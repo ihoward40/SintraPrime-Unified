@@ -1,0 +1,264 @@
+version: '3.9'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: sintraprime-postgres
+    environment:
+      POSTGRES_USER: sintraprime
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sintraprime123}
+      POSTGRES_DB: sintraprime_unified
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./shared/schemas/unified_schema.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sintraprime"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sintraprime_network
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: sintraprime-redis
+    command: >
+      sh -c "redis-server ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD}"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sintraprime_network
+    restart: unless-stopped
+
+  # Python Hive Mind API (FastAPI) — service name: api
+  api:
+    build:
+      context: ./core
+      dockerfile: Dockerfile
+    container_name: sintraprime-api
+    environment:
+      DATABASE_URL: postgresql://sintraprime:${POSTGRES_PASSWORD:-sintraprime123}@postgres:5432/sintraprime_unified
+      REDIS_URL: redis://${REDIS_PASSWORD:+:$REDIS_PASSWORD@}redis:6379
+      PYTHONUNBUFFERED: "1"
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      API_PORT: "8080"
+      SECRET_KEY: ${SECRET_KEY:-change_me_32_char_secret_key_here}
+      JWT_SECRET: ${JWT_SECRET:-change_me_jwt_secret_here}
+      ENABLE_SUPERINTELLIGENCE: ${ENABLE_SUPERINTELLIGENCE:-true}
+      ENABLE_TWIN_TUI: ${ENABLE_TWIN_TUI:-true}
+      ENABLE_AGENT_SWARMS: ${ENABLE_AGENT_SWARMS:-true}
+      ENABLE_HIVE_MIND: ${ENABLE_HIVE_MIND:-true}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "${API_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./core/universe:/app/universe:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - sintraprime_network
+    restart: unless-stopped
+
+  # Elasticsearch (Search & Analytics)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.5.0
+    container_name: sintraprime-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - cluster.name=sintraprime
+    ports:
+      - "${ELASTICSEARCH_PORT:-9200}:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health | grep -qE '\"status\":\"(yellow|green)\"'"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - sintraprime_network
+    restart: unless-stopped
+
+  # TypeScript Airlock Server (Express/Node)
+  airlock-server:
+    build:
+      context: ./apps/sintraprime
+      dockerfile: Dockerfile
+    container_name: sintraprime-airlock
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      API_PORT: "3001"
+      DATABASE_URL: postgresql://sintraprime:${POSTGRES_PASSWORD:-sintraprime123}@postgres:5432/sintraprime_unified
+      REDIS_URL: redis://${REDIS_PASSWORD:+:$REDIS_PASSWORD@}redis:6379
+      HIVE_MIND_API: http://api:8080
+      SECRET_KEY: ${SECRET_KEY:-change_me_32_char_secret_key_here}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - sintraprime_network
+    restart: unless-stopped
+
+  # Prometheus (Metrics Collection)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: sintraprime-prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./shared/config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - sintraprime_network
+    restart: unless-stopped
+
+  # Grafana (Monitoring Dashboard)
+  grafana:
+    image: grafana/grafana:9.5.0
+    container_name: sintraprime-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: "http://localhost:${GRAFANA_PORT:-3000}"
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./shared/config/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks:
+      - sintraprime_network
+    restart: unless-stopped
+
+  # MinIO (S3-compatible Object Storage)
+  minio:
+    image: minio/minio:latest
+    container_name: sintraprime-minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-minioadmin123}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/minio_data
+    command: server /minio_data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 30s
+    networks:
+      - sintraprime_network
+    restart: unless-stopped
+
+  # Twin Display Server — TUI over WebSocket
+  twin-display-server:
+    image: python:3.12-slim
+    container_name: sintraprime-twin-display
+    working_dir: /app
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        pip install websockets fastapi uvicorn --quiet
+        python /app/twin_layer/server_entrypoint.py
+    ports:
+      - "8765:8765"
+    volumes:
+      - ./twin_layer:/app/twin_layer:ro
+    environment:
+      PYTHONPATH: /app
+      TWIN_AUTH_TOKEN: ${TWIN_AUTH_TOKEN:-change-me-in-production}
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import socket; s=socket.create_connection(('localhost', 8765), 2); s.close()\""]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - sintraprime_network
+    restart: unless-stopped
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: sintraprime-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./shared/config/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+      - airlock-server
+      - grafana
+    networks:
+      - sintraprime_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  minio_data:
+    driver: local
+
+networks:
+  sintraprime_network:
+    driver: bridge

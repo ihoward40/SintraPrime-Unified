@@ -1,0 +1,29 @@
+services:
+  # IkeBot API Service
+  - type: web
+    name: ikebot-api
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: LOG_LEVEL
+        value: info
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_API_BASE
+        value: https://api.openai.com/v1
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false

@@ -1,0 +1,53 @@
+{
+  "type": "function",
+  "function": {
+    "name": "list_beneficiaries",
+    "description": "List all beneficiaries with optional filtering, pagination, and sorting. Returns a paginated list of beneficiaries from the trust management system.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "page": {
+          "type": "number",
+          "description": "Page number for pagination (default: 1)"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Number of results per page (default: 10, max: 100)"
+        },
+        "sortBy": {
+          "type": "string",
+          "description": "Field to sort by (default: created_at)",
+          "enum": ["created_at", "first_name", "last_name", "email"]
+        },
+        "sortOrder": {
+          "type": "string",
+          "description": "Sort order (default: desc)",
+          "enum": ["asc", "desc"]
+        },
+        "search": {
+          "type": "string",
+          "description": "Search query to filter beneficiaries by name or email"
+        }
+      }
+    },
+    "returns": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "description": "Array of beneficiary objects"
+        },
+        "pagination": {
+          "type": "object",
+          "properties": {
+            "page": { "type": "number" },
+            "limit": { "type": "number" },
+            "total": { "type": "number" },
+            "totalPages": { "type": "number" }
+          }
+        }
+      }
+    },
+    "api_endpoint": "GET /api/beneficiaries"
+  }
+}

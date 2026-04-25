@@ -1,0 +1,54 @@
+{
+  "type": "function",
+  "function": {
+    "name": "create_beneficiary",
+    "description": "Create a new beneficiary in the trust management system. Requires first name and last name at minimum. Returns the created beneficiary object.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "first_name": {
+          "type": "string",
+          "description": "Beneficiary's first name (required, max 100 characters)"
+        },
+        "last_name": {
+          "type": "string",
+          "description": "Beneficiary's last name (required, max 100 characters)"
+        },
+        "email": {
+          "type": "string",
+          "description": "Beneficiary's email address (optional, must be valid email format)"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Beneficiary's phone number (optional)"
+        },
+        "address": {
+          "type": "string",
+          "description": "Beneficiary's mailing address (optional)"
+        },
+        "ssn_last_four": {
+          "type": "string",
+          "description": "Last 4 digits of SSN (optional, must be exactly 4 digits)"
+        },
+        "date_of_birth": {
+          "type": "string",
+          "description": "Date of birth in ISO 8601 format (optional)"
+        },
+        "relationship": {
+          "type": "string",
+          "description": "Relationship to trust (optional, e.g., 'Primary', 'Spouse', 'Child')"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes about the beneficiary (optional)"
+        }
+      },
+      "required": ["first_name", "last_name"]
+    },
+    "returns": {
+      "type": "object",
+      "description": "The created beneficiary object with id and timestamps"
+    },
+    "api_endpoint": "POST /api/beneficiaries"
+  }
+}

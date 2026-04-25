@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IKE SOLUTIONS - Legal Document & Case Strategy Support</title>
+    <meta name="description" content="Clear Documents. Smarter Strategy. Better Preparation. Professional legal document drafting and case strategy support for self-represented litigants.">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1a4d8f;
+            --primary-dark: #0f2e54;
+            --primary-light: #2966b8;
+            --accent: #d4a574;
+            --text-dark: #2c3e50;
+            --text-light: #5a6c7d;
+            --bg-light: #f8f9fa;
+            --bg-white: #ffffff;
+            --border: #e0e6ed;
+            --success: #27ae60;
+            --error: #e74c3c;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background: var(--bg-white);
+        }
+
+        /* Header & Navigation */
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 70px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        nav ul {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        nav a:hover {
+            color: var(--accent);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            font-size: 18px;
+            margin-bottom: 30px;
+            opacity: 0.95;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--primary);
+        }
+
+        .btn-primary:hover {
+            background: #e8b887;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn-secondary:hover {
+            background: white;
+            color: var(--primary);
+        }
+
+        /* Page Sections */
+        .page-section {
+            display: none;
+        }
+
+        .page-section.active {
+            display: block;
+        }
+
+        section {
+            padding: 60px 0;
+        }
+
+        section h2 {
+            font-size: 36px;
+            margin-bottom: 30px;
+            color: var(--primary);
+        }
+
+        section h3 {
+            font-size: 24px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+
+        section p {
+            margin-bottom: 15px;
+            line-height: 1.8;
+            color: var(--text-light);
+        }
+
+        /* Services Grid */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .service-card {
+            background: var(--bg-light);
+            padding: 30px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .service-card h3 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        .service-card .price {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-top: 15px;
+        }
+
+        /* Steps Grid */
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .step {
+            background: var(--bg-light);
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .step-number {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            line-height: 50px;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        /* Form Section */
+        .form-container {
+            background: var(--bg-light);
+            padding: 40px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+
+        .typeform-container {
+            margin-top: 30px;
+            min-height: 600px;
+        }
+
+        /* FAQ */
+        .faq-item {
+            background: var(--bg-light);
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .faq-item h4 {
+            color: var(--primary);
+            margin-bottom: 0;
+        }
+
+        .faq-item p {
+            display: none;
+            margin-top: 15px;
+            margin-bottom: 0;
+        }
+
+        .faq-item.open p {
+            display: block;
+        }
+
+        /* Pricing Table */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .pricing-card {
+            background: var(--bg-light);
+            padding: 30px;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .pricing-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .pricing-card.featured {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .pricing-card.featured h3 {
+            color: var(--accent);
+        }
+
+        .pricing-card .price {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 15px 0;
+            color: var(--accent);
+        }
+
+        .pricing-card.featured .price {
+            color: white;
+        }
+
+        .pricing-card ul {
+            list-style: none;
+            margin: 20px 0;
+        }
+
+        .pricing-card li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            font-size: 14px;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--primary);
+            color: white;
+            padding: 40px 0 20px;
+            margin-top: 60px;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        footer h4 {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        footer a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-size: 14px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        footer a:hover {
+            color: var(--accent);
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 20px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .disclaimer {
+            background: var(--bg-light);
+            padding: 20px;
+            border-radius: 4px;
+            margin: 30px 0;
+            font-size: 14px;
+            line-height: 1.8;
+            border-left: 4px solid var(--accent);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            nav ul {
+                gap: 1rem;
+            }
+
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .hero p {
+                font-size: 16px;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+
+            section {
+                padding: 40px 0;
+            }
+
+            section h2 {
+                font-size: 28px;
+            }
+
+            .pricing-card.featured {
+                transform: scale(1);
+            }
+
+            .form-container {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            nav ul {
+                flex-direction: column;
+                gap: 0.5rem;
+                text-align: center;
+            }
+
+            .logo {
+                font-size: 20px;
+            }
+
+            .hero {
+                padding: 40px 0;
+            }
+
+            .hero h1 {
+                font-size: 24px;
+            }
+
+            section h2 {
+                font-size: 24px;
+            }
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent);
+            color: var(--primary);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">IKE SOLUTIONS</div>
+                <nav>
+                    <ul>
+                        <li><a href="#" onclick="showPage('home')">Home</a></li>
+                        <li><a href="#" onclick="showPage('services')">Services</a></li>
+                        <li><a href="#" onclick="showPage('how')">How It Works</a></li>
+                        <li><a href="#" onclick="showPage('about')">About</a></li>
+                        <li><a href="#" onclick="showPage('faq')">FAQ</a></li>
+                        <li><a href="#" onclick="showPage('intake')">Intake</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- HOME PAGE -->
+    <div id="home" class="page-section active">
+        <div class="hero">
+            <div class="container">
+                <h1>Clear Documents. Smarter Strategy. Better Preparation.</h1>
+                <p>Professional legal document drafting and case strategy support for self-represented litigants. Get the preparation you need to succeed.</p>
+                <div class="cta-buttons">
+                    <button class="btn btn-primary" onclick="showPage('intake')">Start Your Intake</button>
+                    <button class="btn btn-secondary" onclick="showPage('services')">See Services</button>
+                </div>
+            </div>
+        </div>
+
+        <section>
+            <div class="container">
+                <h2>Why Choose IKE SOLUTIONS?</h2>
+                <div class="services-grid">
+                    <div class="service-card">
+                        <h3>Expert Document Preparation</h3>
+                        <p>Professional drafting of affidavits, declarations, motions, and dispute packets prepared for filing support and submission.</p>
+                    </div>
+                    <div class="service-card">
+                        <h3>Strategic Case Review</h3>
+                        <p>Comprehensive analysis of your situation with clear recommendations for next steps and filing strategy.</p>
+                    </div>
+                    <div class="service-card">
+                        <h3>Fast Turnaround</h3>
+                        <p>Standard 2-business-day turnaround, next-business-day rush, and 3-5 days for complex packets. 24-hour intake response.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section style="background: var(--bg-light);">
+            <div class="container">
+                <h2>Our Top Services</h2>
+                <div class="services-grid">
+                    <div class="service-card" style="background: white;">
+                        <h3>Case Review & Strategy Audit</h3>
+                        <p>Start with a professional case review. We analyze your situation, identify key issues, and recommend the best path forward.</p>
+                        <div class="price">From $49</div>
+                    </div>
+                    <div class="service-card" style="background: white;">
+                        <h3>Affidavit & Declaration Drafting</h3>
+                        <p>Professional drafting of affidavits and declarations, formatted and ready for filing support. Clear, persuasive, prepared for submission.</p>
+                        <div class="price">From $99</div>
+                    </div>
+                    <div class="service-card" style="background: white;">
+                        <h3>Dispute & Escalation Packets</h3>
+                        <p>Complete debt validation, credit dispute, collection response, and escalation packets with all supporting documentation organized and ready.</p>
+                        <div class="price">From $149</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- SERVICES PAGE -->
+    <div id="services" class="page-section">
+        <section style="background: var(--primary); color: white; padding: 40px 0;">
+            <div class="container">
+                <h2 style="color: white; margin-bottom: 15px;">Our Services</h2>
+                <p style="font-size: 18px;">Professional legal document preparation and case strategy support for self-represented litigants</p>
+            </div>
+        </section>
+
+        <section>
+            <div class="container">
+                <h3>Primary Services</h3>
+
+                <h4 style="color: var(--primary); font-size: 20px; margin-top: 25px;">1. Case Review & Strategy Audit ($49–$97)</h4>
+                <p>Start with a comprehensive case review. We analyze your situation, identify key legal and strategic issues, and provide clear recommendations for your next steps. Perfect for understanding your options and charting your path forward.</p>
+
+                <h4 style="color: var(--primary); font-size: 20px; margin-top: 25px;">2. Affidavit, Declaration & Motion Draft Support ($99–$249)</h4>
+                <p>Professional drafting of affidavits, declarations, and motions formatted for filing support and court submission. We ensure clarity, persuasive language, and proper formatting for your jurisdiction.</p>
+
+                <h4 style="color: var(--primary); font-size: 20px; margin-top: 25px;">3. Dispute, Validation & Escalation Packets ($149–$750)</h4>
+                <p>Complete debt validation, credit dispute, collection response, and escalation packets with all supporting documentation organized and ready. Includes demand letters, cease & desist notices, and detailed response templates.</p>
+
+                <h3>Supporting Services</h3>
+
+                <div class="services-grid" style="margin-top: 25px;">
+                    <div class="service-card">
+                        <h4 style="margin-top: 0;">Credit & Metro 2 Dispute Help</h4>
+                        <p>Comprehensive guides and templates for disputing credit bureau errors and Metro 2 violations.</p>
+                    </div>
+                    <div class="service-card">
+                        <h4 style="margin-top: 0;">Debt Collection Response Prep</h4>
+                        <p>Templates and strategies for responding to collection actions, notices, and litigation.</p>
+                    </div>
+                    <div class="service-card">
+                        <h4 style="margin-top: 0;">Filing Prep & Exhibit Organization</h4>
+                        <p>Checklist-based preparation for court filings with exhibits properly organized and indexed.</p>
+                    </div>
+                    <div class="service-card">
+                        <h4 style="margin-top: 0;">Trust & Private Record Documentation</h4>
+                        <p>Support for trust documentation and private record creation for asset protection planning.</p>
+                    </div>
+                    <div class="service-card">
+                        <h4 style="margin-top: 0;">Educational Templates & Guides</h4>
+                        <p>Self-directed templates, guides, and educational resources for common legal situations.</p>
+                    </div>
+                    <div class="service-card">
+                        <h4 style="margin-top: 0;">Single-Document Drafting</h4>
+                        <p>Affordable single-document preparation when you need just one letter, brief, or statement.</p>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 40px;">Service Standards</h3>
+                <ul style="margin-left: 20px; color: var(--text-light);">
+                    <li><strong>24-hour intake response</strong> — We acknowledge your intake within one business day</li>
+                    <li><strong>2 business days standard</strong> — Most documents delivered within 2 business days</li>
+                    <li><strong>Next business day rush</strong> — Expedited service available (rush add-on)</li>
+                    <li><strong>3–5 days for complex packets</strong> — Comprehensive packets delivered within 3–5 business days</li>
+                </ul>
+
+                <div class="disclaimer">
+                    <strong>⚠️ Important Disclaimer</strong><br>
+                    IKE SOLUTIONS provides educational information, document preparation support, and administrative workflow assistance. We are <strong>not a law firm</strong>, do not represent clients in court, and do not provide legal advice. Results are not guaranteed. All deadlines remain your responsibility. Services are based on client-provided information. Sensitive outputs may require manual review before use.
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- HOW IT WORKS PAGE -->
+    <div id="how" class="page-section">
+        <section style="background: var(--primary); color: white; padding: 40px 0;">
+            <div class="container">
+                <h2 style="color: white; margin-bottom: 15px;">How It Works</h2>
+                <p style="font-size: 18px;">Three simple steps from intake to delivery</p>
+            </div>
+        </section>
+
+        <section>
+            <div class="container">
+                <div class="steps-grid">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <h3>Complete Your Intake</h3>
+                        <p>Answer our intake form with details about your situation, the service you need, and your timeline. We'll contact you within 24 hours.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <h3>Review & Refinement</h3>
+                        <p>We analyze your situation, ask clarifying questions if needed, and prepare your documents or strategy recommendation.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <h3>Delivery & Support</h3>
+                        <p>Receive your completed documents, strategy brief, or packet. We're available for questions and minor revisions.</p>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 40px;">The Process in Detail</h3>
+
+                <h4 style="color: var(--primary); font-size: 18px; margin-top: 25px;"><strong>Intake Triage</strong></h4>
+                <p>Your intake form tells us what you need. Based on your answers, we route you to the right service: Case Review, Document Drafting, or Packet Assembly.</p>
+
+                <h4 style="color: var(--primary); font-size: 18px; margin-top: 25px;"><strong>Information Gathering</strong></h4>
+                <p>We review what you've provided and may request additional documents, clarifications, or supporting materials to ensure accuracy and completeness.</p>
+
+                <h4 style="color: var(--primary); font-size: 18px; margin-top: 25px;"><strong>Preparation & Drafting</strong></h4>
+                <p>Our team prepares your documents, strategy brief, or packet. We ensure proper formatting, correct terminology, and clear organization.</p>
+
+                <h4 style="color: var(--primary); font-size: 18px; margin-top: 25px;"><strong>Quality Review</strong></h4>
+                <p>Every deliverable is reviewed for accuracy, completeness, and presentation before delivery to you.</p>
+
+                <h4 style="color: var(--primary); font-size: 18px; margin-top: 25px;"><strong>Delivery & Follow-up</strong></h4>
+                <p>You receive your completed work via email. We're available for questions, minor clarifications, and support as you move forward.</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- ABOUT PAGE -->
+    <div id="about" class="page-section">
+        <section style="background: var(--primary); color: white; padding: 40px 0;">
+            <div class="container">
+                <h2 style="color: white; margin-bottom: 15px;">About IKE SOLUTIONS</h2>
+                <p style="font-size: 18px;">Supporting self-represented litigants with professional document preparation and strategic guidance</p>
+            </div>
+        </section>
+
+        <section>
+            <div class="container">
+                <h3>Our Mission</h3>
+                <p>IKE SOLUTIONS exists to support self-represented litigants and individuals handling their own legal matters. We believe that access to professional document preparation and strategic guidance should be affordable and straightforward. Our goal is to help you prepare better documents, understand your options, and approach your situation with confidence.</p>
+
+                <h3>What We Do</h3>
+                <p>We provide professional document drafting, case strategy consultation, and packet assembly for individuals navigating debt disputes, credit issues, collections defense, filing preparation, and other civil matters. We focus on clarity, accuracy, and practical support—not legal advice.</p>
+
+                <h3>What We Don't Do</h3>
+                <ul style="margin-left: 20px; color: var(--text-light);">
+                    <li>We do not provide legal advice or represent clients in court</li>
+                    <li>We are not a law firm</li>
+                    <li>We do not guarantee specific outcomes or results</li>
+                    <li>We do not handle matters where we would need to appear in court on your behalf</li>
+                </ul>
+
+                <h3>How We're Different</h3>
+                <div class="services-grid">
+                    <div class="service-card">
+                        <h4 style="margin-top: 0;">Affordable & Transparent</h4>
+                        <p>Clear pricing, no hidden fees, and straightforward service packages.</p>
+                    </div>
+                    <div class="service-card">
+                        <h4 style="margin-top: 0;">Fast Turnaround</h4>
+                        <p>Standard 2-day turnaround, next-day rush, and same-day intake response.</p>
+                    </div>
+                    <div class="service-card">
+                        <h4 style="margin-top: 0;">Professional Quality</h4>
+                        <p>Every document reviewed for accuracy, completeness, and proper formatting.</p>
+                    </div>
+                    <div class="service-card">
+                        <h4 style="margin-top: 0;">Practical Support</h4>
+                        <p>We focus on what you actually need—clear documents and actionable strategy.</p>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 40px;">Contact</h3>
+                <p><strong>Business Address:</strong> 971 US Highway 202N Ste A, Branchburg, NJ 08876</p>
+                <p><strong>Email:</strong> isiahh@ikesolutions.org</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- INTAKE PAGE (TYPEFORM EMBEDDED) -->
+    <div id="intake" class="page-section">
+        <section style="background: var(--primary); color: white; padding: 40px 0;">
+            <div class="container">
+                <h2 style="color: white; margin-bottom: 15px;">Start Your Intake</h2>
+                <p style="font-size: 18px;">Tell us about your situation. We'll respond within 24 hours.</p>
+            </div>
+        </section>
+
+        <section>
+            <div class="container">
+                <p style="margin-bottom: 20px;">Complete this form to get started. Based on your answers, we'll recommend the right service and provide a quote.</p>
+                
+                <div class="typeform-container">
+                    <iframe id="typeform-iframe" src="https://form.typeform.com/to/BBfLj3rg?typeform-medium=embed-snippet" width="100%" height="500" frameborder="0" allow="camera; microphone; clipboard-read; clipboard-write"></iframe>
+                </div>
+
+                <div class="disclaimer">
+                    <strong>What happens next:</strong><br>
+                    We review your intake within 24 hours. If we have questions, we'll email you. Once we understand your needs, we'll provide a quote and timeline. You can then approve the quote and get started.
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- FAQ PAGE -->
+    <div id="faq" class="page-section">
+        <section style="background: var(--primary); color: white; padding: 40px 0;">
+            <div class="container">
+                <h2 style="color: white; margin-bottom: 15px;">Frequently Asked Questions</h2>
+            </div>
+        </section>
+
+        <section>
+            <div class="container">
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <h4>How fast can you turn around my documents?</h4>
+                    <p>Standard turnaround is 2 business days. We offer next-business-day rush service for an additional fee. Complex packets (3+ documents) typically take 3–5 business days. We respond to all intakes within 24 hours.</p>
+                </div>
+
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <h4>Are you a law firm? Do you provide legal advice?</h4>
+                    <p>No. IKE SOLUTIONS is not a law firm. We provide document preparation, case strategy consultation, and administrative support. We do not provide legal advice or represent clients in court. We recommend you consult an attorney if you need legal advice.</p>
+                </div>
+
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <h4>What if I'm not sure what service I need?</h4>
+                    <p>Start with a Case Review & Strategy Audit ($49–$97). We'll analyze your situation and recommend the right next steps, whether that's document drafting, a packet, or additional guidance.</p>
+                </div>
+
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <h4>Can you help with my specific situation?</h4>
+                    <p>We specialize in debt disputes, collection defense, affidavits, declarations, motions, and filing preparation for self-represented litigants. Complete your intake form and we'll let you know if we can help.</p>
+                </div>
+
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <h4>What if I need to revise my documents?</h4>
+                    <p>We include minor revisions and clarifications as part of our service. For substantial rewrites, we'll discuss additional fees upfront.</p>
+                </div>
+
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <h4>How do I know my information is secure?</h4>
+                    <p>We treat all client information as confidential. Your intake form and documents are encrypted and stored securely. We do not share your information with third parties.</p>
+                </div>
+
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <h4>What formats will my documents be in?</h4>
+                    <p>Documents are delivered as Word (.docx) or PDF files that you can easily edit, print, or file. All documents are formatted for court submission and filing.</p>
+                </div>
+
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <h4>Do you guarantee results?</h4>
+                    <p>No. We cannot guarantee specific outcomes or results. Our job is to prepare you with clear, well-organized documents and strategic guidance. The outcome of your case depends on many factors beyond our control, including the judge, evidence, and your opponent's actions.</p>
+                </div>
+
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <h4>Can you file documents on my behalf?</h4>
+                    <p>No. We prepare documents for YOU to file. Filing is your responsibility. However, we'll provide clear instructions on how and where to file.</p>
+                </div>
+
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <h4>What payment methods do you accept?</h4>
+                    <p>We accept credit cards, PayPal, and bank transfers. Once you complete your intake, we'll provide a quote and payment options.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- CONTACT PAGE -->
+    <div id="contact" class="page-section">
+        <section style="background: var(--bg-light);">
+            <div class="container">
+                <h2>Get In Touch</h2>
+                <p style="margin-bottom: 30px;">Questions? Ready to get started? Contact us.</p>
+
+                <div style="max-width: 500px;">
+                    <h3>Contact Information</h3>
+                    <p><strong>Email:</strong> <a href="mailto:isiahh@ikesolutions.org" style="color: var(--primary);">isiahh@ikesolutions.org</a></p>
+                    <p><strong>Address:</strong><br>
+                    IKE SOLUTIONS<br>
+                    971 US Highway 202N Ste A<br>
+                    Branchburg, NJ 08876</p>
+
+                    <h3 style="margin-top: 30px;">Quick Start</h3>
+                    <p>The fastest way to get started is to <button class="btn btn-primary" onclick="showPage('intake')" style="padding: 10px 20px;">Complete Your Intake</button></p>
+
+                    <h3 style="margin-top: 30px;">Response Time</h3>
+                    <p>We respond to all inquiries within <strong>24 hours</strong>. For urgent matters, mention that in your email.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- PRICING PAGE -->
+    <div id="pricing" class="page-section">
+        <section style="background: var(--primary); color: white; padding: 40px 0;">
+            <div class="container">
+                <h2 style="color: white; margin-bottom: 15px;">Pricing</h2>
+                <p style="font-size: 18px;">Transparent, affordable pricing for professional legal document preparation</p>
+            </div>
+        </section>
+
+        <section>
+            <div class="container">
+                <div class="pricing-grid">
+                    <div class="pricing-card">
+                        <h3>Case Review & Strategy</h3>
+                        <div class="price">$49–$97</div>
+                        <ul>
+                            <li>Comprehensive case analysis</li>
+                            <li>Key issue identification</li>
+                            <li>Strategic recommendations</li>
+                            <li>2-day turnaround</li>
+                        </ul>
+                        <button class="btn btn-primary" onclick="showPage('intake')" style="width: 100%; margin-top: 15px;">Get Started</button>
+                    </div>
+
+                    <div class="pricing-card featured">
+                        <h3>Document Drafting</h3>
+                        <div class="price">$99–$249</div>
+                        <ul>
+                            <li>Affidavit & Declaration drafting</li>
+                            <li>Motion preparation</li>
+                            <li>Court-ready formatting</li>
+                            <li>1–2 day turnaround</li>
+                        </ul>
+                        <button class="btn btn-primary" onclick="showPage('intake')" style="width: 100%; margin-top: 15px;">Get Started</button>
+                    </div>
+
+                    <div class="pricing-card">
+                        <h3>Dispute & Escalation Packets</h3>
+                        <div class="price">$149–$750</div>
+                        <ul>
+                            <li>Multi-document packets</li>
+                            <li>Debt validation & disputes</li>
+                            <li>Collection responses</li>
+                            <li>3–5 day turnaround</li>
+                        </ul>
+                        <button class="btn btn-primary" onclick="showPage('intake')" style="width: 100%; margin-top: 15px;">Get Started</button>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 40px;">Add-Ons & Rush Service</h3>
+                <div class="services-grid">
+                    <div class="service-card">
+                        <h4 style="margin-top: 0;">Next-Day Rush</h4>
+                        <p>Get your documents by the next business day for an additional $25–$75 depending on complexity.</p>
+                    </div>
+                    <div class="service-card">
+                        <h4 style="margin-top: 0;">Single Document Drafting</h4>
+                        <p>One letter, brief, or statement prepared and formatted for filing. Starting at $49.</p>
+                    </div>
+                    <div class="service-card">
+                        <h4 style="margin-top: 0;">Educational Templates</h4>
+                        <p>Self-directed templates and guides for common legal situations. Starting at $29.</p>
+                    </div>
+                    <div class="service-card">
+                        <h4 style="margin-top: 0;">Revisions & Follow-up</h4>
+                        <p>Minor revisions included. Additional revisions beyond scope available at $25–$50 per hour.</p>
+                    </div>
+                </div>
+
+                <div class="disclaimer" style="margin-top: 40px;">
+                    <strong>Pricing Notes:</strong><br>
+                    • Final pricing provided after intake review<br>
+                    • Quotes are valid for 7 days<br>
+                    • Payment required before work begins<br>
+                    • No refunds for completed work; revisions included<br>
+                    • Complex matters may require higher pricing
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- FOOTER (appears on all pages) -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div>
+                    <h4>Quick Links</h4>
+                    <a href="#" onclick="showPage('home')">Home</a>
+                    <a href="#" onclick="showPage('services')">Services</a>
+                    <a href="#" onclick="showPage('how')">How It Works</a>
+                    <a href="#" onclick="showPage('about')">About</a>
+                    <a href="#" onclick="showPage('intake')">Intake Form</a>
+                </div>
+                <div>
+                    <h4>More</h4>
+                    <a href="#" onclick="showPage('faq')">FAQ</a>
+                    <a href="#" onclick="showPage('pricing')">Pricing</a>
+                    <a href="#" onclick="showPage('contact')">Contact</a>
+                    <a href="#" onclick="showPage('privacy')">Privacy Policy</a>
+                    <a href="#" onclick="showPage('terms')">Terms of Service</a>
+                </div>
+                <div>
+                    <h4>Contact</h4>
+                    <p>Email: <a href="mailto:isiahh@ikesolutions.org">isiahh@ikesolutions.org</a></p>
+                    <p>Address: 971 US Highway 202N Ste A, Branchburg, NJ 08876</p>
+                </div>
+                <div>
+                    <h4>Important</h4>
+                    <p style="font-size: 13px; line-height: 1.6;">IKE SOLUTIONS provides educational information and document preparation support. We are not a law firm and do not provide legal advice. <a href="#" onclick="showPage('disclaimer')">Read our full disclaimer</a>.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 IKE SOLUTIONS. All rights reserved. | <a href="#" onclick="showPage('privacy')" style="color: inherit;">Privacy</a> | <a href="#" onclick="showPage('terms')" style="color: inherit;">Terms</a> | <a href="#" onclick="showPage('disclaimer')" style="color: inherit;">Disclaimer</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- DISCLAIMER PAGE -->
+    <div id="disclaimer" class="page-section">
+        <section style="background: var(--bg-light); padding: 40px 0;">
+            <div class="container">
+                <h2>Disclaimer</h2>
+                <p style="font-size: 14px; color: var(--text-light);">Last updated: April 2026</p>
+
+                <h3>Important Legal Disclaimer</h3>
+                <p><strong>IKE SOLUTIONS provides educational information, document preparation support, and administrative workflow assistance. We are NOT a law firm, do not represent clients in court, and do not provide legal advice.</strong></p>
+
+                <h3>What We Do</h3>
+                <ul style="margin-left: 20px;">
+                    <li>Prepare legal documents (affidavits, declarations, motions, dispute packets)</li>
+                    <li>Provide case strategy consultation</li>
+                    <li>Organize documents for filing</li>
+                    <li>Offer templates and educational resources</li>
+                </ul>
+
+                <h3>What We Don't Do</h3>
+                <ul style="margin-left: 20px;">
+                    <li>Provide legal advice or counsel</li>
+                    <li>Represent you in court</li>
+                    <li>Guarantee specific outcomes or results</li>
+                    <li>File documents on your behalf</li>
+                </ul>
+
+                <h3>Important Notices</h3>
+                <ul style="margin-left: 20px;">
+                    <li><strong>No Guarantee of Results:</strong> We cannot guarantee that using our services will result in any particular outcome. The success of any legal matter depends on many factors beyond our control, including the specific facts, the judge, applicable law, and the opposing party's actions.</li>
+                    <li><strong>Your Responsibility for Deadlines:</strong> All deadlines are your responsibility. You are solely responsible for tracking and meeting all filing deadlines, court dates, and other time-sensitive requirements.</li>
+                    <li><strong>Information Accuracy:</strong> Our work is based on the information you provide. You are responsible for the accuracy and completeness of all information submitted to us. Inaccurate or incomplete information may result in defective documents.</li>
+                    <li><strong>Manual Review Required:</strong> Sensitive outputs (especially those involving financial or legal claims) may require manual review by you or an attorney before use. We recommend having an attorney review your documents before filing.</li>
+                    <li><strong>Not Lawyer-Client Relationship:</strong> Using our services does not create a lawyer-client relationship. You are not entitled to attorney-client privilege for communications with IKE SOLUTIONS.</li>
+                </ul>
+
+                <h3>Limitation of Liability</h3>
+                <p>To the fullest extent permitted by law, IKE SOLUTIONS is not liable for any indirect, incidental, special, or consequential damages resulting from the use of our services, even if we have been advised of the possibility of such damages.</p>
+
+                <h3>Suitability for Your Jurisdiction</h3>
+                <p>Laws vary significantly by jurisdiction. Documents we prepare may not be suitable for your specific location or situation. We recommend consulting with a local attorney to ensure documents are appropriate for your jurisdiction and circumstances.</p>
+
+                <h3>When to Consult an Attorney</h3>
+                <p>We strongly recommend consulting with a licensed attorney:</p>
+                <ul style="margin-left: 20px;">
+                    <li>Before filing any legal documents</li>
+                    <li>If you're unsure about the law applicable to your situation</li>
+                    <li>If opposing counsel is represented by an attorney</li>
+                    <li>If your matter involves substantial amounts of money or complex legal issues</li>
+                    <li>If you've been served with legal papers or a lawsuit</li>
+                </ul>
+
+                <div class="disclaimer">
+                    By using IKE SOLUTIONS services, you acknowledge that you have read this disclaimer, understand that we do not provide legal advice, and accept responsibility for ensuring that documents are suitable for your jurisdiction and situation.
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- PRIVACY PAGE -->
+    <div id="privacy" class="page-section">
+        <section style="background: var(--bg-light); padding: 40px 0;">
+            <div class="container">
+                <h2>Privacy Policy</h2>
+                <p style="font-size: 14px; color: var(--text-light);">Last updated: April 2026</p>
+
+                <h3>Information We Collect</h3>
+                <p>When you use our services, we collect information including:</p>
+                <ul style="margin-left: 20px;">
+                    <li>Name, email address, and phone number</li>
+                    <li>Information about your legal matter</li>
+                    <li>Documents and evidence you provide</li>
+                    <li>Payment information (credit card or PayPal)</li>
+                </ul>
+
+                <h3>How We Use Your Information</h3>
+                <ul style="margin-left: 20px;">
+                    <li>To prepare documents and provide services</li>
+                    <li>To communicate with you about your project</li>
+                    <li>To process payments</li>
+                    <li>To improve our services</li>
+                </ul>
+
+                <h3>Data Security</h3>
+                <p>We encrypt and secure all client information. Your information is never shared with third parties without your consent, except as required by law.</p>
+
+                <h3>Your Rights</h3>
+                <p>You have the right to request access to, correction of, or deletion of your personal information. Contact us at isiahh@ikesolutions.org to exercise these rights.</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- TERMS OF SERVICE PAGE -->
+    <div id="terms" class="page-section">
+        <section style="background: var(--bg-light); padding: 40px 0;">
+            <div class="container">
+                <h2>Terms of Service</h2>
+                <p style="font-size: 14px; color: var(--text-light);">Last updated: April 2026</p>
+
+                <h3>Services Agreement</h3>
+                <p>By using IKE SOLUTIONS services, you agree to these terms. If you do not agree, please do not use our services.</p>
+
+                <h3>Service Scope</h3>
+                <p>IKE SOLUTIONS provides document preparation, case strategy consultation, and educational support. Services do not include legal advice, court representation, or legal counsel.</p>
+
+                <h3>Payment Terms</h3>
+                <ul style="margin-left: 20px;">
+                    <li>Quotes are valid for 7 days</li>
+                    <li>Payment is due before work begins</li>
+                    <li>We accept credit cards, PayPal, and bank transfers</li>
+                    <li>No refunds for completed work</li>
+                </ul>
+
+                <h3>Intellectual Property</h3>
+                <p>Documents prepared by IKE SOLUTIONS are your property for your exclusive use. You may not resell or redistribute our documents or materials without permission.</p>
+
+                <h3>Limitation of Liability</h3>
+                <p>IKE SOLUTIONS is not liable for any damages resulting from the use or misuse of our services, to the fullest extent permitted by law.</p>
+
+                <h3>Governing Law</h3>
+                <p>These terms are governed by the laws of New Jersey, without regard to its conflict of law provisions.</p>
+
+                <h3>Changes to Terms</h3>
+                <p>IKE SOLUTIONS reserves the right to modify these terms at any time. Changes are effective immediately upon posting.</p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        function showPage(pageId) {
+            // Hide all pages
+            const pages = document.querySelectorAll('.page-section');
+            pages.forEach(page => page.classList.remove('active'));
+
+            // Show selected page
+            const selectedPage = document.getElementById(pageId);
+            if (selectedPage) {
+                selectedPage.classList.add('active');
+                window.scrollTo(0, 0);
+            }
+        }
+
+        function toggleFaq(element) {
+            element.classList.toggle('open');
+        }
+
+        // Typeform resize handler
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'embed:resize') {
+                const iframe = document.getElementById('typeform-iframe');
+                if (iframe) {
+                    iframe.style.height = event.data.height + 'px';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

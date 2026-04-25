@@ -1,0 +1,44 @@
+{
+  "type": "function",
+  "function": {
+    "name": "run_enforcement_packet",
+    "description": "Create and initiate an enforcement packet (UCC lien, FOIA request, IRS rebuttal, etc.) for a beneficiary. This is used for trust enforcement actions. Returns the created enforcement packet object.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "beneficiary_id": {
+          "type": "string",
+          "description": "UUID of the beneficiary this enforcement is for (required)"
+        },
+        "packet_type": {
+          "type": "string",
+          "description": "Type of enforcement packet (required)",
+          "enum": ["ucc_lien", "foia_request", "irs_rebuttal", "affidavit", "notice_of_default", "other"]
+        },
+        "target_agency": {
+          "type": "string",
+          "description": "Target agency or organization (optional, e.g., 'IRS', 'Credit Bureau', 'County Recorder')"
+        },
+        "documents": {
+          "type": "object",
+          "description": "Document references and metadata (optional, JSON object)"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes or instructions (optional)"
+        },
+        "auto_send": {
+          "type": "boolean",
+          "description": "Whether to automatically send the packet (default: false)"
+        }
+      },
+      "required": ["beneficiary_id", "packet_type"]
+    },
+    "returns": {
+      "type": "object",
+      "description": "The created enforcement packet object with status and tracking info"
+    },
+    "implementation_note": "This currently creates a draft enforcement packet. Future implementation will include document generation, mailing, and tracking.",
+    "api_endpoint": "POST /api/enforcement-packets (to be implemented)"
+  }
+}

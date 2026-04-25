@@ -1,0 +1,65 @@
+{
+  "version": "2.0.0",
+  "last_updated": "2026-02-26",
+  "code_agents": [
+    "CreditGuardian",
+    "EcommerceAutomationAgent",
+    "TrustGuardian",
+    "SentinelGuardAgent"
+  ],
+  "agent_hub": [
+    "SintraPrime_Planner_v1",
+    "SintraPrime_Validation_Agent",
+    "Trust_Orchestrator_Agent",
+    "Watchtower_Reporting_Agent",
+    "Tiktok_Sentinel_Agent",
+    "Telecom_Enforcement_Agent",
+    "Email_Sentinel_Agent",
+    "Trust_Records_Guardian_Agent"
+  ],
+  "make_ai_agents": [
+    "Affidavit Generator Agent",
+    "Legal-Document-Generator-Agent",
+    "TikTok-Lead-Capture-Agent",
+    "STEVEN - IKE SOLUTIONS LEGAL EVIDENCE AGENT"
+  ],
+  "sintra_specialists": [
+    "Vizzy",
+    "Soshie",
+    "Buddy",
+    "Dexter",
+    "Commet",
+    "Gigi",
+    "Emmie",
+    "Seomi",
+    "Scouty",
+    "Penn",
+    "Milli",
+    "Cassie"
+  ],
+  "high_roi_skills_agents": [
+    "FCRA_Dispute_Automation_Agent",
+    "Debt_Validation_Agent",
+    "TCPA_FDCPA_Violation_Tracker_Agent",
+    "Contract_Analysis_Agent",
+    "Accounts_Receivable_Agent",
+    "Lead_Generation_Qualification_Agent",
+    "Financial_Analysis_Agent",
+    "Wealth_Management_Agent",
+    "Investment_Banking_Agent",
+    "Private_Equity_Agent",
+    "Frontend_Slides_Agent"
+  ],
+  "legacy_archive": [
+    "Core Engineer",
+    "Infisical Agent",
+    "Trademark Agent",
+    "Stripe Agent",
+    "Zillow Agent",
+    "IRS Agent",
+    "VA Benefits Agent",
+    "Trello Agent",
+    "Tave Agent",
+    "TurboTax Agent"
+  ]
+}

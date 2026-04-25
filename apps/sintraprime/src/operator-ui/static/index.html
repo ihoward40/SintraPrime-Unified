@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Operator Console (Fast UI)</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="brand">Operator Console</div>
+      <nav class="tabs">
+        <button class="tab" data-tab="approvals">Approvals</button>
+        <button class="tab" data-tab="receipts">Receipts</button>
+        <button class="tab" data-tab="artifacts">Artifacts</button>
+        <button class="tab" data-tab="scheduler">Scheduler</button>
+        <button class="tab" data-tab="audit">Audit</button>
+        <button class="tab" data-tab="command">Command</button>
+      </nav>
+    </header>
+
+    <main class="main">
+      <section class="panel" id="panel-approvals">
+        <div class="panelHeader">
+          <h2>Pending Approvals</h2>
+          <button id="refresh-approvals">Refresh</button>
+        </div>
+        <div id="approvals"></div>
+      </section>
+
+      <section class="panel" id="panel-receipts" hidden>
+        <div class="panelHeader">
+          <h2>Receipts (tail)</h2>
+          <div class="row">
+            <label>Limit <input id="receipts-limit" type="number" value="50" min="1" max="500" /></label>
+            <button id="refresh-receipts">Refresh</button>
+          </div>
+        </div>
+        <pre class="code" id="receipts"></pre>
+      </section>
+
+      <section class="panel" id="panel-artifacts" hidden>
+        <div class="panelHeader">
+          <h2>Artifacts</h2>
+          <div class="row">
+            <label>Prefix <input id="artifacts-prefix" value="runs" /></label>
+            <button id="refresh-artifacts">Refresh</button>
+          </div>
+        </div>
+        <div class="split">
+          <div class="list" id="artifacts-list"></div>
+          <pre class="code" id="artifact-viewer">Select an artifact…</pre>
+        </div>
+      </section>
+
+      <section class="panel" id="panel-scheduler" hidden>
+        <div class="panelHeader">
+          <h2>Scheduler History</h2>
+          <div class="row">
+            <label>job_id <input id="scheduler-job" placeholder="optional" /></label>
+            <button id="refresh-scheduler">Refresh</button>
+          </div>
+        </div>
+        <pre class="code" id="scheduler"></pre>
+
+        <div class="panelHeader" style="margin-top: 14px;">
+          <h2>Scheduler Explain</h2>
+          <div class="row">
+            <label>job_id <input id="scheduler-explain-job" placeholder="required" /></label>
+            <label>at <input id="scheduler-explain-at" placeholder="optional ISO" /></label>
+            <button id="run-scheduler-explain">Explain</button>
+          </div>
+        </div>
+        <pre class="code" id="scheduler-explain">Run an explain to see the decision trace…</pre>
+      </section>
+
+      <section class="panel" id="panel-audit" hidden>
+        <div class="panelHeader">
+          <h2>Audit Export (Court Packet)</h2>
+          <button id="run-audit-export">Export</button>
+        </div>
+        <div class="row">
+          <label>since_iso <input id="audit-since" placeholder="2025-01-01T00:00:00.000Z" /></label>
+          <label><input id="audit-redact" type="checkbox" checked /> redact</label>
+          <label><input id="audit-include-artifacts" type="checkbox" /> include_artifacts</label>
+        </div>
+        <pre class="code" id="audit-output">Export output will appear here…</pre>
+      </section>
+
+      <section class="panel" id="panel-command" hidden>
+        <div class="panelHeader">
+          <h2>Run Command</h2>
+          <button id="send-command">Send</button>
+        </div>
+        <input id="command-input" class="cmd" placeholder="/queue list" value="/queue list" />
+        <pre class="code" id="command-output"></pre>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>Local-only • policy-bound • JSON-first</span>
+    </footer>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,28 @@
+FROM node:20-alpine AS deps
+WORKDIR /app/webapp
+RUN corepack enable
+
+COPY webapp/package.json webapp/pnpm-lock.yaml ./
+COPY webapp/patches ./patches
+RUN pnpm install --frozen-lockfile
+
+FROM node:20-alpine AS build
+WORKDIR /app/webapp
+RUN corepack enable
+
+COPY --from=deps /app/webapp/node_modules ./node_modules
+COPY webapp ./
+RUN pnpm build
+
+FROM node:20-alpine AS runner
+WORKDIR /app/webapp
+ENV NODE_ENV=production
+ENV PORT=3002
+RUN corepack enable
+
+COPY --from=deps /app/webapp/node_modules ./node_modules
+COPY --from=build /app/webapp/dist ./dist
+COPY webapp/package.json ./package.json
+
+EXPOSE 3002
+CMD ["node", "dist/index.js"]

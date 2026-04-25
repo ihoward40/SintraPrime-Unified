@@ -1,0 +1,15 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY airlock_server/package.json ./airlock_server/
+RUN cd airlock_server && npm install --omit=dev
+
+COPY airlock_server ./airlock_server
+
+WORKDIR /app/airlock_server
+ENV NODE_ENV=production
+ENV PORT=3000
+EXPOSE 3000
+
+CMD ["node", "index.mjs"]

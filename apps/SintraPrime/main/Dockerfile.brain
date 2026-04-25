@@ -1,0 +1,16 @@
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app/brain
+
+COPY brain/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY brain ./
+
+ENV BRAIN_ROOT=/app/brain
+EXPOSE 8011
+
+CMD ["python", "-m", "uvicorn", "brain_server:app", "--host", "0.0.0.0", "--port", "8011"]

@@ -1,0 +1,51 @@
+# Dockerfile.sentinelguard
+# SentinelGuard Cybersecurity Agent - Security Tools Container
+# This Dockerfile extends the base SintraPrime image with security scanning tools
+# required by the SentinelGuard agent (nmap, theHarvester, amass).
+
+FROM node:20-slim AS base
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /app
+
+# Install system dependencies and security tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    nmap \
+    python3-pip \
+    python3-venv \
+    git \
+    curl \
+    dnsutils \
+    whois \
+    && python3 -m pip install --break-system-packages theHarvester \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install amass (latest release binary)
+RUN curl -sL https://github.com/owasp-amass/amass/releases/latest/download/amass_Linux_amd64.zip -o /tmp/amass.zip \
+    && unzip -q /tmp/amass.zip -d /tmp/amass \
+    && mv /tmp/amass/amass_Linux_amd64/amass /usr/local/bin/amass \
+    && chmod +x /usr/local/bin/amass \
+    && rm -rf /tmp/amass /tmp/amass.zip
+
+# Copy application
+COPY package.json pnpm-lock.yaml* ./
+RUN corepack enable && pnpm install --frozen-lockfile --prod 2>/dev/null || npm install --omit=dev
+
+COPY . .
+
+# Build TypeScript
+RUN npm run build 2>/dev/null || echo "Build step skipped (no build script or build error)"
+
+# Environment variables for SentinelGuard
+ENV SENTINELGUARD_SCAN_TARGETS="" \
+    SENTINELGUARD_SCAN_SCHEDULE="0 2 * * 0" \
+    SENTINELGUARD_ALERT_WEBHOOK="" \
+    METASPLOIT_RPC_HOST="127.0.0.1" \
+    METASPLOIT_RPC_PORT="55553" \
+    METASPLOIT_RPC_PASSWORD=""
+
+EXPOSE 3000
+
+CMD ["node", "dist/index.js"]

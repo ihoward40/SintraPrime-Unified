@@ -1,0 +1,211 @@
+{
+  "version": "2.0.0",
+  "last_updated": "2026-02-26",
+  "agents": [
+    {
+      "name": "validation-agent",
+      "version": "1.2.0",
+      "capabilities": ["command.validate"]
+    },
+    {
+      "name": "planner-agent",
+      "version": "1.1.3",
+      "capabilities": ["plan.generate"]
+    },
+    {
+      "name": "document-intake-agent",
+      "version": "1.0.0",
+      "capabilities": ["intake.scan"]
+    },
+    {
+      "name": "tax-agent",
+      "version": "1.0.0",
+      "capabilities": ["tax.analyze"]
+    },
+    {
+      "name": "notion-read-agent",
+      "version": "1.0.0",
+      "capabilities": ["notion.read.database", "notion.read.page"]
+    },
+    {
+      "name": "notion-write-agent",
+      "version": "1.0.0",
+      "capabilities": ["notion.write.page_property", "notion.write.page_title"]
+    },
+    {
+      "name": "browser-l0-agent",
+      "version": "1.0.0",
+      "capabilities": ["browser:l0", "browser.l0.navigate", "browser.l0.screenshot", "browser.l0.dom_extract"]
+    },
+    {
+      "name": "sentinel-guard-agent",
+      "version": "2.0.0",
+      "capabilities": [
+        "security.threat.detect",
+        "security.vulnerability.scan.network",
+        "security.vulnerability.scan.web_app",
+        "security.osint.gather",
+        "security.exploit.attempt",
+        "security.pentest.run",
+        "security.incident.respond",
+        "security.report.generate",
+        "security.data.classify",
+        "security.access.audit",
+        "security.policy.enforce"
+      ]
+    },
+    {
+      "name": "fcra-dispute-automation-agent",
+      "version": "1.0.0",
+      "skill_file": "skills/legal-compliance/fcra-dispute-automation.md",
+      "capabilities": [
+        "credit.report.parse",
+        "fcra.dispute.letter.generate",
+        "fcra.section611.dispute",
+        "fcra.section609.request",
+        "fcra.section623.creditor_dispute",
+        "cfpb.complaint.escalate",
+        "deadline.track",
+        "case.log.notion"
+      ]
+    },
+    {
+      "name": "debt-validation-agent",
+      "version": "1.0.0",
+      "skill_file": "skills/legal-compliance/debt-validation.md",
+      "capabilities": [
+        "fdcpa.section809.validation_letter",
+        "debt.validation.window.track",
+        "collector.response.analyze",
+        "collector.flag.non_responsive",
+        "violation.escalate"
+      ]
+    },
+    {
+      "name": "tcpa-fdcpa-violation-tracker-agent",
+      "version": "1.0.0",
+      "skill_file": "skills/legal-compliance/tcpa-fdcpa-violation-tracking.md",
+      "capabilities": [
+        "robocall.log",
+        "fdcpa.violation.categorize",
+        "tcpa.violation.track",
+        "statutory.damages.calculate",
+        "evidence.package.generate",
+        "steven.legal.integrate"
+      ]
+    },
+    {
+      "name": "contract-analysis-agent",
+      "version": "1.0.0",
+      "skill_file": "skills/legal-compliance/contract-analysis.md",
+      "capabilities": [
+        "contract.parse",
+        "clause.extract",
+        "risk.score",
+        "contract.redline",
+        "compliance.check",
+        "playbook.enforce"
+      ]
+    },
+    {
+      "name": "accounts-receivable-agent",
+      "version": "1.0.0",
+      "skill_file": "skills/business-operations/accounts-receivable-automation.md",
+      "capabilities": [
+        "invoice.generate",
+        "invoice.track",
+        "payment.reminder.send",
+        "payment.reconcile",
+        "aging.report.generate",
+        "dso.optimize",
+        "bad_debt.identify",
+        "stripe.integrate"
+      ]
+    },
+    {
+      "name": "lead-generation-qualification-agent",
+      "version": "1.0.0",
+      "skill_file": "skills/business-operations/lead-generation-qualification.md",
+      "capabilities": [
+        "prospect.scrape",
+        "email.verify",
+        "outreach.sequence.generate",
+        "lead.score",
+        "crm.integrate",
+        "tiktok.lead.capture",
+        "pipeline.manage"
+      ]
+    },
+    {
+      "name": "financial-analysis-agent",
+      "version": "1.0.0",
+      "skill_file": "skills/financial-services/financial-analysis.md",
+      "capabilities": [
+        "financial.comps.run",
+        "financial.dcf.model",
+        "financial.lbo.model",
+        "financial.3statements.model",
+        "presentation.qc",
+        "model.qc",
+        "mcp.daloopa.connect",
+        "mcp.morningstar.connect",
+        "mcp.sp_global.connect",
+        "mcp.factset.connect",
+        "mcp.pitchbook.connect"
+      ]
+    },
+    {
+      "name": "wealth-management-agent",
+      "version": "1.0.0",
+      "skill_file": "skills/financial-services/wealth-management.md",
+      "capabilities": [
+        "wealth.client_review",
+        "wealth.financial_plan",
+        "wealth.portfolio_rebalance",
+        "wealth.client_report",
+        "wealth.tax_loss_harvest",
+        "wealth.investment_proposal",
+        "wealth.monte_carlo_simulate"
+      ]
+    },
+    {
+      "name": "investment-banking-agent",
+      "version": "1.0.0",
+      "skill_file": "skills/financial-services/investment-banking.md",
+      "capabilities": [
+        "ib.cim.draft",
+        "ib.pitch_deck.create",
+        "ib.merger_model.build",
+        "ib.buyer_list.generate",
+        "ib.deal.track",
+        "ib.teaser.draft",
+        "ib.process_letter.draft"
+      ]
+    },
+    {
+      "name": "private-equity-agent",
+      "version": "1.0.0",
+      "skill_file": "skills/financial-services/private-equity.md",
+      "capabilities": [
+        "pe.deal.source",
+        "pe.deal.screen",
+        "pe.dd_checklist.generate",
+        "pe.ic_memo.draft",
+        "pe.portfolio_kpi.dashboard",
+        "pe.returns.analyze",
+        "pe.value_creation.plan"
+      ]
+    },
+    {
+      "name": "frontend-slides-agent",
+      "version": "1.0.0",
+      "skill_file": "skills/presentation/frontend-slides.md",
+      "capabilities": [
+        "slides.html.generate",
+        "slides.ppt.convert",
+        "slides.style.apply",
+        "slides.animation.add"
+      ]
+    }
+  ]
+}

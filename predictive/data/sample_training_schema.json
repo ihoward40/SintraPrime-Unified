@@ -1,0 +1,388 @@
+{
+  "title": "Legal Case Outcome Prediction Training Data Schema",
+  "version": "1.0",
+  "description": "Comprehensive schema defining the structure and fields required for training the case outcome prediction ML model.",
+  "type": "object",
+  "required": [
+    "case_id",
+    "case_type",
+    "court",
+    "outcome",
+    "damages_requested"
+  ],
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "description": "Unique identifier for the case",
+      "example": "2023-CV-001234"
+    },
+    "case_type": {
+      "type": "string",
+      "enum": [
+        "civil_rights",
+        "contract",
+        "tort",
+        "criminal",
+        "family",
+        "employment",
+        "ip",
+        "property",
+        "administrative"
+      ],
+      "description": "Category of legal case",
+      "example": "employment"
+    },
+    "court": {
+      "type": "string",
+      "enum": ["federal", "state", "local", "tribal"],
+      "description": "Type of court hearing the case",
+      "example": "federal"
+    },
+    "circuit": {
+      "type": "string",
+      "description": "Federal circuit court (if applicable)",
+      "enum": ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "dc", "fed"],
+      "example": "2nd"
+    },
+    "judge_name": {
+      "type": "string",
+      "description": "Name of the judge assigned to the case",
+      "example": "Judge Sarah Mitchell"
+    },
+    "judge_id": {
+      "type": "string",
+      "description": "Unique identifier for the judge",
+      "example": "judge_001"
+    },
+    "years_on_bench": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 50,
+      "description": "Number of years the judge has served",
+      "example": 12
+    },
+    "num_parties": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 100,
+      "description": "Number of parties involved in the case",
+      "example": 2
+    },
+    "num_claims": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "Number of distinct legal claims",
+      "example": 3
+    },
+    "prior_case_history_plaintiff": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of prior cases involving the plaintiff side",
+      "example": 5
+    },
+    "prior_case_history_defendant": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of prior cases involving the defendant side",
+      "example": 8
+    },
+    "days_to_trial": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of days from filing to trial resolution",
+      "example": 547
+    },
+    "representation_quality_plaintiff": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 10,
+      "description": "Quality rating of plaintiff's counsel (1-10 scale)",
+      "example": 7.5
+    },
+    "representation_quality_defendant": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 10,
+      "description": "Quality rating of defendant's counsel (1-10 scale)",
+      "example": 6.0
+    },
+    "damages_requested": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Amount of damages plaintiff is requesting in dollars",
+      "example": 500000
+    },
+    "typical_award_amount": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Typical award amount for similar cases in jurisdiction",
+      "example": 350000
+    },
+    "jurisdiction": {
+      "type": "string",
+      "enum": [
+        "federal",
+        "state",
+        "local",
+        "tribal",
+        "international"
+      ],
+      "description": "Jurisdiction where case is heard",
+      "example": "federal"
+    },
+    "venue": {
+      "type": "string",
+      "description": "Specific geographic venue",
+      "example": "Northern District of California"
+    },
+    "venue_appropriateness": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 10,
+      "description": "How favorable the venue is to plaintiff (1-10 scale)",
+      "example": 7
+    },
+    "prior_verdicts_favorable_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of prior similar verdicts favorable to plaintiff side",
+      "example": 3
+    },
+    "prior_verdicts_total_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total number of prior similar verdicts",
+      "example": 5
+    },
+    "has_summary_judgment": {
+      "type": "boolean",
+      "description": "Whether summary judgment motion was filed",
+      "example": false
+    },
+    "class_action": {
+      "type": "boolean",
+      "description": "Whether the case involves class certification",
+      "example": false
+    },
+    "injunction_sought": {
+      "type": "boolean",
+      "description": "Whether injunctive relief is being sought",
+      "example": true
+    },
+    "is_criminal": {
+      "type": "boolean",
+      "description": "Whether this is a criminal case",
+      "example": false
+    },
+    "decision_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date of case resolution/verdict",
+      "example": "2023-06-15T14:30:00Z"
+    },
+    "outcome": {
+      "type": "integer",
+      "enum": [0, 1],
+      "description": "Case outcome: 0 = loss/defendant won, 1 = win/plaintiff won",
+      "example": 1
+    },
+    "verdict_amount": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Actual verdict amount awarded",
+      "example": 425000
+    },
+    "appeal_filed": {
+      "type": "boolean",
+      "description": "Whether an appeal was filed",
+      "example": false
+    },
+    "appeal_outcome": {
+      "type": "integer",
+      "enum": [0, 1, -1],
+      "description": "Appeal outcome: 1 = reversed, 0 = affirmed, -1 = not applicable",
+      "example": 0
+    },
+    "case_complexity": {
+      "type": "string",
+      "enum": ["simple", "moderate", "complex", "highly_complex"],
+      "description": "Complexity rating of the case",
+      "example": "moderate"
+    },
+    "document_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of documents produced in discovery",
+      "example": 2500
+    },
+    "deposition_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of depositions conducted",
+      "example": 8
+    },
+    "expert_witnesses_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total number of expert witnesses used",
+      "example": 3
+    },
+    "settlement_offer_made": {
+      "type": "boolean",
+      "description": "Whether a settlement offer was made",
+      "example": true
+    },
+    "settlement_offer_amount": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Amount of final settlement offer",
+      "example": 375000
+    },
+    "case_settled": {
+      "type": "boolean",
+      "description": "Whether case was settled before trial",
+      "example": false
+    },
+    "plaintiff_counsel_firm_size": {
+      "type": "string",
+      "enum": ["solo", "small", "medium", "large", "mega"],
+      "description": "Size of plaintiff's law firm",
+      "example": "medium"
+    },
+    "defendant_counsel_firm_size": {
+      "type": "string",
+      "enum": ["solo", "small", "medium", "large", "mega"],
+      "description": "Size of defendant's law firm",
+      "example": "large"
+    },
+    "plaintiff_win_rate_similar_cases": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Historical win rate in similar case types",
+      "example": 0.62
+    },
+    "judge_reversal_rate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Reversal rate of this judge's decisions on appeal",
+      "example": 0.12
+    },
+    "judge_plaintiff_win_rate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Rate at which this judge rules for plaintiffs in similar cases",
+      "example": 0.58
+    },
+    "jury_trial": {
+      "type": "boolean",
+      "description": "Whether case was tried to jury vs bench",
+      "example": true
+    },
+    "jury_verdict_unanimous": {
+      "type": "boolean",
+      "description": "Whether jury verdict was unanimous",
+      "example": true
+    },
+    "procedural_errors": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of procedural errors found",
+      "example": 0
+    },
+    "evidentiary_issues": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of evidentiary issues encountered",
+      "example": 1
+    },
+    "litigation_costs": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Total litigation costs incurred",
+      "example": 125000
+    },
+    "discovery_disputes": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of discovery disputes that occurred",
+      "example": 2
+    },
+    "motion_practice_intensity": {
+      "type": "string",
+      "enum": ["low", "moderate", "high"],
+      "description": "Intensity of motion practice in the case",
+      "example": "moderate"
+    },
+    "jurisdiction_favorable_to_type": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "How favorable jurisdiction is to this case type overall",
+      "example": 0.65
+    },
+    "case_publicity": {
+      "type": "string",
+      "enum": ["minimal", "local", "regional", "national", "international"],
+      "description": "Level of publicity the case received",
+      "example": "local"
+    }
+  },
+  "additionalProperties": false,
+  "example": {
+    "case_id": "2023-CV-001234",
+    "case_type": "employment",
+    "court": "federal",
+    "circuit": "2nd",
+    "judge_name": "Judge Sarah Mitchell",
+    "judge_id": "judge_001",
+    "years_on_bench": 12,
+    "num_parties": 2,
+    "num_claims": 2,
+    "prior_case_history_plaintiff": 3,
+    "prior_case_history_defendant": 5,
+    "days_to_trial": 450,
+    "representation_quality_plaintiff": 7.5,
+    "representation_quality_defendant": 6.0,
+    "damages_requested": 500000,
+    "typical_award_amount": 350000,
+    "jurisdiction": "federal",
+    "venue": "Northern District of California",
+    "venue_appropriateness": 7,
+    "prior_verdicts_favorable_count": 3,
+    "prior_verdicts_total_count": 5,
+    "has_summary_judgment": false,
+    "class_action": false,
+    "injunction_sought": true,
+    "is_criminal": false,
+    "decision_date": "2023-06-15T14:30:00Z",
+    "outcome": 1,
+    "verdict_amount": 425000,
+    "appeal_filed": false,
+    "appeal_outcome": -1,
+    "case_complexity": "moderate",
+    "document_count": 2500,
+    "deposition_count": 8,
+    "expert_witnesses_count": 3,
+    "settlement_offer_made": true,
+    "settlement_offer_amount": 375000,
+    "case_settled": false,
+    "plaintiff_counsel_firm_size": "medium",
+    "defendant_counsel_firm_size": "large",
+    "plaintiff_win_rate_similar_cases": 0.62,
+    "judge_reversal_rate": 0.12,
+    "judge_plaintiff_win_rate": 0.58,
+    "jury_trial": true,
+    "jury_verdict_unanimous": true,
+    "procedural_errors": 0,
+    "evidentiary_issues": 1,
+    "litigation_costs": 125000,
+    "discovery_disputes": 2,
+    "motion_practice_intensity": "moderate",
+    "jurisdiction_favorable_to_type": 0.65,
+    "case_publicity": "local"
+  }
+}

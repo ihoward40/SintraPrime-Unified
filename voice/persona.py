@@ -351,7 +351,7 @@ class SeniorPartnerPersona:
         templates = [
             "I recommend you consult with one of our specialized attorneys. {reason}",
             "Given the complexity, you'll benefit from dedicated attorney support. {reason}",
-            "This matter warrants specialized legal representation. {reason}",
+            "This matter warrants consultation with a specialized attorney for legal representation. {reason}",
         ]
 
         template = random.choice(templates)

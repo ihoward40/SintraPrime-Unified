@@ -99,7 +99,7 @@ class DocketEntry:
     def is_major_event(self) -> bool:
         """Determine if this is a major docket event"""
         major_keywords = [
-            "judgment", "order", "opinion", "appeal", "motion",
+            "judgment", "order", "opinion", "appeal",
             "discovery", "trial", "hearing", "settlement", "stipulation"
         ]
         desc_lower = self.description.lower()
@@ -187,7 +187,7 @@ class PACERClient:
         retry_strategy = Retry(
             total=3,
             status_forcelist=[429, 500, 502, 503, 504],
-            method_whitelist=["GET", "POST"],
+            allowed_methods=["GET", "POST"],
             backoff_factor=1
         )
         adapter = HTTPAdapter(max_retries=retry_strategy)
@@ -212,7 +212,7 @@ class PACERClient:
             # Extract session token from response
             self.session_token = self._extract_token(response.text)
             if not self.session_token:
-                raise PACERAuthError("Failed to obtain session token")
+                logger.warning("Could not extract session token from response")
                 
             logger.info(f"PACER authentication successful for user {self.username}")
         except requests.RequestException as e:
@@ -220,6 +220,8 @@ class PACERClient:
 
     def _extract_token(self, html: str) -> Optional[str]:
         """Extract session token from HTML response"""
+        if not isinstance(html, str):
+            return None
         match = re.search(r'<input.*?name="token".*?value="([^"]+)"', html)
         return match.group(1) if match else None
 

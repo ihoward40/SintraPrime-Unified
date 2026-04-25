@@ -9,7 +9,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List, Any, Tuple
 import redis
 import json
 

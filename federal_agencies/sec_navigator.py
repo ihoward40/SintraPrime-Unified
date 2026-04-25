@@ -256,16 +256,18 @@ class SECNavigator:
         has_foreign = "foreign" in investor_types
         
         # Determine best fit exemption
-        if has_foreign and offering_amount <= 75_000_000:
+        if offering_type == "mini_ipo" and offering_amount <= 75_000_000:
             exemption_type = ExemptionType.REGULATION_A
-        elif general_solicitation and has_non_accredited:
+        elif has_foreign and offering_amount <= 75_000_000:
             exemption_type = ExemptionType.REGULATION_A
         elif general_solicitation and not has_non_accredited:
+            exemption_type = ExemptionType.REG_D_506C
+        elif general_solicitation and has_non_accredited:
             exemption_type = ExemptionType.REG_D_506C
         elif not general_solicitation and has_non_accredited:
             exemption_type = ExemptionType.REG_D_506B
         else:
-            exemption_type = ExemptionType.REG_D_506C
+            exemption_type = ExemptionType.REG_D_506B
         
         # Get requirements
         reqs = self.EXEMPTION_REQUIREMENTS.get(exemption_type, {})

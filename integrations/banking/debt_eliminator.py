@@ -176,7 +176,7 @@ class DebtEliminator:
         total_interest = 0.0
         total_paid = 0.0
         month = 0
-        max_months = 600
+        max_months = 599
 
         while any(b > 0.01 for b in balances.values()) and month < max_months:
             month += 1

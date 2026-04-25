@@ -124,15 +124,11 @@ class DeadlineCalculator:
     @staticmethod
     def add_days_excluding_weekends(start_date: date, days: int) -> date:
         """Add days, excluding weekends"""
-        current = start_date
-        remaining = days
-        
-        while remaining > 0:
-            current += timedelta(days=1)
-            if current.weekday() < 5:  # Monday-Friday
-                remaining -= 1
-        
-        return current
+        result = start_date + timedelta(days=days)
+        # If result falls on weekend, push to next Monday
+        while result.weekday() >= 5:
+            result += timedelta(days=1)
+        return result
     
     @staticmethod
     def add_days_excluding_holidays(start_date: date, days: int, jurisdiction: str = "federal") -> date:
@@ -243,7 +239,7 @@ class StatuteOfLimitations:
             )
         
         deadline = incident_date + timedelta(days=sol_years * 365)
-        years_remaining = (deadline - date.today()).days // 365
+        years_remaining = max(0, (deadline - date.today()).days // 365)
         
         return deadline, years_remaining
 

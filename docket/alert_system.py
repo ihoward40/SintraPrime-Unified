@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Multi-Channel Docket Alert System
 
@@ -103,7 +105,7 @@ class Alert:
 class AlertDigest:
     """Digest of non-urgent alerts"""
     digest_id: str
-    date: date
+    date_created: date
     alerts: List[Alert] = field(default_factory=list)
     recipient: str = ""
     sent_date: Optional[datetime] = None
@@ -241,6 +243,9 @@ class AlertSystem:
             if rule.matches(alert_type, case_id, details or {})
         ]
         
+        # Always record alert in history
+        self.alert_history.append(alert)
+        
         # Check quiet hours
         if self._is_quiet_hours() and not any(r.suppress_quiet_hours for r in matching_rules):
             if priority != AlertPriority.CRITICAL:
@@ -256,8 +261,6 @@ class AlertSystem:
             # Send through default channel if no rules match
             self._dispatch_alert(alert, [AlertChannel.EMAIL])
         
-        # Record alert
-        self.alert_history.append(alert)
         alert.sent_date = datetime.now()
         
         logger.info(f"Sent alert {alert.alert_id} ({alert_type}) for case {case_id}")

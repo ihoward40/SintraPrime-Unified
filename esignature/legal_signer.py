@@ -528,11 +528,18 @@ evidence of identification."""
         """
         steps = workflow.get("steps", [])
         
+        # Check that all parties have signed in order
+        all_parties = [step["party"].get("name") for step in steps]
+        if not all(p in completed_signers for p in all_parties):
+            for step in sorted(steps, key=lambda s: s.get("order", 0)):
+                party_name = step["party"].get("name")
+                if party_name not in completed_signers:
+                    return False, f"Waiting for {party_name} to sign"
+        
+        # Verify signing order was respected
         for step in steps:
             required_order = step.get("order")
             party_name = step["party"].get("name")
-            
-            # Check if previous signers have signed
             for prev_step in steps:
                 if prev_step.get("order", 99) < required_order:
                     prev_party = prev_step["party"].get("name")

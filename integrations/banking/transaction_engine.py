@@ -71,6 +71,7 @@ class EnrichedTransaction(BaseModel):
     is_income: bool = False
     is_expense: bool = True
     is_transfer: bool = False
+    is_subscription: bool = False
     is_recurring: bool = False
     recurrence_frequency: Optional[RecurrenceFrequency] = None
     is_tax_deductible: bool = False
@@ -97,6 +98,10 @@ class RecurringTransaction(BaseModel):
     total_paid: float = 0.0
     is_subscription: bool = False
     annual_cost: float = 0.0
+
+
+# Alias for backward compatibility
+RecurringTransactionGroup = RecurringTransaction
 
 
 class TransactionSummary(BaseModel):
@@ -223,13 +228,47 @@ class TransactionEngine:
 
     # ── Enrichment ─────────────────────────────────────────────────────────
 
-    def enrich(self, transactions: List[Transaction]) -> List[EnrichedTransaction]:
-        """Enrich raw transactions with categories, flags, and metadata."""
+    def enrich(self, transactions):
+        """Enrich raw transactions with categories, flags, and metadata.
+        Accepts a single dict/Transaction or a list of them.
+        If a single item is passed, returns a single EnrichedTransaction.
+        """
+        single = False
+        if isinstance(transactions, dict):
+            # Convert dict to Transaction
+            txn_dict = transactions
+            # Map iso_currency_code to currency if needed
+            if 'iso_currency_code' in txn_dict and 'currency' not in txn_dict:
+                txn_dict['currency'] = txn_dict.pop('iso_currency_code')
+            # Remove unknown fields
+            known_fields = set(Transaction.model_fields.keys())
+            clean = {k: v for k, v in txn_dict.items() if k in known_fields}
+            transactions = [Transaction(**clean)]
+            single = True
+        elif isinstance(transactions, Transaction):
+            transactions = [transactions]
+            single = True
+        elif not isinstance(transactions, list):
+            transactions = [transactions]
+            single = True
+
         enriched = []
         for txn in transactions:
+            if isinstance(txn, dict):
+                txn_dict = txn
+                if 'iso_currency_code' in txn_dict and 'currency' not in txn_dict:
+                    txn_dict['currency'] = txn_dict.pop('iso_currency_code')
+                known_fields = set(Transaction.model_fields.keys())
+                clean = {k: v for k, v in txn_dict.items() if k in known_fields}
+                txn = Transaction(**clean)
             master_cat, sub_cat, tax_cat = self.categorize(txn)
             is_income = (master_cat == MasterCategory.INCOME) or (txn.amount < 0)
             is_transfer = master_cat == MasterCategory.TRANSFER
+            # Detect subscriptions from category keywords
+            search_text = " ".join(filter(None, [txn.name.lower(), (txn.merchant_name or "").lower()]))
+            is_sub = bool(sub_cat == "streaming" or
+                      any(kw in search_text for kw in ["netflix", "spotify", "hulu", "disney", "hbo", "amazon prime", "subscription"]) or
+                      (txn.category and any("subscription" in c.lower() for c in txn.category)))
 
             e = EnrichedTransaction(
                 transaction_id=txn.transaction_id,
@@ -244,6 +283,7 @@ class TransactionEngine:
                 is_income=is_income,
                 is_expense=not is_income and not is_transfer,
                 is_transfer=is_transfer,
+                is_subscription=is_sub,
                 tax_category=tax_cat,
                 is_tax_deductible=tax_cat in (TaxCategory.DEDUCTIBLE_BUSINESS, TaxCategory.DEDUCTIBLE_MEDICAL,
                                                TaxCategory.DEDUCTIBLE_CHARITABLE, TaxCategory.DEDUCTIBLE_EDUCATION),
@@ -256,6 +296,8 @@ class TransactionEngine:
 
         enriched = self._detect_duplicates(enriched)
         enriched = self._detect_unusual(enriched)
+        if single:
+            return enriched[0] if enriched else None
         return enriched
 
     # ── Recurring Detection ────────────────────────────────────────────────
@@ -266,8 +308,10 @@ class TransactionEngine:
         """Identify subscriptions and recurring bills."""
         merchant_txns: Dict[str, List[EnrichedTransaction]] = defaultdict(list)
         for txn in transactions:
-            if txn.is_expense and txn.merchant_name:
-                merchant_txns[txn.merchant_name.lower()].append(txn)
+            if txn.is_expense:
+                key = (txn.merchant_name or txn.name or "").lower()
+                if key:
+                    merchant_txns[key].append(txn)
 
         recurring: List[RecurringTransaction] = []
         for merchant, txns in merchant_txns.items():
@@ -292,7 +336,7 @@ class TransactionEngine:
                     t.recurrence_frequency = freq
 
                 recurring.append(RecurringTransaction(
-                    merchant_name=sorted_txns[0].merchant_name or merchant,
+                    merchant_name=sorted_txns[0].merchant_name or sorted_txns[0].name or merchant,
                     master_category=sorted_txns[0].master_category,
                     frequency=freq,
                     average_amount=round(avg_amount, 2),
@@ -390,18 +434,29 @@ class TransactionEngine:
     def search(
         self,
         transactions: List[EnrichedTransaction],
-        query: str,
+        query: str = "",
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
         min_amount: Optional[float] = None,
         max_amount: Optional[float] = None,
         categories: Optional[List[MasterCategory]] = None,
         merchant: Optional[str] = None,
+        category: Optional[MasterCategory] = None,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
     ) -> List[EnrichedTransaction]:
         """
         Natural language-aware transaction search.
         e.g. 'all Amazon purchases last 3 months'
         """
+        # Handle alternative parameter names
+        if date_from and not start_date:
+            start_date = date_from
+        if date_to and not end_date:
+            end_date = date_to
+        if category and not categories:
+            categories = [category]
+
         results = transactions[:]
 
         # Date filters
@@ -510,3 +565,53 @@ class TransactionEngine:
                 "currency": t.currency,
             })
         return output.getvalue()
+
+    def detect_anomalies(self, transactions: List[EnrichedTransaction]) -> List[EnrichedTransaction]:
+        """Flag anomalous transactions — exposed wrapper around internal detection."""
+        if len(transactions) < 3:
+            return []
+        merchant_amounts: Dict[str, List[float]] = defaultdict(list)
+        for txn in transactions:
+            key = txn.merchant_name or txn.name
+            merchant_amounts[key].append(abs(txn.amount))
+
+        flagged = []
+        for txn in transactions:
+            key = txn.merchant_name or txn.name
+            amounts = merchant_amounts.get(key, [])
+            if len(amounts) >= 3:
+                mean = statistics.mean(amounts)
+                std = statistics.stdev(amounts)
+                if std > 0 and abs(txn.amount) > mean + 2 * std:
+                    flagged.append(txn)
+        return flagged
+
+    def monthly_summary(self, transactions: List[EnrichedTransaction], year: int, month: int) -> TransactionSummary:
+        """Generate a monthly spending summary."""
+        from calendar import monthrange
+        month_txns = [t for t in transactions if t.date.year == year and t.date.month == month]
+        total_income = sum(abs(t.amount) for t in month_txns if t.is_income)
+        total_expenses = sum(abs(t.amount) for t in month_txns if t.is_expense)
+        cat_totals: Dict[str, float] = defaultdict(float)
+        for t in month_txns:
+            if t.is_expense:
+                cat_totals[t.master_category.value] += abs(t.amount)
+        _, last_day = monthrange(year, month)
+        return TransactionSummary(
+            period_start=date(year, month, 1),
+            period_end=date(year, month, last_day),
+            total_income=round(total_income, 2),
+            total_expenses=round(total_expenses, 2),
+            net_cash_flow=round(total_income - total_expenses, 2),
+            by_category=dict(cat_totals),
+            transaction_count=len(month_txns),
+        )
+
+    def category_breakdown(self, transactions: List[EnrichedTransaction]) -> Dict[str, float]:
+        """Return spending totals by master category."""
+        totals: Dict[str, float] = defaultdict(float)
+        for t in transactions:
+            if t.is_expense:
+                totals[t.master_category.value] += round(abs(t.amount), 2)
+        return dict(totals)
+

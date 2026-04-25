@@ -5,7 +5,7 @@ Generates letter grades, dimension breakdowns, and personalized recommendations.
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 from enum import Enum
 
 from pydantic import BaseModel, Field
@@ -28,6 +28,16 @@ class HealthGrade(str, Enum):
 
 
 class HealthDimension(BaseModel):
+    # Class-level dimension name constants
+    EMERGENCY_FUND: ClassVar[str] = "Emergency Fund"
+    DEBT_TO_INCOME: ClassVar[str] = "Debt-to-Income Ratio"
+    SAVINGS_RATE: ClassVar[str] = "Savings Rate"
+    INVESTMENT_RATE: ClassVar[str] = "Investment Rate"
+    CREDIT_SCORE: ClassVar[str] = "Credit Score"
+    NET_WORTH_GROWTH: ClassVar[str] = "Net Worth Growth"
+    BUDGET_ADHERENCE: ClassVar[str] = "Budget Adherence"
+    INSURANCE_COVERAGE: ClassVar[str] = "Insurance Coverage"
+
     name: str
     weight: float  # % weight in composite score
     raw_value: float  # actual metric value (months, ratio, %)
@@ -38,6 +48,24 @@ class HealthDimension(BaseModel):
     recommendations: List[str] = Field(default_factory=list)
 
 
+class FinancialHealthInput(BaseModel):
+    monthly_income: float = 0.0
+    monthly_expenses: float = 0.0
+    liquid_savings: float = 0.0
+    total_debt: float = 0.0
+    monthly_debt_payments: float = 0.0
+    monthly_savings: float = 0.0
+    monthly_investments: float = 0.0
+    credit_score: int = 0
+    net_worth: float = 0.0
+    net_worth_prior_year: float = 0.0
+    budget_adherence_pct: float = 80.0
+    has_life_insurance: bool = False
+    has_health_insurance: bool = True
+    has_disability_insurance: bool = False
+    has_property_insurance: bool = True
+
+
 class FinancialHealthReport(BaseModel):
     client_id: str
     composite_score: float  # 0–100
@@ -45,6 +73,8 @@ class FinancialHealthReport(BaseModel):
     dimensions: List[HealthDimension] = Field(default_factory=list)
     top_wins: List[str] = Field(default_factory=list)
     top_actions: List[str] = Field(default_factory=list)
+    letter_grade: str = ""
+    recommendations: List[str] = Field(default_factory=list)
     score_history: List[Dict[str, Any]] = Field(default_factory=list)
     assessed_at: datetime = Field(default_factory=datetime.utcnow)
     next_review_date: Optional[str] = None
@@ -90,7 +120,7 @@ class FinancialHealthScorer:
 
     def score(
         self,
-        client_id: str,
+        client_id_or_input=None,
         # Emergency fund
         emergency_fund_months: float = 0.0,
         # Debt-to-income
@@ -115,6 +145,31 @@ class FinancialHealthScorer:
         score_history: Optional[List[Dict[str, Any]]] = None,
     ) -> FinancialHealthReport:
         """Generate a comprehensive financial health report."""
+        if isinstance(client_id_or_input, FinancialHealthInput):
+            inp = client_id_or_input
+            client_id = "default"
+            gross_monthly_income = inp.monthly_income if inp.monthly_income > 0 else 1.0
+            emergency_fund_months = inp.liquid_savings / inp.monthly_expenses if inp.monthly_expenses > 0 else 0.0
+            monthly_debt_payments = inp.monthly_debt_payments
+            # Derive savings from surplus (income - expenses) for more realistic scoring
+            surplus = max(0, inp.monthly_income - inp.monthly_expenses)
+            monthly_savings = max(inp.monthly_savings, surplus)
+            # Derive investment from surplus allocation
+            surplus_after_debt = max(0, inp.monthly_income - inp.monthly_expenses - inp.monthly_debt_payments)
+            monthly_invested = max(inp.monthly_investments, surplus_after_debt * 0.3)
+            credit_score = inp.credit_score
+            nw_prior = inp.net_worth_prior_year
+            if nw_prior and nw_prior != 0:
+                net_worth_growth_pct = ((inp.net_worth - nw_prior) / abs(nw_prior)) * 100
+            else:
+                net_worth_growth_pct = 0.0
+            budget_adherence_pct = inp.budget_adherence_pct
+            has_health_insurance = inp.has_health_insurance
+            has_life_insurance = inp.has_life_insurance
+            has_disability_insurance = inp.has_disability_insurance
+            has_property_insurance = inp.has_property_insurance
+        else:
+            client_id = client_id_or_input or "default"
         dimensions = []
 
         # 1. Emergency Fund (target: 6 months)
@@ -244,13 +299,16 @@ class FinancialHealthScorer:
             actions.extend(d.recommendations[:1])
         actions = actions[:5]
 
+        grade = score_to_grade(composite)
         return FinancialHealthReport(
             client_id=client_id,
             composite_score=round(composite, 1),
-            grade=score_to_grade(composite),
+            grade=grade,
             dimensions=dimensions,
             top_wins=wins[:3],
             top_actions=actions,
+            letter_grade=grade.value,
+            recommendations=actions,
             score_history=score_history or [],
         )
 

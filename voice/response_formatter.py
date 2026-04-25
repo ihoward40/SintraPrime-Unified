@@ -28,7 +28,7 @@ class FormattingConfig:
     remove_markdown: bool = True
     convert_tables_to_speech: bool = True
     chunk_long_responses: bool = True
-    max_chunk_length: int = 500  # words
+    max_chunk_length: int = 150  # words
     add_emphasis: bool = True
     add_pauses: bool = True
     use_ssml: bool = True

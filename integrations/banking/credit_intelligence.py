@@ -8,7 +8,7 @@ from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from .plaid_client import PlaidClient
 
@@ -24,6 +24,7 @@ class CreditScoreTier(str, Enum):
 
 
 class CreditScoreComponent(BaseModel):
+    """Also known as CreditComponent."""
     name: str
     weight: float  # percentage weight in score
     current_score: float  # 0–100 sub-score
@@ -31,6 +32,18 @@ class CreditScoreComponent(BaseModel):
     impact: str  # "high", "medium", "low"
     detail: str
     recommendation: Optional[str] = None
+
+
+# Alias for backward compatibility
+CreditComponent = CreditScoreComponent
+
+
+class UtilizationTarget(BaseModel):
+    account_name: str
+    current_balance: float
+    credit_limit: float
+    target_balance: float
+    paydown_needed: float
 
 
 class CreditAccount(BaseModel):
@@ -46,11 +59,28 @@ class CreditAccount(BaseModel):
     last_payment_amount: Optional[float] = None
     minimum_payment: Optional[float] = None
     apr: Optional[float] = None
+    account_age_months: int = 0
     is_derogatory: bool = False
 
 
 class CreditReport(BaseModel):
-    client_id: str
+    client_id: str = "default"
+
+    @model_validator(mode='after')
+    def _compute_score_tier(self):
+        """Auto-compute score_tier from credit_score."""
+        if self.credit_score is not None:
+            for low, high, tier in [
+                (800, 850, CreditScoreTier.EXCEPTIONAL),
+                (740, 799, CreditScoreTier.VERY_GOOD),
+                (670, 739, CreditScoreTier.GOOD),
+                (580, 669, CreditScoreTier.FAIR),
+                (300, 579, CreditScoreTier.POOR),
+            ]:
+                if low <= self.credit_score <= high:
+                    self.score_tier = tier
+                    break
+        return self
     credit_score: Optional[int] = None
     score_model: str = "FICO 8"
     score_tier: Optional[CreditScoreTier] = None
@@ -365,6 +395,27 @@ class CreditIntelligence:
             ))
             priority += 1
 
+        # General improvement actions if gap exists and no specific actions yet
+        if not actions and gap > 0:
+            actions.append(CreditImprovementAction(
+                priority=priority,
+                action="Review and dispute any errors on your credit reports",
+                expected_impact="+5–20 points",
+                timeline="30–60 days",
+                effort="easy",
+                detail="Request free reports from AnnualCreditReport.com and check for inaccuracies.",
+            ))
+            priority += 1
+            actions.append(CreditImprovementAction(
+                priority=priority,
+                action="Keep all credit card utilization below 10%",
+                expected_impact="+10–30 points",
+                timeline="30 days",
+                effort="moderate",
+                detail="Pay down balances before statement close dates.",
+            ))
+            priority += 1
+
         # Balance optimization for quick wins
         balance_opt = self._optimize_card_balances(
             [a for a in report.accounts if a.account_type == "credit_card"]
@@ -408,7 +459,7 @@ class CreditIntelligence:
         self,
         current_report: CreditReport,
         previous_report: Optional[CreditReport] = None,
-    ) -> List[CreditMonitoringAlert]:
+    ) -> List[str]:
         """Generate credit monitoring alerts."""
         alerts: List[CreditMonitoringAlert] = []
 
@@ -434,6 +485,15 @@ class CreditIntelligence:
                     recommended_action="Pay down this card immediately to below 30%, ideally below 10%.",
                 ))
 
+        # Missed payments
+        if current_report.total_missed_payments and current_report.total_missed_payments > 0:
+            alerts.append(CreditMonitoringAlert(
+                alert_type="missed_payment",
+                severity="critical",
+                message=f"{current_report.total_missed_payments} missed payment(s) detected — this severely impacts your score",
+                recommended_action="Set up autopay immediately and contact creditors about removing late marks.",
+            ))
+
         # Late payment risk
         for acct in current_report.accounts:
             if acct.minimum_payment and acct.minimum_payment > 0 and not acct.last_payment_date:
@@ -445,8 +505,8 @@ class CreditIntelligence:
                     recommended_action="Make at least the minimum payment immediately to avoid a 30-day late mark.",
                 ))
 
-        # New inquiry
-        if current_report.recent_inquiries > (previous_report.recent_inquiries if previous_report else 0):
+        # New inquiry — only alert when we have a previous report to compare against
+        if previous_report and current_report.recent_inquiries > previous_report.recent_inquiries:
             alerts.append(CreditMonitoringAlert(
                 alert_type="new_inquiry",
                 severity="info",
@@ -454,7 +514,7 @@ class CreditIntelligence:
                 recommended_action="If this inquiry was not authorized, file a dispute with the bureaus.",
             ))
 
-        return alerts
+        return [a.message for a in alerts]
 
     def generate_dispute_letter(
         self,
@@ -494,3 +554,36 @@ Enclosed: Copy of government-issued ID, utility bill (proof of address)
 Sincerely,
 {client_name}
 """.strip()
+
+    def compute_components(self, report: CreditReport) -> List[CreditScoreComponent]:
+        """Wrapper around _analyze_components that takes a CreditReport."""
+        account_types = list(set(a.account_type for a in report.accounts if a.account_type))
+        return self._analyze_components(
+            score=report.credit_score,
+            utilization=report.total_utilization or 0,
+            missed_payments=report.total_missed_payments or 0,
+            oldest_age_months=report.oldest_account_age_months or 0,
+            average_age_months=report.average_account_age_months or 0,
+            account_types=account_types,
+            recent_inquiries=report.recent_inquiries or 0,
+        )
+
+    def build_improvement_plan(self, report: CreditReport, target_score: int = 750) -> CreditImprovementPlan:
+        """Alias for create_improvement_plan."""
+        return self.create_improvement_plan(report, target_score)
+
+    def utilization_optimizer(self, report: CreditReport, target_utilization: float = 0.10) -> List[UtilizationTarget]:
+        """Optimize credit utilization across accounts."""
+        results = []
+        for a in report.accounts:
+            if a.account_type == "credit_card" and a.credit_limit and (a.utilization or 0) > target_utilization:
+                target_bal = round(a.credit_limit * target_utilization, 2)
+                results.append(UtilizationTarget(
+                    account_name=a.name,
+                    current_balance=a.current_balance,
+                    credit_limit=a.credit_limit,
+                    target_balance=target_bal,
+                    paydown_needed=round(max(0, a.current_balance - target_bal), 2),
+                ))
+        return results
+

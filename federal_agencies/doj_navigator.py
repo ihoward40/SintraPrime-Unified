@@ -258,7 +258,7 @@ class DOJNavigator:
         if not return_date:
             return_date = issue_date + timedelta(days=14)
         
-        days_to_comply = (return_date - issue_date).days
+        days_to_comply = round((return_date - issue_date).total_seconds() / 86400)
         
         # Estimate responsive documents
         responsive_estimate = 500  # Conservative estimate
@@ -567,14 +567,17 @@ class DOJNavigator:
         ]
         
         status = GrandJuryStatus.UNKNOWN
+        priority = {GrandJuryStatus.UNKNOWN: 0, GrandJuryStatus.WITNESS: 1, GrandJuryStatus.SUBJECT: 2, GrandJuryStatus.TARGET: 3}
         
         for indicator in indicators:
             if any(t in indicator.lower() for t in target_indicators):
-                status = GrandJuryStatus.TARGET
+                new_status = GrandJuryStatus.TARGET
             elif any(w in indicator.lower() for w in witness_indicators):
-                status = GrandJuryStatus.WITNESS
+                new_status = GrandJuryStatus.WITNESS
             else:
-                status = GrandJuryStatus.SUBJECT
+                new_status = GrandJuryStatus.SUBJECT
+            if priority[new_status] > priority[status]:
+                status = new_status
         
         status_info = self.GRAND_JURY_STATUSES.get(status, {})
         

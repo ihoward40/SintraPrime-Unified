@@ -6,7 +6,7 @@ Respects quiet hours, prioritizes alerts, and tracks acknowledgment.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime, time, timedelta
+from datetime import datetime, time, timedelta, date
 from enum import Enum
 from typing import List, Optional, Dict, Any, Callable, Set
 import json

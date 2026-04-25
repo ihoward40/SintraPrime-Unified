@@ -25,8 +25,8 @@ Usage:
 
 from .courtlistener_client import CourtListenerClient
 from .congress_api import CongressAPIClient
-from .citation_network import CitationNetworkBuilder
-from .precedent_finder import PrecedentFinder
+from .citation_network import CitationNetworkBuilder, CitationEdge, CaseNode, CitationReport
+from .precedent_finder import PrecedentFinder, PrecedentBrief as PrecedentResult
 from .case_alert_system import CaseAlertSystem
 from .opinion_analyzer import OpinionAnalyzer
 from .case_law_search_engine import CaseLawSearchEngine
@@ -37,10 +37,18 @@ from .legal_news_aggregator import LegalNewsAggregator
 from .state_courts import StateCourtNavigator
 from .pacer_navigator import PACERNavigator
 
+# Alias for backwards compatibility
+CitationNetwork = CitationNetworkBuilder
+
 __all__ = [
     "CourtListenerClient",
     "CongressAPIClient",
+    "CitationNetwork",
     "CitationNetworkBuilder",
+    "CitationEdge",
+    "CaseNode",
+    "CitationReport",
+    "PrecedentResult",
     "PrecedentFinder",
     "CaseAlertSystem",
     "OpinionAnalyzer",

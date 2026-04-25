@@ -1,0 +1,1 @@
+"""SintraPrime applications package."""

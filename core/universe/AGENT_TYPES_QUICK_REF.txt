@@ -1,0 +1,455 @@
+================================================================================
+                    UNIVERSE AGENT TYPES - QUICK REFERENCE
+================================================================================
+
+AGENT CREATION
+==============
+from agent_types import AgentRegistry
+
+agent = AgentRegistry.create_agent("AGENT_TYPE", "Display Name")
+
+Available types: analyst, executor, learner, coordinator, vision, guard
+
+
+AGENT TYPES OVERVIEW
+====================
+
+┌─────────────┬──────────────────────┬──────────────────────────────────────┐
+│ Agent Type  │ Primary Function      │ Key Capabilities                     │
+├─────────────┼──────────────────────┼──────────────────────────────────────┤
+│ analyst     │ Research & Analysis  │ Pattern recognition, trend analysis, │
+│             │                      │ report generation, recommendations   │
+├─────────────┼──────────────────────┼──────────────────────────────────────┤
+│ executor    │ Code Execution       │ Python/Bash/JS/SQL execution, API   │
+│             │                      │ calls, deployments, data processing  │
+├─────────────┼──────────────────────┼──────────────────────────────────────┤
+│ learner     │ Skill Generation     │ Pattern extraction, generalization,  │
+│             │                      │ knowledge synthesis, documentation   │
+├─────────────┼──────────────────────┼──────────────────────────────────────┤
+│ coordinator │ Task Management      │ Task delegation, resource allocation │
+│             │                      │ execution planning, load balancing   │
+├─────────────┼──────────────────────┼──────────────────────────────────────┤
+│ vision      │ Visual Analysis      │ Object detection, OCR, diagram      │
+│             │                      │ parsing, UI understanding           │
+├─────────────┼──────────────────────┼──────────────────────────────────────┤
+│ guard       │ Security             │ Signature verification, compliance  │
+│             │                      │ checking, audit logging, validation │
+└─────────────┴──────────────────────┴──────────────────────────────────────┘
+
+
+CORE METHODS
+============
+
+execute(task_id: str, command: str) → Dict
+    Execute a task asynchronously
+    Returns: {"status": "success|failed", "task_id": "...", "result": {...}}
+
+learn(task_id: str, result: Dict) → Optional[str]
+    Learn from task results, generate skills
+    Returns: skill_id or None
+
+collaborate(other_agent: BaseAgent, message: Dict) → Dict
+    Send message to another agent
+    Returns: response dictionary
+
+
+COMMON PATTERNS
+===============
+
+1. Execute a Task
+   ────────────────
+   import json
+   import asyncio
+   
+   async def run():
+       agent = AgentRegistry.create_agent("analyst", "Bot")
+       task = {"query": "example", "analysis_type": "summary"}
+       result = await agent.execute("task_1", json.dumps(task))
+       return result
+   
+   asyncio.run(run())
+
+
+2. Learn from Results
+   ───────────────────
+   skill_id = await agent.learn("task_1", result["result"])
+   if skill_id:
+       print(f"Acquired skill: {skill_id}")
+
+
+3. Agent Collaboration
+   ────────────────────
+   message = {"request_type": "share_analysis"}
+   response = await agent1.collaborate(agent2, message)
+
+
+4. Check Agent Status
+   ──────────────────
+   status = agent.get_status()
+   print(f"Status: {status['status']}")
+   print(f"Skills: {status['skills_count']}")
+   print(f"Success rate: {status['performance']['success_rate']:.1%}")
+
+
+AGENT INPUT FORMATS
+===================
+
+ANALYST:
+{
+    "query": "Research question",
+    "analysis_type": "summary|pattern|trend|comparison",
+    "depth": "shallow|medium|deep",
+    "sources": ["source1", "source2"]
+}
+
+EXECUTOR:
+{
+    "code": "Your code here",
+    "language": "python|bash|javascript|sql",
+    "timeout": 30,
+    "environment": {}
+}
+
+LEARNER:
+{
+    "task_examples": [
+        {"input": "...", "output": "...", "context": "..."}
+    ],
+    "skill_category": "category_name",
+    "generalization_level": "specific|general|abstract"
+}
+
+COORDINATOR:
+{
+    "tasks": [{"task_id": "...", "type": "...", "priority": 1}],
+    "available_agents": [{"agent_id": "...", "capabilities": [...]}],
+    "optimization_goal": "speed|quality|cost|balanced"
+}
+
+VISION:
+{
+    "image_path": "/path/to/image.jpg",
+    "analysis_type": "object_detection|ocr|scene_understanding|diagram_parsing",
+    "focus_areas": ["area1", "area2"]
+}
+
+GUARD:
+{
+    "target": "target_to_check",
+    "check_type": "signature|compliance|audit|permission",
+    "severity_level": "low|medium|high|critical",
+    "policy": {}
+}
+
+
+AGENT OUTPUT FORMATS
+====================
+
+ANALYST:
+{
+    "analysis_type": "...",
+    "findings": ["finding1", "finding2"],
+    "patterns": [{"name": "...", "strength": 0.85}],
+    "recommendations": ["rec1", "rec2"],
+    "confidence": 0.87,
+    "sources_used": ["src1", "src2"]
+}
+
+EXECUTOR:
+{
+    "status": "success|failure|timeout",
+    "output": "execution output",
+    "error": "error message",
+    "execution_time_ms": 1250,
+    "artifacts": ["file1.txt"]
+}
+
+VISION:
+{
+    "analysis_type": "...",
+    "objects_detected": [{"object": "...", "confidence": 0.95}],
+    "text_extracted": "extracted text",
+    "scene_description": "description",
+    "insights": ["insight1"],
+    "ui_elements": [{"element_type": "...", "description": "..."}]
+}
+
+GUARD:
+{
+    "status": "approved|rejected|review_needed",
+    "violations": [{"violation": "...", "severity": "high"}],
+    "risk_score": 0.35,
+    "audit_trail": ["log1", "log2"],
+    "approval_required": false
+}
+
+
+AGENT REGISTRY METHODS
+======================
+
+AgentRegistry.create_agent(type, name) → BaseAgent
+    Create agent instance
+
+AgentRegistry.get_available_types() → List[str]
+    Get all available agent types
+
+AgentRegistry.get_agent_schema(type) → Dict
+    Get input/output schemas for agent type
+
+
+SKILL MANAGEMENT
+================
+
+Add Skill:
+    agent.add_skill("skill_id", {"type": "...", "data": ...})
+
+Get Skills:
+    status = agent.get_status()
+    print(f"Skills: {status['skills_count']}")
+    print(f"Skill dict: {agent.skills}")
+
+Remove Skill:
+    agent.remove_skill("skill_id")
+
+
+PERFORMANCE TRACKING
+====================
+
+Access metrics:
+    status = agent.get_status()
+    metrics = status["performance"]
+    # {
+    #   "tasks_completed": 5,
+    #   "tasks_failed": 1,
+    #   "success_rate": 0.833,
+    #   "avg_execution_time_ms": 1250
+    # }
+
+Update after task:
+    agent.update_performance(success=True, execution_time_ms=1250)
+
+
+SERIALIZATION
+=============
+
+Convert to dictionary:
+    agent_data = agent.to_dict()
+    # Contains: agent_id, name, role, skills, performance, etc.
+
+Store in JSON:
+    import json
+    with open("agent.json", "w") as f:
+        json.dump(agent.to_dict(), f, indent=2)
+
+
+ERROR HANDLING
+==============
+
+try:
+    result = await agent.execute("task_id", json.dumps(task))
+    if result["status"] == "failed":
+        print(f"Task failed: {result['error']}")
+except Exception as e:
+    print(f"Exception: {str(e)}")
+
+
+AGENT STATUS VALUES
+===================
+
+Status:  idle | executing | learning | collaborating
+Task Result: success | failure | timeout
+
+
+SEVERITY LEVELS (Guard Agent)
+=============================
+
+low     → Minor issues, no action required
+medium  → Issues requiring review
+high    → Critical issues, quick resolution needed
+critical → Immediate action required
+
+
+OPTIMIZATION GOALS (Coordinator Agent)
+======================================
+
+speed    → Minimize execution time
+quality  → Maximize output quality
+cost     → Minimize resource usage
+balanced → Balance all factors
+
+
+ANALYSIS TYPES (Analyst Agent)
+==============================
+
+summary    → Summarize data and findings
+pattern    → Identify recurring patterns
+trend      → Analyze trends over time
+comparison → Compare multiple items
+
+
+GENERALIZATION LEVELS (Learner Agent)
+====================================
+
+specific → Single use case, high precision
+general  → Multiple similar use cases
+abstract → Broad principle, wide applicability
+
+
+VISION ANALYSIS TYPES
+====================
+
+object_detection    → Detect and locate objects
+ocr                 → Extract text from images
+scene_understanding → Describe overall scene
+diagram_parsing     → Analyze diagrams/flowcharts
+
+
+GUARD CHECK TYPES
+=================
+
+signature  → Verify authenticity/integrity
+compliance → Check against security policies
+audit      → Review access logs/activities
+permission → Validate user permissions
+
+
+USEFUL IMPORTS
+==============
+
+from agent_types import (
+    AgentRegistry,
+    AnalystAgent,
+    ExecutorAgent,
+    LearnerAgent,
+    CoordinatorAgent,
+    VisionAgent,
+    GuardAgent,
+    InputSchema,
+    OutputSchema,
+    PromptTemplates
+)
+
+import asyncio
+import json
+
+
+EXAMPLE: FULL WORKFLOW
+======================
+
+import json
+import asyncio
+from agent_types import AgentRegistry
+
+async def workflow():
+    # Create agents
+    analyst = AgentRegistry.create_agent("analyst", "Researcher")
+    executor = AgentRegistry.create_agent("executor", "Coder")
+    
+    # Run analysis
+    task1 = {
+        "query": "AI trends",
+        "analysis_type": "trend",
+        "depth": "medium",
+        "sources": ["reports"]
+    }
+    result1 = await analyst.execute("t1", json.dumps(task1))
+    print(f"Analysis: {result1['result']['findings']}")
+    
+    # Learn from analysis
+    skill = await analyst.learn("t1", result1["result"])
+    print(f"Skill acquired: {skill}")
+    
+    # Executor processes results
+    task2 = {
+        "code": "print('Processing results')",
+        "language": "python",
+        "timeout": 30
+    }
+    result2 = await executor.execute("t2", json.dumps(task2))
+    print(f"Output: {result2['result']['output']}")
+    
+    # Collaborate
+    msg = {"request_type": "share_analysis"}
+    response = await analyst.collaborate(executor, msg)
+    print(f"Collaboration: {response['status']}")
+
+asyncio.run(workflow())
+
+
+DOCUMENTATION FILES
+===================
+
+AGENT_TYPES_GUIDE.md        → Complete reference guide
+agent_examples.py           → 17 working examples
+AGENT_TYPES_SUMMARY.md      → Implementation summary
+AGENT_TYPES_QUICK_REF.txt   → This quick reference
+
+
+QUICK LINKS
+===========
+
+Main File:     /agent/home/universe/agent_types.py
+Guide:         /agent/home/universe/AGENT_TYPES_GUIDE.md
+Examples:      /agent/home/universe/agent_examples.py
+Summary:       /agent/home/universe/AGENT_TYPES_SUMMARY.md
+Base Class:    /agent/home/universe/base_agent.py
+
+
+TROUBLESHOOTING
+===============
+
+Agent not executing:
+  ✓ Check if task JSON is valid
+  ✓ Verify required fields are present
+  ✓ Check agent status before executing
+
+Skill not acquired:
+  ✓ Check if task was successful (status == "success")
+  ✓ Some agents don't always acquire skills
+  ✓ Check agent.skills dict for acquired skills
+
+Collaboration failing:
+  ✓ Ensure both agents are created
+  ✓ Check message format is correct
+  ✓ Verify request_type is supported
+
+
+VERSION INFORMATION
+===================
+
+UniVerse Agent Types v1.0.0
+Created: April 21, 2026
+Status: Production Ready ✅
+Python 3.8+
+Async/Await Support: Yes
+Database Ready: Yes
+Claude Integration: Yes
+
+
+KEY METRICS
+===========
+
+Lines of Code:        ~2,100 (production)
+Number of Agents:     6
+Methods per Agent:    3 core + inherited
+Input Schemas:        6
+Output Schemas:       6
+Prompt Templates:     6
+Usage Examples:       17
+Documentation Pages: ~1,800 lines
+
+
+SUPPORT & INTEGRATION
+====================
+
+BaseAgent parent:     ✓ Implemented
+CoreEngine ready:     ✓ Compatible
+Database storage:     ✓ Serializable
+Async execution:      ✓ Full support
+Error handling:       ✓ Comprehensive
+Skill inheritance:    ✓ Supported
+Multi-agent:         ✓ Collaborative
+
+================================================================================
+                    For detailed info, see AGENT_TYPES_GUIDE.md
+================================================================================

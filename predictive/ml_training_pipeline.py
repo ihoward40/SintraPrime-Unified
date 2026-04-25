@@ -296,11 +296,11 @@ class MLTrainingPipeline:
         # Handle missing values
         numeric_cols = df.select_dtypes(include=[np.number]).columns
         for col in numeric_cols:
-            df[col].fillna(df[col].median(), inplace=True)
+            df[col] = df[col].fillna(df[col].median())
         
-        categorical_cols = df.select_dtypes(include=['object']).columns
+        categorical_cols = df.select_dtypes(include=['object', 'string']).columns
         for col in categorical_cols:
-            df[col].fillna(df[col].mode()[0] if len(df[col].mode()) > 0 else 'unknown', inplace=True)
+            df[col] = df[col].fillna(df[col].mode()[0] if len(df[col].mode()) > 0 else 'unknown')
         
         # Normalize numerical features
         for col in numeric_cols:
@@ -366,9 +366,11 @@ class MLTrainingPipeline:
         # Prepare train/test
         train_data, test_data = self.create_train_test_split_temporal(data)
         
-        # Feature selection (exclude non-feature columns)
+        # Feature selection (exclude non-feature columns and string columns)
         exclude_cols = ['case_id', 'outcome', 'decision_date']
         feature_cols = [c for c in train_data.columns if c not in exclude_cols]
+        # Drop any remaining non-numeric columns
+        feature_cols = [c for c in feature_cols if train_data[c].dtype in ['int64', 'float64', 'int32', 'float32', 'bool', 'int', 'float']]
         
         X_train = train_data[feature_cols]
         y_train = train_data['outcome']

@@ -132,11 +132,13 @@ class TrialStrategy:
     # Verdict considerations
     verdict_form_strategy: str
     damages_presentation_strategy: str
-    special_verdict_questions: Optional[List[str]] = None
     
     # Timeline
     trial_duration_estimate_days: int
     critical_trial_dates: List[Tuple[str, str]]  # (Event, Estimated Date)
+    
+    # Optional fields with defaults
+    special_verdict_questions: Optional[List[str]] = None
 
 
 @dataclass
@@ -163,7 +165,6 @@ class AppealAnalysis:
     optimal_appeal_arguments: List[str]
     arguments_to_avoid: List[str]
     briefing_strategy: str
-    oral_argument_strategy: Optional[str] = None
     
     # Likelihood of success
     estimated_win_probability_appeal: float
@@ -177,6 +178,9 @@ class AppealAnalysis:
     # Risk mitigation
     rehearing_en_banc_probability: float
     supreme_court_cert_probability: float
+    
+    # Optional fields with defaults
+    oral_argument_strategy: Optional[str] = None
 
 
 @dataclass
@@ -185,11 +189,6 @@ class StrategyReport:
     case_id: str
     case_name: str
     case_type: str
-    
-    motion_strategy: Optional[MotionStrategy] = None
-    discovery_plan: Optional[DiscoveryPlan] = None
-    trial_strategy: Optional[TrialStrategy] = None
-    appeal_analysis: Optional[AppealAnalysis] = None
     
     # Overall strategy
     overall_strategy_summary: str
@@ -208,6 +207,11 @@ class StrategyReport:
     success_metrics: List[str]
     decision_points: List[Tuple[str, str]]  # (Decision, Action if result X)
     
+    # Optional fields with defaults
+    motion_strategy: Optional[MotionStrategy] = None
+    discovery_plan: Optional[DiscoveryPlan] = None
+    trial_strategy: Optional[TrialStrategy] = None
+    appeal_analysis: Optional[AppealAnalysis] = None
     report_date: str = field(default_factory=lambda: datetime.now().isoformat())
     last_updated: str = field(default_factory=lambda: datetime.now().isoformat())
 
@@ -413,6 +417,7 @@ class CaseStrategyOptimizer:
         """
         case_strength = case_features.get('case_strength', 0.5)
         case_type = case_features.get('case_type', 'general')
+        case_complexity = case_features.get('complexity', 'moderate')
         
         # Trial type recommendation
         if judge_profile and judge_profile.get('prefers_bench_trial'):

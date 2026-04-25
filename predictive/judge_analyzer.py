@@ -123,8 +123,6 @@ class StrategyRecommendations:
     
     # Trial strategy
     trial_type_recommendation: str  # "bench", "jury", "either"
-    jury_preference_notes: Optional[str] = None
-    bench_trial_preparation: List[str] = field(default_factory=list)
     
     # Brief and argument
     brief_length_recommendation: str
@@ -139,6 +137,10 @@ class StrategyRecommendations:
     # Risk factors
     judge_specific_risks: List[str]
     mitigation_strategies: List[str]
+    
+    # Fields with defaults must come last
+    jury_preference_notes: Optional[str] = None
+    bench_trial_preparation: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -518,6 +520,7 @@ class JudgeAnalyzer:
             discovery_pace=discovery_pace,
             discovery_scope_focus=["Admissions", "Documents", "Interrogatories"],
             deposition_target_order=["Key witnesses", "Experts", "Defendants"],
+            e_discovery_volume_assessment="standard",
             trial_type_recommendation=trial_recommendation,
             jury_preference_notes=None if trial_recommendation == "bench" else
                 "Jury may be more sympathetic to plaintiff's arguments",

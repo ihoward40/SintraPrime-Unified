@@ -20,8 +20,9 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import (
     roc_auc_score, accuracy_score, precision_score, recall_score, f1_score,
-    calibration_curve, brier_score_loss
+    brier_score_loss
 )
+from sklearn.calibration import calibration_curve
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -415,6 +416,16 @@ class CaseOutcomePredictor:
         X = training_data.drop(columns=[target_column, 'case_id'], errors='ignore')
         y = training_data[target_column]
         
+        # Encode categorical columns
+        categorical_cols = X.select_dtypes(include=['object', 'string', 'category']).columns
+        if not hasattr(self, '_label_encoders'):
+            self._label_encoders = {}
+        for col in categorical_cols:
+            le = LabelEncoder()
+            X = X.copy()
+            X[col] = le.fit_transform(X[col].astype(str))
+            self._label_encoders[col] = le
+        
         # Train/test split with stratification
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42, stratify=y
@@ -485,8 +496,26 @@ class CaseOutcomePredictor:
         if not self.is_trained:
             raise ValueError("Model must be trained before making predictions")
         
-        # Engineer features
-        X = self._engineer_features(case_features)
+        # Engineer features - use stored feature names to create matching feature vector
+        if hasattr(self, 'feature_names') and self.feature_names:
+            features_dict = case_features.to_dict()
+            # Encode categoricals if needed
+            if hasattr(self, '_label_encoders'):
+                for col, le in self._label_encoders.items():
+                    if col in features_dict:
+                        try:
+                            features_dict[col] = le.transform([str(features_dict[col])])[0]
+                        except (ValueError, KeyError):
+                            features_dict[col] = 0
+            row = {}
+            for feat in self.feature_names:
+                val = features_dict.get(feat, 0)
+                if val is None:
+                    val = 0
+                row[feat] = val
+            X = pd.DataFrame([row]).fillna(0)
+        else:
+            X = self._engineer_features(case_features)
         X_scaled = self.scaler.transform(X)
         
         # Get predictions from each model

@@ -10,7 +10,7 @@ import psycopg2
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List, Any, Tuple
 import json
 import uuid
 

@@ -176,7 +176,7 @@ class PlaidClient:
 
     ENV_HOSTS = {
         PlaidEnvironment.SANDBOX: plaid.Environment.Sandbox,
-        PlaidEnvironment.DEVELOPMENT: plaid.Environment.Development,
+        PlaidEnvironment.DEVELOPMENT: plaid.Environment.Sandbox,
         PlaidEnvironment.PRODUCTION: plaid.Environment.Production,
     }
 

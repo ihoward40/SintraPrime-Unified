@@ -8,7 +8,7 @@ assessment, and deadline chain tracking.
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from enum import Enum
-from typing import List, Optional, Dict, Any, Tuple
+from typing import Union, List, Optional, Dict, Any, Tuple
 import logging
 
 logger = logging.getLogger(__name__)
@@ -491,6 +491,3 @@ class DeadlineTracker:
         else:
             return "NORMAL"
 
-
-# Type hint
-from typing import Union

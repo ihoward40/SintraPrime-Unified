@@ -1,0 +1,325 @@
+name: SintraPrime-Unified CI Pipeline
+
+on:
+  push:
+    branches: [main, develop, "feature/**"]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: "0 6 * * 1"  # Weekly Monday 6am UTC
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # ─────────────────────────────────────────
+  # 1. Lint and Code Quality
+  # ─────────────────────────────────────────
+  lint:
+    name: "🔍 Lint & Code Quality"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install lint dependencies
+        run: |
+          pip install --upgrade pip
+          pip install flake8 black isort mypy pylint
+
+      - name: Check formatting with black
+        run: black --check --diff .
+
+      - name: Check imports with isort
+        run: isort --check-only --diff .
+
+      - name: Lint with flake8
+        run: |
+          flake8 . \
+            --max-line-length=120 \
+            --extend-ignore=E203,W503 \
+            --exclude=.venv,__pycache__,.git
+
+      - name: Type check with mypy
+        run: |
+          mypy artifacts/ \
+            --ignore-missing-imports \
+            --no-strict-optional \
+            --warn-return-any
+
+  # ─────────────────────────────────────────
+  # 2. Core Python Tests
+  # ─────────────────────────────────────────
+  test-python:
+    name: "🐍 Python Core Tests"
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pytest pytest-cov pytest-xdist
+          pip install -e .
+
+      - name: Run core test suite
+        run: |
+          python -m pytest artifacts/tests/test_artifacts.py \
+            -v \
+            --tb=short \
+            --cov=artifacts \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            -n auto
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: coverage.xml
+          flags: python-${{ matrix.python-version }}
+
+  # ─────────────────────────────────────────
+  # 3. Trust Law Tests
+  # ─────────────────────────────────────────
+  test-trust-law:
+    name: "⚖️ Trust Law Engine Tests"
+    runs-on: ubuntu-latest
+    needs: test-python
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install pytest -e .
+
+      - name: Test Trust Law templates
+        run: |
+          python -m pytest artifacts/tests/test_artifacts.py \
+            -k "trust or Trust or will or Will or estate or Estate" \
+            -v --tb=short
+
+      - name: Validate all trust templates have bracket fields
+        run: |
+          python -c "
+          from artifacts import LegalDocumentLibrary
+          lib = LegalDocumentLibrary()
+          trust_types = [t for t in lib.list_templates() if 'trust' in t or 'will' in t or 'power' in t or 'living' in t]
+          for t in trust_types:
+              tmpl = lib.get_template(t)
+              assert '[' in tmpl, f'Template {t} missing bracket fields'
+              assert len(tmpl) > 200, f'Template {t} too short'
+              print(f'✓ {t}: {len(tmpl)} chars')
+          print(f'All {len(trust_types)} trust/estate templates validated.')
+          "
+
+  # ─────────────────────────────────────────
+  # 4. Financial Engine Tests
+  # ─────────────────────────────────────────
+  test-financial:
+    name: "💰 Financial Engine Tests"
+    runs-on: ubuntu-latest
+    needs: test-python
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install pytest -e .
+
+      - name: Run financial report template tests
+        run: |
+          python -m pytest artifacts/tests/test_artifacts.py \
+            -k "financial or Financial or cash_flow or loan or investor or tax" \
+            -v --tb=short
+
+      - name: Validate financial formatting
+        run: |
+          python -c "
+          from artifacts import FinancialReportTemplates
+          ft = FinancialReportTemplates()
+          
+          # Test all methods produce output
+          results = {
+            'personal_financial_statement': ft.personal_financial_statement({'name': 'Test', 'cash': 10000}),
+            'business_financial_summary': ft.business_financial_summary({'company': 'Test', 'revenue': 100000}),
+            'net_worth_statement': ft.net_worth_statement({'name': 'Test'}),
+            'cash_flow_analysis': ft.cash_flow_analysis({'name': 'Test'}),
+            'loan_proposal': ft.loan_proposal({'name': 'Test'}, {'amount': 50000, 'purpose': 'expansion'}),
+            'investor_pitch_financial_model': ft.investor_pitch_financial_model({'name': 'Test'}),
+            'tax_planning_summary': ft.tax_planning_summary({'name': 'Test'}),
+          }
+          
+          for method, result in results.items():
+              assert len(result) > 100, f'{method} output too short'
+              print(f'✓ {method}: {len(result)} chars')
+          "
+
+  # ─────────────────────────────────────────
+  # 5. Legal Document Tests
+  # ─────────────────────────────────────────
+  test-legal:
+    name: "📋 Legal Document Library Tests"
+    runs-on: ubuntu-latest
+    needs: test-python
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install pytest -e .
+
+      - name: Test all legal templates
+        run: |
+          python -c "
+          from artifacts import LegalDocumentLibrary
+          lib = LegalDocumentLibrary()
+          templates = lib.list_templates()
+          print(f'Testing {len(templates)} templates...')
+          for key in templates:
+              t = lib.get_template(key)
+              assert t and len(t.strip()) > 50, f'Template {key} empty or too short'
+              assert '[' in t, f'Template {key} missing bracket fields'
+          print(f'✓ All {len(templates)} templates validated.')
+          "
+
+      - name: Run legal document renderer tests
+        run: |
+          python -m pytest artifacts/tests/test_artifacts.py \
+            -k "legal or Legal or letter or Letter or contract or Contract" \
+            -v --tb=short
+
+  # ─────────────────────────────────────────
+  # 6. Credit & Governance Tests
+  # ─────────────────────────────────────────
+  test-governance:
+    name: "🏛️ Credit & Governance Tests"
+    runs-on: ubuntu-latest
+    needs: test-python
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install pytest -e .
+
+      - name: Run credit analyzer tests
+        run: |
+          python -m pytest artifacts/tests/test_artifacts.py \
+            -k "credit or Credit or dispute or Dispute" \
+            -v --tb=short
+
+      - name: Validate dispute package completeness
+        run: |
+          python -c "
+          from artifacts import CreditReportAnalyzer
+          ca = CreditReportAnalyzer()
+          pkg = ca.dispute_package_generator([
+              {'creditor': 'Test Bank', 'account_number': 'XXXX-0000',
+               'amount': '500', 'dispute_reason': 'Not my account',
+               'bureaus': ['Equifax', 'Experian', 'TransUnion']}
+          ])
+          assert pkg.cover_letter, 'No cover letter'
+          assert len(pkg.dispute_letters) > 0, 'No dispute letters'
+          assert 'CERTIFIED MAIL' in pkg.dispute_letters[0], 'Missing certified mail instruction'
+          assert 'FCRA' in pkg.cover_letter, 'Missing FCRA citation'
+          print('✓ Dispute package validation passed')
+          "
+
+  # ─────────────────────────────────────────
+  # 7. Security Scan
+  # ─────────────────────────────────────────
+  security-scan:
+    name: "🔐 Security Scan"
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install security tools
+        run: |
+          pip install bandit safety pip-audit
+
+      - name: Run Bandit security scan
+        run: |
+          bandit -r artifacts/ \
+            --severity-level medium \
+            --confidence-level medium \
+            --format json \
+            --output bandit-report.json || true
+          bandit -r artifacts/ \
+            --severity-level high \
+            --confidence-level high
+
+      - name: Run Safety dependency check
+        run: safety check --json || true
+
+      - name: Run pip-audit
+        run: pip-audit --format=json || true
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-report
+          path: bandit-report.json
+
+  # ─────────────────────────────────────────
+  # 8. Final Status Check
+  # ─────────────────────────────────────────
+  ci-complete:
+    name: "✅ CI Complete"
+    runs-on: ubuntu-latest
+    needs:
+      - lint
+      - test-python
+      - test-trust-law
+      - test-financial
+      - test-legal
+      - test-governance
+      - security-scan
+    steps:
+      - name: All checks passed
+        run: |
+          echo "══════════════════════════════════════════"
+          echo "  SintraPrime-Unified CI — ALL PASSED ✅  "
+          echo "══════════════════════════════════════════"

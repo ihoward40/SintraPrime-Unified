@@ -1,0 +1,86 @@
+name: "✨ Feature Request"
+description: "Suggest a new capability for SintraPrime-Unified"
+title: "[FEATURE] "
+labels: ["enhancement", "needs-discussion"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Thank you for suggesting a feature!
+        The most impactful contributions expand SintraPrime's legal, financial, and governance capabilities.
+
+  - type: dropdown
+    id: domain
+    attributes:
+      label: "Domain"
+      description: "Which domain does this feature belong to?"
+      options:
+        - "Trust Law"
+        - "Legal Intelligence"
+        - "Financial Mastery"
+        - "Credit & Funding"
+        - "Entity Governance"
+        - "Estate Planning"
+        - "Document Rendering"
+        - "Superintelligence"
+        - "twin TUI"
+        - "API / Integration"
+        - "Other"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: "Suggested Priority"
+      options:
+        - "🔴 Critical — Core capability gap"
+        - "🟠 High — Significant user value"
+        - "🟡 Medium — Nice to have"
+        - "🟢 Low — Future consideration"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: "Problem / Use Case"
+      description: "What problem does this solve? Who benefits?"
+      placeholder: "Currently, SintraPrime cannot analyze Delaware statutory trust structures, which are critical for real estate syndications..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: "Proposed Solution"
+      description: "How would you implement this? What should the API look like?"
+      render: python
+      value: |
+        # Proposed API:
+        from trust_law import DelawareStatutoryTrustEngine
+
+        dst = DelawareStatutoryTrustEngine()
+        analysis = dst.analyze_syndication({...})
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "Alternatives Considered"
+      description: "Other approaches you've considered or workarounds you're using"
+
+  - type: textarea
+    id: legal_basis
+    attributes:
+      label: "Legal / Financial Basis (if applicable)"
+      description: "Relevant statutes, regulations, or standards this would implement"
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: "Contribution"
+      options:
+        - label: "I am willing to implement this feature (submit a PR)"
+        - label: "I can provide legal/financial domain expertise for this feature"
+        - label: "I can help write tests for this feature"

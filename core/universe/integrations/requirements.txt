@@ -1,0 +1,32 @@
+# Discord Integration Requirements for SintraPrime UniVerse
+# Install with: pip install -r requirements.txt
+
+# Core Discord bot library
+discord.py>=2.3.0
+
+# Async HTTP client
+aiohttp>=3.8.0
+
+# Database drivers
+psycopg2-binary>=2.9.0  # PostgreSQL adapter
+
+# Configuration management
+python-dotenv>=1.0.0
+
+# Utilities
+PyYAML>=6.0  # For config files
+requests>=2.31.0  # For HTTP requests
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+
+# Code quality
+flake8>=6.0.0
+black>=23.7.0
+mypy>=1.4.0
+
+# Development
+ipython>=8.12.0
+jupyter>=1.0.0

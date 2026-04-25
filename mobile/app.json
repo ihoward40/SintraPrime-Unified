@@ -1,0 +1,80 @@
+{
+  "expo": {
+    "name": "SintraPrime",
+    "slug": "sintraprime-unified",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F172A"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sintraprime.unified",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "SintraPrime uses Face ID to secure your account.",
+        "NSCameraUsageDescription": "SintraPrime uses the camera to scan and upload documents.",
+        "NSMicrophoneUsageDescription": "SintraPrime uses the microphone for voice queries to AI counsel.",
+        "NSPhotoLibraryUsageDescription": "SintraPrime accesses photos to attach to cases and documents.",
+        "UIBackgroundModes": ["fetch", "remote-notification"]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0F172A"
+      },
+      "package": "com.sintraprime.unified",
+      "versionCode": 1,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "RECORD_AUDIO"
+      ],
+      "googleServicesFile": "./google-services.json"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-camera",
+      "expo-document-picker",
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow SintraPrime to use Face ID."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#D4AF37",
+          "sounds": ["./assets/notification.wav"]
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "sintraprime-unified-prod"
+      }
+    },
+    "scheme": "sintraprime",
+    "notification": {
+      "icon": "./assets/notification-icon.png",
+      "color": "#D4AF37",
+      "iosDisplayInForeground": true
+    }
+  }
+}

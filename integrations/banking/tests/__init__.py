@@ -1,0 +1,1 @@
+"""SintraPrime Banking Integration Tests"""

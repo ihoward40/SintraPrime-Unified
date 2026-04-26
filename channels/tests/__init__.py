@@ -1,0 +1,1 @@
+# SintraPrime channels test suite

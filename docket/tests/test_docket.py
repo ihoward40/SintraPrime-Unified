@@ -11,7 +11,7 @@ from unittest.mock import Mock, MagicMock, patch
 
 # Import modules to test
 import sys
-sys.path.insert(0, '/agent/home/SintraPrime-Unified')
+sys.path.insert(0, '/tmp/SP-omega2')
 
 from docket.pacer_client import (
     PACERClient, PACERCase, DocketEntry, DocumentType, CourtType,

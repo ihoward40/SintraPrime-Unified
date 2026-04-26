@@ -48,7 +48,7 @@ def mock_tenant_manager():
     manager = Mock()
     manager.create_tenant = Mock(return_value={
         'id': 'tenant_123',
-        'name': 'Test Law Firm',
+        'name': 'Test Firm',
         'status': 'active'
     })
     manager.get_tenant = Mock(return_value={

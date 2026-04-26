@@ -182,7 +182,7 @@ class QueryParser:
             raw_query=raw_query,
             terms=terms,
             phrase=phrase,
-            court_filter=court_filter or kwargs.get("court_filter"),
+            court_filter=kwargs.get("court_filter") or court_filter,
             date_min=kwargs.get("date_min"),
             date_max=kwargs.get("date_max"),
             practice_area=practice_area,

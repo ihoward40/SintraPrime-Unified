@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "sintra-prime": {
+      "command": "python",
+      "args": ["-m", "mcp_server"],
+      "cwd": "/path/to/SintraPrime-Unified",
+      "env": {
+        "SINTRA_ENV": "production",
+        "SINTRA_LOG_LEVEL": "INFO"
+      }
+    }
+  },
+  "_instructions": {
+    "step_1": "Replace /path/to/SintraPrime-Unified with the actual path to your clone",
+    "step_2_macos": "Copy this file to: ~/Library/Application Support/Claude/claude_desktop_config.json",
+    "step_2_windows": "Copy to: %APPDATA%\\Claude\\claude_desktop_config.json",
+    "step_2_linux": "Copy to: ~/.config/Claude/claude_desktop_config.json",
+    "step_3": "Restart Claude Desktop",
+    "step_4": "Look for the hammer icon in Claude — SintraPrime tools will be listed",
+    "auto_install": "Or run: python -m mcp_server.mcp_config install"
+  }
+}

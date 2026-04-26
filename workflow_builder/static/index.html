@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SintraPrime Workflow Builder</title>
+  <!-- xterm.js for Web TUI -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+  <style>
+    :root {
+      --bg-primary: #0f1117;
+      --bg-secondary: #1a1d27;
+      --bg-panel: #13151f;
+      --border: #2a2d3a;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --text-muted: #475569;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --node-start: #22c55e;
+      --node-end: #ef4444;
+      --node-action: #3b82f6;
+      --node-decision: #f59e0b;
+      --node-parallel: #8b5cf6;
+      --node-wait: #6b7280;
+      --node-agent: #06b6d4;
+      --node-human: #ec4899;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      height: 52px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .logo-icon { font-size: 20px; }
+    .logo-sub { color: var(--text-secondary); font-weight: 400; font-size: 13px; }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg-panel);
+      color: var(--text-primary);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .btn:hover { background: var(--border); border-color: var(--accent); }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: white; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-success { background: #166534; border-color: var(--success); color: var(--success); }
+    .btn-success:hover { background: #14532d; }
+    .btn-danger { background: #7f1d1d; border-color: var(--error); color: var(--error); }
+    .btn-danger:hover { background: #991b1b; }
+
+    /* ── Tab bar ── */
+    .tab-bar {
+      display: flex;
+      padding: 0 20px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      gap: 0;
+      flex-shrink: 0;
+    }
+    .tab {
+      padding: 10px 18px;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .tab:hover { color: var(--text-primary); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── Main layout ── */
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Left palette ── */
+    .palette {
+      width: 220px;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .palette-header {
+      padding: 12px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .palette-section { padding: 8px 0; }
+    .palette-section-title {
+      padding: 4px 14px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .palette-node {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 14px;
+      cursor: grab;
+      border-radius: 0;
+      transition: background 0.12s;
+      font-size: 13px;
+      user-select: none;
+    }
+    .palette-node:hover { background: var(--border); }
+    .palette-node:active { cursor: grabbing; }
+
+    .palette-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .palette-dot.decision { border-radius: 2px; transform: rotate(45deg); }
+
+    .node-label { font-size: 12px; }
+
+    /* ── Canvas ── */
+    .canvas-area {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background-color: var(--bg-primary);
+      background-image:
+        radial-gradient(circle, #2a2d3a 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    #canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── Canvas toolbar ── */
+    .canvas-toolbar {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+      z-index: 10;
+    }
+
+    .canvas-zoom {
+      position: absolute;
+      bottom: 14px;
+      right: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 10;
+    }
+    .zoom-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--text-secondary);
+      user-select: none;
+    }
+    .zoom-btn:hover { background: var(--border); color: var(--text-primary); }
+
+    /* ── Workflow Node on Canvas ── */
+    .wf-node {
+      position: absolute;
+      min-width: 160px;
+      border-radius: 8px;
+      border: 2px solid transparent;
+      padding: 10px 14px;
+      cursor: move;
+      user-select: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      transition: box-shadow 0.15s, border-color 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      text-align: center;
+    }
+    .wf-node:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.6); }
+    .wf-node.selected { border-color: white !important; box-shadow: 0 0 0 3px rgba(99,102,241,0.5); }
+    .wf-node.start { background: var(--node-start); border-radius: 50%; width: 80px; height: 80px; justify-content: center; }
+    .wf-node.end { background: var(--node-end); border-radius: 50%; width: 80px; height: 80px; justify-content: center; }
+    .wf-node.action { background: var(--node-action); }
+    .wf-node.decision { background: var(--node-decision); transform: rotate(0deg); }
+    .wf-node.parallel { background: var(--node-parallel); }
+    .wf-node.wait { background: var(--node-wait); }
+    .wf-node.agent_call { background: var(--node-agent); }
+    .wf-node.human_review { background: var(--node-human); }
+    .node-icon { font-size: 16px; }
+
+    /* ── Edges SVG ── */
+    #edges-svg {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .edge-path {
+      stroke: #4a5568;
+      stroke-width: 2;
+      fill: none;
+      marker-end: url(#arrowhead);
+    }
+    .edge-path:hover { stroke: var(--accent); }
+
+    /* ── Right properties panel ── */
+    .properties {
+      width: 260px;
+      background: var(--bg-panel);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .properties-header {
+      padding: 12px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .properties-body { padding: 14px; flex: 1; }
+    .properties-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 200px;
+      color: var(--text-muted);
+      font-size: 13px;
+      gap: 8px;
+    }
+    .properties-empty-icon { font-size: 32px; }
+
+    .form-group { margin-bottom: 14px; }
+    .form-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+    }
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 7px 10px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--accent);
+    }
+    .form-textarea { resize: vertical; min-height: 70px; }
+
+    .form-row { display: flex; gap: 8px; }
+    .form-row .form-group { flex: 1; }
+
+    .prop-btn-row { display: flex; gap: 6px; margin-top: 8px; }
+    .prop-btn-row .btn { flex: 1; font-size: 11px; padding: 5px 8px; }
+
+    /* ── Templates panel ── */
+    .templates-panel {
+      display: none;
+      padding: 16px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .templates-panel.active { display: block; }
+    .template-card {
+      padding: 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .template-card:hover { border-color: var(--accent); }
+    .template-name { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .template-desc { font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; }
+    .template-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+    .template-tag {
+      font-size: 10px;
+      padding: 2px 7px;
+      background: var(--border);
+      border-radius: 9999px;
+      color: var(--text-secondary);
+    }
+
+    /* ── TUI Panel ── */
+    .tui-panel {
+      display: none;
+      flex: 1;
+      background: #0d0e14;
+    }
+    .tui-panel.active { display: flex; flex-direction: column; }
+    .tui-header {
+      padding: 10px 16px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tui-status { width: 8px; height: 8px; border-radius: 50%; background: var(--error); }
+    .tui-status.connected { background: var(--success); }
+    #tui-terminal { flex: 1; padding: 10px; }
+
+    /* ── Context Menu ── */
+    .context-menu {
+      position: fixed;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px 0;
+      z-index: 1000;
+      min-width: 160px;
+      display: none;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .context-menu.visible { display: block; }
+    .context-item {
+      padding: 8px 14px;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .context-item:hover { background: var(--border); }
+    .context-separator { height: 1px; background: var(--border); margin: 3px 0; }
+
+    /* ── Toast ── */
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .toast {
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      animation: slideIn 0.2s ease;
+      max-width: 300px;
+    }
+    .toast.success { background: #166534; border: 1px solid var(--success); color: var(--success); }
+    .toast.error { background: #7f1d1d; border: 1px solid var(--error); color: var(--error); }
+    .toast.info { background: #1e3a5f; border: 1px solid #3b82f6; color: #93c5fd; }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* ── Minimap ── */
+    .minimap {
+      position: absolute;
+      bottom: 60px;
+      right: 14px;
+      width: 140px;
+      height: 90px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      z-index: 5;
+      overflow: hidden;
+    }
+    .minimap-title {
+      font-size: 9px;
+      color: var(--text-muted);
+      padding: 2px 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Status bar ── */
+    .status-bar {
+      height: 24px;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 16px;
+      font-size: 11px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .status-item { display: flex; align-items: center; gap: 4px; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .status-dot.green { background: var(--success); }
+    .status-dot.yellow { background: var(--warning); }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <span class="logo-icon">⚡</span>
+    <span>SintraPrime</span>
+    <span class="logo-sub">Workflow Builder</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn" onclick="newWorkflow()">＋ New</button>
+    <button class="btn" onclick="loadWorkflowFromFile()">📂 Open</button>
+    <button class="btn btn-primary" onclick="saveWorkflow()">💾 Save</button>
+    <button class="btn btn-success" onclick="exportWorkflow()">⬇ Export</button>
+    <button class="btn" onclick="clearCanvas()">🗑 Clear</button>
+  </div>
+</header>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab('builder', this)">🔧 Builder</div>
+  <div class="tab" onclick="switchTab('templates', this)">📋 Templates</div>
+  <div class="tab" onclick="switchTab('tui', this)">💻 Terminal</div>
+</div>
+
+<!-- Main -->
+<div class="main" id="main-area">
+
+  <!-- Left Palette -->
+  <aside class="palette" id="palette-panel">
+    <div class="palette-header">Node Palette</div>
+
+    <div class="palette-section">
+      <div class="palette-section-title">Control Flow</div>
+      <div class="palette-node" draggable="true" data-type="START" ondragstart="onDragStart(event, 'START')">
+        <div class="palette-dot" style="background:var(--node-start)"></div>
+        <span class="node-label">▶ Start</span>
+      </div>
+      <div class="palette-node" draggable="true" data-type="END" ondragstart="onDragStart(event, 'END')">
+        <div class="palette-dot" style="background:var(--node-end)"></div>
+        <span class="node-label">⏹ End</span>
+      </div>
+      <div class="palette-node" draggable="true" data-type="DECISION" ondragstart="onDragStart(event, 'DECISION')">
+        <div class="palette-dot decision" style="background:var(--node-decision)"></div>
+        <span class="node-label">◆ Decision</span>
+      </div>
+      <div class="palette-node" draggable="true" data-type="PARALLEL" ondragstart="onDragStart(event, 'PARALLEL')">
+        <div class="palette-dot" style="background:var(--node-parallel)"></div>
+        <span class="node-label">⫶ Parallel</span>
+      </div>
+    </div>
+
+    <div class="palette-section">
+      <div class="palette-section-title">Operations</div>
+      <div class="palette-node" draggable="true" data-type="ACTION" ondragstart="onDragStart(event, 'ACTION')">
+        <div class="palette-dot" style="background:var(--node-action)"></div>
+        <span class="node-label">⚡ Action</span>
+      </div>
+      <div class="palette-node" draggable="true" data-type="WAIT" ondragstart="onDragStart(event, 'WAIT')">
+        <div class="palette-dot" style="background:var(--node-wait)"></div>
+        <span class="node-label">⏳ Wait</span>
+      </div>
+    </div>
+
+    <div class="palette-section">
+      <div class="palette-section-title">Integration</div>
+      <div class="palette-node" draggable="true" data-type="AGENT_CALL" ondragstart="onDragStart(event, 'AGENT_CALL')">
+        <div class="palette-dot" style="background:var(--node-agent)"></div>
+        <span class="node-label">🤖 Agent Call</span>
+      </div>
+      <div class="palette-node" draggable="true" data-type="HUMAN_REVIEW" ondragstart="onDragStart(event, 'HUMAN_REVIEW')">
+        <div class="palette-dot" style="background:var(--node-human)"></div>
+        <span class="node-label">👤 Human Review</span>
+      </div>
+    </div>
+
+    <div style="padding: 12px 14px; border-top: 1px solid var(--border); margin-top: auto;">
+      <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Quick Connect</div>
+      <button class="btn" style="width:100%; font-size:11px;" onclick="toggleConnectMode()">
+        🔗 <span id="connect-btn-text">Connect Mode: OFF</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Builder Canvas -->
+  <div class="canvas-area" id="builder-panel"
+    ondragover="event.preventDefault()"
+    ondrop="onDrop(event)"
+    oncontextmenu="showContextMenu(event)"
+    onclick="onCanvasClick(event)">
+
+    <!-- SVG for edges -->
+    <svg id="edges-svg">
+      <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#4a5568"/>
+        </marker>
+      </defs>
+      <g id="edges-group"></g>
+    </svg>
+
+    <!-- Nodes container -->
+    <div id="canvas" style="z-index:2; position:absolute; top:0;left:0;width:100%;height:100%;pointer-events:none;">
+    </div>
+
+    <!-- Canvas toolbar -->
+    <div class="canvas-toolbar">
+      <button class="btn" onclick="autoLayout()">⊞ Auto Layout</button>
+      <button class="btn" onclick="fitToScreen()">⊡ Fit</button>
+      <button class="btn" onclick="validateWorkflow()">✓ Validate</button>
+      <button class="btn" onclick="runSimulation()">▶ Simulate</button>
+    </div>
+
+    <!-- Zoom controls -->
+    <div class="canvas-zoom">
+      <div class="zoom-btn" onclick="zoom(1.2)">+</div>
+      <div class="zoom-btn" id="zoom-level" style="font-size:10px;">100%</div>
+      <div class="zoom-btn" onclick="zoom(0.8)">−</div>
+    </div>
+
+    <!-- Mini map -->
+    <div class="minimap">
+      <div class="minimap-title">Mini Map</div>
+      <canvas id="minimap-canvas" width="140" height="75"></canvas>
+    </div>
+  </div>
+
+  <!-- Templates Panel -->
+  <div class="canvas-area" id="templates-panel" style="display:none; overflow-y:auto; align-items:flex-start;">
+    <div style="padding:16px; max-width:900px; width:100%;">
+      <div style="font-size:20px; font-weight:700; margin-bottom:4px;">Legal Workflow Templates</div>
+      <div style="color:var(--text-secondary); font-size:13px; margin-bottom:16px;">
+        21 built-in templates ready to use. Click a template to load it into the builder.
+      </div>
+      <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;" id="tag-filters">
+        <button class="btn btn-primary" onclick="filterByTag('')">All</button>
+        <button class="btn" onclick="filterByTag('estate')">Estate</button>
+        <button class="btn" onclick="filterByTag('corporate')">Corporate</button>
+        <button class="btn" onclick="filterByTag('litigation')">Litigation</button>
+        <button class="btn" onclick="filterByTag('financial')">Financial</button>
+        <button class="btn" onclick="filterByTag('family-law')">Family Law</button>
+        <button class="btn" onclick="filterByTag('ip')">IP</button>
+        <button class="btn" onclick="filterByTag('compliance')">Compliance</button>
+      </div>
+      <div id="templates-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px;">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- TUI Panel -->
+  <div class="canvas-area" id="tui-panel" style="display:none; padding:0;">
+    <div class="tui-header">
+      <div class="tui-status" id="tui-status-dot"></div>
+      <span id="tui-status-text">Disconnected — Connect to ws://localhost:8000/workflows/tui</span>
+      <div style="margin-left:auto; display:flex; gap:6px;">
+        <input id="ws-url" type="text" class="form-input"
+          style="width:280px; font-size:11px;"
+          value="ws://localhost:8000/workflows/tui"
+          placeholder="WebSocket URL"/>
+        <button class="btn btn-primary" onclick="connectTUI()" style="font-size:11px;">Connect</button>
+        <button class="btn btn-danger" onclick="disconnectTUI()" style="font-size:11px;">Disconnect</button>
+      </div>
+    </div>
+    <div id="tui-terminal" style="flex:1;"></div>
+  </div>
+
+  <!-- Right Properties Panel -->
+  <aside class="properties" id="properties-panel">
+    <div class="properties-header">Properties</div>
+    <div class="properties-body">
+      <div class="properties-empty" id="prop-empty">
+        <div class="properties-empty-icon">☰</div>
+        <div>Select a node to edit its properties</div>
+      </div>
+      <div id="prop-form" style="display:none;">
+        <div class="form-group">
+          <label class="form-label">Node Type</label>
+          <select class="form-select" id="prop-type" onchange="updateSelectedNode()">
+            <option value="START">▶ Start</option>
+            <option value="END">⏹ End</option>
+            <option value="ACTION">⚡ Action</option>
+            <option value="DECISION">◆ Decision</option>
+            <option value="PARALLEL">⫶ Parallel</option>
+            <option value="WAIT">⏳ Wait</option>
+            <option value="AGENT_CALL">🤖 Agent Call</option>
+            <option value="HUMAN_REVIEW">👤 Human Review</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Label</label>
+          <input class="form-input" id="prop-label" type="text"
+            placeholder="Node label" oninput="updateSelectedNode()" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-textarea" id="prop-desc"
+            placeholder="Node description..." oninput="updateSelectedNode()"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Timeout (s)</label>
+            <input class="form-input" id="prop-timeout" type="number" min="0"
+              placeholder="None" oninput="updateSelectedNode()" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Retries</label>
+            <input class="form-input" id="prop-retry" type="number" min="0" max="10"
+              value="0" oninput="updateSelectedNode()" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Required</label>
+          <select class="form-select" id="prop-required" onchange="updateSelectedNode()">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+        </div>
+        <div class="prop-btn-row">
+          <button class="btn btn-danger" onclick="deleteSelectedNode()" style="flex:1;">🗑 Delete</button>
+          <button class="btn" onclick="duplicateSelectedNode()">⧉ Duplicate</button>
+        </div>
+
+        <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
+          <div class="form-label" style="margin-bottom:8px;">Connections</div>
+          <div id="prop-connections" style="font-size:11px; color:var(--text-secondary);"></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- Status Bar -->
+<div class="status-bar">
+  <div class="status-item">
+    <div class="status-dot green"></div>
+    <span id="status-nodes">0 nodes</span>
+  </div>
+  <div class="status-item">
+    <div class="status-dot green"></div>
+    <span id="status-edges">0 edges</span>
+  </div>
+  <div class="status-item" id="status-validation">
+    <div class="status-dot yellow"></div>
+    <span>Not validated</span>
+  </div>
+  <div class="status-item" style="margin-left:auto;">
+    <span id="status-workflow-name">Untitled Workflow</span>
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div class="context-menu" id="context-menu">
+  <div class="context-item" onclick="addNodeAtContext('ACTION')">⚡ Add Action Node</div>
+  <div class="context-item" onclick="addNodeAtContext('DECISION')">◆ Add Decision Node</div>
+  <div class="context-item" onclick="addNodeAtContext('AGENT_CALL')">🤖 Add Agent Call</div>
+  <div class="context-separator"></div>
+  <div class="context-item" onclick="autoLayout()">⊞ Auto Layout</div>
+  <div class="context-item" onclick="clearCanvas()">🗑 Clear Canvas</div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toasts"></div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+
+<script>
+// ============================================================
+// State
+// ============================================================
+let nodes = [];
+let edges = [];
+let selectedNodeId = null;
+let connectMode = false;
+let connectSource = null;
+let dragType = null;
+let contextX = 0, contextY = 0;
+let zoomLevel = 1.0;
+let workflowName = "Untitled Workflow";
+let term = null, ws = null, fitAddon = null;
+let nodeIdCounter = 0;
+
+const NODE_COLORS = {
+  START: '#22c55e', END: '#ef4444', ACTION: '#3b82f6',
+  DECISION: '#f59e0b', PARALLEL: '#8b5cf6', WAIT: '#6b7280',
+  AGENT_CALL: '#06b6d4', HUMAN_REVIEW: '#ec4899'
+};
+const NODE_ICONS = {
+  START: '▶', END: '⏹', ACTION: '⚡', DECISION: '◆',
+  PARALLEL: '⫶', WAIT: '⏳', AGENT_CALL: '🤖', HUMAN_REVIEW: '👤'
+};
+
+// ============================================================
+// Node functions
+// ============================================================
+
+function createNode(type, x, y, label) {
+  const id = 'node_' + (++nodeIdCounter) + '_' + Date.now();
+  const node = {
+    id, type, x, y,
+    label: label || (NODE_ICONS[type] + ' ' + type.replace('_', ' ')),
+    description: '', timeout: null, retry: 0, required: true
+  };
+  nodes.push(node);
+  renderNode(node);
+  updateStatus();
+  return node;
+}
+
+function renderNode(node) {
+  const el = document.createElement('div');
+  el.id = node.id;
+  el.className = 'wf-node ' + node.type.toLowerCase();
+  el.style.left = node.x + 'px';
+  el.style.top = node.y + 'px';
+  el.style.background = NODE_COLORS[node.type];
+  el.style.color = '#fff';
+  el.style.pointerEvents = 'all';
+  el.innerHTML = `<span class="node-icon">${NODE_ICONS[node.type]}</span><span class="node-text" style="font-size:11px;">${escHtml(node.label)}</span>`;
+  el.onclick = (e) => { e.stopPropagation(); selectNode(node.id); };
+  el.ondblclick = (e) => { e.stopPropagation(); startEdgeFromNode(node.id); };
+  makeDraggable(el, node);
+  document.getElementById('canvas').appendChild(el);
+}
+
+function makeDraggable(el, node) {
+  let dragging = false, ox = 0, oy = 0;
+  el.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    if (connectMode) { startEdgeFromNode(node.id); return; }
+    dragging = true;
+    ox = e.clientX - node.x;
+    oy = e.clientY - node.y;
+    e.stopPropagation();
+  });
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    node.x = e.clientX - ox;
+    node.y = e.clientY - oy;
+    el.style.left = node.x + 'px';
+    el.style.top = node.y + 'px';
+    drawEdges();
+  });
+  document.addEventListener('mouseup', () => { dragging = false; });
+}
+
+function selectNode(id) {
+  selectedNodeId = id;
+  document.querySelectorAll('.wf-node').forEach(el => el.classList.remove('selected'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('selected');
+  showNodeProperties(id);
+
+  if (connectMode && connectSource && connectSource !== id) {
+    addEdge(connectSource, id);
+    connectSource = null;
+  } else if (connectMode) {
+    connectSource = id;
+    showToast('Click another node to connect', 'info');
+  }
+}
+
+function startEdgeFromNode(id) {
+  if (!connectMode) {
+    connectMode = true;
+    document.getElementById('connect-btn-text').textContent = 'Connect Mode: ON';
+  }
+  connectSource = id;
+  showToast('Click target node to create edge', 'info');
+}
+
+function showNodeProperties(id) {
+  const node = nodes.find(n => n.id === id);
+  if (!node) return;
+  document.getElementById('prop-empty').style.display = 'none';
+  document.getElementById('prop-form').style.display = 'block';
+  document.getElementById('prop-type').value = node.type;
+  document.getElementById('prop-label').value = node.label;
+  document.getElementById('prop-desc').value = node.description || '';
+  document.getElementById('prop-timeout').value = node.timeout || '';
+  document.getElementById('prop-retry').value = node.retry || 0;
+  document.getElementById('prop-required').value = node.required !== false ? 'true' : 'false';
+
+  const conns = edges.filter(e => e.source === id || e.target === id);
+  const connHtml = conns.length === 0 ? '<em>No connections</em>' :
+    conns.map(e => `<div>→ ${e.source === id ? nodes.find(n=>n.id===e.target)?.label||e.target : '← ' + (nodes.find(n=>n.id===e.source)?.label||e.source)}</div>`).join('');
+  document.getElementById('prop-connections').innerHTML = connHtml;
+}
+
+function updateSelectedNode() {
+  if (!selectedNodeId) return;
+  const node = nodes.find(n => n.id === selectedNodeId);
+  if (!node) return;
+  node.type = document.getElementById('prop-type').value;
+  node.label = document.getElementById('prop-label').value;
+  node.description = document.getElementById('prop-desc').value;
+  node.timeout = parseInt(document.getElementById('prop-timeout').value) || null;
+  node.retry = parseInt(document.getElementById('prop-retry').value) || 0;
+  node.required = document.getElementById('prop-required').value === 'true';
+  const el = document.getElementById(node.id);
+  if (el) {
+    el.className = 'wf-node ' + node.type.toLowerCase() + ' selected';
+    el.style.background = NODE_COLORS[node.type];
+    el.innerHTML = `<span class="node-icon">${NODE_ICONS[node.type]}</span><span class="node-text" style="font-size:11px;">${escHtml(node.label)}</span>`;
+    el.onclick = (e) => { e.stopPropagation(); selectNode(node.id); };
+    makeDraggable(el, node);
+  }
+}
+
+function deleteSelectedNode() {
+  if (!selectedNodeId) return;
+  edges = edges.filter(e => e.source !== selectedNodeId && e.target !== selectedNodeId);
+  nodes = nodes.filter(n => n.id !== selectedNodeId);
+  const el = document.getElementById(selectedNodeId);
+  if (el) el.remove();
+  selectedNodeId = null;
+  document.getElementById('prop-empty').style.display = 'flex';
+  document.getElementById('prop-form').style.display = 'none';
+  drawEdges();
+  updateStatus();
+}
+
+function duplicateSelectedNode() {
+  if (!selectedNodeId) return;
+  const node = nodes.find(n => n.id === selectedNodeId);
+  if (!node) return;
+  createNode(node.type, node.x + 30, node.y + 30, node.label + ' (copy)');
+  showToast('Node duplicated', 'success');
+}
+
+// ============================================================
+// Edge functions
+// ============================================================
+
+function addEdge(sourceId, targetId) {
+  if (sourceId === targetId) return;
+  const exists = edges.find(e => e.source === sourceId && e.target === targetId);
+  if (exists) return;
+  edges.push({ id: 'e_' + Date.now(), source: sourceId, target: targetId, condition: 'always' });
+  drawEdges();
+  updateStatus();
+  showToast('Edge created', 'success');
+}
+
+function drawEdges() {
+  const svg = document.getElementById('edges-group');
+  svg.innerHTML = '';
+  edges.forEach(edge => {
+    const src = nodes.find(n => n.id === edge.source);
+    const tgt = nodes.find(n => n.id === edge.target);
+    if (!src || !tgt) return;
+    const srcEl = document.getElementById(src.id);
+    const tgtEl = document.getElementById(tgt.id);
+    if (!srcEl || !tgtEl) return;
+    const sw = srcEl.offsetWidth || 160, sh = srcEl.offsetHeight || 60;
+    const tw = tgtEl.offsetWidth || 160, th = tgtEl.offsetHeight || 60;
+    const x1 = src.x + sw/2, y1 = src.y + sh/2;
+    const x2 = tgt.x + tw/2, y2 = tgt.y + th/2;
+    const cx1 = x1, cy1 = (y1 + y2)/2;
+    const cx2 = x2, cy2 = (y1 + y2)/2;
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`);
+    path.setAttribute('class', 'edge-path');
+    path.setAttribute('data-edge-id', edge.id);
+    path.style.pointerEvents = 'stroke';
+    path.style.cursor = 'pointer';
+    path.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      if (confirm('Delete this edge?')) {
+        edges = edges.filter(ex => ex.id !== edge.id);
+        drawEdges();
+        updateStatus();
+      }
+    });
+    svg.appendChild(path);
+
+    // Condition label
+    if (edge.condition && edge.condition !== 'always') {
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', (x1+x2)/2);
+      text.setAttribute('y', (y1+y2)/2 - 6);
+      text.setAttribute('fill', '#94a3b8');
+      text.setAttribute('font-size', '10');
+      text.setAttribute('text-anchor', 'middle');
+      text.textContent = edge.condition;
+      svg.appendChild(text);
+    }
+  });
+}
+
+// ============================================================
+// Drag & Drop
+// ============================================================
+
+function onDragStart(event, type) {
+  dragType = type;
+  event.dataTransfer.setData('text/plain', type);
+}
+
+function onDrop(event) {
+  event.preventDefault();
+  const type = event.dataTransfer.getData('text/plain') || dragType;
+  if (!type) return;
+  const rect = event.currentTarget.getBoundingClientRect();
+  const x = event.clientX - rect.left - 80;
+  const y = event.clientY - rect.top - 30;
+  createNode(type, x, y);
+  dragType = null;
+}
+
+// ============================================================
+// Context Menu
+// ============================================================
+
+function showContextMenu(event) {
+  event.preventDefault();
+  contextX = event.clientX;
+  contextY = event.clientY;
+  const menu = document.getElementById('context-menu');
+  menu.style.left = contextX + 'px';
+  menu.style.top = contextY + 'px';
+  menu.classList.add('visible');
+}
+
+function addNodeAtContext(type) {
+  const rect = document.getElementById('builder-panel').getBoundingClientRect();
+  createNode(type, contextX - rect.left - 80, contextY - rect.top - 30);
+  document.getElementById('context-menu').classList.remove('visible');
+}
+
+function onCanvasClick(event) {
+  document.getElementById('context-menu').classList.remove('visible');
+  if (event.target.id === 'builder-panel' || event.target.id === 'canvas') {
+    selectedNodeId = null;
+    document.querySelectorAll('.wf-node').forEach(el => el.classList.remove('selected'));
+    document.getElementById('prop-empty').style.display = 'flex';
+    document.getElementById('prop-form').style.display = 'none';
+  }
+}
+
+document.addEventListener('click', () => {
+  document.getElementById('context-menu').classList.remove('visible');
+});
+
+// ============================================================
+// Workflow operations
+// ============================================================
+
+function clearCanvas() {
+  if (nodes.length > 0 && !confirm('Clear the canvas? This will remove all nodes and edges.')) return;
+  nodes = [];
+  edges = [];
+  selectedNodeId = null;
+  document.getElementById('canvas').innerHTML = '';
+  document.getElementById('edges-group').innerHTML = '';
+  document.getElementById('prop-empty').style.display = 'flex';
+  document.getElementById('prop-form').style.display = 'none';
+  updateStatus();
+  showToast('Canvas cleared', 'info');
+}
+
+function newWorkflow() {
+  workflowName = prompt('Workflow name:', 'New Workflow') || 'New Workflow';
+  document.getElementById('status-workflow-name').textContent = workflowName;
+  clearCanvas();
+  createNode('START', 100, 120, '▶ Start');
+  createNode('END', 500, 120, '⏹ End');
+  showToast('New workflow created', 'success');
+}
+
+function saveWorkflow() {
+  const data = getWorkflowJSON();
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = workflowName.replace(/\s+/g, '_') + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Workflow saved', 'success');
+}
+
+function exportWorkflow() {
+  const data = getWorkflowJSON();
+  const pyCode = generatePythonCode(data);
+  const blob = new Blob([pyCode], {type: 'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = workflowName.replace(/\s+/g, '_') + '_workflow.py';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Python code exported', 'success');
+}
+
+function loadWorkflowFromFile() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        loadWorkflowFromJSON(data);
+        showToast('Workflow loaded: ' + (data.name || 'Unknown'), 'success');
+      } catch (err) {
+        showToast('Failed to load workflow: ' + err.message, 'error');
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function getWorkflowJSON() {
+  return {
+    id: 'wf_' + Date.now(),
+    name: workflowName,
+    description: '',
+    version: '1.0.0',
+    nodes: nodes.map(n => ({
+      id: n.id, type: n.type,
+      position: {x: n.x, y: n.y},
+      data: {
+        label: n.label, description: n.description,
+        timeout_seconds: n.timeout, retry_count: n.retry, is_required: n.required
+      }
+    })),
+    edges: edges.map(e => ({
+      id: e.id, source: e.source, target: e.target, condition: e.condition
+    }))
+  };
+}
+
+function loadWorkflowFromJSON(data) {
+  clearCanvas();
+  workflowName = data.name || 'Loaded Workflow';
+  document.getElementById('status-workflow-name').textContent = workflowName;
+  (data.nodes || []).forEach(nd => {
+    const n = {
+      id: nd.id,
+      type: nd.type,
+      x: nd.position?.x || 0,
+      y: nd.position?.y || 0,
+      label: nd.data?.label || nd.type,
+      description: nd.data?.description || '',
+      timeout: nd.data?.timeout_seconds || null,
+      retry: nd.data?.retry_count || 0,
+      required: nd.data?.is_required !== false
+    };
+    nodes.push(n);
+    renderNode(n);
+  });
+  (data.edges || []).forEach(ed => {
+    edges.push({id: ed.id, source: ed.source, target: ed.target, condition: ed.condition || 'always'});
+  });
+  drawEdges();
+  updateStatus();
+}
+
+function generatePythonCode(data) {
+  const fn = (data.name || 'workflow').toLowerCase().replace(/\s+/g,'_').replace(/\W/g,'');
+  let code = `"""Auto-generated workflow: ${data.name}\nGenerated by SintraPrime Workflow Builder\n"""\n\nimport asyncio\nfrom typing import Any, Dict, Optional\n\n`;
+  (data.nodes || []).forEach(nd => {
+    const fnName = (nd.data?.label || nd.type).toLowerCase().replace(/\s+/g,'_').replace(/\W/g,'');
+    code += `async def handle_${fnName}(ctx: Dict[str, Any]) -> Dict[str, Any]:\n    """${nd.data?.label||nd.type} [${nd.type}]\"\"\"\n    print(f"Executing: ${nd.data?.label||nd.type}")\n    return ctx\n\n`;
+  });
+  code += `async def run_${fn}(ctx: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:\n    ctx = ctx or {}\n`;
+  (data.nodes || []).forEach(nd => {
+    const fnName = (nd.data?.label || nd.type).toLowerCase().replace(/\s+/g,'_').replace(/\W/g,'');
+    code += `    ctx = await handle_${fnName}(ctx)\n`;
+  });
+  code += `    return ctx\n\nif __name__ == "__main__":\n    result = asyncio.run(run_${fn}())\n    print("Done:", result)\n`;
+  return code;
+}
+
+function validateWorkflow() {
+  const errors = [];
+  const starts = nodes.filter(n => n.type === 'START');
+  const ends = nodes.filter(n => n.type === 'END');
+  if (starts.length === 0) errors.push('Missing START node');
+  if (starts.length > 1) errors.push('Multiple START nodes');
+  if (ends.length === 0) errors.push('Missing END node');
+  nodes.forEach(n => {
+    if (n.type !== 'START') {
+      const hasIn = edges.some(e => e.target === n.id);
+      if (!hasIn) errors.push(`"${n.label}" has no incoming edges`);
+    }
+    if (n.type !== 'END') {
+      const hasOut = edges.some(e => e.source === n.id);
+      if (!hasOut) errors.push(`"${n.label}" has no outgoing edges`);
+    }
+  });
+
+  const statusEl = document.getElementById('status-validation');
+  if (errors.length === 0) {
+    statusEl.innerHTML = '<div class="status-dot green"></div><span>✓ Valid</span>';
+    showToast('Workflow is valid!', 'success');
+  } else {
+    statusEl.innerHTML = '<div class="status-dot" style="background:var(--error)"></div><span>' + errors.length + ' errors</span>';
+    showToast('Validation errors:\n• ' + errors.slice(0,3).join('\n• '), 'error');
+  }
+}
+
+function runSimulation() {
+  validateWorkflow();
+  showToast('Simulation: nodes would execute in topological order', 'info');
+}
+
+function autoLayout() {
+  if (nodes.length === 0) return;
+  const cols = Math.ceil(Math.sqrt(nodes.length));
+  nodes.forEach((n, i) => {
+    n.x = 60 + (i % cols) * 220;
+    n.y = 60 + Math.floor(i / cols) * 150;
+    const el = document.getElementById(n.id);
+    if (el) { el.style.left = n.x + 'px'; el.style.top = n.y + 'px'; }
+  });
+  drawEdges();
+  showToast('Auto layout applied', 'info');
+}
+
+function fitToScreen() {
+  if (nodes.length === 0) return;
+  const minX = Math.min(...nodes.map(n => n.x));
+  const minY = Math.min(...nodes.map(n => n.y));
+  const shift = 40;
+  nodes.forEach(n => {
+    n.x = n.x - minX + shift;
+    n.y = n.y - minY + shift;
+    const el = document.getElementById(n.id);
+    if (el) { el.style.left = n.x + 'px'; el.style.top = n.y + 'px'; }
+  });
+  drawEdges();
+}
+
+function zoom(factor) {
+  zoomLevel = Math.max(0.3, Math.min(2.0, zoomLevel * factor));
+  document.getElementById('canvas').style.transform = `scale(${zoomLevel})`;
+  document.getElementById('canvas').style.transformOrigin = 'top left';
+  document.getElementById('zoom-level').textContent = Math.round(zoomLevel * 100) + '%';
+}
+
+function toggleConnectMode() {
+  connectMode = !connectMode;
+  connectSource = null;
+  document.getElementById('connect-btn-text').textContent = 'Connect Mode: ' + (connectMode ? 'ON' : 'OFF');
+  if (connectMode) showToast('Click source node, then target node', 'info');
+}
+
+function updateStatus() {
+  document.getElementById('status-nodes').textContent = nodes.length + ' node' + (nodes.length !== 1 ? 's' : '');
+  document.getElementById('status-edges').textContent = edges.length + ' edge' + (edges.length !== 1 ? 's' : '');
+}
+
+// ============================================================
+// Templates
+// ============================================================
+
+const TEMPLATES = [
+  {id:'tpl_trust_creation',name:'Trust Creation',desc:'End-to-end trust document creation workflow.',tags:['trust','estate']},
+  {id:'tpl_estate_planning',name:'Estate Planning',desc:'Comprehensive estate planning from intake to execution.',tags:['estate','planning']},
+  {id:'tpl_debt_negotiation',name:'Debt Negotiation',desc:'Structured debt settlement negotiation workflow.',tags:['debt','financial']},
+  {id:'tpl_business_formation',name:'Business Formation',desc:'Step-by-step business entity formation workflow.',tags:['corporate','formation']},
+  {id:'tpl_court_filing',name:'Court Filing',desc:'Court document preparation and filing workflow.',tags:['court','litigation']},
+  {id:'tpl_contract_review',name:'Contract Review',desc:'AI-assisted contract review and negotiation.',tags:['contract','review']},
+  {id:'tpl_bankruptcy_filing',name:'Bankruptcy Filing',desc:'Chapter 7 and Chapter 13 bankruptcy filing workflow.',tags:['bankruptcy','financial']},
+  {id:'tpl_real_estate_closing',name:'Real Estate Closing',desc:'Residential real estate closing workflow.',tags:['real-estate']},
+  {id:'tpl_immigration',name:'Immigration Application',desc:'Visa and immigration application processing.',tags:['immigration','visa']},
+  {id:'tpl_employment_dispute',name:'Employment Dispute',desc:'Employment discrimination and wrongful termination claims.',tags:['employment','litigation']},
+  {id:'tpl_ip_filing',name:'IP Filing',desc:'Patent, trademark, and copyright filing workflow.',tags:['ip','patent']},
+  {id:'tpl_divorce',name:'Divorce Proceedings',desc:'Contested and uncontested divorce workflow.',tags:['family-law','divorce']},
+  {id:'tpl_personal_injury',name:'Personal Injury Claim',desc:'Personal injury claim and litigation workflow.',tags:['personal-injury','litigation']},
+  {id:'tpl_criminal_defense',name:'Criminal Defense',desc:'Criminal defense case management workflow.',tags:['criminal','defense']},
+  {id:'tpl_power_of_attorney',name:'Power of Attorney',desc:'POA creation and execution workflow.',tags:['estate','poa']},
+  {id:'tpl_landlord_tenant',name:'Landlord-Tenant Dispute',desc:'Eviction and tenant dispute workflow.',tags:['landlord-tenant']},
+  {id:'tpl_nonprofit_formation',name:'Non-Profit Formation',desc:'501(c)(3) non-profit formation workflow.',tags:['nonprofit','tax']},
+  {id:'tpl_guardianship',name:'Guardianship Petition',desc:'Guardianship petition filing and processing.',tags:['family-law','guardianship']},
+  {id:'tpl_tax_dispute',name:'Tax Dispute',desc:'IRS audit and tax dispute resolution workflow.',tags:['tax','irs']},
+  {id:'tpl_mergers_acquisitions',name:'M&A',desc:'Mergers & acquisitions due diligence workflow.',tags:['corporate','ma']},
+  {id:'tpl_compliance_audit',name:'Compliance Audit',desc:'Regulatory compliance audit and remediation.',tags:['compliance','audit']},
+];
+
+let activeTagFilter = '';
+
+function renderTemplates(filterTag) {
+  const grid = document.getElementById('templates-grid');
+  const filtered = filterTag ? TEMPLATES.filter(t => t.tags.includes(filterTag)) : TEMPLATES;
+  grid.innerHTML = filtered.map(t => `
+    <div class="template-card" onclick="loadTemplate('${t.id}')">
+      <div class="template-name">${escHtml(t.name)}</div>
+      <div class="template-desc">${escHtml(t.desc)}</div>
+      <div class="template-tags">${t.tags.map(tag => `<span class="template-tag">${escHtml(tag)}</span>`).join('')}</div>
+    </div>
+  `).join('');
+}
+
+function filterByTag(tag) {
+  activeTagFilter = tag;
+  renderTemplates(tag);
+}
+
+function loadTemplate(templateId) {
+  const tpl = TEMPLATES.find(t => t.id === templateId);
+  if (!tpl) return;
+  fetch(`/workflows/templates/${templateId}`)
+    .then(r => r.json())
+    .then(data => {
+      loadWorkflowFromJSON(data);
+      switchTab('builder', document.querySelector('.tab'));
+      showToast('Template loaded: ' + tpl.name, 'success');
+    })
+    .catch(() => {
+      // Fallback: create a simple template locally
+      clearCanvas();
+      workflowName = tpl.name;
+      document.getElementById('status-workflow-name').textContent = workflowName;
+      const start = createNode('START', 100, 200, '▶ Start');
+      const action = createNode('ACTION', 350, 200, '⚡ Process');
+      const end = createNode('END', 600, 200, '⏹ End');
+      addEdge(start.id, action.id);
+      addEdge(action.id, end.id);
+      switchTab('builder', document.querySelector('.tab'));
+      showToast('Template preview loaded (API offline)', 'info');
+    });
+}
+
+// ============================================================
+// Tab switching
+// ============================================================
+
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  document.getElementById('palette-panel').style.display = tab === 'builder' ? 'flex' : 'none';
+  document.getElementById('builder-panel').style.display = tab === 'builder' ? 'block' : 'none';
+  document.getElementById('templates-panel').style.display = tab === 'templates' ? 'flex' : 'none';
+  document.getElementById('tui-panel').style.display = tab === 'tui' ? 'flex' : 'none';
+  document.getElementById('properties-panel').style.display = tab === 'builder' ? 'flex' : 'none';
+
+  if (tab === 'templates') renderTemplates(activeTagFilter);
+  if (tab === 'tui' && !term) initTUI();
+}
+
+// ============================================================
+// Web TUI
+// ============================================================
+
+function initTUI() {
+  term = new Terminal({
+    theme: {
+      background: '#0d0e14', foreground: '#e2e8f0',
+      cursor: '#6366f1', selection: '#3b4063',
+    },
+    fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+    fontSize: 13,
+    cursorBlink: true,
+    convertEol: true,
+  });
+  fitAddon = new FitAddon.FitAddon();
+  term.loadAddon(fitAddon);
+  term.open(document.getElementById('tui-terminal'));
+  fitAddon.fit();
+  term.writeln('\x1b[34m╔══════════════════════════════════╗\x1b[0m');
+  term.writeln('\x1b[34m║  SintraPrime Workflow Terminal   ║\x1b[0m');
+  term.writeln('\x1b[34m╚══════════════════════════════════╝\x1b[0m\r\n');
+  term.writeln('\x1b[90mConnect to the WebSocket TUI server above to start.\x1b[0m\r\n');
+
+  window.addEventListener('resize', () => { if (fitAddon) fitAddon.fit(); });
+}
+
+function connectTUI() {
+  if (ws) ws.close();
+  const url = document.getElementById('ws-url').value;
+  try {
+    ws = new WebSocket(url);
+    ws.onopen = () => {
+      document.getElementById('tui-status-dot').classList.add('connected');
+      document.getElementById('tui-status-text').textContent = 'Connected to ' + url;
+      term.onData(data => ws.readyState === WebSocket.OPEN && ws.send(data));
+    };
+    ws.onmessage = (e) => term.write(e.data);
+    ws.onclose = () => {
+      document.getElementById('tui-status-dot').classList.remove('connected');
+      document.getElementById('tui-status-text').textContent = 'Disconnected';
+      term.writeln('\r\n\x1b[31mConnection closed.\x1b[0m');
+    };
+    ws.onerror = () => {
+      showToast('WebSocket connection failed', 'error');
+    };
+  } catch(e) {
+    showToast('Invalid WebSocket URL', 'error');
+  }
+}
+
+function disconnectTUI() {
+  if (ws) { ws.close(); ws = null; }
+}
+
+// ============================================================
+// Toast
+// ============================================================
+
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toasts');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// ============================================================
+// Utilities
+// ============================================================
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ============================================================
+// Init
+// ============================================================
+
+window.addEventListener('load', () => {
+  createNode('START', 80, 180, '▶ Start');
+  createNode('ACTION', 320, 180, '⚡ Collect Information');
+  createNode('DECISION', 560, 180, '◆ Decision');
+  createNode('ACTION', 560, 330, '⚡ Process A');
+  createNode('ACTION', 760, 180, '⚡ Process B');
+  createNode('END', 960, 180, '⏹ End');
+
+  setTimeout(() => {
+    if (nodes.length >= 6) {
+      addEdge(nodes[0].id, nodes[1].id);
+      addEdge(nodes[1].id, nodes[2].id);
+      addEdge(nodes[2].id, nodes[3].id);
+      addEdge(nodes[2].id, nodes[4].id);
+      addEdge(nodes[3].id, nodes[5].id);
+      addEdge(nodes[4].id, nodes[5].id);
+    }
+  }, 100);
+});
+</script>
+</body>
+</html>

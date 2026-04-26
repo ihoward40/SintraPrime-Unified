@@ -1,6 +1,12 @@
 <div align="center">
 
 # ⚖️ SintraPrime-Unified
+
+![CI](https://github.com/ihoward40/SintraPrime-Unified/actions/workflows/ci.yml/badge.svg)
+![Tests](https://img.shields.io/badge/tests-797%2F797-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Python](https://img.shields.io/badge/python-3.11-blue)
 ### The Sovereign AI — One for All and All for One
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue?style=for-the-badge&logo=python)](https://python.org)

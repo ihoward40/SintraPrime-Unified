@@ -14,9 +14,7 @@ UNIVERSE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if UNIVERSE_ROOT not in sys.path:
     sys.path.insert(0, UNIVERSE_ROOT)
 
-# Also ensure that any previously cached 'integrations' module pointing to the
-# top-level integrations/ is removed so the local one is picked up.
-if "integrations" in sys.modules:
-    existing_path = getattr(sys.modules["integrations"], "__path__", [])
-    if existing_path and not any(UNIVERSE_ROOT in str(p) for p in existing_path):
-        del sys.modules["integrations"]
+# The root conftest.py now registers 'integrations' as a namespace package
+# covering BOTH ROOT/integrations/ and ROOT/core/universe/integrations/.
+# No need to delete sys.modules["integrations"] here — the namespace package
+# already includes the universe integrations path.

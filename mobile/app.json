@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "SintraPrime",
-    "slug": "sintraprime-unified",
+    "slug": "sintraprime",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -9,72 +9,52 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0F172A"
+      "backgroundColor": "#0f172a"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.sintraprime.unified",
+      "bundleIdentifier": "com.ikesolutions.sintraprime",
       "buildNumber": "1",
       "infoPlist": {
-        "NSFaceIDUsageDescription": "SintraPrime uses Face ID to secure your account.",
-        "NSCameraUsageDescription": "SintraPrime uses the camera to scan and upload documents.",
-        "NSMicrophoneUsageDescription": "SintraPrime uses the microphone for voice queries to AI counsel.",
-        "NSPhotoLibraryUsageDescription": "SintraPrime accesses photos to attach to cases and documents.",
-        "UIBackgroundModes": ["fetch", "remote-notification"]
+        "NSMicrophoneUsageDescription": "SintraPrime uses microphone for voice legal queries",
+        "NSSpeechRecognitionUsageDescription": "SintraPrime uses speech recognition for voice commands",
+        "NSFaceIDUsageDescription": "SintraPrime uses Face ID for secure authentication"
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0F172A"
+        "backgroundColor": "#0f172a"
       },
-      "package": "com.sintraprime.unified",
+      "package": "com.ikesolutions.sintraprime",
       "versionCode": 1,
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE",
+        "RECORD_AUDIO",
         "USE_BIOMETRIC",
-        "USE_FINGERPRINT",
-        "RECORD_AUDIO"
-      ],
-      "googleServicesFile": "./google-services.json"
+        "USE_FINGERPRINT"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-camera",
-      "expo-document-picker",
-      "expo-secure-store",
+      "expo-router",
+      "expo-speech",
       [
-        "expo-local-authentication",
+        "expo-av",
         {
-          "faceIDPermission": "Allow SintraPrime to use Face ID."
-        }
-      ],
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/notification-icon.png",
-          "color": "#D4AF37",
-          "sounds": ["./assets/notification.wav"]
+          "microphonePermission": "Allow SintraPrime to access microphone"
         }
       ]
     ],
     "extra": {
       "eas": {
-        "projectId": "sintraprime-unified-prod"
-      }
-    },
-    "scheme": "sintraprime",
-    "notification": {
-      "icon": "./assets/notification-icon.png",
-      "color": "#D4AF37",
-      "iosDisplayInForeground": true
+        "projectId": "sintraprime-unified"
+      },
+      "apiUrl": "http://localhost:8000"
     }
   }
 }

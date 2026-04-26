@@ -1,0 +1,79 @@
+name: "Sigma Gate"
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+
+jobs:
+  sigma-gate:
+    name: "Sigma Quality Gate"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov bandit mypy
+
+      - name: Run tests with coverage
+        run: |
+          python -m pytest tests/ \
+            --tb=short \
+            --cov=. \
+            --cov-report=json:/tmp/coverage.json \
+            --cov-report=term-missing \
+            --junitxml=/tmp/test-results.xml
+
+      - name: Enforce coverage threshold
+        run: |
+          python -c "
+          import json, sys
+          data = json.load(open('/tmp/coverage.json'))
+          pct = data['totals']['percent_covered']
+          print(f'Coverage: {pct:.1f}%')
+          if pct < 80:
+              print(f'FAIL: Coverage {pct:.1f}% < 80%')
+              sys.exit(1)
+          print('PASS: Coverage meets threshold')
+          "
+
+      - name: Security scan (bandit)
+        run: |
+          python -m bandit -r . \
+            --exclude .venv,node_modules,tests \
+            -f json -o /tmp/bandit.json || true
+          python -c "
+          import json, sys
+          data = json.load(open('/tmp/bandit.json'))
+          results = data.get('results', [])
+          critical = [r for r in results if r['issue_severity'] == 'HIGH']
+          print(f'Bandit: {len(results)} findings, {len(critical)} HIGH')
+          if critical:
+              sys.exit(1)
+          print('PASS: No critical security findings')
+          "
+
+      - name: Post gate status
+        if: always()
+        run: |
+          echo "Sigma gate completed at $(date -u +%Y-%m-%dT%H:%M:%SZ)"

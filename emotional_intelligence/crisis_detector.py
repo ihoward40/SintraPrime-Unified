@@ -98,6 +98,8 @@ _HOUSING_CRISIS_PHRASES = [
 _FINANCIAL_EMERGENCY_PHRASES = [
     "can't eat", "no food", "utilities shut off", "electricity cut off",
     "bank account frozen", "wage garnishment", "wages garnished",
+    "wages are being garnished", "garnished wages", "being garnished",
+    "can't buy food", "cannot buy food", "can't afford food",
     "car repossessed", "repo", "can't buy medicine", "can't afford medication",
     "zero dollars", "completely broke", "nothing left",
     "emergency funds", "no money whatsoever",

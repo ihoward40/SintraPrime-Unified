@@ -35,7 +35,7 @@ COLOURS = {
 ROLE_ADMIN = "sintra-admin"
 ROLE_ATTORNEY = "attorney"
 ROLE_CLIENT = "client"
-ALLOWED_ROLES = {ROLE_ADMIN, ROLE_ATTORNEY, ROLE_CLIENT}
+ALLOWED_ROLES = {ROLE_ADMIN, ROLE_ATTORNEY, ROLE_CLIENT, "admin", "sintra_admin"}
 
 
 class DiscordChannel:
@@ -152,10 +152,8 @@ class DiscordChannel:
         return bool(set(user_roles) & set(required))
 
     def _user_has_access(self, user_roles: List[str]) -> bool:
-        if not self.config.allowed_users:
-            # Check role-based access
-            return bool(set(user_roles) & ALLOWED_ROLES)
-        return True
+        # Always enforce role-based access control
+        return bool(set(user_roles) & ALLOWED_ROLES)
 
     # ------------------------------------------------------------------
     # Listening

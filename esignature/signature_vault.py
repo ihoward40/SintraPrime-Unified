@@ -186,7 +186,7 @@ class SignatureVault:
     
     def __init__(
         self,
-        vault_path: str = "/agent/home/SintraPrime-Unified/.vault",
+        vault_path: str = os.environ.get("SINTRA_VAULT_PATH", str(Path.home() / ".sintra" / ".vault")),
         encryption_enabled: bool = True,
         encryption_key: Optional[str] = None
     ):

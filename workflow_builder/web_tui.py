@@ -4,6 +4,7 @@ WebSocket-based terminal emulator server with VT100/ANSI escape code support.
 Provides an xterm.js-compatible terminal over WebSocket.
 """
 
+from pathlib import Path
 from __future__ import annotations
 
 import asyncio
@@ -111,7 +112,7 @@ class TerminalSession:
         self.cwd: str = os.getcwd()
         self.env: Dict[str, str] = {
             "USER": "sintra",
-            "HOME": "/agent/home",
+            "HOME": os.environ.get("HOME", str(Path.home())),
             "SHELL": "sintratui",
             "TERM": "xterm-256color",
         }

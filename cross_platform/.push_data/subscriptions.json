@@ -1,0 +1,13 @@
+{
+  "2fa111792d4ddb3f": {
+    "subscription_id": "2fa111792d4ddb3f",
+    "endpoint": "https://push.example.com/endpoint123",
+    "p256dh": "key_data",
+    "auth": "auth_data",
+    "user_id": "test_user",
+    "user_agent": null,
+    "created_at": "2026-04-26T20:46:50.015855+00:00",
+    "last_used": null,
+    "active": true
+  }
+}

@@ -2,7 +2,7 @@
 """Test the memory system without heavy dependencies"""
 
 import sys
-sys.path.insert(0, '/agent/home/universe')
+import pathlib; sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 from memory_system import MemorySystem
 

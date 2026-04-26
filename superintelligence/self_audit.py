@@ -7,6 +7,7 @@ SintraPrime catches and corrects its own mistakes before they reach users.
 from __future__ import annotations
 
 import json
+import os
 import re
 import time
 import uuid
@@ -15,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-AUDIT_LOG_PATH = Path("/agent/home/audit_log.jsonl")
+AUDIT_LOG_PATH = Path(os.environ.get("AUDIT_LOG_PATH", str(Path.home() / ".sintra" / "audit_log.jsonl")))
 
 
 def _now_ts() -> float:
@@ -488,6 +489,7 @@ class AuditLogger:
         """Persist an audit result."""
         entry = audit_result.to_dict()
         self._log.append(entry)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.path, "a") as f:
             f.write(json.dumps(entry) + "\n")
 

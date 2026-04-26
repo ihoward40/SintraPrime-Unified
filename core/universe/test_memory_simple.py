@@ -7,7 +7,7 @@ import os
 # Disable embeddings
 os.environ['SENTENCE_TRANSFORMERS_HOME'] = '/tmp'
 
-sys.path.insert(0, '/agent/home/universe')
+import pathlib; sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 # Mock sentence transformers to prevent loading
 class MockSentenceTransformer:

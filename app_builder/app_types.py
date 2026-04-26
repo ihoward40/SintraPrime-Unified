@@ -365,7 +365,8 @@ class Property:
 
 
 @dataclass
-class Relationship:
+class PersonRelationship:
+    """A personal/legal relationship between people (distinct from DB table relationships)."""
     relationship_id: str
     name: str
     relationship_type: str  # spouse, child, parent, business_partner, creditor, attorney
@@ -383,6 +384,7 @@ class Directive:
     agent_name: str = ""
     document_path: str = ""
     signed_date: str = ""
+    date_executed: str = ""  # alias used in some contexts
     notarized: bool = False
 
 

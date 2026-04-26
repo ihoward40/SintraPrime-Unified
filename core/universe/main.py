@@ -3,6 +3,8 @@ SintraPrime UniVerse - Main Entry Point
 Revolutionary Multi-Agent Orchestration System
 """
 
+import os
+from pathlib import Path
 import asyncio
 import logging
 import sys
@@ -14,7 +16,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('/agent/home/universe.log'),
+        logging.FileHandler(str(Path.home() / '.sintra' / 'universe.log')),
         logging.StreamHandler(sys.stdout)
     ]
 )

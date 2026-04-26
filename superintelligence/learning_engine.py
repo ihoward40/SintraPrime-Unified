@@ -7,6 +7,7 @@ SintraPrime gets smarter from every interaction.
 from __future__ import annotations
 
 import json
+import os
 import re
 import time
 import uuid
@@ -15,7 +16,7 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-LESSONS_PATH = Path("/agent/home/lessons.json")
+LESSONS_PATH = Path(os.environ.get("SINTRA_DATA_DIR", str(Path.home() / ".sintra")) + "/lessons.json")
 
 
 def _now_ts() -> float:
@@ -88,6 +89,7 @@ class LearningEngine:
 
     def _save(self):
         data = {lid: l.to_dict() for lid, l in self._lessons.items()}
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.path, "w") as f:
             json.dump(data, f, indent=2)
 

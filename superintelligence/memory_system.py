@@ -23,9 +23,9 @@ from typing import Any, Dict, List, Optional, Tuple
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-EPISODIC_PATH = Path("/agent/home/episodic_memory.jsonl")
-SEMANTIC_PATH = Path("/agent/home/semantic_memory.json")
-PROCEDURAL_PATH = Path("/agent/home/procedural_memory.json")
+EPISODIC_PATH = Path(os.environ.get("SINTRA_DATA_DIR", str(Path.home() / ".sintra")) + "/episodic_memory.jsonl")
+SEMANTIC_PATH = Path(os.environ.get("SINTRA_DATA_DIR", str(Path.home() / ".sintra")) + "/semantic_memory.json")
+PROCEDURAL_PATH = Path(os.environ.get("SINTRA_DATA_DIR", str(Path.home() / ".sintra")) + "/procedural_memory.json")
 
 
 # ---------------------------------------------------------------------------
@@ -120,6 +120,7 @@ class EpisodicMemory:
                             pass
 
     def _append_to_file(self, ep: Episode):
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.path, "a") as f:
             f.write(json.dumps(ep.to_dict()) + "\n")
 
@@ -220,6 +221,7 @@ class EpisodicMemory:
         return compressed_count
 
     def _rewrite_file(self):
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.path, "w") as f:
             for ep in self._episodes:
                 f.write(json.dumps(ep.to_dict()) + "\n")
@@ -278,6 +280,7 @@ class SemanticMemory:
 
     def _save(self):
         data = {k: f.to_dict() for k, f in self._facts.items()}
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.path, "w") as f:
             json.dump(data, f, indent=2)
 
@@ -409,6 +412,7 @@ class ProceduralMemory:
 
     def _save(self):
         data = {name: p.to_dict() for name, p in self._procedures.items()}
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.path, "w") as f:
             json.dump(data, f, indent=2)
 

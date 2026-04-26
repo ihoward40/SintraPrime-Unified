@@ -5,6 +5,8 @@ This module shows how the memory system integrates with the existing
 execution_trace, audit_log, and task_registry to enable collective learning.
 """
 
+import os
+from pathlib import Path
 import sqlite3
 from datetime import datetime
 from typing import List, Dict, Optional
@@ -14,9 +16,9 @@ from memory_system import MemorySystem
 class ExecutionAwareMemory:
     """Memory system that integrates with execution infrastructure"""
     
-    def __init__(self, db_path: str = "/agent/home/universe/memory.db"):
+    def __init__(self, db_path: str = os.environ.get("SINTRA_MEMORY_DB", str(Path.home() / ".sintra" / "universe" / "memory.db"))):
         self.memory = MemorySystem(db_path)
-        self.main_db_path = "/agent/home/universe/universe.db"  # Main execution DB
+        self.main_db_path = os.environ.get("SINTRA_UNIVERSE_DB", str(Path.home() / ".sintra" / "universe" / "universe.db"))  # Main execution DB
     
     def record_successful_task(self, task_id: str, execution_id: str,
                               agent_id: str, description: str,

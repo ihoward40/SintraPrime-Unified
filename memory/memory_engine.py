@@ -100,8 +100,15 @@ class MemoryEngine:
         # Check working memory first (fastest)
         wm_context = self.working.get_all_context()
         wm_query_lower = query.lower()
+        wm_query_words = set(wm_query_lower.split())
         for key, value in wm_context.items():
-            if isinstance(value, str) and wm_query_lower in value.lower():
+            if not isinstance(value, str):
+                continue
+            value_lower = value.lower()
+            # Match if full query is substring OR majority of query words appear in value
+            word_hits = sum(1 for w in wm_query_words if w in value_lower)
+            match_ratio = word_hits / len(wm_query_words) if wm_query_words else 0
+            if wm_query_lower in value_lower or match_ratio >= 0.5:
                 synthetic = MemoryEntry(
                     content=value,
                     memory_type=MemoryType.WORKING,

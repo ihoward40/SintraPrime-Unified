@@ -10,6 +10,8 @@ Features:
 - Inheritance system for multi-agent skill distribution
 """
 
+import os
+from pathlib import Path
 import json
 import sqlite3
 import hashlib
@@ -120,7 +122,7 @@ class ValidationResult:
 class DatabaseManager:
     """Manages database connections and skill table operations."""
 
-    def __init__(self, db_path: str = '/agent/home/universe/skills.db'):
+    def __init__(self, db_path: str = os.environ.get("SINTRA_SKILLS_DB", str(Path.home() / ".sintra" / "universe" / "skills.db"))):
         """Initialize database manager."""
         self.db_path = db_path
         self._init_schema()
@@ -1020,7 +1022,7 @@ class UniVersSkillSystem:
     Coordinates all components: extraction, generation, validation, library, and inheritance.
     """
 
-    def __init__(self, db_path: str = '/agent/home/universe/skills.db'):
+    def __init__(self, db_path: str = os.environ.get("SINTRA_SKILLS_DB", str(Path.home() / ".sintra" / "universe" / "skills.db"))):
         """Initialize the unified skill system."""
         self.db_manager = DatabaseManager(db_path)
         self.extractor = SkillExtractor()

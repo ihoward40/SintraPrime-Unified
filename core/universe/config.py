@@ -2,6 +2,7 @@
 SintraPrime UniVerse Configuration
 """
 
+from pathlib import Path
 import os
 from dataclasses import dataclass
 from typing import Optional
@@ -57,7 +58,7 @@ TRACE_STORAGE_DAYS = 90  # Keep execution traces for 90 days
 # Database Configuration
 # ============================================
 
-DATABASE_PATH = os.getenv("UNIVERSE_DB_PATH", "/agent/memory.db")
+DATABASE_PATH = os.getenv("UNIVERSE_DB_PATH", str(Path.home() / ".sintra" / "universe" / "memory.db"))
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
 # ============================================

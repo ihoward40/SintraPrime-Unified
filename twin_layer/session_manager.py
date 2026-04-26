@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-SESSIONS_FILE = Path("/agent/home/sessions.json")
+SESSIONS_FILE = Path(os.environ.get("SINTRA_SESSIONS_FILE", str(Path.home() / ".sintra" / "sessions.json")))
 
 
 # ─── Enums ────────────────────────────────────────────────────────────────────

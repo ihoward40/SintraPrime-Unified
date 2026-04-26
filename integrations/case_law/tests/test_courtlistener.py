@@ -31,8 +31,11 @@ def mock_session():
 
 
 @pytest.fixture
-def client():
-    """Create a CourtListenerClient with no API token."""
+def client(monkeypatch):
+    """Create a CourtListenerClient with no API token.
+    Clears COURTLISTENER_API_TOKEN env var to prevent test pollution.
+    """
+    monkeypatch.delenv("COURTLISTENER_API_TOKEN", raising=False)
     return CourtListenerClient(api_token=None, cache_ttl=60, calls_per_second=10)
 
 

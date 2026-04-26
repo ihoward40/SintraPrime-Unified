@@ -7,13 +7,14 @@ For critical decisions, agents debate and vote democratically.
 from __future__ import annotations
 
 import json
+import os
 import time
 import uuid
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-PARLIAMENT_LOG_PATH = Path("/agent/home/parliament_decisions.jsonl")
+PARLIAMENT_LOG_PATH = Path(os.environ.get("SINTRA_DATA_DIR", str(Path.home() / ".sintra")) + "/parliament_decisions.jsonl")
 
 
 def _now_ts() -> float:

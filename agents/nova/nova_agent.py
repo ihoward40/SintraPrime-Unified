@@ -280,8 +280,54 @@ class NovaAgent:
         approval_required: Optional[bool] = None,
     ) -> ExecutionRecord:
         """Central action dispatcher."""
+        # If action_type is unknown, try to dynamically generate a handler using LLM
         if action_type not in self._registry:
-            raise ValueError(f"Unknown action type: {action_type}")
+            api_key = os.environ.get("OPENAI_API_KEY")
+            if api_key:
+                try:
+                    import openai
+                    client = openai.OpenAI(api_key=api_key)
+                    prompt = f"Generate a Python function that handles the action '{action_type}' with params {list(params.keys())}. Return ONLY the function code named 'dynamic_handler(params)'. It should return a dict with a 'status' key."
+                    response = client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[
+                            {"role": "system", "content": "You are Nova, an autonomous execution agent. Output only raw python code."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        temperature=0.1,
+                        max_tokens=1000
+                    )
+                    code = response.choices[0].message.content.strip()
+                    if code.startswith("```python"):
+                        code = code[9:]
+                    if code.startswith("```"):
+                        code = code[3:]
+                    if code.endswith("```"):
+                        code = code[:-3]
+                    
+                    # Create a dynamic spec
+                    spec = ActionSpec(
+                        action_type=action_type,
+                        name=action_type.replace("_", " ").title(),
+                        description=f"Dynamically generated handler for {action_type}",
+                        category="dynamic",
+                        required_params=list(params.keys()),
+                        approval_level=ApprovalLevel.HUMAN
+                    )
+                    
+                    # Compile and attach the handler
+                    local_env = {}
+                    exec(code.strip(), globals(), local_env)
+                    if "dynamic_handler" in local_env:
+                        spec.handler = local_env["dynamic_handler"]
+                        spec.rollback_handler = self._create_default_rollback(action_type)
+                        self._registry[action_type] = spec
+                        logger.info("Dynamically generated handler for %s", action_type)
+                except Exception as e:
+                    logger.error("Failed to dynamically generate handler for %s: %s", action_type, e)
+                    raise ValueError(f"Unknown action type: {action_type} and dynamic generation failed.")
+            else:
+                raise ValueError(f"Unknown action type: {action_type}")
 
         spec = self._registry[action_type]
 

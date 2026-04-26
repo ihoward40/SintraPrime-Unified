@@ -36,12 +36,19 @@ class StripeIntegrator:
     - STRIPE_PRICE_ID: default price ID (optional)
     """
 
-    def __init__(self):
-        self._secret_key = os.environ.get("STRIPE_SECRET_KEY", "sk_test_placeholder")
-        self._pub_key = os.environ.get("STRIPE_PUBLISHABLE_KEY", "pk_test_placeholder")
+    def __init__(self, test_mode: bool = False):
+        self._test_mode = test_mode
+        key_prefix = "sk_test" if test_mode else "sk_live"
+        pub_prefix = "pk_test" if test_mode else "pk_live"
+        self._secret_key = os.environ.get("STRIPE_SECRET_KEY", f"{key_prefix}_placeholder")
+        self._pub_key = os.environ.get("STRIPE_PUBLISHABLE_KEY", f"{pub_prefix}_placeholder")
         self._webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "whsec_placeholder")
         self._configs: Dict[str, StripeConfig] = {}
         self._products: Dict[str, Dict[str, Any]] = {}
+
+    @property
+    def test_mode(self) -> bool:
+        return self._test_mode
 
     # ------------------------------------------------------------------
     # Setup Methods

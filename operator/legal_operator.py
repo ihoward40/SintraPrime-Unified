@@ -167,14 +167,7 @@ GOVERNMENT_FORM_SOURCES = {
     "ca_sos": "https://www.sos.ca.gov/business-programs/business-entities/forms",
 }
 
-DOCUMENT_TEMPLATES = {
-    "retainer_agreement": _retainer_agreement_template,
-    "nda": _nda_template,
-    "demand_letter": _demand_letter_template,
-    "settlement_agreement": _settlement_agreement_template,
-    "power_of_attorney": _power_of_attorney_template,
-    "trust_document": _trust_document_template,
-}
+# DOCUMENT_TEMPLATES is defined after all template functions below
 
 
 def _retainer_agreement_template(parties: Dict[str, str], terms: Dict[str, Any]) -> str:
@@ -1149,3 +1142,17 @@ The parties named above hereby agree to the terms set forth herein.
             citations=citations,
             report_markdown="\n".join(report_lines),
         )
+
+
+# ---------------------------------------------------------------------------
+# Document Templates Registry (must be defined after all template functions)
+# ---------------------------------------------------------------------------
+
+DOCUMENT_TEMPLATES = {
+    "retainer_agreement": _retainer_agreement_template,
+    "nda": _nda_template,
+    "demand_letter": _demand_letter_template,
+    "settlement_agreement": _settlement_agreement_template,
+    "power_of_attorney": _power_of_attorney_template,
+    "trust_document": _trust_document_template,
+}

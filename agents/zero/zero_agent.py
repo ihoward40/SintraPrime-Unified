@@ -272,21 +272,69 @@ class ZeroAgent:
     # ------------------------------------------------------------------
 
     def generate_fix_patch(self, failure: TestFailure) -> Optional[Patch]:
-        """Generate a candidate fix patch for a test failure."""
+        """Generate a candidate fix patch for a test failure using LLM."""
         fpath = Path(failure.file_path)
         if not fpath.exists():
             return None
 
         original = fpath.read_text(encoding="utf-8", errors="replace")
         patched = original
+        description = f"Auto-fix for test failure: {failure.test_id}"
 
-        if "fixture" in failure.error_message.lower() and "not found" in failure.error_message.lower():
-            fixture_name = failure.error_message.split("'")[1] if "'" in failure.error_message else "unknown"
-            fixture_code = (
-                f"\n\nimport pytest\n\n@pytest.fixture\ndef {fixture_name}():\n"
-                f'    """Auto-generated placeholder fixture."""\n    return None\n'
-            )
-            patched = fixture_code + original
+        # Try LLM-based fix first if API key is available
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if api_key:
+            try:
+                import openai
+                client = openai.OpenAI(api_key=api_key)
+                prompt = f"""
+You are an expert Python developer. Fix the following failing test.
+File: {failure.file_path}
+Test ID: {failure.test_id}
+Error Message: {failure.error_message}
+Traceback:
+{failure.traceback}
+
+Original File Content:
+```python
+{original}
+```
+
+Return ONLY the complete fixed Python code. Do not include markdown formatting like ```python or explanations.
+"""
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "You are an autonomous self-healing agent. Output only raw code."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.1,
+                    max_tokens=4000
+                )
+                
+                result = response.choices[0].message.content.strip()
+                if result.startswith("```python"):
+                    result = result[9:]
+                if result.startswith("```"):
+                    result = result[3:]
+                if result.endswith("```"):
+                    result = result[:-3]
+                
+                patched = result.strip() + "\n"
+                description = f"LLM-generated fix for {failure.test_id}"
+                logger.info("Successfully generated LLM patch for %s", failure.test_id)
+            except Exception as e:
+                logger.error("LLM patch generation failed: %s. Falling back to rule-based.", e)
+
+        # Fallback to rule-based if LLM failed or didn't change anything
+        if patched == original:
+            if "fixture" in failure.error_message.lower() and "not found" in failure.error_message.lower():
+                fixture_name = failure.error_message.split("'")[1] if "'" in failure.error_message else "unknown"
+                fixture_code = (
+                    f"\n\nimport pytest\n\n@pytest.fixture\ndef {fixture_name}():\n"
+                    f'    """Auto-generated placeholder fixture."""\n    return None\n'
+                )
+                patched = fixture_code + original
 
         if patched == original:
             return None
@@ -296,7 +344,7 @@ class ZeroAgent:
             file_path=str(fpath),
             original_content=original,
             patched_content=patched,
-            description=f"Auto-fix for test failure: {failure.test_id}",
+            description=description,
         )
         self._patches.append(patch)
         return patch

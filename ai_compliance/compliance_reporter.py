@@ -277,7 +277,7 @@ class ComplianceReporter:
 {"✅ SintraPrime operations are substantially compliant with applicable AI regulations." if compliance_rate >= 0.80 else "⚠️ SintraPrime operations require attention to achieve full regulatory compliance." if compliance_rate >= 0.60 else "❌ CRITICAL: Significant compliance deficiencies detected requiring immediate remediation."}
 
 **Top Compliance Concerns:**
-{"".join(f"- {law}: {count} violation(s)\\n" for law, count in stats.get("top_violations", [])[:3]) or "- No significant compliance concerns identified."}
+{chr(10).join(f"- {law}: {count} violation(s)" for law, count in stats.get("top_violations", [])[:3]) or "- No significant compliance concerns identified."}
 """
 
     def _risk_dashboard(self, data: ComplianceReportData) -> str:

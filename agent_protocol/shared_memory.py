@@ -4,12 +4,13 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import time
 from pathlib import Path
 from typing import Any, Optional
 
 _PERSIST_PATH = Path(
-    "/agent/home/SintraPrime-Unified/agent_protocol/shared_memory.json"
+    os.environ.get("SINTRA_SHARED_MEMORY", str(Path.home() / ".sintra" / "shared_memory.json"))
 )
 
 _CATEGORIES = {

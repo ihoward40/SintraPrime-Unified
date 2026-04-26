@@ -23,12 +23,11 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 _INTENT_PATTERNS: List[Tuple[Intent, List[str]]] = [
+    # High-specificity intents first — these have strong, unambiguous keywords
     (
-        Intent.LEGAL_QUESTION,
+        Intent.REMINDER,
         [
-            r"\b(legal|law|statute|regulation|court|attorney|lawyer|sue|lawsuit|"
-            r"litigation|contract|liability|jurisdiction|tort|habeas|motion|brief|"
-            r"pleading|deposition|subpoena|evidence|verdict|appeal|settlement)\b",
+            r"\b(remind me|set reminder|don.t forget|remember to|alert me|notify me)\b",
         ],
     ),
     (
@@ -39,17 +38,10 @@ _INTENT_PATTERNS: List[Tuple[Intent, List[str]]] = [
         ],
     ),
     (
-        Intent.DOCUMENT_REQUEST,
-        [
-            r"\b(draft|generate|create|write|prepare|compose|template|document|"
-            r"letter|memo|agreement|contract|NDA|form|report|proposal|invoice)\b",
-        ],
-    ),
-    (
         Intent.TASK_MANAGEMENT,
         [
-            r"\b(task|remind|schedule|deadline|due|calendar|todo|to-do|assign|"
-            r"priority|track|followup|follow.up|milestone)\b",
+            r"\b(task|schedule|deadline|due|calendar|todo|to-do|assign|"
+            r"track|followup|follow.up|milestone)\b",
         ],
     ),
     (
@@ -61,16 +53,26 @@ _INTENT_PATTERNS: List[Tuple[Intent, List[str]]] = [
         ],
     ),
     (
+        Intent.DOCUMENT_REQUEST,
+        [
+            r"\b(draft|generate|create|write|prepare|compose|template|document|"
+            r"letter|memo|agreement|NDA|form|report|proposal)\b",
+        ],
+    ),
+    (
         Intent.STATUS_CHECK,
         [
             r"\b(status|progress|update|how.s|running|working|online|offline|"
             r"health|ready|done|completed|pending)\b",
         ],
     ),
+    # LEGAL_QUESTION last — its keywords are broad and overlap with other intents
     (
-        Intent.REMINDER,
+        Intent.LEGAL_QUESTION,
         [
-            r"\b(remind me|set reminder|don.t forget|remember to|alert me|notify me)\b",
+            r"\b(legal|statute|regulation|court|attorney|lawyer|sue|lawsuit|"
+            r"litigation|contract|liability|jurisdiction|tort|habeas|motion|brief|"
+            r"pleading|deposition|subpoena|evidence|verdict|appeal|settlement)\b",
         ],
     ),
 ]

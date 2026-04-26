@@ -357,7 +357,7 @@ class DiscordComponents:
         )
         
         button_list = discord.ui.Button(
-            style=discord.ButtonStyle.blue,
+            style=discord.ButtonStyle.blurple,
             label="List Agents",
             emoji="📋"
         )

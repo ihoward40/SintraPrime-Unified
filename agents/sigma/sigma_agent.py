@@ -252,6 +252,29 @@ class SigmaAgent:
                 lines.append(f"- {reason}")
             lines.append("")
 
+        # Add LLM PR Review if API key is available
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if api_key and results.get("pr_diff"):
+            try:
+                import openai
+                client = openai.OpenAI(api_key=api_key)
+                prompt = f"Review the following PR diff and provide a concise code review summary, highlighting potential bugs, performance issues, or architectural concerns:\n\n{results.get('pr_diff')[:10000]}"
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "You are Sigma, an expert CI/CD code reviewer. Provide a concise, actionable review."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.2,
+                    max_tokens=1000
+                )
+                review = response.choices[0].message.content.strip()
+                lines.append("## AI Code Review")
+                lines.append(review)
+                lines.append("")
+            except Exception as e:
+                logger.error("LLM PR review failed: %s", e)
+
         return "\n".join(lines)
 
     def post_github_status(self, commit_sha: str, state: str, description: str) -> bool:

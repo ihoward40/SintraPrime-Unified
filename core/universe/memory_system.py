@@ -4,6 +4,7 @@ Distributed knowledge and learning system for collective agent improvement
 """
 
 import json
+import os
 import sqlite3
 import time
 from datetime import datetime, timedelta
@@ -28,7 +29,10 @@ except ImportError:
     EMBEDDINGS_AVAILABLE = False
 
 # Database configuration
-DB_PATH = "/agent/home/universe/memory.db"
+DB_PATH = os.environ.get(
+    "SINTRA_MEMORY_DB",
+    str(Path.home() / ".sintra" / "universe" / "memory.db")
+)
 VECTOR_DIMENSION = 384  # Using all-MiniLM-L6-v2 model
 
 
@@ -104,6 +108,7 @@ class MemorySystem:
     def _init_database(self):
         """Create or connect to the database and initialize tables"""
         try:
+            Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
             self.connection = sqlite3.connect(self.db_path)
             self.cursor = self.connection.cursor()
             

@@ -193,24 +193,141 @@ class DatabaseManager:
     def __init__(self):
         """Initialize database manager."""
         self.logger = logging.getLogger(__name__)
+        self._init_schema()
+
+    def _init_schema(self) -> None:
+        """Create all required tables if they do not exist."""
+        import sqlite3
+        db_path = self._get_db_path()
+        schema_sql = """
+        CREATE TABLE IF NOT EXISTS execution_trace (
+            execution_id TEXT PRIMARY KEY,
+            intent TEXT,
+            status TEXT,
+            start_time TEXT,
+            end_time TEXT,
+            root_task_id TEXT,
+            total_subtasks INTEGER DEFAULT 0,
+            completed_subtasks INTEGER DEFAULT 0,
+            failed_subtasks INTEGER DEFAULT 0,
+            agent_count INTEGER DEFAULT 0,
+            result_summary TEXT,
+            error_message TEXT,
+            rollback_reason TEXT,
+            metadata TEXT
+        );
+        CREATE TABLE IF NOT EXISTS audit_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            execution_id TEXT,
+            agent_id TEXT,
+            action_type TEXT,
+            task_id TEXT,
+            status TEXT,
+            details TEXT,
+            error TEXT,
+            timestamp TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS task_results (
+            task_id TEXT PRIMARY KEY,
+            execution_id TEXT,
+            agent_id TEXT,
+            status TEXT,
+            result TEXT,
+            error TEXT,
+            started_at TEXT,
+            completed_at TEXT,
+            metadata TEXT
+        );
+        CREATE TABLE IF NOT EXISTS agent_coordination (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            execution_id TEXT,
+            agent_id TEXT,
+            agent_type TEXT,
+            status TEXT DEFAULT 'active',
+            assigned_tasks INTEGER DEFAULT 0,
+            completed_tasks INTEGER DEFAULT 0,
+            last_heartbeat TEXT,
+            capacity_utilization REAL DEFAULT 0.0,
+            task_count INTEGER DEFAULT 0,
+            metadata TEXT
+        );
+        CREATE TABLE IF NOT EXISTS task_registry (
+            task_id TEXT PRIMARY KEY,
+            execution_id TEXT,
+            parent_task_id TEXT,
+            agent_id TEXT,
+            assigned_agent_id TEXT,
+            task_type TEXT,
+            description TEXT,
+            status TEXT DEFAULT 'pending',
+            priority INTEGER DEFAULT 5,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            started_at TEXT,
+            completed_at TEXT,
+            result TEXT,
+            error TEXT,
+            error_message TEXT,
+            dependencies TEXT,
+            metadata TEXT
+        );
+        CREATE TABLE IF NOT EXISTS rollback_state (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            execution_id TEXT UNIQUE,
+            task_id TEXT,
+            agent_id TEXT,
+            state_snapshot TEXT,
+            checkpoint_data TEXT,
+            rollback_stack TEXT,
+            last_checkpoint TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            metadata TEXT
+        );
+        """
+        try:
+            conn = sqlite3.connect(db_path)
+            conn.executescript(schema_sql)
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            self.logger.error(f"Schema init error: {e}")
+
+    def _get_db_path(self) -> str:
+        """Return the database path, creating parent dirs as needed."""
+        import os
+        from pathlib import Path
+        db_path = os.environ.get(
+            "SINTRA_CORE_DB",
+            str(Path.home() / ".sintra" / "universe" / "core_engine.db")
+        )
+        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+        return db_path
 
     def execute_query(self, query: str, params: Optional[Dict] = None) -> Any:
         """
-        Execute a database query.
-        
+        Execute a database query using SQLite.
+
         Args:
             query: SQL query string
             params: Optional parameter dictionary
-            
+
         Returns:
             Query result
         """
-        # Import here to avoid circular dependencies
-        from run_agent_memory_sql import run_agent_memory_sql
+        import sqlite3
+        db_path = self._get_db_path()
         try:
-            result = run_agent_memory_sql(query=query)
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
+            conn.commit()
+            rows = cursor.fetchall()
+            conn.close()
             self.logger.debug(f"Query executed successfully: {query[:100]}")
-            return result
+            return [dict(row) for row in rows] if rows else []
         except Exception as e:
             self.logger.error(f"Database error: {str(e)}")
             raise

@@ -158,13 +158,14 @@ class PlatformDetector:
         return Platform.UNKNOWN
 
     def _detect_runtime(self) -> RuntimeEnvironment:
+        # CI/CD takes priority over Docker since CI runners often run inside containers
+        if any(os.environ.get(v) for v in ("CI", "GITHUB_ACTIONS", "JENKINS_URL", "GITLAB_CI")):
+            return RuntimeEnvironment.CI
+
+
         # Docker
         if os.path.exists("/.dockerenv") or os.environ.get("container"):
             return RuntimeEnvironment.DOCKER
-
-        # CI/CD
-        if any(os.environ.get(v) for v in ("CI", "GITHUB_ACTIONS", "JENKINS_URL", "GITLAB_CI")):
-            return RuntimeEnvironment.CI
 
         # Jupyter
         try:

@@ -18,7 +18,8 @@ from unittest.mock import Mock, patch, AsyncMock
 
 # Import engine components
 import sys
-sys.path.insert(0, '/agent/home/universe')
+import pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from core_engine import (
     OrchestrationEngine,
     IntentParser,

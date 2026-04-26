@@ -1,0 +1,14 @@
+{
+  "user_no_notifs": {
+    "user_id": "user_no_notifs",
+    "enabled_types": [],
+    "quiet_hours_start": null,
+    "quiet_hours_end": null,
+    "deadline_reminders": [
+      24,
+      72,
+      168
+    ],
+    "min_urgency": "normal"
+  }
+}

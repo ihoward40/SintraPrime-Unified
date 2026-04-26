@@ -45,3 +45,19 @@ collect_ignore_glob = [
     ".github/*",
     "node_modules/*",
 ]
+
+# Fix: The core/universe/integrations package creates a namespace conflict with
+# the top-level integrations/ package when pytest collects from root.
+# We ensure the top-level integrations package is importable by explicitly
+# registering it before any sub-package with the same name.
+import importlib
+import types
+
+_integrations_path = os.path.join(ROOT, "integrations")
+if _integrations_path not in sys.path:
+    # Register the top-level integrations as a proper package
+    if "integrations" not in sys.modules:
+        _pkg = types.ModuleType("integrations")
+        _pkg.__path__ = [_integrations_path]
+        _pkg.__package__ = "integrations"
+        sys.modules["integrations"] = _pkg

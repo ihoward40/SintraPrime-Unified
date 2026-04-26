@@ -388,7 +388,7 @@ class DatabaseBuilder:
                 parts.append(f"REFERENCES {ref_table}({ref_col})")
             col_defs.append("  " + " ".join(parts))
 
-        return f"CREATE TABLE IF NOT EXISTS {table.name} (\n{chr(44) + chr(10)  .join(col_defs)}\n);"
+        return f"CREATE TABLE IF NOT EXISTS {table.name} (\n{(chr(44) + chr(10)).join(col_defs)}\n);"
 
     # ------------------------------------------------------------------
     # SQL Migration Generator

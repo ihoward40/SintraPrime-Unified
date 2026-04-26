@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="SintraPrime Legal Intelligence Platform - AI-powered legal tools for attorneys" />
+  <meta name="theme-color" content="#1a2744" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SintraPrime" />
+  <meta name="mobile-web-app-capable" content="yes" />
+
+  <!-- Apple touch icons -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
+  <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" />
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96x96.png" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/styles.css" />
+
+  <title>SintraPrime Legal Intelligence</title>
+</head>
+<body>
+  <!-- App Shell -->
+  <div id="app" class="app-shell">
+
+    <!-- Header / Navigation -->
+    <header class="app-header" role="banner">
+      <div class="header-content">
+        <button class="menu-toggle" id="menuToggle" aria-label="Open navigation menu" aria-expanded="false">
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+        </button>
+        <div class="brand">
+          <span class="brand-icon">⚖️</span>
+          <span class="brand-name">SintraPrime</span>
+        </div>
+        <div class="header-actions">
+          <button class="icon-btn notification-btn" id="notificationBtn" aria-label="Notifications" title="Notifications">
+            🔔
+            <span class="notification-badge hidden" id="notificationBadge">0</span>
+          </button>
+          <button class="icon-btn sync-btn" id="syncBtn" aria-label="Sync data" title="Sync">⟳</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Side Navigation Drawer -->
+    <nav class="nav-drawer" id="navDrawer" aria-label="Main navigation" aria-hidden="true">
+      <div class="nav-header">
+        <span class="nav-title">Navigation</span>
+        <button class="close-nav" id="closeNav" aria-label="Close navigation">✕</button>
+      </div>
+      <ul class="nav-list" role="list">
+        <li><a href="#dashboard" class="nav-item active" data-view="dashboard">📊 Dashboard</a></li>
+        <li><a href="#cases" class="nav-item" data-view="cases">📁 Cases</a></li>
+        <li><a href="#research" class="nav-item" data-view="research">🔍 Legal Research</a></li>
+        <li><a href="#deadlines" class="nav-item" data-view="deadlines">📅 Deadlines</a></li>
+        <li><a href="#documents" class="nav-item" data-view="documents">📄 Documents</a></li>
+        <li><a href="#agents" class="nav-item" data-view="agents">🤖 AI Agents</a></li>
+        <li><a href="#settings" class="nav-item" data-view="settings">⚙️ Settings</a></li>
+      </ul>
+      <div class="nav-footer">
+        <div class="offline-indicator" id="offlineIndicator">
+          <span class="offline-dot"></span>
+          <span id="connectionStatus">Online</span>
+        </div>
+      </div>
+    </nav>
+    <div class="nav-overlay" id="navOverlay"></div>
+
+    <!-- Main Content Area -->
+    <main class="main-content" id="mainContent" role="main">
+
+      <!-- Dashboard View -->
+      <section class="view active" id="view-dashboard" data-view="dashboard">
+        <div class="view-header">
+          <h1>Dashboard</h1>
+          <p class="subtitle">Good <span id="timeOfDay">morning</span>, Counselor</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid" id="statsGrid">
+          <div class="stat-card urgent" id="statDeadlines">
+            <div class="stat-icon">⏰</div>
+            <div class="stat-info">
+              <span class="stat-value" id="deadlineCount">—</span>
+              <span class="stat-label">Upcoming Deadlines</span>
+            </div>
+          </div>
+          <div class="stat-card" id="statCases">
+            <div class="stat-icon">📁</div>
+            <div class="stat-info">
+              <span class="stat-value" id="caseCount">—</span>
+              <span class="stat-label">Active Cases</span>
+            </div>
+          </div>
+          <div class="stat-card" id="statAgents">
+            <div class="stat-icon">🤖</div>
+            <div class="stat-info">
+              <span class="stat-value" id="agentCount">—</span>
+              <span class="stat-label">Running Agents</span>
+            </div>
+          </div>
+          <div class="stat-card" id="statDocs">
+            <div class="stat-icon">📄</div>
+            <div class="stat-info">
+              <span class="stat-value" id="docCount">—</span>
+              <span class="stat-label">Pending Docs</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <section class="card">
+          <h2 class="card-title">Recent Activity</h2>
+          <ul class="activity-list" id="activityList" role="list">
+            <li class="activity-item loading">Loading activity...</li>
+          </ul>
+        </section>
+
+        <!-- Quick Actions -->
+        <section class="card">
+          <h2 class="card-title">Quick Actions</h2>
+          <div class="quick-actions">
+            <button class="action-btn" data-action="new-case">+ New Case</button>
+            <button class="action-btn" data-action="research">🔍 Research</button>
+            <button class="action-btn" data-action="deadline">📅 Add Deadline</button>
+            <button class="action-btn" data-action="run-agent">🤖 Run Agent</button>
+          </div>
+        </section>
+      </section>
+
+      <!-- Cases View -->
+      <section class="view" id="view-cases" data-view="cases">
+        <div class="view-header">
+          <h1>Cases</h1>
+          <button class="primary-btn" id="newCaseBtn">+ New Case</button>
+        </div>
+        <div class="search-bar">
+          <input type="search" id="caseSearch" placeholder="Search cases..." aria-label="Search cases" />
+        </div>
+        <div class="cases-list" id="casesList">
+          <div class="loading-state">Loading cases...</div>
+        </div>
+      </section>
+
+      <!-- Research View -->
+      <section class="view" id="view-research" data-view="research">
+        <div class="view-header">
+          <h1>Legal Research</h1>
+        </div>
+        <div class="research-panel">
+          <div class="search-form">
+            <textarea id="researchQuery" placeholder="Describe your legal question..." rows="3" aria-label="Research query"></textarea>
+            <div class="search-options">
+              <label><input type="checkbox" id="includeCaseLaw" checked /> Case Law</label>
+              <label><input type="checkbox" id="includeStatutes" checked /> Statutes</label>
+              <label><input type="checkbox" id="includeRegs" /> Regulations</label>
+            </div>
+            <button class="primary-btn full-width" id="searchBtn">Search ⚡</button>
+          </div>
+          <div class="results-panel" id="researchResults"></div>
+        </div>
+      </section>
+
+      <!-- Deadlines View -->
+      <section class="view" id="view-deadlines" data-view="deadlines">
+        <div class="view-header">
+          <h1>Deadlines</h1>
+          <button class="primary-btn" id="addDeadlineBtn">+ Add</button>
+        </div>
+        <div class="deadline-filters">
+          <button class="filter-chip active" data-filter="all">All</button>
+          <button class="filter-chip" data-filter="week">This Week</button>
+          <button class="filter-chip" data-filter="month">This Month</button>
+          <button class="filter-chip" data-filter="critical">Critical</button>
+        </div>
+        <div class="deadlines-list" id="deadlinesList">
+          <div class="loading-state">Loading deadlines...</div>
+        </div>
+      </section>
+
+      <!-- Settings View -->
+      <section class="view" id="view-settings" data-view="settings">
+        <div class="view-header">
+          <h1>Settings</h1>
+        </div>
+        <div class="settings-list">
+          <div class="settings-group">
+            <h2 class="settings-group-title">App</h2>
+            <div class="setting-row" id="installRow">
+              <div class="setting-info">
+                <span class="setting-name">Install App</span>
+                <span class="setting-desc">Add SintraPrime to your home screen</span>
+              </div>
+              <button class="secondary-btn" id="installBtn">Install</button>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-name">Push Notifications</span>
+                <span class="setting-desc">Deadline reminders and alerts</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notifToggle" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-name">Offline Mode</span>
+                <span class="setting-desc">Cache data for offline access</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="offlineToggle" checked />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+          <div class="settings-group">
+            <h2 class="settings-group-title">Cache</h2>
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-name">Cached Items</span>
+                <span class="setting-desc" id="cacheSize">Calculating...</span>
+              </div>
+              <button class="secondary-btn danger" id="clearCacheBtn">Clear</button>
+            </div>
+          </div>
+          <div class="settings-group">
+            <h2 class="settings-group-title">API</h2>
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-name">API Server</span>
+                <span class="setting-desc">Connection to SintraPrime backend</span>
+              </div>
+              <span class="status-badge online" id="apiStatus">Connected</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Tab Bar (mobile) -->
+    <nav class="bottom-tabs" aria-label="Tab navigation">
+      <button class="tab-btn active" data-view="dashboard" aria-label="Dashboard">
+        <span class="tab-icon">📊</span>
+        <span class="tab-label">Dashboard</span>
+      </button>
+      <button class="tab-btn" data-view="cases" aria-label="Cases">
+        <span class="tab-icon">📁</span>
+        <span class="tab-label">Cases</span>
+      </button>
+      <button class="tab-btn" data-view="research" aria-label="Research">
+        <span class="tab-icon">🔍</span>
+        <span class="tab-label">Research</span>
+      </button>
+      <button class="tab-btn" data-view="deadlines" aria-label="Deadlines">
+        <span class="tab-icon">📅</span>
+        <span class="tab-label">Deadlines</span>
+      </button>
+      <button class="tab-btn" data-view="settings" aria-label="Settings">
+        <span class="tab-icon">⚙️</span>
+        <span class="tab-label">Settings</span>
+      </button>
+    </nav>
+
+    <!-- Install Prompt Banner -->
+    <div class="install-banner hidden" id="installBanner" role="dialog" aria-live="polite">
+      <div class="install-banner-content">
+        <span class="install-icon">⚖️</span>
+        <div class="install-text">
+          <strong>Install SintraPrime</strong>
+          <small>Access your cases anytime, even offline</small>
+        </div>
+        <div class="install-actions">
+          <button class="primary-btn small" id="installAccept">Install</button>
+          <button class="ghost-btn small" id="installDismiss">Not now</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Offline Toast -->
+    <div class="toast hidden" id="offlineToast" role="alert" aria-live="assertive">
+      📡 You're offline — showing cached data
+    </div>
+
+    <!-- Update Banner -->
+    <div class="update-banner hidden" id="updateBanner" role="alert">
+      <span>🔄 New version available</span>
+      <button class="ghost-btn small" id="updateBtn">Update Now</button>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="/app.js" defer></script>
+</body>
+</html>

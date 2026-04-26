@@ -1,0 +1,1775 @@
+openapi: 3.1.0
+info:
+  title: SintraPrime-Unified API
+  description: |
+    SintraPrime-Unified is an enterprise legal intelligence platform providing
+    trust law analysis, case law search, court docket monitoring, banking integration,
+    voice interface, federal agency navigation, ML predictions, e-signature, RAG legal Q&A,
+    and local LLM inference.
+    
+    ## Authentication
+    All endpoints require a Bearer JWT token in the Authorization header.
+    Tokens are issued by the `/auth/token` endpoint and expire in 1 hour (configurable).
+    
+    ## Rate Limiting
+    Rate limits are enforced per-user per-action. See individual endpoints for limits.
+    Response headers include `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`.
+    
+    ## Versioning
+    API version is included in the `X-API-Version` response header.
+  version: 2.0.0
+  contact:
+    name: SintraPrime Support
+    email: api@sintraprime.com
+    url: https://docs.sintraprime.com
+  license:
+    name: Proprietary
+    url: https://sintraprime.com/license
+
+servers:
+  - url: https://api.sintraprime.com/v2
+    description: Production
+  - url: https://staging-api.sintraprime.com/v2
+    description: Staging
+  - url: http://localhost:8000/v2
+    description: Local development
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: auth
+    description: Authentication and token management
+  - name: trust
+    description: Trust law analysis and management
+  - name: legal
+    description: Legal intelligence and research
+  - name: cases
+    description: Case law search and citation
+  - name: docket
+    description: Court docket monitoring
+  - name: banking
+    description: Banking and financial data (Plaid integration)
+  - name: voice
+    description: Voice interface for legal queries
+  - name: federal
+    description: Federal agency navigator
+  - name: predict
+    description: ML-powered legal predictions
+  - name: esign
+    description: Electronic signature workflow
+  - name: rag
+    description: RAG-powered legal Q&A
+  - name: llm
+    description: Local LLM inference interface
+
+paths:
+
+  # ─── Authentication ──────────────────────────────────────────────────────────
+
+  /auth/token:
+    post:
+      tags: [auth]
+      summary: Obtain a JWT access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+            example:
+              user_id: "usr_abc123"
+              password: "SecurePassword123!"
+      responses:
+        '200':
+          description: JWT token issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: Refresh an expiring JWT token
+      responses:
+        '200':
+          description: New JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/revoke:
+    post:
+      tags: [auth]
+      summary: Revoke a JWT token
+      responses:
+        '204':
+          description: Token revoked
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ─── Trust Law ────────────────────────────────────────────────────────────────
+
+  /api/trust:
+    get:
+      tags: [trust]
+      summary: List trust documents for the authenticated user
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: trust_type
+          in: query
+          schema:
+            type: string
+            enum: [revocable, irrevocable, testamentary, living, charitable, special_needs]
+        - name: state
+          in: query
+          schema:
+            type: string
+            pattern: '^[A-Z]{2}$'
+      responses:
+        '200':
+          description: List of trust documents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrustListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [trust]
+      summary: Create a new trust document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrustDocument'
+            example:
+              trust_name: "Smith Family Living Trust"
+              grantor:
+                name: "John Smith"
+                dob: "1960-05-15"
+              trustee:
+                name: "Jane Smith"
+              beneficiaries:
+                - name: "Alice Smith"
+                  share_percent: 100
+              state: "CA"
+              trust_type: "revocable"
+      responses:
+        '201':
+          description: Trust document created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrustDocument'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/trust/{trust_id}:
+    get:
+      tags: [trust]
+      summary: Get a specific trust document
+      parameters:
+        - $ref: '#/components/parameters/TrustIdParam'
+      responses:
+        '200':
+          description: Trust document
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrustDocument'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [trust]
+      summary: Update a trust document
+      parameters:
+        - $ref: '#/components/parameters/TrustIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrustDocument'
+      responses:
+        '200':
+          description: Updated trust document
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrustDocument'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [trust]
+      summary: Delete a trust document
+      parameters:
+        - $ref: '#/components/parameters/TrustIdParam'
+      responses:
+        '204':
+          description: Trust document deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/trust/{trust_id}/analyze:
+    post:
+      tags: [trust]
+      summary: Run AI analysis on a trust document
+      parameters:
+        - $ref: '#/components/parameters/TrustIdParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                analysis_type:
+                  type: string
+                  enum: [tax_efficiency, beneficiary_rights, successor_trustee, asset_protection]
+      responses:
+        '200':
+          description: Trust analysis result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrustAnalysis'
+
+  # ─── Legal Intelligence ───────────────────────────────────────────────────────
+
+  /api/legal:
+    get:
+      tags: [legal]
+      summary: Query legal intelligence engine
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 2000
+          description: Legal query string
+        - name: jurisdiction
+          in: query
+          schema:
+            type: string
+            pattern: '^[A-Z]{2}$'
+        - name: area_of_law
+          in: query
+          schema:
+            type: string
+            enum: [trusts, estates, tax, corporate, criminal, civil, family, bankruptcy]
+      responses:
+        '200':
+          description: Legal intelligence response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/legal/statutes:
+    get:
+      tags: [legal]
+      summary: Search applicable statutes
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          schema:
+            type: string
+        - name: federal
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Matching statutes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatuteList'
+
+  # ─── Case Law Search ──────────────────────────────────────────────────────────
+
+  /api/cases:
+    get:
+      tags: [cases]
+      summary: Search case law
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 3
+        - name: court
+          in: query
+          schema:
+            type: string
+            enum: [scotus, ca1, ca2, ca3, ca4, ca5, ca6, ca7, ca8, ca9, ca10, ca11, cadc, cafc]
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Matching cases
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseListResponse'
+
+  /api/cases/{case_id}:
+    get:
+      tags: [cases]
+      summary: Get full case details
+      parameters:
+        - name: case_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Case details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/cases/{case_id}/similar:
+    get:
+      tags: [cases]
+      summary: Find similar cases using semantic search
+      parameters:
+        - name: case_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 5
+      responses:
+        '200':
+          description: Similar cases
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseListResponse'
+
+  # ─── Docket Feeds ─────────────────────────────────────────────────────────────
+
+  /api/docket:
+    get:
+      tags: [docket]
+      summary: Get monitored court dockets
+      parameters:
+        - name: court
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, closed, pending]
+      responses:
+        '200':
+          description: Docket entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocketListResponse'
+
+  /api/docket/subscribe:
+    post:
+      tags: [docket]
+      summary: Subscribe to docket updates for a case
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [court, case_number]
+              properties:
+                court:
+                  type: string
+                case_number:
+                  type: string
+                webhook_url:
+                  type: string
+                  format: uri
+                notification_events:
+                  type: array
+                  items:
+                    type: string
+                    enum: [filing, order, judgment, hearing_scheduled]
+      responses:
+        '201':
+          description: Subscription created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocketSubscription'
+
+  # ─── Banking (Plaid) ──────────────────────────────────────────────────────────
+
+  /api/banking:
+    get:
+      tags: [banking]
+      summary: Get linked banking accounts
+      responses:
+        '200':
+          description: Banking accounts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankingAccountList'
+
+  /api/banking/link:
+    post:
+      tags: [banking]
+      summary: Initiate Plaid Link flow to connect a bank account
+      responses:
+        '200':
+          description: Plaid Link token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  link_token:
+                    type: string
+                  expiration:
+                    type: string
+                    format: date-time
+
+  /api/banking/sync:
+    post:
+      tags: [banking]
+      summary: Sync transactions from connected accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                account_ids:
+                  type: array
+                  items:
+                    type: string
+                date_from:
+                  type: string
+                  format: date
+      responses:
+        '200':
+          description: Sync result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankingSyncResult'
+
+  /api/banking/transactions:
+    get:
+      tags: [banking]
+      summary: Get transactions for trust account reconciliation
+      parameters:
+        - name: account_id
+          in: query
+          schema:
+            type: string
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Transactions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionListResponse'
+
+  # ─── Voice Interface ──────────────────────────────────────────────────────────
+
+  /api/voice:
+    post:
+      tags: [voice]
+      summary: Submit a voice query for transcription and legal analysis
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [audio]
+              properties:
+                audio:
+                  type: string
+                  format: binary
+                  description: Audio file (WAV, MP3, OGG, FLAC — max 10MB)
+                language:
+                  type: string
+                  default: en-US
+                response_format:
+                  type: string
+                  enum: [json, text, audio]
+                  default: json
+      responses:
+        '200':
+          description: Voice query result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoiceResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/voice/tts:
+    post:
+      tags: [voice]
+      summary: Convert text to speech
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text:
+                  type: string
+                  maxLength: 5000
+                voice:
+                  type: string
+                  enum: [neutral, professional, warm]
+                  default: professional
+                format:
+                  type: string
+                  enum: [mp3, wav, ogg]
+                  default: mp3
+      responses:
+        '200':
+          description: Audio file
+          content:
+            audio/mpeg:
+              schema:
+                type: string
+                format: binary
+
+  # ─── Federal Agency Navigator ─────────────────────────────────────────────────
+
+  /api/federal:
+    get:
+      tags: [federal]
+      summary: Search federal agencies and regulations
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: agency
+          in: query
+          schema:
+            type: string
+            enum: [irs, ssa, dol, hhs, sec, fdic, occ, cfpb, fincen]
+        - name: topic
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Federal agency results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FederalResponse'
+
+  /api/federal/forms:
+    get:
+      tags: [federal]
+      summary: Search federal forms and filing requirements
+      parameters:
+        - name: agency
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: form_number
+          in: query
+          schema:
+            type: string
+        - name: topic
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Matching federal forms
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FederalFormList'
+
+  # ─── ML Predictions ───────────────────────────────────────────────────────────
+
+  /api/predict:
+    post:
+      tags: [predict]
+      summary: Run ML predictions on legal scenarios
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PredictionRequest'
+            example:
+              prediction_type: "case_outcome"
+              context:
+                case_type: "trust_dispute"
+                jurisdiction: "CA"
+                facts: "Grantor passed away without amending trust..."
+              confidence_threshold: 0.7
+      responses:
+        '200':
+          description: Prediction result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PredictionResult'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/predict/batch:
+    post:
+      tags: [predict]
+      summary: Run multiple predictions in batch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                predictions:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/PredictionRequest'
+                  maxItems: 50
+      responses:
+        '200':
+          description: Batch prediction results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PredictionResult'
+                  processing_time_ms:
+                    type: number
+
+  # ─── eSignature ───────────────────────────────────────────────────────────────
+
+  /api/esign:
+    get:
+      tags: [esign]
+      summary: List signature requests
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, signed, declined, expired, voided]
+      responses:
+        '200':
+          description: Signature requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EsignListResponse'
+
+    post:
+      tags: [esign]
+      summary: Create a new signature request
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [document, signers]
+              properties:
+                document:
+                  type: string
+                  format: binary
+                  description: PDF document to sign
+                signers:
+                  type: string
+                  description: JSON array of signer objects
+                title:
+                  type: string
+                message:
+                  type: string
+                expiration_days:
+                  type: integer
+                  default: 30
+      responses:
+        '201':
+          description: Signature request created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EsignRequest'
+
+  /api/esign/{request_id}:
+    get:
+      tags: [esign]
+      summary: Get signature request status
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Signature request details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EsignRequest'
+
+  /api/esign/{request_id}/void:
+    post:
+      tags: [esign]
+      summary: Void a pending signature request
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Request voided
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── RAG Legal Q&A ────────────────────────────────────────────────────────────
+
+  /api/rag:
+    post:
+      tags: [rag]
+      summary: Ask a legal question using RAG (Retrieval-Augmented Generation)
+      description: |
+        Submits a legal question to the RAG pipeline which retrieves relevant 
+        documents from the knowledge base and generates a grounded answer.
+        
+        Response includes source citations for all retrieved documents.
+        Target latency: <200ms retrieval, <5000ms generation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RAGRequest'
+            example:
+              question: "What are the fiduciary duties of a trustee under California Probate Code?"
+              jurisdiction: "CA"
+              area_of_law: "trusts"
+              max_sources: 5
+              include_citations: true
+      responses:
+        '200':
+          description: RAG answer with citations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RAGResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /api/rag/ingest:
+    post:
+      tags: [rag]
+      summary: Ingest a document into the RAG knowledge base
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [document]
+              properties:
+                document:
+                  type: string
+                  format: binary
+                title:
+                  type: string
+                document_type:
+                  type: string
+                  enum: [statute, case_law, regulation, trust_document, legal_brief, memo]
+                jurisdiction:
+                  type: string
+                metadata:
+                  type: string
+                  description: JSON metadata string
+      responses:
+        '202':
+          description: Document accepted for ingestion
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  document_id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [queued, processing]
+                  estimated_completion_seconds:
+                    type: integer
+
+  /api/rag/search:
+    get:
+      tags: [rag]
+      summary: Semantic search over the RAG knowledge base
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 3
+        - name: jurisdiction
+          in: query
+          schema:
+            type: string
+        - name: document_type
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Matching documents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RAGSearchResponse'
+
+  # ─── Local LLM Interface ──────────────────────────────────────────────────────
+
+  /api/llm:
+    post:
+      tags: [llm]
+      summary: Query the local LLM for legal analysis
+      description: |
+        Submits a prompt to the locally-hosted LLM (llama.cpp or similar).
+        Designed for offline/air-gapped environments where cloud LLMs cannot be used.
+        
+        Target latency: <5000ms for standard queries.
+        Model: Configurable via SINTRAPRIME_LOCAL_LLM_MODEL env var.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LLMRequest'
+            example:
+              prompt: "Analyze this trust clause for ambiguity: 'The trustee shall distribute income equally among my children.'"
+              system_prompt: "You are a legal expert specializing in trust law."
+              max_tokens: 2000
+              temperature: 0.1
+              stream: false
+      responses:
+        '200':
+          description: LLM response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LLMResponse'
+            text/event-stream:
+              schema:
+                type: string
+                description: Server-sent events stream when stream=true
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          description: Local LLM not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/llm/models:
+    get:
+      tags: [llm]
+      summary: List available local LLM models
+      responses:
+        '200':
+          description: Available models
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  models:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LLMModel'
+                  active_model:
+                    type: string
+
+  /api/llm/health:
+    get:
+      tags: [llm]
+      summary: Check local LLM health and availability
+      security: []
+      responses:
+        '200':
+          description: LLM is available
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [online, loading, offline]
+                  model:
+                    type: string
+                  uptime_seconds:
+                    type: integer
+        '503':
+          description: LLM unavailable
+
+
+# ─── Components ──────────────────────────────────────────────────────────────────
+
+components:
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from /auth/token
+
+  parameters:
+    TrustIdParam:
+      name: trust_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    LimitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  responses:
+    Unauthorized:
+      description: Authentication required or token invalid/expired
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "unauthorized"
+            message: "Token is expired or invalid"
+            code: 401
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "not_found"
+            message: "The requested resource was not found"
+            code: 404
+    ValidationError:
+      description: Input validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationErrorResponse'
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+
+    Error:
+      type: object
+      required: [error, message, code]
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        code:
+          type: integer
+        request_id:
+          type: string
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "validation_error"
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
+    AuthRequest:
+      type: object
+      required: [user_id, password]
+      properties:
+        user_id:
+          type: string
+        password:
+          type: string
+          format: password
+
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          example: "bearer"
+        expires_in:
+          type: integer
+          example: 3600
+        role:
+          type: string
+          enum: [admin, attorney, auditor, client, viewer]
+
+    Person:
+      type: object
+      properties:
+        name:
+          type: string
+        dob:
+          type: string
+          format: date
+        ssn:
+          type: string
+          description: Masked SSN (XXX-XX-1234)
+        address:
+          $ref: '#/components/schemas/Address'
+
+    Address:
+      type: object
+      properties:
+        street:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+          pattern: '^[A-Z]{2}$'
+        zip:
+          type: string
+          pattern: '^\d{5}(-\d{4})?$'
+
+    TrustDocument:
+      type: object
+      required: [trust_name, grantor, trustee, beneficiaries, state, trust_type]
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        trust_name:
+          type: string
+          minLength: 3
+          maxLength: 200
+        grantor:
+          $ref: '#/components/schemas/Person'
+        trustee:
+          oneOf:
+            - $ref: '#/components/schemas/Person'
+            - type: array
+              items:
+                $ref: '#/components/schemas/Person'
+        successor_trustees:
+          type: array
+          items:
+            $ref: '#/components/schemas/Person'
+        beneficiaries:
+          type: array
+          minItems: 1
+          items:
+            allOf:
+              - $ref: '#/components/schemas/Person'
+              - type: object
+                properties:
+                  share_percent:
+                    type: number
+                    minimum: 0
+                    maximum: 100
+        state:
+          type: string
+          pattern: '^[A-Z]{2}$'
+        trust_type:
+          type: string
+          enum: [revocable, irrevocable, testamentary, living, charitable, special_needs, spendthrift, blind, land, asset_protection, dynasty, generation_skipping]
+        execution_date:
+          type: string
+          format: date
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    TrustListResponse:
+      type: object
+      properties:
+        trusts:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrustDocument'
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    TrustAnalysis:
+      type: object
+      properties:
+        trust_id:
+          type: string
+        analysis_type:
+          type: string
+        findings:
+          type: array
+          items:
+            type: object
+            properties:
+              severity:
+                type: string
+                enum: [info, warning, critical]
+              finding:
+                type: string
+              recommendation:
+                type: string
+        score:
+          type: number
+          minimum: 0
+          maximum: 100
+        generated_at:
+          type: string
+          format: date-time
+
+    LegalResponse:
+      type: object
+      properties:
+        query:
+          type: string
+        answer:
+          type: string
+        jurisdiction:
+          type: string
+        area_of_law:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/LegalCitation'
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        processing_time_ms:
+          type: number
+
+    LegalCitation:
+      type: object
+      properties:
+        citation:
+          type: string
+          example: "347 U.S. 483 (1954)"
+        title:
+          type: string
+        court:
+          type: string
+        year:
+          type: integer
+        relevance_score:
+          type: number
+
+    StatuteList:
+      type: object
+      properties:
+        statutes:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              code:
+                type: string
+              section:
+                type: string
+              text:
+                type: string
+              jurisdiction:
+                type: string
+              effective_date:
+                type: string
+                format: date
+
+    Case:
+      type: object
+      properties:
+        id:
+          type: string
+        citation:
+          type: string
+        title:
+          type: string
+        court:
+          type: string
+        date_decided:
+          type: string
+          format: date
+        summary:
+          type: string
+        holding:
+          type: string
+        judges:
+          type: array
+          items:
+            type: string
+        cited_by:
+          type: integer
+        full_text_url:
+          type: string
+          format: uri
+
+    CaseListResponse:
+      type: object
+      properties:
+        cases:
+          type: array
+          items:
+            $ref: '#/components/schemas/Case'
+        total:
+          type: integer
+        page:
+          type: integer
+
+    DocketListResponse:
+      type: object
+      properties:
+        dockets:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              court:
+                type: string
+              case_number:
+                type: string
+              title:
+                type: string
+              status:
+                type: string
+              last_activity:
+                type: string
+                format: date-time
+              next_hearing:
+                type: string
+                format: date-time
+        total:
+          type: integer
+
+    DocketSubscription:
+      type: object
+      properties:
+        subscription_id:
+          type: string
+        court:
+          type: string
+        case_number:
+          type: string
+        webhook_url:
+          type: string
+        active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    BankingAccountList:
+      type: object
+      properties:
+        accounts:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              type:
+                type: string
+                enum: [checking, savings, investment, credit, loan]
+              balance:
+                type: number
+              currency:
+                type: string
+                default: USD
+              institution:
+                type: string
+              last_synced:
+                type: string
+                format: date-time
+
+    BankingSyncResult:
+      type: object
+      properties:
+        accounts_synced:
+          type: integer
+        transactions_added:
+          type: integer
+        transactions_modified:
+          type: integer
+        transactions_removed:
+          type: integer
+        sync_time_ms:
+          type: number
+
+    TransactionListResponse:
+      type: object
+      properties:
+        transactions:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              date:
+                type: string
+                format: date
+              amount:
+                type: number
+              description:
+                type: string
+              category:
+                type: array
+                items:
+                  type: string
+              pending:
+                type: boolean
+        total:
+          type: integer
+
+    VoiceResponse:
+      type: object
+      properties:
+        transcript:
+          type: string
+        legal_analysis:
+          $ref: '#/components/schemas/LegalResponse'
+        confidence:
+          type: number
+        language_detected:
+          type: string
+        audio_duration_seconds:
+          type: number
+
+    FederalResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              agency:
+                type: string
+              title:
+                type: string
+              type:
+                type: string
+                enum: [regulation, guidance, form, publication, ruling]
+              content:
+                type: string
+              effective_date:
+                type: string
+                format: date
+              url:
+                type: string
+                format: uri
+
+    FederalFormList:
+      type: object
+      properties:
+        forms:
+          type: array
+          items:
+            type: object
+            properties:
+              form_number:
+                type: string
+              title:
+                type: string
+              agency:
+                type: string
+              description:
+                type: string
+              url:
+                type: string
+                format: uri
+
+    PredictionRequest:
+      type: object
+      required: [prediction_type, context]
+      properties:
+        prediction_type:
+          type: string
+          enum: [case_outcome, settlement_value, filing_deadline, tax_liability, trust_validity]
+        context:
+          type: object
+          additionalProperties: true
+        confidence_threshold:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.7
+
+    PredictionResult:
+      type: object
+      properties:
+        prediction_type:
+          type: string
+        prediction:
+          type: object
+          additionalProperties: true
+        confidence:
+          type: number
+        reasoning:
+          type: string
+        similar_cases:
+          type: array
+          items:
+            $ref: '#/components/schemas/Case'
+        processing_time_ms:
+          type: number
+
+    EsignListResponse:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/EsignRequest'
+        total:
+          type: integer
+
+    EsignRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+          enum: [pending, signed, declined, expired, voided]
+        signers:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              email:
+                type: string
+                format: email
+              status:
+                type: string
+                enum: [pending, signed, declined]
+              signed_at:
+                type: string
+                format: date-time
+        document_url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        audit_trail:
+          type: array
+          items:
+            type: object
+            properties:
+              event:
+                type: string
+              timestamp:
+                type: string
+                format: date-time
+              ip_address:
+                type: string
+              user_agent:
+                type: string
+
+    RAGRequest:
+      type: object
+      required: [question]
+      properties:
+        question:
+          type: string
+          minLength: 3
+          maxLength: 2000
+        jurisdiction:
+          type: string
+          pattern: '^[A-Z]{2}$'
+        area_of_law:
+          type: string
+          enum: [trusts, estates, tax, corporate, criminal, civil, family, bankruptcy, federal_agency]
+        max_sources:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 5
+        include_citations:
+          type: boolean
+          default: true
+        filter_date_after:
+          type: string
+          format: date
+
+    RAGResponse:
+      type: object
+      properties:
+        question:
+          type: string
+        answer:
+          type: string
+        sources:
+          type: array
+          items:
+            type: object
+            properties:
+              document_id:
+                type: string
+              title:
+                type: string
+              document_type:
+                type: string
+              excerpt:
+                type: string
+              relevance_score:
+                type: number
+              citation:
+                type: string
+        confidence:
+          type: number
+        retrieval_time_ms:
+          type: number
+        generation_time_ms:
+          type: number
+        total_time_ms:
+          type: number
+
+    RAGSearchResponse:
+      type: object
+      properties:
+        documents:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              title:
+                type: string
+              document_type:
+                type: string
+              excerpt:
+                type: string
+              relevance_score:
+                type: number
+              jurisdiction:
+                type: string
+        total:
+          type: integer
+
+    LLMRequest:
+      type: object
+      required: [prompt]
+      properties:
+        prompt:
+          type: string
+          minLength: 1
+          maxLength: 32000
+        system_prompt:
+          type: string
+          maxLength: 4000
+        max_tokens:
+          type: integer
+          minimum: 1
+          maximum: 8192
+          default: 2048
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 2
+          default: 0.1
+        top_p:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.9
+        stream:
+          type: boolean
+          default: false
+        model:
+          type: string
+          description: Override the active model for this request
+
+    LLMResponse:
+      type: object
+      properties:
+        response:
+          type: string
+        model:
+          type: string
+        prompt_tokens:
+          type: integer
+        completion_tokens:
+          type: integer
+        total_tokens:
+          type: integer
+        processing_time_ms:
+          type: number
+        finish_reason:
+          type: string
+          enum: [stop, length, error]
+
+    LLMModel:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        size_gb:
+          type: number
+        context_length:
+          type: integer
+        quantization:
+          type: string
+        loaded:
+          type: boolean

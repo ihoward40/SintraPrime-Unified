@@ -1,0 +1,123 @@
+{
+  "audit_type": "complete_governance_trail",
+  "correlation_id": "e82de077-544f-40ad-82aa-2cc0ea86a484",
+  "lead_id": "33d59301-aa15-4666-abc6-a58fc51c5b0d",
+  "payment_id": "pi_mock_da7ccc74-593",
+  "test_date": "2026-04-28T12:35:25.127169",
+  "phases_audited": [
+    {
+      "phase": "intake",
+      "success": true,
+      "timestamp": "2026-04-28T12:35:19.278661",
+      "receipt_id": "RCP-E82DE077-INTAKE",
+      "data_fields": [
+        "lead_id",
+        "correlation_id",
+        "email",
+        "notion_page_id",
+        "postgres_saved",
+        "gateway_receipt"
+      ]
+    },
+    {
+      "phase": "payment",
+      "success": true,
+      "timestamp": "2026-04-28T12:35:19.278919",
+      "receipt_id": "RCP-E82DE077-PAYMENT",
+      "data_fields": [
+        "payment_intent_id",
+        "amount",
+        "amount_dollars",
+        "currency",
+        "status",
+        "receipt_url",
+        "charge_id"
+      ]
+    },
+    {
+      "phase": "processing",
+      "success": true,
+      "timestamp": "2026-04-28T12:35:19.279058",
+      "receipt_id": "RCP-E82DE077-PROCESSING",
+      "data_fields": [
+        "agents_executed",
+        "documents_generated",
+        "documents",
+        "parl_reward",
+        "processing_time_ms"
+      ]
+    },
+    {
+      "phase": "delivery",
+      "success": true,
+      "timestamp": "2026-04-28T12:35:19.279199",
+      "receipt_id": "RCP-E82DE077-DELIVERY",
+      "data_fields": [
+        "drive_folder_id",
+        "drive_folder_url",
+        "files_uploaded",
+        "files",
+        "email_sent",
+        "email_to",
+        "email_sent_at",
+        "notion_updated"
+      ]
+    },
+    {
+      "phase": "verification",
+      "success": true,
+      "timestamp": "2026-04-28T12:35:19.279480",
+      "receipt_id": "RCP-E82DE077-VERIFICATION",
+      "data_fields": [
+        "stripe_payment",
+        "postgres_lead",
+        "notion_page",
+        "google_drive_folder",
+        "email_sent",
+        "audit_trail_complete",
+        "security_gates_passed"
+      ]
+    }
+  ],
+  "security_checks": {
+    "security_layer": true,
+    "issue_verifier": true,
+    "trust_compliance": true,
+    "tool_gateway_wired": true
+  },
+  "gateway_receipts": [
+    {
+      "phase": "intake",
+      "receipt_id": "RCP-E82DE077-INTAKE",
+      "issued_at": "2026-04-28T12:35:19.278661"
+    },
+    {
+      "phase": "payment",
+      "receipt_id": "RCP-E82DE077-PAYMENT",
+      "issued_at": "2026-04-28T12:35:19.278919"
+    },
+    {
+      "phase": "processing",
+      "receipt_id": "RCP-E82DE077-PROCESSING",
+      "issued_at": "2026-04-28T12:35:19.279058"
+    },
+    {
+      "phase": "delivery",
+      "receipt_id": "RCP-E82DE077-DELIVERY",
+      "issued_at": "2026-04-28T12:35:19.279199"
+    },
+    {
+      "phase": "verification",
+      "receipt_id": "RCP-E82DE077-VERIFICATION",
+      "issued_at": "2026-04-28T12:35:19.279480"
+    }
+  ],
+  "system_verifications": {
+    "stripe_payment": true,
+    "postgres_lead": true,
+    "notion_page": true,
+    "google_drive": true,
+    "email_delivery": true,
+    "audit_trail": true
+  }
+}

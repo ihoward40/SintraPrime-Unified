@@ -1,0 +1,36 @@
+{
+  "delivery_timestamp": "2026-04-28T12:35:19.279199",
+  "status": "completed",
+  "drive_folder_id": "folder_30965773",
+  "drive_folder_url": "https://drive.google.com/drive/folders/folder_4ba8588b",
+  "files_uploaded": 3,
+  "files": [
+    "trust_analysis.pdf",
+    "compliance_report.pdf",
+    "strategy_recommendations.pdf"
+  ],
+  "email_sent": true,
+  "email_to": "smoke-test-phase19d@example.com",
+  "email_sent_at": "2026-04-28T12:35:19.279203",
+  "notion_updated": true,
+  "documents": [
+    {
+      "name": "trust_analysis.pdf",
+      "type": "pdf",
+      "size_kb": 245,
+      "status": "uploaded"
+    },
+    {
+      "name": "compliance_report.pdf",
+      "type": "pdf",
+      "size_kb": 156,
+      "status": "uploaded"
+    },
+    {
+      "name": "strategy_recommendations.pdf",
+      "type": "pdf",
+      "size_kb": 189,
+      "status": "uploaded"
+    }
+  ]
+}

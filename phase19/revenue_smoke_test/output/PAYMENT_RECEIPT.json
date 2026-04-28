@@ -1,0 +1,20 @@
+{
+  "receipt_type": "stripe_payment",
+  "payment_intent_id": "pi_mock_da7ccc74-593",
+  "amount": 9700,
+  "amount_dollars": 97.0,
+  "currency": "usd",
+  "status": "succeeded",
+  "receipt_url": "https://receipt.stripe.com/mock_3f335ce2-823",
+  "charge_id": "ch_mock_7c58bd94-b5b",
+  "customer_email": "smoke-test-phase19d@example.com",
+  "timestamp": "2026-04-28T12:35:19.278919",
+  "test_mode": true,
+  "test_card": "4242424242424242",
+  "product": "Basic Trust Review",
+  "metadata": {
+    "correlation_id": "e82de077-544f-40ad-82aa-2cc0ea86a484",
+    "lead_id": "33d59301-aa15-4666-abc6-a58fc51c5b0d",
+    "phase": "19d"
+  }
+}

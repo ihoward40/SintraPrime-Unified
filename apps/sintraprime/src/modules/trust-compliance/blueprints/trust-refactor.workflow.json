@@ -1,0 +1,114 @@
+{
+  "id": "trust-refactor-v1",
+  "name": "Trust Document Compliance Refactor",
+  "version": "1.0.0",
+  "description": "Compliance-first workflow for classifying, rewriting, and governing trust and administrative documents before use in bank, court, IRS, credit bureau, or creditor contexts.",
+  "module": "modules/trust-compliance",
+  "governanceLevel": "compliance-first",
+  "trigger": {
+    "type": "document_upload",
+    "acceptedFormats": ["pdf", "docx", "txt", "md"],
+    "maxFileSizeMB": 25
+  },
+  "safetyGates": {
+    "preExecution": [
+      "Is this factually supported?",
+      "Is this legally recognized?",
+      "Is this tax-sensitive?",
+      "Could this be treated as frivolous, fraudulent, threatening, or misleading?",
+      "Does it need attorney or CPA review?"
+    ],
+    "blockOnFail": true,
+    "flaggedOutcomes": ["BLOCKED", "REWRITE_REQUIRED"]
+  },
+  "agents": [
+    {
+      "id": "intake",
+      "name": "Document Intake Agent",
+      "module": "agents/intake",
+      "export": "runIntakeAgent",
+      "description": "Reads uploaded document text. Segments by section. Extracts document ID, title, date, parties, addresses, filing numbers, and sensitive-data flags.",
+      "inputs": ["rawText", "filename", "uploadedAt"],
+      "outputs": ["ParsedDocument"]
+    },
+    {
+      "id": "classifier",
+      "name": "Risk Classifier Agent",
+      "module": "agents/classifier",
+      "export": "runClassifierAgent",
+      "description": "Clause-level classification: GREEN (usable with minor cleanup), YELLOW (useful intent, rewrite required), RED (do not send/file/rely on without attorney or CPA review).",
+      "inputs": ["ParsedDocument"],
+      "outputs": ["ClassifiedClause[]"]
+    },
+    {
+      "id": "rewrite",
+      "name": "Compliance Rewrite Agent",
+      "module": "agents/rewrite",
+      "export": "runRewriteAgent",
+      "description": "Converts YELLOW clauses into bank-safe, court-safe, agency-safe language. RED clauses are blocked. Preserves trust law, contract law, fiduciary duty, due process, accounting, verification, good faith, and administrative fairness principles.",
+      "inputs": ["ClassifiedClause[]"],
+      "outputs": ["RewrittenClause[]"]
+    },
+    {
+      "id": "evidence",
+      "name": "Evidence Binder Agent",
+      "module": "agents/evidence",
+      "export": "runEvidenceBinderAgent",
+      "description": "Builds public and reserve exhibit indexes. Public exhibits may be transmitted externally after safety gates pass. Reserve exhibits are internal only.",
+      "inputs": ["ParsedDocument", "ClassifiedClause[]"],
+      "outputs": ["ExhibitIndex"],
+      "exhibitStructure": {
+        "public": ["Ex-A: UCC Filing Acknowledgment", "Ex-B: Certification of Trust", "Ex-C: Banking Resolution", "Ex-D: Trustee Minutes"],
+        "reserve": ["R-1: Security Agreement (internal only)", "R-2: Tax Affidavits/W-8 (internal only)", "R-3: Legacy Notices (internal only)"]
+      }
+    },
+    {
+      "id": "recommendation",
+      "name": "Action Recommendation Agent",
+      "module": "agents/recommendation",
+      "export": "runRecommendationAgent",
+      "description": "Recommends permitted next steps per destination context. Blocks unsafe actions and provides rewrite options.",
+      "inputs": ["ClassifiedClause[]"],
+      "outputs": ["ActionRecommendation[]"],
+      "contexts": ["bank", "court", "irs_tax", "credit_bureau", "creditor", "internal_trust_record"]
+    },
+    {
+      "id": "receipt",
+      "name": "Receipt Agent",
+      "module": "agents/receipt",
+      "export": "runReceiptAgent",
+      "description": "Emits an immutable run receipt for every intake, classification, rewrite, block, export, and recommendation.",
+      "inputs": ["ParsedDocument", "ClassifiedClause[]", "RewrittenClause[]", "ExhibitIndex", "ActionRecommendation[]"],
+      "outputs": ["RunReceipt"],
+      "alwaysRun": true
+    }
+  ],
+  "riskTags": [
+    "TRUST_ADMIN",
+    "BANKING_AUTHORITY",
+    "UCC_RECORD",
+    "TAX_POSITION",
+    "A4V_LANGUAGE",
+    "NONRESIDENT_CLAIM",
+    "BIRTH_CERTIFICATE_ACCOUNT_CLAIM",
+    "SELF_EXECUTING_CONTRACT",
+    "MARITIME_LIEN_CLAIM",
+    "THREATENING_FEE_SCHEDULE",
+    "REWRITE_REQUIRED",
+    "DO_NOT_SEND"
+  ],
+  "outputs": [
+    "trust_admin_summary.md",
+    "risk_register.json",
+    "clause_classification_table.md",
+    "bank_safe_packet_outline.md",
+    "court_safe_rewrite_recommendations.md",
+    "exhibit_index.md",
+    "run_receipt.json"
+  ],
+  "actionRegistry": {
+    "ALLOW": "Clause passed all safety gates. Proceed with standard review.",
+    "REWRITE_REQUIRED": "Clause passed intake but requires compliance rewrite before external use.",
+    "BLOCKED": "Clause failed safety gates. Do not export, file, or submit. Internal review only."
+  }
+}

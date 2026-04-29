@@ -1,166 +1,58 @@
-# =============================================================================
-# SintraPrime Unified — .gitignore
-# =============================================================================
-
-# ── Environment & Secrets ────────────────────────────────────────────────────
-.env
-.env.*
-!.env.example
-*.pem
-*.key
-*.p12
-*.pfx
-secrets/
-.secrets/
-
-# ── Python ───────────────────────────────────────────────────────────────────
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-*.pyc
 *.pyo
-
-# ── Virtual Environments ─────────────────────────────────────────────────────
-venv/
-.venv/
-env/
-ENV/
-.env/
-.venv/
-venv.bak/
-.virtualenv/
-.pyenv/
-
-# ── Testing & Coverage ───────────────────────────────────────────────────────
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
 .pytest_cache/
 .coverage
-.coverage.*
-coverage.xml
 htmlcov/
-nosetests.xml
-test-results/
-*.test.db
-junit*.xml
-
-# ── Linting & Type Checking ──────────────────────────────────────────────────
+.tox/
 .mypy_cache/
-.dmypy.json
-dmypy.json
 .ruff_cache/
-.pytype/
+.venv/
+venv/
+env/
+pip-wheel-metadata/
 
-# ── Jupyter ──────────────────────────────────────────────────────────────────
-.ipynb_checkpoints
-*.ipynb
-
-# ── Node / Frontend ──────────────────────────────────────────────────────────
+# Node.js / TypeScript
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
-.npm
-.yarn/cache
-.yarn/unplugged
-.pnp.*
 dist/
-.next/
-.nuxt/
-.output/
+.cache/
+*.tsbuildinfo
 
-# ── Docker ───────────────────────────────────────────────────────────────────
-.docker/
-docker-compose.override.yml
+# Environment
+.env
+.env.*
+!.env.example
 
-# ── Database & Storage ───────────────────────────────────────────────────────
-*.db
-*.sqlite
-*.sqlite3
-*.db-journal
-*.db-wal
-*.db-shm
-data/
-pgdata/
-redis-data/
-minio-data/
-
-# ── Logs & Runtime Artifacts ─────────────────────────────────────────────────
-*.log
-logs/
-*.pid
-*.sock
-celerybeat-schedule
-celerybeat.pid
-instance/
-
-# ── ML / Model Artifacts ─────────────────────────────────────────────────────
-*.pkl
-*.pickle
-*.joblib
-*.h5
-*.hdf5
-*.onnx
-*.pt
-*.pth
-*.bin
-models/
-checkpoints/
-
-# ── IDE & Editor ─────────────────────────────────────────────────────────────
+# Editors / OS
+.DS_Store
 .idea/
 .vscode/
 *.swp
 *.swo
-*~
-.DS_Store
 Thumbs.db
-*.sublime-project
-*.sublime-workspace
 
-# ── OS ───────────────────────────────────────────────────────────────────────
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Desktop.ini
+# Test artifacts
+test-results.xml
+coverage/
+.nyc_output/
 
-# ── Docs Build ───────────────────────────────────────────────────────────────
-docs/_build/
-site/
+# Database
+*.db
+*.sqlite
+*.sqlite3
 
-# ── Dependency Lock (generated — keep requirements.lock, not dist-info) ──────
-*.dist-info/
-
-# ── Temporary Files ──────────────────────────────────────────────────────────
-tmp/
-temp/
-.tmp/
-*.tmp
-*.bak
-*.orig
-*.rej
-
-# ── CI Artifacts ─────────────────────────────────────────────────────────────
-.github/actions/*/node_modules/
+# Logs
+*.log
+logs/

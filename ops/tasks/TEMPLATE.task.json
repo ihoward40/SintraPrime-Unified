@@ -1,0 +1,31 @@
+{
+  "task_id": "SPU-000",
+  "title": "Short task title",
+  "priority": "P0",
+  "assigned_agent": "tasklet|manus|commander",
+  "branch": "agent/manus/SPU-000-short-title",
+  "objective": "What needs to be accomplished.",
+  "context": [
+    "Relevant repo file paths.",
+    "Relevant issue links.",
+    "Relevant acceptance criteria."
+  ],
+  "allowed_actions": [
+    "read_files",
+    "edit_files",
+    "run_tests",
+    "create_branch",
+    "open_pull_request"
+  ],
+  "blocked_actions": [
+    "commit_to_main",
+    "use_real_secrets",
+    "execute_generated_code",
+    "external_legal_or_financial_dispatch"
+  ],
+  "files_expected": [],
+  "commands_to_run": [],
+  "acceptance_checks": [],
+  "receipt_required": true,
+  "human_review_required": true
+}

@@ -1,0 +1,40 @@
+{
+  "task_id": "P0-001",
+  "title": "Add .gitignore and .env.example",
+  "priority": "P0",
+  "assigned_agent": "manus",
+  "branch": "agent/manus/P0-001-gitignore-env",
+  "objective": "Add repository ignore rules and a safe environment variable template.",
+  "context": [
+    "The repo was flagged for missing .gitignore and unsafe secret hygiene.",
+    "Do not include real secrets.",
+    "Use placeholders only."
+  ],
+  "allowed_actions": [
+    "read_files",
+    "edit_files",
+    "create_branch",
+    "run_tests",
+    "open_pull_request"
+  ],
+  "blocked_actions": [
+    "commit_to_main",
+    "use_real_secrets"
+  ],
+  "files_expected": [
+    ".gitignore",
+    ".env.example",
+    "ops/receipts/P0-001-manus.md"
+  ],
+  "commands_to_run": [
+    "git status --ignored",
+    "python -m pytest --tb=short -q"
+  ],
+  "acceptance_checks": [
+    ".env files are ignored except .env.example",
+    "Python cache, virtualenv, DB, logs, and runtime artifacts are ignored",
+    ".env.example contains placeholders only"
+  ],
+  "receipt_required": true,
+  "human_review_required": true
+}

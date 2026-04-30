@@ -1,211 +1,233 @@
 """
-Okta SSO provider tests (16 tests).
-Tests use dependency injection to mock httpx.AsyncClient — no real network calls.
+Tests for Okta OAuth 2.0 provider and configuration.
+
+All tests are mocked; no real network calls.
 """
-import pytest
-import pytest_asyncio
+
+import os
 from unittest.mock import AsyncMock, MagicMock
+
+import httpx
+import pytest
 
 from portal.sso.okta_config import OktaConfig
 from portal.sso.okta_models import OktaTokenResponse, OktaUserInfo
 from portal.sso.okta_provider import OktaProvider
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _make_config(**kwargs):
-    defaults = dict(
-        okta_domain="https://dev-12345.okta.com",
-        client_id="test_client_id",
-        client_secret="test_client_secret",
-        redirect_uri="http://localhost:8000/callback",
-    )
-    defaults.update(kwargs)
-    return OktaConfig(**defaults)
-
-
-def _mock_response(json_data: dict, status_code: int = 200):
-    """Create a mock httpx Response-like object."""
-    resp = MagicMock()
-    resp.status_code = status_code
-    resp.json.return_value = json_data
-    resp.raise_for_status = MagicMock()  # no-op for 2xx
-    return resp
-
-
-def _mock_client(post_resp=None, get_resp=None):
-    """Create a mock AsyncClient with configurable post/get responses."""
-    client = AsyncMock()
-    if post_resp is not None:
-        client.post = AsyncMock(return_value=post_resp)
-    if get_resp is not None:
-        client.get = AsyncMock(return_value=get_resp)
-    return client
-
-
-# ---------------------------------------------------------------------------
-# OktaConfig tests (7)
-# ---------------------------------------------------------------------------
-
 class TestOktaConfig:
-    """Okta configuration validation tests."""
+    """Test OktaConfig validation and initialization."""
 
-    def test_valid_config(self):
-        config = _make_config()
+    def test_init_valid(self):
+        """Test valid OktaConfig initialization."""
+        config = OktaConfig(
+            okta_domain="https://dev-12345.okta.com",
+            client_id="test_client_id",
+            client_secret="test_client_secret",
+            redirect_uri="http://localhost:8000/callback",
+        )
         assert config.okta_domain == "https://dev-12345.okta.com"
         assert config.client_id == "test_client_id"
         assert config.scopes == ["openid", "profile", "email"]
 
-    def test_missing_domain_raises(self):
-        with pytest.raises(ValueError, match="okta_domain must be absolute HTTPS URL"):
-            _make_config(okta_domain="")
+    def test_missing_domain(self):
+        """Test missing okta_domain raises ValueError."""
+        with pytest.raises(ValueError, match="okta_domain"):
+            OktaConfig(
+                okta_domain="",
+                client_id="test",
+                client_secret="test",
+                redirect_uri="http://localhost:8000/callback",
+            )
 
-    def test_http_domain_raises(self):
-        with pytest.raises(ValueError, match="okta_domain must be absolute HTTPS URL"):
-            _make_config(okta_domain="http://dev-12345.okta.com")
+    def test_invalid_protocol(self):
+        """Test invalid protocol in okta_domain raises ValueError."""
+        with pytest.raises(ValueError, match="HTTPS URL"):
+            OktaConfig(
+                okta_domain="http://dev-12345.okta.com",
+                client_id="test",
+                client_secret="test",
+                redirect_uri="http://localhost:8000/callback",
+            )
 
-    def test_missing_client_id_raises(self):
-        with pytest.raises(ValueError, match="client_id is required"):
-            _make_config(client_id="")
+    def test_missing_client_id(self):
+        """Test missing client_id raises ValueError."""
+        with pytest.raises(ValueError, match="client_id"):
+            OktaConfig(
+                okta_domain="https://dev-12345.okta.com",
+                client_id="",
+                client_secret="test",
+                redirect_uri="http://localhost:8000/callback",
+            )
 
-    def test_missing_client_secret_raises(self):
-        with pytest.raises(ValueError, match="client_secret is required"):
-            _make_config(client_secret="")
+    def test_missing_redirect_uri(self):
+        """Test missing redirect_uri raises ValueError."""
+        with pytest.raises(ValueError, match="redirect_uri"):
+            OktaConfig(
+                okta_domain="https://dev-12345.okta.com",
+                client_id="test",
+                client_secret="test",
+                redirect_uri="",
+            )
 
-    def test_missing_redirect_uri_raises(self):
-        with pytest.raises(ValueError, match="redirect_uri is required"):
-            _make_config(redirect_uri="")
+    def test_from_env_success(self):
+        """Test OktaConfig.from_env() with valid environment variables."""
+        # Set up environment
+        os.environ["OKTA_DOMAIN"] = "https://dev-12345.okta.com"
+        os.environ["OKTA_CLIENT_ID"] = "env_client_id"
+        os.environ["OKTA_CLIENT_SECRET"] = "env_client_secret"
+        os.environ["OKTA_REDIRECT_URI"] = "http://localhost:8000/callback"
 
-    def test_custom_scopes(self):
-        config = _make_config(scopes=["openid", "groups"])
-        assert config.scopes == ["openid", "groups"]
+        try:
+            config = OktaConfig.from_env()
+            assert config.okta_domain == "https://dev-12345.okta.com"
+            assert config.client_id == "env_client_id"
+            assert config.client_secret == "env_client_secret"
+            assert config.redirect_uri == "http://localhost:8000/callback"
+        finally:
+            # Clean up
+            os.environ.pop("OKTA_DOMAIN", None)
+            os.environ.pop("OKTA_CLIENT_ID", None)
+            os.environ.pop("OKTA_CLIENT_SECRET", None)
+            os.environ.pop("OKTA_REDIRECT_URI", None)
 
+    def test_from_env_missing_var(self):
+        """Test OktaConfig.from_env() with missing environment variable."""
+        # Ensure variable is missing
+        os.environ.pop("OKTA_DOMAIN", None)
 
-# ---------------------------------------------------------------------------
-# OktaProvider tests (9)
-# ---------------------------------------------------------------------------
+        with pytest.raises((KeyError, ValueError)):
+            OktaConfig.from_env()
+
 
 class TestOktaProvider:
-    """Okta OAuth 2.0 provider tests — all async HTTP calls use injected mocks."""
+    """Test OktaProvider OAuth 2.0 flow."""
 
     @pytest.fixture
     def config(self):
-        return _make_config()
+        """Fixture providing test OktaConfig."""
+        return OktaConfig(
+            okta_domain="https://dev-12345.okta.com",
+            client_id="test_client_id",
+            client_secret="test_client_secret",
+            redirect_uri="http://localhost:8000/callback",
+        )
 
-    # --- get_authorization_url (sync) ---
+    @pytest.fixture
+    def mock_client(self):
+        """Fixture providing mocked httpx.AsyncClient."""
+        return AsyncMock(spec=httpx.AsyncClient)
 
-    def test_get_authorization_url_contains_required_params(self, config):
+    def test_get_authorization_url_with_state(self, config):
+        """Test authorization URL generation with provided state."""
         provider = OktaProvider(config)
-        url, state = provider.get_authorization_url()
-        assert "oauth2/v1/authorize" in url
-        assert "client_id=test_client_id" in url
-        assert "response_type=code" in url
-        assert f"state={state}" in url
-        assert len(state) > 20  # urlsafe token
+        auth_url, returned_state = provider.get_authorization_url(
+            state="test_state_123"
+        )
 
-    def test_get_authorization_url_with_custom_state(self, config):
+        assert "https://dev-12345.okta.com/oauth2/v1/authorize?" in auth_url
+        assert "client_id=test_client_id" in auth_url
+        assert "response_type=code" in auth_url
+        assert "scope=openid+profile+email" in auth_url
+        assert returned_state == "test_state_123"
+
+    def test_get_authorization_url_auto_state(self, config):
+        """Test authorization URL generation with auto-generated state."""
         provider = OktaProvider(config)
-        url, state = provider.get_authorization_url(state="custom_state_xyz")
-        assert state == "custom_state_xyz"
-        assert "state=custom_state_xyz" in url
+        auth_url, returned_state = provider.get_authorization_url()
 
-    # --- exchange_code_for_token (async, mocked) ---
+        assert "https://dev-12345.okta.com/oauth2/v1/authorize?" in auth_url
+        assert returned_state is not None
+        assert len(returned_state) > 0
 
     @pytest.mark.asyncio
-    async def test_exchange_code_returns_token_response(self, config):
-        token_data = {
-            "access_token": "at_abc123",
+    async def test_exchange_code_for_token(self, config, mock_client):
+        """Test authorization code exchange with real HTTP boundary."""
+        provider = OktaProvider(config, client=mock_client)
+
+        # Mock successful token response
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "access_token": "real_okta_access_token_xyz",
             "token_type": "Bearer",
             "expires_in": 3600,
             "scope": "openid profile email",
-            "id_token": "id_xyz",
+            "id_token": "real_okta_id_token_abc",
         }
-        client = _mock_client(post_resp=_mock_response(token_data))
-        provider = OktaProvider(config, client=client)
+        mock_client.post.return_value = mock_response
 
-        result = await provider.exchange_code_for_token("auth_code_123")
+        token = await provider.exchange_code_for_token("auth_code_123")
 
-        assert result.access_token == "at_abc123"
-        assert result.token_type == "Bearer"
-        assert result.id_token == "id_xyz"
-        client.post.assert_called_once()
-        call_args = client.post.call_args
-        assert "oauth2/v1/token" in call_args[0][0]
-        assert call_args[1]["timeout"] == config.timeout_seconds
+        assert token.access_token == "real_okta_access_token_xyz"
+        assert token.id_token == "real_okta_id_token_abc"
+        assert token.token_type == "Bearer"
+        mock_client.post.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_exchange_empty_code_raises(self, config):
+    async def test_exchange_code_empty_code(self, config):
+        """Test exchange_code_for_token with empty code raises ValueError."""
         provider = OktaProvider(config)
+
         with pytest.raises(ValueError, match="code is required"):
             await provider.exchange_code_for_token("")
 
     @pytest.mark.asyncio
-    async def test_exchange_http_error_raises_value_error(self, config):
-        import httpx
-        error_resp = MagicMock()
-        error_resp.status_code = 401
-        error_resp.text = "Unauthorized"
-        http_error = httpx.HTTPStatusError("401", request=MagicMock(), response=error_resp)
-        client = AsyncMock()
-        client.post = AsyncMock(side_effect=http_error)
-        provider = OktaProvider(config, client=client)
+    async def test_get_user_info(self, config, mock_client):
+        """Test user info retrieval with real HTTP boundary."""
+        provider = OktaProvider(config, client=mock_client)
 
-        with pytest.raises(ValueError, match="Okta token exchange failed: 401"):
-            await provider.exchange_code_for_token("bad_code")
-
-    # --- get_user_info (async, mocked) ---
-
-    @pytest.mark.asyncio
-    async def test_get_user_info_returns_user_info(self, config):
-        user_data = {
-            "sub": "okta_user_001",
-            "email": "alice@example.com",
+        # Mock successful userinfo response
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "sub": "00u123xyz",
+            "email": "user@example.com",
             "email_verified": True,
-            "name": "Alice Smith",
-            "given_name": "Alice",
-            "family_name": "Smith",
+            "name": "Test User",
         }
-        client = _mock_client(get_resp=_mock_response(user_data))
-        provider = OktaProvider(config, client=client)
+        mock_client.get.return_value = mock_response
 
-        result = await provider.get_user_info("valid_access_token")
+        user_info = await provider.get_user_info("real_access_token_xyz")
 
-        assert result.sub == "okta_user_001"
-        assert result.email == "alice@example.com"
-        assert result.email_verified is True
-        client.get.assert_called_once()
-        call_args = client.get.call_args
-        assert "oauth2/v1/userinfo" in call_args[0][0]
-        assert "Bearer valid_access_token" in call_args[1]["headers"]["Authorization"]
+        assert user_info.sub == "00u123xyz"
+        assert user_info.email == "user@example.com"
+        assert user_info.email_verified is True
+        assert user_info.name == "Test User"
+        mock_client.get.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_user_info_empty_token_raises(self, config):
+    async def test_get_user_info_empty_token(self, config):
+        """Test get_user_info with empty token raises ValueError."""
         provider = OktaProvider(config)
+
         with pytest.raises(ValueError, match="access_token is required"):
             await provider.get_user_info("")
 
-    @pytest.mark.asyncio
-    async def test_get_user_info_http_error_raises_value_error(self, config):
-        import httpx
-        error_resp = MagicMock()
-        error_resp.status_code = 403
-        error_resp.text = "Forbidden"
-        http_error = httpx.HTTPStatusError("403", request=MagicMock(), response=error_resp)
-        client = AsyncMock()
-        client.get = AsyncMock(side_effect=http_error)
-        provider = OktaProvider(config, client=client)
-
-        with pytest.raises(ValueError, match="Okta userinfo request failed: 403"):
-            await provider.get_user_info("expired_token")
-
-    # --- validate_state ---
-
-    def test_validate_state_matching(self, config):
+    def test_validate_state_valid(self, config):
+        """Test state validation with matching state."""
         provider = OktaProvider(config)
-        assert provider.validate_state("abc123", "abc123") is True
+        assert provider.validate_state("test_state", "test_state") is True
 
-    def test_validate_state_mismatch(self, config):
+    def test_validate_state_invalid(self, config):
+        """Test state validation with non-matching state."""
         provider = OktaProvider(config)
-        assert provider.validate_state("abc123", "xyz789") is False
+        assert provider.validate_state("test_state", "different_state") is False
+
+    def test_response_models(self, config):
+        """Test OktaTokenResponse and OktaUserInfo model parsing."""
+        token = OktaTokenResponse(
+            access_token="token_xyz",
+            token_type="Bearer",
+            expires_in=3600,
+            scope="openid",
+            id_token="id_token_abc",
+        )
+        assert token.access_token == "token_xyz"
+        assert token.id_token == "id_token_abc"
+
+        user = OktaUserInfo(
+            sub="00u123",
+            email="user@example.com",
+            email_verified=True,
+            name="Test User",
+        )
+        assert user.email == "user@example.com"

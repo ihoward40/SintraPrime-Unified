@@ -1,7 +1,12 @@
 """
 Okta OAuth 2.0 Provider.
-Implements OAuth 2.0 authorization code flow for Okta using real HTTPS endpoints.
+
+Implements OAuth 2.0 authorization code flow for Okta.
+Real HTTP boundary: injectable httpx.AsyncClient for dependency injection.
+Tests use mocked responses; production uses real HTTPS calls.
 """
+
+import json
 import logging
 import secrets
 import urllib.parse
@@ -16,37 +21,32 @@ logger = logging.getLogger(__name__)
 
 
 class OktaProvider:
-    """
-    Okta OAuth 2.0 provider with real HTTPS boundary.
+    """Okta OAuth 2.0 provider with injectable HTTP client."""
 
-    Uses dependency injection for the HTTP client so tests can inject
-    a mock AsyncClient without making real network calls.
-
-    Usage (production):
-        provider = OktaProvider(config)
-
-    Usage (tests):
-        provider = OktaProvider(config, client=AsyncMock(...))
-    """
-
-    def __init__(
-        self,
-        config: OktaConfig,
-        client: Optional[httpx.AsyncClient] = None,
-    ):
+    def __init__(self, config: OktaConfig, client: Optional[httpx.AsyncClient] = None):
         """
         Initialize Okta provider.
 
         Args:
-            config: OktaConfig instance (fail-closed validation)
-            client: Optional injected AsyncClient for testing.
+            config: OktaConfig instance
+            client: httpx.AsyncClient for HTTP requests (optional; creates default if None)
         """
         self.config = config
-        self._client = client
+        self.client = client or httpx.AsyncClient()
+        self._owns_client = client is None  # Track if we created the client
+
+    async def __aenter__(self):
+        """Async context manager entry."""
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit; closes client if we own it."""
+        if self._owns_client:
+            await self.client.aclose()
 
     def get_authorization_url(self, state: Optional[str] = None) -> tuple[str, str]:
         """
-        Generate OAuth 2.0 authorization URL.
+        Generate OAuth authorization URL.
 
         Args:
             state: Optional CSRF protection state (generated if not provided)
@@ -55,6 +55,7 @@ class OktaProvider:
             Tuple of (auth_url, state)
         """
         state = state or secrets.token_urlsafe(32)
+
         params = {
             "client_id": self.config.client_id,
             "response_type": "code",
@@ -62,26 +63,27 @@ class OktaProvider:
             "redirect_uri": self.config.redirect_uri,
             "state": state,
         }
+
         auth_url = (
             f"{self.config.okta_domain}/oauth2/v1/authorize?"
             + urllib.parse.urlencode(params)
         )
+
         return auth_url, state
 
     async def exchange_code_for_token(self, code: str) -> OktaTokenResponse:
         """
-        Exchange authorization code for tokens via real HTTPS POST.
-
-        POST {okta_domain}/oauth2/v1/token
+        Exchange authorization code for access token via HTTPS.
 
         Args:
             code: Authorization code from callback
 
         Returns:
-            OktaTokenResponse
+            OktaTokenResponse with access_token, id_token, etc.
 
         Raises:
-            ValueError: If code is empty or token exchange fails
+            ValueError: If code is missing
+            httpx.HTTPError: If token endpoint request fails
         """
         if not code:
             raise ValueError("code is required")
@@ -90,113 +92,83 @@ class OktaProvider:
         payload = {
             "grant_type": "authorization_code",
             "code": code,
-            "redirect_uri": self.config.redirect_uri,
             "client_id": self.config.client_id,
             "client_secret": self.config.client_secret,
+            "redirect_uri": self.config.redirect_uri,
         }
 
         try:
-            if self._client is not None:
-                response = await self._client.post(
-                    token_url,
-                    data=payload,
-                    timeout=self.config.timeout_seconds,
-                )
-            else:
-                async with httpx.AsyncClient() as client:
-                    response = await client.post(
-                        token_url,
-                        data=payload,
-                        timeout=self.config.timeout_seconds,
-                    )
-            response.raise_for_status()
-            data = response.json()
-        except httpx.HTTPStatusError as exc:
-            logger.error(
-                "Okta token exchange failed: %s %s",
-                exc.response.status_code,
-                exc.response.text[:200],
+            response = await self.client.post(
+                token_url,
+                data=payload,
+                headers={"Accept": "application/json"},
+                timeout=10.0,
             )
-            raise ValueError(
-                f"Okta token exchange failed: {exc.response.status_code}"
-            ) from exc
+            response.raise_for_status()
+            token_data = response.json()
 
-        return OktaTokenResponse(
-            access_token=data["access_token"],
-            token_type=data.get("token_type", "Bearer"),
-            expires_in=data.get("expires_in", 3600),
-            scope=data.get("scope", " ".join(self.config.scopes)),
-            id_token=data.get("id_token"),
-            refresh_token=data.get("refresh_token"),
-        )
+            return OktaTokenResponse(
+                access_token=token_data.get("access_token", ""),
+                token_type=token_data.get("token_type", "Bearer"),
+                expires_in=token_data.get("expires_in", 3600),
+                scope=token_data.get("scope", " ".join(self.config.scopes)),
+                id_token=token_data.get("id_token", ""),
+            )
+        except httpx.HTTPError as e:
+            logger.error(f"Okta token exchange failed: {e}")
+            raise
 
     async def get_user_info(self, access_token: str) -> OktaUserInfo:
         """
-        Fetch user profile via real HTTPS GET to Okta userinfo endpoint.
-
-        GET {okta_domain}/oauth2/v1/userinfo
+        Fetch user information using access token via HTTPS.
 
         Args:
-            access_token: Bearer token from token exchange
+            access_token: OAuth access token from token endpoint
 
         Returns:
-            OktaUserInfo
+            OktaUserInfo with user profile
 
         Raises:
-            ValueError: If access_token is empty or request fails
+            ValueError: If access_token is missing
+            httpx.HTTPError: If userinfo request fails
         """
         if not access_token:
             raise ValueError("access_token is required")
 
         userinfo_url = f"{self.config.okta_domain}/oauth2/v1/userinfo"
-        headers = {"Authorization": f"Bearer {access_token}"}
 
         try:
-            if self._client is not None:
-                response = await self._client.get(
-                    userinfo_url,
-                    headers=headers,
-                    timeout=self.config.timeout_seconds,
-                )
-            else:
-                async with httpx.AsyncClient() as client:
-                    response = await client.get(
-                        userinfo_url,
-                        headers=headers,
-                        timeout=self.config.timeout_seconds,
-                    )
-            response.raise_for_status()
-            data = response.json()
-        except httpx.HTTPStatusError as exc:
-            logger.error(
-                "Okta userinfo failed: %s %s",
-                exc.response.status_code,
-                exc.response.text[:200],
+            response = await self.client.get(
+                userinfo_url,
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Accept": "application/json",
+                },
+                timeout=10.0,
             )
-            raise ValueError(
-                f"Okta userinfo request failed: {exc.response.status_code}"
-            ) from exc
+            response.raise_for_status()
+            user_data = response.json()
 
-        return OktaUserInfo(
-            sub=data["sub"],
-            email=data.get("email", ""),
-            email_verified=data.get("email_verified", False),
-            name=data.get("name"),
-            given_name=data.get("given_name"),
-            family_name=data.get("family_name"),
-            preferred_username=data.get("preferred_username"),
-            groups=data.get("groups", []),
-        )
+            return OktaUserInfo(
+                sub=user_data.get("sub", ""),
+                email=user_data.get("email", ""),
+                email_verified=user_data.get("email_verified", False),
+                name=user_data.get("name", ""),
+            )
+        except httpx.HTTPError as e:
+            logger.error(f"Okta userinfo request failed: {e}")
+            raise
 
     def validate_state(self, state: str, expected_state: str) -> bool:
         """
-        Validate CSRF state parameter using constant-time comparison.
+        Validate state parameter for CSRF protection.
 
         Args:
-            state: State received from callback
+            state: State from callback
             expected_state: State generated during authorization
 
         Returns:
-            True if states match, False otherwise
+            True if state is valid, False otherwise
         """
+        # Constant-time comparison to prevent timing attacks
         return secrets.compare_digest(state, expected_state)

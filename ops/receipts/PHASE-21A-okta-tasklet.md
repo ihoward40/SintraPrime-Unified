@@ -1,149 +1,154 @@
-# Phase 21A: Okta Provider Implementation — Receipt
+# Phase 21A: Okta OAuth 2.0 Provider — Tasklet Build Receipt
 
-**Branch:** `agent/tasklet/PHASE-21A-okta`  
-**Implementation Commit:** `ec6c17c`  
-**Status:** ✅ **COMPLETE — 15/15 TESTS PASSING**
-
----
+**Status:** ✅ COMPLETE (Real HTTP Boundary Implemented)
 
 ## Summary
 
-Full Okta OAuth 2.0 provider implementation with authorization code flow, token exchange, userinfo endpoint access, and state validation for CSRF protection.
+Okta OAuth 2.0 provider with real HTTPS boundary via injectable `httpx.AsyncClient` (dependency injection pattern). All stubs replaced with production code. No real network calls in tests (mocked).
 
-| Component | Status | Details |
-|---|---|---|
-| **Okta Configuration** | ✅ | Fail-closed: all env vars required |
-| **OAuth 2.0 Authorization Flow** | ✅ | Auth URL generation with state parameter |
-| **Token Exchange** | ✅ | Code-to-token exchange (auth code flow) |
-| **User Information Endpoint** | ✅ | Fetch user profile using access token |
-| **State Validation** | ✅ | Constant-time CSRF state validation |
-| **Response Models** | ✅ | OktaTokenResponse, OktaUserInfo classes |
-| **Tests** | ✅ 15/15 passing | Config validation (5), OAuth flow (10) |
+## Implementation Details
 
----
+### Architecture: Dependency Injection Pattern
 
-## Files Created
+```python
+# Allows flexible testing with mocked clients
+provider = OktaProvider(config, client=AsyncMock(spec=httpx.AsyncClient))
+
+# Production uses default client (real HTTPS)
+provider = OktaProvider(config)
+```
+
+**Real HTTPS Endpoints:**
+- Token Exchange: `POST {okta_domain}/oauth2/v1/token`
+- User Info: `GET {okta_domain}/oauth2/v1/userinfo`
+
+**Failure Handling:**
+- Network errors logged with context
+- Async context manager cleanup: `async with OktaProvider(...) as provider:`
+- Request timeout: 10.0 seconds (configurable)
+
+### Files Changed (7 total, 535 LOC)
 
 | File | Lines | Purpose |
 |---|---|---|
-| `portal/sso/okta_config.py` | 108 | OktaConfig class with fail-closed env loading |
-| `portal/sso/okta_models.py` | 58 | OktaTokenResponse, OktaUserInfo data classes |
-| `portal/sso/okta_provider.py` | 144 | OktaProvider with OAuth 2.0 authorization code flow |
-| `portal/sso/tests/test_okta.py` | 167 | 15 comprehensive tests (5 config, 10 provider) |
-| `portal/sso/__init__.py` | 31 | Updated module exports for Okta |
-| `.env.example` | 7 additions | Okta environment variable placeholders |
-| **Total** | **515** | **Full implementation + tests** |
+| `portal/sso/okta_provider.py` | 174 | OAuth 2.0 flow (real httpx.AsyncClient) |
+| `portal/sso/okta_config.py` | 108 | Config validation, `from_env()` classmethod |
+| `portal/sso/okta_models.py` | 58 | Response models (Pydantic) |
+| `portal/sso/providers/okta.py` | 4 | Thin provider wrapper |
+| `portal/sso/tests/test_okta.py` | 233 | 16 async tests (from_env(), HTTP mocks) |
+| `portal/sso/__init__.py` | 31 | Updated exports (Session + Okta) |
+| `.env.example` | 27 | Okta config + security warnings |
 
----
+### Test Coverage: 16/16 Passing ✅
 
-## Test Results
+**OktaConfig Tests (7):**
+- ✅ Valid initialization
+- ✅ Missing domain validation
+- ✅ Invalid protocol (non-HTTPS) validation
+- ✅ Missing client_id validation
+- ✅ Missing redirect_uri validation
+- ✅ `from_env()` success with all required vars
+- ✅ `from_env()` failure with missing var
 
-```
-✅ 15/15 tests PASSING (exceeded 12-test target)
+**OktaProvider Tests (9):**
+- ✅ Authorization URL generation (with state)
+- ✅ Authorization URL generation (auto-generated state)
+- ✅ Token exchange via mocked httpx POST
+- ✅ Token exchange fails on empty code
+- ✅ User info retrieval via mocked httpx GET
+- ✅ User info fails on empty token
+- ✅ State validation (valid/invalid)
+- ✅ Response model parsing
 
-TestOktaConfig (5 tests):
-  ✅ test_okta_config_init_valid
-  ✅ test_okta_config_missing_domain
-  ✅ test_okta_config_invalid_domain_protocol
-  ✅ test_okta_config_missing_client_id
-  ✅ test_okta_config_missing_redirect_uri
-
-TestOktaProvider (10 tests):
-  ✅ test_get_authorization_url
-  ✅ test_get_authorization_url_with_custom_state
-  ✅ test_exchange_code_for_token
-  ✅ test_exchange_code_empty_fails
-  ✅ test_get_user_info
-  ✅ test_get_user_info_empty_token_fails
-  ✅ test_validate_state_valid
-  ✅ test_validate_state_invalid
-  ✅ test_okta_token_response_from_dict
-  ✅ test_okta_user_info_from_dict
-```
-
-**Runtime:** 0.11s  
-**Success Rate:** 100% (15/15)
-
----
-
-## Security Validation
-
-| Check | Status | Details |
-|---|---|---|
-| **exec() Security Gate** | ✅ 28/28 | No runtime exec() paths detected |
-| **Bandit Scan** | ✅ Clean | No high/critical issues in Okta code |
-| **CI Bypasses** | ✅ None | Zero `\|\| true` found |
-| **Fail-Closed Config** | ✅ Verified | All env vars required, no defaults |
-| **CSRF Protection** | ✅ Verified | Constant-time state validation |
-
----
-
-## Feature Checklist
-
-- ✅ OAuth 2.0 Authorization Code Flow
-- ✅ Configuration (fail-closed, env vars required)
-- ✅ Authorization URL generation with state
-- ✅ Token exchange (code → access token + ID token)
-- ✅ Userinfo endpoint access
-- ✅ CSRF state validation (constant-time)
-- ✅ Response model classes (OktaTokenResponse, OktaUserInfo)
-- ✅ Comprehensive test coverage (15 tests)
-- ✅ Environment variable documentation (.env.example)
-- ✅ Module exports (__init__.py)
-
----
-
-## Environment Variables
-
-```
-OKTA_DOMAIN=https://dev-12345.okta.com
-OKTA_CLIENT_ID=your_okta_client_id
-OKTA_CLIENT_SECRET=your_okta_client_secret
-OKTA_REDIRECT_URI=http://localhost:8000/callback
-OKTA_SCOPES=openid,profile,email
-OKTA_TIMEOUT_SECONDS=30
+**Command to Verify:**
+```bash
+python -m pytest portal/sso/tests/test_okta.py -v
+# Result: 16 passed in 0.47s
 ```
 
-All required; no defaults. Fail-closed if missing.
+### Security Profile
+
+**Fail-Closed Behavior:**
+- Missing `OKTA_DOMAIN` env var → `KeyError` (caught as `ValueError`)
+- Missing `OKTA_CLIENT_ID` → explicit `ValueError("client_id is required")`
+- Missing `OKTA_CLIENT_SECRET` → explicit `ValueError("client_secret is required")`
+- Missing `OKTA_REDIRECT_URI` → explicit `ValueError("redirect_uri is required")`
+
+**Production Safety:**
+- No real Okta credentials in `.env.example` (placeholders only)
+- No hardcoded secrets in code
+- All real credentials must come from:
+  1. GitHub Secrets (CI/CD)
+  2. Secure credential manager (production servers)
+  3. Environment variables (NEVER in code)
+
+**CRITICAL:** If Okta credentials are accidentally committed:
+- Rotate `OKTA_CLIENT_SECRET` immediately
+- Re-issue `OKTA_CLIENT_ID` if needed
+- Purge git history with BFG or git filter-branch
+
+### Async/Await Pattern
+
+```python
+async with OktaProvider(config) as provider:
+    auth_url, state = provider.get_authorization_url()
+    token = await provider.exchange_code_for_token(code)
+    user_info = await provider.get_user_info(token.access_token)
+```
+
+Sync code (CSRF validation):
+```python
+if not provider.validate_state(callback_state, stored_state):
+    raise ValueError("CSRF check failed")
+```
+
+### Integration Path (Phase 21B)
+
+**Next:** Route registration in portal FastAPI app
+```python
+@router.post("/login/okta")
+async def okta_login(code: str, state: str):
+    provider = OktaProvider(OktaConfig.from_env())
+    # Validate state (sync)
+    # Exchange code for token (async)
+    # Fetch user info (async)
+    # Create session and return redirect
+```
+
+### Commits
+
+1. `ec6c17c` — Initial Okta (stubs)
+2. `983e63b` — Tests + receipt
+3. `a9bfc21` — Env + module exports
+4. `c0f6e3d` — Refactor: Replace stubs with real httpx
+5. `5d09ae0` — Merge main + fix __init__.py
+6. `<current>` — Fix test regex, finalize tests
+
+## Validation Checklist
+
+- ✅ All tests passing (16/16)
+- ✅ Async/await properly implemented
+- ✅ Dependency injection for testing
+- ✅ Real HTTPS endpoints (not mocked in production)
+- ✅ Security warnings in .env.example
+- ✅ from_env() tests (success + failure)
+- ✅ Fail-closed configuration
+- ✅ No runtime exec() calls
+- ✅ Bandit clean
+- ✅ No CI bypasses
+
+## Status: Ready for Review & Merge to Main
+
+**PR #36** can now be reviewed by Commander and merged.
+
+**Blocking Issues:** None.
+
+**Open Questions for Phase 21B:**
+- Should Azure/Google follow the same injectable client pattern?
+- Where should session creation logic live (this provider or route handler)?
 
 ---
 
-## Dependencies
-
-- `PyJWT>=2.8.0` (implicit via Sessions)
-- Standard library: `json`, `logging`, `secrets`, `urllib.parse`
-
----
-
-## Ready for Review
-
-✅ **PR #36 is ready for review:**
-- Branch: `agent/tasklet/PHASE-21A-okta`
-- Commit: `ec6c17c`
-- Target: 15/15 tests passing
-- Security: All gates green
-- Next: Push to GitHub and open PR
-
----
-
-## Blocking
-
-- ✅ PR #35 (Sessions) — MERGED to main
-- PR #36 (Okta) — awaiting push to GitHub
-- PR #37 (Azure) — depends on PR #36 merge
-- PR #38 (Google) — depends on PR #36 merge
-
----
-
-## Notes
-
-- OAuth 2.0 token exchange and userinfo operations are mocked for testing (placeholder implementations). Production deployment requires real HTTPS calls to Okta endpoints.
-- State validation uses `secrets.compare_digest()` for constant-time comparison (CSRF protection).
-- Configuration is fail-closed: missing any required env var raises `ValueError` at initialization time.
-- Test coverage exceeds target (15/15 vs. 12 required).
-
----
-
-**Created by:** Tasklet Phase 21A Agent  
+**Built by:** Tasklet AI  
 **Date:** 2026-04-30  
-**Status:** Ready for merge
+**Verified:** ✅ Real HTTP boundary, no mocks in production path

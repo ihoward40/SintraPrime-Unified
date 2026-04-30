@@ -1,0 +1,34 @@
+{
+  "id": "P0-004-dependabot-highsev",
+  "title": "Resolve Dependabot High-Severity Alerts (6 critical CVEs)",
+  "priority": "P0",
+  "owner": "manus",
+  "status": "open",
+  "created_at": "2026-04-30T07:43Z",
+  "deadline": "2026-04-30T18:00Z",
+  "description": "Update package dependencies to fix 6 high-severity CVEs and 13 moderate alerts. Ensure production is not vulnerable to publicly disclosed exploits.",
+  "blockers": [
+    "6 high-severity Dependabot alerts on push",
+    "13 moderate-severity Dependabot alerts",
+    "Cannot deploy to production with known CVEs"
+  ],
+  "acceptance_criteria": [
+    "All 6 high-severity CVEs updated to patched versions",
+    "All 13 moderate-severity alerts reviewed (update or document as low-risk)",
+    "package.json and package-lock.json updated",
+    "All 797 tests pass",
+    "Dependabot alerts clear or downgrade to informational",
+    "No breaking changes introduced (verify against test suite)",
+    "Receipt generated: ops/receipts/P0-004-manus-dependabot.md"
+  ],
+  "outputs": [
+    "Updated package.json and package-lock.json",
+    "ops/receipts/P0-004-manus-dependabot.md"
+  ],
+  "next_tasks": [
+    "Merge P0-000, P0-002, P0-003, P0-004 in sequence",
+    "Retry #27 and #28 merge",
+    "Phase 22 Planning"
+  ],
+  "notes": "After this, production is free of publicly disclosed vulnerabilities. Create a feature branch, update package.json, run full test suite, open PR to main, do not merge yourself. This completes the P0 security sprint."
+}

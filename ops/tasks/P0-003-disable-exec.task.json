@@ -1,0 +1,70 @@
+{
+  "task_id": "P0-003",
+  "title": "Disable unsafe dynamic execution — gate exec() behind SecurityLayer",
+  "priority": "P0",
+  "assigned_agent": "manus",
+  "branch": "agent/manus/P0-003-disable-exec",
+  "depends_on": "P0-002",
+  "objective": "Gate all exec() calls in production code behind the SecurityLayer R3 approval gate and the NOVA_ALLOW_DYNAMIC_EXEC environment flag. In production, NOVA_ALLOW_DYNAMIC_EXEC must default to false. This removes the B102 bandit finding from the baseline.",
+  "context": [
+    "P0-000 triage confirmed B102 exec_used as a Medium/High bandit finding in production code.",
+    "Confirmed affected files from bandit output:",
+    "  agents/nova/nova_agent.py — dynamic handler execution",
+    "  scheduler/task_executor.py — execute_shell() with shell=True",
+    "The phase18/security/security_hardening.py SecurityLayer already provides R3 approval gating.",
+    "NOVA_ALLOW_DYNAMIC_EXEC=false is already documented in .env.example (added in P0-001).",
+    "The fix is to wire the env flag check into nova_agent.py and task_executor.py.",
+    "Any exec() call must: (1) check NOVA_ALLOW_DYNAMIC_EXEC env var, (2) require SecurityLayer R3 approval, (3) log to AuditTrail."
+  ],
+  "allowed_actions": [
+    "read_files",
+    "edit_files",
+    "create_branch",
+    "run_tests",
+    "open_pull_request"
+  ],
+  "blocked_actions": [
+    "commit_to_main",
+    "remove_security_checks",
+    "weaken_tests",
+    "add_new_exec_calls"
+  ],
+  "confirmed_bandit_findings": [
+    {
+      "id": "B102",
+      "issue": "exec_used",
+      "severity": "Medium",
+      "confidence": "High",
+      "files": ["agents/nova/nova_agent.py", "scheduler/task_executor.py"]
+    },
+    {
+      "id": "B104",
+      "issue": "hardcoded_bind_all_interfaces",
+      "severity": "Medium",
+      "confidence": "Medium",
+      "note": "Secondary target — address if in same files"
+    }
+  ],
+  "files_expected": [
+    "agents/nova/nova_agent.py",
+    "scheduler/task_executor.py",
+    "tests/security/test_no_runtime_exec.py",
+    "ops/receipts/P0-003-manus.md"
+  ],
+  "commands_to_run": [
+    "grep -rn 'exec(' agents/ scheduler/ core/ backend/ --include='*.py'",
+    "bandit -r agents/nova/nova_agent.py scheduler/task_executor.py -ll",
+    "python -m pytest tests/security/ phase18/ --tb=short -q"
+  ],
+  "acceptance_checks": [
+    "exec() in nova_agent.py is gated behind NOVA_ALLOW_DYNAMIC_EXEC env check",
+    "exec() in task_executor.py requires SecurityLayer R3 approval",
+    "NOVA_ALLOW_DYNAMIC_EXEC defaults to false when env var is not set",
+    "All exec() calls are logged to AuditTrail",
+    "bandit B102 finding is resolved for agents/ and scheduler/",
+    "New tests in tests/security/test_no_runtime_exec.py document the behavior",
+    "phase18/ tests still pass (127/127)"
+  ],
+  "receipt_required": true,
+  "human_review_required": true
+}

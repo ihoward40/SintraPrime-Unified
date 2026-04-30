@@ -1,0 +1,51 @@
+{
+  "task_id": "P0-004",
+  "title": "Fix 6 high-severity and 13 moderate Dependabot CVEs",
+  "priority": "P0",
+  "assigned_agent": "manus",
+  "branch": "agent/manus/P0-004-dependabot-cves",
+  "depends_on": "P0-003",
+  "objective": "Update all vulnerable dependencies to patched versions as identified by GitHub Dependabot. After this task, 'safety check -r requirements.txt' must return zero vulnerabilities.",
+  "context": [
+    "GitHub reported 19 vulnerabilities on push to ihoward40/SintraPrime-Unified: 6 high, 13 moderate.",
+    "Source: https://github.com/ihoward40/SintraPrime-Unified/security/dependabot",
+    "Dependency updates must not break existing tests.",
+    "After P0-002, safety check will fail the CI build — so this task is required before CI can go green.",
+    "Use 'pip-audit' or 'safety check' to enumerate all CVEs before patching.",
+    "Pin all updated dependencies to exact versions in requirements.txt.",
+    "Run the full phase18/ test suite after each batch of updates to catch regressions early."
+  ],
+  "allowed_actions": [
+    "read_files",
+    "edit_files",
+    "create_branch",
+    "run_tests",
+    "open_pull_request"
+  ],
+  "blocked_actions": [
+    "commit_to_main",
+    "downgrade_dependencies",
+    "remove_tests",
+    "pin_to_vulnerable_version"
+  ],
+  "files_expected": [
+    "requirements.txt",
+    "ops/receipts/P0-004-manus.md"
+  ],
+  "commands_to_run": [
+    "pip install safety pip-audit",
+    "safety check -r requirements.txt --full-report",
+    "pip-audit -r requirements.txt",
+    "pip install --upgrade <vulnerable_package>",
+    "python -m pytest phase18/ --tb=short -q"
+  ],
+  "acceptance_checks": [
+    "safety check -r requirements.txt returns 0 vulnerabilities",
+    "pip-audit -r requirements.txt returns 0 vulnerabilities",
+    "All existing phase18/ tests pass (127/127 minimum)",
+    "No new ModuleNotFoundError or ImportError introduced",
+    "requirements.txt uses exact version pins (==) not ranges"
+  ],
+  "receipt_required": true,
+  "human_review_required": true
+}

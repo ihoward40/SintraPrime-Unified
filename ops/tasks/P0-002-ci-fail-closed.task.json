@@ -1,0 +1,68 @@
+{
+  "task_id": "P0-002",
+  "title": "Make CI fail closed — remove all || true security bypasses",
+  "priority": "P0",
+  "assigned_agent": "manus",
+  "branch": "agent/manus/P0-002-ci-fail-closed",
+  "depends_on": "P0-000",
+  "objective": "Remove all || true bypass patterns from GitHub Actions workflows so that security checks (bandit, safety) fail the build when issues are found. CI must be fail-closed before PRs #27 and #28 can merge.",
+  "context": [
+    "P0-000 triage confirmed: bandit and safety currently use '|| true' so they NEVER fail the build.",
+    "Confirmed bypass patterns in CI logs:",
+    "  safety check -r requirements.txt || true",
+    "  bandit -r . -x tests/ -ll || true",
+    "Affected workflow files: .github/workflows/ci.yml, .github/workflows/sigma-gate.yml, .github/workflows/issue-verifier.yml",
+    "Bandit baseline: 21 High + 93 Medium issues already exist — removing || true will make CI red until P0-003 and P0-004 fix the underlying issues.",
+    "Strategy: Remove || true BUT add a bandit baseline file (.bandit-baseline.json) so only NEW issues fail the build, not the pre-existing 114 issues.",
+    "This allows CI to go green while still catching regressions."
+  ],
+  "allowed_actions": [
+    "read_files",
+    "edit_files",
+    "create_branch",
+    "run_tests",
+    "open_pull_request"
+  ],
+  "blocked_actions": [
+    "commit_to_main",
+    "add_new_or_true_bypasses",
+    "silence_security_failures",
+    "weaken_tests"
+  ],
+  "confirmed_baseline_failures": {
+    "ruff_errors": 1215,
+    "bandit_high": 21,
+    "bandit_medium": 93,
+    "coverage_actual_pct": 1.7,
+    "coverage_threshold_pct": 80,
+    "test_collection_errors": [
+      "email_validator",
+      "test_config",
+      "tool_registry",
+      "tests.test_nova_agent",
+      "tests.test_sigma_agent",
+      "tests.test_zero_agent"
+    ]
+  },
+  "files_expected": [
+    ".github/workflows/ci.yml",
+    ".github/workflows/sigma-gate.yml",
+    ".github/workflows/issue-verifier.yml",
+    ".bandit-baseline.json",
+    "ops/receipts/P0-002-manus.md"
+  ],
+  "commands_to_run": [
+    "grep -R '|| true' .github/workflows",
+    "bandit -r . -x tests/ -ll --baseline .bandit-baseline.json",
+    "python -m pytest phase18/ --tb=short -q"
+  ],
+  "acceptance_checks": [
+    "grep -R '|| true' .github/workflows returns empty (no bypasses)",
+    "bandit exits with code 1 only for issues NOT in the baseline",
+    "safety exits with code 1 for any known CVE",
+    "Tests still run and produce a report even when they fail",
+    "phase18/ tests still pass (127/127)"
+  ],
+  "receipt_required": true,
+  "human_review_required": true
+}

@@ -1,0 +1,84 @@
+{
+  "id": "P0-003-disable-exec",
+  "title": "Disable Unsafe exec() Paths — Nova Agent + Scheduler Hardening",
+  "priority": "P0",
+  "owner": "manus",
+  "status": "authorized",
+  "created_at": "2026-04-30T08:30Z",
+  "deadline": "2026-04-30T16:00Z",
+  "description": "Gate all exec() and eval() paths in Nova agent and scheduler behind a default-deny SecurityLayer that requires explicit R3-level approval for runtime code generation.",
+  "authorization": "User approved on 2026-04-30 after P0-002 verification. P0-002 security gates now pass. Proceed with implementation.",
+  "blockers": [
+    "Nova agent can execute arbitrary Python code without approval",
+    "Scheduler can run untrusted cron/task code",
+    "No audit trail for code execution requests",
+    "Manus token exposure risk if stored in repo"
+  ],
+  "required_changes": {
+    "nova_agent": {
+      "file": "packages/agents/nova/",
+      "changes": [
+        "Replace all exec() calls with SecurityLayer.check() that defaults to DENY",
+        "Require explicit SecurityLayer token/context to unlock dynamic code execution",
+        "Add validation: only R3-approved contexts may generate and execute code",
+        "Document: Nova requires user approval via ToolGateway.authorize_execution()"
+      ]
+    },
+    "scheduler": {
+      "file": "packages/services/scheduler/",
+      "changes": [
+        "Replace all cron/task execution paths with SecurityLayer guards",
+        "Add rate limiting + audit logging for code generation requests",
+        "Require explicit approval per execution (no blanket tokens)",
+        "Document: Scheduler tasks execute only under human-approved SecurityLayer contexts"
+      ]
+    },
+    "security_layer": {
+      "file": "packages/security/SecurityLayer.ts",
+      "changes": [
+        "Add authorize_execution() method requiring: risk level (R0–R3), user/agent ID, code snippet, approval token",
+        "Log all executions to /ops/receipts/exec-audit.log",
+        "Implement fail-closed: missing approval blocks execution"
+      ]
+    },
+    "tests": [
+      "Unit test: exec() denied without approval",
+      "Integration test: exec() allowed with R3 SecurityLayer token",
+      "Regression: All 797 tests pass"
+    ],
+    "receipt": "ops/receipts/P0-003-manus-exec-hardening.md with before/after grep"
+  },
+  "critical_security_rules": [
+    "⚠️  NO hardcoded GitHub/Manus tokens in repo files, logs, screenshots, or prompts",
+    "⚠️  NO blanket 'allow_exec=true' tokens — require per-execution approval from Tasklet",
+    "⚠️  AUDIT all execution requests to /ops/receipts/exec-audit.log",
+    "⚠️  FAIL-CLOSED: missing approval ⟹ execution blocked",
+    "⚠️  DO use GitHub Secrets for Manus auth",
+    "⚠️  DO use Git Credential Manager or scoped GitHub App tokens for local CLI",
+    "⚠️  DO audit git history for accidental token commits before pushing"
+  ],
+  "acceptance_criteria": [
+    "All exec() paths in Nova secured behind SecurityLayer",
+    "All scheduler code execution paths require SecurityLayer approval",
+    "Default-deny policy: execution blocked without explicit R3 token",
+    "No hardcoded tokens in any file (verified by grep + git audit)",
+    "All 797 tests pass",
+    "Receipt generated: ops/receipts/P0-003-manus-exec-hardening.md",
+    "Before/after grep confirms unsafe pattern removal",
+    "Execution audit log initialized: /ops/receipts/exec-audit.log"
+  ],
+  "outputs": [
+    "Patched packages/agents/nova/ with SecurityLayer guards",
+    "Patched packages/services/scheduler/ with approval checks",
+    "New SecurityLayer.authorize_execution() method",
+    "ops/receipts/P0-003-manus-exec-hardening.md",
+    "ops/receipts/exec-audit.log (initialized)"
+  ],
+  "next_tasks": [
+    "P0-004: Resolve Dependabot high-severity alerts (6 critical CVEs)",
+    "Merge sequence: P0-000 → P0-002 → P0-003 → P0-004",
+    "Retry PR #27 (Agent Command Bus) and #28 (P0-001 .gitignore)",
+    "Phase 22: Advanced Integration Planning"
+  ],
+  "notes": "This is the highest-risk P0 task. Code execution is the largest attack surface in any AI system. Take time to get this right. Verify token handling thoroughly before pushing. Do not merge yourself — Tasklet commander will review receipt and approve merge."
+}

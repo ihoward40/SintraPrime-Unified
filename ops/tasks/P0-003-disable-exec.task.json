@@ -1,0 +1,33 @@
+{
+  "id": "P0-003-disable-exec",
+  "title": "Disable Unsafe exec() Paths — Nova Agent + Scheduler Hardening",
+  "priority": "P0",
+  "owner": "manus",
+  "status": "open",
+  "created_at": "2026-04-30T07:43Z",
+  "deadline": "2026-04-30T16:00Z",
+  "description": "Remove arbitrary code execution from Nova agent and scheduler. Prevents malicious prompts or hijacked integrations from executing arbitrary Python/shell code.",
+  "blockers": [
+    "Nova agent can execute arbitrary Python code via exec()",
+    "Scheduler can evaluate arbitrary expressions via eval()",
+    "This is a critical RCE vector if prompt is poisoned"
+  ],
+  "acceptance_criteria": [
+    "exec() removed from Nova agent or gated behind SecurityLayer R3",
+    "eval() removed from scheduler or gated behind SecurityLayer R3",
+    "child_process.exec() removed from scheduler",
+    "All execution paths require tool registration or explicit approval",
+    "Arbitrary code paths return 403 Forbidden",
+    "All 797 tests pass",
+    "Receipt generated: ops/receipts/P0-003-manus-exec-hardening.md"
+  ],
+  "outputs": [
+    "Updated packages/agents/nova-agent/index.ts",
+    "Updated packages/core/scheduler/executor.ts",
+    "ops/receipts/P0-003-manus-exec-hardening.md"
+  ],
+  "next_tasks": [
+    "P0-004 (Dependabot high-severity fixes)"
+  ],
+  "notes": "After this, Nova and Scheduler are sandboxed. No code can be executed unless it's registered in a tool or explicitly approved by SecurityLayer R3 gating. Create a feature branch, update files, run tests, open PR to main, do not merge yourself."
+}

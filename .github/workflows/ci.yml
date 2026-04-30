@@ -37,6 +37,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
-      - run: pip install safety bandit
-      - run: safety check -r requirements.txt || true
-      - run: bandit -r . -x tests/ -ll || true
+      - name: Install security tools
+        run: pip install safety bandit
+      # P0-002: safety check is now fail-closed — no || true
+      - name: Dependency vulnerability scan (safety)
+        run: safety check -r requirements.txt
+      # P0-002: bandit uses baseline to suppress pre-existing findings;
+      # only NEW issues (not in .bandit-baseline.json) will fail the build.
+      - name: Security lint (bandit — baseline mode)
+        run: bandit -r . -x tests/ -ll --baseline .bandit-baseline.json

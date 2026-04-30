@@ -1,0 +1,32 @@
+{
+  "id": "P0-002-ci-fail-closed",
+  "title": "Remove CI Bypass Patterns (|| true) — Activate Fail-Closed Gates",
+  "priority": "P0",
+  "owner": "manus",
+  "status": "open",
+  "created_at": "2026-04-30T07:43Z",
+  "deadline": "2026-04-30T14:00Z",
+  "description": "Remove all instances of || true from GitHub Actions workflows and safety checks. Make CI fail-closed: tests must pass, security checks cannot be silenced.",
+  "blockers": [
+    "Current CI allows security/test failures to be silenced with || true",
+    "This prevents fail-closed mandate from being enforced",
+    "P0-002 must complete before merging #27 and #28"
+  ],
+  "acceptance_criteria": [
+    "All || true patterns removed from .github/workflows/*.yml",
+    "All || true patterns removed from scripts/ci-*.sh",
+    "safety and bandit checks now block PR merge on failure",
+    "All 797 tests pass (or are properly failed, not silenced)",
+    "GitHub Actions show green checks on main",
+    "Receipt generated: ops/receipts/P0-002-manus-ci-gates.md"
+  ],
+  "outputs": [
+    "Updated .github/workflows/ files",
+    "ops/receipts/P0-002-manus-ci-gates.md"
+  ],
+  "next_tasks": [
+    "P0-003 (Disable unsafe exec() paths)",
+    "P0-004 (Dependabot high-severity fixes)"
+  ],
+  "notes": "This task makes CI the gatekeeper. After this, no code can silently bypass security checks. Create a feature branch, update files, run tests locally, open PR to main, do not merge yourself."
+}

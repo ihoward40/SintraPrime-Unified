@@ -57,20 +57,24 @@ jobs:
           print('PASS: Coverage meets threshold')
           "
 
-      - name: Security scan (bandit)
+      # P0-002: || true removed. Bandit now uses .bandit-baseline.json so only
+      # NEW findings (regressions) fail the build, not the 114 pre-existing ones.
+      - name: Security scan (bandit — baseline mode)
         run: |
           python -m bandit -r . \
             --exclude .venv,node_modules,tests \
-            -f json -o /tmp/bandit.json || true
+            --baseline .bandit-baseline.json \
+            -f json -o /tmp/bandit.json
           python -c "
           import json, sys
           data = json.load(open('/tmp/bandit.json'))
           results = data.get('results', [])
           critical = [r for r in results if r['issue_severity'] == 'HIGH']
-          print(f'Bandit: {len(results)} findings, {len(critical)} HIGH')
+          print(f'Bandit (new findings only): {len(results)} findings, {len(critical)} HIGH')
           if critical:
+              print('FAIL: New HIGH severity findings detected — not in baseline')
               sys.exit(1)
-          print('PASS: No critical security findings')
+          print('PASS: No new critical security findings')
           "
 
       - name: Post gate status

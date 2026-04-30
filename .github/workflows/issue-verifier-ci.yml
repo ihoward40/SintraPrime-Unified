@@ -26,8 +26,10 @@ jobs:
       - name: Run unit tests (scoped)
         run: pytest -q tests/
 
-      - name: Security lint (bandit)
-        run: bandit -r . -x tests/ -ll
+      # P0-002: bandit now uses .bandit-baseline.json to suppress pre-existing
+      # findings. Only NEW issues (regressions) will fail the build.
+      - name: Security lint (bandit — baseline mode)
+        run: bandit -r . -x tests/ -ll --baseline .bandit-baseline.json
 
       - name: Dependency vulnerability scan (safety)
         run: safety check -r requirements.txt

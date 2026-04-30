@@ -65,7 +65,7 @@ class SessionConfig:
             refresh_token_ttl_seconds=int(os.getenv("SSO_REFRESH_TOKEN_TTL_SECONDS", "604800")),
             issuer=issuer,
             audience=audience,
-            allow_clock_skew_seconds=int(os.getenv("SSO_ALLOWED_CLOCK_SKEW_SECONDS", "60")),
+            allowed_clock_skew_seconds=int(os.getenv("SSO_ALLOWED_CLOCK_SKEW_SECONDS", "60")),
             require_https=os.getenv("SSO_REQUIRE_HTTPS", "true").lower() == "true",
             secure_cookies=os.getenv("SSO_SECURE_COOKIES", "true").lower() == "true",
             same_site_cookie=os.getenv("SSO_SAME_SITE_COOKIE", "Strict"),

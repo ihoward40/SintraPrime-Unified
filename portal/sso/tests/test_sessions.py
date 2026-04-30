@@ -1,7 +1,7 @@
 """
 Comprehensive Session Management Test Suite
 Tests configuration, models, JWT, storage, and session manager.
-17+ tests covering fail-closed behavior and security properties.
+26 tests covering fail-closed behavior and security properties.
 """
 import pytest
 import os
@@ -406,10 +406,37 @@ class TestSessionManager:
         payload2 = manager.jwt_service.validate_token(token_pair2.refresh_token, token_type="refresh")
         assert payload1["refresh_token_id"] != payload2["refresh_token_id"]
 
+    def test_session_config_from_env_valid(self):
+        """Test SessionConfig.from_env() successfully loads valid environment."""
+        os.environ.update({
+            "SSO_JWT_SECRET_KEY": "x" * 32,
+            "SSO_ISSUER": "https://issuer.example.com",
+            "SSO_AUDIENCE": "https://app.example.com",
+        })
+        config = SessionConfig.from_env()
+        assert config.jwt_secret_key == "x" * 32
+        assert config.issuer == "https://issuer.example.com"
+        assert config.audience == "https://app.example.com"
+        assert config.allowed_clock_skew_seconds == 60
 
-# ==============================================================================
-# Integration Tests
-# ==============================================================================
+    def test_refresh_token_revoke_flag_on_revoke(self):
+        """Test that refresh token is marked revoked after revocation."""
+        from portal.sso.session_models import RefreshToken
+        
+        token = RefreshToken.create(
+            session_id="sess1",
+            user_id="user1",
+            ttl_seconds=3600,
+        )
+        
+        # Initially not revoked
+        assert token.is_revoked is False
+        
+        # Manually revoke (simulating what refresh_session does)
+        token.is_revoked = True
+        
+        # After revocation, is_valid() should return False
+        assert token.is_valid() is False, "Revoked token should not be valid"
 
 class TestSessionIntegration:
     """Integration tests for complete workflows."""

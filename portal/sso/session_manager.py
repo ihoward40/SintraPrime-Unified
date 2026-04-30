@@ -142,7 +142,11 @@ class SessionManager:
             if not session:
                 return None
             
-            # Create new refresh token (old one can be invalidated)
+            # Revoke old refresh token (prevent token replay attacks)
+            stored_token.is_revoked = True
+            await self.store.save_refresh_token(stored_token, self.config.refresh_token_ttl_seconds)
+            
+            # Create new refresh token
             new_refresh_token = RefreshToken.create(
                 session_id=session_id,
                 user_id=user_id,

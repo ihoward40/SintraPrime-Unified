@@ -316,13 +316,30 @@ class NovaAgent:
                     )
                     
                     # Compile and attach the handler
+                    # P0-003: exec gate — default-deny unless explicitly enabled
+                    if os.environ.get("NOVA_ALLOW_DYNAMIC_EXEC", "false").lower() != "true":
+                        logger.warning(
+                            "Dynamic exec blocked: NOVA_ALLOW_DYNAMIC_EXEC is not 'true'. "
+                            "Set this env var explicitly to enable dynamic handler generation."
+                        )
+                        raise PermissionError(
+                            "Dynamic code execution is disabled. "
+                            "Set NOVA_ALLOW_DYNAMIC_EXEC=true to enable."
+                        )
+                    logger.info(
+                        "Dynamic exec permitted via NOVA_ALLOW_DYNAMIC_EXEC flag (audit: %s)",
+                        str(uuid.uuid4())[:8],
+                    )
                     local_env = {}
-                    exec(code.strip(), globals(), local_env)
+                    exec(code.strip(), globals(), local_env)  # noqa: S102
                     if "dynamic_handler" in local_env:
                         spec.handler = local_env["dynamic_handler"]
                         spec.rollback_handler = self._create_default_rollback(action_type)
                         self._registry[action_type] = spec
                         logger.info("Dynamically generated handler for %s", action_type)
+                except PermissionError:
+                    # P0-003: exec gate PermissionError must propagate — do not swallow
+                    raise
                 except Exception as e:
                     logger.error("Failed to dynamically generate handler for %s: %s", action_type, e)
                     raise ValueError(f"Unknown action type: {action_type} and dynamic generation failed.")

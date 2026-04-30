@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import io
 import logging
+import os
 import shlex
 import subprocess
 import sys
@@ -182,6 +183,12 @@ class TaskExecutor:
         if context:
             safe_globals.update(context)
 
+        # P0-003: exec gate — default-deny unless explicitly enabled
+        if os.environ.get("NOVA_ALLOW_DYNAMIC_EXEC", "false").lower() != "true":
+            raise PermissionError(
+                "Dynamic Python execution is disabled. "
+                "Set NOVA_ALLOW_DYNAMIC_EXEC=true to enable."
+            )
         stdout_buf = io.StringIO()
         try:
             with redirect_stdout(stdout_buf):
@@ -211,6 +218,8 @@ class TaskExecutor:
                     )
 
         args = shlex.split(command)
+        # P0-003: shell=False enforced (list args, not string) — no shell injection possible
+        logger.info("Shell exec: %s (safe_mode=%s)", args[0] if args else "?", safe_mode)
         try:
             proc = subprocess.run(
                 args,

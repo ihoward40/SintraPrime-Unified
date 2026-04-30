@@ -1,0 +1,32 @@
+{
+  "id": "P0-000-ci-baseline-triage",
+  "title": "CI Baseline Triage: Determine Root Cause of GitHub Actions Failures",
+  "priority": "P0",
+  "owner": "manus",
+  "status": "open",
+  "created_at": "2026-04-30T07:43Z",
+  "deadline": "2026-04-30T12:00Z",
+  "description": "Triage failing GitHub Actions across PRs #27 and #28 to determine whether failures are pre-existing repo-wide baseline issues or introduced by the PR changes. Do NOT merge. Do NOT patch. Generate receipt only.",
+  "blockers": [
+    "PR #27 (ops/agent-command-bus) is blocked on CI failure",
+    "PR #28 (agent/manus/P0-001) is blocked on CI failure",
+    "Cannot merge governance files while safety gates are broken",
+    "Security checks still contain old bypass patterns (|| true)"
+  ],
+  "acceptance_criteria": [
+    "Receipt generated: ops/receipts/P0-000-manus-ci-triage.md",
+    "Identifies pre-existing baseline failures vs. PR-introduced failures",
+    "Lists all || true patterns in CI config",
+    "Recommends whether to merge #27/#28 before or after P0-002 CI gate removal",
+    "Documents true CI health baseline"
+  ],
+  "outputs": [
+    "ops/receipts/P0-000-manus-ci-triage.md"
+  ],
+  "next_tasks": [
+    "P0-002 (Remove CI || true bypasses)",
+    "P0-003 (Disable unsafe exec() paths)",
+    "P0-004 (Dependabot high-severity fixes)"
+  ],
+  "notes": "This is a discovery task. Manus analyzes but does not modify CI config or merge anything. Output is a receipt that informs the next three P0 tasks."
+}

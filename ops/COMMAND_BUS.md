@@ -33,7 +33,32 @@ agent/manus/<task-id>-short-name
 remediation/<task-id>-short-name
 ```
 
+## Phase Ownership Registry
+
+Before starting any implementation, check this registry. If a phase is already assigned, **stand down immediately** and notify the Commander.
+
+| Phase | Scope | Owner | Status |
+|---|---|---|---|
+| P0-001 | `.gitignore` + `.env.example` | Manus | ✅ Merged #28 |
+| P0-002 | CI fail-closed gates | Manus | ✅ Merged #30 |
+| P0-003 | `exec()` gate | Manus | ✅ Merged #31 |
+| P0-004 | Dependabot CVEs | Manus | ✅ Merged #33 |
+| Phase 21A | SAML/SSO (Sessions, Okta, Azure, Google) | **Tasklet** | 🔄 In progress |
+| Phase 22 | Ruff lint debt + test collection fixes | TBD | Queued |
+
+## Collision Prevention Rule
+
+> **No two agents may work on the same phase, module, or file path simultaneously.**
+>
+> Before creating a branch or writing any code, an agent MUST:
+> 1. Check the Phase Ownership Registry above.
+> 2. Check `git branch -r | grep <phase-keyword>` for any existing branches.
+> 3. If a branch or ownership entry already exists for that scope — **STOP**. Post a comment on the relevant issue/PR and wait for Commander direction.
+>
+> Violation of this rule causes merge conflicts, duplicate work, and wasted CI minutes.
+
 ## Required Gates
+
 
 ```bash
 python -m pytest --tb=short -q

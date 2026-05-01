@@ -3,6 +3,7 @@ FastAPI application factory for SintraPrime Unified Client Portal.
 Multi-tenant, JWT-secured, real-time document vault.
 """
 
+import os
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -13,12 +14,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
-from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.sessions import SessionMiddleware as StarletteSessionMiddleware
 
 from .config import get_settings
 from .database import close_db, init_db, check_db_connection
 from .middleware.audit_middleware import AuditMiddleware
-from .middleware.rate_limiter import RateLimitMiddleware
+from .middleware.rate_limiter import RateLimiterMiddleware as RateLimitMiddleware
 from .routers import (
     admin,
     auth,
@@ -31,10 +32,25 @@ from .routers import (
     sso,
     users,
 )
-from .websocket.connection_manager import ws_manager
+from .sso import (
+    SessionMiddlewareManager,
+    SessionMiddleware as SSOSessionMiddleware,
+    TokenRefreshManager,
+    OktaProvider, OktaConfig,
+    AzureADProvider, AzureConfig,
+    GoogleWorkspaceProvider, GoogleConfig,
+    InMemorySessionStore, RedisSessionStore,
+)
 
 logger = structlog.get_logger(__name__)
-settings = get_settings()
+
+
+def _build_session_store():
+    """Return RedisSessionStore when REDIS_URL is set, else InMemorySessionStore."""
+    redis_url = os.environ.get("REDIS_URL", "")
+    if redis_url:
+        return RedisSessionStore(redis_url=redis_url)
+    return InMemorySessionStore()
 
 
 # ── Lifespan ──────────────────────────────────────────────────────────────────
@@ -42,20 +58,84 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
+    settings = get_settings()
     logger.info("portal.startup", version=settings.APP_VERSION, env=settings.ENVIRONMENT)
 
     # Initialise database connection pool
     await init_db()
 
-    # Warm WebSocket manager
-    await ws_manager.startup()
+    # ── SSO: Session middleware manager ───────────────────────────────────────
+    app.state.sso_session_manager = SessionMiddlewareManager(
+        session_secret=settings.SSO_SESSION_SECRET,
+        session_ttl_seconds=settings.SSO_SESSION_TTL_SECONDS,
+    )
+
+    # ── SSO: Token refresh manager ────────────────────────────────────────────
+    async def _noop_refresh_callback(token):
+        """Default no-op callback; replaced per-provider at runtime."""
+        return None
+
+    app.state.sso_token_refresh_manager = TokenRefreshManager(
+        refresh_callback=_noop_refresh_callback,
+    )
+
+    # ── SSO: Providers (initialised only when config is present) ──────────────
+    if settings.OKTA_DOMAIN and settings.OKTA_CLIENT_ID:
+        app.state.okta_provider = OktaProvider(
+            OktaConfig(
+                domain=settings.OKTA_DOMAIN,
+                client_id=settings.OKTA_CLIENT_ID,
+                client_secret=settings.OKTA_CLIENT_SECRET,
+                redirect_uri=settings.OKTA_REDIRECT_URI,
+                scopes=settings.OKTA_SCOPES.split(),
+            )
+        )
+        logger.info("sso.okta_provider.initialized")
+    else:
+        app.state.okta_provider = None
+        logger.info("sso.okta_provider.skipped", reason="OKTA_DOMAIN or OKTA_CLIENT_ID not set")
+
+    if settings.AZURE_TENANT_ID and settings.AZURE_CLIENT_ID:
+        app.state.azure_provider = AzureADProvider(
+            AzureConfig(
+                tenant_id=settings.AZURE_TENANT_ID,
+                client_id=settings.AZURE_CLIENT_ID,
+                client_secret=settings.AZURE_CLIENT_SECRET,
+                redirect_uri=settings.AZURE_REDIRECT_URI,
+            )
+        )
+        logger.info("sso.azure_provider.initialized")
+    else:
+        app.state.azure_provider = None
+        logger.info("sso.azure_provider.skipped", reason="AZURE_TENANT_ID or AZURE_CLIENT_ID not set")
+
+    if settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET:
+        app.state.google_provider = GoogleWorkspaceProvider(
+            GoogleConfig(
+                client_id=settings.GOOGLE_CLIENT_ID,
+                client_secret=settings.GOOGLE_CLIENT_SECRET,
+                redirect_uri=settings.GOOGLE_REDIRECT_URI,
+                hosted_domain=settings.GOOGLE_HOSTED_DOMAIN or None,
+            )
+        )
+        logger.info("sso.google_provider.initialized")
+    else:
+        app.state.google_provider = None
+        logger.info("sso.google_provider.skipped", reason="GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET not set")
 
     logger.info("portal.ready")
     yield
 
-    # Teardown
+    # ── Teardown ──────────────────────────────────────────────────────────────
     logger.info("portal.shutdown")
-    await ws_manager.shutdown()
+
+    # Stop all active token refresh loops
+    trm = getattr(app.state, "sso_token_refresh_manager", None)
+    if trm:
+        for session_id in list(trm.active_tasks.keys()):
+            await trm.stop_refresh_loop(session_id)
+        logger.info("sso.token_refresh_manager.stopped")
+
     await close_db()
     logger.info("portal.stopped")
 
@@ -63,6 +143,8 @@ async def lifespan(app: FastAPI):
 # ── App factory ───────────────────────────────────────────────────────────────
 
 def create_app() -> FastAPI:
+    settings = get_settings()
+
     app = FastAPI(
         title=settings.APP_NAME,
         version=settings.APP_VERSION,
@@ -137,8 +219,29 @@ def create_app() -> FastAPI:
     # ── Compression ─────────────────────────────────────────────────────────────
     app.add_middleware(GZipMiddleware, minimum_size=1024)
 
-    # ── Session (for MFA state) ──────────────────────────────────────────────────
-    app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
+    # ── Starlette session (for OAuth2 CSRF state cookie) ─────────────────────
+    app.add_middleware(StarletteSessionMiddleware, secret_key=settings.SECRET_KEY)
+
+    # ── SSO session middleware (Phase 21C) — protects /api/ routes ───────────
+    # SessionMiddlewareManager is created in lifespan; we pass a lazy accessor
+    # so the middleware can reference app.state after startup. The _Lazy wrapper
+    # defers the lookup to first request to avoid Starlette startup ordering issues.
+    class _LazySSOSessionMiddleware(SSOSessionMiddleware):
+        """Defers session_manager lookup to first request (after lifespan)."""
+        def __init__(self, app_inner, **kwargs):
+            # Pass a placeholder; dispatch() will read from request.app.state
+            from .sso.middleware import SessionMiddlewareManager as _SMM
+            placeholder = _SMM(session_secret="placeholder", session_ttl_seconds=3600)
+            super().__init__(app_inner, session_manager=placeholder)
+
+        async def dispatch(self, request: Request, call_next):
+            # Replace placeholder with the real manager from app.state
+            real_manager = getattr(request.app.state, "sso_session_manager", None)
+            if real_manager is not None:
+                self.session_manager = real_manager
+            return await super().dispatch(request, call_next)
+
+    app.add_middleware(_LazySSOSessionMiddleware)
 
     # ── Routers ──────────────────────────────────────────────────────────────────
     API_PREFIX = "/api/v1"

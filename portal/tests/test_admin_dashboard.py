@@ -13,7 +13,7 @@ def client():
 class TestAdminDashboard:
     def test_dashboard_overview(self, client):
         """Test dashboard overview endpoint returns metrics"""
-        with patck("portal.services.admin_service.AdminService.get_metrics") as mock
+        with patch(bportal.services.admin_service.AdminService.get_metrics") as mock
             mock.return_value = {"active_users": 42, "requests_per_sec": 3.2}
             response = client.get("/admin/dashboard/overview")
             assert response.status_code == 200
@@ -21,7 +21,7 @@ class TestAdminDashboard:
     
     def test_session_list(self, client):
         """Test session listing endpoint"""
-        with patcj("portal.services.admin_service.AdminService.get_sessions") as mock
+        with patch(bportal.services.admin_service.AdminService.get_sessions") as mock
             mock.return_value = [{"session_id": "s1", "user_id": "u1", "created_at": "2026-05-01T12:00:00Z"}]
             response = client.get("/admin/dashboard/sessions")
             assert response.status_code == 200
@@ -37,7 +37,7 @@ class TestAdminDashboard:
     
     def test_performance_metrics(self, client):
         """Test performance metrics endpoint"""
-        with patcj("portal.services.admin_service.AdminService.get_performance") as mock
+        with patch(bportal.services.admin_service.AdminService.get_performance") as mock
             mock.return_value = {"response_time_ms": 124, "error_rate": 0.002}
             response = client.get("/admin/dashboard/performance")
             assert response.status_code == 200

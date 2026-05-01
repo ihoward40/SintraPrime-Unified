@@ -1,1 +1,181 @@
-"""\nFastAPI SSO Router for PHASE 21B — Session Management & AuthN Integration.\n\nRoutes:\n  POST /auth/session/authorize — Initiate SSO flow (returns auth_url)\n  GET  /auth/session/callback  — SSO provider callback (CSRF protected)\n  POST /auth/session/refresh   — Refresh JWT token\n  POST /auth/session/logout    — Destroy session + cookies\n  GET  /auth/session/me        — Get current user info (session required)\n\nAcceptance Criteria:\n  ✓ CSRF token validation on callback\n  ✓ JWT refresh with new expiry\n  ✓ Secure cookie attributes (httponly, secure, samesite)\n  ✓ Session TTL enforcement (30 min default)\n  ✓ Logout invalidates all sessions\n  ✓ /me requires valid session or 401\n  ✓ All routes log audit trail\n  ✓ Error responses do not leak secrets\n  ✓ Rate limiting on authorize (max 10/min per IP)\n  ✓ Callback timeout: 5 min max\n  ✓ Redirect URI validation (whitelist)\n  ✓ State parameter validation (CSRF protection)\n  ✓ Nonce validation for OIDC\n  ✓ Token refresh fails if session invalidated\n  ✓ Logout removes user from cache\n"""\n\nfrom fastapi import APIRouter, Depends, HTTPException, Request, Response\nfrom fastapi.responses import RedirectResponse\nfrom typing import Optional\nfrom datetime import datetime, timedelta\nimport secrets\nimport hmac\nimport hashlib\nfrom pydantic import BaseModel\nfrom ..session import SessionManager\nfrom .okta_provider import OktaProvider\nfrom .azure_provider import AzureProvider\nfrom .google_provider import GoogleProvider\n\nrouter = APIRouter(prefix=\"/auth/session\", tags=[\"sso\"])\n\n# Dependency: Get active SessionManager\nasync def get_session_manager(request: Request) -> SessionManager:\n    \"\"\"Inject SessionManager from app state.\"\"\"\n    if not hasattr(request.app.state, \"session_manager\"):\n        raise HTTPException(status_code=500, detail=\"SessionManager not initialized\")\n    return request.app.state.session_manager\n\n# Schemas\nclass AuthorizeRequest(BaseModel):\n    provider: str  # \"okta\", \"azure\", \"google\"\n    redirect_after_auth: Optional[str] = None\n\nclass AuthorizeResponse(BaseModel):\n    auth_url: str\n    state: str\n    csrf_token: str\n    expires_in: int  # seconds until state/csrf expire\n\nclass CallbackRequest(BaseModel):\n    code: str\n    state: str\n    csrf_token: str\n\nclass RefreshRequest(BaseModel):\n    refresh_token: str\n\nclass RefreshResponse(BaseModel):\n    access_token: str\n    expires_in: int\n    token_type: str\n\nclass SessionUserResponse(BaseModel):\n    user_id: str\n    email: str\n    name: str\n    groups: list\n    session_created: str\n    session_expires: str\n\n# Routes\n\n@router.post(\"/authorize\", response_model=AuthorizeResponse)\nasync def authorize(\n    req: AuthorizeRequest,\n    request: Request,\n    session_mgr: SessionManager = Depends(get_session_manager)\n) -> AuthorizeResponse:\n    \"\"\"\n    Initiate SSO flow.\n    \n    Acceptance Criteria:\n    ✓ Validate provider in [\"okta\", \"azure\", \"google\"]\n    ✓ Generate state + csrf token (cryptographically secure)\n    ✓ Store state in cache with 5 min TTL\n    ✓ Return auth_url from provider\n    ✓ Rate limit: max 10 authorize calls per IP per minute\n    ✓ Log audit trail: IP, provider, timestamp\n    \"\"\"\n    # Rate limit check\n    client_ip = request.client.host\n    rate_limit_key = f\"auth:authorize:{client_ip}\"\n    if await session_mgr.redis.get(rate_limit_key):\n        count = int(await session_mgr.redis.get(rate_limit_key))\n        if count >= 10:\n            raise HTTPException(status_code=429, detail=\"Too many authorize requests\")\n    \n    # Get provider\n    provider_name = req.provider.lower()\n    if provider_name not in [\"okta\", \"azure\", \"google\"]:\n        raise HTTPException(status_code=400, detail=\"Unknown provider\")\n    \n    # Generate state + csrf\n    state = secrets.token_urlsafe(32)\n    csrf_token = secrets.token_urlsafe(32)\n    \n    # Store in cache (5 min TTL)\n    await session_mgr.redis.setex(f\"sso:state:{state}\", 300, provider_name)\n    await session_mgr.redis.setex(f\"sso:csrf:{csrf_token}\", 300, state)\n    \n    # Rate limit increment\n    await session_mgr.redis.incr(rate_limit_key)\n    await session_mgr.redis.expire(rate_limit_key, 60)\n    \n    # Get auth URL from provider\n    if provider_name == \"okta\":\n        provider = OktaProvider(config=request.app.state.okta_config)\n        auth_url = provider.get_authorize_url(state=state, redirect_uri=req.redirect_after_auth or \"http://localhost:8000/auth/session/callback\")\n    elif provider_name == \"azure\":\n        provider = AzureProvider(config=request.app.state.azure_config)\n        auth_url = provider.get_authorize_url(state=state, redirect_uri=req.redirect_after_auth or \"http://localhost:8000/auth/session/callback\")\n    else:  # google\n        provider = GoogleProvider(config=request.app.state.google_config)\n        auth_url = provider.get_authorize_url(state=state, redirect_uri=req.redirect_after_auth or \"http://localhost:8000/auth/session/callback\")\n    \n    # Audit log\n    await session_mgr.log_audit(\n        event=\"sso_authorize_initiated\",\n        user_id=\"anonymous\",\n        ip=client_ip,\n        provider=provider_name,\n        timestamp=datetime.utcnow().isoformat()\n    )\n    \n    return AuthorizeResponse(\n        auth_url=auth_url,\n        state=state,\n        csrf_token=csrf_token,\n        expires_in=300\n    )\n"
+"""
+FastAPI SSO Router for PHASE 21B - Session Management & AuthN Integration.
+
+Routes:
+  POST /auth/authorize — Initiate SSO (redirect to IdP)
+  GET /auth/callback — Handle IdP callback (OAuth 2.0 code exchange)
+  GET /auth/refresh — Refresh access token
+  POST /auth/logout — Destroy session
+  GET /auth/me — Current user profile
+"""
+
+import logging
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from pydantic import BaseModel, EmailStr
+
+from portal.sso.middleware import (
+    SessionMiddlewareManager,
+    TokenRefreshManager,
+    IdPErrorHandler,
+)
+from portal.sso.providers import okta, azure, google
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="", tags=["SSO"])
+
+
+class AuthorizeRequest(BaseModel):
+    """SSO authorize request."""
+    provider: str  # okta, azure, google
+    redirect_uri: str
+
+
+class UserProfile(BaseModel):
+    """Current user profile from session."""
+    user_id: str
+    email: EmailStr
+    name: str
+    provider: str
+    session_id: str
+
+
+class TokenResponse(BaseModel):
+    """Token response."""
+    access_token: str
+    token_type: str = "Bearer"
+    expires_in: int
+
+
+@router.post("/authorize")
+async def authorize(
+    request: Request,
+    req: AuthorizeRequest,
+) -> dict:
+    """Initiate SSO with specified provider."""
+    provider = req.provider.lower()
+    
+    if provider == "okta":
+        auth_url = okta.get_authorization_url(redirect_uri=req.redirect_uri)
+    elif provider == "azure":
+        auth_url = azure.get_authorization_url(redirect_uri=req.redirect_uri)
+    elif provider == "google":
+        auth_url = google.get_authorization_url(redirect_uri=req.redirect_uri)
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported provider")
+    
+    logger.info(f"SSO authorize initiated for provider {provider}")
+    return {"authorization_url": auth_url, "provider": provider}
+
+
+@router.get("/callback")
+async def callback(
+    request: Request,
+    code: str,
+    state: str,
+    session_manager: SessionMiddlewareManager = Depends(),
+) -> Response:
+    """Handle OAuth 2.0 callback from IdP."""
+    try:
+        # Detect provider from state or request context
+        provider = request.query_params.get("provider", "okta").lower()
+        
+        # Exchange code for tokens
+        if provider == "okta":
+            user_info = await okta.exchange_code(code)
+        elif provider == "azure":
+            user_info = await azure.exchange_code(code)
+        elif provider == "google":
+            user_info = await google.exchange_code(code)
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported provider")
+        
+        # Create session
+        session_id = await session_manager.create_session(
+            user_id=user_info["sub"],
+            email=user_info["email"],
+            provider=provider,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        )
+        
+        # Set secure session cookie
+        response = Response(status_code=302)
+        response.headers["location"] = "/app/dashboard"  # Redirect to app
+        response.set_cookie(
+            "session_id",
+            session_id,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            max_age=3600,  # 1 hour
+        )
+        
+        logger.info(f"SSO callback completed for {user_info.get('email')} via {provider}")
+        return response
+    
+    except Exception as e:
+        logger.error(f"SSO callback failed: {e}")
+        raise HTTPException(status_code=401, detail="Authentication failed")
+
+
+@router.get("/refresh")
+async def refresh(
+    request: Request,
+    token_manager: TokenRefreshManager = Depends(),
+) -> TokenResponse:
+    """Refresh access token using refresh token."""
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="No refresh token")
+    
+    # Get current access token from Authorization header
+    auth_header = request.headers.get("authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing bearer token")
+    
+    access_token = auth_header[7:]
+    
+    # Refresh
+    new_token = await token_manager.refresh_token(access_token, refresh_token)
+    if not new_token:
+        raise HTTPException(status_code=401, detail="Token refresh failed")
+    
+    return TokenResponse(access_token=new_token, expires_in=3600)
+
+
+@router.post("/logout")
+async def logout(
+    request: Request,
+    session_manager: SessionMiddlewareManager = Depends(),
+) -> dict:
+    """Destroy session and logout."""
+    session_id = request.cookies.get("session_id")
+    if session_id:
+        await session_manager.destroy_session(session_id)
+    
+    # Clear cookies
+    response = Response(content="{\"message\": \"Logged out\"}")
+    response.delete_cookie("session_id")
+    response.delete_cookie("refresh_token")
+    
+    logger.info(f"User logged out, session {session_id}")
+    return {"message": "Logged out"}
+
+
+@router.get("/me", response_model=UserProfile)
+async def get_current_user(request: Request) -> UserProfile:
+    """Get current user profile from session."""
+    session = getattr(request.state, "session", None)
+    if not session:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    return UserProfile(
+        user_id=session["user_id"],
+        email=session["email"],
+        name=session.get("name", session["email"]),
+        provider=session["provider"],
+        session_id=session["session_id"],
+    )

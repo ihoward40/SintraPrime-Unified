@@ -1,25 +1,18 @@
-\"\"\"
-Comprehensive tests for Phase 21B FastAPI SSO router.
-\"\"\"
+"""
+SSO module tests -- routing index.
 
-import pytest
-from unittest.mock import AsyncMock
-from fastapi import FastAPI
+The Phase 21B FastAPI SSO route tests live in:
+  portal/routers/tests/test_sso_routes.py  (46 tests)
 
-class MockSessionManager:
-    def __init__(self):
-        self.redis = AsyncMock()
-    
-    async def log_audit(self, **kwargs):
-        pass
+The Phase 21C middleware tests live in:
+  portal/sso/tests/test_middleware.py  (23 tests)
 
-@pytest.fixture
-def app():
-    app = FastAPI()
-    app.state.session_manager = MockSessionManager()
-    return app
+The Phase 21D integration tests live in:
+  portal/sso/tests/test_integration.py  (22 tests)
 
-@pytest.mark.asyncio
-async def test_authorize_okta_success():
-    \"\"\"POST /auth/session/authorize with valid provider returns state+csrf.\"\"\"
-    pass
+This file previously contained a broken Tasklet-generated stub with escaped
+triple-quote syntax errors.  It has been replaced with this index comment so
+that pytest can collect the directory without errors.
+
+Phase 21E cleanup -- 2026-05-01.
+"""

@@ -114,7 +114,8 @@ class CaseEvent(Base):
     location: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
 
     is_client_visible: Mapped[bool] = mapped_column(Boolean, default=False)
-    metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    # Renamed from metadata to avoid SQLAlchemy Declarative API collision. Phase 21E.
+    event_metadata: Mapped[Optional[dict]] = mapped_column("metadata", JSONB, nullable=True)
 
     created_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now())
 

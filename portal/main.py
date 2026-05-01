@@ -28,6 +28,7 @@ from .routers import (
     documents,
     messages,
     notifications,
+    sso,
     users,
 )
 from .websocket.connection_manager import ws_manager
@@ -151,6 +152,7 @@ def create_app() -> FastAPI:
     app.include_router(billing.router, prefix=f"{API_PREFIX}/billing", tags=["Billing"])
     app.include_router(notifications.router, prefix=f"{API_PREFIX}/notifications", tags=["Notifications"])
     app.include_router(admin.router, prefix=f"{API_PREFIX}/admin", tags=["Administration"])
+    app.include_router(sso.router, prefix=f"{API_PREFIX}/sso", tags=["SSO"])
 
     # ── WebSocket ─────────────────────────────────────────────────────────────────
     from .websocket.message_handler import websocket_endpoint

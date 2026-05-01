@@ -139,6 +139,33 @@ class Settings(BaseSettings):
     SHARE_LINK_MAX_EXPIRY_DAYS: int = 90
     SHARE_LINK_BASE_URL: str = "https://share.sintraprime.ai"
 
+    # ── SSO / OAuth 2.0 ──────────────────────────────────────────────────────
+    # Shared session settings
+    SSO_SESSION_SECRET: str = "CHANGE-ME-SSO-SESSION-SECRET-256-BIT"
+    SSO_ISSUER: str = "https://portal.sintraprime.ai"
+    SSO_AUDIENCE: str = "sintraprime-portal"
+    SSO_SESSION_TTL_SECONDS: int = 3600          # 1 hour
+    SSO_REFRESH_TTL_SECONDS: int = 2592000       # 30 days
+
+    # Okta
+    OKTA_DOMAIN: str = ""                        # e.g. dev-123456.okta.com
+    OKTA_CLIENT_ID: str = ""
+    OKTA_CLIENT_SECRET: str = ""
+    OKTA_REDIRECT_URI: str = "https://portal.sintraprime.ai/api/v1/sso/okta/callback"
+    OKTA_SCOPES: str = "openid email profile offline_access"
+
+    # Azure AD
+    AZURE_TENANT_ID: str = ""
+    AZURE_CLIENT_ID: str = ""
+    AZURE_CLIENT_SECRET: str = ""
+    AZURE_REDIRECT_URI: str = "https://portal.sintraprime.ai/api/v1/sso/azure/callback"
+
+    # Google Workspace
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = "https://portal.sintraprime.ai/api/v1/sso/google/callback"
+    GOOGLE_HOSTED_DOMAIN: str = ""              # e.g. yourdomain.com; empty = any Google account
+
     @field_validator("ENCRYPTION_KEY")
     @classmethod
     def validate_encryption_key(cls, v: str) -> str:

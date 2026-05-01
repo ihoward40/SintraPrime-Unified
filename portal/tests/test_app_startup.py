@@ -1,6 +1,6 @@
 """Smoke test to verify app boots without import errors."""
 import pytest
-ifrom portal.main import create_app
+from portal.main import create_app
 from portal.config import get_settings
 
 

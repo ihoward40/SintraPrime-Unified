@@ -51,7 +51,8 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
             return Response(content="Rate limit exceeded", status_code=429)
 
         self.request_history[client_ip].append(now_utc)
-        return await call_next(request)
+        response = await call_next(request)
+        return response
 
 
 def setup_middleware(app):
@@ -59,7 +60,7 @@ def setup_middleware(app):
     app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.CORS_ORIGINS,
+        allow_vigins=settings.CORS_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

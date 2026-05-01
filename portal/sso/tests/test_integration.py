@@ -91,7 +91,7 @@ class TestRedisSessionStoreConstructor:
     def test_accepts_redis_url(self):
         """RedisSessionStore must accept a redis_url string and create a client."""
         fake_redis = MagicMock()
-        with patch("redis.Redis.from_url", return_value=fake_redis) as mock_from_url:
+        with patch("redis.asyncio.Redis.from_url", return_value=fake_redis) as mock_from_url:
             store = RedisSessionStore(redis_url="redis://localhost:6379/1")
             mock_from_url.assert_called_once_with(
                 "redis://localhost:6379/1", decode_responses=True
@@ -101,7 +101,7 @@ class TestRedisSessionStoreConstructor:
     def test_redis_client_takes_precedence_over_url(self):
         """When both redis_client and redis_url are provided, redis_client wins."""
         mock_client = MagicMock()
-        with patch("redis.Redis.from_url") as mock_from_url:
+        with patch("redis.asyncio.Redis.from_url") as mock_from_url:
             store = RedisSessionStore(redis_client=mock_client, redis_url="redis://ignored")
             mock_from_url.assert_not_called()
             assert store.redis is mock_client
@@ -256,13 +256,12 @@ class TestSessionMiddlewareFailClosed:
         async def protected(request):
             return PlainTextResponse("secret")
 
+        manager = SessionMiddlewareManager(
+            session_secret="test-secret-32-bytes-long-enough!",
+            session_ttl_seconds=3600,
+        )
         app = Starlette(routes=[Route("/api/secret", protected)])
-        middleware, _ = self._make_middleware()
-
-        # Wrap the app with the middleware
-        from starlette.middleware import Middleware
-        app.add_middleware(SessionMiddleware, session_manager=_[1] if False else
-                           SessionMiddlewareManager("test-secret-32-bytes-long-enough!", 3600))
+        app.add_middleware(SessionMiddleware, session_manager=manager)
 
         client = TestClient(app, raise_server_exceptions=False)
         resp = client.get("/api/secret")

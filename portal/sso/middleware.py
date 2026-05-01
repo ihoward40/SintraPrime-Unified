@@ -301,15 +301,38 @@ class SessionMiddleware(BaseHTTPMiddleware):
         '/auth/session/logout',
         '/api/',
     ]
-    
+
+    # SSO login/callback routes must be exempt — they are the entry points that
+    # establish a session and therefore cannot require one to proceed.
+    # NOTE: '/' is handled via exact match below, not startswith, to avoid
+    # matching every path (all paths start with '/').
+    BYPASS_PATHS = [
+        '/api/v1/sso/',
+        '/api/v1/auth/',
+        '/api/docs',
+        '/api/redoc',
+        '/api/openapi.json',
+        '/health',
+    ]
+    BYPASS_EXACT = {'/'}
+
     def __init__(self, app: ASGIApp, session_manager: SessionMiddlewareManager):
         super().__init__(app)
         self.session_manager = session_manager
-    
+
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Validate session for protected paths."""
+        # Bypass paths always pass through (SSO entry points, health, docs)
+        path = request.url.path
+        is_bypassed = (
+            path in self.BYPASS_EXACT
+            or any(path.startswith(p) for p in self.BYPASS_PATHS)
+        )
+        if is_bypassed:
+            return await call_next(request)
+
         # Check if path is protected
-        is_protected = any(request.url.path.startswith(p) for p in self.PROTECTED_PATHS)
+        is_protected = any(path.startswith(p) for p in self.PROTECTED_PATHS)
         
         if is_protected:
             session_id = request.cookies.get('session_id')

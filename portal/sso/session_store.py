@@ -129,8 +129,8 @@ class RedisSessionStore(SessionStore):
                 "RedisSessionStore requires either redis_client or redis_url"
             )
         if redis_client is None:
-            import redis as _redis
-            redis_client = _redis.Redis.from_url(redis_url, decode_responses=True)
+            import redis.asyncio as _aioredis
+            redis_client = _aioredis.Redis.from_url(redis_url, decode_responses=True)
         self.redis = redis_client
         self.session_key_prefix = "sso:session:"
         self.refresh_token_key_prefix = "sso:refresh_token:"

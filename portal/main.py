@@ -224,19 +224,8 @@ def create_app() -> FastAPI:
 
     # ── SSO session middleware (Phase 21C) — protects /api/ routes ───────────
     # SessionMiddlewareManager is created in lifespan; we pass a lazy accessor
-    # so the middleware can reference app.state after startup.
-    _sso_session_manager_holder: list = []  # populated in lifespan via startup event
-
-    @app.on_event("startup")
-    async def _attach_sso_middleware():
-        """Attach SSOSessionMiddleware after lifespan has populated app.state."""
-        # NOTE: Middleware cannot be added after app startup in Starlette, so we
-        # wire it here using the manager that was created in the lifespan context.
-        # The manager is available on app.state at this point.
-        pass  # Middleware is added below before lifespan runs (see add_middleware call)
-
-    # Add SSO session middleware — it reads app.state.sso_session_manager lazily
-    # by wrapping the lookup in a factory closure.
+    # so the middleware can reference app.state after startup. The _Lazy wrapper
+    # defers the lookup to first request to avoid Starlette startup ordering issues.
     class _LazySSOSessionMiddleware(SSOSessionMiddleware):
         """Defers session_manager lookup to first request (after lifespan)."""
         def __init__(self, app_inner, **kwargs):

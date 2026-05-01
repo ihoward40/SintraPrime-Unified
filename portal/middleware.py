@@ -39,8 +39,9 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
         now_utc = datetime.now(timezone.utc)
 
         if client_ip not in self.request_history:
-            self.request_history[client_ip] = [(
-         cutoff = datetime.fromtimestamp(now_utc.timestamp() - 60, tz=timezone.utc)
+            self.request_history[client_ip] = [
+
+        cutoff = datetime.fromtimestamp(now_utc.timestamp() - 60, tz=timezone.utc)
         self.request_history[client_ip] = [
             req_time for req_time in self.request_history[client_ip]
             if req_time > cutoff
@@ -50,7 +51,8 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
             return Response(content="Rate limit exceeded", status_code=429)
 
         self.request_history[client_ip].append(now_utc)
-        return await call_next(request)
+        response = await call_next(request)
+        return response
 
 
 def setup_middleware(app):
@@ -58,7 +60,7 @@ def setup_middleware(app):
     app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.CORS_ORIGINS,
+        allow_vigins=settings.CORS_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

@@ -1,15 +1,35 @@
-name: Load Test
+name: Load Test (Phase 24B)
+
 on:
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
 
 jobs:
   load-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
-      - run: pip install locust
-      - run: echo "Load test simulation"
+          python-version: '3.12'
+      
+      - name: Install dependencies
+        run: |
+          pip install locust requests
+          pip install -r requirements.txt
+      
+      - name: Run load test
+        run: |
+          python load_test_runner.py --users 100 -s spawn-rate 10 --duration 300
+        env:
+          BASE_URL: ${{ secrets.STAGING_URL || 'http://localhost:8000' }}
+      
+      - name: Upload results
+        if: always
+        uses: actions/upload-artifact@v3
+        with:
+          name: load-test-results
+          path: load_test_results/

@@ -5,7 +5,7 @@ Handles session lifecycle, background token refresh, IdP error recovery.
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Callable, Any
 from dataclasses import dataclass, field
 import hashlib
@@ -13,7 +13,6 @@ import hashlib
 from fastapi import Request, Response, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
-import jwt
 
 logger = logging.getLogger(__name__)
 
@@ -32,12 +31,12 @@ class SessionToken:
     
     def is_expired(self) -> bool:
         """Check if token is expired."""
-        return datetime.utcnow() >= self.expires_at
+        return datetime.now(timezone.utc) >= self.expires_at
     
     def should_refresh(self) -> bool:
         """Check if token should refresh at 80% TTL."""
         ttl = (self.expires_at - self.issued_at).total_seconds()
-        elapsed = (datetime.utcnow() - self.issued_at).total_seconds()
+        elapsed = (datetime.now(timezone.utc) - self.issued_at).total_seconds()
         return elapsed >= (ttl * 0.8)
 
 
@@ -85,11 +84,11 @@ class SessionMiddlewareManager:
         """Return session TTL in seconds."""
         return int(self.session_ttl.total_seconds())
     
-    @staticmethod
-    def _generate_session_id(user_id: str, issued_at: datetime) -> str:
-        """Generate a secure session ID using HMAC."""
+    def _generate_session_id(self, user_id: str, issued_at: datetime) -> str:
+        """Generate a secure session ID using HMAC-SHA256 with the session secret."""
+        import hmac as hmac_mod
         data = f"{user_id}:{issued_at.isoformat()}"
-        return hashlib.sha256(data.encode()).hexdigest()
+        return hmac_mod.new(self.session_secret.encode(), data.encode(), 'sha256').hexdigest()
 
 
 class TokenRefreshManager:
@@ -164,7 +163,7 @@ class TokenRefreshManager:
     
     def _record_failure(self, session_id: str) -> None:
         """Record a failure and check circuit breaker threshold."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         if session_id not in self.failure_log:
             self.failure_log[session_id] = []
         
@@ -243,7 +242,7 @@ class IdPErrorHandler:
             code=error_code,
             message=error_message,
             provider=provider,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             recovery_strategy=strategy,
             user_message=user_msg,
             request_id=request_id
@@ -259,7 +258,7 @@ class IdPErrorHandler:
             return False
         
         # Reset circuit breaker after 5 minutes
-        if datetime.utcnow() - cb['opened_at'] > timedelta(minutes=5):
+        if datetime.now(timezone.utc) - cb['opened_at'] > timedelta(minutes=5):
             cb['open'] = False
             cb['failures'] = 0
             logger.info(f"Circuit breaker reset for provider: {provider}")
@@ -277,7 +276,7 @@ class IdPErrorHandler:
         
         if cb['failures'] >= 3:
             cb['open'] = True
-            cb['opened_at'] = datetime.utcnow()
+            cb['opened_at'] = datetime.now(timezone.utc)
             logger.error(f"Circuit breaker OPEN for provider: {provider} (3+ failures)")
     
     def record_provider_success(self, provider: str) -> None:
@@ -314,12 +313,14 @@ class SessionMiddleware(BaseHTTPMiddleware):
             session_id = request.cookies.get('session_id')
             if not session_id:
                 logger.warning(f"No session cookie for protected route: {request.url.path}")
-                raise HTTPException(status_code=401, detail="Unauthorized: No session")
+                from starlette.responses import JSONResponse as _JR
+                return _JR(status_code=401, content={"detail": "Unauthorized: No session"})
             
             token = self.session_manager.validate_session(session_id)
             if not token:
                 logger.warning(f"Invalid session for protected route: {request.url.path}")
-                raise HTTPException(status_code=401, detail="Unauthorized: Invalid session")
+                from starlette.responses import JSONResponse as _JR
+                return _JR(status_code=401, content={"detail": "Unauthorized: Invalid session"})
             
             # Attach token to request state for use in route handlers
             request.state.session_token = token

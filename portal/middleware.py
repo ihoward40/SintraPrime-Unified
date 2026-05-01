@@ -39,8 +39,9 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
         now_utc = datetime.now(timezone.utc)
 
         if client_ip not in self.request_history:
-            self.request_history[client_ip] = [(
-         cutoff = datetime.fromtimestamp(now_utc.timestamp() - 60, tz=timezone.utc)
+            self.request_history[client_ip] = [
+
+        cutoff = datetime.fromtimestamp(now_utc.timestamp() - 60, tz=timezone.utc)
         self.request_history[client_ip] = [
             req_time for req_time in self.request_history[client_ip]
             if req_time > cutoff

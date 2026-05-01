@@ -115,11 +115,22 @@ class InMemorySessionStore(SessionStore):
 
 class RedisSessionStore(SessionStore):
     """Redis-backed session store for production."""
-    
-    def __init__(self, redis_client):
-        """Initialize with Redis client."""
-        if not redis_client:
-            raise ValueError("redis_client is required for RedisSessionStore")
+
+    def __init__(self, redis_client=None, *, redis_url: str = ""):
+        """Initialize with a Redis client object or a redis_url string.
+
+        Accepts either:
+          - ``redis_client``: a pre-constructed ``redis.Redis`` instance, or
+          - ``redis_url``: a connection URL (e.g. ``redis://localhost:6379/1``)
+            from which a client is created automatically.
+        """
+        if redis_client is None and not redis_url:
+            raise ValueError(
+                "RedisSessionStore requires either redis_client or redis_url"
+            )
+        if redis_client is None:
+            import redis as _redis
+            redis_client = _redis.Redis.from_url(redis_url, decode_responses=True)
         self.redis = redis_client
         self.session_key_prefix = "sso:session:"
         self.refresh_token_key_prefix = "sso:refresh_token:"

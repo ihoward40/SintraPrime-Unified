@@ -192,6 +192,8 @@ class TokenRefreshManager:
                 await self.active_tasks[session_id]
             except asyncio.CancelledError:
                 pass
+            finally:
+                self.active_tasks.pop(session_id, None)
             logger.info(f"Refresh loop stopped for session: {session_id}")
 
 

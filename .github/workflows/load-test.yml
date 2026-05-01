@@ -1,0 +1,15 @@
+name: Load Test
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: pip install locust
+      - run: echo "Load test simulation"

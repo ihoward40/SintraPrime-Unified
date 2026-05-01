@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import hmac
 import logging
+import os
 import secrets
 from typing import Annotated, Literal, Optional
 
@@ -36,10 +37,9 @@ from ..sso import (
 )
 from ..sso.providers.azure import AzureADProvider, AzureConfig
 from ..sso.providers.google import GoogleWorkspaceProvider, GoogleConfig
+from ..sso.session_store import RedisSessionStore
 
 logger = logging.getLogger(__name__)
-settings = get_settings()
-
 router = APIRouter()
 
 # ── Cookie / session constants ────────────────────────────────────────────────
@@ -76,15 +76,22 @@ class SSORefreshResponse(BaseModel):
 
 # ── Provider / SessionManager factories ──────────────────────────────────────
 def _get_session_manager() -> SessionManager:
-    """Build a SessionManager from app settings."""
+    """Build a SessionManager from app settings.
+
+    Uses RedisSessionStore when REDIS_URL is set in the environment (production),
+    and falls back to InMemorySessionStore for local development and testing.
+    """
+    s = get_settings()
     cfg = SessionConfig(
-        secret_key=settings.SSO_SESSION_SECRET,
-        issuer=settings.SSO_ISSUER,
-        audience=settings.SSO_AUDIENCE,
-        session_ttl_seconds=settings.SSO_SESSION_TTL_SECONDS,
-        refresh_token_ttl_seconds=settings.SSO_REFRESH_TTL_SECONDS,
+        secret_key=s.SSO_SESSION_SECRET,
+        issuer=s.SSO_ISSUER,
+        audience=s.SSO_AUDIENCE,
+        session_ttl_seconds=s.SSO_SESSION_TTL_SECONDS,
+        refresh_token_ttl_seconds=s.SSO_REFRESH_TTL_SECONDS,
     )
-    return SessionManager(cfg, store=InMemorySessionStore())
+    redis_url = os.environ.get("REDIS_URL", "")
+    store = RedisSessionStore(redis_url=redis_url) if redis_url else InMemorySessionStore()
+    return SessionManager(cfg, store=store)
 
 
 def _get_okta_provider() -> OktaProvider:
@@ -93,21 +100,23 @@ def _get_okta_provider() -> OktaProvider:
 
 
 def _get_azure_provider() -> AzureADProvider:
+    s = get_settings()
     cfg = AzureConfig(
-        tenant_id=settings.AZURE_TENANT_ID,
-        client_id=settings.AZURE_CLIENT_ID,
-        client_secret=settings.AZURE_CLIENT_SECRET,
-        redirect_uri=settings.AZURE_REDIRECT_URI,
+        tenant_id=s.AZURE_TENANT_ID,
+        client_id=s.AZURE_CLIENT_ID,
+        client_secret=s.AZURE_CLIENT_SECRET,
+        redirect_uri=s.AZURE_REDIRECT_URI,
     )
     return AzureADProvider(cfg)
 
 
 def _get_google_provider() -> GoogleWorkspaceProvider:
+    s = get_settings()
     cfg = GoogleConfig(
-        client_id=settings.GOOGLE_CLIENT_ID,
-        client_secret=settings.GOOGLE_CLIENT_SECRET,
-        redirect_uri=settings.GOOGLE_REDIRECT_URI,
-        hosted_domain=settings.GOOGLE_HOSTED_DOMAIN or None,
+        client_id=s.GOOGLE_CLIENT_ID,
+        client_secret=s.GOOGLE_CLIENT_SECRET,
+        redirect_uri=s.GOOGLE_REDIRECT_URI,
+        hosted_domain=s.GOOGLE_HOSTED_DOMAIN or None,
     )
     return GoogleWorkspaceProvider(cfg)
 
@@ -230,6 +239,10 @@ async def okta_callback(
         logger.error("sso.okta.callback.error", extra={"error": str(exc)})
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Okta token exchange failed")
 
+    if not user_info.sub:
+        logger.error("sso.okta.callback.missing_sub")
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="IdP did not return a subject identifier")
+
     sm = _get_session_manager()
     token_pair = await sm.create_session(
         user_id=user_info.sub,
@@ -244,7 +257,7 @@ async def okta_callback(
     logger.info("sso.okta.callback.success", extra={"sub": user_info.sub})
     return SSOTokenResponse(
         access_token=token_pair.access_token,
-        expires_in=settings.SSO_SESSION_TTL_SECONDS,
+        expires_in=get_settings().SSO_SESSION_TTL_SECONDS,
         provider="okta",
         email=user_info.email,
         name=getattr(user_info, "preferred_username", None),
@@ -266,7 +279,7 @@ async def okta_refresh(
     _set_refresh_cookie(response, token_pair.refresh_token)
     return SSORefreshResponse(
         access_token=token_pair.access_token,
-        expires_in=settings.SSO_SESSION_TTL_SECONDS,
+        expires_in=get_settings().SSO_SESSION_TTL_SECONDS,
     )
 
 
@@ -343,8 +356,12 @@ async def azure_callback(
         logger.error("sso.azure.callback.error", extra={"error": str(exc)})
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Azure token exchange failed")
 
+     # Azure returns email in either 'email' or 'preferred_username' (UPN)
     email = user_info.get("email") or user_info.get("preferred_username", "")
     sub = user_info.get("sub", "")
+    if not sub:
+        logger.error("sso.azure.callback.missing_sub")
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="IdP did not return a subject identifier")
 
     sm = _get_session_manager()
     token_pair = await sm.create_session(
@@ -360,7 +377,7 @@ async def azure_callback(
     logger.info("sso.azure.callback.success", extra={"sub": sub})
     return SSOTokenResponse(
         access_token=token_pair.access_token,
-        expires_in=settings.SSO_SESSION_TTL_SECONDS,
+        expires_in=get_settings().SSO_SESSION_TTL_SECONDS,
         provider="azure",
         email=email,
         name=user_info.get("name"),
@@ -381,7 +398,7 @@ async def azure_refresh(
     _set_refresh_cookie(response, token_pair.refresh_token)
     return SSORefreshResponse(
         access_token=token_pair.access_token,
-        expires_in=settings.SSO_SESSION_TTL_SECONDS,
+        expires_in=get_settings().SSO_SESSION_TTL_SECONDS,
     )
 
 
@@ -458,6 +475,9 @@ async def google_callback(
 
     email = user_info.get("email", "")
     sub = user_info.get("sub", "")
+    if not sub:
+        logger.error("sso.google.callback.missing_sub")
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="IdP did not return a subject identifier")
 
     sm = _get_session_manager()
     token_pair = await sm.create_session(
@@ -473,7 +493,7 @@ async def google_callback(
     logger.info("sso.google.callback.success", extra={"sub": sub})
     return SSOTokenResponse(
         access_token=token_pair.access_token,
-        expires_in=settings.SSO_SESSION_TTL_SECONDS,
+        expires_in=get_settings().SSO_SESSION_TTL_SECONDS,
         provider="google",
         email=email,
         name=user_info.get("name"),
@@ -494,7 +514,7 @@ async def google_refresh(
     _set_refresh_cookie(response, token_pair.refresh_token)
     return SSORefreshResponse(
         access_token=token_pair.access_token,
-        expires_in=settings.SSO_SESSION_TTL_SECONDS,
+        expires_in=get_settings().SSO_SESSION_TTL_SECONDS,
     )
 
 

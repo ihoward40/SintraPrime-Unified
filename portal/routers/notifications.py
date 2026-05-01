@@ -4,17 +4,19 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, String, Text, func, select
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, func, select
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from ..auth.rbac import CurrentUser, Permission, get_current_user, require_permissions
+from ..auth.rbac import CurrentUser, get_current_user
 from ..database import Base, get_db
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -30,14 +32,14 @@ class Notification(Base):
 
     event_type: Mapped[str]         = mapped_column(String(50), nullable=False)
     title: Mapped[str]              = mapped_column(String(500), nullable=False)
-    body: Mapped[Optional[str]]     = mapped_column(Text, nullable=True)
-    resource_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    resource_id: Mapped[Optional[str]]   = mapped_column(String(255), nullable=True)
-    actor_id: Mapped[Optional[str]]      = mapped_column(String(255), nullable=True)
-    metadata: Mapped[Optional[dict]]     = mapped_column(JSONB, nullable=True)
+    body: Mapped[str | None]     = mapped_column(Text, nullable=True)
+    resource_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    resource_id: Mapped[str | None]   = mapped_column(String(255), nullable=True)
+    actor_id: Mapped[str | None]      = mapped_column(String(255), nullable=True)
+    metadata: Mapped[dict | None]     = mapped_column(JSONB, nullable=True)
 
     is_read: Mapped[bool]           = mapped_column(Boolean, default=False)
-    read_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     email_sent: Mapped[bool]        = mapped_column(Boolean, default=False)
     push_sent: Mapped[bool]         = mapped_column(Boolean, default=False)
@@ -57,18 +59,18 @@ class NotificationResponse(BaseModel):
     id: uuid.UUID
     event_type: str
     title: str
-    body: Optional[str] = None
-    resource_type: Optional[str] = None
-    resource_id: Optional[str] = None
+    body: str | None = None
+    resource_type: str | None = None
+    resource_id: str | None = None
     is_read: bool
-    read_at: Optional[datetime] = None
+    read_at: datetime | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
 
 
 class NotificationListResponse(BaseModel):
-    items: List[NotificationResponse]
+    items: list[NotificationResponse]
     total: int
     unread_count: int
     page: int
@@ -79,8 +81,8 @@ class NotificationListResponse(BaseModel):
 
 @router.get("", response_model=NotificationListResponse)
 async def list_notifications(
-    is_read: Optional[bool] = Query(None),
-    event_type: Optional[str] = Query(None),
+    is_read: bool | None = Query(None),
+    event_type: str | None = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: CurrentUser = Depends(get_current_user),
@@ -102,7 +104,7 @@ async def list_notifications(
         select(func.count()).select_from(
             select(Notification).where(
                 Notification.user_id == current_user.user_id,
-                Notification.is_read == False,
+                not Notification.is_read,
             ).subquery()
         )
     )
@@ -150,7 +152,7 @@ async def mark_all_read(
     now = datetime.now(timezone.utc)
     await db.execute(
         update(Notification)
-        .where(Notification.user_id == current_user.user_id, Notification.is_read == False)
+        .where(Notification.user_id == current_user.user_id, not Notification.is_read)
         .values(is_read=True, read_at=now)
     )
     await db.commit()
@@ -164,7 +166,7 @@ async def get_unread_count(
     result = await db.execute(
         select(func.count(Notification.id)).where(
             Notification.user_id == current_user.user_id,
-            Notification.is_read == False,
+            not Notification.is_read,
         )
     )
     return {"unread_count": result.scalar() or 0}

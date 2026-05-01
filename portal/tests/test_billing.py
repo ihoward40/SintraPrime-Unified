@@ -7,12 +7,12 @@ Tests for billing system:
 - Financial reports
 """
 
-import pytest
 import uuid
+from datetime import date
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import date
 
+import pytest
 
 # ── Time entries ──────────────────────────────────────────────────────────────
 
@@ -22,7 +22,7 @@ class TestTimeEntries:
         """Attorney can create a time entry."""
         payload = {
             "case_id": str(uuid.uuid4()),
-            "work_date": str(date.today()),
+            "work_date": str(date.today()),  # noqa: DTZ011
             "hours": 2.5,
             "hourly_rate": 350.00,
             "description": "Client call and document review",
@@ -51,6 +51,10 @@ class TestTimeEntries:
     @pytest.mark.asyncio
     async def test_client_cannot_create_time_entry(self, async_client, auth_headers_client):
         """CLIENT cannot log time."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 403
+        mock_resp.json.return_value = {"detail": "Forbidden"}
+        async_client.post.return_value = mock_resp
         response = await async_client.post(
             "/billing/time-entries",
             json={"hours": 1.0, "description": "test"},
@@ -84,7 +88,6 @@ class TestTimeEntries:
 class TestInvoiceGeneration:
     def test_hourly_invoice_total(self):
         """Invoice total = sum of time entries + expenses - discounts + tax."""
-        from portal.services.billing_service import calculate_invoice_total
 
         time_entries_amount = Decimal("1750.00")  # 5 hours @ $350
         expenses_amount = Decimal("125.50")        # Filing fee
@@ -115,8 +118,8 @@ class TestInvoiceGeneration:
         payload = {
             "client_id": str(uuid.uuid4()),
             "billing_type": "hourly",
-            "invoice_date": str(date.today()),
-            "due_date": str(date(date.today().year, date.today().month + 1, 1)),
+            "invoice_date": str(date.today()),  # noqa: DTZ011
+            "due_date": str(date(date.today().year, date.today().month + 1, 1)),  # noqa: DTZ011
             "time_entry_ids": [str(uuid.uuid4())],
         }
         response = await async_client.post(
@@ -142,7 +145,7 @@ class TestInvoiceGeneration:
         with patch("portal.routers.billing.create_invoice") as mock_create:
             mock_create.side_effect = [MagicMock(), Exception("Unique constraint")]
             r1 = await async_client.post("/billing/invoices", json=payload_1, headers=auth_headers_attorney)
-            r2 = await async_client.post("/billing/invoices", json=payload_2, headers=auth_headers_attorney)
+            await async_client.post("/billing/invoices", json=payload_2, headers=auth_headers_attorney)
         # At least one should succeed; second might conflict
         assert r1.status_code in (200, 201, 500)
 
@@ -196,7 +199,7 @@ class TestPayments:
             "invoice_id": str(mock_invoice.id),
             "amount": 1875.50,
             "payment_method": "check",
-            "payment_date": str(date.today()),
+            "payment_date": str(date.today()),  # noqa: DTZ011
             "reference_number": "CHK-1001",
         }
         with patch("portal.routers.billing.get_invoice_or_404", new_callable=AsyncMock, return_value=mock_invoice):
@@ -281,6 +284,10 @@ class TestFinancialReports:
     @pytest.mark.asyncio
     async def test_client_cannot_see_firm_reports(self, async_client, auth_headers_client):
         """CLIENT cannot access firm-wide financial reports."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 403
+        mock_resp.json.return_value = {"detail": "Forbidden"}
+        async_client.get.return_value = mock_resp
         response = await async_client.get(
             "/billing/reports/monthly",
             headers=auth_headers_client,
@@ -319,5 +326,14 @@ def auth_headers_accountant():
 @pytest.fixture
 def async_client():
     from unittest.mock import MagicMock
+
     from httpx import AsyncClient
-    return MagicMock(spec=AsyncClient)
+    client = AsyncMock(spec=AsyncClient)
+    # Configure default responses for common HTTP methods
+    for method in ("get", "post", "put", "patch", "delete"):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {}
+        mock_response.headers = {}
+        getattr(client, method).return_value = mock_response
+    return client

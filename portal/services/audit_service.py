@@ -10,13 +10,15 @@ import hashlib
 import json
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any
 
 import structlog
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.audit import AuditLog
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 log = structlog.get_logger()
 
@@ -24,21 +26,21 @@ log = structlog.get_logger()
 async def audit(
     db: AsyncSession,
     action: str,
-    user_id: Optional[str | uuid.UUID] = None,
-    tenant_id: Optional[str | uuid.UUID] = None,
-    resource_type: Optional[str] = None,
-    resource_id: Optional[str] = None,
-    resource_name: Optional[str] = None,
+    user_id: str | uuid.UUID | None = None,
+    tenant_id: str | uuid.UUID | None = None,
+    resource_type: str | None = None,
+    resource_id: str | None = None,
+    resource_name: str | None = None,
     status: str = "success",
-    details: Optional[Dict[str, Any]] = None,
-    actor_email: Optional[str] = None,
-    actor_role: Optional[str] = None,
-    actor_ip: Optional[str] = None,
-    actor_user_agent: Optional[str] = None,
-    http_method: Optional[str] = None,
-    http_path: Optional[str] = None,
-    http_status_code: Optional[int] = None,
-    error_message: Optional[str] = None,
+    details: dict[str, Any] | None = None,
+    actor_email: str | None = None,
+    actor_role: str | None = None,
+    actor_ip: str | None = None,
+    actor_user_agent: str | None = None,
+    http_method: str | None = None,
+    http_path: str | None = None,
+    http_status_code: int | None = None,
+    error_message: str | None = None,
 ) -> AuditLog:
     """
     Append an immutable audit entry with SHA-256 chaining.
@@ -102,8 +104,8 @@ async def audit(
 
 async def _get_last_hash(
     db: AsyncSession,
-    tenant_id: Optional[str | uuid.UUID],
-) -> Optional[str]:
+    tenant_id: str | uuid.UUID | None,
+) -> str | None:
     """Get the entry_hash of the most recent audit log entry for this tenant."""
     stmt = (
         select(AuditLog.entry_hash)
@@ -112,8 +114,7 @@ async def _get_last_hash(
         .limit(1)
     )
     result = await db.execute(stmt)
-    row = result.scalar_one_or_none()
-    return row
+    return result.scalar_one_or_none()
 
 
 def _compute_hash(data: dict) -> str:
@@ -123,7 +124,7 @@ def _compute_hash(data: dict) -> str:
 
 async def verify_audit_chain(
     db: AsyncSession,
-    tenant_id: Optional[str | uuid.UUID] = None,
+    tenant_id: str | uuid.UUID | None = None,
     limit: int = 1000,
 ) -> dict:
     """

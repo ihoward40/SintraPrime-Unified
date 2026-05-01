@@ -1,9 +1,9 @@
 """
 Pydantic schemas for SSO router responses.
 """
+from typing import Optional
+
 from pydantic import BaseModel
-from typing import Optional, List
-from datetime import datetime
 
 
 class AuthorizeRequest(BaseModel):

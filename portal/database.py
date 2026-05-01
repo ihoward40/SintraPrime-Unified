@@ -3,10 +3,12 @@ SQLAlchemy async database engine and session factory.
 Supports per-tenant row-level security via PostgreSQL SET LOCAL.
 """
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Optional
-import uuid
+from typing import Optional
 
+import structlog
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -14,8 +16,6 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import text, event
-import structlog
 
 from .config import get_settings
 

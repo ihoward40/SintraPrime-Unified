@@ -1,7 +1,8 @@
 """
 FastAPI dependencies for SSO router -- session, rate limiting, CSRF.
 """
-from fastapi import Depends, HTTPException, Request
+from fastapi import HTTPException, Request
+
 from portal.sso.session_manager import SessionManager
 
 

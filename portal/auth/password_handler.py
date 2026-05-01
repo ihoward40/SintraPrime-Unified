@@ -6,7 +6,6 @@ Includes strength validation and breach checking (optional HaveIBeenPwned).
 import re
 import secrets
 import string
-from typing import Optional
 
 import bcrypt
 import structlog

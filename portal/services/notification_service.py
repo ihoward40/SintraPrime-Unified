@@ -9,13 +9,15 @@ import smtplib
 import uuid
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import List, Optional
+from typing import TYPE_CHECKING
 
 import structlog
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import get_settings
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 log = structlog.get_logger()
 settings = get_settings()
@@ -40,14 +42,14 @@ async def notify_users(
     resource_id: str,
     resource_name: str,
     actor_id: str,
-    recipient_ids: Optional[List[str]] = None,
-    related_client_id: Optional[str] = None,
-    related_case_id: Optional[str] = None,
-    details: Optional[dict] = None,
+    recipient_ids: list[str] | None = None,
+    related_client_id: str | None = None,
+    related_case_id: str | None = None,
+    details: dict | None = None,
 ) -> None:
     """Create in-app notifications and optionally send email/push."""
-    from ..routers.notifications import Notification
     from ..models.user import User
+    from ..routers.notifications import Notification
 
     title = EVENT_TITLES.get(event_type, event_type.replace("_", " ").title())
     body = f"{resource_name}" if resource_name else None
@@ -98,17 +100,16 @@ async def _resolve_recipients(
     db: AsyncSession,
     tenant_id: uuid.UUID | str,
     event_type: str,
-    client_id: Optional[str] = None,
-    case_id: Optional[str] = None,
-) -> List[str]:
+    client_id: str | None = None,
+    case_id: str | None = None,
+) -> list[str]:
     """Auto-resolve who should receive a notification based on event context."""
-    from ..models.user import User
     # For now: return all staff in tenant
-    from ..models.user import Role as RoleModel
+    from ..models.user import User
     result = await db.execute(
         select(User.id).where(
             User.tenant_id == uuid.UUID(str(tenant_id)),
-            User.is_active == True,
+            User.is_active,
         ).limit(50)
     )
     return [str(r[0]) for r in result.all()]

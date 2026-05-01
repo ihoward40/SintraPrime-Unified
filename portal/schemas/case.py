@@ -2,79 +2,81 @@
 
 from __future__ import annotations
 
-import uuid
-from datetime import date, datetime
-from typing import List, Optional
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field
+
+if TYPE_CHECKING:
+    import uuid
+    from datetime import date, datetime
 
 
 class CaseCreate(BaseModel):
     client_id: uuid.UUID
-    matter_id: Optional[uuid.UUID] = None
+    matter_id: uuid.UUID | None = None
     title: str = Field(..., min_length=2, max_length=500)
-    description: Optional[str] = None
-    practice_area: Optional[str] = None
-    case_type: Optional[str] = None
-    jurisdiction: Optional[str] = None
-    court_name: Optional[str] = None
-    docket_number: Optional[str] = None
-    lead_attorney_id: Optional[uuid.UUID] = None
-    opposing_party: Optional[str] = None
-    opposing_counsel: Optional[str] = None
-    statute_of_limitations: Optional[date] = None
-    next_court_date: Optional[date] = None
+    description: str | None = None
+    practice_area: str | None = None
+    case_type: str | None = None
+    jurisdiction: str | None = None
+    court_name: str | None = None
+    docket_number: str | None = None
+    lead_attorney_id: uuid.UUID | None = None
+    opposing_party: str | None = None
+    opposing_counsel: str | None = None
+    statute_of_limitations: date | None = None
+    next_court_date: date | None = None
     is_urgent: bool = False
     is_confidential: bool = False
-    intake_data: Optional[dict] = None
-    tags: Optional[List[str]] = None
+    intake_data: dict | None = None
+    tags: list[str] | None = None
 
 
 class CaseUpdate(BaseModel):
-    title: Optional[str] = Field(None, min_length=2)
-    description: Optional[str] = None
-    stage: Optional[str] = None
-    practice_area: Optional[str] = None
-    case_type: Optional[str] = None
-    jurisdiction: Optional[str] = None
-    court_name: Optional[str] = None
-    docket_number: Optional[str] = None
-    lead_attorney_id: Optional[uuid.UUID] = None
-    assigned_staff: Optional[List[uuid.UUID]] = None
-    opposing_party: Optional[str] = None
-    opposing_counsel: Optional[str] = None
-    statute_of_limitations: Optional[date] = None
-    next_court_date: Optional[date] = None
-    is_urgent: Optional[bool] = None
-    conflict_checked: Optional[bool] = None
-    conflict_cleared: Optional[bool] = None
-    outcome: Optional[str] = None
-    outcome_notes: Optional[str] = None
-    settlement_amount: Optional[float] = None
-    tags: Optional[List[str]] = None
-    custom_fields: Optional[dict] = None
+    title: str | None = Field(None, min_length=2)
+    description: str | None = None
+    stage: str | None = None
+    practice_area: str | None = None
+    case_type: str | None = None
+    jurisdiction: str | None = None
+    court_name: str | None = None
+    docket_number: str | None = None
+    lead_attorney_id: uuid.UUID | None = None
+    assigned_staff: list[uuid.UUID] | None = None
+    opposing_party: str | None = None
+    opposing_counsel: str | None = None
+    statute_of_limitations: date | None = None
+    next_court_date: date | None = None
+    is_urgent: bool | None = None
+    conflict_checked: bool | None = None
+    conflict_cleared: bool | None = None
+    outcome: str | None = None
+    outcome_notes: str | None = None
+    settlement_amount: float | None = None
+    tags: list[str] | None = None
+    custom_fields: dict | None = None
 
 
 class CaseResponse(BaseModel):
     id: uuid.UUID
     tenant_id: uuid.UUID
     client_id: uuid.UUID
-    matter_id: Optional[uuid.UUID] = None
+    matter_id: uuid.UUID | None = None
     case_number: str
     title: str
-    description: Optional[str] = None
-    practice_area: Optional[str] = None
+    description: str | None = None
+    practice_area: str | None = None
     stage: str
-    lead_attorney_id: Optional[uuid.UUID] = None
+    lead_attorney_id: uuid.UUID | None = None
     is_urgent: bool
     is_confidential: bool
     conflict_checked: bool
     conflict_cleared: bool
-    statute_of_limitations: Optional[date] = None
-    next_court_date: Optional[date] = None
-    opened_at: Optional[datetime] = None
-    closed_at: Optional[datetime] = None
-    tags: Optional[List[str]] = None
+    statute_of_limitations: date | None = None
+    next_court_date: date | None = None
+    opened_at: datetime | None = None
+    closed_at: datetime | None = None
+    tags: list[str] | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -82,7 +84,7 @@ class CaseResponse(BaseModel):
 
 
 class CaseListResponse(BaseModel):
-    items: List[CaseResponse]
+    items: list[CaseResponse]
     total: int
     page: int
     page_size: int
@@ -91,11 +93,11 @@ class CaseListResponse(BaseModel):
 class CaseEventCreate(BaseModel):
     event_type: str
     title: str = Field(..., min_length=1, max_length=500)
-    description: Optional[str] = None
+    description: str | None = None
     event_date: datetime
-    location: Optional[str] = None
+    location: str | None = None
     is_client_visible: bool = False
-    metadata: Optional[dict] = None
+    metadata: dict | None = None
 
 
 class CaseEventResponse(BaseModel):
@@ -103,9 +105,9 @@ class CaseEventResponse(BaseModel):
     case_id: uuid.UUID
     event_type: str
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     event_date: datetime
-    location: Optional[str] = None
+    location: str | None = None
     is_client_visible: bool
     created_by: uuid.UUID
     created_at: datetime
@@ -115,11 +117,11 @@ class CaseEventResponse(BaseModel):
 
 class CaseDeadlineCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=500)
-    description: Optional[str] = None
+    description: str | None = None
     deadline_type: str
     due_date: datetime
-    reminder_days: List[int] = [7, 1]
-    assigned_to: Optional[uuid.UUID] = None
+    reminder_days: list[int] = [7, 1]
+    assigned_to: uuid.UUID | None = None
     is_critical: bool = False
 
 
@@ -131,14 +133,14 @@ class CaseDeadlineResponse(BaseModel):
     due_date: datetime
     is_completed: bool
     is_critical: bool
-    assigned_to: Optional[uuid.UUID] = None
+    assigned_to: uuid.UUID | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
 
 
 class CaseNoteCreate(BaseModel):
-    title: Optional[str] = None
+    title: str | None = None
     content: str = Field(..., min_length=1)
     note_type: str = Field("private", pattern=r"^(private|client_visible)$")
     pinned: bool = False
@@ -147,7 +149,7 @@ class CaseNoteCreate(BaseModel):
 class CaseNoteResponse(BaseModel):
     id: uuid.UUID
     case_id: uuid.UUID
-    title: Optional[str] = None
+    title: str | None = None
     content: str
     note_type: str
     pinned: bool
@@ -160,23 +162,23 @@ class CaseNoteResponse(BaseModel):
 
 class CaseTaskCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=500)
-    description: Optional[str] = None
+    description: str | None = None
     priority: str = Field("medium", pattern=r"^(low|medium|high|critical)$")
-    assigned_to: Optional[uuid.UUID] = None
-    due_date: Optional[datetime] = None
-    estimated_hours: Optional[float] = Field(None, ge=0)
+    assigned_to: uuid.UUID | None = None
+    due_date: datetime | None = None
+    estimated_hours: float | None = Field(None, ge=0)
 
 
 class CaseTaskResponse(BaseModel):
     id: uuid.UUID
     case_id: uuid.UUID
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     priority: str
     status: str
-    assigned_to: Optional[uuid.UUID] = None
-    due_date: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    assigned_to: uuid.UUID | None = None
+    due_date: datetime | None = None
+    completed_at: datetime | None = None
     created_by: uuid.UUID
     created_at: datetime
 
@@ -189,5 +191,5 @@ class ConflictCheckRequest(BaseModel):
 
 class ConflictCheckResponse(BaseModel):
     matches_found: bool
-    matches: List[dict]  # list of matching cases/clients
+    matches: list[dict]  # list of matching cases/clients
     search_term: str

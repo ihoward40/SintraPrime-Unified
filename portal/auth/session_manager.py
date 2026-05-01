@@ -7,9 +7,8 @@ Also maintains a JWT blocklist (blacklisted JTIs).
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
-from typing import List, Optional
 import uuid
+from datetime import datetime, timezone
 
 import redis.asyncio as aioredis
 import structlog
@@ -25,7 +24,7 @@ USER_SESSIONS    = "user_sessions:"  # user_sessions:{user_id} → set of sessio
 JTI_BLOCKLIST    = "jti_block:"     # jti_block:{jti} → "1" (blocklisted)
 REFRESH_FAMILY   = "refresh_fam:"   # refresh_fam:{family_id} → last jti
 
-_redis_client: Optional[aioredis.Redis] = None
+_redis_client: aioredis.Redis | None = None
 
 
 async def get_redis() -> aioredis.Redis:
@@ -84,7 +83,7 @@ async def create_session(
     return session_id
 
 
-async def get_session(session_id: str) -> Optional[dict]:
+async def get_session(session_id: str) -> dict | None:
     """Retrieve session data. Returns None if not found or expired."""
     redis = await get_redis()
     raw = await redis.get(f"{SESSION_PREFIX}{session_id}")
@@ -143,7 +142,7 @@ async def revoke_all_user_sessions(user_id: str) -> int:
     return count
 
 
-async def get_user_sessions(user_id: str) -> List[dict]:
+async def get_user_sessions(user_id: str) -> list[dict]:
     """List all active sessions for a user."""
     redis = await get_redis()
     session_ids = await redis.smembers(f"{USER_SESSIONS}{user_id}")
@@ -200,3 +199,8 @@ async def rotate_refresh_family(family_id: str, new_jti: str) -> None:
     redis = await get_redis()
     ttl = settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 86400
     await redis.setex(f"{REFRESH_FAMILY}{family_id}", ttl, new_jti)
+
+
+def get_token_jti(payload: dict) -> str | None:
+    """Extract the JTI (JWT ID) claim from a decoded token payload."""
+    return payload.get("jti")

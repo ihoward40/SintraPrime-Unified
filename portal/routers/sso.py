@@ -21,7 +21,7 @@ import hmac
 import logging
 import os
 import secrets
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
@@ -29,14 +29,14 @@ from pydantic import BaseModel
 
 from ..config import get_settings
 from ..sso import (
+    InMemorySessionStore,
     OktaConfig,
     OktaProvider,
     SessionConfig,
     SessionManager,
-    InMemorySessionStore,
 )
 from ..sso.providers.azure import AzureADProvider, AzureConfig
-from ..sso.providers.google import GoogleWorkspaceProvider, GoogleConfig
+from ..sso.providers.google import GoogleConfig, GoogleWorkspaceProvider
 from ..sso.session_store import RedisSessionStore
 
 logger = logging.getLogger(__name__)
@@ -57,7 +57,7 @@ class SSOTokenResponse(BaseModel):
     expires_in: int
     provider: str
     email: str
-    name: Optional[str] = None
+    name: str | None = None
 
 
 class SSOSessionResponse(BaseModel):
@@ -135,13 +135,13 @@ def _store_state(request: Request, state: str) -> None:
     request.session[SSO_STATE_SESSION_KEY] = state
 
 
-def _pop_state(request: Request) -> Optional[str]:
+def _pop_state(request: Request) -> str | None:
     return request.session.pop(SSO_STATE_SESSION_KEY, None)
 
 
 # ── Shared dependency: validate SSO refresh cookie ───────────────────────────
 def _get_sso_refresh_token(
-    sso_refresh_token: Annotated[Optional[str], Cookie()] = None,
+    sso_refresh_token: Annotated[str | None, Cookie()] = None,
 ) -> str:
     if not sso_refresh_token:
         raise HTTPException(
@@ -216,7 +216,7 @@ async def okta_authorize(request: Request) -> RedirectResponse:
         return RedirectResponse(url=auth_url, status_code=status.HTTP_302_FOUND)
     except (ValueError, KeyError) as exc:
         logger.error("sso.okta.authorize.error", extra={"error": str(exc)})
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Okta SSO not configured")
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Okta SSO not configured") from None
 
 
 @router.get("/okta/callback", response_model=SSOTokenResponse, summary="Handle Okta OAuth callback")
@@ -237,7 +237,7 @@ async def okta_callback(
             user_info = await provider.get_user_info(token_resp.access_token)
     except ValueError as exc:
         logger.error("sso.okta.callback.error", extra={"error": str(exc)})
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Okta token exchange failed")
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Okta token exchange failed") from exc
 
     if not user_info.sub:
         logger.error("sso.okta.callback.missing_sub")
@@ -333,7 +333,7 @@ async def azure_authorize(request: Request) -> RedirectResponse:
         return RedirectResponse(url=auth_url, status_code=status.HTTP_302_FOUND)
     except (ValueError, KeyError) as exc:
         logger.error("sso.azure.authorize.error", extra={"error": str(exc)})
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Azure SSO not configured")
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Azure SSO not configured") from None
 
 
 @router.get("/azure/callback", response_model=SSOTokenResponse, summary="Handle Azure AD OAuth callback")
@@ -354,7 +354,7 @@ async def azure_callback(
         user_info = provider.get_user_info(tokens["access_token"])
     except Exception as exc:
         logger.error("sso.azure.callback.error", extra={"error": str(exc)})
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Azure token exchange failed")
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Azure token exchange failed") from exc
 
      # Azure returns email in either 'email' or 'preferred_username' (UPN)
     email = user_info.get("email") or user_info.get("preferred_username", "")
@@ -450,7 +450,7 @@ async def google_authorize(request: Request) -> RedirectResponse:
         return RedirectResponse(url=auth_url, status_code=status.HTTP_302_FOUND)
     except (ValueError, KeyError) as exc:
         logger.error("sso.google.authorize.error", extra={"error": str(exc)})
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Google SSO not configured")
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Google SSO not configured") from None
 
 
 @router.get("/google/callback", response_model=SSOTokenResponse, summary="Handle Google OAuth callback")
@@ -471,7 +471,7 @@ async def google_callback(
         user_info = provider.get_user_info(tokens["access_token"])
     except Exception as exc:
         logger.error("sso.google.callback.error", extra={"error": str(exc)})
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Google token exchange failed")
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Google token exchange failed") from exc
 
     email = user_info.get("email", "")
     sub = user_info.get("sub", "")

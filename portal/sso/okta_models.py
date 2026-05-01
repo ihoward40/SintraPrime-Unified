@@ -2,7 +2,7 @@
 Okta OAuth 2.0 response models.
 """
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Optional
 
 
 @dataclass
@@ -41,7 +41,7 @@ class OktaUserInfo:
     family_name: Optional[str] = None
     locale: Optional[str] = None
     preferred_username: Optional[str] = None  # Okta login / username
-    groups: List[str] = field(default_factory=list)  # Okta group memberships
+    groups: list[str] = field(default_factory=list)  # Okta group memberships
 
     @classmethod
     def from_dict(cls, data: dict) -> "OktaUserInfo":

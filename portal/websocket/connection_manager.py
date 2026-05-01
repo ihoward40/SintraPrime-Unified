@@ -8,12 +8,13 @@ from __future__ import annotations
 
 import asyncio
 import json
-import uuid
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set
+from typing import TYPE_CHECKING
 
 import structlog
-from fastapi import WebSocket
+
+if TYPE_CHECKING:
+    from fastapi import WebSocket
 
 log = structlog.get_logger()
 
@@ -23,9 +24,9 @@ class ConnectionManager:
 
     def __init__(self) -> None:
         # user_id → set of WebSocket connections
-        self._user_connections: Dict[str, Set[WebSocket]] = defaultdict(set)
+        self._user_connections: dict[str, set[WebSocket]] = defaultdict(set)
         # tenant_id → set of user_ids
-        self._tenant_users: Dict[str, Set[str]] = defaultdict(set)
+        self._tenant_users: dict[str, set[str]] = defaultdict(set)
         self._lock = asyncio.Lock()
 
     async def connect(
@@ -80,7 +81,7 @@ class ConnectionManager:
         for user_id in user_ids:
             await self.send_to_user(user_id, event)
 
-    async def broadcast_to_users(self, user_ids: List[str], event: dict) -> None:
+    async def broadcast_to_users(self, user_ids: list[str], event: dict) -> None:
         """Send an event to a list of specific users."""
         tasks = [self.send_to_user(uid, event) for uid in user_ids]
         await asyncio.gather(*tasks, return_exceptions=True)
@@ -89,7 +90,7 @@ class ConnectionManager:
     def connection_count(self) -> int:
         return sum(len(conns) for conns in self._user_connections.values())
 
-    def get_online_users(self, tenant_id: str) -> List[str]:
+    def get_online_users(self, tenant_id: str) -> list[str]:
         return list(self._tenant_users.get(tenant_id, set()))
 
 

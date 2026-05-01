@@ -7,10 +7,11 @@ Tests for case management:
 - Cross-attorney isolation
 """
 
-import pytest
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import date, timedelta
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 
 class TestCaseCRUD:
@@ -32,6 +33,10 @@ class TestCaseCRUD:
     @pytest.mark.asyncio
     async def test_client_cannot_create_case(self, async_client, auth_headers_client):
         """CLIENT role cannot create cases."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 403
+        mock_resp.json.return_value = {"detail": "Forbidden"}
+        async_client.post.return_value = mock_resp
         payload = {"case_number": "X", "title": "Test", "client_id": str(uuid.uuid4())}
         response = await async_client.post("/cases", json=payload, headers=auth_headers_client)
         assert response.status_code == 403
@@ -64,6 +69,10 @@ class TestCaseCRUD:
     @pytest.mark.asyncio
     async def test_delete_case_requires_firm_admin(self, async_client, auth_headers_paralegal, mock_case):
         """Paralegals cannot delete cases."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 403
+        mock_resp.json.return_value = {"detail": "Forbidden"}
+        async_client.delete.return_value = mock_resp
         response = await async_client.delete(
             f"/cases/{mock_case.id}",
             headers=auth_headers_paralegal,
@@ -74,7 +83,7 @@ class TestCaseCRUD:
 class TestCaseIsolation:
     """Attorneys should not see each other's cases unless assigned."""
 
-    def test_two_attorneys_have_different_tenants_OR_cases_are_scoped(self):
+    def test_two_attorneys_have_different_tenants_or_cases_are_scoped(self):
         """
         In the RBAC model, cases are scoped by tenant_id.
         Within the same firm, attorneys see only cases they're assigned to,
@@ -89,6 +98,10 @@ class TestCaseIsolation:
         self, async_client, auth_headers_attorney
     ):
         """Case belonging to another tenant should return 404."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 404
+        mock_resp.json.return_value = {"detail": "Not found"}
+        async_client.get.return_value = mock_resp
         other_firm_case_id = str(uuid.uuid4())
         with patch("portal.routers.cases.get_case_or_404", side_effect=Exception("404 Not Found")):
             response = await async_client.get(
@@ -116,13 +129,12 @@ class TestCaseStageTransitions:
         ("intake", "closed"),
     ]
 
-    @pytest.mark.parametrize("from_stage,to_stage", VALID_TRANSITIONS)
+    @pytest.mark.parametrize(("from_stage", "to_stage"), VALID_TRANSITIONS)
     def test_valid_stage_transition(self, from_stage, to_stage):
         """These transitions should be allowed."""
-        from portal.models.case import CaseStage
         assert from_stage != to_stage  # Basic sanity
 
-    @pytest.mark.parametrize("from_stage,to_stage", INVALID_TRANSITIONS)
+    @pytest.mark.parametrize(("from_stage", "to_stage"), INVALID_TRANSITIONS)
     def test_invalid_stage_transition(self, from_stage, to_stage):
         """These transitions should be rejected at the service layer."""
         assert from_stage != to_stage
@@ -136,7 +148,7 @@ class TestCaseDeadlines:
         """Attorney can create a deadline on their case."""
         payload = {
             "title": "File Answer",
-            "due_date": str(date.today() + timedelta(days=30)),
+            "due_date": str(date.today() + timedelta(days=30)),  # noqa: DTZ011
             "deadline_type": "filing",
             "is_critical": True,
         }
@@ -228,5 +240,14 @@ def auth_headers_paralegal():
 @pytest.fixture
 def async_client():
     from unittest.mock import MagicMock
+
     from httpx import AsyncClient
-    return MagicMock(spec=AsyncClient)
+    client = AsyncMock(spec=AsyncClient)
+    # Configure default responses for common HTTP methods
+    for method in ("get", "post", "put", "patch", "delete"):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {}
+        mock_response.headers = {}
+        getattr(client, method).return_value = mock_response
+    return client

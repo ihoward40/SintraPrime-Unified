@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import FastAPI
@@ -21,7 +21,6 @@ from portal.sso.middleware import (
     SessionToken,
     TokenRefreshManager,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
@@ -189,7 +188,7 @@ class TestIdPErrorHandler:
         assert isinstance(err, IdPError)
         assert err.recovery_strategy == "reauth"
         assert err.provider == "okta"
-        assert "req-1" == err.request_id
+        assert err.request_id == "req-1"
 
     def test_classify_server_error(self):
         err = self.handler.classify_error("azure", "server_error", "500 Internal", "req-2")

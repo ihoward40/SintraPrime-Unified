@@ -12,12 +12,11 @@ import structlog
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware as StarletteSessionMiddleware
 
 from .config import get_settings
-from .database import close_db, init_db, check_db_connection
+from .database import check_db_connection, close_db, init_db
 from .middleware.audit_middleware import AuditMiddleware
 from .middleware.rate_limiter import RateLimiterMiddleware as RateLimitMiddleware
 from .routers import (
@@ -33,13 +32,19 @@ from .routers import (
     users,
 )
 from .sso import (
+    AzureADProvider,
+    AzureConfig,
+    GoogleConfig,
+    GoogleWorkspaceProvider,
+    InMemorySessionStore,
+    OktaConfig,
+    OktaProvider,
+    RedisSessionStore,
     SessionMiddlewareManager,
-    SessionMiddleware as SSOSessionMiddleware,
     TokenRefreshManager,
-    OktaProvider, OktaConfig,
-    AzureADProvider, AzureConfig,
-    GoogleWorkspaceProvider, GoogleConfig,
-    InMemorySessionStore, RedisSessionStore,
+)
+from .sso import (
+    SessionMiddleware as SSOSessionMiddleware,
 )
 
 logger = structlog.get_logger(__name__)
@@ -73,7 +78,7 @@ async def lifespan(app: FastAPI):
     # ── SSO: Token refresh manager ────────────────────────────────────────────
     async def _noop_refresh_callback(token):
         """Default no-op callback; replaced per-provider at runtime."""
-        return None
+        return
 
     app.state.sso_token_refresh_manager = TokenRefreshManager(
         refresh_callback=_noop_refresh_callback,
@@ -230,8 +235,8 @@ def create_app() -> FastAPI:
         """Defers session_manager lookup to first request (after lifespan)."""
         def __init__(self, app_inner, **kwargs):
             # Pass a placeholder; dispatch() will read from request.app.state
-            from .sso.middleware import SessionMiddlewareManager as _SMM
-            placeholder = _SMM(session_secret="placeholder", session_ttl_seconds=3600)
+            from .sso.middleware import SessionMiddlewareManager
+            placeholder = SessionMiddlewareManager(session_secret="placeholder", session_ttl_seconds=3600)
             super().__init__(app_inner, session_manager=placeholder)
 
         async def dispatch(self, request: Request, call_next):
@@ -244,18 +249,18 @@ def create_app() -> FastAPI:
     app.add_middleware(_LazySSOSessionMiddleware)
 
     # ── Routers ──────────────────────────────────────────────────────────────────
-    API_PREFIX = "/api/v1"
+    api_prefix = "/api/v1"
 
-    app.include_router(auth.router, prefix=f"{API_PREFIX}/auth", tags=["Authentication"])
-    app.include_router(users.router, prefix=f"{API_PREFIX}/users", tags=["Users"])
-    app.include_router(clients.router, prefix=f"{API_PREFIX}/clients", tags=["Clients"])
-    app.include_router(cases.router, prefix=f"{API_PREFIX}/cases", tags=["Cases"])
-    app.include_router(documents.router, prefix=f"{API_PREFIX}/documents", tags=["Documents"])
-    app.include_router(messages.router, prefix=f"{API_PREFIX}/messages", tags=["Messaging"])
-    app.include_router(billing.router, prefix=f"{API_PREFIX}/billing", tags=["Billing"])
-    app.include_router(notifications.router, prefix=f"{API_PREFIX}/notifications", tags=["Notifications"])
-    app.include_router(admin.router, prefix=f"{API_PREFIX}/admin", tags=["Administration"])
-    app.include_router(sso.router, prefix=f"{API_PREFIX}/sso", tags=["SSO"])
+    app.include_router(auth.router, prefix=f"{api_prefix}/auth", tags=["Authentication"])
+    app.include_router(users.router, prefix=f"{api_prefix}/users", tags=["Users"])
+    app.include_router(clients.router, prefix=f"{api_prefix}/clients", tags=["Clients"])
+    app.include_router(cases.router, prefix=f"{api_prefix}/cases", tags=["Cases"])
+    app.include_router(documents.router, prefix=f"{api_prefix}/documents", tags=["Documents"])
+    app.include_router(messages.router, prefix=f"{api_prefix}/messages", tags=["Messaging"])
+    app.include_router(billing.router, prefix=f"{api_prefix}/billing", tags=["Billing"])
+    app.include_router(notifications.router, prefix=f"{api_prefix}/notifications", tags=["Notifications"])
+    app.include_router(admin.router, prefix=f"{api_prefix}/admin", tags=["Administration"])
+    app.include_router(sso.router, prefix=f"{api_prefix}/sso", tags=["SSO"])
 
     # ── WebSocket ─────────────────────────────────────────────────────────────────
     from .websocket.message_handler import websocket_endpoint

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from enum import Enum
 from functools import lru_cache
-from typing import Callable, FrozenSet, Optional, Set
+from typing import Callable
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -120,7 +120,7 @@ class Permission(str, Enum):
 
 # ── Role → Permission mapping ─────────────────────────────────────────────────
 
-ROLE_PERMISSIONS: dict[Role, FrozenSet[Permission]] = {
+ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
     Role.SUPER_ADMIN: frozenset(Permission),  # all permissions
 
     Role.FIRM_ADMIN: frozenset([
@@ -216,7 +216,7 @@ class CurrentUser:
         self.user_id: str    = payload["sub"]
         self.tenant_id: str  = payload["tenant_id"]
         self.role: Role      = Role(payload["role"])
-        self.permissions: FrozenSet[Permission] = frozenset(
+        self.permissions: frozenset[Permission] = frozenset(
             Permission(p) for p in payload.get("permissions", []) if p in Permission._value2member_map_
         )
 
@@ -243,7 +243,7 @@ class CurrentUser:
 # ── FastAPI dependencies ──────────────────────────────────────────────────────
 
 async def get_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
 ) -> CurrentUser:
     """Extract and validate JWT, return CurrentUser. Raises 401 if invalid."""
     if credentials is None:
@@ -260,7 +260,7 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(exc),
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from exc
 
 
 def require_permissions(*perms: Permission) -> Callable:
@@ -297,7 +297,7 @@ def require_same_tenant(current_user: CurrentUser, tenant_id: str) -> None:
         )
 
 
-@lru_cache()
-def get_role_permissions(role: Role) -> FrozenSet[Permission]:
+@lru_cache
+def get_role_permissions(role: Role) -> frozenset[Permission]:
     """Return the full permission set for a role (cached)."""
     return ROLE_PERMISSIONS.get(role, frozenset())

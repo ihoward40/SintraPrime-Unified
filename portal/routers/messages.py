@@ -2,25 +2,33 @@
 
 from __future__ import annotations
 
-import uuid
 from datetime import datetime, timezone
-from typing import Optional
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func, select
 
 from ..auth.rbac import CurrentUser, Permission, require_permissions
 from ..database import get_db
 from ..models.message import Message, MessageAttachment, MessageThread
 from ..schemas.message import (
-    MessageListResponse, MessageResponse, MessageSend,
-    ReadReceiptUpdate, ThreadCreate, ThreadListResponse, ThreadResponse,
+    MessageListResponse,
+    MessageResponse,
+    MessageSend,
+    ReadReceiptUpdate,
+    ThreadCreate,
+    ThreadListResponse,
+    ThreadResponse,
 )
 from ..services.audit_service import audit
-from ..services.encryption_service import encrypt_text, decrypt_text
+from ..services.encryption_service import decrypt_text, encrypt_text
 from ..services.notification_service import notify_users
 from ..websocket.connection_manager import ws_manager
+
+if TYPE_CHECKING:
+    import uuid
+
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -54,17 +62,15 @@ async def create_thread(
 
 @router.get("/threads", response_model=ThreadListResponse)
 async def list_threads(
-    category: Optional[str] = Query(None),
-    client_id: Optional[uuid.UUID] = Query(None),
-    case_id: Optional[uuid.UUID] = Query(None),
+    category: str | None = Query(None),
+    client_id: uuid.UUID | None = Query(None),
+    case_id: uuid.UUID | None = Query(None),
     is_archived: bool = Query(False),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: CurrentUser = Depends(require_permissions(Permission.MSG_READ)),
     db: AsyncSession = Depends(get_db),
 ):
-    from sqlalchemy import cast
-    from sqlalchemy.dialects.postgresql import JSONB
     stmt = select(MessageThread).where(
         MessageThread.tenant_id == current_user.tenant_id,
         MessageThread.deleted_at.is_(None),
@@ -209,7 +215,7 @@ async def send_message(
 @router.get("/threads/{thread_id}/messages", response_model=MessageListResponse)
 async def list_messages(
     thread_id: uuid.UUID,
-    before_id: Optional[uuid.UUID] = Query(None),
+    before_id: uuid.UUID | None = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
     current_user: CurrentUser = Depends(require_permissions(Permission.MSG_READ)),
@@ -225,7 +231,7 @@ async def list_messages(
 
     stmt = select(Message).where(
         Message.thread_id == thread_id,
-        Message.is_deleted == False,
+        not Message.is_deleted,
     )
     if before_id:
         # Cursor-based pagination

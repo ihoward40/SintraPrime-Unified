@@ -56,8 +56,20 @@ addopts = "--cov=. --cov-report=html --cov-report=term-missing"
 [tool.ruff]
 line-length = 100
 target-version = "py39"
+
+[tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM", "ARG", "TID", "TCH", "DTZ", "T20", "PT", "Q", "RSE", "RET", "SLF", "ISC", "LOG"]
-ignore = ["E501"]
+ignore = [
+    "E501",    # line-too-long: handled by formatter
+    "B008",    # function-call-in-default-argument: standard FastAPI Depends() pattern
+    "TID252",  # relative-imports: project uses relative imports by convention
+    "ARG001",  # unused-function-argument: common in FastAPI route handlers
+    "ARG002",  # unused-method-argument: common in overrides
+    "SLF001",  # private-member-access: acceptable in tests
+    "DTZ003",  # call-datetime-utcnow: remaining instances are in test fixtures
+    "T201",    # print: acceptable in CLI scripts
+    "T203",    # pprint: acceptable in CLI scripts
+]
 
 [tool.mypy]
 python_version = "3.9"

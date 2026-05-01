@@ -6,7 +6,6 @@ Includes backup code generation and management.
 
 import base64
 import io
-from typing import Optional
 
 import pyotp
 import qrcode

@@ -2,21 +2,28 @@
 
 from __future__ import annotations
 
-import uuid
-from typing import Optional
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, func, or_
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func, or_, select
 
 from ..auth.rbac import CurrentUser, Permission, require_permissions
 from ..database import get_db
 from ..models.client import Client, Matter
 from ..schemas.client import (
-    ClientCreate, ClientListResponse, ClientResponse, ClientUpdate,
-    MatterCreate, MatterResponse, MatterUpdate,
+    ClientCreate,
+    ClientListResponse,
+    ClientResponse,
+    ClientUpdate,
+    MatterCreate,
+    MatterResponse,
 )
 from ..services.audit_service import audit
+
+if TYPE_CHECKING:
+    import uuid
+
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -43,9 +50,9 @@ async def create_client(
 
 @router.get("", response_model=ClientListResponse)
 async def list_clients(
-    search: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),
-    attorney_id: Optional[uuid.UUID] = Query(None),
+    search: str | None = Query(None),
+    status: str | None = Query(None),
+    attorney_id: uuid.UUID | None = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: CurrentUser = Depends(require_permissions(Permission.CLIENT_READ)),

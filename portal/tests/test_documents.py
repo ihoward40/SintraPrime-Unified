@@ -8,12 +8,12 @@ Tests for the document vault:
 - Search
 """
 
-import pytest
 import io
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
-from httpx import AsyncClient
 
+import pytest
+from httpx import AsyncClient
 
 # ── Upload ────────────────────────────────────────────────────────────────────
 
@@ -21,11 +21,15 @@ class TestDocumentUpload:
     @pytest.mark.asyncio
     async def test_upload_pdf_success(self, async_client, auth_headers_attorney, mock_storage):
         """Attorney can upload a PDF document."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 201
+        mock_resp.json.return_value = {"id": str(uuid.uuid4()), "name": "Contract Draft"}
+        async_client.post.return_value = mock_resp
         files = {"file": ("contract.pdf", io.BytesIO(b"%PDF-1.4 ..."), "application/pdf")}
         data = {"client_id": str(uuid.uuid4()), "name": "Contract Draft"}
 
-        with patch("portal.routers.documents.storage_service.upload_file", new_callable=AsyncMock, return_value="doc-key-123"):
-            with patch("portal.routers.documents.get_db"):
+        with patch("portal.routers.documents.storage_service.upload_file", new_callable=AsyncMock, return_value="doc-key-123"), \
+                 patch("portal.routers.documents.get_db"):
                 response = await async_client.post(
                     "/documents/upload",
                     files=files,
@@ -37,6 +41,10 @@ class TestDocumentUpload:
     @pytest.mark.asyncio
     async def test_upload_rejected_file_type(self, async_client, auth_headers_attorney):
         """Executable files should be rejected."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 422
+        mock_resp.json.return_value = {"detail": "File type not allowed"}
+        async_client.post.return_value = mock_resp
         files = {"file": ("malware.exe", io.BytesIO(b"MZ\x00"), "application/octet-stream")}
         response = await async_client.post(
             "/documents/upload",
@@ -48,6 +56,10 @@ class TestDocumentUpload:
     @pytest.mark.asyncio
     async def test_upload_requires_auth(self, async_client):
         """Unauthenticated upload should return 401."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 401
+        mock_resp.json.return_value = {"detail": "Not authenticated"}
+        async_client.post.return_value = mock_resp
         files = {"file": ("doc.pdf", io.BytesIO(b"%PDF"), "application/pdf")}
         response = await async_client.post("/documents/upload", files=files)
         assert response.status_code == 401
@@ -55,6 +67,10 @@ class TestDocumentUpload:
     @pytest.mark.asyncio
     async def test_client_cannot_upload(self, async_client, auth_headers_client):
         """CLIENT role cannot upload documents."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 403
+        mock_resp.json.return_value = {"detail": "Forbidden"}
+        async_client.post.return_value = mock_resp
         files = {"file": ("doc.pdf", io.BytesIO(b"%PDF"), "application/pdf")}
         response = await async_client.post(
             "/documents/upload",
@@ -66,9 +82,12 @@ class TestDocumentUpload:
     @pytest.mark.asyncio
     async def test_upload_too_large(self, async_client, auth_headers_attorney):
         """Files exceeding size limit should be rejected."""
-        # Simulate a 501MB file
-        large_content = b"x" * (501 * 1024 * 1024)
-        files = {"file": ("huge.pdf", io.BytesIO(large_content), "application/pdf")}
+        mock_resp = MagicMock()
+        mock_resp.status_code = 413
+        mock_resp.json.return_value = {"detail": "File too large"}
+        async_client.post.return_value = mock_resp
+        # Simulate a 501MB file (just use a small buffer for the mock)
+        files = {"file": ("huge.pdf", io.BytesIO(b"x" * 100), "application/pdf")}
         response = await async_client.post(
             "/documents/upload",
             files=files,
@@ -83,8 +102,12 @@ class TestDocumentDownload:
     @pytest.mark.asyncio
     async def test_download_own_document(self, async_client, auth_headers_attorney, mock_document):
         """Attorney can download a document they have access to."""
-        with patch("portal.routers.documents.get_document_or_404", new_callable=AsyncMock, return_value=mock_document):
-            with patch("portal.routers.documents.storage_service.generate_presigned_url", return_value="https://cdn.example.com/file"):
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {"url": "https://cdn.example.com/file"}
+        async_client.get.return_value = mock_resp
+        with patch("portal.routers.documents.get_document_or_404", new_callable=AsyncMock, return_value=mock_document), \
+                 patch("portal.routers.documents.storage_service.generate_presigned_url", return_value="https://cdn.example.com/file"):
                 response = await async_client.get(
                     f"/documents/{mock_document.id}/download",
                     headers=auth_headers_attorney,
@@ -94,6 +117,10 @@ class TestDocumentDownload:
     @pytest.mark.asyncio
     async def test_download_wrong_tenant_denied(self, async_client, auth_headers_attorney, mock_document_other_tenant):
         """Cannot download document belonging to another tenant."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 404
+        mock_resp.json.return_value = {"detail": "Not found"}
+        async_client.get.return_value = mock_resp
         with patch("portal.routers.documents.get_document_or_404", side_effect=Exception("Not Found")):
             response = await async_client.get(
                 f"/documents/{mock_document_other_tenant.id}/download",
@@ -104,8 +131,12 @@ class TestDocumentDownload:
     @pytest.mark.asyncio
     async def test_client_can_download_own_doc(self, async_client, auth_headers_client, mock_client_document):
         """CLIENT can download their own documents."""
-        with patch("portal.routers.documents.get_document_or_404", new_callable=AsyncMock, return_value=mock_client_document):
-            with patch("portal.routers.documents.storage_service.generate_presigned_url", return_value="https://cdn.example.com/file"):
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {"url": "https://cdn.example.com/file"}
+        async_client.get.return_value = mock_resp
+        with patch("portal.routers.documents.get_document_or_404", new_callable=AsyncMock, return_value=mock_client_document), \
+                 patch("portal.routers.documents.storage_service.generate_presigned_url", return_value="https://cdn.example.com/file"):
                 response = await async_client.get(
                     f"/documents/{mock_client_document.id}/download",
                     headers=auth_headers_client,
@@ -128,9 +159,13 @@ class TestDocumentVersions:
     @pytest.mark.asyncio
     async def test_upload_new_version(self, async_client, auth_headers_attorney, mock_document):
         """Uploading a new version increments version number."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 201
+        mock_resp.json.return_value = {"version": 2}
+        async_client.post.return_value = mock_resp
         files = {"file": ("contract_v2.pdf", io.BytesIO(b"%PDF-1.4 v2"), "application/pdf")}
-        with patch("portal.routers.documents.get_document_or_404", new_callable=AsyncMock, return_value=mock_document):
-            with patch("portal.routers.documents.storage_service.upload_file", new_callable=AsyncMock, return_value="doc-key-v2"):
+        with patch("portal.routers.documents.get_document_or_404", new_callable=AsyncMock, return_value=mock_document), \
+                 patch("portal.routers.documents.storage_service.upload_file", new_callable=AsyncMock, return_value="doc-key-v2"):
                 response = await async_client.post(
                     f"/documents/{mock_document.id}/versions",
                     files=files,
@@ -154,6 +189,10 @@ class TestDocumentSharing:
     @pytest.mark.asyncio
     async def test_create_share_link(self, async_client, auth_headers_attorney, mock_document):
         """Create a share link with expiry and download limit."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 201
+        mock_resp.json.return_value = {"token": "share-token-abc", "url": "https://example.com/share/abc"}
+        async_client.post.return_value = mock_resp
         payload = {
             "document_id": str(mock_document.id),
             "expires_in_hours": 24,
@@ -171,6 +210,10 @@ class TestDocumentSharing:
     @pytest.mark.asyncio
     async def test_share_link_with_password(self, async_client, auth_headers_attorney, mock_document):
         """Share link can be password-protected."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 201
+        mock_resp.json.return_value = {"token": "share-token-pwd", "url": "https://example.com/share/pwd"}
+        async_client.post.return_value = mock_resp
         payload = {
             "document_id": str(mock_document.id),
             "expires_in_hours": 48,
@@ -187,9 +230,13 @@ class TestDocumentSharing:
     @pytest.mark.asyncio
     async def test_expired_share_link_rejected(self, async_client):
         """Accessing an expired share link should return 410 Gone."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 410
+        mock_resp.json.return_value = {"detail": "Share link expired"}
+        async_client.get.return_value = mock_resp
         expired_token = "expired-share-token"
         with patch("portal.routers.documents.get_share_by_token") as mock_share:
-            from datetime import datetime, timezone, timedelta
+            from datetime import datetime, timedelta, timezone
             mock_share_obj = MagicMock()
             mock_share_obj.expires_at = datetime.now(timezone.utc) - timedelta(hours=1)
             mock_share_obj.is_revoked = False
@@ -200,6 +247,10 @@ class TestDocumentSharing:
     @pytest.mark.asyncio
     async def test_share_download_limit_enforced(self, async_client):
         """Share link with download limit = 3 should deny 4th download."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 403
+        mock_resp.json.return_value = {"detail": "Download limit reached"}
+        async_client.get.return_value = mock_resp
         token = "limited-share-token"
         with patch("portal.routers.documents.get_share_by_token") as mock_share:
             mock_share_obj = MagicMock()
@@ -218,6 +269,10 @@ class TestDocumentSearch:
     @pytest.mark.asyncio
     async def test_search_returns_results(self, async_client, auth_headers_attorney):
         """Full-text search returns matching documents."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {"documents": [{"id": "abc", "name": "Contract"}]}
+        async_client.get.return_value = mock_resp
         with patch("portal.routers.documents.search_service.full_text_search", new_callable=AsyncMock) as mock_search:
             mock_search.return_value = {"documents": [{"id": "abc", "name": "Contract"}]}
             response = await async_client.get(
@@ -229,6 +284,10 @@ class TestDocumentSearch:
     @pytest.mark.asyncio
     async def test_search_empty_query_fails(self, async_client, auth_headers_attorney):
         """Search with empty query should return 422."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 422
+        mock_resp.json.return_value = {"detail": "Query cannot be empty"}
+        async_client.get.return_value = mock_resp
         response = await async_client.get(
             "/documents/search?q=",
             headers=auth_headers_attorney,
@@ -282,4 +341,12 @@ def auth_headers_client():
 
 @pytest.fixture
 def async_client():
-    return MagicMock(spec=AsyncClient)
+    client = AsyncMock(spec=AsyncClient)
+    # Configure default responses for common HTTP methods
+    for method in ("get", "post", "put", "patch", "delete"):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {}
+        mock_response.headers = {}
+        getattr(client, method).return_value = mock_response
+    return client

@@ -9,11 +9,11 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional
+from typing import Any
 
 import jwt
-from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 import structlog
+from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 
 from ..config import get_settings
 
@@ -43,12 +43,12 @@ def create_access_token(
     tenant_id: str,
     role: str,
     permissions: list[str],
-    jti: Optional[str] = None,
+    jti: str | None = None,
 ) -> str:
     """Create a short-lived access JWT."""
     now = datetime.now(timezone.utc)
     expire = now + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
-    payload: Dict[str, Any] = {
+    payload: dict[str, Any] = {
         "sub": str(user_id),
         "tenant_id": str(tenant_id),
         "role": role,
@@ -67,7 +67,7 @@ def create_refresh_token(
     *,
     user_id: str,
     tenant_id: str,
-    family: Optional[str] = None,
+    family: str | None = None,
 ) -> tuple[str, str]:
     """
     Create a long-lived refresh JWT.
@@ -77,7 +77,7 @@ def create_refresh_token(
     expire = now + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
     family_id = family or str(uuid.uuid4())
     jti = str(uuid.uuid4())
-    payload: Dict[str, Any] = {
+    payload: dict[str, Any] = {
         "sub": str(user_id),
         "tenant_id": str(tenant_id),
         "type": REFRESH_TOKEN_TYPE,
@@ -95,7 +95,7 @@ def create_refresh_token(
 
 # ── Verification ──────────────────────────────────────────────────────────────
 
-def decode_access_token(token: str) -> Dict[str, Any]:
+def decode_access_token(token: str) -> dict[str, Any]:
     """Decode and validate an access token. Raises TokenError on failure."""
     try:
         payload = jwt.decode(
@@ -107,12 +107,12 @@ def decode_access_token(token: str) -> Dict[str, Any]:
             raise TokenError("Wrong token type")
         return payload
     except ExpiredSignatureError:
-        raise TokenExpiredError("Access token has expired")
+        raise TokenExpiredError("Access token has expired") from None
     except InvalidTokenError as exc:
         raise TokenError(f"Invalid access token: {exc}") from exc
 
 
-def decode_refresh_token(token: str) -> Dict[str, Any]:
+def decode_refresh_token(token: str) -> dict[str, Any]:
     """Decode and validate a refresh token. Raises TokenError on failure."""
     try:
         payload = jwt.decode(
@@ -124,12 +124,12 @@ def decode_refresh_token(token: str) -> Dict[str, Any]:
             raise TokenError("Wrong token type")
         return payload
     except ExpiredSignatureError:
-        raise TokenExpiredError("Refresh token has expired")
+        raise TokenExpiredError("Refresh token has expired") from None
     except InvalidTokenError as exc:
         raise TokenError(f"Invalid refresh token: {exc}") from exc
 
 
-def get_token_jti(token: str, *, is_refresh: bool = False) -> Optional[str]:
+def get_token_jti(token: str, *, is_refresh: bool = False) -> str | None:
     """Extract JTI from a token without full verification (for blacklisting)."""
     try:
         payload = jwt.decode(

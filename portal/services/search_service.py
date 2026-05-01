@@ -3,21 +3,23 @@
 from __future__ import annotations
 
 import uuid
-from typing import Optional, List
+from typing import TYPE_CHECKING
 
-from sqlalchemy import text, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
-from ..models.document import Document
 from ..models.case import Case
 from ..models.client import Client
+from ..models.document import Document
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def full_text_search(
     db: AsyncSession,
     query: str,
     tenant_id: uuid.UUID | str,
-    resource_types: Optional[List[str]] = None,
+    resource_types: list[str] | None = None,
     limit: int = 20,
 ) -> dict:
     """

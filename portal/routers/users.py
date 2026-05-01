@@ -3,26 +3,31 @@
 from __future__ import annotations
 
 import secrets
-import uuid
-from datetime import datetime, timezone
-from typing import Optional
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func, select
 
 from ..auth.password_handler import generate_secure_password, hash_password
-from ..auth.rbac import CurrentUser, Permission, require_permissions, Role
+from ..auth.rbac import CurrentUser, Permission, require_permissions
 from ..auth.session_manager import revoke_all_user_sessions
+from ..config import get_settings
 from ..database import get_db
 from ..models.user import User
 from ..schemas.user import (
-    UserCreate, UserInvite, UserListResponse, UserResponse, UserUpdate,
     SessionResponse,
+    UserInvite,
+    UserListResponse,
+    UserResponse,
+    UserUpdate,
 )
 from ..services.audit_service import audit
 from ..services.notification_service import send_email
-from ..config import get_settings
+
+if TYPE_CHECKING:
+    import uuid
+
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 settings = get_settings()
@@ -30,9 +35,9 @@ settings = get_settings()
 
 @router.get("", response_model=UserListResponse)
 async def list_users(
-    search: Optional[str] = Query(None),
-    role: Optional[str] = Query(None),
-    is_active: Optional[bool] = Query(None),
+    search: str | None = Query(None),
+    role: str | None = Query(None),
+    is_active: bool | None = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: CurrentUser = Depends(require_permissions(Permission.USER_READ)),

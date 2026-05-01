@@ -6,11 +6,13 @@ Captures: user, method, path, status, IP, user-agent, duration.
 from __future__ import annotations
 
 import time
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 import structlog
-from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
+
+if TYPE_CHECKING:
+    from fastapi import Request
 
 log = structlog.get_logger()
 

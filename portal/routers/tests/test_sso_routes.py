@@ -18,16 +18,16 @@ Coverage:
 """
 from __future__ import annotations
 
-import pytest
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from starlette.middleware.sessions import SessionMiddleware
 
 from portal.routers.sso import router as sso_router
-from portal.sso.session_models import TokenPair, SessionData
-
+from portal.sso.session_models import SessionData, TokenPair
 
 # ── App factory ───────────────────────────────────────────────────────────────
 

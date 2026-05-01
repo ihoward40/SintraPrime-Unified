@@ -2,24 +2,25 @@
 
 from __future__ import annotations
 
-import uuid
-from datetime import datetime
-from typing import List, Optional
+from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
+if TYPE_CHECKING:
+    import uuid
+    from datetime import datetime
 
 # ── Tenant ────────────────────────────────────────────────────────────────────
 
 class TenantBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
     slug: str = Field(..., min_length=2, max_length=100, pattern=r"^[a-z0-9\-]+$")
-    domain: Optional[str] = None
+    domain: str | None = None
     primary_color: str = "#1a56db"
     secondary_color: str = "#7e3af2"
-    email: Optional[EmailStr] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
+    email: EmailStr | None = None
+    phone: str | None = None
+    address: str | None = None
 
 
 class TenantCreate(TenantBase):
@@ -27,20 +28,20 @@ class TenantCreate(TenantBase):
 
 
 class TenantUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=2, max_length=255)
-    domain: Optional[str] = None
-    logo_url: Optional[str] = None
-    primary_color: Optional[str] = None
-    secondary_color: Optional[str] = None
-    email: Optional[EmailStr] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
-    settings: Optional[dict] = None
+    name: str | None = Field(None, min_length=2, max_length=255)
+    domain: str | None = None
+    logo_url: str | None = None
+    primary_color: str | None = None
+    secondary_color: str | None = None
+    email: EmailStr | None = None
+    phone: str | None = None
+    address: str | None = None
+    settings: dict | None = None
 
 
 class TenantResponse(TenantBase):
     id: uuid.UUID
-    logo_url: Optional[str] = None
+    logo_url: str | None = None
     plan: str
     storage_quota_gb: int
     user_quota: int
@@ -56,24 +57,24 @@ class UserBase(BaseModel):
     email: EmailStr
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(..., min_length=1, max_length=100)
-    phone: Optional[str] = None
-    title: Optional[str] = None
-    bar_number: Optional[str] = None
+    phone: str | None = None
+    title: str | None = None
+    bar_number: str | None = None
 
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=12, max_length=128)
     role: str = Field(..., description="Role name e.g. ATTORNEY, CLIENT")
-    tenant_id: Optional[uuid.UUID] = None  # set by server for non-super-admin
+    tenant_id: uuid.UUID | None = None  # set by server for non-super-admin
 
     @field_validator("password")
     @classmethod
     def validate_password(cls, v: str) -> str:
-        from ..auth.password_handler import validate_password_strength, PasswordError
+        from ..auth.password_handler import PasswordError, validate_password_strength
         try:
             validate_password_strength(v)
         except PasswordError as exc:
-            raise ValueError(str(exc))
+            raise ValueError(str(exc)) from exc
         return v
 
 
@@ -86,13 +87,13 @@ class UserInvite(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    first_name: Optional[str] = Field(None, min_length=1, max_length=100)
-    last_name: Optional[str] = Field(None, min_length=1, max_length=100)
-    phone: Optional[str] = None
-    title: Optional[str] = None
-    notify_email: Optional[bool] = None
-    notify_sms: Optional[bool] = None
-    notify_push: Optional[bool] = None
+    first_name: str | None = Field(None, min_length=1, max_length=100)
+    last_name: str | None = Field(None, min_length=1, max_length=100)
+    phone: str | None = None
+    title: str | None = None
+    notify_email: bool | None = None
+    notify_sms: bool | None = None
+    notify_push: bool | None = None
 
 
 class UserPasswordChange(BaseModel):
@@ -102,11 +103,11 @@ class UserPasswordChange(BaseModel):
     @field_validator("new_password")
     @classmethod
     def validate_password(cls, v: str) -> str:
-        from ..auth.password_handler import validate_password_strength, PasswordError
+        from ..auth.password_handler import PasswordError, validate_password_strength
         try:
             validate_password_strength(v)
         except PasswordError as exc:
-            raise ValueError(str(exc))
+            raise ValueError(str(exc)) from exc
         return v
 
 
@@ -114,17 +115,17 @@ class UserResponse(UserBase):
     id: uuid.UUID
     tenant_id: uuid.UUID
     role: str
-    avatar_url: Optional[str] = None
+    avatar_url: str | None = None
     email_verified: bool
     mfa_enabled: bool
     is_active: bool
-    last_login_at: Optional[datetime] = None
+    last_login_at: datetime | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
 
     @classmethod
-    def from_orm_with_role(cls, user) -> "UserResponse":
+    def from_orm_with_role(cls, user) -> UserResponse:
         data = {
             "id": user.id,
             "tenant_id": user.tenant_id,
@@ -146,7 +147,7 @@ class UserResponse(UserBase):
 
 
 class UserListResponse(BaseModel):
-    items: List[UserResponse]
+    items: list[UserResponse]
     total: int
     page: int
     page_size: int

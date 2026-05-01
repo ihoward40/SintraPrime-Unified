@@ -5,10 +5,14 @@ In multi-tenant mode, allowed origins are dynamically set per tenant subdomain.
 
 from __future__ import annotations
 
-from fastapi import FastAPI
+from typing import TYPE_CHECKING
+
 from fastapi.middleware.cors import CORSMiddleware
 
 from ..config import get_settings
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 
 settings = get_settings()
 

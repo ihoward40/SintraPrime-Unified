@@ -4,14 +4,17 @@ from __future__ import annotations
 
 import hashlib
 import secrets
-import uuid
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 from fastapi import HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.document import Document, DocumentShare
-from ..schemas.document import DocumentShareCreate
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from ..schemas.document import DocumentShareCreate
 
 
 async def create_share_link(

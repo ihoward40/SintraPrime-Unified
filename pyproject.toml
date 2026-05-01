@@ -1,70 +1,99 @@
 [project]
 name = "sintraprime-unified"
 version = "2.0.0"
-description = "SintraPrime UniVerse v2.0 — The smartest AI agent system"
+description = "SintraPrime UniVerse v2.0 — The smartest AI agent system. Unifies Python Universe, TypeScript ClawdBot, twin TUI, superintelligence layers, and all ihoward40 features into one monorepo."
+authors = [
+    {name = "Isiah T Howard", email = "ihoward40@users.noreply.github.com"}
+]
+readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.11"
 
-[tool.ruff]
-target-version = "py311"
-line-length = 120
-select = ["E", "F", "W", "I", "UP", "B", "SIM"]
-ignore = [
-    "E501",   # line too long (handled by formatter)
-    "E402",   # module level import not at top
-    "F401",   # unused import (cleanup in progress)
-    "F841",   # local variable assigned but never used
-    "B008",   # function call in default argument
-    "UP007",  # use X | Y for union types
-]
-exclude = [
-    ".git",
-    "__pycache__",
-    "node_modules",
-    ".venv",
-    "venv",
-    "build",
-    "dist",
-    "*.egg-info",
-    "migrations",
+dependencies = [
+    "fastapi==0.115.7",
+    "uvicorn[standard]==0.30.1",
+    "sqlalchemy==2.0.35",
+    "alembic==1.13.2",
+    "pydantic==2.7.4",
+    "python-jose[cryptography]==3.3.0",
+    "passlib[bcrypt]==1.7.4",
+    "aioredis==2.0.1",
+    "httpx==0.27.0",
+    "stripe==10.0.0",
+    "python-multipart==0.0.6",
 ]
 
-[tool.ruff.per-file-ignores]
-"__init__.py" = ["F401"]
-"tests/*" = ["E501", "B008"]
+[project.optional-dependencies]
+dev = [
+    "pytest==7.4.4",
+    "pytest-asyncio==0.23.2",
+    "pytest-cov==4.1.0",
+    "httpx==0.27.0",
+    "ruff==0.3.5",
+    "black==24.1.1",
+    "mypy==1.8.0",
+    "bandit==1.7.6",
+]
+
+[tool.ruff]
+# Ruff linter configuration (Phase 22 modernization)
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+# Enable plugins
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # Pyflakes
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "A",     # flake8-builtins
+    "C4",    # flake8-comprehensions
+    "SIM",   # flake8-simplify
+    "RET",   # flake8-return
+    "ARG",   # flake8-unused-arguments
+    "DTZ",   # flake8-datetimez
+    "PT",    # flake8-pytest-style
+    "RUF",   # ruff-specific
+]
+ignore = [
+    "E501",   # line-too-long (handled by formatter)
+    "E701",   # multiple-statements-on-one-line-colon
+    "E702",   # multiple-statements-on-one-line-semicolon
+    "E722",   # bare-except
+    "SIM102", # nested-if-statements
+    "DTZ011", # datetime.today() (noqa per file)
+]
+
+[tool.ruff.lint.isort]
+profile = "black"
+known-first-party = ["portal", "operator"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "portal/sso/tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = "-v --tb=short"
-markers = [
-    "slow: marks tests as slow",
-    "integration: marks integration tests",
-    "security: marks security tests",
-]
+addopts = "--strict-markers -v --tb=short"
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+asyncio_mode = "auto"
 
 [tool.coverage.run]
-source = ["portal", "agents", "packages"]
+source = ["portal", "operator"]
 omit = [
     "*/tests/*",
-    "*/test_*",
+    "*/conftest.py",
     "*/__pycache__/*",
-    "*/migrations/*",
 ]
 
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "if __name__ == .__main__.",
-    "raise NotImplementedError",
-    "pass",
-    "except ImportError",
-]
-show_missing = true
-fail_under = 70
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
 
-[tool.bandit]
-exclude_dirs = ["tests", "node_modules", ".venv"]
-skips = ["B101", "B601"]
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"

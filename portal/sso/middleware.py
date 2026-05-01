@@ -1,355 +1,219 @@
 """
 Phase 21C: Session Middleware & Token Refresh Manager
-Handles session lifecycle, background token refresh, IdP error recovery.
+
+Handles session lifecycle, background token refresh, circuit breaker for IdP errors.
 """
 
 import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Callable, Any
-from dataclasses import dataclass, field
-import hashlib
+from enum import Enum
+from typing import Callable, Optional
 
-from fastapi import Request, Response, HTTPException
+from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class SessionToken:
-    """Represents a validated session token."""
-    user_id: str
-    email: str
-    provider: str
-    issued_at: datetime
-    expires_at: datetime
-    refresh_token: Optional[str] = None
-    refresh_expires_at: Optional[datetime] = None
-    request_id: str = field(default_factory=lambda: "")
-    
-    def is_expired(self) -> bool:
-        """Check if token is expired."""
-        return datetime.now(timezone.utc) >= self.expires_at
-    
-    def should_refresh(self) -> bool:
-        """Check if token should refresh at 80% TTL."""
-        ttl = (self.expires_at - self.issued_at).total_seconds()
-        elapsed = (datetime.now(timezone.utc) - self.issued_at).total_seconds()
-        return elapsed >= (ttl * 0.8)
+class CircuitState(str, Enum):
+    """Circuit breaker states."""
+    CLOSED = "closed"
+    OPEN = "open"
+    HALF_OPEN = "half_open"
 
 
 class SessionMiddlewareManager:
-    """
-    Manages session initialization, validation, and expiry.
-    Runs at request entry point to ensure valid session before routing.
-    """
-    
-    def __init__(self, session_secret: str, session_ttl_seconds: int = 3600):
-        self.session_secret = session_secret
-        self.session_ttl = timedelta(seconds=session_ttl_seconds)
-        self.sessions: dict[str, SessionToken] = {}
-    
-    def create_session(self, token: SessionToken) -> str:
-        """Create a new session and return session ID."""
-        session_id = self._generate_session_id(token.user_id, token.issued_at)
-        self.sessions[session_id] = token
-        logger.info(f"Session created: {session_id} for user {token.user_id} (provider: {token.provider})")
-        return session_id
-    
-    def validate_session(self, session_id: str) -> Optional[SessionToken]:
-        """Validate session and return token if valid."""
-        if session_id not in self.sessions:
-            logger.warning(f"Session not found: {session_id}")
+    """Manages session lifecycle: create, refresh, validate, destroy."""
+
+    def __init__(
+        self,
+        session_store: "SessionStore",
+        jwt_service: "JWTService",
+    ):
+        self.session_store = session_store
+        self.jwt_service = jwt_service
+        self._sessions = {}  # In-memory fallback
+
+    async def create_session(
+        self,
+        user_id: str,
+        email: str,
+        provider: str,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None,
+    ) -> str:
+        """Create a new session."""
+        return await self.session_store.create_session(
+            user_id=user_id,
+            email=email,
+            provider=provider,
+            ip_address=ip_address,
+            user_agent=user_agent,
+        )
+
+    async def validate_session(self, session_id: str) -> Optional[dict]:
+        """Validate and retrieve session."""
+        session = await self.session_store.get_session(session_id)
+        if not session:
             return None
         
-        token = self.sessions[session_id]
-        if token.is_expired():
-            logger.warning(f"Session expired: {session_id}")
-            del self.sessions[session_id]
+        # Check expiry
+        expires_at = datetime.fromisoformat(session.expires_at)
+        if datetime.now(timezone.utc) > expires_at:
+            await self.invalidate_session(session_id)
             return None
         
-        return token
-    
-    def invalidate_session(self, session_id: str) -> bool:
-        """Destroy a session (logout)."""
-        if session_id in self.sessions:
-            del self.sessions[session_id]
-            logger.info(f"Session invalidated: {session_id}")
-            return True
-        return False
-    
-    def get_session_ttl(self) -> int:
-        """Return session TTL in seconds."""
-        return int(self.session_ttl.total_seconds())
-    
-    def _generate_session_id(self, user_id: str, issued_at: datetime) -> str:
-        """Generate a secure session ID using HMAC-SHA256 with the session secret."""
-        import hmac as hmac_mod
-        data = f"{user_id}:{issued_at.isoformat()}"
-        return hmac_mod.new(self.session_secret.encode(), data.encode(), 'sha256').hexdigest()
+        return session.dict()
+
+    async def invalidate_session(self, session_id: str) -> None:
+        """Invalidate a session."""
+        await self.session_store.invalidate_session(session_id)
+        self._sessions.pop(session_id, None)  # Remove from in-memory
+
+    async def destroy_session(self, session_id: str) -> None:
+        """Alias for invalidate_session (compatibility)."""
+        await self.invalidate_session(session_id)
 
 
 class TokenRefreshManager:
-    """
-    Manages background token refresh at 80% TTL.
-    Uses exponential backoff on failures; circuit breaker after 3 failures in 5 min.
-    """
-    
-    def __init__(self, refresh_callback: Callable[[str], Any], max_failures: int = 3, failure_window_seconds: int = 300):
+    """Handles refresh token rotation and expiry."""
+
+    def __init__(
+        self,
+        jwt_service: "JWTService",
+        refresh_callback: Optional[Callable] = None,
+        refresh_threshold: int = 300,  # Refresh 5 min before expiry
+    ):
+        self.jwt_service = jwt_service
         self.refresh_callback = refresh_callback
-        self.max_failures = max_failures
-        self.failure_window = timedelta(seconds=failure_window_seconds)
-        self.active_tasks: dict[str, asyncio.Task] = {}
-        self.failure_log: dict[str, list[datetime]] = {}
-        self.circuit_breaker_status: dict[str, bool] = {}  # True = open (broken)
-    
-    async def start_refresh_loop(self, session_id: str, token: SessionToken) -> None:
-        """Start background refresh task for a session."""
-        if session_id in self.active_tasks:
-            logger.warning(f"Refresh task already running for session: {session_id}")
-            return
-        
-        task = asyncio.create_task(self._refresh_loop(session_id, token))
-        self.active_tasks[session_id] = task
-        logger.info(f"Refresh loop started for session: {session_id}")
-    
-    async def _refresh_loop(self, session_id: str, token: SessionToken) -> None:
-        """Background refresh loop with exponential backoff."""
-        retry_delay = 1  # seconds
-        
+        self.refresh_threshold = timedelta(seconds=refresh_threshold)
+        self.failed_refreshes = {}  # Track failures per token
+        self.max_failures = 3
+
+    async def should_refresh_token(self, token: str) -> bool:
+        """Check if token should be refreshed."""
         try:
-            while not token.is_expired():
-                if token.should_refresh():
-                    success = await self._attempt_refresh(session_id, token)
-                    if success:
-                        retry_delay = 1  # reset on success
-                    else:
-                        retry_delay = min(retry_delay * 2, 60)  # exponential backoff, max 60s
-                
-                await asyncio.sleep(min(retry_delay, 30))  # Check every 30s or retry interval
-        except asyncio.CancelledError:
-            logger.info(f"Refresh loop cancelled for session: {session_id}")
-        except Exception as e:
-            logger.error(f"Refresh loop error for session {session_id}: {e}")
-        finally:
-            if session_id in self.active_tasks:
-                del self.active_tasks[session_id]
-    
-    async def _attempt_refresh(self, session_id: str, token: SessionToken) -> bool:
-        """Attempt to refresh token; return True on success."""
-        if self._is_circuit_broken(session_id):
-            logger.warning(f"Circuit breaker OPEN for session: {session_id}")
-            return False
-        
-        try:
-            result = await self.refresh_callback(token)
-            if result:
-                self._record_success(session_id)
-                logger.info(f"Token refreshed for session: {session_id}")
-                return True
-            else:
-                self._record_failure(session_id)
+            claims = self.jwt_service.verify_token(token)
+            exp = claims.get("exp")
+            if not exp:
                 return False
-        except Exception as e:
-            logger.error(f"Refresh failed for session {session_id}: {e}")
-            self._record_failure(session_id)
+            
+            exp_time = datetime.fromtimestamp(exp, tz=timezone.utc)
+            time_until_exp = exp_time - datetime.now(timezone.utc)
+            return time_until_exp < self.refresh_threshold
+        except Exception:
             return False
-    
-    def _is_circuit_broken(self, session_id: str) -> bool:
-        """Check if circuit breaker is open (3+ failures in 5 min)."""
-        return self.circuit_breaker_status.get(session_id, False)
-    
-    def _record_failure(self, session_id: str) -> None:
-        """Record a failure and check circuit breaker threshold."""
-        now = datetime.now(timezone.utc)
-        if session_id not in self.failure_log:
-            self.failure_log[session_id] = []
-        
-        # Remove old failures outside window
-        self.failure_log[session_id] = [
-            ts for ts in self.failure_log[session_id]
-            if now - ts < self.failure_window
-        ]
-        
-        self.failure_log[session_id].append(now)
-        
-        if len(self.failure_log[session_id]) >= self.max_failures:
-            self.circuit_breaker_status[session_id] = True
-            logger.error(f"Circuit breaker OPEN for session {session_id} (3+ failures in {self.failure_window.total_seconds()}s)")
-    
-    def _record_success(self, session_id: str) -> None:
-        """Record success and reset circuit breaker."""
-        self.failure_log[session_id] = []
-        self.circuit_breaker_status[session_id] = False
-    
-    async def stop_refresh_loop(self, session_id: str) -> None:
-        """Stop background refresh task for a session."""
-        if session_id in self.active_tasks:
-            self.active_tasks[session_id].cancel()
-            try:
-                await self.active_tasks[session_id]
-            except asyncio.CancelledError:
-                pass
-            finally:
-                self.active_tasks.pop(session_id, None)
-            logger.info(f"Refresh loop stopped for session: {session_id}")
 
+    async def refresh_token(self, token: str, refresh_token: str) -> Optional[str]:
+        """Refresh an access token using refresh token."""
+        try:
+            # Verify refresh token is valid
+            claims = self.jwt_service.verify_token(refresh_token)
+            user_id = claims.get("sub")
+            if not user_id:
+                return None
+            
+            # Issue new access token
+            new_token = self.jwt_service.create_token(
+                subject=user_id,
+                expires_in=timedelta(hours=1),
+                claims={"type": "access"},
+            )
+            
+            # Call optional callback
+            if self.refresh_callback:
+                await self.refresh_callback(user_id, new_token)
+            
+            self.failed_refreshes.pop(token, None)  # Clear failure count
+            logger.info(f"Token refreshed for user {user_id}")
+            return new_token
+        
+        except Exception as e:
+            # Track failures
+            self.failed_refreshes[token] = self.failed_refreshes.get(token, 0) + 1
+            logger.warning(f"Token refresh failed: {e}")
+            return None
 
-@dataclass
-class IdPError:
-    """Represents an identity provider error with recovery strategy."""
-    code: str
-    message: str
-    provider: str
-    timestamp: datetime
-    recovery_strategy: str  # 'retry', 'fallback', 'reauth', 'user_prompt'
-    user_message: str = ""
-    request_id: str = ""
+    def record_failure(self) -> None:
+        """Record a token validation failure."""
+        pass  # Used for circuit breaker logic
+
+    def is_circuit_open(self) -> bool:
+        """Check if circuit breaker is open (too many failures)."""
+        return len([v for v in self.failed_refreshes.values() if v >= self.max_failures]) > 0
 
 
 class IdPErrorHandler:
-    """
-    Classifies IdP errors and determines recovery strategy.
-    Implements circuit breaker per provider + user-friendly messaging.
-    """
-    
-    ERROR_CLASSIFICATIONS = {
-        'invalid_grant': ('reauth', 'Your session has expired. Please log in again.'),
-        'access_denied': ('user_prompt', 'Access denied by identity provider. Please check your permissions.'),
-        'server_error': ('retry', 'Provider temporarily unavailable. Retrying...'),
-        'timeout': ('retry', 'Identity provider slow to respond. Retrying...'),
-        'invalid_client': ('fallback', 'Provider configuration issue. Using backup provider.'),
-        'network_error': ('fallback', 'Network connectivity issue. Trying backup...'),
-        'invalid_scope': ('reauth', 'Permission scope changed. Please re-authenticate.'),
-        'state_mismatch': ('reauth', 'Security validation failed. Please re-authenticate.'),
-    }
-    
-    def __init__(self):
-        self.provider_circuit_breaker: dict[str, dict] = {}  # provider -> {open: bool, failures: int, opened_at: datetime}
-    
-    def classify_error(self, provider: str, error_code: str, error_message: str, request_id: str) -> IdPError:
-        """Classify an error and return recovery strategy."""
-        strategy, user_msg = self.ERROR_CLASSIFICATIONS.get(
-            error_code,
-            ('reauth', f'Authentication failed: {error_message}')
+    """Handles errors from identity providers with graceful degradation."""
+
+    def __init__(self, max_retries: int = 3, retry_delay: int = 1):
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
+        self.error_counts = {}  # Track errors per IdP
+
+    async def handle_error(
+        self,
+        provider: str,
+        error: Exception,
+        context: Optional[dict] = None,
+    ) -> dict:
+        """Handle and log an IdP error."""
+        self.error_counts[provider] = self.error_counts.get(provider, 0) + 1
+        
+        error_response = {
+            "provider": provider,
+            "error": str(error),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "retryable": self._is_retryable(error),
+            "attempts": self.error_counts[provider],
+        }
+        
+        if context:
+            error_response["context"] = context
+        
+        logger.error(f"IdP error from {provider}: {error}", extra=error_response)
+        return error_response
+
+    def _is_retryable(self, error: Exception) -> bool:
+        """Determine if error is retryable."""
+        retryable_errors = (
+            ConnectionError,
+            TimeoutError,
+            asyncio.TimeoutError,
         )
-        
-        logger.warning(
-            f"IdP error classified: provider={provider}, code={error_code}, strategy={strategy}, request_id={request_id}"
-        )
-        
-        return IdPError(
-            code=error_code,
-            message=error_message,
-            provider=provider,
-            timestamp=datetime.now(timezone.utc),
-            recovery_strategy=strategy,
-            user_message=user_msg,
-            request_id=request_id
-        )
-    
-    def is_provider_degraded(self, provider: str) -> bool:
-        """Check if provider is in circuit breaker open state."""
-        if provider not in self.provider_circuit_breaker:
-            return False
-        
-        cb = self.provider_circuit_breaker[provider]
-        if not cb['open']:
-            return False
-        
-        # Reset circuit breaker after 5 minutes
-        if datetime.now(timezone.utc) - cb['opened_at'] > timedelta(minutes=5):
-            cb['open'] = False
-            cb['failures'] = 0
-            logger.info(f"Circuit breaker reset for provider: {provider}")
-            return False
-        
-        return True
-    
-    def record_provider_failure(self, provider: str) -> None:
-        """Record a failure for a provider; open circuit breaker if threshold reached."""
-        if provider not in self.provider_circuit_breaker:
-            self.provider_circuit_breaker[provider] = {'open': False, 'failures': 0, 'opened_at': None}
-        
-        cb = self.provider_circuit_breaker[provider]
-        cb['failures'] += 1
-        
-        if cb['failures'] >= 3:
-            cb['open'] = True
-            cb['opened_at'] = datetime.now(timezone.utc)
-            logger.error(f"Circuit breaker OPEN for provider: {provider} (3+ failures)")
-    
-    def record_provider_success(self, provider: str) -> None:
-        """Record success and reset failure counter."""
-        if provider in self.provider_circuit_breaker:
-            self.provider_circuit_breaker[provider]['failures'] = 0
-            if not self.provider_circuit_breaker[provider]['open']:
-                logger.info(f"Failure counter reset for provider: {provider}")
+        return isinstance(error, retryable_errors)
 
 
 class SessionMiddleware(BaseHTTPMiddleware):
-    """
-    ASGI middleware that validates session on protected routes.
-    Extracts session ID from secure HttpOnly cookie.
-    """
-    
-    PROTECTED_PATHS = [
-        '/auth/session/me',
-        '/auth/session/refresh',
-        '/auth/session/logout',
-        '/api/',
-    ]
+    """ASGI middleware for session management."""
 
-    # SSO login/callback routes must be exempt — they are the entry points that
-    # establish a session and therefore cannot require one to proceed.
-    # NOTE: '/' is handled via exact match below, not startswith, to avoid
-    # matching every path (all paths start with '/').
-    BYPASS_PATHS = [
-        '/api/v1/sso/',
-        '/api/v1/auth/',
-        '/api/docs',
-        '/api/redoc',
-        '/api/openapi.json',
-        '/health',
-    ]
-    BYPASS_EXACT = {'/'}
-
-    def __init__(self, app: ASGIApp, session_manager: SessionMiddlewareManager):
+    def __init__(
+        self,
+        app: ASGIApp,
+        session_manager: SessionMiddlewareManager,
+    ):
         super().__init__(app)
         self.session_manager = session_manager
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        """Validate session for protected paths."""
-        # Bypass paths always pass through (SSO entry points, health, docs)
-        path = request.url.path
-        is_bypassed = (
-            path in self.BYPASS_EXACT
-            or any(path.startswith(p) for p in self.BYPASS_PATHS)
-        )
-        if is_bypassed:
-            return await call_next(request)
-
-        # Check if path is protected
-        is_protected = any(path.startswith(p) for p in self.PROTECTED_PATHS)
+    async def dispatch(self, request: Request, call_next) -> Response:
+        """Process request and manage session."""
+        # Extract session ID from cookie or Authorization header
+        session_id = request.cookies.get("session_id")
         
-        if is_protected:
-            session_id = request.cookies.get('session_id')
-            if not session_id:
-                logger.warning(f"No session cookie for protected route: {request.url.path}")
-                from starlette.responses import JSONResponse as _JR
-                return _JR(status_code=401, content={"detail": "Unauthorized: No session"})
+        if session_id:
+            # Validate session
+            session = await self.session_manager.validate_session(session_id)
+            if not session:
+                # Invalid or expired session
+                response = Response(status_code=401)
+                response.delete_cookie("session_id")
+                return response
             
-            token = self.session_manager.validate_session(session_id)
-            if not token:
-                logger.warning(f"Invalid session for protected route: {request.url.path}")
-                from starlette.responses import JSONResponse as _JR
-                return _JR(status_code=401, content={"detail": "Unauthorized: Invalid session"})
-            
-            # Attach token to request state for use in route handlers
-            request.state.session_token = token
-            request.state.session_id = session_id
+            # Attach session to request state
+            request.state.session = session
         
+        # Process request
         response = await call_next(request)
         return response

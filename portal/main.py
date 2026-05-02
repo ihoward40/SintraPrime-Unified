@@ -83,12 +83,8 @@ def create_app() -> FastAPI:
     app.include_router(sso.router, prefix="/api/v1/sso", tags=["sso"])
     app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
     app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["webhooks"])
-<<<<<<< HEAD
-
-=======
     app.include_router(trust_compliance.router)
     
->>>>>>> cd47164 (phase-23C: trust compliance backend integration — FastAPI endpoints + service layer + 8 tests)
     # Health check
     @app.get("/health")
     async def health_check():

@@ -1,27 +1,26 @@
 # SintraPrime-Unified Production Dependencies
 # Generated from pyproject.toml as single source of truth
 
-fastapi==0.104.1
-starlette==0.27.0
+fastapi>=0.115.0
 uvicorn[standard]==0.24.0
 pydantic==2.5.0
 pydantic-settings==2.1.0
 sqlalchemy==2.0.23
 asyncpg==0.29.0
 alembic==1.12.1
-python-jose[cryptography]==3.3.0
-passlib["bcrypt]==1.7.4
-python-multipart==0.0.6
-starlette-session==0.0.7
+python-jose[cryptography]==3.4.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.26
+starlette-session==0.4.3
 pytz==2023.3.post1
 python-dateutil==2.8.2
 prometheus-client==0.19.0
 websockets==12.0
 locust==2.17.0
-pytest==7.4.3
+pytest==9.0.3
 pytest-asyncio==0.21.1
 pytest-cov==4.1.0
 ruff==0.1.8
 mypy==1.7.1
-black==23.12.0
+black==26.3.1
 isort==5.13.2

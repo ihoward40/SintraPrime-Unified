@@ -8,9 +8,15 @@ pydantic-settings==2.1.0
 sqlalchemy==2.0.23
 asyncpg==0.29.0
 alembic==1.12.1
+<<<<<<< HEAD
 python-jose[cryptography]==3.4.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.26
+=======
+python-jose[cryptography]==3.3.0
+
+python-multipart==0.0.6
+>>>>>>> cd47164 (phase-23C: trust compliance backend integration — FastAPI endpoints + service layer + 8 tests)
 starlette-session==0.4.3
 pytz==2023.3.post1
 python-dateutil==2.8.2

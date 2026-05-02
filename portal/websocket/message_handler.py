@@ -38,7 +38,7 @@ class MessageHandler:
     ) -> None:
         event_type = event.get("type")
         if not event_type:
-            log.warning("ws.invalid_event", user_id=user_id, event=event)
+            log.warning("ws.invalid_event", user_id=user_id, event_data=event)
             return
 
         handler = getattr(self, f"_handle_{event_type}", None)

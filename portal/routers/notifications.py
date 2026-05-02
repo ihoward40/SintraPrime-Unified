@@ -34,7 +34,7 @@ class Notification(Base):
     resource_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     resource_id: Mapped[Optional[str]]   = mapped_column(String(255), nullable=True)
     actor_id: Mapped[Optional[str]]      = mapped_column(String(255), nullable=True)
-    metadata: Mapped[Optional[dict]]     = mapped_column(JSONB, nullable=True)
+    extra_data: Mapped[Optional[dict]]    = mapped_column(JSONB, nullable=True)
 
     is_read: Mapped[bool]           = mapped_column(Boolean, default=False)
     read_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

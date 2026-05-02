@@ -64,11 +64,14 @@ class AuditLog(Base):
 
     # Request context
     request_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
-    http_method: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
-    http_path: Mapped[Optional[str]]   = mapped_column(Text, nullable=True)
+    http_method: Mapped[Optional[str]]      = mapped_column(String(10), nullable=True)
+    http_path: Mapped[Optional[str]]         = mapped_column(Text, nullable=True)
+    http_status_code: Mapped[Optional[int]]  = mapped_column(nullable=True)
 
     # Hash chain for tamper detection
-    hash_chain: Mapped[Optional[str]]  = mapped_column(String(64), nullable=True)  # SHA-256 hex
+    hash_chain: Mapped[Optional[str]]    = mapped_column(String(64), nullable=True)  # SHA-256 hex
+    entry_hash: Mapped[Optional[str]]    = mapped_column(String(64), nullable=True)  # SHA-256 of this entry
+    previous_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)  # SHA-256 of previous entry
 
     # Timestamp (UTC, server-set — NOT user-settable)
     created_at: Mapped[datetime]     = mapped_column(

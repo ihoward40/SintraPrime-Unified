@@ -131,4 +131,4 @@ class StorageService:
         """Alias for presigned_get_url with simplified signature."""
         from ..config import get_settings
         settings = get_settings()
-        return await self.presigned_get_url(bucket=settings.MINIO_BUCKET, key=key, expires=expires_in)
+        return await self.presigned_get_url(bucket=settings.MINIO_BUCKET, key=key, expires_seconds=expires_in)

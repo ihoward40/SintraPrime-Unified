@@ -70,8 +70,35 @@ target-version = ['py311']
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-select = ["E", "F", "I", "N", "W", "DTZ"]
-ignore = ["E501"]  # line too long (handled by black)
+[tool.ruff.lint]
+# Enable plugins
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # Pyflakes
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "A",     # flake8-builtins
+    "C4",    # flake8-comprehensions
+    "SIM",   # flake8-simplify
+    "RET",   # flake8-return
+    "ARG",   # flake8-unused-arguments
+    "DTZ",   # flake8-datetimez
+    "PT",    # flake8-pytest-style
+    "RUF",   # ruff-specific
+]
+ignore = [
+    "E501",   # line-too-long (handled by formatter)
+    "E701",   # multiple-statements-on-one-line-colon
+    "E702",   # multiple-statements-on-one-line-semicolon
+    "E722",   # bare-except
+    "SIM102", # nested-if-statements
+    "DTZ011", # datetime.today() (noqa per file)
+]
+[tool.ruff.lint.isort]
+known-first-party = ["portal", "operator"]
 
 [tool.pytest.ini_options]
 testpaths = ["portal/tests", "packages/tests"]

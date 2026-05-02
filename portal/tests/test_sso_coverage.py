@@ -148,9 +148,12 @@ class TestRedisSessionManager:
 
     @pytest.mark.asyncio
     async def test_connect_returns_false_when_redis_unavailable(self):
+        from unittest.mock import patch
         manager = self._make_manager()
-        # Redis is not running in test environment — should return False gracefully
-        result = await manager.connect()
+        # Force Redis to be unavailable regardless of environment
+        with patch("redis.asyncio.from_url",
+                   side_effect=ConnectionRefusedError("Redis unavailable")):
+            result = await manager.connect()
         assert result is False
         assert manager._connected is False
 

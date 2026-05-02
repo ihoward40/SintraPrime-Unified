@@ -117,3 +117,18 @@ class StorageService:
                 source=CopySource(src_bucket, src_key),
             ),
         )
+
+
+    # ── Test-compatibility aliases ────────────────────────────────────────────
+    async def upload_file(self, file_content: bytes, key: str, content_type: str = 'application/octet-stream', **kwargs) -> str:
+        """Alias for put_object with simplified signature."""
+        from ..config import get_settings
+        settings = get_settings()
+        await self.put_object(bucket=settings.MINIO_BUCKET, key=key, data=file_content, content_type=content_type)
+        return key
+
+    async def generate_presigned_url(self, key: str, expires_in: int = 3600, **kwargs) -> str:
+        """Alias for presigned_get_url with simplified signature."""
+        from ..config import get_settings
+        settings = get_settings()
+        return await self.presigned_get_url(bucket=settings.MINIO_BUCKET, key=key, expires_seconds=expires_in)

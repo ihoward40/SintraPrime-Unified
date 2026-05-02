@@ -16,6 +16,22 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
 
+import enum as _enum
+
+
+class CaseStage(str, _enum.Enum):
+    """Lifecycle stages for a legal case."""
+    INTAKE = "intake"
+    ACTIVE = "active"
+    DISCOVERY = "discovery"
+    NEGOTIATION = "negotiation"
+    TRIAL = "trial"
+    APPEAL = "appeal"
+    CLOSED = "closed"
+    ARCHIVED = "archived"
+
+
+
 
 class Case(Base):
     __tablename__ = "cases"

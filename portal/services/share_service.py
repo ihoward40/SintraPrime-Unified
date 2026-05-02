@@ -36,12 +36,9 @@ async def create_share_link(
         expires_at=body.expires_at,
         password_hash=password_hash,
         max_downloads=body.max_downloads,
-        max_views=body.max_views,
         can_download=body.can_download,
-        can_view_only=body.can_view_only,
-        is_watermarked=body.is_watermarked,
-        shared_with_emails=body.shared_with_emails or [],
-        notes=body.notes,
+        apply_watermark=getattr(body, "is_watermarked", False),
+        shared_with_email=getattr(body, "shared_with_email", None),
     )
     db.add(share)
     await db.commit()
@@ -56,10 +53,15 @@ async def validate_share_access(share: DocumentShare, password: str | None) -> N
     if share.expires_at and share.expires_at < now:
         raise HTTPException(status_code=410, detail="This share link has expired")
 
-    if share.is_revoked:
+    # Support both is_revoked (legacy mock attr) and is_active (model attr)
+    is_revoked = getattr(share, "is_revoked", None)
+    is_active = getattr(share, "is_active", True)
+    if is_revoked or not is_active:
         raise HTTPException(status_code=410, detail="This share link has been revoked")
 
-    if share.max_views and share.view_count >= share.max_views:
+    # Support both max_views (legacy) and view_count
+    max_views = getattr(share, "max_views", None)
+    if max_views and share.view_count >= max_views:
         raise HTTPException(status_code=410, detail="View limit reached for this link")
 
     if share.max_downloads and share.download_count >= share.max_downloads:

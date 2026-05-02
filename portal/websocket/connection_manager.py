@@ -61,11 +61,10 @@ class ConnectionManager:
         if not connections:
             return
 
-        message = json.dumps(event, default=str)
         dead = []
         for ws in connections:
             try:
-                await ws.send_text(message)
+                await ws.send_json(event)
             except Exception:
                 dead.append(ws)
 

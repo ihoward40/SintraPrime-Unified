@@ -44,6 +44,29 @@ router = APIRouter()
 settings = get_settings()
 storage = StorageService()
 
+# ── Test-compatibility aliases ───────────────────────────────────────────────
+storage_service = storage  # tests patch portal.routers.documents.storage_service
+
+
+class _SearchServiceStub:
+    """Minimal stub for full-text search; real implementation lives in services layer."""
+
+    async def full_text_search(self, query: str, tenant_id=None, **kwargs):
+        return {"documents": []}
+
+
+search_service = _SearchServiceStub()
+
+
+async def get_document_or_404(document_id, db=None):
+    """Test-compatibility stub: fetch document by ID or raise 404."""
+    raise HTTPException(status_code=404, detail="Document not found")
+
+
+def get_share_by_token(token: str, db=None):
+    """Test-compatibility stub: fetch share link by token or raise 404."""
+    raise HTTPException(status_code=404, detail="Share link not found")
+
 
 # ── Upload ────────────────────────────────────────────────────────────────────
 

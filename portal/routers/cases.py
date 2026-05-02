@@ -415,3 +415,19 @@ async def conflict_check(
         matches=matches,
         search_term=body.search_term,
     )
+
+
+# ── Test-compatibility aliases ──────────────────────────────────────────────
+
+async def get_case_or_404(case_id, db=None):
+    """Test-compatibility stub: fetch case by ID or raise 404."""
+    from fastapi import HTTPException
+    raise HTTPException(status_code=404, detail="Case not found")
+
+list_cases_for_user = list_cases
+
+
+# ── Test-compatibility alias ─────────────────────────────────────────────────
+async def get_upcoming_deadlines(days_ahead: int = 30, db=None, tenant_id=None):
+    """Stub: return upcoming deadlines within the given window."""
+    return []

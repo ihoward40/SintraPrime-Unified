@@ -358,6 +358,6 @@ class TestMainPyWiring:
         """portal/main.py must parse without syntax errors."""
         import ast
         import pathlib
-        src = pathlib.Path("/tmp/sp_ag/portal/main.py").read_text()
+        src = (pathlib.Path(__file__).parent.parent.parent / "main.py").read_text()
         tree = ast.parse(src)  # raises SyntaxError if invalid
         assert tree is not None

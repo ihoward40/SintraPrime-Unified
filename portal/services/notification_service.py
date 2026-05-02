@@ -46,7 +46,7 @@ async def notify_users(
     details: Optional[dict] = None,
 ) -> None:
     """Create in-app notifications and optionally send email/push."""
-    from ..routers.notifications import Notification
+    from ..routers.notifications import Notification  # lazy to avoid circular import
     from ..models.user import User
 
     title = EVENT_TITLES.get(event_type, event_type.replace("_", " ").title())
@@ -71,7 +71,7 @@ async def notify_users(
             body=body,
             resource_id=resource_id,
             actor_id=str(actor_id),
-            metadata=details,
+            extra_data=details,
         )
         db.add(notif)
 
@@ -80,13 +80,12 @@ async def notify_users(
     # Push email (non-blocking fire-and-forget style)
     if settings.SMTP_HOST and recipient_ids:
         user_result = await db.execute(
-            select(User.email, User.first_name, User.notification_preferences).where(
+            select(User.email, User.first_name, User.notify_email).where(
                 User.id.in_([uuid.UUID(r) for r in recipient_ids if r != str(actor_id)])
             )
         )
-        for email, fname, prefs in user_result.all():
-            prefs_dict = prefs or {}
-            if prefs_dict.get(f"email_{event_type}", True):
+        for email, fname, notify_email in user_result.all():
+            if notify_email:
                 await send_email(
                     to=email,
                     subject=title,

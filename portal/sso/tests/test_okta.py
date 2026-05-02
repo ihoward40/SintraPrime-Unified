@@ -147,7 +147,8 @@ class TestOktaProvider:
     def test_get_authorization_url_auto_state(self, config):
         provider = OktaProvider(config)
         url, state = provider.get_authorization_url()
-        assert state is not None and len(state) > 0
+        assert state is not None
+        assert len(state) > 0
         assert "state=" + state in url
 
     # --- Timeout is sourced from config ---

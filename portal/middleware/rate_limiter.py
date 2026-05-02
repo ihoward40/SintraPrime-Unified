@@ -8,7 +8,6 @@ Backed by Redis for distributed deployments.
 from __future__ import annotations
 
 import time
-from typing import Optional
 
 import structlog
 from fastapi import Request
@@ -85,7 +84,7 @@ def _sliding_window_check(
         except Exception as exc:
             log.error("rate_limiter.redis_error", error=str(exc))
             # Fall through to in-memory
-    
+
     # In-memory fallback (not distributed-safe)
     bucket = _rate_store.setdefault(key, [])
     # Prune old timestamps

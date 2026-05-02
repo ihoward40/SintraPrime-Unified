@@ -6,8 +6,6 @@ Handles file upload, download, deletion, presigned URLs.
 from __future__ import annotations
 
 import io
-from typing import Optional
-from urllib.parse import urljoin
 
 from ..config import get_settings
 
@@ -42,7 +40,7 @@ class StorageService:
         key: str,
         data: bytes,
         content_type: str = "application/octet-stream",
-        metadata: Optional[dict] = None,
+        metadata: dict | None = None,
     ) -> None:
         import asyncio
         await self.ensure_bucket_exists(bucket)
@@ -84,7 +82,7 @@ class StorageService:
         import asyncio
         from datetime import timedelta
         loop = asyncio.get_event_loop()
-        url = await loop.run_in_executor(
+        return await loop.run_in_executor(
             None,
             lambda: self._client.presigned_get_object(
                 bucket_name=bucket,
@@ -92,7 +90,6 @@ class StorageService:
                 expires=timedelta(seconds=expires_seconds),
             ),
         )
-        return url
 
     async def object_exists(self, bucket: str, key: str) -> bool:
         import asyncio
@@ -107,6 +104,7 @@ class StorageService:
         self, src_bucket: str, src_key: str, dest_bucket: str, dest_key: str
     ) -> None:
         import asyncio
+
         from minio.commonconfig import CopySource  # type: ignore
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(

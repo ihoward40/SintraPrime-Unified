@@ -3,18 +3,22 @@
 from __future__ import annotations
 
 import uuid
-from typing import Optional
+from datetime import UTC
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, func, or_
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth.rbac import CurrentUser, Permission, require_permissions
 from ..database import get_db
 from ..models.client import Client, Matter
 from ..schemas.client import (
-    ClientCreate, ClientListResponse, ClientResponse, ClientUpdate,
-    MatterCreate, MatterResponse, MatterUpdate,
+    ClientCreate,
+    ClientListResponse,
+    ClientResponse,
+    ClientUpdate,
+    MatterCreate,
+    MatterResponse,
 )
 from ..services.audit_service import audit
 
@@ -43,9 +47,9 @@ async def create_client(
 
 @router.get("", response_model=ClientListResponse)
 async def list_clients(
-    search: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),
-    attorney_id: Optional[uuid.UUID] = Query(None),
+    search: str | None = Query(None),
+    status: str | None = Query(None),
+    attorney_id: uuid.UUID | None = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: CurrentUser = Depends(require_permissions(Permission.CLIENT_READ)),
@@ -144,7 +148,7 @@ async def delete_client(
     current_user: CurrentUser = Depends(require_permissions(Permission.CLIENT_DELETE)),
     db: AsyncSession = Depends(get_db),
 ):
-    from datetime import datetime, timezone
+    from datetime import datetime
     result = await db.execute(
         select(Client).where(
             Client.id == client_id,
@@ -154,7 +158,7 @@ async def delete_client(
     client = result.scalar_one_or_none()
     if not client:
         raise HTTPException(status_code=404)
-    client.deleted_at = datetime.now(timezone.utc)
+    client.deleted_at = datetime.now(UTC)
     await db.commit()
     await audit(db, action="client_delete", user_id=current_user.user_id,
                 tenant_id=current_user.tenant_id, resource_type="client", resource_id=str(client_id))

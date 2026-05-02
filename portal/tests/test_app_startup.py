@@ -1,7 +1,8 @@
 """Smoke test to verify app boots without import errors."""
 import pytest
-from portal.main import create_app
+
 from portal.config import get_settings
+from portal.main import create_app
 
 
 def test_app_creation():
@@ -21,10 +22,10 @@ def test_settings_loads():
 def test_no_import_errors():
     """Test that all imports resolve without errors."""
     try:
-        from portal.main import create_app
         from portal.config import get_settings
-        from portal.sso.session_manager import SessionManager
-        from portal.sso.jwt_service import JWTTokenService
+        from portal.main import create_app
         from portal.middleware.cors_middleware import CORSMiddleware
+        from portal.sso.jwt_service import JWTTokenService
+        from portal.sso.session_manager import SessionManager
     except ImportError as e:
         pytest.fail(f"Import error: {e}")

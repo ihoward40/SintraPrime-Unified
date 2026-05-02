@@ -8,12 +8,13 @@ Tests for the document vault:
 - Search
 """
 
-import pytest
 import io
 import uuid
+from datetime import UTC
 from unittest.mock import AsyncMock, MagicMock, patch
-from httpx import AsyncClient
 
+import pytest
+from httpx import AsyncClient
 
 # ── Upload ────────────────────────────────────────────────────────────────────
 
@@ -194,9 +195,9 @@ class TestDocumentSharing:
         expired_token = "expired-share-token"
         async_client.get.return_value = MagicMock(status_code=410)
         with patch("portal.routers.documents.get_share_by_token") as mock_share:
-            from datetime import datetime, timezone, timedelta
+            from datetime import datetime, timedelta
             mock_share_obj = MagicMock()
-            mock_share_obj.expires_at = datetime.now(timezone.utc) - timedelta(hours=1)
+            mock_share_obj.expires_at = datetime.now(UTC) - timedelta(hours=1)
             mock_share_obj.is_revoked = False
             mock_share.return_value = mock_share_obj
             response = await async_client.get(f"/documents/share/{expired_token}")

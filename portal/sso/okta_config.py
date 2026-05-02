@@ -5,7 +5,6 @@ Fail-closed: All settings required, no defaults.
 """
 
 import os
-from typing import Optional
 
 
 class OktaConfig:
@@ -17,7 +16,7 @@ class OktaConfig:
         client_id: str,
         client_secret: str,
         redirect_uri: str,
-        scopes: Optional[list[str]] = None,
+        scopes: list[str] | None = None,
         timeout_seconds: int = 30,
     ):
         """

@@ -14,11 +14,10 @@ Covers zero-coverage modules:
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 
 # ─── portal.schemas.client ────────────────────────────────────────────────────
 
@@ -40,6 +39,7 @@ class TestClientSchemas:
 
     def test_client_base_invalid_type_raises(self):
         from pydantic import ValidationError
+
         from portal.schemas.client import ClientBase
         with pytest.raises(ValidationError):
             ClientBase(client_type="invalid_type")
@@ -87,8 +87,8 @@ class TestClientSchemas:
         mock_obj.status = "active"
         mock_obj.portal_access = False
         mock_obj.display_name = "Alice Smith"
-        mock_obj.created_at = datetime.now(timezone.utc)
-        mock_obj.updated_at = datetime.now(timezone.utc)
+        mock_obj.created_at = datetime.now(UTC)
+        mock_obj.updated_at = datetime.now(UTC)
         resp = ClientResponse.model_validate(mock_obj)
         assert resp.client_type == "individual"
 
@@ -113,6 +113,7 @@ class TestUserSchemas:
 
     def test_tenant_base_invalid_slug_raises(self):
         from pydantic import ValidationError
+
         from portal.schemas.user import TenantBase
         with pytest.raises(ValidationError):
             TenantBase(name="Acme", slug="INVALID SLUG!")
@@ -145,7 +146,7 @@ class TestUserSchemas:
         mock_obj.storage_quota_gb = 100
         mock_obj.user_quota = 50
         mock_obj.is_active = True
-        mock_obj.created_at = datetime.now(timezone.utc)
+        mock_obj.created_at = datetime.now(UTC)
         resp = TenantResponse.model_validate(mock_obj)
         assert resp.plan == "professional"
 
@@ -163,6 +164,7 @@ class TestUserSchemas:
 
     def test_user_create_weak_password_raises(self):
         from pydantic import ValidationError
+
         from portal.schemas.user import UserCreate
         with pytest.raises((ValidationError, Exception)):
             UserCreate(
@@ -196,8 +198,8 @@ class TestUserSchemas:
         mock_obj.mfa_enabled = False
         mock_obj.last_login_at = None
         mock_obj.avatar_url = None
-        mock_obj.created_at = datetime.now(timezone.utc)
-        mock_obj.updated_at = datetime.now(timezone.utc)
+        mock_obj.created_at = datetime.now(UTC)
+        mock_obj.updated_at = datetime.now(UTC)
         resp = UserResponse.model_validate(mock_obj)
         assert resp.role == "ATTORNEY"
 
@@ -225,6 +227,7 @@ class TestMessageSchemas:
 
     def test_thread_create_invalid_category_raises(self):
         from pydantic import ValidationError
+
         from portal.schemas.message import ThreadCreate
         with pytest.raises(ValidationError):
             ThreadCreate(
@@ -235,6 +238,7 @@ class TestMessageSchemas:
 
     def test_thread_create_empty_participants_raises(self):
         from pydantic import ValidationError
+
         from portal.schemas.message import ThreadCreate
         with pytest.raises(ValidationError):
             ThreadCreate(
@@ -259,7 +263,7 @@ class TestMessageSchemas:
         mock_obj.message_count = 0
         mock_obj.last_message_at = None
         mock_obj.created_by = uuid.uuid4()
-        mock_obj.created_at = datetime.now(timezone.utc)
+        mock_obj.created_at = datetime.now(UTC)
         resp = ThreadResponse.model_validate(mock_obj)
         assert resp.subject == "Test Thread"
 
@@ -270,6 +274,7 @@ class TestMessageSchemas:
 
     def test_message_send_empty_content_raises(self):
         from pydantic import ValidationError
+
         from portal.schemas.message import MessageSend
         with pytest.raises(ValidationError):
             MessageSend(content="")
@@ -495,6 +500,7 @@ class TestSSOSchemas:
 
     def test_authorize_request_missing_provider_raises(self):
         from pydantic import ValidationError
+
         from portal.sso.schemas import AuthorizeRequest
         with pytest.raises(ValidationError):
             AuthorizeRequest()
@@ -508,6 +514,7 @@ class TestSSODependencies:
     @pytest.mark.asyncio
     async def test_get_session_manager_raises_500_when_not_initialized(self):
         from fastapi import HTTPException
+
         from portal.sso.dependencies import get_session_manager
         mock_request = MagicMock()
         del mock_request.app.state.session_manager  # ensure attribute missing

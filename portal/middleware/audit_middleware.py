@@ -6,7 +6,7 @@ Captures: user, method, path, status, IP, user-agent, duration.
 from __future__ import annotations
 
 import time
-from typing import Callable
+from collections.abc import Callable
 
 import structlog
 from fastapi import Request

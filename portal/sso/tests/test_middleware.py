@@ -5,8 +5,8 @@ Covers SessionMiddlewareManager, TokenRefreshManager, IdPErrorHandler, SessionMi
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import FastAPI
@@ -22,7 +22,6 @@ from portal.sso.middleware import (
     TokenRefreshManager,
 )
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────────
@@ -34,7 +33,7 @@ def _make_token(
     provider: str = "okta",
     offset_seconds: int = 3600,
 ) -> SessionToken:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return SessionToken(
         user_id=user_id,
         email=email,
@@ -189,7 +188,7 @@ class TestIdPErrorHandler:
         assert isinstance(err, IdPError)
         assert err.recovery_strategy == "reauth"
         assert err.provider == "okta"
-        assert "req-1" == err.request_id
+        assert err.request_id == "req-1"
 
     def test_classify_server_error(self):
         err = self.handler.classify_error("azure", "server_error", "500 Internal", "req-2")
@@ -211,7 +210,7 @@ class TestIdPErrorHandler:
         assert self.handler.is_provider_degraded("azure") is True
 
         # Simulate 5+ minutes passing
-        past = datetime.now(timezone.utc) - timedelta(minutes=6)
+        past = datetime.now(UTC) - timedelta(minutes=6)
         self.handler.provider_circuit_breaker["azure"]["opened_at"] = past
         assert self.handler.is_provider_degraded("azure") is False
 

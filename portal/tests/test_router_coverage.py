@@ -7,19 +7,18 @@ Also adds additional coverage for auth, billing, cases, documents routers.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-
 # ─── Shared helpers ───────────────────────────────────────────────────────────
 
 def _make_mock_user(role="FIRM_ADMIN", tenant_id=None):
     """Create a mock CurrentUser for dependency injection."""
-    from portal.auth.rbac import CurrentUser, Role, Permission
+    from portal.auth.rbac import CurrentUser, Permission, Role
     user = MagicMock(spec=CurrentUser)
     user.user_id = str(uuid.uuid4())
     user.tenant_id = tenant_id or str(uuid.uuid4())
@@ -53,7 +52,6 @@ def _make_mock_db():
 def _build_app_with_router(router, current_user=None, db=None):
     """Build a minimal FastAPI app with the given router and mocked dependencies."""
     from portal.database import get_db
-    from portal.auth.rbac import CurrentUser
 
     if current_user is None:
         current_user = _make_mock_user()
@@ -86,9 +84,9 @@ class TestAdminRouter:
     """Tests for portal.routers.admin endpoints."""
 
     def _make_app(self):
-        from portal.routers import admin
-        from portal.database import get_db
         from portal.auth.rbac import get_current_user
+        from portal.database import get_db
+        from portal.routers import admin
 
         mock_user = _make_mock_user()
         mock_db = _make_mock_db()
@@ -108,26 +106,26 @@ class TestAdminRouter:
         return app, mock_user, mock_db
 
     def test_get_firm_stats_returns_200(self):
-        app, mock_user, mock_db = self._make_app()
+        app, _mock_user, _mock_db = self._make_app()
         client = TestClient(app, raise_server_exceptions=False)
         resp = client.get("/admin/stats")
         assert resp.status_code == 200
 
     def test_system_health_returns_200(self):
-        app, mock_user, mock_db = self._make_app()
+        app, _mock_user, _mock_db = self._make_app()
         client = TestClient(app, raise_server_exceptions=False)
         with patch("portal.routers.admin.check_db_connection", return_value=True):
             resp = client.get("/admin/system-health")
         assert resp.status_code == 200
 
     def test_get_audit_log_returns_200(self):
-        app, mock_user, mock_db = self._make_app()
+        app, _mock_user, _mock_db = self._make_app()
         client = TestClient(app, raise_server_exceptions=False)
         resp = client.get("/admin/audit-log")
         assert resp.status_code == 200
 
     def test_create_api_key_returns_201(self):
-        app, mock_user, mock_db = self._make_app()
+        app, _mock_user, _mock_db = self._make_app()
         client = TestClient(app, raise_server_exceptions=False)
         with patch("portal.routers.admin.audit", new_callable=AsyncMock):
             # name is a query parameter, not JSON body
@@ -135,7 +133,7 @@ class TestAdminRouter:
         assert resp.status_code in (200, 201)
 
     def test_storage_usage_returns_200(self):
-        app, mock_user, mock_db = self._make_app()
+        app, _mock_user, _mock_db = self._make_app()
         client = TestClient(app, raise_server_exceptions=False)
         resp = client.get("/admin/storage-usage")
         assert resp.status_code == 200
@@ -147,9 +145,9 @@ class TestClientsRouter:
     """Tests for portal.routers.clients endpoints."""
 
     def _make_app(self):
-        from portal.routers import clients
-        from portal.database import get_db
         from portal.auth.rbac import get_current_user
+        from portal.database import get_db
+        from portal.routers import clients
 
         mock_user = _make_mock_user()
         mock_db = _make_mock_db()
@@ -162,7 +160,7 @@ class TestClientsRouter:
         return TestClient(app, raise_server_exceptions=False), mock_user, mock_db
 
     def test_list_clients_returns_200(self):
-        client, mock_user, mock_db = self._make_app()
+        client, _mock_user, mock_db = self._make_app()
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = []
         mock_result.scalar.return_value = 0
@@ -171,7 +169,6 @@ class TestClientsRouter:
         assert resp.status_code == 200
 
     def test_create_client_returns_201(self):
-        from portal.routers import clients
         from portal.database import get_db
         from portal.models.client import Client
 
@@ -191,8 +188,8 @@ class TestClientsRouter:
         mock_client.country = "US"
         mock_client.is_active = True
         mock_client.tenant_id = mock_user.tenant_id
-        mock_client.created_at = datetime.now(timezone.utc)
-        mock_client.updated_at = datetime.now(timezone.utc)
+        mock_client.created_at = datetime.now(UTC)
+        mock_client.updated_at = datetime.now(UTC)
         mock_client.matters = []
         mock_db.refresh = AsyncMock(side_effect=lambda obj: setattr(obj, 'id', str(uuid.uuid4())))
 
@@ -207,7 +204,7 @@ class TestClientsRouter:
         assert resp.status_code in (200, 201, 422, 500)  # 422 if schema validation fails, 500 if mock db missing attrs
 
     def test_get_client_not_found_returns_404(self):
-        client, mock_user, mock_db = self._make_app()
+        client, _mock_user, mock_db = self._make_app()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         mock_db.execute = AsyncMock(return_value=mock_result)
@@ -215,7 +212,7 @@ class TestClientsRouter:
         assert resp.status_code == 404
 
     def test_delete_client_not_found_returns_404(self):
-        client, mock_user, mock_db = self._make_app()
+        client, _mock_user, mock_db = self._make_app()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         mock_db.execute = AsyncMock(return_value=mock_result)
@@ -229,9 +226,9 @@ class TestMessagesRouter:
     """Tests for portal.routers.messages endpoints."""
 
     def _make_app(self):
-        from portal.routers import messages
-        from portal.database import get_db
         from portal.auth.rbac import get_current_user
+        from portal.database import get_db
+        from portal.routers import messages
 
         mock_user = _make_mock_user()
         mock_db = _make_mock_db()
@@ -244,7 +241,7 @@ class TestMessagesRouter:
         return TestClient(app, raise_server_exceptions=False), mock_user, mock_db
 
     def test_list_threads_returns_200(self):
-        client, mock_user, mock_db = self._make_app()
+        client, _mock_user, mock_db = self._make_app()
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = []
         mock_result.scalar.return_value = 0
@@ -253,7 +250,7 @@ class TestMessagesRouter:
         assert resp.status_code == 200
 
     def test_get_thread_not_found_returns_404(self):
-        client, mock_user, mock_db = self._make_app()
+        client, _mock_user, mock_db = self._make_app()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         mock_db.execute = AsyncMock(return_value=mock_result)
@@ -261,7 +258,7 @@ class TestMessagesRouter:
         assert resp.status_code == 404
 
     def test_list_messages_in_thread_not_found_returns_404(self):
-        client, mock_user, mock_db = self._make_app()
+        client, _mock_user, mock_db = self._make_app()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         mock_db.execute = AsyncMock(return_value=mock_result)
@@ -270,10 +267,9 @@ class TestMessagesRouter:
         assert resp.status_code in (404, 405, 422, 200, 403)  # any response indicates endpoint was reached
 
     def test_create_thread_returns_201(self):
-        from portal.routers import messages
         from portal.database import get_db
 
-        mock_user = _make_mock_user()
+        _make_mock_user()
         mock_db = _make_mock_db()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
@@ -282,7 +278,7 @@ class TestMessagesRouter:
         app = FastAPI()
         app.dependency_overrides[get_db] = lambda: mock_db
 
-        client, mock_user, mock_db = self._make_app()
+        client, _mock_user, mock_db = self._make_app()
         resp = client.post("/messages/threads", json={
             "subject": "Test Thread",
             "participants": [str(uuid.uuid4())],
@@ -296,9 +292,9 @@ class TestUsersRouter:
     """Tests for portal.routers.users endpoints."""
 
     def _make_app(self):
-        from portal.routers import users
-        from portal.database import get_db
         from portal.auth.rbac import get_current_user
+        from portal.database import get_db
+        from portal.routers import users
 
         mock_user = _make_mock_user()
         mock_db = _make_mock_db()
@@ -311,7 +307,7 @@ class TestUsersRouter:
         return TestClient(app, raise_server_exceptions=False), mock_user, mock_db
 
     def test_list_users_returns_200(self):
-        client, mock_user, mock_db = self._make_app()
+        client, _mock_user, mock_db = self._make_app()
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = []
         mock_result.scalar.return_value = 0
@@ -320,7 +316,7 @@ class TestUsersRouter:
         assert resp.status_code == 200
 
     def test_get_user_not_found_returns_404(self):
-        client, mock_user, mock_db = self._make_app()
+        client, _mock_user, mock_db = self._make_app()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         mock_db.execute = AsyncMock(return_value=mock_result)
@@ -328,7 +324,7 @@ class TestUsersRouter:
         assert resp.status_code == 404
 
     def test_deactivate_user_not_found_returns_404(self):
-        client, mock_user, mock_db = self._make_app()
+        client, _mock_user, mock_db = self._make_app()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         mock_db.execute = AsyncMock(return_value=mock_result)
@@ -336,7 +332,7 @@ class TestUsersRouter:
         assert resp.status_code == 404
 
     def test_change_user_role_not_found_returns_404(self):
-        client, mock_user, mock_db = self._make_app()
+        client, _mock_user, mock_db = self._make_app()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         mock_db.execute = AsyncMock(return_value=mock_result)
@@ -345,13 +341,13 @@ class TestUsersRouter:
         assert resp.status_code in (404, 400)  # 404 if user not found, 400 if role invalid
 
     def test_get_user_sessions_returns_list(self):
-        client, mock_user, mock_db = self._make_app()
+        client, _mock_user, _mock_db = self._make_app()
         # get_user_sessions returns in-memory sessions (no DB lookup for user existence)
         resp = client.get(f"/users/{uuid.uuid4()}/sessions")
         assert resp.status_code in (200, 404, 500)  # 200 if sessions found, 404 if user not found, 500 if session_manager error
 
     def test_invite_user_returns_201(self):
-        client, mock_user, mock_db = self._make_app()
+        client, _mock_user, _mock_db = self._make_app()
         with patch("portal.routers.users.send_email", new_callable=AsyncMock):
             resp = client.post("/users/invite", json={
                 "email": "newuser@firm.com",
@@ -368,9 +364,9 @@ class TestAuthRouterCoverage:
     """Additional coverage tests for portal.routers.auth."""
 
     def _make_app(self):
-        from portal.routers import auth
-        from portal.database import get_db
         from portal.auth.rbac import get_current_user
+        from portal.database import get_db
+        from portal.routers import auth
 
         mock_user = _make_mock_user()
         mock_db = _make_mock_db()
@@ -400,7 +396,7 @@ class TestAuthRouterCoverage:
         assert resp.status_code in (200, 204)
 
     def test_mfa_setup_endpoint_exists(self):
-        client, mock_user, mock_db = self._make_app()
+        client, _mock_user, mock_db = self._make_app()
         # Configure mock DB to return a user (otherwise endpoint raises 404)
         mock_user_obj = MagicMock()
         mock_user_obj.mfa_enabled = False

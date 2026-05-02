@@ -5,12 +5,9 @@ Covers: rate_limiter, auth_middleware, audit_middleware, cors_middleware,
 """
 from __future__ import annotations
 
-import asyncio
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 
 # ─── rate_limiter ─────────────────────────────────────────────────────────────
 
@@ -31,8 +28,9 @@ class TestRateLimiter:
         assert reset_in == 60
 
     def test_sliding_window_check_blocks_after_limit(self):
-        from portal.middleware.rate_limiter import _rate_store, _sliding_window_check
         import time
+
+        from portal.middleware.rate_limiter import _rate_store, _sliding_window_check
         key = "test-key-block"
         now = int(time.time())
         _rate_store[key] = [now] * 11
@@ -58,13 +56,14 @@ class TestRateLimiter:
         mock_response = MagicMock()
         mock_response.headers = {}
         call_next = AsyncMock(return_value=mock_response)
-        response = await middleware.dispatch(mock_request, call_next)
+        await middleware.dispatch(mock_request, call_next)
         call_next.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_rate_limiter_returns_429_when_auth_limit_exceeded(self):
-        from portal.middleware.rate_limiter import AUTH_LIMIT, RateLimiterMiddleware, _rate_store
         import time
+
+        from portal.middleware.rate_limiter import AUTH_LIMIT, RateLimiterMiddleware, _rate_store
         _rate_store.clear()
         app = MagicMock()
         middleware = RateLimiterMiddleware(app)
@@ -112,7 +111,7 @@ class TestAuthMiddleware:
         mock_request.headers = {}
         mock_response = MagicMock()
         call_next = AsyncMock(return_value=mock_response)
-        response = await middleware.dispatch(mock_request, call_next)
+        await middleware.dispatch(mock_request, call_next)
         call_next.assert_called_once()
 
     @pytest.mark.asyncio
@@ -125,7 +124,7 @@ class TestAuthMiddleware:
         mock_request.headers = {}
         mock_response = MagicMock()
         call_next = AsyncMock(return_value=mock_response)
-        response = await middleware.dispatch(mock_request, call_next)
+        await middleware.dispatch(mock_request, call_next)
         call_next.assert_called_once()
 
     @pytest.mark.asyncio
@@ -138,7 +137,7 @@ class TestAuthMiddleware:
         mock_request.headers = {}
         mock_response = MagicMock()
         call_next = AsyncMock(return_value=mock_response)
-        response = await middleware.dispatch(mock_request, call_next)
+        await middleware.dispatch(mock_request, call_next)
         call_next.assert_called_once()
 
     @pytest.mark.asyncio
@@ -198,7 +197,7 @@ class TestAuditMiddleware:
         mock_response = MagicMock()
         mock_response.status_code = 200
         call_next = AsyncMock(return_value=mock_response)
-        response = await middleware.dispatch(mock_request, call_next)
+        await middleware.dispatch(mock_request, call_next)
         call_next.assert_called_once()
 
     @pytest.mark.asyncio
@@ -260,6 +259,7 @@ class TestCorsMiddleware:
     def test_cors_does_not_use_wildcard_in_production(self):
         """Security gate: CORS must not allow all origins in production."""
         import inspect
+
         import portal.middleware.cors_middleware as cors_mod
         source = inspect.getsource(cors_mod)
         # The production block should use regex, not wildcard

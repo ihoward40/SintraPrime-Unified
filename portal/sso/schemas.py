@@ -1,14 +1,13 @@
 """
 Pydantic schemas for SSO router responses.
 """
+
 from pydantic import BaseModel
-from typing import Optional, List
-from datetime import datetime
 
 
 class AuthorizeRequest(BaseModel):
     provider: str
-    redirect_after_auth: Optional[str] = None
+    redirect_after_auth: str | None = None
 
 
 class AuthorizeResponse(BaseModel):

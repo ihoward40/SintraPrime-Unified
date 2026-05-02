@@ -3,47 +3,46 @@ Session Storage Abstraction
 Support for Redis and in-memory backends.
 Fail-closed: operations raise explicit errors on unavailable backends.
 """
-from abc import ABC, abstractmethod
-from typing import Optional, Dict
 import json
+from abc import ABC, abstractmethod
 from datetime import datetime
 
-from .session_models import SessionData, RefreshToken
+from .session_models import RefreshToken, SessionData
 
 
 class SessionStore(ABC):
     """Abstract base for session storage."""
-    
+
     @abstractmethod
     async def save_session(self, session: SessionData, ttl_seconds: int) -> None:
         """Save session data. ttl_seconds overrides session.expires_at."""
         pass
-    
+
     @abstractmethod
-    async def get_session(self, session_id: str) -> Optional[SessionData]:
+    async def get_session(self, session_id: str) -> SessionData | None:
         """Retrieve session by ID."""
         pass
-    
+
     @abstractmethod
     async def delete_session(self, session_id: str) -> None:
         """Delete session."""
         pass
-    
+
     @abstractmethod
     async def revoke_session(self, session_id: str) -> None:
         """Mark session as revoked (soft delete)."""
         pass
-    
+
     @abstractmethod
     async def save_refresh_token(self, token: RefreshToken, ttl_seconds: int) -> None:
         """Save refresh token."""
         pass
-    
+
     @abstractmethod
-    async def get_refresh_token(self, token_id: str) -> Optional[RefreshToken]:
+    async def get_refresh_token(self, token_id: str) -> RefreshToken | None:
         """Retrieve refresh token by ID."""
         pass
-    
+
     @abstractmethod
     async def revoke_refresh_token(self, token_id: str) -> None:
         """Revoke refresh token."""
@@ -52,61 +51,61 @@ class SessionStore(ABC):
 
 class InMemorySessionStore(SessionStore):
     """In-memory session store for testing."""
-    
+
     def __init__(self):
-        self._sessions: Dict[str, tuple] = {}  # session_id -> (SessionData, expiry_time)
-        self._refresh_tokens: Dict[str, tuple] = {}  # token_id -> (RefreshToken, expiry_time)
-    
+        self._sessions: dict[str, tuple] = {}  # session_id -> (SessionData, expiry_time)
+        self._refresh_tokens: dict[str, tuple] = {}  # token_id -> (RefreshToken, expiry_time)
+
     async def save_session(self, session: SessionData, ttl_seconds: int) -> None:
         """Save session in memory."""
         self._sessions[session.session_id] = (session, datetime.utcnow().timestamp() + ttl_seconds)
-    
-    async def get_session(self, session_id: str) -> Optional[SessionData]:
+
+    async def get_session(self, session_id: str) -> SessionData | None:
         """Get session from memory."""
         if session_id not in self._sessions:
             return None
-        
+
         session, expiry_time = self._sessions[session_id]
         if datetime.utcnow().timestamp() > expiry_time:
             del self._sessions[session_id]
             return None
-        
+
         return session
-    
+
     async def delete_session(self, session_id: str) -> None:
         """Delete session from memory."""
         self._sessions.pop(session_id, None)
-    
+
     async def revoke_session(self, session_id: str) -> None:
         """Revoke session in memory."""
         if session_id in self._sessions:
-            session, expiry_time = self._sessions[session_id]
+            session, _expiry_time = self._sessions[session_id]
             session.is_revoked = True
             session.revoked_at = datetime.utcnow()
-    
+
     async def save_refresh_token(self, token: RefreshToken, ttl_seconds: int) -> None:
         """Save refresh token in memory."""
         self._refresh_tokens[token.token_id] = (token, datetime.utcnow().timestamp() + ttl_seconds)
-    
-    async def get_refresh_token(self, token_id: str) -> Optional[RefreshToken]:
+
+    async def get_refresh_token(self, token_id: str) -> RefreshToken | None:
         """Get refresh token from memory."""
         if token_id not in self._refresh_tokens:
             return None
-        
+
         token, expiry_time = self._refresh_tokens[token_id]
         if datetime.utcnow().timestamp() > expiry_time:
             del self._refresh_tokens[token_id]
             return None
-        
+
         return token
-    
+
     async def revoke_refresh_token(self, token_id: str) -> None:
         """Revoke refresh token in memory."""
         if token_id in self._refresh_tokens:
-            token, expiry_time = self._refresh_tokens[token_id]
+            token, _expiry_time = self._refresh_tokens[token_id]
             token.is_revoked = True
             token.revoked_at = datetime.utcnow()
-    
+
     def clear(self) -> None:
         """Clear all stored sessions and tokens (for testing)."""
         self._sessions.clear()
@@ -134,29 +133,29 @@ class RedisSessionStore(SessionStore):
         self.redis = redis_client
         self.session_key_prefix = "sso:session:"
         self.refresh_token_key_prefix = "sso:refresh_token:"
-    
+
     async def save_session(self, session: SessionData, ttl_seconds: int) -> None:
         """Save session to Redis with TTL."""
         key = f"{self.session_key_prefix}{session.session_id}"
         data = json.dumps(session.to_dict(), default=str)
         await self.redis.setex(key, ttl_seconds, data)
-    
-    async def get_session(self, session_id: str) -> Optional[SessionData]:
+
+    async def get_session(self, session_id: str) -> SessionData | None:
         """Get session from Redis."""
         key = f"{self.session_key_prefix}{session_id}"
         data = await self.redis.get(key)
-        
+
         if not data:
             return None
-        
+
         session_dict = json.loads(data)
         return self._dict_to_session(session_dict)
-    
+
     async def delete_session(self, session_id: str) -> None:
         """Delete session from Redis."""
         key = f"{self.session_key_prefix}{session_id}"
         await self.redis.delete(key)
-    
+
     async def revoke_session(self, session_id: str) -> None:
         """Revoke session in Redis."""
         session = await self.get_session(session_id)
@@ -167,24 +166,24 @@ class RedisSessionStore(SessionStore):
             ttl = max(1, int((session.expires_at - datetime.utcnow()).total_seconds()))
             data = json.dumps(session.to_dict(), default=str)
             await self.redis.setex(key, ttl, data)
-    
+
     async def save_refresh_token(self, token: RefreshToken, ttl_seconds: int) -> None:
         """Save refresh token to Redis with TTL."""
         key = f"{self.refresh_token_key_prefix}{token.token_id}"
         data = json.dumps(token.to_dict(), default=str)
         await self.redis.setex(key, ttl_seconds, data)
-    
-    async def get_refresh_token(self, token_id: str) -> Optional[RefreshToken]:
+
+    async def get_refresh_token(self, token_id: str) -> RefreshToken | None:
         """Get refresh token from Redis."""
         key = f"{self.refresh_token_key_prefix}{token_id}"
         data = await self.redis.get(key)
-        
+
         if not data:
             return None
-        
+
         token_dict = json.loads(data)
         return self._dict_to_refresh_token(token_dict)
-    
+
     async def revoke_refresh_token(self, token_id: str) -> None:
         """Revoke refresh token in Redis."""
         token = await self.get_refresh_token(token_id)
@@ -195,9 +194,9 @@ class RedisSessionStore(SessionStore):
             ttl = max(1, int((token.expires_at - datetime.utcnow()).total_seconds()))
             data = json.dumps(token.to_dict(), default=str)
             await self.redis.setex(key, ttl, data)
-    
+
     @staticmethod
-    def _dict_to_session(data: Dict) -> SessionData:
+    def _dict_to_session(data: dict) -> SessionData:
         """Convert dict to SessionData."""
         return SessionData(
             session_id=data["session_id"],
@@ -216,9 +215,9 @@ class RedisSessionStore(SessionStore):
             is_revoked=data.get("is_revoked", False),
             revoked_at=datetime.fromisoformat(data["revoked_at"]) if data.get("revoked_at") else None,
         )
-    
+
     @staticmethod
-    def _dict_to_refresh_token(data: Dict) -> RefreshToken:
+    def _dict_to_refresh_token(data: dict) -> RefreshToken:
         """Convert dict to RefreshToken."""
         return RefreshToken(
             token_id=data["token_id"],

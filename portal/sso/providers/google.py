@@ -1,11 +1,10 @@
 
-import requests
-import jwt
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.backends import default_backend
 from dataclasses import dataclass, field
-from typing import List, Dict, Any
-import time
+from typing import Any
+
+import jwt
+import requests
+
 
 @dataclass
 class GoogleConfig:
@@ -13,7 +12,7 @@ class GoogleConfig:
     client_secret: str
     redirect_uri: str
     hosted_domain: str = None
-    scopes: List[str] = field(default_factory=lambda: ["openid", "email", "profile"])
+    scopes: list[str] = field(default_factory=lambda: ["openid", "email", "profile"])
 
     def __post_init__(self):
         if not self.client_id:
@@ -48,7 +47,7 @@ class GoogleWorkspaceProvider:
             params["hd"] = self.config.hosted_domain
         return f"{self.authorize_url}?{requests.compat.urlencode(params)}"
 
-    def exchange_code_for_tokens(self, code: str) -> Dict[str, Any]:
+    def exchange_code_for_tokens(self, code: str) -> dict[str, Any]:
         """Exchanges authorization code for access, ID, and refresh tokens."""
         data = {
             "code": code,
@@ -61,7 +60,7 @@ class GoogleWorkspaceProvider:
         response.raise_for_status()
         return response.json()
 
-    def get_user_info(self, access_token: str) -> Dict[str, Any]:
+    def get_user_info(self, access_token: str) -> dict[str, Any]:
         """Retrieves user information using the access token."""
         headers = {
             "Authorization": f"Bearer {access_token}"
@@ -70,7 +69,7 @@ class GoogleWorkspaceProvider:
         response.raise_for_status()
         return response.json()
 
-    def validate_id_token(self, id_token: str) -> Dict[str, Any]:
+    def validate_id_token(self, id_token: str) -> dict[str, Any]:
         """Validates the ID token and returns its claims."""
         jwks_client = jwt.PyJWKClient(self.jwks_url)
         signing_key = jwks_client.get_signing_key_from_jwt(id_token)
@@ -89,7 +88,7 @@ class GoogleWorkspaceProvider:
             "require_iss": True,
         }
 
-        decoded_token = jwt.decode(
+        return jwt.decode(
             id_token,
             signing_key.key,
             algorithms=["RS256"],
@@ -97,9 +96,8 @@ class GoogleWorkspaceProvider:
             issuer="https://accounts.google.com",
             options=options
         )
-        return decoded_token
 
-    def verify_hosted_domain(self, id_token_claims: Dict[str, Any]) -> bool:
+    def verify_hosted_domain(self, id_token_claims: dict[str, Any]) -> bool:
         """Verifies if the hosted domain in the ID token matches the configured hosted domain."""
         if self.config.hosted_domain:
             return id_token_claims.get("hd") == self.config.hosted_domain

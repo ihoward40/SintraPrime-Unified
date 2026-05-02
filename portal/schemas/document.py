@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -17,9 +16,9 @@ class DocumentUploadResponse(BaseModel):
     size_bytes: int
     current_version: int
     storage_key: str
-    virus_scan_result: Optional[str] = None
+    virus_scan_result: str | None = None
     ocr_completed: bool
-    ai_category: Optional[str] = None
+    ai_category: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -29,23 +28,23 @@ class DocumentResponse(BaseModel):
     id: uuid.UUID
     tenant_id: uuid.UUID
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     mime_type: str
     file_extension: str
     size_bytes: int
-    client_id: Optional[uuid.UUID] = None
-    case_id: Optional[uuid.UUID] = None
-    matter_id: Optional[uuid.UUID] = None
-    folder_id: Optional[uuid.UUID] = None
+    client_id: uuid.UUID | None = None
+    case_id: uuid.UUID | None = None
+    matter_id: uuid.UUID | None = None
+    folder_id: uuid.UUID | None = None
     uploaded_by: uuid.UUID
     current_version: int
     status: str
     is_confidential: bool
     requires_signature: bool
-    signed_at: Optional[datetime] = None
-    ai_category: Optional[str] = None
-    ai_tags: Optional[List[str]] = None
-    tags: Optional[List[str]] = None
+    signed_at: datetime | None = None
+    ai_category: str | None = None
+    ai_tags: list[str] | None = None
+    tags: list[str] | None = None
     watermark_enabled: bool
     created_at: datetime
     updated_at: datetime
@@ -54,15 +53,15 @@ class DocumentResponse(BaseModel):
 
 
 class DocumentUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    folder_id: Optional[uuid.UUID] = None
-    is_confidential: Optional[bool] = None
-    requires_signature: Optional[bool] = None
-    tags: Optional[List[str]] = None
-    custom_fields: Optional[dict] = None
-    watermark_enabled: Optional[bool] = None
-    watermark_text: Optional[str] = None
+    name: str | None = None
+    description: str | None = None
+    folder_id: uuid.UUID | None = None
+    is_confidential: bool | None = None
+    requires_signature: bool | None = None
+    tags: list[str] | None = None
+    custom_fields: dict | None = None
+    watermark_enabled: bool | None = None
+    watermark_text: str | None = None
 
 
 class DocumentVersionResponse(BaseModel):
@@ -72,7 +71,7 @@ class DocumentVersionResponse(BaseModel):
     size_bytes: int
     checksum_sha256: str
     mime_type: str
-    change_summary: Optional[str] = None
+    change_summary: str | None = None
     uploaded_by: uuid.UUID
     created_at: datetime
 
@@ -81,13 +80,13 @@ class DocumentVersionResponse(BaseModel):
 
 class DocumentShareCreate(BaseModel):
     expires_in_hours: int = Field(24, ge=1, le=2160)  # 1h to 90 days
-    password: Optional[str] = None
-    max_downloads: Optional[int] = Field(None, ge=1, le=100)
+    password: str | None = None
+    max_downloads: int | None = Field(None, ge=1, le=100)
     can_download: bool = True
     can_print: bool = True
     apply_watermark: bool = False
-    watermark_text: Optional[str] = None
-    shared_with_email: Optional[str] = None
+    watermark_text: str | None = None
+    shared_with_email: str | None = None
 
 
 class DocumentShareResponse(BaseModel):
@@ -95,9 +94,9 @@ class DocumentShareResponse(BaseModel):
     document_id: uuid.UUID
     share_token: str
     share_url: str
-    expires_at: Optional[datetime] = None
+    expires_at: datetime | None = None
     can_download: bool
-    max_downloads: Optional[int] = None
+    max_downloads: int | None = None
     download_count: int
     view_count: int
     is_active: bool
@@ -107,7 +106,7 @@ class DocumentShareResponse(BaseModel):
 
 
 class DocumentListResponse(BaseModel):
-    items: List[DocumentResponse]
+    items: list[DocumentResponse]
     total: int
     page: int
     page_size: int
@@ -115,39 +114,39 @@ class DocumentListResponse(BaseModel):
 
 class DocumentSearchRequest(BaseModel):
     query: str = Field(..., min_length=1)
-    client_id: Optional[uuid.UUID] = None
-    case_id: Optional[uuid.UUID] = None
-    mime_type: Optional[str] = None
-    category: Optional[str] = None
-    date_from: Optional[datetime] = None
-    date_to: Optional[datetime] = None
+    client_id: uuid.UUID | None = None
+    case_id: uuid.UUID | None = None
+    mime_type: str | None = None
+    category: str | None = None
+    date_from: datetime | None = None
+    date_to: datetime | None = None
     page: int = Field(1, ge=1)
     page_size: int = Field(20, ge=1, le=100)
 
 
 class FolderCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
-    parent_id: Optional[uuid.UUID] = None
-    client_id: Optional[uuid.UUID] = None
-    case_id: Optional[uuid.UUID] = None
-    color: Optional[str] = None
-    icon: Optional[str] = None
+    parent_id: uuid.UUID | None = None
+    client_id: uuid.UUID | None = None
+    case_id: uuid.UUID | None = None
+    color: str | None = None
+    icon: str | None = None
 
 
 class FolderResponse(BaseModel):
     id: uuid.UUID
     name: str
     path: str
-    parent_id: Optional[uuid.UUID] = None
-    client_id: Optional[uuid.UUID] = None
-    case_id: Optional[uuid.UUID] = None
-    color: Optional[str] = None
+    parent_id: uuid.UUID | None = None
+    client_id: uuid.UUID | None = None
+    case_id: uuid.UUID | None = None
+    color: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
 
 
 class BulkDocumentRequest(BaseModel):
-    document_ids: List[uuid.UUID] = Field(..., min_length=1, max_length=100)
+    document_ids: list[uuid.UUID] = Field(..., min_length=1, max_length=100)
     operation: str = Field(..., pattern=r"^(move|delete|archive|download_zip)$")
-    target_folder_id: Optional[uuid.UUID] = None  # for move
+    target_folder_id: uuid.UUID | None = None  # for move

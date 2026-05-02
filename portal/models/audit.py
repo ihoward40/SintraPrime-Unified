@@ -8,12 +8,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
-from sqlalchemy import (
-    DateTime, ForeignKey, Index, String, Text, func
-)
-from sqlalchemy.dialects.postgresql import UUID, JSONB, INET
+from sqlalchemy import DateTime, ForeignKey, Index, String, Text, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..database import Base
@@ -28,15 +25,15 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
 
     id: Mapped[uuid.UUID]            = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=True)
-    user_id: Mapped[Optional[uuid.UUID]]   = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=True)
+    user_id: Mapped[uuid.UUID | None]   = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
 
     # Who
-    actor_email: Mapped[Optional[str]]  = mapped_column(String(255), nullable=True)
-    actor_role: Mapped[Optional[str]]   = mapped_column(String(50), nullable=True)
-    actor_ip: Mapped[Optional[str]]     = mapped_column(String(45), nullable=True)  # supports IPv6
-    actor_user_agent: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    session_id: Mapped[Optional[str]]   = mapped_column(String(255), nullable=True)
+    actor_email: Mapped[str | None]  = mapped_column(String(255), nullable=True)
+    actor_role: Mapped[str | None]   = mapped_column(String(50), nullable=True)
+    actor_ip: Mapped[str | None]     = mapped_column(String(45), nullable=True)  # supports IPv6
+    actor_user_agent: Mapped[str | None] = mapped_column(Text, nullable=True)
+    session_id: Mapped[str | None]   = mapped_column(String(255), nullable=True)
 
     # What
     action: Mapped[str]              = mapped_column(String(100), nullable=False)
@@ -50,28 +47,28 @@ class AuditLog(Base):
     # api_key_create | api_key_revoke
     # settings_update | branding_update
 
-    resource_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    resource_id: Mapped[Optional[str]]   = mapped_column(String(255), nullable=True)
-    resource_name: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    resource_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    resource_id: Mapped[str | None]   = mapped_column(String(255), nullable=True)
+    resource_name: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # Outcome
     status: Mapped[str]              = mapped_column(String(10), default="success")  # success | failure | error
 
     # Details
-    details: Mapped[Optional[dict]]  = mapped_column(JSONB, nullable=True)
-    changes: Mapped[Optional[dict]]  = mapped_column(JSONB, nullable=True)  # before/after for updates
-    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    details: Mapped[dict | None]  = mapped_column(JSONB, nullable=True)
+    changes: Mapped[dict | None]  = mapped_column(JSONB, nullable=True)  # before/after for updates
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Request context
-    request_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
-    http_method: Mapped[Optional[str]]      = mapped_column(String(10), nullable=True)
-    http_path: Mapped[Optional[str]]         = mapped_column(Text, nullable=True)
-    http_status_code: Mapped[Optional[int]]  = mapped_column(nullable=True)
+    request_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    http_method: Mapped[str | None]      = mapped_column(String(10), nullable=True)
+    http_path: Mapped[str | None]         = mapped_column(Text, nullable=True)
+    http_status_code: Mapped[int | None]  = mapped_column(nullable=True)
 
     # Hash chain for tamper detection
-    hash_chain: Mapped[Optional[str]]    = mapped_column(String(64), nullable=True)  # SHA-256 hex
-    entry_hash: Mapped[Optional[str]]    = mapped_column(String(64), nullable=True)  # SHA-256 of this entry
-    previous_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)  # SHA-256 of previous entry
+    hash_chain: Mapped[str | None]    = mapped_column(String(64), nullable=True)  # SHA-256 hex
+    entry_hash: Mapped[str | None]    = mapped_column(String(64), nullable=True)  # SHA-256 of this entry
+    previous_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)  # SHA-256 of previous entry
 
     # Timestamp (UTC, server-set — NOT user-settable)
     created_at: Mapped[datetime]     = mapped_column(

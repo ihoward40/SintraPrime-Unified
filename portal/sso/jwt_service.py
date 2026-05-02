@@ -2,15 +2,15 @@
 JWT Token Generation and Validation Service
 Fail-closed: invalid tokens raise explicit errors.
 """
-from typing import Dict, Optional
 from datetime import datetime, timedelta
+
 import jwt
 from jwt.exceptions import (
-    InvalidTokenError,
-    ExpiredSignatureError,
-    InvalidIssuerError,
-    InvalidAudienceError,
     DecodeError,
+    ExpiredSignatureError,
+    InvalidAudienceError,
+    InvalidIssuerError,
+    InvalidTokenError,
 )
 
 from .session_config import SessionConfig
@@ -19,18 +19,18 @@ from .session_models import TokenPair
 
 class JWTTokenService:
     """Generate and validate JWT tokens for SSO sessions."""
-    
+
     def __init__(self, config: SessionConfig):
         """Initialize with session config."""
         config.validate()
         self.config = config
-    
+
     def generate_access_token(
         self,
         session_id: str,
         user_id: str,
         email: str,
-        additional_claims: Optional[Dict] = None,
+        additional_claims: dict | None = None,
     ) -> str:
         """
         Generate JWT access token.
@@ -42,10 +42,10 @@ class JWTTokenService:
             raise ValueError("JWT issuer not configured")
         if not self.config.audience:
             raise ValueError("JWT audience not configured")
-        
+
         now = datetime.utcnow()
         expires_at = now + timedelta(seconds=self.config.jwt_expiration_seconds)
-        
+
         payload = {
             "sub": user_id,
             "email": email,
@@ -56,16 +56,16 @@ class JWTTokenService:
             "aud": self.config.audience,
             "type": "access",
         }
-        
+
         if additional_claims:
             payload.update(additional_claims)
-        
+
         return jwt.encode(
             payload,
             self.config.jwt_secret_key,
             algorithm=self.config.jwt_algorithm,
         )
-    
+
     def generate_refresh_token(
         self,
         session_id: str,
@@ -82,10 +82,10 @@ class JWTTokenService:
             raise ValueError("JWT issuer not configured")
         if not self.config.audience:
             raise ValueError("JWT audience not configured")
-        
+
         now = datetime.utcnow()
         expires_at = now + timedelta(seconds=self.config.jwt_refresh_expiration_seconds)
-        
+
         payload = {
             "sub": user_id,
             "session_id": session_id,
@@ -96,24 +96,24 @@ class JWTTokenService:
             "aud": self.config.audience,
             "type": "refresh",
         }
-        
+
         return jwt.encode(
             payload,
             self.config.jwt_secret_key,
             algorithm=self.config.jwt_algorithm,
         )
-    
-    def validate_token(self, token: str, token_type: str = "access") -> Dict:
+
+    def validate_token(self, token: str, token_type: str = "access") -> dict:
         """
         Validate and decode JWT token.
-        
+
         Args:
             token: JWT token string
             token_type: "access" or "refresh"
-        
+
         Returns:
             Decoded token payload
-        
+
         Raises:
             ExpiredSignatureError: Token has expired
             InvalidTokenError: Token is invalid
@@ -122,7 +122,7 @@ class JWTTokenService:
         """
         if not self.config.jwt_secret_key:
             raise ValueError("JWT secret key not configured")
-        
+
         try:
             payload = jwt.decode(
                 token,
@@ -132,13 +132,13 @@ class JWTTokenService:
                 audience=self.config.audience,
                 options={"leeway": self.config.allowed_clock_skew_seconds},
             )
-            
+
             # Verify token type
             if payload.get("type") != token_type:
                 raise InvalidTokenError(f"Token type mismatch: expected {token_type}")
-            
+
             return payload
-        
+
         except ExpiredSignatureError:
             raise ExpiredSignatureError("Token has expired")
         except InvalidIssuerError:
@@ -146,17 +146,17 @@ class JWTTokenService:
         except InvalidAudienceError:
             raise InvalidAudienceError("Token audience mismatch")
         except DecodeError as e:
-            raise InvalidTokenError(f"Token decode error: {str(e)}")
+            raise InvalidTokenError(f"Token decode error: {e!s}")
         except Exception as e:
-            raise InvalidTokenError(f"Token validation failed: {str(e)}")
-    
+            raise InvalidTokenError(f"Token validation failed: {e!s}")
+
     def generate_token_pair(
         self,
         session_id: str,
         user_id: str,
         email: str,
         refresh_token_id: str,
-        additional_claims: Optional[Dict] = None,
+        additional_claims: dict | None = None,
     ) -> TokenPair:
         """
         Generate both access and refresh tokens.
@@ -167,13 +167,13 @@ class JWTTokenService:
             email=email,
             additional_claims=additional_claims,
         )
-        
+
         refresh_token = self.generate_refresh_token(
             session_id=session_id,
             user_id=user_id,
             refresh_token_id=refresh_token_id,
         )
-        
+
         return TokenPair(
             access_token=access_token,
             refresh_token=refresh_token,

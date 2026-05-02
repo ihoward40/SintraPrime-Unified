@@ -4,56 +4,55 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr, Field
 
 
 class ClientBase(BaseModel):
     client_type: str = Field("individual", pattern=r"^(individual|organization)$")
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    company_name: Optional[str] = None
-    contact_name: Optional[str] = None
-    email: Optional[EmailStr] = None
-    phone: Optional[str] = None
-    alt_phone: Optional[str] = None
-    address_line1: Optional[str] = None
-    address_line2: Optional[str] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    postal_code: Optional[str] = None
+    first_name: str | None = None
+    last_name: str | None = None
+    company_name: str | None = None
+    contact_name: str | None = None
+    email: EmailStr | None = None
+    phone: str | None = None
+    alt_phone: str | None = None
+    address_line1: str | None = None
+    address_line2: str | None = None
+    city: str | None = None
+    state: str | None = None
+    postal_code: str | None = None
     country: str = "US"
-    notes: Optional[str] = None
-    tags: Optional[List[str]] = None
-    custom_fields: Optional[dict] = None
+    notes: str | None = None
+    tags: list[str] | None = None
+    custom_fields: dict | None = None
 
 
 class ClientCreate(ClientBase):
-    primary_attorney_id: Optional[uuid.UUID] = None
-    intake_date: Optional[datetime] = None
+    primary_attorney_id: uuid.UUID | None = None
+    intake_date: datetime | None = None
 
 
 class ClientUpdate(BaseModel):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    company_name: Optional[str] = None
-    contact_name: Optional[str] = None
-    email: Optional[EmailStr] = None
-    phone: Optional[str] = None
-    alt_phone: Optional[str] = None
-    address_line1: Optional[str] = None
-    address_line2: Optional[str] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    postal_code: Optional[str] = None
-    country: Optional[str] = None
-    notes: Optional[str] = None
-    tags: Optional[List[str]] = None
-    custom_fields: Optional[dict] = None
-    status: Optional[str] = None
-    primary_attorney_id: Optional[uuid.UUID] = None
-    portal_access: Optional[bool] = None
+    first_name: str | None = None
+    last_name: str | None = None
+    company_name: str | None = None
+    contact_name: str | None = None
+    email: EmailStr | None = None
+    phone: str | None = None
+    alt_phone: str | None = None
+    address_line1: str | None = None
+    address_line2: str | None = None
+    city: str | None = None
+    state: str | None = None
+    postal_code: str | None = None
+    country: str | None = None
+    notes: str | None = None
+    tags: list[str] | None = None
+    custom_fields: dict | None = None
+    status: str | None = None
+    primary_attorney_id: uuid.UUID | None = None
+    portal_access: bool | None = None
 
 
 class ClientResponse(ClientBase):
@@ -61,8 +60,8 @@ class ClientResponse(ClientBase):
     tenant_id: uuid.UUID
     status: str
     portal_access: bool
-    primary_attorney_id: Optional[uuid.UUID] = None
-    intake_date: Optional[datetime] = None
+    primary_attorney_id: uuid.UUID | None = None
+    intake_date: datetime | None = None
     created_at: datetime
     updated_at: datetime
     display_name: str
@@ -71,7 +70,7 @@ class ClientResponse(ClientBase):
 
 
 class ClientListResponse(BaseModel):
-    items: List[ClientResponse]
+    items: list[ClientResponse]
     total: int
     page: int
     page_size: int
@@ -81,34 +80,34 @@ class ClientListResponse(BaseModel):
 
 class MatterBase(BaseModel):
     title: str = Field(..., min_length=2, max_length=255)
-    description: Optional[str] = None
-    practice_area: Optional[str] = None
+    description: str | None = None
+    practice_area: str | None = None
     billing_type: str = Field("hourly", pattern=r"^(hourly|flat_fee|contingency|retainer)$")
-    hourly_rate: Optional[float] = Field(None, ge=0)
-    flat_fee: Optional[float] = Field(None, ge=0)
-    retainer_amount: Optional[float] = Field(None, ge=0)
-    contingency_pct: Optional[float] = Field(None, ge=0, le=100)
-    responsible_attorney_id: Optional[uuid.UUID] = None
-    billing_attorney_id: Optional[uuid.UUID] = None
+    hourly_rate: float | None = Field(None, ge=0)
+    flat_fee: float | None = Field(None, ge=0)
+    retainer_amount: float | None = Field(None, ge=0)
+    contingency_pct: float | None = Field(None, ge=0, le=100)
+    responsible_attorney_id: uuid.UUID | None = None
+    billing_attorney_id: uuid.UUID | None = None
 
 
 class MatterCreate(MatterBase):
     client_id: uuid.UUID
-    matter_number: Optional[str] = None
+    matter_number: str | None = None
 
 
 class MatterUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    practice_area: Optional[str] = None
-    billing_type: Optional[str] = None
-    hourly_rate: Optional[float] = None
-    flat_fee: Optional[float] = None
-    retainer_amount: Optional[float] = None
-    status: Optional[str] = None
-    responsible_attorney_id: Optional[uuid.UUID] = None
-    billing_attorney_id: Optional[uuid.UUID] = None
-    closed_at: Optional[datetime] = None
+    title: str | None = None
+    description: str | None = None
+    practice_area: str | None = None
+    billing_type: str | None = None
+    hourly_rate: float | None = None
+    flat_fee: float | None = None
+    retainer_amount: float | None = None
+    status: str | None = None
+    responsible_attorney_id: uuid.UUID | None = None
+    billing_attorney_id: uuid.UUID | None = None
+    closed_at: datetime | None = None
 
 
 class MatterResponse(MatterBase):
@@ -117,8 +116,8 @@ class MatterResponse(MatterBase):
     client_id: uuid.UUID
     matter_number: str
     status: str
-    opened_at: Optional[datetime] = None
-    closed_at: Optional[datetime] = None
+    opened_at: datetime | None = None
+    closed_at: datetime | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

@@ -6,14 +6,22 @@ IOLTA-compliant trust accounting support.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, date
-from typing import List, Optional
+from datetime import date, datetime
 
 from sqlalchemy import (
-    Boolean, Date, DateTime, ForeignKey, Index, Integer, Numeric,
-    String, Text, func, UniqueConstraint
+    Boolean,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
 )
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
@@ -26,13 +34,13 @@ class TimeEntry(Base):
     id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
     user_id: Mapped[uuid.UUID]      = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    client_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=True)
-    case_id: Mapped[Optional[uuid.UUID]]   = mapped_column(UUID(as_uuid=True), ForeignKey("cases.id"), nullable=True)
-    matter_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("matters.id"), nullable=True)
-    invoice_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("invoices.id"), nullable=True)
+    client_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=True)
+    case_id: Mapped[uuid.UUID | None]   = mapped_column(UUID(as_uuid=True), ForeignKey("cases.id"), nullable=True)
+    matter_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("matters.id"), nullable=True)
+    invoice_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("invoices.id"), nullable=True)
 
     description: Mapped[str]        = mapped_column(Text, nullable=False)
-    activity_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # UTBMS activity codes
+    activity_code: Mapped[str | None] = mapped_column(String(20), nullable=True)  # UTBMS activity codes
 
     # Time tracking
     work_date: Mapped[date]         = mapped_column(Date, nullable=False)
@@ -41,22 +49,22 @@ class TimeEntry(Base):
     amount: Mapped[float]           = mapped_column(Numeric(12, 2), nullable=False)  # hours * rate
 
     # Timer support
-    timer_started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    timer_stopped_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    timer_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    timer_stopped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     is_timer_entry: Mapped[bool]    = mapped_column(Boolean, default=False)
 
     # Billing state
     is_billable: Mapped[bool]       = mapped_column(Boolean, default=True)
     is_billed: Mapped[bool]         = mapped_column(Boolean, default=False)
     is_approved: Mapped[bool]       = mapped_column(Boolean, default=False)
-    approved_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    approved_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
 
     # Timestamps
     created_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    user: Mapped["User"]            = relationship("User", foreign_keys=[user_id])
+    user: Mapped[User]            = relationship("User", foreign_keys=[user_id])
 
     __table_args__ = (
         Index("ix_time_entries_tenant_id", "tenant_id"),
@@ -74,9 +82,9 @@ class Expense(Base):
     id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
     user_id: Mapped[uuid.UUID]      = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    client_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=True)
-    case_id: Mapped[Optional[uuid.UUID]]   = mapped_column(UUID(as_uuid=True), ForeignKey("cases.id"), nullable=True)
-    invoice_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("invoices.id"), nullable=True)
+    client_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=True)
+    case_id: Mapped[uuid.UUID | None]   = mapped_column(UUID(as_uuid=True), ForeignKey("cases.id"), nullable=True)
+    invoice_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("invoices.id"), nullable=True)
 
     description: Mapped[str]        = mapped_column(Text, nullable=False)
     expense_date: Mapped[date]      = mapped_column(Date, nullable=False)
@@ -86,11 +94,11 @@ class Expense(Base):
 
     is_billable: Mapped[bool]       = mapped_column(Boolean, default=True)
     is_billed: Mapped[bool]         = mapped_column(Boolean, default=False)
-    receipt_document_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("documents.id"), nullable=True)
+    receipt_document_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("documents.id"), nullable=True)
 
     created_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
         Index("ix_expenses_tenant_id", "tenant_id"),
@@ -104,8 +112,8 @@ class Invoice(Base):
     id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
     client_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False)
-    matter_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("matters.id"), nullable=True)
-    case_id: Mapped[Optional[uuid.UUID]]   = mapped_column(UUID(as_uuid=True), ForeignKey("cases.id"), nullable=True)
+    matter_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("matters.id"), nullable=True)
+    case_id: Mapped[uuid.UUID | None]   = mapped_column(UUID(as_uuid=True), ForeignKey("cases.id"), nullable=True)
     created_by: Mapped[uuid.UUID]   = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
 
     invoice_number: Mapped[str]     = mapped_column(String(50), nullable=False)
@@ -127,31 +135,31 @@ class Invoice(Base):
     # draft | sent | viewed | partial | paid | overdue | voided | refunded
 
     # Notes
-    notes: Mapped[Optional[str]]    = mapped_column(Text, nullable=True)
-    terms: Mapped[Optional[str]]    = mapped_column(Text, nullable=True)
-    footer: Mapped[Optional[str]]   = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None]    = mapped_column(Text, nullable=True)
+    terms: Mapped[str | None]    = mapped_column(Text, nullable=True)
+    footer: Mapped[str | None]   = mapped_column(Text, nullable=True)
 
     # PDF
-    pdf_document_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("documents.id"), nullable=True)
+    pdf_document_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("documents.id"), nullable=True)
 
     # Payment link
-    stripe_payment_intent_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    payment_url: Mapped[Optional[str]]               = mapped_column(Text, nullable=True)
+    stripe_payment_intent_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    payment_url: Mapped[str | None]               = mapped_column(Text, nullable=True)
 
     # Sent/viewed timestamps
-    sent_at: Mapped[Optional[datetime]]    = mapped_column(DateTime(timezone=True), nullable=True)
-    viewed_at: Mapped[Optional[datetime]]  = mapped_column(DateTime(timezone=True), nullable=True)
-    paid_at: Mapped[Optional[datetime]]    = mapped_column(DateTime(timezone=True), nullable=True)
-    voided_at: Mapped[Optional[datetime]]  = mapped_column(DateTime(timezone=True), nullable=True)
-    void_reason: Mapped[Optional[str]]     = mapped_column(Text, nullable=True)
+    sent_at: Mapped[datetime | None]    = mapped_column(DateTime(timezone=True), nullable=True)
+    viewed_at: Mapped[datetime | None]  = mapped_column(DateTime(timezone=True), nullable=True)
+    paid_at: Mapped[datetime | None]    = mapped_column(DateTime(timezone=True), nullable=True)
+    voided_at: Mapped[datetime | None]  = mapped_column(DateTime(timezone=True), nullable=True)
+    void_reason: Mapped[str | None]     = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    line_items: Mapped[List["InvoiceLineItem"]] = relationship("InvoiceLineItem", back_populates="invoice", lazy="selectin")
-    payments: Mapped[List["Payment"]]           = relationship("Payment", back_populates="invoice", lazy="select")
+    line_items: Mapped[list[InvoiceLineItem]] = relationship("InvoiceLineItem", back_populates="invoice", lazy="selectin")
+    payments: Mapped[list[Payment]]           = relationship("Payment", back_populates="invoice", lazy="select")
 
     __table_args__ = (
         Index("ix_invoices_tenant_id", "tenant_id"),
@@ -167,8 +175,8 @@ class InvoiceLineItem(Base):
 
     id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     invoice_id: Mapped[uuid.UUID]   = mapped_column(UUID(as_uuid=True), ForeignKey("invoices.id", ondelete="CASCADE"), nullable=False)
-    time_entry_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("time_entries.id"), nullable=True)
-    expense_id: Mapped[Optional[uuid.UUID]]    = mapped_column(UUID(as_uuid=True), ForeignKey("expenses.id"), nullable=True)
+    time_entry_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("time_entries.id"), nullable=True)
+    expense_id: Mapped[uuid.UUID | None]    = mapped_column(UUID(as_uuid=True), ForeignKey("expenses.id"), nullable=True)
 
     description: Mapped[str]        = mapped_column(Text, nullable=False)
     item_type: Mapped[str]          = mapped_column(String(20), nullable=False)  # time | expense | flat_fee | discount
@@ -177,7 +185,7 @@ class InvoiceLineItem(Base):
     amount: Mapped[float]           = mapped_column(Numeric(12, 2), nullable=False)
     sort_order: Mapped[int]         = mapped_column(Integer, default=0)
 
-    invoice: Mapped["Invoice"]      = relationship("Invoice", back_populates="line_items")
+    invoice: Mapped[Invoice]      = relationship("Invoice", back_populates="line_items")
 
     __table_args__ = (Index("ix_invoice_items_invoice_id", "invoice_id"),)
 
@@ -187,7 +195,7 @@ class Payment(Base):
 
     id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    invoice_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("invoices.id"), nullable=True)
+    invoice_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("invoices.id"), nullable=True)
     client_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False)
 
     amount: Mapped[float]           = mapped_column(Numeric(12, 2), nullable=False)
@@ -198,22 +206,22 @@ class Payment(Base):
     status: Mapped[str]             = mapped_column(String(20), default="pending")
     # pending | processing | succeeded | failed | refunded
 
-    stripe_payment_intent_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    stripe_charge_id: Mapped[Optional[str]]         = mapped_column(String(255), nullable=True)
-    check_number: Mapped[Optional[str]]             = mapped_column(String(50), nullable=True)
-    reference: Mapped[Optional[str]]                = mapped_column(String(255), nullable=True)
-    notes: Mapped[Optional[str]]                    = mapped_column(Text, nullable=True)
+    stripe_payment_intent_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    stripe_charge_id: Mapped[str | None]         = mapped_column(String(255), nullable=True)
+    check_number: Mapped[str | None]             = mapped_column(String(50), nullable=True)
+    reference: Mapped[str | None]                = mapped_column(String(255), nullable=True)
+    notes: Mapped[str | None]                    = mapped_column(Text, nullable=True)
 
     payment_date: Mapped[date]      = mapped_column(Date, nullable=False)
-    processed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    refunded_at: Mapped[Optional[datetime]]  = mapped_column(DateTime(timezone=True), nullable=True)
-    refund_amount: Mapped[Optional[float]]   = mapped_column(Numeric(12, 2), nullable=True)
-    refund_reason: Mapped[Optional[str]]     = mapped_column(Text, nullable=True)
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    refunded_at: Mapped[datetime | None]  = mapped_column(DateTime(timezone=True), nullable=True)
+    refund_amount: Mapped[float | None]   = mapped_column(Numeric(12, 2), nullable=True)
+    refund_reason: Mapped[str | None]     = mapped_column(Text, nullable=True)
 
-    received_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    received_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    invoice: Mapped[Optional["Invoice"]] = relationship("Invoice", back_populates="payments")
+    invoice: Mapped[Invoice | None] = relationship("Invoice", back_populates="payments")
 
     __table_args__ = (
         Index("ix_payments_tenant_id", "tenant_id"),
@@ -230,7 +238,7 @@ class TrustAccount(Base):
     id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
     client_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False)
-    matter_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("matters.id"), nullable=True)
+    matter_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("matters.id"), nullable=True)
 
     transaction_type: Mapped[str]   = mapped_column(String(20), nullable=False)
     # deposit | withdrawal | disbursement | transfer | refund
@@ -238,10 +246,10 @@ class TrustAccount(Base):
     amount: Mapped[float]           = mapped_column(Numeric(12, 2), nullable=False)
     balance_after: Mapped[float]    = mapped_column(Numeric(12, 2), nullable=False)
     description: Mapped[str]        = mapped_column(Text, nullable=False)
-    reference: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    reference: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     transaction_date: Mapped[date]  = mapped_column(Date, nullable=False)
-    approved_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    approved_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     created_by: Mapped[uuid.UUID]   = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
 
     created_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now())

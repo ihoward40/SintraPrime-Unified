@@ -7,37 +7,37 @@ Additional SSO coverage tests targeting the 4 low-coverage modules:
 """
 import json
 import uuid
-import pytest
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
 def _make_session_data(**kwargs):
     from portal.sso.session_models import SessionData
-    defaults = dict(
-        session_id=str(uuid.uuid4()),
-        user_id=str(uuid.uuid4()),
-        email="user@example.com",
-        issuer="https://sso.example.com",
-        audience="sintra-prime",
-        created_at=datetime.utcnow(),
-        expires_at=datetime.utcnow() + timedelta(hours=1),
-    )
+    defaults = {
+        "session_id": str(uuid.uuid4()),
+        "user_id": str(uuid.uuid4()),
+        "email": "user@example.com",
+        "issuer": "https://sso.example.com",
+        "audience": "sintra-prime",
+        "created_at": datetime.utcnow(),
+        "expires_at": datetime.utcnow() + timedelta(hours=1),
+    }
     defaults.update(kwargs)
     return SessionData(**defaults)
 
 
 def _make_refresh_token(**kwargs):
     from portal.sso.session_models import RefreshToken
-    defaults = dict(
-        token_id=str(uuid.uuid4()),
-        session_id=str(uuid.uuid4()),
-        user_id=str(uuid.uuid4()),
-        issued_at=datetime.utcnow(),
-        expires_at=datetime.utcnow() + timedelta(days=7),
-    )
+    defaults = {
+        "token_id": str(uuid.uuid4()),
+        "session_id": str(uuid.uuid4()),
+        "user_id": str(uuid.uuid4()),
+        "issued_at": datetime.utcnow(),
+        "expires_at": datetime.utcnow() + timedelta(days=7),
+    }
     defaults.update(kwargs)
     return RefreshToken(**defaults)
 
@@ -401,6 +401,7 @@ class TestSSORouterCoverage:
 
     def _make_sso_app(self):
         from fastapi import FastAPI
+
         from portal.sso import sso
         app = FastAPI()
         app.include_router(sso.router, prefix="/sso")
@@ -463,8 +464,9 @@ class TestRedisSessionStoreConnectedPaths:
     methods that only execute when _connected is True."""
 
     def _make_store(self):
+        from unittest.mock import AsyncMock
+
         from portal.sso.redis_session import RedisSessionStore
-        from unittest.mock import AsyncMock, MagicMock
         store = RedisSessionStore.__new__(RedisSessionStore)
         store.redis_url = "redis://localhost:6379/0"
         store.prefix = "sso:session:"
@@ -584,9 +586,11 @@ class TestSSOCallbackAndRefreshEndpoints:
     """Cover the OAuth callback and token refresh endpoints in sso/sso.py."""
 
     def _make_app(self):
+        from unittest.mock import AsyncMock
+
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
-        from unittest.mock import AsyncMock, MagicMock
+
         from portal.sso import sso as sso_module
         from portal.sso.middleware import SessionMiddlewareManager, TokenRefreshManager
 
@@ -605,7 +609,6 @@ class TestSSOCallbackAndRefreshEndpoints:
         return TestClient(app, raise_server_exceptions=False), mock_session_mgr, mock_token_mgr
 
     def test_callback_with_unsupported_provider_returns_401(self):
-        from unittest.mock import patch
         client, _, _ = self._make_app()
         with patch("portal.sso.sso.okta") as mock_okta:
             mock_okta.exchange_code = AsyncMock(side_effect=Exception("auth failed"))
@@ -613,14 +616,13 @@ class TestSSOCallbackAndRefreshEndpoints:
         assert resp.status_code == 401
 
     def test_callback_with_bad_provider_param_returns_400_or_401(self):
-        from unittest.mock import patch, AsyncMock
         client, _, _ = self._make_app()
-        with patch("portal.sso.sso.okta") as mock_okta,              patch("portal.sso.sso.azure") as mock_azure,              patch("portal.sso.sso.google") as mock_google:
+        with patch("portal.sso.sso.okta"),              patch("portal.sso.sso.azure"),              patch("portal.sso.sso.google"):
             resp = client.get("/sso/callback?code=abc&state=xyz&provider=unknown_idp")
         assert resp.status_code in (400, 401)
 
     def test_callback_with_valid_okta_exchange_returns_redirect(self):
-        from unittest.mock import patch, AsyncMock
+        from unittest.mock import AsyncMock
         client, mock_session_mgr, _ = self._make_app()
         mock_session_mgr.create_session = AsyncMock(return_value="sess-123")
         with patch("portal.sso.sso.okta") as mock_okta:

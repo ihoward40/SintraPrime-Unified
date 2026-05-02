@@ -5,8 +5,6 @@ Asynchronous session persistence using Redis with automatic expiry.
 
 import json
 import logging
-from datetime import datetime, timezone
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +65,7 @@ class RedisSessionStore:
             logger.error("Failed to store session %s: %s", session_id[:8], e)
             return False
 
-    async def retrieve(self, session_id: str) -> Optional[dict]:
+    async def retrieve(self, session_id: str) -> dict | None:
         """Retrieve session data. Returns None if not found or expired."""
         if not self._connected or not self._client:
             return None

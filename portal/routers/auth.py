@@ -7,8 +7,7 @@ from __future__ import annotations
 
 import secrets
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, EmailStr, Field
@@ -31,7 +30,7 @@ from ..auth.password_handler import (
     verify_backup_code,
     verify_password,
 )
-from ..auth.rbac import CurrentUser, get_current_user, get_role_permissions
+from ..auth.rbac import CurrentUser, get_current_user
 from ..auth.session_manager import (
     blocklist_jti,
     create_session,
@@ -39,7 +38,6 @@ from ..auth.session_manager import (
     is_jti_blocklisted,
     register_refresh_family,
     revoke_all_user_sessions,
-    revoke_session,
     rotate_refresh_family,
     validate_refresh_family,
 )
@@ -60,7 +58,7 @@ REFRESH_COOKIE_NAME = "refresh_token"
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
-    mfa_code: Optional[str] = None  # TOTP code if MFA enabled
+    mfa_code: str | None = None  # TOTP code if MFA enabled
 
 
 class LoginResponse(BaseModel):
@@ -68,7 +66,7 @@ class LoginResponse(BaseModel):
     token_type: str = "bearer"
     expires_in: int  # seconds
     requires_mfa: bool = False
-    mfa_challenge_token: Optional[str] = None
+    mfa_challenge_token: str | None = None
     user_id: str
     role: str
     tenant_id: str
@@ -112,7 +110,7 @@ class ChangePasswordRequest(BaseModel):
 
 # ── Helper ────────────────────────────────────────────────────────────────────
 
-async def _get_user_by_email(db: AsyncSession, email: str, tenant_id: Optional[str] = None) -> Optional[User]:
+async def _get_user_by_email(db: AsyncSession, email: str, tenant_id: str | None = None) -> User | None:
     stmt = select(User).where(User.email == email.lower(), User.deleted_at.is_(None))
     if tenant_id:
         stmt = stmt.where(User.tenant_id == tenant_id)
@@ -185,7 +183,7 @@ async def login(
 
     # Account checks
     if user.is_locked:
-        if user.locked_until and user.locked_until > datetime.now(timezone.utc):
+        if user.locked_until and user.locked_until > datetime.now(UTC):
             raise HTTPException(status_code=status.HTTP_423_LOCKED,
                                 detail=f"Account locked until {user.locked_until.isoformat()}")
         # Auto-unlock
@@ -200,7 +198,7 @@ async def login(
         user.failed_login_attempts += 1
         if user.failed_login_attempts >= 5:
             user.is_locked = True
-            user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=30)
+            user.locked_until = datetime.now(UTC) + timedelta(minutes=30)
         await db.commit()
         await audit(db, action="login_failed", user_id=str(user.id), status="failure",
                     details={"reason": "invalid_password", "attempts": user.failed_login_attempts},
@@ -236,7 +234,7 @@ async def login(
 
     # Success — reset failures
     user.failed_login_attempts = 0
-    user.last_login_at = datetime.now(timezone.utc)
+    user.last_login_at = datetime.now(UTC)
     user.last_login_ip = ip
     await db.commit()
 
@@ -266,7 +264,7 @@ async def login(
 @router.post("/refresh", response_model=RefreshResponse)
 async def refresh_token(
     response: Response,
-    refresh_token: Optional[str] = Cookie(None, alias=REFRESH_COOKIE_NAME),
+    refresh_token: str | None = Cookie(None, alias=REFRESH_COOKIE_NAME),
     db: AsyncSession = Depends(get_db),
 ):
     """Use refresh token to get a new access token (rotation)."""
@@ -346,7 +344,7 @@ async def logout(
     response: Response,
     request: Request,
     current_user: CurrentUser = Depends(get_current_user),
-    refresh_token: Optional[str] = Cookie(None, alias=REFRESH_COOKIE_NAME),
+    refresh_token: str | None = Cookie(None, alias=REFRESH_COOKIE_NAME),
     db: AsyncSession = Depends(get_db),
 ):
     """Logout current session — blocklist tokens."""
@@ -472,7 +470,7 @@ async def request_password_reset(
     if user and user.is_active:
         token = secrets.token_urlsafe(48)
         user.reset_token = token
-        user.reset_token_expires = datetime.now(timezone.utc) + timedelta(hours=2)
+        user.reset_token_expires = datetime.now(UTC) + timedelta(hours=2)
         await db.commit()
         reset_url = f"{settings.BASE_URL}/auth/reset-password?token={token}"
         await send_email(
@@ -492,7 +490,7 @@ async def confirm_password_reset(
     result = await db.execute(
         select(User).where(
             User.reset_token == body.token,
-            User.reset_token_expires > datetime.now(timezone.utc),
+            User.reset_token_expires > datetime.now(UTC),
             User.deleted_at.is_(None),
         )
     )
@@ -508,7 +506,7 @@ async def confirm_password_reset(
     user.hashed_password = hash_password(body.new_password)
     user.reset_token = None
     user.reset_token_expires = None
-    user.password_changed_at = datetime.now(timezone.utc)
+    user.password_changed_at = datetime.now(UTC)
     await db.commit()
 
     # Revoke all sessions after password reset
@@ -544,17 +542,17 @@ async def get_me(
 
 async def authenticate_user(email: str, password: str, db=None):
     """Stub: authenticate a user by email and password."""
-    return None
+    return
 
 
 async def verify_refresh_token(token: str, db=None):
     """Stub: verify a refresh token and return the associated user."""
-    return None
+    return
 
 
 async def revoke_user_session(session_id: str, db=None):
     """Stub: revoke a specific user session."""
-    return None
+    return
 
 
 def generate_totp_secret() -> str:
@@ -575,7 +573,7 @@ async def use_backup_code(user_id: str, code: str, db=None) -> bool:
 
 async def get_user_by_email(email: str, db=None):
     """Stub: look up a user by email address."""
-    return None
+    return
 
 
 # ── Test-compatibility aliases ───────────────────────────────────────────────
@@ -584,17 +582,17 @@ async def get_user_by_email(email: str, db=None):
 
 async def authenticate_user(email: str, password: str, db=None):
     """Stub: authenticate a user by email and password."""
-    return None
+    return
 
 
 async def verify_refresh_token(token: str, db=None):
     """Stub: verify a refresh token and return the associated user."""
-    return None
+    return
 
 
 async def revoke_user_session(session_id: str, db=None):
     """Stub: revoke a specific user session."""
-    return None
+    return
 
 
 def generate_totp_secret() -> str:
@@ -615,4 +613,4 @@ async def use_backup_code(user_id: str, code: str, db=None) -> bool:
 
 async def get_user_by_email(email: str, db=None):
     """Stub: look up a user by email address."""
-    return None
+    return

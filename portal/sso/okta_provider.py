@@ -13,7 +13,6 @@ Design decisions:
 import logging
 import secrets
 import urllib.parse
-from typing import Optional
 
 import httpx
 
@@ -29,7 +28,7 @@ class OktaProvider:
     def __init__(
         self,
         config: OktaConfig,
-        client: Optional[httpx.AsyncClient] = None,
+        client: httpx.AsyncClient | None = None,
     ):
         self.config = config
         self._timeout = httpx.Timeout(float(config.timeout_seconds))
@@ -43,7 +42,7 @@ class OktaProvider:
         if self._owns_client:
             await self.client.aclose()
 
-    def get_authorization_url(self, state: Optional[str] = None) -> tuple[str, str]:
+    def get_authorization_url(self, state: str | None = None) -> tuple[str, str]:
         """Generate the OAuth 2.0 authorization URL."""
         state = state or secrets.token_urlsafe(32)
         params = {

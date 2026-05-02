@@ -4,9 +4,8 @@ All settings read from environment variables with sensible defaults.
 """
 
 from functools import lru_cache
-from typing import List, Optional
 
-from pydantic import AnyHttpUrl, EmailStr, field_validator
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -83,19 +82,19 @@ class Settings(BaseSettings):
     RATE_LIMIT_UPLOAD: int = 20         # file uploads per minute
 
     # ── CORS ─────────────────────────────────────────────────────────────
-    CORS_ORIGINS: List[str] = [
+    CORS_ORIGINS: list[str] = [
         "https://portal.sintraprime.ai",
         "https://*.sintraprime.ai",
         "http://localhost:3000",
         "http://localhost:5173",
     ]
     CORS_ALLOW_CREDENTIALS: bool = True
-    CORS_ALLOW_METHODS: List[str] = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-    CORS_ALLOW_HEADERS: List[str] = ["*"]
+    CORS_ALLOW_METHODS: list[str] = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+    CORS_ALLOW_HEADERS: list[str] = ["*"]
 
     # ── File Storage ─────────────────────────────────────────────────────
     MAX_FILE_SIZE_MB: int = 500
-    ALLOWED_FILE_TYPES: List[str] = [
+    ALLOWED_FILE_TYPES: list[str] = [
         "application/pdf",
         "application/msword",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -182,7 +181,7 @@ class Settings(BaseSettings):
         return self.ENCRYPTION_KEY.encode()[:32]
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """Cached settings instance — call this everywhere instead of Settings()."""
     return Settings()

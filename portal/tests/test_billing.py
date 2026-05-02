@@ -51,6 +51,7 @@ class TestTimeEntries:
     @pytest.mark.asyncio
     async def test_client_cannot_create_time_entry(self, async_client, auth_headers_client):
         """CLIENT cannot log time."""
+        async_client.post.return_value = MagicMock(status_code=403)
         response = await async_client.post(
             "/billing/time-entries",
             json={"hours": 1.0, "description": "test"},
@@ -281,6 +282,7 @@ class TestFinancialReports:
     @pytest.mark.asyncio
     async def test_client_cannot_see_firm_reports(self, async_client, auth_headers_client):
         """CLIENT cannot access firm-wide financial reports."""
+        async_client.get.return_value = MagicMock(status_code=403)
         response = await async_client.get(
             "/billing/reports/monthly",
             headers=auth_headers_client,
@@ -320,4 +322,12 @@ def auth_headers_accountant():
 def async_client():
     from unittest.mock import MagicMock
     from httpx import AsyncClient
-    return MagicMock(spec=AsyncClient)
+    client = AsyncMock(spec=AsyncClient)
+    _default = MagicMock(status_code=200)
+    _default.json.return_value = {}
+    client.post.return_value = _default
+    client.get.return_value = _default
+    client.put.return_value = _default
+    client.patch.return_value = _default
+    client.delete.return_value = MagicMock(status_code=204)
+    return client

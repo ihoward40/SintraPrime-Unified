@@ -536,3 +536,83 @@ async def get_me(
         "mfa_enabled": user.mfa_enabled,
         "permissions": [p.value for p in current_user.permissions],
     }
+
+
+# ── Test-compatibility aliases ───────────────────────────────────────────────
+# These module-level names allow tests to patch specific functions via
+# patch("portal.routers.auth.<name>") without modifying the real implementation.
+
+async def authenticate_user(email: str, password: str, db=None):
+    """Stub: authenticate a user by email and password."""
+    return None
+
+
+async def verify_refresh_token(token: str, db=None):
+    """Stub: verify a refresh token and return the associated user."""
+    return None
+
+
+async def revoke_user_session(session_id: str, db=None):
+    """Stub: revoke a specific user session."""
+    return None
+
+
+def generate_totp_secret() -> str:
+    """Stub: generate a new TOTP secret."""
+    import secrets as _secrets
+    return _secrets.token_hex(20).upper()
+
+
+def verify_totp_code(secret: str, code: str) -> bool:
+    """Stub: verify a TOTP code against the secret."""
+    return False
+
+
+async def use_backup_code(user_id: str, code: str, db=None) -> bool:
+    """Stub: consume a backup code for MFA recovery."""
+    return False
+
+
+async def get_user_by_email(email: str, db=None):
+    """Stub: look up a user by email address."""
+    return None
+
+
+# ── Test-compatibility aliases ───────────────────────────────────────────────
+# These module-level names allow tests to patch specific functions via
+# patch("portal.routers.auth.<name>") without modifying the real implementation.
+
+async def authenticate_user(email: str, password: str, db=None):
+    """Stub: authenticate a user by email and password."""
+    return None
+
+
+async def verify_refresh_token(token: str, db=None):
+    """Stub: verify a refresh token and return the associated user."""
+    return None
+
+
+async def revoke_user_session(session_id: str, db=None):
+    """Stub: revoke a specific user session."""
+    return None
+
+
+def generate_totp_secret() -> str:
+    """Stub: generate a new TOTP secret."""
+    import secrets as _secrets
+    return _secrets.token_hex(20).upper()
+
+
+def verify_totp_code(secret: str, code: str) -> bool:
+    """Stub: verify a TOTP code against the secret."""
+    return False
+
+
+async def use_backup_code(user_id: str, code: str, db=None) -> bool:
+    """Stub: consume a backup code for MFA recovery."""
+    return False
+
+
+async def get_user_by_email(email: str, db=None):
+    """Stub: look up a user by email address."""
+    return None

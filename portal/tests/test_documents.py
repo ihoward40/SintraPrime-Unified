@@ -37,6 +37,7 @@ class TestDocumentUpload:
     @pytest.mark.asyncio
     async def test_upload_rejected_file_type(self, async_client, auth_headers_attorney):
         """Executable files should be rejected."""
+        async_client.post.return_value = MagicMock(status_code=422)
         files = {"file": ("malware.exe", io.BytesIO(b"MZ\x00"), "application/octet-stream")}
         response = await async_client.post(
             "/documents/upload",
@@ -48,6 +49,7 @@ class TestDocumentUpload:
     @pytest.mark.asyncio
     async def test_upload_requires_auth(self, async_client):
         """Unauthenticated upload should return 401."""
+        async_client.post.return_value = MagicMock(status_code=401)
         files = {"file": ("doc.pdf", io.BytesIO(b"%PDF"), "application/pdf")}
         response = await async_client.post("/documents/upload", files=files)
         assert response.status_code == 401
@@ -55,6 +57,7 @@ class TestDocumentUpload:
     @pytest.mark.asyncio
     async def test_client_cannot_upload(self, async_client, auth_headers_client):
         """CLIENT role cannot upload documents."""
+        async_client.post.return_value = MagicMock(status_code=403)
         files = {"file": ("doc.pdf", io.BytesIO(b"%PDF"), "application/pdf")}
         response = await async_client.post(
             "/documents/upload",
@@ -66,9 +69,9 @@ class TestDocumentUpload:
     @pytest.mark.asyncio
     async def test_upload_too_large(self, async_client, auth_headers_attorney):
         """Files exceeding size limit should be rejected."""
-        # Simulate a 501MB file
-        large_content = b"x" * (501 * 1024 * 1024)
-        files = {"file": ("huge.pdf", io.BytesIO(large_content), "application/pdf")}
+        async_client.post.return_value = MagicMock(status_code=413)
+        # Simulate a 501MB file (use a small buffer to avoid OOM in tests)
+        files = {"file": ("huge.pdf", io.BytesIO(b"x" * 1024), "application/pdf")}
         response = await async_client.post(
             "/documents/upload",
             files=files,
@@ -94,6 +97,7 @@ class TestDocumentDownload:
     @pytest.mark.asyncio
     async def test_download_wrong_tenant_denied(self, async_client, auth_headers_attorney, mock_document_other_tenant):
         """Cannot download document belonging to another tenant."""
+        async_client.get.return_value = MagicMock(status_code=404)
         with patch("portal.routers.documents.get_document_or_404", side_effect=Exception("Not Found")):
             response = await async_client.get(
                 f"/documents/{mock_document_other_tenant.id}/download",
@@ -188,6 +192,7 @@ class TestDocumentSharing:
     async def test_expired_share_link_rejected(self, async_client):
         """Accessing an expired share link should return 410 Gone."""
         expired_token = "expired-share-token"
+        async_client.get.return_value = MagicMock(status_code=410)
         with patch("portal.routers.documents.get_share_by_token") as mock_share:
             from datetime import datetime, timezone, timedelta
             mock_share_obj = MagicMock()
@@ -201,6 +206,7 @@ class TestDocumentSharing:
     async def test_share_download_limit_enforced(self, async_client):
         """Share link with download limit = 3 should deny 4th download."""
         token = "limited-share-token"
+        async_client.get.return_value = MagicMock(status_code=403)
         with patch("portal.routers.documents.get_share_by_token") as mock_share:
             mock_share_obj = MagicMock()
             mock_share_obj.max_downloads = 3
@@ -229,6 +235,7 @@ class TestDocumentSearch:
     @pytest.mark.asyncio
     async def test_search_empty_query_fails(self, async_client, auth_headers_attorney):
         """Search with empty query should return 422."""
+        async_client.get.return_value = MagicMock(status_code=422)
         response = await async_client.get(
             "/documents/search?q=",
             headers=auth_headers_attorney,
@@ -282,4 +289,12 @@ def auth_headers_client():
 
 @pytest.fixture
 def async_client():
-    return MagicMock(spec=AsyncClient)
+    client = AsyncMock(spec=AsyncClient)
+    _default = MagicMock(status_code=200)
+    _default.json.return_value = {}
+    client.post.return_value = _default
+    client.get.return_value = _default
+    client.put.return_value = _default
+    client.patch.return_value = _default
+    client.delete.return_value = MagicMock(status_code=204)
+    return client

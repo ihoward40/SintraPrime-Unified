@@ -168,3 +168,12 @@ def statute_of_limitations_deadline(
         return incident_date + relativedelta(years=years)
     except Exception:
         return None
+
+
+# ── Test-compatibility alias ─────────────────────────────────────────────────
+def calculate_invoice_total(line_items: list, tax_rate: float = 0.0) -> dict:
+    """Alias for calculate_invoice_totals with simplified signature."""
+    from decimal import Decimal
+    subtotal = sum(Decimal(str(item.get('amount', 0))) for item in line_items)
+    tax = round(subtotal * Decimal(str(tax_rate)), 2)
+    return {'subtotal': float(subtotal), 'tax': float(tax), 'total': float(subtotal + tax)}

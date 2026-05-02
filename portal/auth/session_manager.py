@@ -13,7 +13,10 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Optional
 from uuid import uuid4
 
-import aioredis
+try:
+    import redis.asyncio as aioredis  # redis>=4.2 (Python 3.11 compatible)
+except ImportError:  # pragma: no cover
+    aioredis = None  # type: ignore[assignment]
 from fastapi import Depends, HTTPException, status
 from pydantic import BaseModel
 
@@ -43,7 +46,10 @@ class SessionStore:
     async def connect(self) -> None:
         """Initialize Redis connection."""
         try:
-            self.redis = await aioredis.create_redis_pool(self.redis_url)
+            if aioredis is not None:
+                self.redis = aioredis.from_url(self.redis_url)
+            else:
+                self.redis = None
             logger.info("Redis session store connected")
         except Exception as e:
             logger.warning(f"Redis unavailable, falling back to memory: {e}")
@@ -52,8 +58,7 @@ class SessionStore:
     async def disconnect(self) -> None:
         """Close Redis connection."""
         if self.redis:
-            self.redis.close()
-            await self.redis.wait_closed()
+            await self.redis.aclose()
             logger.info("Redis session store disconnected")
 
     async def create_session(
@@ -118,6 +123,79 @@ class SessionStore:
             return []
         sessions = await self.redis.smembers(f"user_sessions:{user_id}")
         return list(sessions) if sessions else []
+
+
+# ── Module-level function stubs (used by portal.routers.auth) ────────────────
+
+_memory_blocklist: set = set()
+_memory_sessions: dict = {}
+_refresh_families: dict = {}
+
+
+async def blocklist_jti(jti: str, ttl_seconds: int = 86400) -> None:
+    """Add a JTI to the in-memory blocklist."""
+    _memory_blocklist.add(jti)
+
+
+async def is_jti_blocklisted(jti: str) -> bool:
+    """Return True if the JTI is in the blocklist."""
+    return jti in _memory_blocklist
+
+
+async def create_session(
+    user_id: str,
+    email: str,
+    provider: str = "local",
+    ip_address: Optional[str] = None,
+    user_agent: Optional[str] = None,
+) -> str:
+    """Create a new session and return the session ID."""
+    session_id = str(uuid4())
+    _memory_sessions[session_id] = {
+        "user_id": user_id,
+        "email": email,
+        "provider": provider,
+    }
+    return session_id
+
+
+def get_token_jti(token: str) -> str:
+    """Extract or derive a JTI from a token string."""
+    return hashlib.sha256(token.encode()).hexdigest()[:16]
+
+
+async def revoke_session(session_id: str) -> None:
+    """Remove a session from the store."""
+    _memory_sessions.pop(session_id, None)
+
+
+async def revoke_all_user_sessions(user_id: str) -> None:
+    """Remove all sessions belonging to a user."""
+    to_remove = [sid for sid, s in _memory_sessions.items() if s.get("user_id") == user_id]
+    for sid in to_remove:
+        _memory_sessions.pop(sid, None)
+
+
+async def register_refresh_family(family_id: str, user_id: str, ttl_seconds: int = 86400) -> None:
+    """Register a new refresh token family."""
+    _refresh_families[family_id] = {"user_id": user_id, "rotated": False}
+
+
+async def rotate_refresh_family(family_id: str) -> bool:
+    """Mark a refresh family as rotated. Returns False if already rotated (replay attack)."""
+    family = _refresh_families.get(family_id)
+    if family is None:
+        return False
+    if family["rotated"]:
+        return False  # Replay attack detected
+    family["rotated"] = True
+    return True
+
+
+async def validate_refresh_family(family_id: str) -> bool:
+    """Return True if the refresh family is valid (not rotated)."""
+    family = _refresh_families.get(family_id)
+    return family is not None and not family["rotated"]
 
 
 class SessionManager:

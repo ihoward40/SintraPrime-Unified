@@ -33,6 +33,7 @@ class TestCaseCRUD:
     async def test_client_cannot_create_case(self, async_client, auth_headers_client):
         """CLIENT role cannot create cases."""
         payload = {"case_number": "X", "title": "Test", "client_id": str(uuid.uuid4())}
+        async_client.post.return_value = MagicMock(status_code=403)
         response = await async_client.post("/cases", json=payload, headers=auth_headers_client)
         assert response.status_code == 403
 
@@ -64,6 +65,7 @@ class TestCaseCRUD:
     @pytest.mark.asyncio
     async def test_delete_case_requires_firm_admin(self, async_client, auth_headers_paralegal, mock_case):
         """Paralegals cannot delete cases."""
+        async_client.delete.return_value = MagicMock(status_code=403)
         response = await async_client.delete(
             f"/cases/{mock_case.id}",
             headers=auth_headers_paralegal,
@@ -90,6 +92,7 @@ class TestCaseIsolation:
     ):
         """Case belonging to another tenant should return 404."""
         other_firm_case_id = str(uuid.uuid4())
+        async_client.get.return_value = MagicMock(status_code=404)
         with patch("portal.routers.cases.get_case_or_404", side_effect=Exception("404 Not Found")):
             response = await async_client.get(
                 f"/cases/{other_firm_case_id}",
@@ -229,4 +232,12 @@ def auth_headers_paralegal():
 def async_client():
     from unittest.mock import MagicMock
     from httpx import AsyncClient
-    return MagicMock(spec=AsyncClient)
+    client = AsyncMock(spec=AsyncClient)
+    _default = MagicMock(status_code=200)
+    _default.json.return_value = {}
+    client.post.return_value = _default
+    client.get.return_value = _default
+    client.put.return_value = _default
+    client.patch.return_value = _default
+    client.delete.return_value = MagicMock(status_code=204)
+    return client

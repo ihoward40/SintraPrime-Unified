@@ -51,7 +51,7 @@ Before starting any implementation, check this registry. If a phase is already a
 | Phase 21F | SSO route integration + sso/__init__.py | **Manus** | ✅ Merged #58 |
 | Phase 22 | Ruff lint debt + test stabilisation (326 passing) | **Manus** | ✅ Merged #50 |
 | Phase 23A | Track A: SSO regression fix + PR backlog resolution | **Manus** | 🔄 PR #63 open |
-| Phase 23B | Track B: Service-layer unit tests (80% coverage) | **Manus** | ⏳ Queued |
+| Phase 23B | Track B: Service-layer unit tests (80% coverage) | **Manus** | ✅ PR #63 (80.01%) |
 | Phase 23C | Track C: Trust Compliance backend integration | **Manus** | ⏳ Queued |
 | Phase 23D | Track D: COMMAND_BUS update + issue #34 closure | **Manus** | 🔄 In progress |
 

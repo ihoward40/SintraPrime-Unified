@@ -3,20 +3,30 @@
 from __future__ import annotations
 
 import uuid
-from typing import List, Optional
+from datetime import UTC
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, func, or_
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth.rbac import CurrentUser, Permission, require_permissions
 from ..database import get_db
 from ..models.case import Case, CaseDeadline, CaseEvent, CaseNote, CaseTask
 from ..schemas.case import (
-    CaseCreate, CaseDeadlineCreate, CaseDeadlineResponse, CaseEventCreate,
-    CaseEventResponse, CaseListResponse, CaseNoteCreate, CaseNoteResponse,
-    CaseResponse, CaseTaskCreate, CaseTaskResponse, CaseUpdate,
-    ConflictCheckRequest, ConflictCheckResponse,
+    CaseCreate,
+    CaseDeadlineCreate,
+    CaseDeadlineResponse,
+    CaseEventCreate,
+    CaseEventResponse,
+    CaseListResponse,
+    CaseNoteCreate,
+    CaseNoteResponse,
+    CaseResponse,
+    CaseTaskCreate,
+    CaseTaskResponse,
+    CaseUpdate,
+    ConflictCheckRequest,
+    ConflictCheckResponse,
 )
 from ..services.audit_service import audit
 from ..services.notification_service import notify_users
@@ -61,12 +71,12 @@ async def create_case(
 
 @router.get("", response_model=CaseListResponse)
 async def list_cases(
-    client_id: Optional[uuid.UUID] = Query(None),
-    stage: Optional[str] = Query(None),
-    attorney_id: Optional[uuid.UUID] = Query(None),
-    practice_area: Optional[str] = Query(None),
-    search: Optional[str] = Query(None),
-    is_urgent: Optional[bool] = Query(None),
+    client_id: uuid.UUID | None = Query(None),
+    stage: str | None = Query(None),
+    attorney_id: uuid.UUID | None = Query(None),
+    practice_area: str | None = Query(None),
+    search: str | None = Query(None),
+    is_urgent: bool | None = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: CurrentUser = Depends(require_permissions(Permission.CASE_READ)),
@@ -196,14 +206,14 @@ async def delete_case(
     current_user: CurrentUser = Depends(require_permissions(Permission.CASE_DELETE)),
     db: AsyncSession = Depends(get_db),
 ):
-    from datetime import datetime, timezone
+    from datetime import datetime
     result = await db.execute(
         select(Case).where(Case.id == case_id, Case.tenant_id == current_user.tenant_id)
     )
     case = result.scalar_one_or_none()
     if not case:
         raise HTTPException(status_code=404)
-    case.deleted_at = datetime.now(timezone.utc)
+    case.deleted_at = datetime.now(UTC)
     await db.commit()
     await audit(db, action="case_delete", user_id=current_user.user_id,
                 tenant_id=current_user.tenant_id, resource_type="case", resource_id=str(case_id))
@@ -230,7 +240,7 @@ async def add_case_event(
     return CaseEventResponse.model_validate(event)
 
 
-@router.get("/{case_id}/events", response_model=List[CaseEventResponse])
+@router.get("/{case_id}/events", response_model=list[CaseEventResponse])
 async def list_case_events(
     case_id: uuid.UUID,
     current_user: CurrentUser = Depends(require_permissions(Permission.CASE_READ)),
@@ -238,7 +248,7 @@ async def list_case_events(
 ):
     stmt = select(CaseEvent).where(CaseEvent.case_id == case_id)
     if current_user.is_client():
-        stmt = stmt.where(CaseEvent.is_client_visible == True)
+        stmt = stmt.where(CaseEvent.is_client_visible)
     result = await db.execute(stmt.order_by(CaseEvent.event_date.desc()))
     return [CaseEventResponse.model_validate(e) for e in result.scalars().all()]
 
@@ -264,7 +274,7 @@ async def add_deadline(
     return CaseDeadlineResponse.model_validate(deadline)
 
 
-@router.get("/{case_id}/deadlines", response_model=List[CaseDeadlineResponse])
+@router.get("/{case_id}/deadlines", response_model=list[CaseDeadlineResponse])
 async def list_deadlines(
     case_id: uuid.UUID,
     include_completed: bool = Query(False),
@@ -273,7 +283,7 @@ async def list_deadlines(
 ):
     stmt = select(CaseDeadline).where(CaseDeadline.case_id == case_id)
     if not include_completed:
-        stmt = stmt.where(CaseDeadline.is_completed == False)
+        stmt = stmt.where(not CaseDeadline.is_completed)
     result = await db.execute(stmt.order_by(CaseDeadline.due_date.asc()))
     return [CaseDeadlineResponse.model_validate(d) for d in result.scalars().all()]
 
@@ -299,7 +309,7 @@ async def add_note(
     return CaseNoteResponse.model_validate(note)
 
 
-@router.get("/{case_id}/notes", response_model=List[CaseNoteResponse])
+@router.get("/{case_id}/notes", response_model=list[CaseNoteResponse])
 async def list_notes(
     case_id: uuid.UUID,
     current_user: CurrentUser = Depends(require_permissions(Permission.CASE_READ)),
@@ -336,7 +346,7 @@ async def create_task(
     return CaseTaskResponse.model_validate(task)
 
 
-@router.get("/{case_id}/tasks", response_model=List[CaseTaskResponse])
+@router.get("/{case_id}/tasks", response_model=list[CaseTaskResponse])
 async def list_tasks(
     case_id: uuid.UUID,
     current_user: CurrentUser = Depends(require_permissions(Permission.CASE_READ)),

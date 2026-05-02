@@ -2,10 +2,8 @@
 SSO Router — Phase 21B
 Wires Okta, Azure AD, and Google Workspace OIDC providers.
 """
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
-
-from portal.config import get_settings
 
 router = APIRouter()
 

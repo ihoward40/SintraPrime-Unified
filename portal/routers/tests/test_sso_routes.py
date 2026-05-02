@@ -18,16 +18,16 @@ Coverage:
 """
 from __future__ import annotations
 
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from starlette.middleware.sessions import SessionMiddleware
 
 from portal.routers.sso import router as sso_router
-from portal.sso.session_models import TokenPair, SessionData
-
+from portal.sso.session_models import SessionData, TokenPair
 
 # ── App factory ───────────────────────────────────────────────────────────────
 
@@ -55,7 +55,7 @@ def _make_token_pair() -> TokenPair:
 
 
 def _make_session_data(provider: str = "okta") -> SessionData:
-    now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    now = datetime(2026, 1, 1, tzinfo=UTC)
     return SessionData(
         session_id="sess-001",
         user_id="user-sub-001",
@@ -63,7 +63,7 @@ def _make_session_data(provider: str = "okta") -> SessionData:
         issuer="https://portal.sintraprime.ai",
         audience="sintraprime-portal",
         created_at=now,
-        expires_at=datetime(2099, 1, 1, tzinfo=timezone.utc),
+        expires_at=datetime(2099, 1, 1, tzinfo=UTC),
         identity_provider=provider,
         auth_method="oidc",
     )

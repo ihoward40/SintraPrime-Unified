@@ -4,16 +4,15 @@ from __future__ import annotations
 
 import secrets
 import uuid
-from datetime import datetime, timezone
-from typing import List, Optional
+from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth.rbac import CurrentUser, Permission, Role, require_permissions, require_role
-from ..database import get_db, check_db_connection
+from ..database import check_db_connection, get_db
 from ..models.audit import AuditLog
 from ..models.billing import Invoice
 from ..models.case import Case
@@ -48,7 +47,7 @@ async def get_firm_stats(
     tid = current_user.tenant_id
 
     users_q = await db.execute(select(func.count(User.id)).where(User.tenant_id == tid, User.deleted_at.is_(None)))
-    active_users_q = await db.execute(select(func.count(User.id)).where(User.tenant_id == tid, User.is_active == True, User.deleted_at.is_(None)))
+    active_users_q = await db.execute(select(func.count(User.id)).where(User.tenant_id == tid, User.is_active, User.deleted_at.is_(None)))
     clients_q = await db.execute(select(func.count(Client.id)).where(Client.tenant_id == tid, Client.deleted_at.is_(None)))
     active_clients_q = await db.execute(select(func.count(Client.id)).where(Client.tenant_id == tid, Client.status == "active", Client.deleted_at.is_(None)))
     cases_q = await db.execute(select(func.count(Case.id)).where(Case.tenant_id == tid, Case.deleted_at.is_(None)))
@@ -79,17 +78,17 @@ async def get_firm_stats(
 
 class AuditLogResponse(BaseModel):
     id: uuid.UUID
-    user_id: Optional[uuid.UUID] = None
-    actor_email: Optional[str] = None
-    actor_role: Optional[str] = None
-    actor_ip: Optional[str] = None
+    user_id: uuid.UUID | None = None
+    actor_email: str | None = None
+    actor_role: str | None = None
+    actor_ip: str | None = None
     action: str
-    resource_type: Optional[str] = None
-    resource_id: Optional[str] = None
+    resource_type: str | None = None
+    resource_id: str | None = None
     status: str
-    details: Optional[dict] = None
-    http_method: Optional[str] = None
-    http_path: Optional[str] = None
+    details: dict | None = None
+    http_method: str | None = None
+    http_path: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -97,10 +96,10 @@ class AuditLogResponse(BaseModel):
 
 @router.get("/audit-log")
 async def get_audit_log(
-    action: Optional[str] = None,
-    user_id: Optional[uuid.UUID] = None,
-    date_from: Optional[datetime] = None,
-    date_to: Optional[datetime] = None,
+    action: str | None = None,
+    user_id: uuid.UUID | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
     page: int = 1,
     page_size: int = 50,
     current_user: CurrentUser = Depends(require_permissions(Permission.ADMIN_AUDIT_LOG)),
@@ -138,7 +137,7 @@ class ApiKeyResponse(BaseModel):
     name: str
     key_prefix: str
     created_at: str
-    last_used_at: Optional[str] = None
+    last_used_at: str | None = None
     is_active: bool
 
 
@@ -151,7 +150,7 @@ async def create_api_key(
     """Generate an API key for server-to-server integration."""
     raw_key = f"sp_{secrets.token_urlsafe(40)}"
     key_prefix = raw_key[:12]
-    hashed = hash_password_for_key(raw_key)
+    hash_password_for_key(raw_key)
 
     await audit(db, action="api_key_create", user_id=current_user.user_id,
                 tenant_id=current_user.tenant_id,
@@ -173,10 +172,10 @@ def hash_password_for_key(key: str) -> str:
 # ── Branding ──────────────────────────────────────────────────────────────────
 
 class BrandingUpdate(BaseModel):
-    logo_url: Optional[str] = None
-    primary_color: Optional[str] = None
-    secondary_color: Optional[str] = None
-    firm_name: Optional[str] = None
+    logo_url: str | None = None
+    primary_color: str | None = None
+    secondary_color: str | None = None
+    firm_name: str | None = None
 
 
 @router.put("/branding")
@@ -229,8 +228,6 @@ async def storage_usage(
     current_user: CurrentUser = Depends(require_permissions(Permission.ADMIN_QUOTA)),
     db: AsyncSession = Depends(get_db),
 ):
-    from ..models.client import Client
-    from sqlalchemy import case
 
     # Per-client storage usage
     result = await db.execute(

@@ -7,10 +7,11 @@ Tests for case management:
 - Cross-attorney isolation
 """
 
-import pytest
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import date, timedelta
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 
 class TestCaseCRUD:
@@ -119,13 +120,12 @@ class TestCaseStageTransitions:
         ("intake", "closed"),
     ]
 
-    @pytest.mark.parametrize("from_stage,to_stage", VALID_TRANSITIONS)
+    @pytest.mark.parametrize(("from_stage", "to_stage"), VALID_TRANSITIONS)
     def test_valid_stage_transition(self, from_stage, to_stage):
         """These transitions should be allowed."""
-        from portal.models.case import CaseStage
         assert from_stage != to_stage  # Basic sanity
 
-    @pytest.mark.parametrize("from_stage,to_stage", INVALID_TRANSITIONS)
+    @pytest.mark.parametrize(("from_stage", "to_stage"), INVALID_TRANSITIONS)
     def test_invalid_stage_transition(self, from_stage, to_stage):
         """These transitions should be rejected at the service layer."""
         assert from_stage != to_stage
@@ -231,6 +231,7 @@ def auth_headers_paralegal():
 @pytest.fixture
 def async_client():
     from unittest.mock import MagicMock
+
     from httpx import AsyncClient
     client = AsyncMock(spec=AsyncClient)
     _default = MagicMock(status_code=200)

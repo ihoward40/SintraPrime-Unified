@@ -7,35 +7,32 @@ Tests the full SSO flow end-to-end:
   - SessionMiddleware fail-closed behaviour on protected routes
   - Full login flow: authorize → callback → protected route → refresh → logout
 """
-import asyncio
-import os
-import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
 from portal.sso import (
-    SessionMiddlewareManager,
-    TokenRefreshManager,
-    IdPErrorHandler,
+    AzureADProvider,
+    AzureConfig,
+    GoogleConfig,
+    GoogleWorkspaceProvider,
     IdPError,
-    SessionMiddleware,
-    SessionToken,
-    OktaProvider, OktaConfig,
-    AzureADProvider, AzureConfig,
-    GoogleWorkspaceProvider, GoogleConfig,
+    IdPErrorHandler,
     InMemorySessionStore,
     RedisSessionStore,
-    SessionManager,
-    SessionConfig,
+    SessionMiddleware,
+    SessionMiddlewareManager,
+    SessionToken,
+    TokenRefreshManager,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _make_token(user_id="u1", provider="okta", ttl_seconds=3600) -> SessionToken:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return SessionToken(
         user_id=user_id,
         email=f"{user_id}@example.com",
@@ -140,7 +137,7 @@ class TestSessionMiddlewareManagerIntegration:
 
     def test_expired_session_returns_none(self):
         """An expired session must be evicted and return None."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         expired_token = SessionToken(
             user_id="u2",
             email="u2@example.com",
@@ -153,7 +150,7 @@ class TestSessionMiddlewareManagerIntegration:
 
     def test_session_id_is_deterministic_for_same_inputs(self):
         """Same user_id + issued_at must produce the same session ID."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         t1 = SessionToken(user_id="u3", email="u3@example.com", provider="google",
                           issued_at=now, expires_at=now + timedelta(hours=1))
         t2 = SessionToken(user_id="u3", email="u3@example.com", provider="google",
@@ -248,10 +245,10 @@ class TestSessionMiddlewareFailClosed:
     @pytest.mark.asyncio
     async def test_protected_route_without_cookie_returns_401(self):
         """A request to a protected path without a session cookie must get 401."""
-        from starlette.testclient import TestClient
         from starlette.applications import Starlette
-        from starlette.routing import Route
         from starlette.responses import PlainTextResponse
+        from starlette.routing import Route
+        from starlette.testclient import TestClient
 
         async def protected(request):
             return PlainTextResponse("secret")
@@ -270,10 +267,10 @@ class TestSessionMiddlewareFailClosed:
     @pytest.mark.asyncio
     async def test_unprotected_route_passes_through(self):
         """A request to an unprotected path must pass through without a session cookie."""
-        from starlette.testclient import TestClient
         from starlette.applications import Starlette
-        from starlette.routing import Route
         from starlette.responses import PlainTextResponse
+        from starlette.routing import Route
+        from starlette.testclient import TestClient
 
         async def public(request):
             return PlainTextResponse("public")
@@ -307,8 +304,8 @@ class TestMainPyWiring:
     def test_lifespan_initialises_sso_session_manager(self):
         """The lifespan must initialise sso_session_manager on app.state."""
         # We test the lifespan logic in isolation using a mock app object
-        from unittest.mock import MagicMock
         import types
+        from unittest.mock import MagicMock
 
         mock_app = MagicMock()
         mock_app.state = types.SimpleNamespace()

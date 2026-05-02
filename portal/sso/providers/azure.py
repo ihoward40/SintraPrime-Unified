@@ -1,9 +1,10 @@
-import hashlib
 import base64
-import json
-import requests
-from typing import Optional, List, Dict, Any
+import hashlib
 from dataclasses import dataclass, field
+from typing import Any
+
+import requests
+
 
 @dataclass
 class AzureConfig:
@@ -11,7 +12,7 @@ class AzureConfig:
     client_id: str
     client_secret: str
     redirect_uri: str
-    scopes: List[str] = field(default_factory=lambda: ["openid", "email", "profile"])
+    scopes: list[str] = field(default_factory=lambda: ["openid", "email", "profile"])
 
     def __post_init__(self):
         if not all([self.tenant_id, self.client_id, self.client_secret, self.redirect_uri]):
@@ -28,7 +29,7 @@ class AzureADProvider:
         self._openid_config = None
         self._jwks = None
 
-    def _get_openid_config(self) -> Dict[str, Any]:
+    def _get_openid_config(self) -> dict[str, Any]:
         """
         Retrieves the OpenID Connect configuration from Azure AD B2C.
         """
@@ -67,7 +68,7 @@ class AzureADProvider:
         from urllib.parse import urlencode
         return f"{auth_endpoint}?{urlencode(params)}"
 
-    def exchange_code_for_tokens(self, code: str) -> Dict[str, Any]:
+    def exchange_code_for_tokens(self, code: str) -> dict[str, Any]:
         """
         Exchanges the authorization code for access, ID, and refresh tokens.
 
@@ -95,7 +96,7 @@ class AzureADProvider:
         response.raise_for_status()
         return response.json()
 
-    def get_user_info(self, access_token: str) -> Dict[str, Any]:
+    def get_user_info(self, access_token: str) -> dict[str, Any]:
         """
         Retrieves user information from Azure AD B2C.
 
@@ -115,7 +116,7 @@ class AzureADProvider:
         response.raise_for_status()
         return response.json()
 
-    def get_jwks(self) -> Dict[str, Any]:
+    def get_jwks(self) -> dict[str, Any]:
         """
         Retrieves the JSON Web Key Set (JWKS) from Azure AD B2C.
 
@@ -130,7 +131,7 @@ class AzureADProvider:
             self._jwks = response.json()
         return self._jwks
 
-    def validate_id_token(self, id_token: str) -> Dict[str, Any]:
+    def validate_id_token(self, id_token: str) -> dict[str, Any]:
         """
         Validates the ID token received from Azure AD B2C.
 
@@ -139,7 +140,7 @@ class AzureADProvider:
 
         Returns:
             A dictionary containing the decoded and validated ID token claims.
-        
+
         Raises:
             ValueError: If the token is invalid or validation fails.
         """
@@ -160,7 +161,7 @@ class AzureADProvider:
                 if jwk["kid"] == kid:
                     key = jwk
                     break
-            
+
             if not key:
                 raise ValueError("No matching JWK found for the ID token.")
 
@@ -176,7 +177,7 @@ class AzureADProvider:
             }
 
             # The audience (aud) claim should match the client_id
-            decoded_token = jwt.decode(
+            return jwt.decode(
                 id_token,
                 key,
                 algorithms=["RS256"], # Azure B2C typically uses RS256
@@ -184,7 +185,6 @@ class AzureADProvider:
                 issuer=expected_issuer,
                 options=options
             )
-            return decoded_token
         except JWTError as e:
             raise ValueError(f"ID token validation failed: {e}")
         except Exception as e:

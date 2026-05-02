@@ -3,16 +3,15 @@ Additional router coverage tests for billing, cases, and documents routers.
 Target: push total coverage from 75% to 80%+.
 """
 import uuid
-import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
 
 # ─── helpers ──────────────────────────────────────────────────────────────────
 
 def _make_mock_user(role="ATTORNEY", permissions=None):
-    from portal.auth.rbac import CurrentUser, Role, Permission
+    from portal.auth.rbac import CurrentUser, Role
     user = MagicMock(spec=CurrentUser)
     user.id = str(uuid.uuid4())
     user.email = "test@example.com"
@@ -39,9 +38,9 @@ def _make_mock_db():
 
 
 def _make_billing_app(mock_user=None, mock_db=None):
-    from portal.routers import billing
     from portal.auth.rbac import get_current_user
     from portal.database import get_db
+    from portal.routers import billing
     app = FastAPI()
     app.include_router(billing.router, prefix="/billing")
     mu = mock_user or _make_mock_user()
@@ -52,9 +51,9 @@ def _make_billing_app(mock_user=None, mock_db=None):
 
 
 def _make_cases_app(mock_user=None, mock_db=None):
-    from portal.routers import cases
     from portal.auth.rbac import get_current_user
     from portal.database import get_db
+    from portal.routers import cases
     app = FastAPI()
     app.include_router(cases.router, prefix="/cases")
     mu = mock_user or _make_mock_user()
@@ -65,9 +64,9 @@ def _make_cases_app(mock_user=None, mock_db=None):
 
 
 def _make_documents_app(mock_user=None, mock_db=None):
-    from portal.routers import documents
     from portal.auth.rbac import get_current_user
     from portal.database import get_db
+    from portal.routers import documents
     app = FastAPI()
     app.include_router(documents.router, prefix="/documents")
     mu = mock_user or _make_mock_user()
@@ -112,7 +111,7 @@ class TestBillingRouterCoverage:
         assert resp.status_code in (201, 422, 500)
 
     def test_start_timer_endpoint_reachable(self):
-        app, mu, md = _make_billing_app()
+        app, _mu, _md = _make_billing_app()
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post("/billing/time-entries/start-timer", json={
                 "description": "Client call",
@@ -120,14 +119,14 @@ class TestBillingRouterCoverage:
         assert resp.status_code in (201, 422, 500)
 
     def test_stop_timer_endpoint_reachable(self):
-        app, mu, md = _make_billing_app()
+        app, _mu, _md = _make_billing_app()
         entry_id = str(uuid.uuid4())
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post(f"/billing/time-entries/{entry_id}/stop-timer")
         assert resp.status_code in (200, 404, 422, 500)
 
     def test_list_time_entries_endpoint_reachable(self):
-        app, mu, md = _make_billing_app()
+        app, _mu, md = _make_billing_app()
         result = MagicMock()
         result.scalars.return_value.all.return_value = []
         md.execute = AsyncMock(return_value=result)
@@ -136,7 +135,7 @@ class TestBillingRouterCoverage:
         assert resp.status_code in (200, 422, 500)
 
     def test_create_expense_endpoint_reachable(self):
-        app, mu, md = _make_billing_app()
+        app, _mu, _md = _make_billing_app()
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post("/billing/expenses", json={
                 "description": "Filing fee",
@@ -147,7 +146,7 @@ class TestBillingRouterCoverage:
         assert resp.status_code in (201, 422, 500)
 
     def test_create_invoice_endpoint_reachable(self):
-        app, mu, md = _make_billing_app()
+        app, _mu, _md = _make_billing_app()
         client_id = str(uuid.uuid4())
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post("/billing/invoices", json={
@@ -157,7 +156,7 @@ class TestBillingRouterCoverage:
         assert resp.status_code in (201, 422, 500)
 
     def test_list_invoices_endpoint_reachable(self):
-        app, mu, md = _make_billing_app()
+        app, _mu, md = _make_billing_app()
         result = MagicMock()
         result.scalars.return_value.all.return_value = []
         result.scalar.return_value = 0
@@ -167,28 +166,28 @@ class TestBillingRouterCoverage:
         assert resp.status_code in (200, 422, 500)
 
     def test_get_invoice_endpoint_reachable(self):
-        app, mu, md = _make_billing_app()
+        app, _mu, _md = _make_billing_app()
         invoice_id = str(uuid.uuid4())
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.get(f"/billing/invoices/{invoice_id}")
         assert resp.status_code in (200, 404, 422, 500)
 
     def test_send_invoice_endpoint_reachable(self):
-        app, mu, md = _make_billing_app()
+        app, _mu, _md = _make_billing_app()
         invoice_id = str(uuid.uuid4())
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post(f"/billing/invoices/{invoice_id}/send")
         assert resp.status_code in (200, 404, 422, 500)
 
     def test_download_invoice_pdf_endpoint_reachable(self):
-        app, mu, md = _make_billing_app()
+        app, _mu, _md = _make_billing_app()
         invoice_id = str(uuid.uuid4())
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.get(f"/billing/invoices/{invoice_id}/pdf")
         assert resp.status_code in (200, 404, 422, 500)
 
     def test_record_payment_endpoint_reachable(self):
-        app, mu, md = _make_billing_app()
+        app, _mu, _md = _make_billing_app()
         invoice_id = str(uuid.uuid4())
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post("/billing/payments", json={
@@ -200,7 +199,7 @@ class TestBillingRouterCoverage:
         assert resp.status_code in (201, 422, 500)
 
     def test_record_trust_transaction_endpoint_reachable(self):
-        app, mu, md = _make_billing_app()
+        app, _mu, _md = _make_billing_app()
         client_id = str(uuid.uuid4())
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post("/billing/trust-transactions", json={
@@ -212,7 +211,7 @@ class TestBillingRouterCoverage:
         assert resp.status_code in (201, 422, 500)
 
     def test_get_trust_ledger_endpoint_reachable(self):
-        app, mu, md = _make_billing_app()
+        app, _mu, md = _make_billing_app()
         client_id = str(uuid.uuid4())
         result = MagicMock()
         result.scalars.return_value.all.return_value = []
@@ -228,7 +227,7 @@ class TestCasesRouterCoverage:
     """Coverage tests for portal.routers.cases."""
 
     def test_create_case_endpoint_reachable(self):
-        app, mu, md = _make_cases_app()
+        app, _mu, _md = _make_cases_app()
         client_id = str(uuid.uuid4())
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post("/cases", json={
@@ -239,7 +238,7 @@ class TestCasesRouterCoverage:
         assert resp.status_code in (201, 422, 500)
 
     def test_list_cases_endpoint_reachable(self):
-        app, mu, md = _make_cases_app()
+        app, _mu, md = _make_cases_app()
         result = MagicMock()
         result.scalars.return_value.all.return_value = []
         result.scalar.return_value = 0
@@ -250,28 +249,28 @@ class TestCasesRouterCoverage:
         assert resp.status_code in (200, 422, 500)
 
     def test_get_case_endpoint_reachable(self):
-        app, mu, md = _make_cases_app()
+        app, _mu, _md = _make_cases_app()
         case_id = str(uuid.uuid4())
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.get(f"/cases/{case_id}")
         assert resp.status_code in (200, 404, 422, 500)
 
     def test_update_case_endpoint_reachable(self):
-        app, mu, md = _make_cases_app()
+        app, _mu, _md = _make_cases_app()
         case_id = str(uuid.uuid4())
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.put(f"/cases/{case_id}", json={"title": "Updated Title"})
         assert resp.status_code in (200, 404, 422, 500)
 
     def test_delete_case_endpoint_reachable(self):
-        app, mu, md = _make_cases_app()
+        app, _mu, _md = _make_cases_app()
         case_id = str(uuid.uuid4())
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.delete(f"/cases/{case_id}")
         assert resp.status_code in (204, 404, 422, 500)
 
     def test_add_case_event_endpoint_reachable(self):
-        app, mu, md = _make_cases_app()
+        app, _mu, _md = _make_cases_app()
         case_id = str(uuid.uuid4())
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post(f"/cases/{case_id}/events", json={
@@ -282,7 +281,7 @@ class TestCasesRouterCoverage:
         assert resp.status_code in (201, 404, 422, 500)
 
     def test_list_case_events_endpoint_reachable(self):
-        app, mu, md = _make_cases_app()
+        app, _mu, md = _make_cases_app()
         case_id = str(uuid.uuid4())
         result = MagicMock()
         result.scalars.return_value.all.return_value = []
@@ -292,7 +291,7 @@ class TestCasesRouterCoverage:
         assert resp.status_code in (200, 404, 422, 500)
 
     def test_add_deadline_endpoint_reachable(self):
-        app, mu, md = _make_cases_app()
+        app, _mu, _md = _make_cases_app()
         case_id = str(uuid.uuid4())
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post(f"/cases/{case_id}/deadlines", json={
@@ -303,7 +302,7 @@ class TestCasesRouterCoverage:
         assert resp.status_code in (201, 404, 422, 500)
 
     def test_list_deadlines_endpoint_reachable(self):
-        app, mu, md = _make_cases_app()
+        app, _mu, md = _make_cases_app()
         case_id = str(uuid.uuid4())
         result = MagicMock()
         result.scalars.return_value.all.return_value = []
@@ -313,7 +312,7 @@ class TestCasesRouterCoverage:
         assert resp.status_code in (200, 404, 422, 500)
 
     def test_add_note_endpoint_reachable(self):
-        app, mu, md = _make_cases_app()
+        app, _mu, _md = _make_cases_app()
         case_id = str(uuid.uuid4())
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post(f"/cases/{case_id}/notes", json={
@@ -323,7 +322,7 @@ class TestCasesRouterCoverage:
         assert resp.status_code in (201, 404, 422, 500)
 
     def test_list_notes_endpoint_reachable(self):
-        app, mu, md = _make_cases_app()
+        app, _mu, md = _make_cases_app()
         case_id = str(uuid.uuid4())
         result = MagicMock()
         result.scalars.return_value.all.return_value = []
@@ -333,7 +332,7 @@ class TestCasesRouterCoverage:
         assert resp.status_code in (200, 404, 422, 500)
 
     def test_create_task_endpoint_reachable(self):
-        app, mu, md = _make_cases_app()
+        app, _mu, _md = _make_cases_app()
         case_id = str(uuid.uuid4())
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post(f"/cases/{case_id}/tasks", json={
@@ -349,7 +348,7 @@ class TestDocumentsRouterCoverage:
     """Coverage tests for portal.routers.documents."""
 
     def test_list_documents_endpoint_reachable(self):
-        app, mu, md = _make_documents_app()
+        app, _mu, md = _make_documents_app()
         result = MagicMock()
         result.scalars.return_value.all.return_value = []
         result.scalar.return_value = 0
@@ -359,21 +358,21 @@ class TestDocumentsRouterCoverage:
         assert resp.status_code in (200, 422, 500)
 
     def test_get_document_endpoint_reachable(self):
-        app, mu, md = _make_documents_app()
+        app, _mu, _md = _make_documents_app()
         doc_id = str(uuid.uuid4())
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.get(f"/documents/{doc_id}")
         assert resp.status_code in (200, 404, 422, 500)
 
     def test_download_document_endpoint_reachable(self):
-        app, mu, md = _make_documents_app()
+        app, _mu, _md = _make_documents_app()
         doc_id = str(uuid.uuid4())
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.get(f"/documents/{doc_id}/download")
         assert resp.status_code in (200, 404, 422, 500)
 
     def test_update_document_endpoint_reachable(self):
-        app, mu, md = _make_documents_app()
+        app, _mu, _md = _make_documents_app()
         doc_id = str(uuid.uuid4())
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.put(f"/documents/{doc_id}", json={
@@ -382,14 +381,14 @@ class TestDocumentsRouterCoverage:
         assert resp.status_code in (200, 404, 422, 500)
 
     def test_delete_document_endpoint_reachable(self):
-        app, mu, md = _make_documents_app()
+        app, _mu, _md = _make_documents_app()
         doc_id = str(uuid.uuid4())
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.delete(f"/documents/{doc_id}")
         assert resp.status_code in (204, 404, 422, 500)
 
     def test_list_versions_endpoint_reachable(self):
-        app, mu, md = _make_documents_app()
+        app, _mu, md = _make_documents_app()
         doc_id = str(uuid.uuid4())
         result = MagicMock()
         result.scalars.return_value.all.return_value = []
@@ -399,7 +398,7 @@ class TestDocumentsRouterCoverage:
         assert resp.status_code in (200, 404, 422, 500)
 
     def test_share_document_endpoint_reachable(self):
-        app, mu, md = _make_documents_app()
+        app, _mu, _md = _make_documents_app()
         doc_id = str(uuid.uuid4())
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post(f"/documents/{doc_id}/share", json={
@@ -409,14 +408,14 @@ class TestDocumentsRouterCoverage:
         assert resp.status_code in (200, 201, 404, 422, 500)
 
     def test_access_shared_document_endpoint_reachable(self):
-        app, mu, md = _make_documents_app()
+        app, _mu, _md = _make_documents_app()
         share_token = "test-share-token-abc123"
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.get(f"/documents/share/{share_token}")
         assert resp.status_code in (200, 404, 422, 500)
 
     def test_search_documents_endpoint_reachable(self):
-        app, mu, md = _make_documents_app()
+        app, _mu, md = _make_documents_app()
         result = MagicMock()
         result.scalars.return_value.all.return_value = []
         result.scalar.return_value = 0
@@ -428,7 +427,7 @@ class TestDocumentsRouterCoverage:
         assert resp.status_code in (200, 422, 500)
 
     def test_bulk_operation_endpoint_reachable(self):
-        app, mu, md = _make_documents_app()
+        app, _mu, md = _make_documents_app()
         result = MagicMock()
         result.scalars.return_value.all.return_value = []
         md.execute = AsyncMock(return_value=result)
@@ -440,7 +439,7 @@ class TestDocumentsRouterCoverage:
         assert resp.status_code in (200, 404, 422, 500)
 
     def test_create_folder_endpoint_reachable(self):
-        app, mu, md = _make_documents_app()
+        app, _mu, _md = _make_documents_app()
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post("/documents/folders", json={
                 "name": "Contracts",
@@ -448,7 +447,7 @@ class TestDocumentsRouterCoverage:
         assert resp.status_code in (201, 422, 500)
 
     def test_list_folders_endpoint_reachable(self):
-        app, mu, md = _make_documents_app()
+        app, _mu, md = _make_documents_app()
         result = MagicMock()
         result.scalars.return_value.all.return_value = []
         md.execute = AsyncMock(return_value=result)
@@ -463,9 +462,9 @@ class TestAuthRouterAdditionalCoverage:
     """Additional coverage tests for portal.routers.auth."""
 
     def _make_auth_app(self, mock_user=None, mock_db=None):
-        from portal.routers import auth
         from portal.auth.rbac import get_current_user
         from portal.database import get_db
+        from portal.routers import auth
         app = FastAPI()
         app.include_router(auth.router, prefix="/auth")
         mu = mock_user or _make_mock_user()
@@ -475,7 +474,7 @@ class TestAuthRouterAdditionalCoverage:
         return app, mu, md
 
     def test_login_with_invalid_credentials_reachable(self):
-        app, mu, md = self._make_auth_app()
+        app, _mu, md = self._make_auth_app()
         result = MagicMock()
         result.scalar_one_or_none.return_value = None
         md.execute = AsyncMock(return_value=result)
@@ -487,7 +486,7 @@ class TestAuthRouterAdditionalCoverage:
         assert resp.status_code in (200, 401, 422, 500)
 
     def test_login_endpoint_reachable(self):
-        app, mu, md = self._make_auth_app()
+        app, _mu, _md = self._make_auth_app()
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post("/auth/login", json={
                 "email": "user@example.com",
@@ -496,13 +495,13 @@ class TestAuthRouterAdditionalCoverage:
         assert resp.status_code in (200, 401, 422, 500)
 
     def test_logout_endpoint_reachable(self):
-        app, mu, md = self._make_auth_app()
+        app, _mu, _md = self._make_auth_app()
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post("/auth/logout")
         assert resp.status_code in (200, 204, 401, 422, 500)
 
     def test_refresh_token_endpoint_reachable(self):
-        app, mu, md = self._make_auth_app()
+        app, _mu, _md = self._make_auth_app()
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post("/auth/refresh", json={
                 "refresh_token": "some-refresh-token",
@@ -529,13 +528,13 @@ class TestAuthRouterAdditionalCoverage:
         assert resp.status_code in (200, 404, 422, 500)
 
     def test_logout_all_endpoint_reachable(self):
-        app, mu, md = self._make_auth_app()
+        app, _mu, _md = self._make_auth_app()
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post("/auth/logout-all")
         assert resp.status_code in (200, 204, 401, 422, 500)
 
     def test_request_password_reset_endpoint_reachable(self):
-        app, mu, md = self._make_auth_app()
+        app, _mu, _md = self._make_auth_app()
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post("/auth/password/reset-request", json={
                 "email": "user@example.com",
@@ -543,7 +542,7 @@ class TestAuthRouterAdditionalCoverage:
         assert resp.status_code in (200, 202, 422, 500)
 
     def test_confirm_password_reset_endpoint_reachable(self):
-        app, mu, md = self._make_auth_app()
+        app, _mu, _md = self._make_auth_app()
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post("/auth/password/reset-confirm", json={
                 "token": "reset-token-abc123",
@@ -552,7 +551,7 @@ class TestAuthRouterAdditionalCoverage:
         assert resp.status_code in (200, 400, 422, 500)
 
     def test_mfa_setup_endpoint_reachable(self):
-        app, mu, md = self._make_auth_app()
+        app, _mu, md = self._make_auth_app()
         mock_user_model = MagicMock()
         mock_user_model.mfa_enabled = False
         result = MagicMock()
@@ -563,7 +562,7 @@ class TestAuthRouterAdditionalCoverage:
         assert resp.status_code in (200, 400, 422, 500)
 
     def test_mfa_verify_endpoint_reachable(self):
-        app, mu, md = self._make_auth_app()
+        app, _mu, _md = self._make_auth_app()
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post("/auth/mfa/verify", json={
                 "totp_code": "123456",
@@ -571,7 +570,7 @@ class TestAuthRouterAdditionalCoverage:
         assert resp.status_code in (200, 400, 401, 422, 500)
 
     def test_mfa_disable_endpoint_reachable(self):
-        app, mu, md = self._make_auth_app()
+        app, _mu, md = self._make_auth_app()
         mock_user_model = MagicMock()
         mock_user_model.mfa_enabled = True
         result = MagicMock()

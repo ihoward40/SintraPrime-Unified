@@ -1,8 +1,11 @@
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
+
 from portal.admin.dashboard import router as dashboard_router
 from portal.main import create_app
+
 
 @pytest.fixture
 def client():
@@ -18,7 +21,7 @@ class TestAdminDashboard:
             response = client.get("/admin/dashboard/overview")
             assert response.status_code == 200
             assert response.json()["active_users"] == 42
-    
+
     def test_session_list(self, client):
         """Test session listing endpoint"""
         with patch("portal.services.admin_service.AdminService.get_sessions") as mock:
@@ -26,7 +29,7 @@ class TestAdminDashboard:
             response = client.get("/admin/dashboard/sessions")
             assert response.status_code == 200
             assert len(response.json()) == 1
-    
+
     def test_audit_log(self, client):
         """Test audit log retrieval"""
         with patch("portal.services.admin_service.AdminService.get_audit_log") as mock:
@@ -34,7 +37,7 @@ class TestAdminDashboard:
             response = client.get("/admin/dashboard/audit")
             assert response.status_code == 200
             assert response.json()[0]["action"] == "login"
-    
+
     def test_performance_metrics(self, client):
         """Test performance metrics endpoint"""
         with patch("portal.services.admin_service.AdminService.get_performance") as mock:
@@ -42,7 +45,7 @@ class TestAdminDashboard:
             response = client.get("/admin/dashboard/performance")
             assert response.status_code == 200
             assert response.json()["error_rate"] < 0.01
-    
+
     def test_auth_required(self, client):
         """Test that auth is required for admin endpoints"""
         response = client.get("/admin/dashboard/overview")

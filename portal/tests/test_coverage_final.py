@@ -4,11 +4,11 @@ session_manager.py, and notification_service.py.
 Target: push total coverage from 75% to 80%+.
 """
 import asyncio
-import pytest
 import uuid
-from datetime import datetime, timezone, timedelta
-from unittest.mock import MagicMock, AsyncMock, patch
+from datetime import datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 
 # ─── document_processor.py ────────────────────────────────────────────────────
 
@@ -329,8 +329,9 @@ class TestNotificationServiceAdditional:
     @pytest.mark.asyncio
     async def test_notify_users_with_empty_recipients(self):
         """notify_users with empty resolved recipients should not raise."""
-        from portal.services.notification_service import notify_users
         import uuid as _uuid
+
+        from portal.services.notification_service import notify_users
         mock_db = AsyncMock()
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = []
@@ -393,6 +394,7 @@ class TestDocumentProcessorWatermark:
     def test_add_watermark_falls_back_when_pypdf2_missing(self):
         import sys
         from unittest.mock import patch
+
         from portal.services.document_processor import add_watermark
         with patch.dict(sys.modules, {"PyPDF2": None}):
             result = add_watermark(b"fake-pdf-bytes", "CONFIDENTIAL")
@@ -411,6 +413,7 @@ class TestDocumentProcessorWatermark:
 
     def test_create_digital_signature_content_hash_is_sha256(self):
         import hashlib
+
         from portal.services.document_processor import create_digital_signature
         content = b"document bytes"
         result = create_digital_signature(content, "u1", "u@x.com", "10.0.0.1")
@@ -423,29 +426,33 @@ class TestSessionConfigCoverage:
     """Additional coverage for portal.sso.session_config.SessionConfig."""
 
     def test_validate_raises_for_missing_jwt_secret(self):
-        from portal.sso.session_config import SessionConfig
         import pytest
+
+        from portal.sso.session_config import SessionConfig
         config = SessionConfig(jwt_secret_key="", issuer="https://sso.example.com", audience="sintra-prime")
         with pytest.raises(ValueError, match="jwt_secret_key"):
             config.validate()
 
     def test_validate_raises_for_short_jwt_secret(self):
-        from portal.sso.session_config import SessionConfig
         import pytest
+
+        from portal.sso.session_config import SessionConfig
         config = SessionConfig(jwt_secret_key="short", issuer="https://sso.example.com", audience="sintra-prime")
         with pytest.raises(ValueError, match="32 characters"):
             config.validate()
 
     def test_validate_raises_for_missing_issuer(self):
-        from portal.sso.session_config import SessionConfig
         import pytest
+
+        from portal.sso.session_config import SessionConfig
         config = SessionConfig(jwt_secret_key="a" * 32, issuer="", audience="sintra-prime")
         with pytest.raises(ValueError, match="issuer"):
             config.validate()
 
     def test_validate_raises_for_missing_audience(self):
-        from portal.sso.session_config import SessionConfig
         import pytest
+
+        from portal.sso.session_config import SessionConfig
         config = SessionConfig(jwt_secret_key="a" * 32, issuer="https://sso.example.com", audience="")
         with pytest.raises(ValueError, match="audience"):
             config.validate()
@@ -465,8 +472,10 @@ class TestFinalCoveragePush:
     # cors_middleware.py:46 — development else-branch
     # The function reads settings.ENVIRONMENT; patch it to 'development' to hit the else branch
     def test_cors_setup_development_mode_uses_wildcard(self):
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
+
         from fastapi import FastAPI
+
         import portal.middleware.cors_middleware as cors_mod
 
         mock_settings = MagicMock()
@@ -482,12 +491,14 @@ class TestFinalCoveragePush:
     # Use fget to call the property on a SimpleNamespace to avoid SQLAlchemy mapper issues
     def test_client_display_name_individual(self):
         from types import SimpleNamespace
+
         from portal.models.client import Client
         c = SimpleNamespace(client_type="individual", first_name="Jane", last_name="Doe", company_name=None)
         assert Client.display_name.fget(c) == "Jane Doe"
 
     def test_client_display_name_organization(self):
         from types import SimpleNamespace
+
         from portal.models.client import Client
         c = SimpleNamespace(client_type="organization", company_name="Acme Corp")
         assert Client.display_name.fget(c) == "Acme Corp"
@@ -495,6 +506,7 @@ class TestFinalCoveragePush:
     # models/user.py:176 — full_name property
     def test_user_full_name_property(self):
         from types import SimpleNamespace
+
         from portal.models.user import User
         u = SimpleNamespace(first_name="Alice", last_name="Smith")
         assert User.full_name.fget(u) == "Alice Smith"
@@ -518,9 +530,10 @@ class TestFinalCoveragePush:
     def test_encryption_service_invalid_key_falls_back(self):
         import os
         from unittest.mock import patch
+
         from portal.services.encryption_service import _get_key
         # Set ENCRYPTION_KEY to invalid base64 — triggers lines 24-29 (try/except)
-        with patch.dict(os.environ, {"ENCRYPTION_KEY": "not-valid-base64!!!"}):  
+        with patch.dict(os.environ, {"ENCRYPTION_KEY": "not-valid-base64!!!"}):
             key = _get_key()
         assert len(key) == 32
 
@@ -528,6 +541,7 @@ class TestFinalCoveragePush:
     def test_encryption_service_dev_fallback_key(self):
         import os
         from unittest.mock import patch
+
         from portal.services.encryption_service import _get_key
         # Remove ENCRYPTION_KEY to trigger the fallback path (lines 31-32)
         with patch.dict(os.environ, {}, clear=True):
@@ -539,8 +553,10 @@ class TestFinalCoveragePush:
     @pytest.mark.asyncio
     async def test_require_permissions_raises_403_on_missing(self):
         from unittest.mock import MagicMock
+
         from fastapi import HTTPException
-        from portal.auth.rbac import require_permissions, Permission, CurrentUser
+
+        from portal.auth.rbac import CurrentUser, Permission, require_permissions
         mock_user = MagicMock(spec=CurrentUser)
         mock_user.has_permission.return_value = False
         dep_fn = require_permissions(Permission.CASE_READ)
@@ -551,8 +567,10 @@ class TestFinalCoveragePush:
     @pytest.mark.asyncio
     async def test_require_role_raises_403_on_insufficient_role(self):
         from unittest.mock import MagicMock
+
         from fastapi import HTTPException
-        from portal.auth.rbac import require_role, Role, CurrentUser
+
+        from portal.auth.rbac import CurrentUser, Role, require_role
         mock_user = MagicMock(spec=CurrentUser)
         mock_user.has_role.return_value = False
         dep_fn = require_role(Role.ATTORNEY)

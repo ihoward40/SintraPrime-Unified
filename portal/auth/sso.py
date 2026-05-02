@@ -1,9 +1,7 @@
 """SSO Router with timezone-aware session management (DTZ011 compliant)."""
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
-from fastapi import APIRouter, Request, Response, HTTPException, Depends
-from starlette.middleware.sessions import SessionMiddleware
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -27,7 +25,7 @@ class LoginRequest(BaseModel):
 class SessionData(BaseModel):
     user_id: str
     username: str
-    email: Optional[EmailStr] = None
+    email: EmailStr | None = None
     created_at: datetime
     expires_at: datetime
 
@@ -39,13 +37,13 @@ class SessionManager:
         self.config = config
         self.sessions = {}
 
-    def create_session(self, user_id: str, username: str, 
-                       email: Optional[str] = None) -> SessionData:
+    def create_session(self, user_id: str, username: str,
+                       email: str | None = None) -> SessionData:
         """Create a timezone-aware session (UTC only)."""
-        now_utc = datetime.now(timezone.utc)
+        now_utc = datetime.now(UTC)
         expires_at = datetime.fromtimestamp(
             now_utc.timestamp() + self.config.session_timeout_minutes * 60,
-            tz=timezone.utc
+            tz=UTC
         )
 
         session = SessionData(
@@ -62,9 +60,9 @@ class SessionManager:
         """Check if session is valid and not expired."""
         if user_id not in self.sessions:
             return False
-        
+
         session = self.sessions[user_id]
-        now_utc = datetime.now(timezone.utc)
+        now_utc = datetime.now(UTC)
         return session.expires_at > now_utc
 
     def invalidate_session(self, user_id: str) -> None:
@@ -120,7 +118,7 @@ async def get_current_user(request: Request, session_manager: SessionManager = D
     user_id = request.session.get("user_id")
     if not user_id or not session_manager.validate_session(user_id):
         raise HTTPException(status_code=401, detail="Unauthorized")
-    
+
     session = session_manager.sessions[user_id]
     return {
         "user_id": session.user_id,

@@ -5,14 +5,10 @@ Target: bring each module from <40% to ≥80% coverage.
 """
 from __future__ import annotations
 
-import hashlib
 import time
-from datetime import datetime, timezone
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
-
 
 # ─── jwt_handler ──────────────────────────────────────────────────────────────
 
@@ -77,6 +73,7 @@ class TestJwtHandler:
 
     def test_decode_expired_token_raises_token_expired_error(self):
         import jwt as pyjwt
+
         from portal.auth.jwt_handler import TokenExpiredError, decode_access_token
         from portal.config import get_settings
         settings = get_settings()
@@ -236,6 +233,7 @@ class TestRbac:
 
     def test_require_same_tenant_different_tenant_raises(self):
         from fastapi import HTTPException
+
         from portal.auth.rbac import require_same_tenant
         user = self._make_user("ATTORNEY")
         with pytest.raises(HTTPException) as exc_info:
@@ -250,6 +248,7 @@ class TestRbac:
     @pytest.mark.asyncio
     async def test_get_current_user_no_credentials_raises_401(self):
         from fastapi import HTTPException
+
         from portal.auth.rbac import get_current_user
         with pytest.raises(HTTPException) as exc_info:
             await get_current_user(credentials=None)
@@ -258,6 +257,7 @@ class TestRbac:
     @pytest.mark.asyncio
     async def test_get_current_user_invalid_token_raises_401(self):
         from fastapi import HTTPException
+
         from portal.auth.rbac import get_current_user
         mock_creds = MagicMock()
         mock_creds.credentials = "invalid.token.here"
@@ -356,7 +356,10 @@ class TestPasswordHandler:
             validate_password_strength("Str!Pass#LongEnough")
 
     def test_generate_secure_password_meets_policy(self):
-        from portal.auth.password_handler import generate_secure_password, validate_password_strength
+        from portal.auth.password_handler import (
+            generate_secure_password,
+            validate_password_strength,
+        )
         pw = generate_secure_password()
         assert isinstance(pw, str)
         assert len(pw) >= 12

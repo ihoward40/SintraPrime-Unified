@@ -7,17 +7,22 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import List, Optional
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, ForeignKey, Index, String, Text,
-    UniqueConstraint, func, Integer,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
 )
-from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
-
 
 # ── Tenant (Firm) ─────────────────────────────────────────────────────────────
 
@@ -27,8 +32,8 @@ class Tenant(Base):
     id: Mapped[uuid.UUID]         = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str]             = mapped_column(String(255), nullable=False)
     slug: Mapped[str]             = mapped_column(String(100), unique=True, nullable=False, index=True)
-    domain: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # custom domain
-    logo_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    domain: Mapped[str | None] = mapped_column(String(255), nullable=True)  # custom domain
+    logo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     primary_color: Mapped[str]    = mapped_column(String(7), default="#1a56db")
     secondary_color: Mapped[str]  = mapped_column(String(7), default="#7e3af2")
 
@@ -39,23 +44,23 @@ class Tenant(Base):
     is_active: Mapped[bool]       = mapped_column(Boolean, default=True)
 
     # Contact
-    email: Mapped[Optional[str]]  = mapped_column(String(255), nullable=True)
-    phone: Mapped[Optional[str]]  = mapped_column(String(50), nullable=True)
-    address: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    email: Mapped[str | None]  = mapped_column(String(255), nullable=True)
+    phone: Mapped[str | None]  = mapped_column(String(50), nullable=True)
+    address: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Stripe
-    stripe_customer_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Settings (JSON blob for flexibility)
-    settings: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True, default=dict)
+    settings: Mapped[dict | None] = mapped_column(JSONB, nullable=True, default=dict)
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    users: Mapped[List["User"]] = relationship("User", back_populates="tenant", lazy="select")
+    users: Mapped[list[User]] = relationship("User", back_populates="tenant", lazy="select")
 
     __table_args__ = (
         Index("ix_tenants_slug", "slug"),
@@ -71,16 +76,16 @@ class Role(Base):
     id: Mapped[uuid.UUID]          = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str]              = mapped_column(String(50), unique=True, nullable=False)
     display_name: Mapped[str]      = mapped_column(String(100), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_system: Mapped[bool]        = mapped_column(Boolean, default=True)
 
     created_at: Mapped[datetime]   = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
-    permissions: Mapped[List["Permission"]] = relationship(
+    permissions: Mapped[list[Permission]] = relationship(
         "Permission", secondary="role_permissions", lazy="selectin"
     )
-    users: Mapped[List["User"]] = relationship("User", back_populates="role_ref")
+    users: Mapped[list[User]] = relationship("User", back_populates="role_ref")
 
 
 # ── Permission ────────────────────────────────────────────────────────────────
@@ -92,7 +97,7 @@ class Permission(Base):
     name: Mapped[str]            = mapped_column(String(100), unique=True, nullable=False)
     resource: Mapped[str]        = mapped_column(String(50), nullable=False)
     action: Mapped[str]          = mapped_column(String(50), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -117,36 +122,36 @@ class User(Base):
 
     email: Mapped[str]               = mapped_column(String(255), nullable=False)
     email_verified: Mapped[bool]     = mapped_column(Boolean, default=False)
-    email_verification_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    email_verification_token: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     hashed_password: Mapped[str]     = mapped_column(String(255), nullable=False)
-    password_changed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    password_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     first_name: Mapped[str]          = mapped_column(String(100), nullable=False)
     last_name: Mapped[str]           = mapped_column(String(100), nullable=False)
-    phone: Mapped[Optional[str]]     = mapped_column(String(50), nullable=True)
-    avatar_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    title: Mapped[Optional[str]]     = mapped_column(String(100), nullable=True)  # e.g., "Senior Attorney"
-    bar_number: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    phone: Mapped[str | None]     = mapped_column(String(50), nullable=True)
+    avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    title: Mapped[str | None]     = mapped_column(String(100), nullable=True)  # e.g., "Senior Attorney"
+    bar_number: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     # MFA
     mfa_enabled: Mapped[bool]        = mapped_column(Boolean, default=False)
-    mfa_secret: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    mfa_backup_codes: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True)  # list of hashed codes
+    mfa_secret: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    mfa_backup_codes: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # list of hashed codes
 
     # Account state
     is_active: Mapped[bool]          = mapped_column(Boolean, default=True)
     is_locked: Mapped[bool]          = mapped_column(Boolean, default=False)
     failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0)
-    locked_until: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Password reset
-    reset_token: Mapped[Optional[str]]         = mapped_column(String(255), nullable=True)
-    reset_token_expires: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    reset_token: Mapped[str | None]         = mapped_column(String(255), nullable=True)
+    reset_token_expires: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Invite
-    invite_token: Mapped[Optional[str]]         = mapped_column(String(255), nullable=True)
-    invite_accepted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    invite_token: Mapped[str | None]         = mapped_column(String(255), nullable=True)
+    invite_accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Notification preferences
     notify_email: Mapped[bool]       = mapped_column(Boolean, default=True)
@@ -154,15 +159,15 @@ class User(Base):
     notify_push: Mapped[bool]        = mapped_column(Boolean, default=True)
 
     # Timestamps
-    last_login_at: Mapped[Optional[datetime]]  = mapped_column(DateTime(timezone=True), nullable=True)
-    last_login_ip: Mapped[Optional[str]]       = mapped_column(String(45), nullable=True)
+    last_login_at: Mapped[datetime | None]  = mapped_column(DateTime(timezone=True), nullable=True)
+    last_login_ip: Mapped[str | None]       = mapped_column(String(45), nullable=True)
     created_at: Mapped[datetime]               = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime]               = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    deleted_at: Mapped[Optional[datetime]]     = mapped_column(DateTime(timezone=True), nullable=True)
+    deleted_at: Mapped[datetime | None]     = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    tenant: Mapped["Tenant"]        = relationship("Tenant", back_populates="users")
-    role_ref: Mapped["Role"]        = relationship("Role", back_populates="users", lazy="selectin")
+    tenant: Mapped[Tenant]        = relationship("Tenant", back_populates="users")
+    role_ref: Mapped[Role]        = relationship("Role", back_populates="users", lazy="selectin")
 
     __table_args__ = (
         UniqueConstraint("tenant_id", "email", name="uq_users_tenant_email"),
@@ -185,5 +190,5 @@ class UserPermissionAssoc(Base):
     user_id: Mapped[uuid.UUID]       = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     permission_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True)
     granted: Mapped[bool]            = mapped_column(Boolean, default=True)  # False = explicit deny
-    granted_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    granted_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime]     = mapped_column(DateTime(timezone=True), server_default=func.now())

@@ -3,10 +3,10 @@ RBAC (Role-Based Access Control) tests.
 Verifies that role boundaries are strictly enforced.
 """
 
-import pytest
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
-from httpx import AsyncClient
+from unittest.mock import MagicMock
+
+import pytest
 
 
 def make_user(role: str, user_id=None, tenant_id=None):
@@ -129,7 +129,7 @@ class TestClient:
     def test_client_cannot_see_other_client_data(self):
         """Simulate filtering: client query must add own-client filter."""
         client_a = make_user("CLIENT")
-        client_b_id = str(uuid.uuid4())
+        str(uuid.uuid4())
 
         # Client's query should be filtered to own data only
         assert client_a.is_client()
@@ -227,7 +227,6 @@ class TestRequirePermissionsDecorator:
 
     @pytest.mark.asyncio
     async def test_requires_valid_permission(self):
-        from portal.auth.rbac import require_permissions, Permission
         # Should raise HTTPException 403 if user lacks permission
         user = make_user("VIEWER")
         # Viewer cannot create clients

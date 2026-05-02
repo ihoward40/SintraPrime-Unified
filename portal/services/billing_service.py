@@ -5,8 +5,7 @@ from __future__ import annotations
 import io
 import uuid
 from datetime import date
-from decimal import Decimal, ROUND_HALF_UP
-from typing import List, Optional, Tuple
+from decimal import ROUND_HALF_UP, Decimal
 
 import structlog
 from sqlalchemy import func, select
@@ -30,9 +29,9 @@ async def generate_invoice_number(db: AsyncSession, tenant_id: uuid.UUID | str) 
 
 def calculate_invoice_totals(
     line_items: list,
-    tax_rate: Optional[float] = None,
-    discount_amount: Optional[float] = None,
-) -> Tuple[float, float, float]:
+    tax_rate: float | None = None,
+    discount_amount: float | None = None,
+) -> tuple[float, float, float]:
     """
     Calculate subtotal, tax, and total for an invoice.
 
@@ -69,9 +68,7 @@ async def generate_invoice_pdf(invoice: object) -> bytes:
         from reportlab.lib.pagesizes import A4
         from reportlab.lib.styles import getSampleStyleSheet
         from reportlab.lib.units import cm
-        from reportlab.platypus import (
-            SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-        )
+        from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(
@@ -141,12 +138,11 @@ def statute_of_limitations_deadline(
     incident_date: date,
     jurisdiction: str,
     case_type: str,
-) -> Optional[date]:
+) -> date | None:
     """
     Calculate statute of limitations deadline.
     Simplified lookup — in production this would use a comprehensive legal database.
     """
-    from datetime import timedelta
     from dateutil.relativedelta import relativedelta  # type: ignore
 
     # Default periods (in years) — simplified

@@ -9,13 +9,10 @@ Covers:
 """
 from __future__ import annotations
 
-import asyncio
 import uuid
-from datetime import datetime, timezone, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 
 # ─── portal.sso.session_store — InMemorySessionStore ─────────────────────────
 
@@ -257,6 +254,7 @@ class TestSSORouter:
 
     def _make_app(self):
         from fastapi import FastAPI
+
         from portal.sso.sso import router
         app = FastAPI()
         app.include_router(router)
@@ -311,7 +309,7 @@ class TestSSORouter:
     def test_get_current_user_with_session_in_state(self):
         from fastapi import Request
         from fastapi.testclient import TestClient
-        from portal.sso.sso import router, get_current_user
+
         app = self._make_app()
 
         @app.middleware("http")
@@ -333,8 +331,9 @@ class TestSSORouter:
         assert data["provider"] == "okta"
 
     def test_logout_clears_cookies(self):
+        from fastapi import FastAPI
         from fastapi.testclient import TestClient
-        from fastapi import FastAPI, Request, Response
+
         from portal.sso.middleware import SessionMiddlewareManager
         from portal.sso.sso import router
 
@@ -510,8 +509,8 @@ class TestSSOSessionManagerLifecycle:
     """Unit tests for portal.sso.session_manager.SessionManager lifecycle."""
 
     def _make_manager(self):
-        from portal.sso.session_manager import SessionManager
         from portal.sso.session_config import SessionConfig
+        from portal.sso.session_manager import SessionManager
         from portal.sso.session_store import InMemorySessionStore
         config = SessionConfig(
             jwt_secret_key="test-secret-key-at-least-32-chars-long",

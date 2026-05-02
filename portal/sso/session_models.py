@@ -1,10 +1,9 @@
 """
 Session and Token Data Models
 """
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timedelta
-from typing import Dict, Optional
 import uuid
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timedelta
 
 
 @dataclass
@@ -20,19 +19,19 @@ class SessionData:
     audience: str
     created_at: datetime
     expires_at: datetime
-    
+
     # SAML/OIDC attributes
-    name_id: Optional[str] = None
-    identity_provider: Optional[str] = None
-    auth_method: Optional[str] = None
-    attributes: Dict[str, str] = field(default_factory=dict)
-    
+    name_id: str | None = None
+    identity_provider: str | None = None
+    auth_method: str | None = None
+    attributes: dict[str, str] = field(default_factory=dict)
+
     # Session tracking
-    ip_address: Optional[str] = None
-    user_agent: Optional[str] = None
+    ip_address: str | None = None
+    user_agent: str | None = None
     is_revoked: bool = False
-    revoked_at: Optional[datetime] = None
-    
+    revoked_at: datetime | None = None
+
     @classmethod
     def create(
         cls,
@@ -46,7 +45,7 @@ class SessionData:
         """Create a new session with generated ID."""
         now = datetime.utcnow()
         expires_at = now + timedelta(seconds=ttl_seconds)
-        
+
         return cls(
             session_id=str(uuid.uuid4()),
             user_id=user_id,
@@ -57,16 +56,16 @@ class SessionData:
             expires_at=expires_at,
             **kwargs
         )
-    
+
     def is_expired(self) -> bool:
         """Check if session has expired."""
         return datetime.utcnow() >= self.expires_at
-    
+
     def is_valid(self) -> bool:
         """Check if session is valid (not expired, not revoked)."""
         return not self.is_expired() and not self.is_revoked
-    
-    def to_dict(self) -> Dict:
+
+    def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
         data = asdict(self)
         data["created_at"] = self.created_at.isoformat()
@@ -88,8 +87,8 @@ class RefreshToken:
     issued_at: datetime
     expires_at: datetime
     is_revoked: bool = False
-    revoked_at: Optional[datetime] = None
-    
+    revoked_at: datetime | None = None
+
     @classmethod
     def create(
         cls,
@@ -100,7 +99,7 @@ class RefreshToken:
         """Create a new refresh token."""
         now = datetime.utcnow()
         expires_at = now + timedelta(seconds=ttl_seconds)
-        
+
         return cls(
             token_id=str(uuid.uuid4()),
             session_id=session_id,
@@ -108,16 +107,16 @@ class RefreshToken:
             issued_at=now,
             expires_at=expires_at,
         )
-    
+
     def is_expired(self) -> bool:
         """Check if refresh token has expired."""
         return datetime.utcnow() >= self.expires_at
-    
+
     def is_valid(self) -> bool:
         """Check if refresh token is valid (not expired, not revoked)."""
         return not self.is_expired() and not self.is_revoked
-    
-    def to_dict(self) -> Dict:
+
+    def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
         data = asdict(self)
         data["issued_at"] = self.issued_at.isoformat()
@@ -136,8 +135,8 @@ class TokenPair:
     refresh_token: str
     token_type: str = "Bearer"
     expires_in: int = 3600
-    
-    def to_dict(self) -> Dict:
+
+    def to_dict(self) -> dict:
         """Convert to dictionary for API response."""
         return {
             "access_token": self.access_token,

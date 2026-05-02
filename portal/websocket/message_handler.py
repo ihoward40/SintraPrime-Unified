@@ -5,12 +5,10 @@ Handles incoming client messages and routes them appropriately.
 
 from __future__ import annotations
 
-import json
 import uuid
-from typing import Any, Dict
+from typing import Any
 
 import structlog
-from fastapi import WebSocket
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .connection_manager import ws_manager
@@ -31,7 +29,7 @@ class MessageHandler:
 
     async def handle(
         self,
-        event: Dict[str, Any],
+        event: dict[str, Any],
         user_id: str,
         tenant_id: str,
         db: AsyncSession,
@@ -56,8 +54,9 @@ class MessageHandler:
         if not thread_id:
             return
         # Broadcast typing indicator to thread participants
-        from ..models.message import MessageThread
         from sqlalchemy import select
+
+        from ..models.message import MessageThread
         result = await db.execute(select(MessageThread).where(MessageThread.id == uuid.UUID(thread_id)))
         thread = result.scalar_one_or_none()
         if not thread:
@@ -75,8 +74,9 @@ class MessageHandler:
         thread_id = event.get("thread_id")
         if not thread_id:
             return
-        from ..models.message import MessageThread
         from sqlalchemy import select
+
+        from ..models.message import MessageThread
         result = await db.execute(select(MessageThread).where(MessageThread.id == uuid.UUID(thread_id)))
         thread = result.scalar_one_or_none()
         if not thread:

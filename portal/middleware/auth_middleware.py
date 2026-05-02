@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import time
-
 import structlog
-from fastapi import Request, Response
+from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -58,5 +56,4 @@ class AuthMiddleware(BaseHTTPMiddleware):
             log.warning("auth.invalid_token", path=path, error=str(exc))
             return JSONResponse(status_code=401, content={"detail": "Invalid or expired token"})
 
-        response = await call_next(request)
-        return response
+        return await call_next(request)

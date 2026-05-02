@@ -8,12 +8,12 @@ Tests for authentication flows:
 - Session management
 """
 
-import pytest
-import pytest_asyncio
-from httpx import AsyncClient
-from unittest.mock import AsyncMock, patch, MagicMock
 import uuid
+from datetime import UTC
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+from httpx import AsyncClient
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -313,8 +313,8 @@ def mock_user():
 
 @pytest.fixture
 def mock_locked_user(mock_user):
-    from datetime import datetime, timezone, timedelta
-    mock_user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=15)
+    from datetime import datetime, timedelta
+    mock_user.locked_until = datetime.now(UTC) + timedelta(minutes=15)
     mock_user.failed_login_attempts = 5
     return mock_user
 
@@ -327,11 +327,12 @@ def valid_refresh_token():
 @pytest.fixture
 def expired_jwt():
     # A properly formed but expired JWT
+    from datetime import datetime, timedelta
+
     import jwt as pyjwt
-    from datetime import datetime, timezone, timedelta
     payload = {
         "sub": str(uuid.uuid4()),
-        "exp": datetime.now(timezone.utc) - timedelta(hours=1),
+        "exp": datetime.now(UTC) - timedelta(hours=1),
     }
     return pyjwt.encode(payload, "wrong_secret", algorithm="HS256")
 

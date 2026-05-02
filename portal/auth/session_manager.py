@@ -5,19 +5,15 @@ Tracks all active sessions per user, supports remote logout via WebSocket pubsub
 Integrates with SessionMiddlewareManager for lifecycle management.
 """
 
-import asyncio
 import hashlib
-import json
 import logging
-from datetime import datetime, timedelta, timezone
-from typing import Any, Callable, Optional
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 try:
     import redis.asyncio as aioredis  # redis>=4.2 (Python 3.11 compatible)
 except ImportError:  # pragma: no cover
     aioredis = None  # type: ignore[assignment]
-from fastapi import Depends, HTTPException, status
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -31,8 +27,8 @@ class SessionInfo(BaseModel):
     provider: str
     created_at: str
     expires_at: str
-    ip_address: Optional[str] = None
-    user_agent: Optional[str] = None
+    ip_address: str | None = None
+    user_agent: str | None = None
 
 
 class SessionStore:
@@ -41,7 +37,7 @@ class SessionStore:
     def __init__(self, redis_url: str = "redis://localhost:6379", ttl_seconds: int = 3600):
         self.redis_url = redis_url
         self.ttl = timedelta(seconds=ttl_seconds)
-        self.redis: Optional[aioredis.Redis] = None
+        self.redis: aioredis.Redis | None = None
 
     async def connect(self) -> None:
         """Initialize Redis connection."""
@@ -66,12 +62,12 @@ class SessionStore:
         user_id: str,
         email: str,
         provider: str,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
     ) -> str:
         """Create and store a new session."""
         session_id = str(uuid4())
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         expires_at = now + self.ttl
 
         session = SessionInfo(
@@ -96,7 +92,7 @@ class SessionStore:
 
         return session_id
 
-    async def get_session(self, session_id: str) -> Optional[SessionInfo]:
+    async def get_session(self, session_id: str) -> SessionInfo | None:
         """Retrieve session by ID."""
         if not self.redis:
             return None
@@ -146,8 +142,8 @@ async def create_session(
     user_id: str,
     email: str,
     provider: str = "local",
-    ip_address: Optional[str] = None,
-    user_agent: Optional[str] = None,
+    ip_address: str | None = None,
+    user_agent: str | None = None,
 ) -> str:
     """Create a new session and return the session ID."""
     session_id = str(uuid4())
@@ -210,8 +206,8 @@ class SessionManager:
         user_id: str,
         email: str,
         provider: str,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
     ) -> str:
         """Create a new session and return session ID."""
         return await self.store.create_session(

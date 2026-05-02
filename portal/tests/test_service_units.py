@@ -8,12 +8,11 @@ from __future__ import annotations
 
 import hashlib
 import uuid
-from datetime import date, datetime, timezone, timedelta
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 
 # ─── billing_service ──────────────────────────────────────────────────────────
 
@@ -75,7 +74,7 @@ class TestBillingService:
         item = MagicMock()
         item.quantity = Decimal("1")
         item.unit_price = Decimal("200.00")
-        subtotal, tax, total = calculate_invoice_totals([item], discount_amount=50.0)
+        subtotal, _tax, total = calculate_invoice_totals([item], discount_amount=50.0)
         assert subtotal == 200.0
         assert total == 150.0
 
@@ -266,6 +265,7 @@ class TestEncryptionService:
     def test_encryption_key_from_env(self):
         import base64
         import os
+
         from portal.services.encryption_service import decrypt_file, encrypt_file
         key = base64.b64encode(b"A" * 32).decode()
         with patch.dict(os.environ, {"ENCRYPTION_KEY": key}):
@@ -336,7 +336,7 @@ class TestStorageService:
         # upload_file(file_content, key, content_type) — different arg order from put_object
         await svc.upload_file(b"data", "key.pdf", "application/pdf")
         # upload_file delegates to put_object internally
-        assert svc._client.put_object.called or True  # alias exists
+        assert True  # alias exists
 
     @pytest.mark.asyncio
     async def test_generate_presigned_url_alias(self):
@@ -413,7 +413,7 @@ class TestAuditService:
         mock_db.execute = AsyncMock(return_value=mock_result)
         mock_db.add = MagicMock()
         mock_db.flush = AsyncMock()
-        entry = await audit(
+        await audit(
             db=mock_db,
             action="case.update",
             user_id=uuid.uuid4(),
@@ -485,7 +485,7 @@ class TestAuditService:
         mock_db.flush = AsyncMock(side_effect=Exception("DB error"))
         mock_db.rollback = AsyncMock()
         # Should not raise — audit failure is swallowed
-        entry = await audit(db=mock_db, action="test.action")
+        await audit(db=mock_db, action="test.action")
         mock_db.rollback.assert_called_once()
 
 
@@ -496,13 +496,13 @@ class TestShareService:
 
     def _make_share(self, **kwargs):
         share = MagicMock()
-        share.expires_at = kwargs.get("expires_at", None)
+        share.expires_at = kwargs.get("expires_at")
         share.is_revoked = kwargs.get("is_revoked", False)
-        share.max_views = kwargs.get("max_views", None)
+        share.max_views = kwargs.get("max_views")
         share.view_count = kwargs.get("view_count", 0)
-        share.max_downloads = kwargs.get("max_downloads", None)
+        share.max_downloads = kwargs.get("max_downloads")
         share.download_count = kwargs.get("download_count", 0)
-        share.password_hash = kwargs.get("password_hash", None)
+        share.password_hash = kwargs.get("password_hash")
         return share
 
     @pytest.mark.asyncio
@@ -514,8 +514,9 @@ class TestShareService:
     @pytest.mark.asyncio
     async def test_validate_share_access_expired_raises_410(self):
         from fastapi import HTTPException
+
         from portal.services.share_service import validate_share_access
-        past = datetime.now(timezone.utc) - timedelta(days=1)
+        past = datetime.now(UTC) - timedelta(days=1)
         share = self._make_share(expires_at=past)
         with pytest.raises(HTTPException) as exc_info:
             await validate_share_access(share, password=None)
@@ -524,6 +525,7 @@ class TestShareService:
     @pytest.mark.asyncio
     async def test_validate_share_access_revoked_raises_410(self):
         from fastapi import HTTPException
+
         from portal.services.share_service import validate_share_access
         share = self._make_share(is_revoked=True)
         with pytest.raises(HTTPException) as exc_info:
@@ -533,6 +535,7 @@ class TestShareService:
     @pytest.mark.asyncio
     async def test_validate_share_access_view_limit_reached_raises_410(self):
         from fastapi import HTTPException
+
         from portal.services.share_service import validate_share_access
         share = self._make_share(max_views=5, view_count=5)
         with pytest.raises(HTTPException) as exc_info:
@@ -542,6 +545,7 @@ class TestShareService:
     @pytest.mark.asyncio
     async def test_validate_share_access_download_limit_reached_raises_410(self):
         from fastapi import HTTPException
+
         from portal.services.share_service import validate_share_access
         share = self._make_share(max_downloads=3, download_count=3)
         with pytest.raises(HTTPException) as exc_info:
@@ -551,6 +555,7 @@ class TestShareService:
     @pytest.mark.asyncio
     async def test_validate_share_access_password_required_raises_401(self):
         from fastapi import HTTPException
+
         from portal.services.share_service import validate_share_access
         pw_hash = hashlib.sha256(b"secret").hexdigest()
         share = self._make_share(password_hash=pw_hash)
@@ -561,6 +566,7 @@ class TestShareService:
     @pytest.mark.asyncio
     async def test_validate_share_access_wrong_password_raises_401(self):
         from fastapi import HTTPException
+
         from portal.services.share_service import validate_share_access
         pw_hash = hashlib.sha256(b"correct_password").hexdigest()
         share = self._make_share(password_hash=pw_hash)
@@ -578,7 +584,7 @@ class TestShareService:
     @pytest.mark.asyncio
     async def test_validate_share_access_not_expired_passes(self):
         from portal.services.share_service import validate_share_access
-        future = datetime.now(timezone.utc) + timedelta(days=7)
+        future = datetime.now(UTC) + timedelta(days=7)
         share = self._make_share(expires_at=future)
         await validate_share_access(share, password=None)
 
@@ -677,7 +683,7 @@ class TestNotificationService:
         mock_db.commit = AsyncMock()
         with patch("portal.services.notification_service.settings") as mock_settings:
             mock_settings.SMTP_HOST = ""
-            with patch("portal.routers.notifications.Notification") as mock_notif_cls:
+            with patch("portal.routers.notifications.Notification"):
                 await notify_users(
                     db=mock_db,
                     tenant_id=uuid.uuid4(),

@@ -5,13 +5,14 @@ Handles session lifecycle, background token refresh, circuit breaker for IdP err
 """
 
 import asyncio
+import contextlib
 import hashlib
 import hmac
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
-from enum import Enum
-from typing import Callable, Dict, Optional
+from datetime import UTC, datetime, timedelta
+from enum import StrEnum
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 _PUBLIC_PREFIXES = ("/public", "/health", "/auth/", "/sso/", "/docs", "/openapi")
 
 
-class CircuitState(str, Enum):
+class CircuitState(StrEnum):
     """Circuit breaker states."""
 
     CLOSED = "closed"
@@ -40,17 +41,17 @@ class SessionToken:
     provider: str
     issued_at: datetime
     expires_at: datetime
-    refresh_token: Optional[str] = None
-    refresh_expires_at: Optional[datetime] = None
+    refresh_token: str | None = None
+    refresh_expires_at: datetime | None = None
     request_id: str = field(default_factory=lambda: "")
 
     def is_expired(self) -> bool:
         """Check if token is expired."""
-        return datetime.now(timezone.utc) >= self.expires_at
+        return datetime.now(UTC) >= self.expires_at
 
     def needs_refresh(self, threshold_seconds: int = 300) -> bool:
         """Check if token needs refresh (within threshold of expiry)."""
-        remaining = (self.expires_at - datetime.now(timezone.utc)).total_seconds()
+        remaining = (self.expires_at - datetime.now(UTC)).total_seconds()
         return remaining < threshold_seconds
 
 
@@ -62,12 +63,12 @@ class SessionMiddlewareManager:
         session_secret: str,
         session_ttl_seconds: int = 3600,
         # Legacy keyword arguments accepted for compatibility with async-store callers
-        session_store: Optional[object] = None,
-        jwt_service: Optional[object] = None,
+        session_store: object | None = None,
+        jwt_service: object | None = None,
     ):
         self._secret = session_secret.encode()
         self._ttl = session_ttl_seconds
-        self.sessions: Dict[str, SessionToken] = {}
+        self.sessions: dict[str, SessionToken] = {}
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -84,11 +85,11 @@ class SessionMiddlewareManager:
 
     def create_session(
         self,
-        token: Optional[SessionToken] = None,
+        token: SessionToken | None = None,
         *,
-        user_id: Optional[str] = None,
-        email: Optional[str] = None,
-        provider: Optional[str] = None,
+        user_id: str | None = None,
+        email: str | None = None,
+        provider: str | None = None,
     ):
         """Store a session and return its session ID.
 
@@ -103,7 +104,7 @@ class SessionMiddlewareManager:
         if _kw_mode:
             if user_id is None or email is None or provider is None:
                 raise ValueError("Must supply either a SessionToken or user_id/email/provider")
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             token = SessionToken(
                 user_id=user_id,
                 email=email,
@@ -124,7 +125,7 @@ class SessionMiddlewareManager:
             }
         return sid
 
-    def validate_session(self, session_id: str) -> Optional[SessionToken]:
+    def validate_session(self, session_id: str) -> SessionToken | None:
         """Return the SessionToken if the session exists and is not expired."""
         token = self.sessions.get(session_id)
         if token is None:
@@ -158,11 +159,11 @@ class SessionMiddlewareManager:
         user_id: str,
         email: str,
         provider: str,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
     ) -> str:
         """Async shim — creates a synthetic SessionToken and stores it."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         token = SessionToken(
             user_id=user_id,
             email=email,
@@ -172,7 +173,7 @@ class SessionMiddlewareManager:
         )
         return self.create_session(token)
 
-    async def validate_session_async(self, session_id: str) -> Optional[dict]:
+    async def validate_session_async(self, session_id: str) -> dict | None:
         """Async shim — returns session as dict for compatibility."""
         token = self.validate_session(session_id)
         if token is None:
@@ -199,21 +200,21 @@ class TokenRefreshManager:
 
     def __init__(
         self,
-        refresh_callback: Optional[Callable] = None,
+        refresh_callback: Callable | None = None,
         max_failures: int = 3,
         failure_window_seconds: int = 300,
         # Legacy keyword arguments
-        jwt_service: Optional[object] = None,
+        jwt_service: object | None = None,
         refresh_threshold: int = 300,
     ):
         self.refresh_callback = refresh_callback
         self.max_failures = max_failures
         self.failure_window_seconds = failure_window_seconds
-        self.active_tasks: Dict[str, asyncio.Task] = {}
-        self.circuit_breaker_status: Dict[str, bool] = {}  # True = open (tripped)
-        self._failure_counts: Dict[str, int] = {}
+        self.active_tasks: dict[str, asyncio.Task] = {}
+        self.circuit_breaker_status: dict[str, bool] = {}  # True = open (tripped)
+        self._failure_counts: dict[str, int] = {}
         # Per-provider circuit breaker (for e2e-style callers using provider names)
-        self._provider_failures: Dict[str, int] = {}
+        self._provider_failures: dict[str, int] = {}
 
     # ------------------------------------------------------------------
     # Refresh loop management
@@ -231,10 +232,8 @@ class TokenRefreshManager:
         task = self.active_tasks.pop(session_id, None)
         if task and not task.done():
             task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError, Exception):
                 await task
-            except (asyncio.CancelledError, Exception):
-                pass
 
     async def _refresh_loop(self, session_id: str, token: SessionToken) -> None:
         """Internal loop: attempt refresh until token expires or circuit opens."""
@@ -341,7 +340,7 @@ class IdPErrorHandler:
         self.max_retries = max_retries
         self.retry_delay = retry_delay
         # provider -> {"failures": int, "opened_at": datetime | None}
-        self.provider_circuit_breaker: Dict[str, dict] = {}
+        self.provider_circuit_breaker: dict[str, dict] = {}
         self._circuit_threshold = 3
         self._circuit_reset_minutes = 5
 
@@ -382,7 +381,7 @@ class IdPErrorHandler:
         self.provider_circuit_breaker[provider]["failures"] += 1
         if self.provider_circuit_breaker[provider]["failures"] >= self._circuit_threshold:
             if self.provider_circuit_breaker[provider]["opened_at"] is None:
-                self.provider_circuit_breaker[provider]["opened_at"] = datetime.now(timezone.utc)
+                self.provider_circuit_breaker[provider]["opened_at"] = datetime.now(UTC)
 
     def record_provider_success(self, provider: str) -> None:
         """Reset failure count and close circuit on success."""
@@ -399,7 +398,7 @@ class IdPErrorHandler:
         opened_at = state.get("opened_at")
         if opened_at is None:
             return False
-        elapsed = (datetime.now(timezone.utc) - opened_at).total_seconds() / 60
+        elapsed = (datetime.now(UTC) - opened_at).total_seconds() / 60
         if elapsed >= self._circuit_reset_minutes:
             # Auto-reset after timeout
             self.record_provider_success(provider)
@@ -415,7 +414,7 @@ class IdPErrorHandler:
         error_code: str,
         provider: str,
         message: str = "",
-        context: Optional[dict] = None,
+        context: dict | None = None,
     ) -> dict:
         """Classify and log an IdP error synchronously.
 
@@ -432,7 +431,7 @@ class IdPErrorHandler:
             "error_code": error_code,
             "message": message,
             "retryable": retryable,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         if context:
             result["context"] = context
@@ -443,7 +442,7 @@ class IdPErrorHandler:
         self,
         provider: str,
         error: Exception,
-        context: Optional[dict] = None,
+        context: dict | None = None,
     ) -> dict:
         """Async variant for legacy callers that await handle_error."""
         return self.handle_error(

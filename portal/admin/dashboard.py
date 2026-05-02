@@ -1,13 +1,12 @@
 """Admin Dashboard — Real-time metrics & WebSocket updates."""
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
-from fastapi.responses import HTMLResponse
-from sqlalchemy.orm import Session
-import json
 import asyncio
-from datetime import datetime, timezone
-from portal.middleware.auth import verify_token
+from datetime import UTC, datetime
+
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse
+
 from portal.core.settings import get_settings
-from portal.db import get_db
+from portal.middleware.auth import verify_token
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 settings = get_settings()
@@ -20,7 +19,7 @@ metrics_store = {
     "error_rate": 0.0,
     "active_sessions": 0,
     "uptime_seconds": 0,
-    "last_updated": datetime.now(timezone.utc).isoformat(),
+    "last_updated": datetime.now(UTC).isoformat(),
 }
 
 @router.get("/dashboard")
@@ -94,5 +93,5 @@ async def get_metrics(token: str = Depends(verify_token)):
 async def update_metrics(data: dict, token: str = Depends(verify_token)):
     """Update metrics store."""
     metrics_store.update(data)
-    metrics_store["last_updated"] = datetime.now(timezone.utc).isoformat()
+    metrics_store["last_updated"] = datetime.now(UTC).isoformat()
     return {"status": "updated"}

@@ -13,10 +13,7 @@ import asyncio
 import base64
 import hashlib
 import io
-import os
-import uuid
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 import structlog
 
@@ -50,7 +47,7 @@ async def _run_virus_scan(document_id: str) -> None:
     log.info("virus_scan.start", document_id=document_id)
     try:
         import pyclamd  # type: ignore
-        cd = pyclamd.ClamdUnixSocket()
+        pyclamd.ClamdUnixSocket()
         # In production: scan the actual file content
         # result = cd.scan_stream(file_content)
         log.info("virus_scan.ok", document_id=document_id)
@@ -74,8 +71,6 @@ async def _run_ocr(document_id: str) -> None:
 async def _auto_categorize(document_id: str) -> None:
     """Use keyword heuristics or AI to categorize a document."""
     # Placeholder — in production, call an LLM API for classification
-    categories = ["contract", "court_filing", "correspondence", "medical_record",
-                  "financial", "identification", "evidence", "insurance", "other"]
     log.info("categorization.complete", document_id=document_id, category="contract")
 
 
@@ -133,7 +128,7 @@ def create_digital_signature(
     Create a simple digital signature record.
     (Placeholder for DocuSign-style integration)
     """
-    timestamp = datetime.now(timezone.utc).isoformat()
+    timestamp = datetime.now(UTC).isoformat()
     content_hash = hashlib.sha256(content).hexdigest()
     signature_token = base64.b64encode(
         hashlib.sha256(f"{content_hash}:{signer_id}:{timestamp}".encode()).digest()

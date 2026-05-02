@@ -7,12 +7,12 @@ Tests for billing system:
 - Financial reports
 """
 
-import pytest
 import uuid
+from datetime import date
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import date
 
+import pytest
 
 # ── Time entries ──────────────────────────────────────────────────────────────
 
@@ -85,7 +85,6 @@ class TestTimeEntries:
 class TestInvoiceGeneration:
     def test_hourly_invoice_total(self):
         """Invoice total = sum of time entries + expenses - discounts + tax."""
-        from portal.services.billing_service import calculate_invoice_total
 
         time_entries_amount = Decimal("1750.00")  # 5 hours @ $350
         expenses_amount = Decimal("125.50")        # Filing fee
@@ -143,7 +142,7 @@ class TestInvoiceGeneration:
         with patch("portal.routers.billing.create_invoice") as mock_create:
             mock_create.side_effect = [MagicMock(), Exception("Unique constraint")]
             r1 = await async_client.post("/billing/invoices", json=payload_1, headers=auth_headers_attorney)
-            r2 = await async_client.post("/billing/invoices", json=payload_2, headers=auth_headers_attorney)
+            await async_client.post("/billing/invoices", json=payload_2, headers=auth_headers_attorney)
         # At least one should succeed; second might conflict
         assert r1.status_code in (200, 201, 500)
 
@@ -321,6 +320,7 @@ def auth_headers_accountant():
 @pytest.fixture
 def async_client():
     from unittest.mock import MagicMock
+
     from httpx import AsyncClient
     client = AsyncMock(spec=AsyncClient)
     _default = MagicMock(status_code=200)

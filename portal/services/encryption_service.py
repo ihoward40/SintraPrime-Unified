@@ -9,7 +9,6 @@ from __future__ import annotations
 import base64
 import os
 import secrets
-from typing import Tuple
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
@@ -32,7 +31,7 @@ def _get_key() -> bytes:
     return hashlib.sha256(b"DEVELOPMENT_ONLY_INSECURE_KEY").digest()
 
 
-def encrypt_file(plaintext: bytes) -> Tuple[bytes, bytes]:
+def encrypt_file(plaintext: bytes) -> tuple[bytes, bytes]:
     """
     Encrypt bytes with AES-256-GCM.
 
@@ -59,7 +58,7 @@ def decrypt_file(data: bytes, nonce: bytes) -> bytes:
     return aesgcm.decrypt(nonce, ciphertext, None)
 
 
-def encrypt_text(plaintext: str) -> Tuple[str, bytes]:
+def encrypt_text(plaintext: str) -> tuple[str, bytes]:
     """
     Encrypt a UTF-8 string. Returns base64-encoded ciphertext and the nonce.
     """

@@ -4,7 +4,6 @@ Fail-closed: all required config must be present
 """
 import os
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -13,29 +12,29 @@ class SessionConfig:
     SSO Session configuration.
     All required fields must be set; missing values raise ValueError.
     """
-    
+
     # JWT signing
     jwt_secret_key: str
     jwt_algorithm: str = "HS256"
     jwt_expiration_seconds: int = 3600  # 1 hour
     jwt_refresh_expiration_seconds: int = 604800  # 7 days
-    
+
     # Session storage
-    redis_url: Optional[str] = None
+    redis_url: str | None = None
     session_store_type: str = "redis"  # "redis" or "memory"
     session_ttl_seconds: int = 3600
     refresh_token_ttl_seconds: int = 604800
-    
+
     # SAML/OIDC
     issuer: str = None
     audience: str = None
     allowed_clock_skew_seconds: int = 60
-    
+
     # Security
     require_https: bool = True
     secure_cookies: bool = True
     same_site_cookie: str = "Strict"
-    
+
     @classmethod
     def from_env(cls) -> "SessionConfig":
         """
@@ -45,15 +44,15 @@ class SessionConfig:
         jwt_secret = os.getenv("SSO_JWT_SECRET_KEY")
         if not jwt_secret:
             raise ValueError("SSO_JWT_SECRET_KEY environment variable is required")
-        
+
         issuer = os.getenv("SSO_ISSUER")
         if not issuer:
             raise ValueError("SSO_ISSUER environment variable is required")
-        
+
         audience = os.getenv("SSO_AUDIENCE")
         if not audience:
             raise ValueError("SSO_AUDIENCE environment variable is required")
-        
+
         return cls(
             jwt_secret_key=jwt_secret,
             jwt_algorithm=os.getenv("SSO_JWT_ALGORITHM", "HS256"),
@@ -70,7 +69,7 @@ class SessionConfig:
             secure_cookies=os.getenv("SSO_SECURE_COOKIES", "true").lower() == "true",
             same_site_cookie=os.getenv("SSO_SAME_SITE_COOKIE", "Strict"),
         )
-    
+
     def validate(self) -> None:
         """
         Validate configuration values.

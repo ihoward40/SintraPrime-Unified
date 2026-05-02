@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import secrets
-import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -48,7 +47,7 @@ async def create_share_link(
 
 async def validate_share_access(share: DocumentShare, password: str | None) -> None:
     """Validate that a share link is still valid and accessible."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     if share.expires_at and share.expires_at < now:
         raise HTTPException(status_code=410, detail="This share link has expired")

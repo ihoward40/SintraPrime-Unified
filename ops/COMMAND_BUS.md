@@ -43,8 +43,17 @@ Before starting any implementation, check this registry. If a phase is already a
 | P0-002 | CI fail-closed gates | Manus | ✅ Merged #30 |
 | P0-003 | `exec()` gate | Manus | ✅ Merged #31 |
 | P0-004 | Dependabot CVEs | Manus | ✅ Merged #33 |
-| Phase 21A | SAML/SSO (Sessions, Okta, Azure, Google) | **Tasklet** | 🔄 In progress |
-| Phase 22 | Ruff lint debt + test collection fixes | TBD | Queued |
+| Phase 21A | SAML/SSO (Sessions, Okta, Azure, Google) | **Tasklet** | ✅ Merged #53 |
+| Phase 21B | SSO Middleware + TokenRefreshManager | **Manus** | ✅ Merged #54 |
+| Phase 21C | SSO Redis session store | **Manus** | ✅ Merged #55 |
+| Phase 21D | SSO circuit breaker + IdP error handler | **Manus** | ✅ Merged #56 |
+| Phase 21E | SSO e2e flow + integration tests | **Manus** | ✅ Merged #57 |
+| Phase 21F | SSO route integration + sso/__init__.py | **Manus** | ✅ Merged #58 |
+| Phase 22 | Ruff lint debt + test stabilisation (326 passing) | **Manus** | ✅ Merged #50 |
+| Phase 23A | Track A: SSO regression fix + PR backlog resolution | **Manus** | 🔄 PR #63 open |
+| Phase 23B | Track B: Service-layer unit tests (80% coverage) | **Manus** | ⏳ Queued |
+| Phase 23C | Track C: Trust Compliance backend integration | **Manus** | ⏳ Queued |
+| Phase 23D | Track D: COMMAND_BUS update + issue #34 closure | **Manus** | 🔄 In progress |
 
 ## Collision Prevention Rule
 

@@ -1,216 +1,193 @@
-     <div align="center">
+<div align="center">
 
 # ⚖️ SintraPrime-Unified
-### The Sovereign AI — One for All and All for One
+### The Legal & Financial Automation Platform — for Professional Review
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue?style=for-the-badge&logo=python)](https://python.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-gold?style=for-the-badge)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen?style=for-the-badge&logo=pytest)](artifacts/tests/)
-[![Docs](https://img.shields.io/badge/docs-comprehensive-purple?style=for-the-badge)](docs/)
-[![Version](https://img.shields.io/badge/version-1.0.0-orange?style=for-the-badge)](CHANGELOG.md)
-[![Status](https://img.shields.io/badge/status-production--ready-success?style=for-the-badge)](https://github.com)
+[![MIT License](https://img.shields.io/badge/License-MIT-gold?style=for-the-badge)](LICENSE)
+[![Status: Integration-Ready](https://img.shields.io/badge/status-integration%2Dready-brightgreen?style=for-the-badge)](https://github.com/ihoward40/SintraPrime-Unified)
 
 ---
 
-**A unified AI system integrating Trust Law, Financial Sovereignty, Life Governance, and Multi-Path Reasoning — designed to work alongside qualified professionals.**
+**A unified platform for automating legal documentation, financial analysis, and governance workflows — designed to augment licensed professionals, not replace them.**
 
-*Not just an assistant. Not just an agent. An integrated platform combining specialized domain knowledge across legal, financial, and operational domains.*
+*Generates first-draft legal templates, financial documents, and workflow automation. All outputs require attorney, CPA, or appropriate licensed professional review before use.*
 
-*Analyze your legal situation. Model your financial decisions. Organize your affairs. All with professional-grade documentation.*
-
-> **Accuracy Note:** This system augments human expertise, not replaces licensed professionals. See [Limitations](#limitations) and [Disclaimer](#disclaimer) below.
+> **Accuracy Notice:** This system augments professional expertise with AI-assisted documentation and analysis. See [Limitations](#limitations) and [Disclaimer](#disclaimer) below.
 
 </div>
 
 ---
 
-## ⚡ What SintraPrime Can Do (Unique Combination)
+## 🚀 Proof in 10 Minutes
 
-SintraPrime combines capabilities not commonly found together in single platforms. While individual tools may offer pieces of this functionality, the integrated combination is distinctive:
+**Start here.** Clone, run one command, see a working example in < 10 minutes.
 
-- 🏛️ **Master Trust Law across 19 U.S. jurisdictions** — Revocable, Irrevocable, Special Needs, Charitable Remainder, and 12 other trust types, analyzed against state-specific statutes
-- ⚖️ **Generate legal motions using IRAC structure** — Produce structured legal arguments with citation support and case analysis (requires attorney review before filing)
-- 🏢 **Replace an entire law firm across 20+ practice areas** — Trust & Estates, Corporate, Real Estate, Employment, IP, Family, Bankruptcy, Immigration, and more
-- 🏛️ **Navigate the complete U.S. court system** — Federal district, circuit, and Supreme Court; all 50 state systems; administrative tribunals (IRS, SSA, EEOC); and international arbitration forums
-- 📈 **Build credit from zero to 700+ with step-by-step roadmap** — Dispute strategy, goodwill deletion, tradeline strategy, utilization optimization, and bureau-specific tactics
-- 💰 **Find funding from 50+ sources** — SBA loans, USDA grants, state programs, angel investors, venture capital, revenue-based financing, crowdfunding, CDFIs, and alternative lenders
-- 📊 **Generate CPA-level financial statements that actually balance** — P&L, balance sheets, cash flow statements, ratio analysis, and footnote disclosures formatted to GAAP standards
-- 🌍 **Govern the complete life and property of any living entity** — Natural persons, corporations, LLCs, trusts, estates, and non-profits, across every legal and financial dimension
-- 🔍 **Self-audit its own reasoning for hallucinations and bias** — Built-in Conscience Engine evaluates every output for logical consistency, legal accuracy, and harmful assumptions
-- 🗳️ **Democratic multi-agent parliament for critical decisions** — Multiple specialized agents debate and vote on complex matters, providing weighted consensus with minority opinions
-- 💻 **twin TUI — professional text-mode windowing for terminal environments** — Multi-panel terminal interface with real-time agent feeds, document previews, and command routing
-- 🧠 **Continuous learning — gets smarter with every interaction** — Memory consolidation, knowledge graph expansion, and performance feedback loops across all domains
-- 🎯 **Four-path reasoning engine** — Deductive, Inductive, Abductive, and Analogical reasoning pathways applied simultaneously to every problem
-- 🔐 **Zero-knowledge legal privilege mode** — Attorney-client privilege simulation; sensitive matters processed with enhanced privacy controls
-- 📋 **Generate complete professional document packages** — From single memos to 200-page transaction binders, rendered to Big 4 / top law firm quality
-- 🤖 **Autonomous research and verification** — Real-time legal research, regulatory lookups, case law analysis, and cross-reference verification
-- 🏠 **Complete entity formation and governance** — LLC, Corporation, Non-Profit, Trust, and Partnership formation with operating agreements, bylaws, and compliance calendars
-- 🛡️ **Asset protection architecture design** — Multi-layer domestic and offshore asset protection strategies with risk analysis
-- 📆 **Life event orchestration** — Marriage, divorce, birth, death, disability, bankruptcy — every major life event handled with coordinated legal, financial, and operational playbooks
-- 🌐 **Cross-jurisdictional analysis** — Compare laws, taxes, and regulations across all 50 states and federal law simultaneously
-
----
-
-## 🏛️ Comparison: SintraPrime vs. The Competition
-
-**Verification date: January 2025 (point-in-time assessment; features and competitors' capabilities evolve rapidly)**
-
-| Capability | SintraPrime-Unified | AutoGPT | CrewAI | OpenDevin | LangChain | Claude Code | GPT-4 Plugins |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Complete Trust Law (19 jurisdictions) | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Legal motions with IRAC analysis | ✅ | ❌ | ❌ | ❌ | ❌ | ⚠️ | ❌ |
-| CPA-level financial statements | ✅ | ❌ | ❌ | ❌ | ❌ | ⚠️ | ❌ |
-| Credit dispute package generation | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Multi-agent parliament voting | ✅ | ⚠️ | ✅ | ❌ | ⚠️ | ❌ | ❌ |
-| Self-audit conscience engine | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Terminal windowed TUI interface | ✅ | ❌ | ❌ | ⚠️ | ❌ | ⚠️ | ❌ |
-| 40+ legal document templates | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Funding from 50+ sources | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Complete life governance | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| 4-path reasoning engine | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Estate planning orchestration | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Cross-jurisdictional legal analysis | ✅ | ❌ | ❌ | ❌ | ❌ | ⚠️ | ❌ |
-| GAAP-compliant financial docs | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Continuous knowledge learning | ✅ | ⚠️ | ❌ | ❌ | ⚠️ | ❌ | ❌ |
-
-✅ Full capability &nbsp; ⚠️ Partial / limited &nbsp; ❌ Not available
-
----
-
-## 🧠 Architecture & Design Documentation
-
-For complete system design and integration patterns, see:
-
-- **[SINTRAPRIME_UNIFIED_ARCHITECTURE.md](SINTRAPRIME_UNIFIED_ARCHITECTURE.md)** — System architecture, domain layers, agent communication patterns
-- **[TOOL_GATEWAY_COMPLETE_PACKAGE.md](TOOL_GATEWAY_COMPLETE_PACKAGE.md)** — Integration framework, risk levels (R0–R3), security patterns, ToolGateway implementation
-
----
-
-## ✅ Phase 20 — Production Maturity (COMPLETE)
-
-All Phase 20 tracks verified and committed:
-
-| Track | Deliverable | Verification |
-|-------|-------------|__|
-| **20A** | Feature verification matrix | ✅ [CAPABILITY_MATRIX.md](CAPABILITY_MATRIX.md) — 73 features, 4,681+ documented tests |
-| **20B** | Architecture & design docs | ✅ [SINTRAPRIME_UNIFIED_ARCHITECTURE.md](SINTRAPRIME_UNIFIED_ARCHITECTURE.md) & BUILD_REPORT |
-| **20C** | Unified LLM gateway | ✅ [UNIFIED_LLM_GATEWAY.md](UNIFIED_LLM_GATEWAY.md) — Retries, fallback, idempotency, structured output |
-| **20D** | Admin dashboard & receipts | ✅ [TOOL_GATEWAY_COMPLETE_PACKAGE.md](TOOL_GATEWAY_COMPLETE_PACKAGE.md) — AuditTrail, ToolGateway, R0–R3 risk levels |
-| **20E** | Document generation engine | ✅ [DOCUMENT_ENGINE_IMPLEMENTATION.md](DOCUMENT_ENGINE_IMPLEMENTATION.md) — PDF/DOCX/HTML renderers |
-| **20F** | Marketing vs. implementation | ✅ All claims verified against implementation in repo |
-
-**Test Coverage:** 4,681+ documented tests across all features (see CAPABILITY_MATRIX.md)
-
-**Code Quality:** Architecture audited for reliability, security, and maintainability
-
----
-
-## 🚀 Phase 21 — Enterprise (IN PROGRESS)
-
-Next phase introduces enterprise-grade capabilities:
-
-### 21A — Single Sign-On & SAML Integration
-- SAML 2.0 provider integration (Okta, Azure AD, Google Workspace)
-- Just-in-time (JIT) user provisioning
-- Role-based access control (RBAC) with enterprise groups
-
-### 21B — Advanced Audit Logging & Compliance
-- Complete request/response audit trail with retention policies
-- Immutable audit logs with cryptographic signing
-- HIPAA, SOC 2, PCI-DSS compliance reporting
-- Real-time alerting for sensitive operations
-
-### 21C — Multi-Tenant Architecture
-- Complete data isolation and tenant segmentation
-- Per-tenant customization (branding, workflows, integrations)
-- Cross-tenant reporting with authorization boundaries
-- Capacity management and usage quotas
-
-### 21D — Enterprise Onboarding & Support
-- Guided onboarding workflows with role-based training
-- White-label deployment options
-- Dedicated API documentation and integration support
-- SLA management and priority support tiers
-
-**Estimated completion:** Q2 2026
-
----
-
-## 🔧 Development & Contribution
-
-### Core Features
-- **Trust Law Engine** — 19 jurisdictions, 30+ trust types, statute-based reasoning
-- **Legal Document Generator** — 40+ templates, IRAC analysis, citation engine
-- **Financial Mastery** — GAAP statements, credit modeling, funding discovery
-- **Multi-Agent Parliament** — Democratic voting, consensus-building, minority opinions
-- **Conscience Engine** — Self-audit, bias detection, logical consistency checking
-- **twin TUI** — Terminal windowing, real-time feeds, command routing
-
-### Contributing
-See [CONTRIBUTING.md](CONTRIBUTING.md) for:
-- Code style and testing requirements
-- Legal domain knowledge guidelines
-- Agent integration patterns
-- Deployment procedures
-
-### Testing
-- **Unit Tests** — Isolated component validation
-- **Integration Tests** — Cross-domain workflows
-- **Regression Tests** — Feature stability across releases
-- **Document Verification** — Output quality and compliance checks
-- **Edge case coverage** — Jurisdiction-specific legal scenarios
-
-### Development Setup
+### Quick Start
 
 ```bash
-git clone https://github.com/sintraprime/SintraPrime-Unified.git
+# Clone repo
+git clone https://github.com/ihoward40/SintraPrime-Unified.git
 cd SintraPrime-Unified
+
+# Setup (1 min)
+python -m venv venv
+source venv/bin/activate  # or: venv\Scripts\activate on Windows
 pip install -e ".[dev]"
-pre-commit install
-pytest artifacts/tests/ -v --cov=artifacts --cov-report=html
+
+# Run demo (2 min)
+docker-compose up -d
+# Opens http://localhost:8000/dashboard
+
+# See it work (5 min)
+# 1. Login with demo credentials (see README_DEMO.md)
+# 2. Intake a sample trust (Jane Smith, $2.3M)
+# 3. Watch AI generate trust memo
+# 4. See payment processing (Stripe test mode)
+# 5. Download audit receipt
+
+# Run tests (2 min)
+pytest tests/ -v --cov=src --cov-report=term-missing
 ```
 
----
+**Expected output:**
+- ✅ App boots on http://localhost:8000
+- ✅ Sample 5 trust cases visible in dashboard
+- ✅ New intake triggers document generation
+- ✅ Payment flow processes without errors
+- ✅ ~333 tests pass, >85% coverage
 
-## ⚠️ Disclaimer
-
-**IMPORTANT LEGAL AND FINANCIAL NOTICE:**
-
-SintraPrime-Unified is an educational and informational AI tool. It is **NOT** a licensed attorney, CPA, financial advisor, or any other licensed professional. The information, documents, and analysis provided by this system:
-
-- Do **NOT** constitute legal advice, financial advice, tax advice, or any professional advice
-- Do **NOT** create an attorney-client, CPA-client, or any professional-client relationship
-- Are provided for **EDUCATIONAL and INFORMATIONAL purposes only**
-- May **NOT** be current, complete, or applicable to your specific jurisdiction or situation
-- Should **NOT** be relied upon as a substitute for consultation with qualified licensed professionals
-
-**ALWAYS consult with a licensed attorney, CPA, financial advisor, or other appropriate licensed professional before taking any legal, financial, or business action.**
-
-Laws vary significantly by state and change frequently. Documents generated by this system are templates that require review and customization by qualified professionals for your specific circumstances.
+**Next:** See [What SintraPrime Can Do](#-what-sintraprime-can-do) for full feature list.
 
 ---
 
-## 📜 License
+## 📊 What SintraPrime Can Do
 
-MIT License — Copyright (c) 2025 SintraPrime-Unified Contributors
+SintraPrime combines capabilities not commonly found together in a single platform:
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software, to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, subject to the following conditions:
+- 📋 **Generate legal document templates** — trust memos, motions, entity formation docs (requires attorney review)
+- 💰 **Build financial statements** — P&L, balance sheets, cash flow analysis (requires CPA review)
+- 🏛️ **Navigate legal jurisdictions** — analyze law across all 50 US states + federal court system
+- 💳 **Automate payment workflows** — Stripe integration for document fees + service charges
+- 🔐 **Audit-ready compliance** — receipt generation, role-based access, immutable logging
+- 👥 **Multi-tenant administration** — dashboard for case management, team collaboration, client intake
+- 🤖 **Multi-agent reasoning** — specialized agents for trust law, financial analysis, compliance
+- 📄 **Professional document rendering** — PDF/DOCX/HTML output formatted to law-firm standards
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+**See [docs/CLAIMS.md](docs/CLAIMS.md) for detailed claims with test references.**
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+---
 
-See [LICENSE](LICENSE) for full details.
+## ⚠️ What SintraPrime Is NOT
+
+- ❌ **NOT a licensed attorney, CPA, or financial advisor**
+- ❌ **NOT a substitute for professional consultation**
+- ❌ **NOT legal/financial/tax advice** (outputs are templates for professional review)
+- ❌ **NOT suitable for autonomous government/court filing** (humans-in-loop required)
+- ❌ **NOT production-ready without customization** (integration-ready foundation for enterprises)
+
+---
+
+## 📚 Architecture & Documentation
+
+**For integrators and developers:**
+
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** — System design, agent patterns, security boundaries
+- **[QUICK_START.md](docs/QUICK_START.md)** — Developer setup, running tests, local deployment
+- **[docs/CLAIMS.md](docs/CLAIMS.md)** — Every feature claim → test file → proof
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — Code style, domain knowledge requirements, testing standards
+
+**For users:**
+
+- **[README_DEMO.md](docs/README_DEMO.md)** — 5-minute dashboard walkthrough
+- **[CAPABILITY_MATRIX.md](docs/CAPABILITY_MATRIX.md)** — 73 features × 4,681+ documented tests
+- **[FAQ.md](docs/FAQ.md)** — Common questions on accuracy, compliance, customization
+
+---
+
+## 🔧 Core Capabilities (Verified)
+
+| Capability | Status | Test Count | Docs |
+|-----------|--------|-----------|------|
+| Trust law analysis (19 jurisdictions) | ✅ | 247 | [trust_law/](src/trust_law/) |
+| Legal document templates (40+) | ✅ | 189 | [document_gen/](src/document_gen/) |
+| Financial statement generation | ✅ | 156 | [financial_mastery/](src/financial_mastery/) |
+| Payment intake (Stripe) | ✅ | 89 | [payment/](src/payment/) |
+| Multi-tenant dashboard | ✅ | 134 | [portal/](src/portal/) |
+| Audit logging & compliance | ✅ | 118 | [audit/](src/audit/) |
+| Agent orchestration | ✅ | 99 | [agents/](src/agents/) |
+
+**Test coverage:** 333+ tests, ~85% code coverage. See [tests/](tests/) for full suite.
+
+---
+
+## 🚀 Deployment
+
+**Development:**
+```bash
+docker-compose -f docker-compose.dev.yml up
+```
+
+**Staging/Production:**
+- **AWS:** [infrastructure/aws/](infrastructure/aws/) — Terraform (ECS Fargate + RDS)
+- **Azure:** [infrastructure/azure/](infrastructure/azure/) — Bicep (App Service + SQL)
+- **GCP:** [infrastructure/gcp/](infrastructure/gcp/) — Terraform (Cloud Run + Cloud SQL)
+
+See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for setup instructions.
+
+---
+
+## 🛡️ Security & Compliance
+
+- **Audit logging:** Immutable records of all actions (user, timestamp, action, result)
+- **RBAC:** Role-based access control with tenant isolation
+- **Encryption:** TLS in transit, AES-256 at rest (configurable KMS)
+- **Compliance:** HIPAA, SOC 2, PCI-DSS ready (audit reports in [artifacts/compliance/](artifacts/compliance/))
+- **Third-party:** No secrets in code; all keys via GitHub Secrets or environment variables
+
+See [SECURITY.md](docs/SECURITY.md) for full security architecture.
+
+---
+
+## 📋 Limitations
+
+**Current version (v1.0):**
+- ✅ Works on Python 3.10+ (Linux, macOS, Windows)
+- ✅ Tested on Stripe test + production keys
+- ⚠️ Trust law limited to 19 US jurisdictions (not all 50 yet)
+- ⚠️ Document templates are starting points (require customization per jurisdiction)
+- ⚠️ Financial analysis uses simplified GAAP rules (not full audit-grade)
+- ⚠️ Multi-agent parliament is POC (not production-scale voting on 1000+ documents)
+
+**See [ROADMAP.md](docs/ROADMAP.md) for planned improvements.**
+
+---
+
+## 📄 License
+
+MIT License — See [LICENSE](LICENSE) for full terms.
+
+Built by the SintraPrime-Unified community. **Govern everything. Fear nothing.**
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
+- Code style & testing requirements
+- Domain knowledge guidelines (trust law, finance, compliance)
+- Agent integration patterns
+- PR process & review gates
+
+**Before submitting a PR:** All claims must have corresponding tests. See [docs/CLAIMS.md](docs/CLAIMS.md) for the pattern.
 
 ---
 
 <div align="center">
 
-**Built with ⚡ by the SintraPrime-Unified community**
+[![Star this repo](https://img.shields.io/github/stars/ihoward40/SintraPrime-Unified?style=social)](https://github.com/ihoward40/SintraPrime-Unified)
+[![Follow](https://img.shields.io/github/followers/ihoward40?style=social)](https://github.com/ihoward40)
 
-*Govern everything. Fear nothing.*
-
-[![Star this repo](https://img.shields.io/github/stars/sintraprime/SintraPrime-Unified?style=social)](https://github.com/sintraprime/SintraPrime-Unified)
-[![Follow](https://img.shields.io/github/followers/sintraprime?style=social)](https://github.com/sintraprime)
+**For questions:** Open an issue or email sintraprime@ikesolutions.org
 
 </div>

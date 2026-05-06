@@ -1,0 +1,40 @@
+name: Deploy to Production (Multi-Cloud)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_cloud:
+        description: 'Deploy to: aws, azure, gcp, or all'
+        required: true
+        default: 'aws'
+
+jobs:
+  deploy-aws:
+    if: ${{ github.event.inputs.target_cloud == 'aws' || github.event.inputs.target_cloud == 'all' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to AWS ECS
+        run: |
+          # TBD: AWS production deploy steps
+          echo "Deploying to AWS production..."
+  
+  deploy-azure:
+    if: ${{ github.event.inputs.target_cloud == 'azure' || github.event.inputs.target_cloud == 'all' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Azure App Service
+        run: |
+          # TBD: Azure production deploy steps
+          echo "Deploying to Azure production..."
+  
+  deploy-gcp:
+    if: ${{ github.event.inputs.target_cloud == 'gcp' || github.event.inputs.target_cloud == 'all' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to GCP Cloud Run
+        run: |
+          # TBD: GCP production deploy steps
+          echo "Deploying to GCP production..."

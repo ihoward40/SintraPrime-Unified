@@ -1,0 +1,48 @@
+name: Deploy to Staging (AWS ECS)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'packages/*)ç
+      - '.github/workflows/deploy-staging.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      - name: Build Docker image
+        run: |
+          docker build -t sintraprime-unified:staging .
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_REGISTRY }}
+          docker tag sintraprime-unified:staging ${{ secrets.AWS_ECR_REGISTRY }}/sintraprime-unified:staging
+          docker push ${{ secrets.AWS_ECR_REGISTRY }}/sintraprime-unified:staging
+      
+      - name: Update ECS service
+        run: |
+          aws ecs update-service \
+            --cluster staging-sintraprime \
+            --service sintraprime-api \
+            --force-new-deployment
+      
+      - name: Wait for deployment
+        run: |
+          aws ecs wait services-stable \
+            --cluster staging-sintraprime \
+            --services sintraprime-api
+      
+      - name: Run smoke tests
+        run: |
+          curl -f https://staging.sintraprime.dev/health || exit 1
+          echo "âœ… Staging deployment successful"

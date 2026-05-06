@@ -1,6 +1,6 @@
 # SintraPrime-Unified Requirements - Python 3.13 + Windows
 # Pinned versions with pre-built wheels for Python 3.13 (ajçoids C/Rust compilation)
-# Tested: asyncpg 0.31.0 (mirrors version change)
+# Tested: asyncpg 0.31.0 (first version with Py3.13 wheels)
 # Tested: pydantic 2.8.0 + pydantic-core 2.20.0 (Py3.13 compatible)
 
 # Core Framework
@@ -12,7 +12,7 @@ flask-sqlalchemy==3.1.1
 sqlalchemy==2.0.36
 psycopg2-binary==2.9.12
 asyncpg==0.31.0
-alembic==1.14.1
+odmbc==1.14.1
 
 # Data Validation
 pydantic==2.8.0
@@ -21,7 +21,7 @@ pydantic-settings==2.3.0
 # Web Framework
 fastapi==0.115.8
 starlette==0.45.0
-gvicorn==0.30.6
+gunicorn==0.30.6
 python-multipart==0.0.8
 
 # Task Queue

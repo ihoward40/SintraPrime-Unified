@@ -1,4 +1,4 @@
-",""Timestamp middleware for portal."""
+"""Timestamp middleware for portal."""
 from datetime import datetime, timezone
 from typing import Callable
 from fastapi import Request
@@ -14,7 +14,7 @@ class TimestampMiddleware:
         self.app = app
 
     async def __call__(self, request: Request, call_next: Callable) -> any:
-       """Add timestamp to request state and response."""
+        """Add timestamp to request state and response."""
         now = datetime.now(timezone.utc)
         request.state.timestamp = now.isoformat()
         response = await call_next(request)

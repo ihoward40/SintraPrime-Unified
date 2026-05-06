@@ -1,19 +1,21 @@
 """Timestamp middleware for portal."""
+import logging
 from datetime import datetime, timezone
 from typing import Callable
 from fastapi import Request
-from starlette import get_logger
+from starlette.middleware.base import BaseHTTPMiddleware
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
-class TimestampMiddleware:
+class TimestampMiddleware(BaseHTTPMiddleware):
     """Add timestamp headers to all responses."""
 
     def __init__(self, app: Callable):
+        super().__init__(app)
         self.app = app
 
-    async def __call__(self, request: Request, call_next: Callable) -> any:
+    async def dispatch(self, request: Request, call_next: Callable) -> any:
         """Add timestamp to request state and response."""
         now = datetime.now(timezone.utc)
         request.state.timestamp = now.isoformat()

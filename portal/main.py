@@ -16,7 +16,7 @@ from portal.middleware.cors_middleware import CORSMiddleware
 from portal.middleware.rate_limiter import RateLimiterMiddleware
 from portal.middleware.session_middleware import SessionMiddleware
 from portal.middleware.timestamp_middleware import TimestampMiddleware
-from portal.routers import admin, sso, webhooks, trust_compliance
+from portal.routers import admin, sso, trust_compliance
 from portal.security.security_layer import SecurityLayer
 from portal.sso.jwt_service import JWTTokenService
 from portal.sso.session_manager import SessionConfig, SessionManager
@@ -82,7 +82,6 @@ def create_app() -> FastAPI:
     # Register routers
     app.include_router(sso.router, prefix="/api/v1/sso", tags=["sso"])
     app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
-    app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["webhooks"])
     app.include_router(trust_compliance.router)
     
     # Health check

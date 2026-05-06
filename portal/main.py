@@ -70,7 +70,7 @@ def create_app() -> FastAPI:
     # Session Middleware (must come before routers that use request.session)
     app.add_middleware(
         SessionMiddleware,
-        secret_key=settings.SECRET_KEY
+        secret=settings.SECRET_KEY
     )
 
     # Rate Limiter Middleware

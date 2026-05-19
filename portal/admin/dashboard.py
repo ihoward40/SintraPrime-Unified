@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 
-from portal.core.settings import get_settings
+from portal.config import get_settings
 from portal.middleware.auth import verify_token
 
 router = APIRouter(prefix="/admin", tags=["admin"])

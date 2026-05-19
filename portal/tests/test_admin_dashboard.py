@@ -3,8 +3,12 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from portal.admin.dashboard import router as dashboard_router
 from portal.main import create_app
+
+try:
+    from portal.admin.dashboard import router as dashboard_router
+except ImportError:
+    dashboard_router = None
 
 
 @pytest.fixture

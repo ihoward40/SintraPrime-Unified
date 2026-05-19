@@ -17,7 +17,7 @@ from models import (
     Subscription,
     Customer,
     Payment,
-    SubscriptionStatus,
+    SubscriptionRequest,
     PaymentStatus,
     Tier
 )
@@ -94,7 +94,7 @@ class TestStripeClient:
             )
 
             assert subscription.subscription_id == "sub_123"
-            assert subscription.status == SubscriptionStatus.TRIALING
+            assert subscription.status == SubscriptionRequest.TRIALING
             mock_create.assert_called_once()
 
     @pytest.mark.asyncio
@@ -151,7 +151,7 @@ class TestStripeClient:
             client = StripeClient()
             subscription = await client.cancel_subscription(subscription_id="sub_123")
 
-            assert subscription.status == SubscriptionStatus.CANCELED
+            assert subscription.status == SubscriptionRequest.CANCELED
             mock_delete.assert_called_once()
 
 
@@ -275,14 +275,14 @@ class TestPaymentModels:
             subscription_id="sub_123",
             stripe_customer_id="cus_123",
             tier=Tier.STARTER,
-            status=SubscriptionStatus.ACTIVE,
+            status=SubscriptionRequest.ACTIVE,
             current_period_start=now,
             current_period_end=future
         )
 
         assert subscription.subscription_id == "sub_123"
         assert subscription.tier == Tier.STARTER
-        assert subscription.status == SubscriptionStatus.ACTIVE
+        assert subscription.status == SubscriptionRequest.ACTIVE
 
     def test_customer_model(self):
         """Test customer model creation"""

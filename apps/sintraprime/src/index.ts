@@ -154,7 +154,14 @@ export async function initializeSintraPrime() {
       trustEIN: process.env.TRUST_EIN || '00-0000000',
       businessName: process.env.TRUST_BUSINESS_NAME || 'DEMO LLC',
       businessEIN: process.env.TRUST_BUSINESS_EIN || '00-0000000',
-      beneficiaries: JSON.parse(process.env.TRUST_BENEFICIARIES || '[]'),
+      beneficiaries: (() => {
+        try {
+          return JSON.parse(process.env.TRUST_BENEFICIARIES || '[]');
+        } catch (e) {
+          console.warn('TRUST_BENEFICIARIES is not valid JSON — defaulting to []');
+          return [];
+        }
+      })(),
       mailingAddress: process.env.TRUST_MAILING_ADDRESS || ''
     }
   );

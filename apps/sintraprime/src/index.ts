@@ -145,23 +145,17 @@ export async function initializeSintraPrime() {
   );
 
   // 11. Initialize Howard Trust Navigator
+  // Trust configuration loaded from environment — see .env.example
   const howardTrustNavigator = new HowardTrustNavigator(
     orchestrator,
     {
-      trustName: 'ISIAH TARIK HOWARD TRUST',
-      trustee: 'Isiah Tarik Howard',
-      trustEIN: '92-6080121',
-      businessName: 'IKE SOLUTIONS LLC',
-      businessEIN: '87-1798434',
-      beneficiaries: [
-        {
-          name: 'Latanya Winbush',
-          email: 'lwinbush34@gmail.com',
-          relationship: 'Mother of beneficiaries',
-          status: 'active'
-        }
-      ],
-      mailingAddress: 'c/o 991 Frelinghuysen Avenue, Apt 1K, Newark, NJ 07114'
+      trustName: process.env.TRUST_NAME || 'DEMO TRUST',
+      trustee: process.env.TRUST_TRUSTEE || 'Demo Trustee',
+      trustEIN: process.env.TRUST_EIN || '00-0000000',
+      businessName: process.env.TRUST_BUSINESS_NAME || 'DEMO LLC',
+      businessEIN: process.env.TRUST_BUSINESS_EIN || '00-0000000',
+      beneficiaries: JSON.parse(process.env.TRUST_BENEFICIARIES || '[]'),
+      mailingAddress: process.env.TRUST_MAILING_ADDRESS || ''
     }
   );
 

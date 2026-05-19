@@ -36,6 +36,7 @@ for i, p in enumerate(sys.path):
 sys.path.insert(insert_pos, ROOT)
 
 # Directories to skip during collection (avoid namespace collisions)
+# Collection exclusions are now in pytest.ini — this list kept as fallback
 collect_ignore_glob = [
     "apps/*",
     "deployment/*",
@@ -46,6 +47,8 @@ collect_ignore_glob = [
     "docs/*",
     ".github/*",
     "node_modules/*",
+    "operator/*",
+    "phase19/revenue_smoke_test/run_smoke_test.py",
 ]
 
 # Both integrations directories that need to be in the namespace package

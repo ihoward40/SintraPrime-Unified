@@ -46,6 +46,7 @@ collect_ignore_glob = [
     "docs/*",
     ".github/*",
     "node_modules/*",
+    "phase19/revenue_smoke_test/run_smoke_test.py",
 ]
 
 # Both integrations directories that need to be in the namespace package

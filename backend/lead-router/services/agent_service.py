@@ -3,11 +3,12 @@ Agent Dispatch Service.
 Routes leads to assigned agents and creates tasks for review.
 """
 
-import os
 import logging
-from typing import Dict, Any, Optional
+import os
 from datetime import datetime
-from models.lead import Lead, AgentType
+from typing import Any, Dict, Optional
+
+from models.lead import AgentType, Lead
 from utils.matching import get_agent_display_name
 
 logger = logging.getLogger(__name__)

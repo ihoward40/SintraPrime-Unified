@@ -13,12 +13,12 @@ resolve correctly regardless of test collection order.
 Default CI collects Tier 1 lanes only (tests/, backend/, core/tests/).
 See docs/ci/dependency-matrix.md for the full lane classification.
 """
-import sys
-import os
-import sysconfig
-import types
 import contextlib
 import glob
+import os
+import sys
+import sysconfig
+import types
 
 # Ensure the repo root is on sys.path, but AFTER stdlib paths to prevent
 # the local 'operator/' directory from shadowing Python's built-in operator module.

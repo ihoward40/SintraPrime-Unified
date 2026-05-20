@@ -7,10 +7,10 @@ Exit code 0 = all checks pass.  Non-zero = at least one failure.
 
 Run:  python scripts/smoke/repo_truth_check.py
 """
+import json
 import os
 import re
 import sys
-import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent

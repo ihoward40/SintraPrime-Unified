@@ -12,6 +12,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from scheduler.task_scheduler import TaskScheduler
 from scheduler.task_types import (
     Schedule,
     ScheduledTask,
@@ -19,8 +20,6 @@ from scheduler.task_types import (
     TaskStatus,
     TaskType,
 )
-from scheduler.task_scheduler import TaskScheduler
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

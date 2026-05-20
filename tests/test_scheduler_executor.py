@@ -11,9 +11,8 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from scheduler.task_types import Schedule, ScheduledTask, TaskResult, TaskStatus, TaskType
 from scheduler.task_executor import TaskExecutor
-
+from scheduler.task_types import Schedule, ScheduledTask, TaskResult, TaskStatus, TaskType
 
 # ---------------------------------------------------------------------------
 # Helpers

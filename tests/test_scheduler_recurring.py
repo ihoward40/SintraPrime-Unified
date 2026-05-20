@@ -6,19 +6,18 @@ from __future__ import annotations
 
 import pytest
 
-from scheduler.task_types import Schedule, TaskStatus
-from scheduler.task_scheduler import TaskScheduler
 from scheduler.recurring_tasks import (
     RecurringTaskManager,
-    daily_case_law_digest,
-    weekly_deadline_check,
-    monthly_credit_report,
-    court_docket_monitor,
-    regulatory_update_check,
     client_followup_reminders,
+    court_docket_monitor,
+    daily_case_law_digest,
+    monthly_credit_report,
+    regulatory_update_check,
     system_health_check,
+    weekly_deadline_check,
 )
-
+from scheduler.task_scheduler import TaskScheduler
+from scheduler.task_types import Schedule, TaskStatus
 
 # ---------------------------------------------------------------------------
 # Fixtures

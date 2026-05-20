@@ -3,12 +3,13 @@ Airtable Integration Service.
 Writes lead records to Airtable CRM.
 """
 
-import os
 import logging
-import requests
-from typing import Optional, Dict, Any
+import os
 from datetime import datetime
-from models.lead import Lead, AgentType
+from typing import Any, Dict, Optional
+
+import requests
+from models.lead import AgentType, Lead
 
 logger = logging.getLogger(__name__)
 

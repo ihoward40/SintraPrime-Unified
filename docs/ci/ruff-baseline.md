@@ -26,7 +26,7 @@ Active directories (`portal/`, `backend/`, `tests/`, `governance/`, root files) 
 | Unique rule codes | 105 |
 | Files with violations | 741 |
 | Directories excluded | 48 |
-| Per-file-ignore entries | 21 |
+| Per-file-ignore entries | 21 (I001 removed from all 11 entries after Phase 1 cleanup) |
 | **Violations after baseline** | **0** |
 
 ### Violations by Category
@@ -35,7 +35,7 @@ Active directories (`portal/`, `backend/`, `tests/`, `governance/`, root files) 
 |----------|-------|---|----------|
 | Style/whitespace (W293, W291, W292) | 6,566 | 27% | Exclude + auto-fix later |
 | Type modernization (UP006, UP035, UP045, etc.) | 10,225 | 42% | Exclude + auto-fix later |
-| Import sorting (I001) | 628 | 3% | Exclude + auto-fix later |
+| Import sorting (I001) | 628 (excl. dirs) / 0 (active dirs — cleaned in Phase 1) | 3% | ✅ Active dirs cleaned; excluded dirs remain |
 | Unused imports/vars (F401, F841, F541) | 1,669 | 7% | Per-file-ignores |
 | Unused arguments (ARG*) | 710 | 3% | Per-file-ignores |
 | Datetime timezone (DTZ*) | 722 | 3% | Exclude + per-file-ignores |
@@ -82,15 +82,21 @@ Ruff reads `pyproject.toml` automatically. No command-line changes needed.
 
 ## Cleanup Ladder
 
-### Phase 1: Auto-fixable bulk cleanup (low risk)
+### Phase 1: Import sorting cleanup ✅ Done (PR #109)
 
-Target rules (17,000+ violations, all auto-fixable):
+- **I001 (import sorting):** 51 violations in 46 active-dir files → 0
+- `ruff check . --select I001 --fix` applied across all active directories
+- `I001` removed from all 11 per-file-ignore entries
+- New unsorted imports now fail CI immediately
+- Excluded directories still have I001 violations (cleaned on re-inclusion)
+- See `docs/ci/ruff-cleanup-phase-1-plan.md` for full investigation
+
+### Phase 1b: Remaining auto-fixable bulk cleanup (low risk)
+
+Target rules (still pending):
 ```bash
 # Whitespace — safe, no semantic change
 ruff check . --select W291,W292,W293 --fix
-
-# Import sorting — safe with isort config
-ruff check . --select I001 --fix
 
 # Type annotation modernization — safe for Python 3.11+
 ruff check . --select UP006,UP035,UP045 --fix

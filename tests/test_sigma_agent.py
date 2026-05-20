@@ -2,26 +2,26 @@
 
 import json
 import os
+import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 
-import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from agents.sigma.sigma_agent import (
-    SigmaAgent,
-    TestResult,
-    SecurityFinding,
-    GateReport,
-)
 from agents.sigma.ci_enforcer import (
-    CIEnforcer,
-    SIGMA_GATE_WORKFLOW,
     PRE_COMMIT_HOOK,
     PRE_PUSH_HOOK,
+    SIGMA_GATE_WORKFLOW,
+    CIEnforcer,
+)
+from agents.sigma.sigma_agent import (
+    GateReport,
+    SecurityFinding,
+    SigmaAgent,
+    TestResult,
 )
 
 

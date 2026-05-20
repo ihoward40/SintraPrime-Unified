@@ -9,9 +9,8 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from scheduler.task_types import Schedule, ScheduledTask, TaskStatus, TaskType
 from scheduler.task_queue import TaskQueue
-
+from scheduler.task_types import Schedule, ScheduledTask, TaskStatus, TaskType
 
 # ---------------------------------------------------------------------------
 # Helpers

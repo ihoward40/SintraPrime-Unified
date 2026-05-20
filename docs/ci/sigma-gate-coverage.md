@@ -129,7 +129,7 @@ Priority path to 80%:
 |-------|-----------|---------|--------|
 | Baseline (PR #103) | 60% | Initial policy decision | ✅ Done |
 | Stage 1 (PR #105) | 65% | PR #104 raised coverage to 85% | ✅ Done |
-| Stage 2 | 70% | Next coverage expansion PR | Planned |
+| Stage 2 (PR #107) | 70% | Coverage at 85%+, dispatcher fixes landed (PR #106) | ✅ Done |
 | Stage 3 | 75% | — | Planned |
 | Stage 4 (target) | 80% | Long-term quality target | Planned |
 

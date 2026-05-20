@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import os
 import time
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -47,7 +47,7 @@ def _make_task(fn=None, name="exec_task", max_retries=0, timeout_seconds=5):
     task = ScheduledTask(
         name=name,
         task_type=TaskType.ONE_TIME,
-        schedule=Schedule(run_at=datetime.utcnow() + timedelta(hours=1)), # noqa: DTZ003
+        schedule=Schedule(run_at=datetime.now(timezone.utc) + timedelta(hours=1)),
         fn=fn or _noop,
         max_retries=max_retries,
     )

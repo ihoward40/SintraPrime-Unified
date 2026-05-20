@@ -4,7 +4,7 @@ Tests for scheduler/task_dispatcher.py — NL parsing, dispatch, agents, status.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -140,11 +140,16 @@ class TestScheduleParsing:
         assert "1 * *" in s.cron_expr
 
     def test_monthly_at_2pm(self, dispatcher):
-        # Note: "every month at 2pm" triggers the weekday pattern because
-        # "mon" in "month" matches the "mon" abbreviation in _WEEKDAY_PATTERN.
-        # This is a known parser quirk. Use "monthly at 2pm" for actual monthly.
         s = dispatcher.parse_schedule_from_text("monthly at 2pm")
         assert s.cron_expr is not None
+        assert "14" in s.cron_expr
+
+    def test_every_month_at_2pm_regression(self, dispatcher):
+        """Regression: 'every month at 2pm' must NOT match 'mon' as Monday."""
+        s = dispatcher.parse_schedule_from_text("every month at 2pm")
+        assert s.cron_expr is not None
+        # Must be a monthly cron (day-of-month = 1), not a weekday cron
+        assert "1 * *" in s.cron_expr
         assert "14" in s.cron_expr
 
     def test_every_30_minutes(self, dispatcher):
@@ -160,9 +165,12 @@ class TestScheduleParsing:
         assert s.interval_minutes == 2880
 
     def test_every_1_minute(self, dispatcher):
-        # "every minute" (without digit) hits a parser bug (_INTERVAL_PATTERNS
-        # unit "1_minute" doesn't end with "_minutes"). Use "every 1 minute".
         s = dispatcher.parse_schedule_from_text("every 1 minute")
+        assert s.interval_minutes == 1
+
+    def test_every_minute_no_digit_regression(self, dispatcher):
+        """Regression: 'every minute' (no digit) must parse as 1-min interval, not IndexError."""
+        s = dispatcher.parse_schedule_from_text("every minute")
         assert s.interval_minutes == 1
 
     def test_every_1_hour(self, dispatcher):
@@ -172,25 +180,25 @@ class TestScheduleParsing:
     def test_in_2_hours(self, dispatcher):
         s = dispatcher.parse_schedule_from_text("run in 2 hours")
         assert s.run_at is not None
-        expected = datetime.utcnow() + timedelta(hours=2)  # noqa: DTZ003
+        expected = datetime.now(timezone.utc) + timedelta(hours=2)
         assert abs((s.run_at - expected).total_seconds()) < 5
 
     def test_in_30_minutes(self, dispatcher):
         s = dispatcher.parse_schedule_from_text("in 30 minutes")
         assert s.run_at is not None
-        expected = datetime.utcnow() + timedelta(minutes=30)  # noqa: DTZ003
+        expected = datetime.now(timezone.utc) + timedelta(minutes=30)
         assert abs((s.run_at - expected).total_seconds()) < 5
 
     def test_in_1_day(self, dispatcher):
         s = dispatcher.parse_schedule_from_text("in 1 day")
         assert s.run_at is not None
-        expected = datetime.utcnow() + timedelta(days=1)  # noqa: DTZ003
+        expected = datetime.now(timezone.utc) + timedelta(days=1)
         assert abs((s.run_at - expected).total_seconds()) < 5
 
     def test_tomorrow_at_3pm(self, dispatcher):
         s = dispatcher.parse_schedule_from_text("run tomorrow at 3pm")
         assert s.run_at is not None
-        tomorrow = datetime.utcnow() + timedelta(days=1)  # noqa: DTZ003
+        tomorrow = datetime.now(timezone.utc) + timedelta(days=1)
         assert s.run_at.date() == tomorrow.date()
         assert s.run_at.hour == 15
 
@@ -202,7 +210,7 @@ class TestScheduleParsing:
     def test_fallback_immediate(self, dispatcher):
         s = dispatcher.parse_schedule_from_text("do something unclear")
         assert s.run_at is not None
-        diff = abs((s.run_at - datetime.utcnow()).total_seconds())  # noqa: DTZ003
+        diff = abs((s.run_at - datetime.now(timezone.utc)).total_seconds())
         assert diff < 5  # runs almost immediately
 
     def test_weekday_abbrev_wed(self, dispatcher):
@@ -239,7 +247,7 @@ class TestDispatch:
         assert task.payload == {"env": "test"}
 
     def test_dispatch_with_deadline(self, dispatcher, scheduler):
-        deadline = datetime.utcnow() + timedelta(days=1)  # noqa: DTZ003
+        deadline = datetime.now(timezone.utc) + timedelta(days=1)
         tid = dispatcher.dispatch("run now", fn=_noop, deadline=deadline)
         task = scheduler.get_task(tid)
         # Deadline is passed as next_run to ScheduledTask, but _arm_threading

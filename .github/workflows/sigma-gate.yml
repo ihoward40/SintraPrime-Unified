@@ -59,7 +59,9 @@ jobs:
 
       # P0-002: || true removed. Bandit now uses .bandit-baseline.json so only
       # NEW findings (regressions) fail the build, not the 114 pre-existing ones.
+      # P0-102: if: always() ensures bandit runs even when coverage threshold fails.
       - name: Security scan (bandit — baseline mode)
+        if: always()
         run: |
           python -m bandit -r . \
             --exclude .venv,node_modules,tests \

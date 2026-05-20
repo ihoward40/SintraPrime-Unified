@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import time
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -27,35 +27,35 @@ from scheduler.task_scheduler import TaskScheduler
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture()
+@pytest.fixture
 def db_path(tmp_path):
     return str(tmp_path / "test_scheduler.db")
 
 
-@pytest.fixture()
+@pytest.fixture
 def scheduler(db_path):
     s = TaskScheduler(db_path=db_path)
     yield s
     s.stop()
 
 
-def _noop(**kwargs):
+def _noop(**_kw):
     return "done"
 
 
-def _failing(**kwargs):
+def _failing(**_kw):
     raise ValueError("intentional")
 
 
 def _make_task(name="task", fn=None, **overrides):
-    defaults = dict(
-        name=name,
-        description=f"Test task: {name}",
-        task_type=TaskType.ONE_TIME,
-        schedule=Schedule(run_at=datetime.utcnow() + timedelta(hours=1)),
-        payload={},
-        fn=fn or _noop,
-    )
+    defaults = {
+        "name": name,
+        "description": f"Test task: {name}",
+        "task_type": TaskType.ONE_TIME,
+        "schedule": Schedule(run_at=datetime.utcnow() + timedelta(hours=1)),  # noqa: DTZ003
+        "payload": {},
+        "fn": fn or _noop,
+    }
     defaults.update(overrides)
     return ScheduledTask(**defaults)
 
@@ -123,7 +123,7 @@ class TestSchedulingAPI:
         assert found.name == "find_me"
 
     def test_schedule_once(self, scheduler):
-        run_at = datetime.utcnow() + timedelta(hours=2)
+        run_at = datetime.utcnow() + timedelta(hours=2) # noqa: DTZ003
         task_id = scheduler.schedule_once("once", _noop, run_at, payload={"x": 1})
         assert isinstance(task_id, str)
         task = scheduler.get_task(task_id)
@@ -218,7 +218,7 @@ class TestQueryAPI:
         assert scheduler.get_task("nonexistent") is None
 
     def test_next_run_time(self, scheduler):
-        run_at = datetime.utcnow() + timedelta(hours=5)
+        run_at = datetime.utcnow() + timedelta(hours=5) # noqa: DTZ003
         task = _make_task(schedule=Schedule(run_at=run_at))
         task.next_run = run_at
         scheduler.schedule(task)
@@ -237,7 +237,7 @@ class TestTaskExecution:
     def test_run_task_success(self, scheduler):
         results = []
 
-        def capture(**kwargs):
+        def capture(**_kw):
             results.append("ran")
             return "output"
 
@@ -316,7 +316,7 @@ class TestTaskExecution:
         assert callback_results[0].success is False
 
     def test_on_success_exception_doesnt_crash(self, scheduler):
-        def bad_callback(result):
+        def bad_callback(_result):
             raise RuntimeError("callback boom")
 
         task = _make_task(fn=_noop)
@@ -327,7 +327,7 @@ class TestTaskExecution:
         assert task.status == TaskStatus.COMPLETED
 
     def test_on_failure_exception_doesnt_crash(self, scheduler):
-        def bad_callback(result):
+        def bad_callback(_result):
             raise RuntimeError("callback boom")
 
         task = _make_task(fn=_failing, max_retries=1)
@@ -399,7 +399,7 @@ class TestPersistence:
 
 class TestArming:
     def test_arm_threading_run_at(self, scheduler):
-        run_at = datetime.utcnow() + timedelta(hours=1)
+        run_at = datetime.utcnow() + timedelta(hours=1) # noqa: DTZ003
         task = _make_task(schedule=Schedule(run_at=run_at), fn=_noop)
         scheduler.start()
         scheduler.schedule(task)
@@ -445,7 +445,7 @@ class TestArming:
 
     def test_disarm_removes_timer(self, scheduler):
         task = _make_task(
-            schedule=Schedule(run_at=datetime.utcnow() + timedelta(hours=1)),
+            schedule=Schedule(run_at=datetime.utcnow() + timedelta(hours=1)), # noqa: DTZ003
             fn=_noop,
         )
         scheduler.start()

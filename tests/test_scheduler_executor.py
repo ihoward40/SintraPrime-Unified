@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import os
 import time
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -20,25 +20,24 @@ from scheduler.task_executor import TaskExecutor
 # ---------------------------------------------------------------------------
 
 
-def _noop(**kwargs):
+def _noop(**_kw):
     return "done"
 
 
-def _failing(**kwargs):
+def _failing(**_kw):
     raise ValueError("intentional failure")
 
 
-def _slow(**kwargs):
+def _slow(**_kw):
     time.sleep(20)
     return "slow"
 
 
-def _printer(**kwargs):
+def _printer(**_kw):
     print("captured output")
-    return None
 
 
-def _stderr_fn(**kwargs):
+def _stderr_fn(**_kw):
     import sys
     print("stderr line", file=sys.stderr)
     raise RuntimeError("oops")
@@ -48,7 +47,7 @@ def _make_task(fn=None, name="exec_task", max_retries=0, timeout_seconds=5):
     task = ScheduledTask(
         name=name,
         task_type=TaskType.ONE_TIME,
-        schedule=Schedule(run_at=datetime.utcnow() + timedelta(hours=1)),
+        schedule=Schedule(run_at=datetime.utcnow() + timedelta(hours=1)), # noqa: DTZ003
         fn=fn or _noop,
         max_retries=max_retries,
     )
@@ -56,7 +55,7 @@ def _make_task(fn=None, name="exec_task", max_retries=0, timeout_seconds=5):
     return task
 
 
-@pytest.fixture()
+@pytest.fixture
 def executor():
     return TaskExecutor(default_timeout=5)
 
@@ -130,10 +129,10 @@ class TestRetries:
         assert sleep_calls[1] == 4   # 2^2
 
     def test_success_on_second_attempt(self, executor, monkeypatch):
-        monkeypatch.setattr("time.sleep", lambda s: None)
+        monkeypatch.setattr("time.sleep", lambda _s: None)
         call_count = [0]
 
-        def flaky(**kwargs):
+        def flaky(**_kw):
             call_count[0] += 1
             if call_count[0] == 1:
                 raise ValueError("first attempt fails")

@@ -25,19 +25,19 @@ from scheduler.recurring_tasks import (
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture()
+@pytest.fixture
 def db_path(tmp_path):
     return str(tmp_path / "recurring_test.db")
 
 
-@pytest.fixture()
+@pytest.fixture
 def scheduler(db_path):
     s = TaskScheduler(db_path=db_path)
     yield s
     s.stop()
 
 
-@pytest.fixture()
+@pytest.fixture
 def mgr(scheduler):
     return RecurringTaskManager(scheduler=scheduler)
 

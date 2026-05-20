@@ -4,7 +4,7 @@ Tests for scheduler/task_dispatcher.py — NL parsing, dispatch, agents, status.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
 
@@ -18,24 +18,24 @@ from scheduler.task_scheduler import TaskScheduler
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture()
+@pytest.fixture
 def db_path(tmp_path):
     return str(tmp_path / "dispatch_test.db")
 
 
-@pytest.fixture()
+@pytest.fixture
 def scheduler(db_path):
     s = TaskScheduler(db_path=db_path)
     yield s
     s.stop()
 
 
-@pytest.fixture()
+@pytest.fixture
 def dispatcher(scheduler):
     return TaskDispatcher(scheduler=scheduler)
 
 
-def _noop(**kwargs):
+def _noop(**_kw):
     return "done"
 
 
@@ -172,25 +172,25 @@ class TestScheduleParsing:
     def test_in_2_hours(self, dispatcher):
         s = dispatcher.parse_schedule_from_text("run in 2 hours")
         assert s.run_at is not None
-        expected = datetime.utcnow() + timedelta(hours=2)
+        expected = datetime.utcnow() + timedelta(hours=2)  # noqa: DTZ003
         assert abs((s.run_at - expected).total_seconds()) < 5
 
     def test_in_30_minutes(self, dispatcher):
         s = dispatcher.parse_schedule_from_text("in 30 minutes")
         assert s.run_at is not None
-        expected = datetime.utcnow() + timedelta(minutes=30)
+        expected = datetime.utcnow() + timedelta(minutes=30)  # noqa: DTZ003
         assert abs((s.run_at - expected).total_seconds()) < 5
 
     def test_in_1_day(self, dispatcher):
         s = dispatcher.parse_schedule_from_text("in 1 day")
         assert s.run_at is not None
-        expected = datetime.utcnow() + timedelta(days=1)
+        expected = datetime.utcnow() + timedelta(days=1)  # noqa: DTZ003
         assert abs((s.run_at - expected).total_seconds()) < 5
 
     def test_tomorrow_at_3pm(self, dispatcher):
         s = dispatcher.parse_schedule_from_text("run tomorrow at 3pm")
         assert s.run_at is not None
-        tomorrow = datetime.utcnow() + timedelta(days=1)
+        tomorrow = datetime.utcnow() + timedelta(days=1)  # noqa: DTZ003
         assert s.run_at.date() == tomorrow.date()
         assert s.run_at.hour == 15
 
@@ -202,7 +202,7 @@ class TestScheduleParsing:
     def test_fallback_immediate(self, dispatcher):
         s = dispatcher.parse_schedule_from_text("do something unclear")
         assert s.run_at is not None
-        diff = abs((s.run_at - datetime.utcnow()).total_seconds())
+        diff = abs((s.run_at - datetime.utcnow()).total_seconds())  # noqa: DTZ003
         assert diff < 5  # runs almost immediately
 
     def test_weekday_abbrev_wed(self, dispatcher):
@@ -239,7 +239,7 @@ class TestDispatch:
         assert task.payload == {"env": "test"}
 
     def test_dispatch_with_deadline(self, dispatcher, scheduler):
-        deadline = datetime.utcnow() + timedelta(days=1)
+        deadline = datetime.utcnow() + timedelta(days=1)  # noqa: DTZ003
         tid = dispatcher.dispatch("run now", fn=_noop, deadline=deadline)
         task = scheduler.get_task(tid)
         # Deadline is passed as next_run to ScheduledTask, but _arm_threading
@@ -268,7 +268,7 @@ class TestAgentRegistry:
     def test_register_and_dispatch_to_agent(self, dispatcher, scheduler):
         called = []
 
-        def handler(**kwargs):
+        def handler(**_kw):
             called.append(True)
 
         dispatcher.register_agent("legal", handler)

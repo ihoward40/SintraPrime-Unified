@@ -5,7 +5,7 @@ Tests for scheduler/task_queue.py — priority queue, thread safety, async bridg
 from __future__ import annotations
 
 import threading
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -22,7 +22,7 @@ def _make_task(name="task"):
     return ScheduledTask(
         name=name,
         task_type=TaskType.ONE_TIME,
-        schedule=Schedule(run_at=datetime.utcnow() + timedelta(hours=1)),
+        schedule=Schedule(run_at=datetime.utcnow() + timedelta(hours=1)), # noqa: DTZ003
     )
 
 

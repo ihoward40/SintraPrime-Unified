@@ -7,7 +7,7 @@ services:
     container_name: sintraprime-postgres
     environment:
       POSTGRES_USER: sintraprime
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sintraprime123}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: sintraprime_unified
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
@@ -50,13 +50,13 @@ services:
       dockerfile: Dockerfile
     container_name: sintraprime-api
     environment:
-      DATABASE_URL: postgresql://sintraprime:${POSTGRES_PASSWORD:-sintraprime123}@postgres:5432/sintraprime_unified
+      DATABASE_URL: postgresql://sintraprime:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/sintraprime_unified
       REDIS_URL: redis://${REDIS_PASSWORD:+:$REDIS_PASSWORD@}redis:6379
       PYTHONUNBUFFERED: "1"
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       API_PORT: "8080"
-      SECRET_KEY: ${SECRET_KEY:-change_me_32_char_secret_key_here}
-      JWT_SECRET: ${JWT_SECRET:-change_me_jwt_secret_here}
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       ENABLE_SUPERINTELLIGENCE: ${ENABLE_SUPERINTELLIGENCE:-true}
       ENABLE_TWIN_TUI: ${ENABLE_TWIN_TUI:-true}
       ENABLE_AGENT_SWARMS: ${ENABLE_AGENT_SWARMS:-true}
@@ -115,10 +115,10 @@ services:
       NODE_ENV: production
       PORT: "3001"
       API_PORT: "3001"
-      DATABASE_URL: postgresql://sintraprime:${POSTGRES_PASSWORD:-sintraprime123}@postgres:5432/sintraprime_unified
+      DATABASE_URL: postgresql://sintraprime:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/sintraprime_unified
       REDIS_URL: redis://${REDIS_PASSWORD:+:$REDIS_PASSWORD@}redis:6379
       HIVE_MIND_API: http://api:8080
-      SECRET_KEY: ${SECRET_KEY:-change_me_32_char_secret_key_here}
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
@@ -184,8 +184,8 @@ services:
     image: minio/minio:latest
     container_name: sintraprime-minio
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-minioadmin123}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:?Set MINIO_PASSWORD in .env}
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -218,7 +218,7 @@ services:
       - ./twin_layer:/app/twin_layer:ro
     environment:
       PYTHONPATH: /app
-      TWIN_AUTH_TOKEN: ${TWIN_AUTH_TOKEN:-change-me-in-production}
+      TWIN_AUTH_TOKEN: ${TWIN_AUTH_TOKEN:?Set TWIN_AUTH_TOKEN in .env}
     healthcheck:
       test: ["CMD-SHELL", "python3 -c \"import socket; s=socket.create_connection(('localhost', 8765), 2); s.close()\""]
       interval: 15s

@@ -3,7 +3,7 @@
 # ⚖️ SintraPrime-Unified
 ### The Legal & Financial Automation Platform — for Professional Review
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue?style=for-the-badge&logo=python)](https://python.org)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue?style=for-the-badge&logo=python)](https://python.org)
 [![MIT License](https://img.shields.io/badge/License-MIT-gold?style=for-the-badge)](LICENSE)
 [![Status: Integration-Ready](https://img.shields.io/badge/status-integration%2Dready-brightgreen?style=for-the-badge)](https://github.com/ihoward40/SintraPrime-Unified)
 
@@ -37,7 +37,7 @@ pip install -e ".[dev]"
 
 # Run demo (2 min)
 docker-compose up -d
-# Opens http://localhost:8000/dashboard
+# Nginx: http://localhost  |  API: http://localhost:8080  |  Airlock: http://localhost:3001
 
 # See it work (5 min)
 # 1. Login with demo credentials (see README_DEMO.md)
@@ -51,8 +51,8 @@ pytest tests/ -v --cov=src --cov-report=term-missing
 ```
 
 **Expected output:**
-- ✅ App boots on http://localhost:8000
-- ✅ Sample 5 trust cases visible in dashboard
+- ✅ Nginx reverse proxy on http://localhost (→ API, Airlock, Grafana)
+- ✅ API health: http://localhost:8080/health
 - ✅ New intake triggers document generation
 - ✅ Payment flow processes without errors
 - ✅ ~333 tests pass, >85% coverage
@@ -152,7 +152,7 @@ See [SECURITY.md](docs/SECURITY.md) for full security architecture.
 ## 📋 Limitations
 
 **Current version (v1.0):**
-- ✅ Works on Python 3.10+ (Linux, macOS, Windows)
+- ✅ Works on Python 3.11+ (Linux, macOS, Windows)
 - ✅ Tested on Stripe test + production keys
 - ⚠️ Trust law limited to 19 US jurisdictions (not all 50 yet)
 - ⚠️ Document templates are starting points (require customization per jurisdiction)

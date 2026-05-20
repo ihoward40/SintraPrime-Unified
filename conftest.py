@@ -133,7 +133,7 @@ def _register_integrations():
     with a single-path namespace package.
     """
     current = sys.modules.get("integrations")
-    current_paths = list(getattr(current, "____path__", []))
+    current_paths = list(getattr(current, "__path__", []))
 
     # Check if both paths are already registered
     if current is not None and all(p in current_paths for p in _BOTH_PATHS):

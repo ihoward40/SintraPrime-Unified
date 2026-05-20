@@ -17,6 +17,7 @@ import sys
 import os
 import sysconfig
 import types
+import contextlib
 import glob
 
 # Ensure the repo root is on sys.path, but AFTER stdlib paths to prevent
@@ -159,17 +160,15 @@ _register_integrations()
 
 def pytest_configure(config):
     """Re-register integrations namespace package when pytest is configured.
-    
+
     Also cleans stale .coverage* files to prevent DataError when
     branch-mode and statement-mode data coexist from prior runs.
     See docs/ci/sigma-gate-coverage.md.
     """
     # Clean stale coverage data to prevent combine() DataError
     for f in glob.glob(os.path.join(ROOT, ".coverage*")):
-        try:
+        with contextlib.suppress(OSError):
             os.remove(f)
-        except OSError:
-            pass
     _register_integrations()
 
 

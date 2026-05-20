@@ -10,9 +10,9 @@
 | Metric | Value |
 |--------|-------|
 | Phase 1 Status | ✅ Complete (I001 in 46 files, 51 → 0 violations) |
-| Active dirs (portal/, tests/, etc.) | 100% clean for W293 + F401 |
+| Active dirs (portal/, tests/, etc.) | W293/F401 status must be verified before execution |
 | Excluded dirs (legacy/phase dirs) | Baseline violations: 24,378 (from main 2026-05-20) |
-| Sigma Gate threshold | 75% (held) |
+| Sigma Gate threshold | 70%; 75% ratchet is held |
 | CI ruff command | `ruff check . --output-format=github` (unchanged) |
 
 ---
@@ -23,21 +23,16 @@
 
 **Definition:** Lines with trailing whitespace (invisible, usually from editor misconfiguration).
 
-**Violation Count (active dirs):** 0  
+**Violation Count (active dirs):** TBD — must verify via `ruff check . --select W293`  
 **Violation Count (excluded dirs):** Part of 6,566 whitespace violations (W291/W292/W293)  
 **Auto-fixable:** ✅ Yes (no semantic impact)  
 **Risk:** ⭐ **LOWEST** — whitespace only, purely cosmetic  
 **Verification:** `ruff check . --select W293 (zero output after fix)`
 
-**Fix Command (excluded dirs):**
+**Fix Command (active dirs subset, if violations exist):**
 ```bash
-ruff check <excluded_dir> --select W293 --fix
+ruff check . --select W293 --fix
 ```
-
-**Example Files (from baseline report):**
-- `core/` (6,701 total violations, subset are W293)
-- `integrations/` (1,721 total violations)
-- `phase19/` (530 total violations)
 
 ---
 
@@ -45,7 +40,7 @@ ruff check <excluded_dir> --select W293 --fix
 
 **Definition:** Import statement that is never used in the module. Some imports have side effects (e.g., plugin registration, monkeypatching) and should not be removed.
 
-**Violation Count (active dirs):** 0  
+**Violation Count (active dirs):** TBD — must verify via `ruff check . --select F401`  
 **Violation Count (excluded dirs):** 1,187 (per baseline report)  
 **Auto-fixable:** ⚠️ Partial (ruff can identify, but ~15-20% require manual review for side effects)  
 **Risk:** ⭐⭐ **MEDIUM** — requires code review per file, side-effect risk  
@@ -59,13 +54,9 @@ ruff check <excluded_dir> --select W293 --fix
 5. Apply removals selectively
 6. Run full test suite
 
-**Example Files (high F401 count in excluded dirs):**
-- `core/` (subset of 6,701 violations)
-- `backend/` (572 violations)
-
 ---
 
-## Recommendation: **Phase 2 = W293 Cleanup (Active Dirs → Excluded Dirs Subset)**
+## Recommendation: **Phase 2 = W293 Cleanup (Active Dirs Only, Safe Subset)**
 
 ### Rationale
 
@@ -93,74 +84,74 @@ ruff check <excluded_dir> --select W293 --fix
 
 ## Phase 2 Execution Plan
 
-### Scope
+### Scope (PR #111)
 
-**Target:** All excluded directories with W293 violations (subset of 6,566 whitespace total)
-
-**Directories to clean (order TBD in PR #111 execution):**
-- `core/`
-- `integrations/`
-- `docket/`
-- `predictive/`
-- And 40+ others (per exclude list in pyproject.toml)
-
-### Execution Command (PR #111)
+**Option A (Recommended if active dirs have W293 violations):**  
+Clean W293 violations from active directories only (portal/, tests/, packages/) using safe auto-fix.
 
 ```bash
-# Run against each excluded directory in sequence
-ruff check core/ --select W293,W291,W292 --fix
-ruff check integrations/ --select W293,W291,W292 --fix
-# ... etc. for all excluded dirs
+# Verify active dirs first
+ruff check . --select W293 --output-format=json > /tmp/w293-check.json
 
-# Verify: zero violations remain
-ruff check . --select W293,W291,W292 --output-format=github
+# If violations exist in active dirs, fix them
+ruff check . --select W293 --fix
+
+# Verify zero violations
+ruff check . --select W293 --output-format=github
 # Expected output: (empty)
 ```
 
+**Option B (if active dirs are already clean):**  
+Skip to Phase 3 planning (F401 dedicated audit with side-effect review).
+
+**Option C (if pilot excluded-dir test desired):**  
+Requires explicit user approval. Will clean ONE excluded directory as controlled test, then measure stability before broader excluded-dir campaign.
+
 ### Verification Plan
 
-1. **Pre-fix:** Run baseline to document current state
+1. **Pre-execution:** Document current state
    ```bash
-   ruff check . --select W293,W291,W292 --output-format=json > pre-fix.json
-   jq 'length' pre-fix.json  # Document violation count
+   ruff check . --select W293 --output-format=json > pre-fix.json
    ```
 
-2. **Post-fix:** Confirm zero violations
+2. **Post-execution:** Confirm zero violations in active dirs
    ```bash
-   ruff check . --select W293,W291,W292 --output-format=json
+   ruff check . --select W293 --output-format=json
    # Expected: [] (empty array)
    ```
 
 3. **CI Pass:** Green checkmark on GitHub Actions lint job
    - No new violations introduced
-   - All test suites pass (should be instant — no logic changes)
+   - All test suites pass
 
-4. **Sigma Gate:** Remain at 75% threshold (coverage unaffected)
+4. **Sigma Gate:** Remain at 70% (Sigma Gate); 75% ratchet held (coverage unaffected)
 
 ### Rollback Plan
 
-If any test suite unexpectedly fails (unlikely, since whitespace is inert):
+If any test suite unexpectedly fails (extremely unlikely, since whitespace is inert):
 
 ```bash
 # Full rollback via git
 git revert <commit-sha>
-
-# Alternative: selective rollback per file
-git checkout HEAD -- <whitespace-fixed-file>
 ```
 
 **Risk:** < 0.1% (whitespace is guaranteed inert)
 
 ---
 
-## After Phase 2 Completes (Phase 3 Preparation)
+## Scope Boundaries (Phase 2 Enforced)
 
-Once PR #111 merges with W293 cleanup:
+✅ **Allowed:**
+- W293 cleanup in active directories only
+- Auto-fix only (no manual edits)
+- Verification via ruff re-run
 
-1. **Update baseline report** to show W293 = 0
-2. **Remove W293 from per-file-ignores** (if present in any entry)
-3. **Plan Phase 3:** F401 with dedicated side-effect audit
-4. **Consider:** W291/W292 cleanup alongside W293 (same PR is safe)
+❌ **Not Allowed:**
+- Excluded directories (no broad cleanup without separate approval)
+- Workflow changes
+- Bandit baseline changes
+- Sigma Gate threshold changes
+- Ratchet release (75% ratchet remains held)
 
 ---
 
@@ -169,7 +160,7 @@ Once PR #111 merges with W293 cleanup:
 | Rule | Phase | Status | CI Enforcement |
 |------|-------|--------|---|
 | I001 | 1 | ✅ Done | ✅ New violations fail CI |
-| W293 | 2 |�📋 Planned | ⏳ To be enforced after cleanup |
+| W293 | 2 | 📋 Planned | ⏳ To be enforced after cleanup |
 | F401 | 3 | 📋 Queued | ⏳ Manual review, then enforce |
 | Others | TBD | ⏳ Excluded | ⏳ Baseline holds them |
 
@@ -179,13 +170,16 @@ Once PR #111 merges with W293 cleanup:
 
 - **Selected target:** W293 (Trailing Whitespace)
 - **Risk level:** ⭐ Lowest
-- **Rejected alternative:** F401 (requires side-effect review, move to Phase 3)
-- **Affected files:** Subset of excluded dirs (to be enumerated in PR #111)
-- **Execution command:** `ruff check . --select W293 --fix` (per directory)
+- **Scope:** Active directories only (safe auto-fix subset)
+- **Rejected alternative:** F401 (requires side-effect review, defer to Phase 3)
+- **Affected files:** TBD in PR #111 (depends on verification result)
+- **Execution command:** `ruff check . --select W293 --fix` (active dirs)
 - **Verification:** Rerun ruff, expect zero output
 - **Rollback:** Single `git revert` if needed (extremely unlikely)
-- **Sigma 75% threshold:** Remains held (whitespace fixes don't affect coverage)
+- **Boundaries:** No excluded-dir cleanup, no workflow changes, no Sigma changes
+- **Sigma Gate threshold:** 70%; 75% ratchet held
+- **PR #111 locked to:** Option A (active-dir W293 auto-fix) OR Option B (skip to Phase 3 planning) OR Option C (single approved pilot excluded-dir only)
 
 ---
 
-**Next step:** PR #111 will execute Phase 2 with the exact file list and cumulative violation counts.
+**Next step:** PR #111 will execute Phase 2 per chosen option (A, B, or C) with exact scope verification.

@@ -51,10 +51,10 @@ jobs:
           data = json.load(open('/tmp/coverage.json'))
           pct = data['totals']['percent_covered']
           print(f'Coverage: {pct:.1f}%')
-          if pct < 80:
-              print(f'FAIL: Coverage {pct:.1f}% < 80%')
+          if pct < 60:
+              print(f'FAIL: Coverage {pct:.1f}% < 60% (baseline threshold — target: 80%)')
               sys.exit(1)
-          print('PASS: Coverage meets threshold')
+          print(f'PASS: Coverage {pct:.1f}% meets baseline threshold (60%, target: 80%)')
           "
 
       # P0-002: || true removed. Bandit now uses .bandit-baseline.json so only

@@ -91,6 +91,18 @@ This gives an honest 63% coverage for the tested modules.
 | scheduler/ (all) | 738 | 234 | 32% |
 | **TOTAL** | **2,068** | **1,303** | **63%** |
 
+*After PR #104 (scheduler coverage expansion):*
+
+| Module | Before | After |
+|--------|--------|-------|
+| scheduler/task_types.py | 75% | **100%** |
+| scheduler/task_executor.py | 52% | **100%** |
+| scheduler/task_queue.py | 26% | **99%** |
+| scheduler/task_dispatcher.py | 17% | **98%** |
+| scheduler/recurring_tasks.py | 31% | **98%** |
+| scheduler/task_scheduler.py | 15% | **80%** |
+| **TOTAL** | **63%** | **85%** |
+
 ### By component
 
 | Component | Stmts | Covered | Coverage | Notes |
@@ -98,7 +110,7 @@ This gives an honest 63% coverage for the tested modules.
 | agents/nova | 632 | 556 | 88% | Above 80% |
 | agents/sigma | 282 | 210 | 74% | Close to 80% |
 | agents/zero | 416 | 303 | 73% | Close to 80% |
-| scheduler | 738 | 234 | 32% | Needs test investment |
+| scheduler | 738 | ~700 | ~95% | PR #104 expansion |
 
 ## What's needed to reach 80%
 
@@ -111,8 +123,18 @@ Priority path to 80%:
 3. **agents/sigma/sigma_agent.py** (211 stmts, 69% covered) — close to 80%
 4. **agents/zero/zero_agent.py** (246 stmts, 66% covered) — close to 80%
 
-Alternative: adjust the 80% threshold in `.github/workflows/sigma-gate.yml`
-to 60% initially, with a roadmap to raise it as test coverage improves.
+## Threshold Ratchet Schedule
+
+| Stage | Threshold | Trigger | Status |
+|-------|-----------|---------|--------|
+| Baseline (PR #103) | 60% | Initial policy decision | ✅ Done |
+| Stage 1 (PR #105) | 65% | PR #104 raised coverage to 85% | ✅ Done |
+| Stage 2 | 70% | Next coverage expansion PR | Planned |
+| Stage 3 | 75% | — | Planned |
+| Stage 4 (target) | 80% | Long-term quality target | Planned |
+
+The threshold is ratcheted upward only after coverage demonstrably exceeds the next stage.
+It should never be lowered to pass — only raised after real tests bring coverage above the threshold.
 
 ## Sigma Gate Step-by-Step After Fix
 

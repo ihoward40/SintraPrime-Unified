@@ -6,7 +6,7 @@ TaskResult.to_dict, TaskPipeline operations.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -35,7 +35,7 @@ class TestSchedule:
         assert s.describe() == "every 30 minute(s)"
 
     def test_describe_run_at(self):
-        dt = datetime(2026, 6, 1, 12, 0, 0, tzinfo=timezone.utc)
+        dt = datetime(2026, 6, 1, 12, 0, 0, tzinfo=UTC)
         s = Schedule(run_at=dt)
         assert "once at" in s.describe()
         assert "2026-06-01" in s.describe()
@@ -75,7 +75,7 @@ class TestScheduledTaskSerialization:
         assert d["schedule"]["interval_minutes"] is None
 
     def test_to_dict_with_schedule_run_at(self):
-        run_at = datetime(2026, 7, 1, 10, 0, 0, tzinfo=timezone.utc)
+        run_at = datetime(2026, 7, 1, 10, 0, 0, tzinfo=UTC)
         task = ScheduledTask(
             name="once_task",
             schedule=Schedule(run_at=run_at),
@@ -84,7 +84,7 @@ class TestScheduledTaskSerialization:
         assert d["schedule"]["run_at"] == "2026-07-01T10:00:00+00:00"
 
     def test_to_dict_with_last_run_and_next_run(self):
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         task = ScheduledTask(name="ran", last_run=now, next_run=now + timedelta(hours=1))
         d = task.to_dict()
         assert d["last_run"] is not None
@@ -137,7 +137,7 @@ class TestScheduledTaskSerialization:
             },
         }
         task = ScheduledTask.from_dict(d)
-        assert task.schedule.run_at == datetime(2026, 7, 1, 10, 0, 0, tzinfo=timezone.utc)
+        assert task.schedule.run_at == datetime(2026, 7, 1, 10, 0, 0, tzinfo=UTC)
 
     def test_from_dict_with_last_run_and_next_run(self):
         d = {
@@ -148,8 +148,8 @@ class TestScheduledTaskSerialization:
             "next_run": "2026-06-02T12:00:00",
         }
         task = ScheduledTask.from_dict(d)
-        assert task.last_run == datetime(2026, 6, 1, 12, 0, 0, tzinfo=timezone.utc)
-        assert task.next_run == datetime(2026, 6, 2, 12, 0, 0, tzinfo=timezone.utc)
+        assert task.last_run == datetime(2026, 6, 1, 12, 0, 0, tzinfo=UTC)
+        assert task.next_run == datetime(2026, 6, 2, 12, 0, 0, tzinfo=UTC)
 
     def test_roundtrip(self):
         original = ScheduledTask(

@@ -4,7 +4,7 @@ Tests for scheduler/task_dispatcher.py — NL parsing, dispatch, agents, status.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -180,25 +180,25 @@ class TestScheduleParsing:
     def test_in_2_hours(self, dispatcher):
         s = dispatcher.parse_schedule_from_text("run in 2 hours")
         assert s.run_at is not None
-        expected = datetime.now(timezone.utc) + timedelta(hours=2)
+        expected = datetime.now(UTC) + timedelta(hours=2)
         assert abs((s.run_at - expected).total_seconds()) < 5
 
     def test_in_30_minutes(self, dispatcher):
         s = dispatcher.parse_schedule_from_text("in 30 minutes")
         assert s.run_at is not None
-        expected = datetime.now(timezone.utc) + timedelta(minutes=30)
+        expected = datetime.now(UTC) + timedelta(minutes=30)
         assert abs((s.run_at - expected).total_seconds()) < 5
 
     def test_in_1_day(self, dispatcher):
         s = dispatcher.parse_schedule_from_text("in 1 day")
         assert s.run_at is not None
-        expected = datetime.now(timezone.utc) + timedelta(days=1)
+        expected = datetime.now(UTC) + timedelta(days=1)
         assert abs((s.run_at - expected).total_seconds()) < 5
 
     def test_tomorrow_at_3pm(self, dispatcher):
         s = dispatcher.parse_schedule_from_text("run tomorrow at 3pm")
         assert s.run_at is not None
-        tomorrow = datetime.now(timezone.utc) + timedelta(days=1)
+        tomorrow = datetime.now(UTC) + timedelta(days=1)
         assert s.run_at.date() == tomorrow.date()
         assert s.run_at.hour == 15
 
@@ -210,7 +210,7 @@ class TestScheduleParsing:
     def test_fallback_immediate(self, dispatcher):
         s = dispatcher.parse_schedule_from_text("do something unclear")
         assert s.run_at is not None
-        diff = abs((s.run_at - datetime.now(timezone.utc)).total_seconds())
+        diff = abs((s.run_at - datetime.now(UTC)).total_seconds())
         assert diff < 5  # runs almost immediately
 
     def test_weekday_abbrev_wed(self, dispatcher):
@@ -247,7 +247,7 @@ class TestDispatch:
         assert task.payload == {"env": "test"}
 
     def test_dispatch_with_deadline(self, dispatcher, scheduler):
-        deadline = datetime.now(timezone.utc) + timedelta(days=1)
+        deadline = datetime.now(UTC) + timedelta(days=1)
         tid = dispatcher.dispatch("run now", fn=_noop, deadline=deadline)
         task = scheduler.get_task(tid)
         # Deadline is passed as next_run to ScheduledTask, but _arm_threading

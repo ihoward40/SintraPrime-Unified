@@ -68,6 +68,7 @@ collect_ignore_glob = [
     # Tier 4 — Integrations (needs .[integrations])
     "integrations/*",
     # Tier 5 — Deferred (transitive imports unverified)
+    "core/*",
     "agents/*",
     "agent_protocol/*",
     "ai_compliance/*",

@@ -92,13 +92,11 @@ Zero collection errors guaranteed. These run with `pip install .[test]`.
 | Lane | Test files | Third-party imports | Status |
 |------|-----------|---------------------|--------|
 | `tests/` | 3 | pytest | ✅ Sigma Gate: 146 pass |
-| `backend/stripe-payments/tests/` | 1 | pytest, stripe | ✅ stripe in core deps |
-| `backend/lead-router/tests/` | 1 | pytest | ✅ stdlib only |
 
 
 **Default CI command:**
 ```bash
-python -m pytest tests/ backend/lead-router/tests/ backend/stripe-payments/tests/ --tb=short -q --import-mode=importlib
+python -m pytest tests/ --tb=short -q --import-mode=importlib
 ```
 
 ### Tier 2 — Portal (requires `.[test,portal]`)
@@ -112,7 +110,7 @@ python -m pytest tests/ backend/lead-router/tests/ backend/stripe-payments/tests
 **Extended CI command:**
 ```bash
 pip install .[test,portal]
-python -m pytest tests/ backend/lead-router/tests/ backend/stripe-payments/tests/ portal/tests/ portal/routers/tests/ portal/sso/tests/ --tb=short -q --import-mode=importlib
+python -m pytest tests/ portal/tests/ portal/routers/tests/ portal/sso/tests/ --tb=short -q --import-mode=importlib
 ```
 
 ### Tier 3 — Predictive (requires `.[test,predictive]`)
@@ -135,6 +133,8 @@ their dependency requirements are verified.
 
 | Lane | Test files | Reason deferred |
 |------|-----------|----------------|
+| backend/lead-router/tests/ | 1 | imports models/ (not on sys.path from backend subdir) |
+| backend/stripe-payments/tests/ | 1 | chains to pydantic EmailStr → email-validator (undeclared) |
 | core/tests/ | 6 | test_slack_integration chains to discord (undeclared) |
 | agents/chat/tests/ | 1 | Transitive imports unverified |
 | agent_protocol/tests/ | 1 | Transitive imports unverified |

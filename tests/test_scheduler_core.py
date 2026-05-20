@@ -52,7 +52,7 @@ def _make_task(name="task", fn=None, **overrides):
         "name": name,
         "description": f"Test task: {name}",
         "task_type": TaskType.ONE_TIME,
-        "schedule": Schedule(run_at=datetime.utcnow() + timedelta(hours=1)),  # noqa: DTZ003
+        "schedule": Schedule(run_at=datetime.now(UTC) + timedelta(hours=1)),
         "payload": {},
         "fn": fn or _noop,
     }
@@ -123,7 +123,7 @@ class TestSchedulingAPI:
         assert found.name == "find_me"
 
     def test_schedule_once(self, scheduler):
-        run_at = datetime.utcnow() + timedelta(hours=2) # noqa: DTZ003
+        run_at = datetime.now(UTC) + timedelta(hours=2)
         task_id = scheduler.schedule_once("once", _noop, run_at, payload={"x": 1})
         assert isinstance(task_id, str)
         task = scheduler.get_task(task_id)
@@ -218,7 +218,7 @@ class TestQueryAPI:
         assert scheduler.get_task("nonexistent") is None
 
     def test_next_run_time(self, scheduler):
-        run_at = datetime.utcnow() + timedelta(hours=5) # noqa: DTZ003
+        run_at = datetime.now(UTC) + timedelta(hours=5)
         task = _make_task(schedule=Schedule(run_at=run_at))
         task.next_run = run_at
         scheduler.schedule(task)
@@ -399,7 +399,7 @@ class TestPersistence:
 
 class TestArming:
     def test_arm_threading_run_at(self, scheduler):
-        run_at = datetime.utcnow() + timedelta(hours=1) # noqa: DTZ003
+        run_at = datetime.now(UTC) + timedelta(hours=1)
         task = _make_task(schedule=Schedule(run_at=run_at), fn=_noop)
         scheduler.start()
         scheduler.schedule(task)
@@ -445,7 +445,7 @@ class TestArming:
 
     def test_disarm_removes_timer(self, scheduler):
         task = _make_task(
-            schedule=Schedule(run_at=datetime.utcnow() + timedelta(hours=1)), # noqa: DTZ003
+            schedule=Schedule(run_at=datetime.now(UTC) + timedelta(hours=1)),
             fn=_noop,
         )
         scheduler.start()

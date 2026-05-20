@@ -22,7 +22,7 @@ def _make_task(name="task"):
     return ScheduledTask(
         name=name,
         task_type=TaskType.ONE_TIME,
-        schedule=Schedule(run_at=datetime.utcnow() + timedelta(hours=1)), # noqa: DTZ003
+        schedule=Schedule(run_at=datetime.now(UTC) + timedelta(hours=1)),
     )
 
 

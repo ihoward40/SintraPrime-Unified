@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Dict, List, Optional
 
 from .task_types import Schedule, ScheduledTask, TaskStatus, TaskType
@@ -29,7 +29,7 @@ _INTERVAL_PATTERNS = [
     (re.compile(r"every\s+(\d+)\s+minute", re.I), "minutes"),
     (re.compile(r"every\s+(\d+)\s+hour", re.I), "hours"),
     (re.compile(r"every\s+(\d+)\s+day", re.I), "days"),
-    (re.compile(r"every\s+minute", re.I), "1_minute"),
+    (re.compile(r"every\s+minute", re.I), "1_minutes"),
     (re.compile(r"every\s+hour", re.I), "60_minutes"),
     (re.compile(r"every\s+day|daily", re.I), "1440_minutes"),
     (re.compile(r"every\s+week|weekly", re.I), "10080_minutes"),
@@ -38,7 +38,7 @@ _INTERVAL_PATTERNS = [
 
 _TIME_PATTERN = re.compile(r"at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?", re.I)
 _WEEKDAY_PATTERN = re.compile(
-    r"every\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)",
+    r"every\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)\b",
     re.I,
 )
 
@@ -195,7 +195,7 @@ class TaskDispatcher:
         if in_m:
             num = int(in_m.group(1))
             unit = in_m.group(2)
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             if unit == "minute":
                 run_at = now + timedelta(minutes=num)
             elif unit == "hour":
@@ -209,14 +209,14 @@ class TaskDispatcher:
             hour, minute = _parse_time(text)
             h = hour if hour is not None else 9
             mn = minute if minute is not None else 0
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             run_at = (now + timedelta(days=1)).replace(
                 hour=h, minute=mn, second=0, microsecond=0
             )
             return Schedule(run_at=run_at)
 
         # --- fallback: run immediately (1 second from now)
-        return Schedule(run_at=datetime.utcnow() + timedelta(seconds=1))
+        return Schedule(run_at=datetime.now(timezone.utc) + timedelta(seconds=1))
 
     def dispatch_to_agent(
         self, task: ScheduledTask, agent_type: str

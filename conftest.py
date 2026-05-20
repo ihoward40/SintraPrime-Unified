@@ -1,37 +1,47 @@
-"""Root conftest.py — pytest collection configuration.
+"""
+Root conftest.py for SintraPrime-Unified test suite.
 
-Default CI collects only Tier 1 lanes (tests/, backend/, core/tests/).
+Ensures correct import resolution when running pytest from the repo root.
+The repo has two 'integrations' directories:
+  - integrations/          (top-level: banking, case_law, airtable_crm)
+  - core/universe/integrations/  (Discord/Slack bridges)
+
+Both are registered as paths in the 'integrations' namespace package so that
+both "from integrations.banking" and "from integrations.discord_handlers"
+resolve correctly regardless of test collection order.
+
+Default CI collects Tier 1 lanes only (tests/, backend/, core/tests/).
 See docs/ci/dependency-matrix.md for the full lane classification.
 """
 import sys
 import os
-from pathlib import Path
+import sysconfig
+import types
+
+# Ensure the repo root is on sys.path, but AFTER stdlib paths to prevent
+# the local 'operator/' directory from shadowing Python's built-in operator module.
+ROOT = os.path.dirname(os.path.abspath(__file__))
+
+# Get stdlib paths to ensure they come first
+stdlib_path = sysconfig.get_paths()["stdlib"]
+stdlib_platstdlib = sysconfig.get_paths()["platstdlib"]
+
+# Remove ROOT from sys.path if already there, then re-insert after stdlib
+if ROOT in sys.path:
+    sys.path.remove(ROOT)
+
+# Find the best insertion point: after all stdlib paths
+insert_pos = 0
+for i, p in enumerate(sys.path):
+    if p.startswith(stdlib_path) or p.startswith(stdlib_platstdlib) or p == '':
+        insert_pos = i + 1
+
+sys.path.insert(insert_pos, ROOT)
 
 # ---------------------------------------------------------------------------
-# stdlib path ordering — ensure stdlib modules resolve before local shadows
+# Directories to skip during collection
 # ---------------------------------------------------------------------------
-stdlib_path = str(Path(sys.prefix) / "lib" / f"python{sys.version_info.major}.{sys.version_info.minor}")
-if stdlib_path in sys.path:
-    sys.path.remove(stdlib_path)
-    sys.path.insert(0, stdlib_path)
-
-# ---------------------------------------------------------------------------
-# namespace package registration — allow pytest to collect from sub-packages
-# ---------------------------------------------------------------------------
-for pkg in ("core", "portal", "backend"):
-    pkg_dir = Path(__file__).parent / pkg
-    if pkg_dir.is_dir() and str(pkg_dir) not in sys.path:
-        sys.path.insert(0, str(pkg_dir.parent))
-
-# ---------------------------------------------------------------------------
-# Collection scope — only Tier 1 lanes in default CI
-# All other lanes are excluded to prevent collection errors from
-# missing optional dependencies. Install extras to run them:
-#   pip install .[portal]      → portal tests
-#   pip install .[predictive]  → predictive tests
-#   pip install .[integrations] → integration tests
-#   pip install .[all]         → everything
-# ---------------------------------------------------------------------------
+# PR #94 baseline exclusions (namespace collisions / non-test dirs):
 collect_ignore_glob = [
     "apps/*",
     "deployment/*",
@@ -44,12 +54,31 @@ collect_ignore_glob = [
     "node_modules/*",
     "operator/*",
     "phase19/revenue_smoke_test/run_smoke_test.py",
-    # Tier 2-5: deferred lanes (require optional extras)
+    # -------------------------------------------------------------------
+    # Tier 2-5: deferred from default CI (PR #98 / Issue #97)
+    # These lanes require optional extras or have unverified transitive
+    # imports. Install .[portal], .[predictive], .[integrations], or
+    # .[all] and override testpaths to run them.
+    # See docs/ci/dependency-matrix.md for details.
+    # -------------------------------------------------------------------
+    # Tier 2 — Portal (needs .[portal])
     "portal/*",
-    "packages/*",
-    "agents/*",
+    # Tier 3 — Predictive (needs .[predictive])
+    "predictive/*",
+    # Tier 4 — Integrations (needs .[integrations])
     "integrations/*",
+    # Tier 5 — Deferred (transitive imports unverified)
+    "agents/*",
+    "agent_protocol/*",
+    "ai_compliance/*",
+    "app_builder/*",
+    "artifacts/*",
+    "channels/*",
+    "claude_code/*",
+    "cross_platform/*",
+    "developer_experience/*",
     "docket/*",
+    "emotional_intelligence/*",
     "esignature/*",
     "federal_agencies/*",
     "financial_mastery/*",
@@ -64,9 +93,14 @@ collect_ignore_glob = [
     "multimodal/*",
     "observability/*",
     "orchestration/*",
+    "packages/*",
     "parl/*",
     "performance/*",
-    "predictive/*",
+    "phase15/*",
+    "phase16/*",
+    "phase17/*",
+    "phase18/*",
+    "phase19/*",
     "rag/*",
     "saas/*",
     "scheduler/*",
@@ -78,24 +112,53 @@ collect_ignore_glob = [
     "twin_layer/*",
     "voice/*",
     "workflow_builder/*",
-    "phase15/*",
-    "phase16/*",
-    "phase17/*",
-    "phase18/*",
-    "phase19/*",
-    "agent_protocol/*",
-    "ai_compliance/*",
-    "app_builder/*",
-    "artifacts/*",
-    "channels/*",
-    "claude_code/*",
-    "cross_platform/*",
-    "developer_experience/*",
-    "emotional_intelligence/*",
 ]
+
+# Both integrations directories that need to be in the namespace package
+_TOP_INTEGRATIONS = os.path.join(ROOT, "integrations")
+_UNIVERSE_INTEGRATIONS = os.path.join(ROOT, "core", "universe", "integrations")
+_BOTH_PATHS = [_TOP_INTEGRATIONS, _UNIVERSE_INTEGRATIONS]
+
+
+def _register_integrations():
+    """
+    Register 'integrations' as a namespace package covering both:
+      - ROOT/integrations/          (banking, case_law, airtable_crm)
+      - ROOT/core/universe/integrations/  (discord_handlers, discord_embeds, etc.)
+
+    This is called at conftest load time AND before each file is collected,
+    to prevent pytest's import machinery from replacing our registration
+    with a single-path namespace package.
+    """
+    current = sys.modules.get("integrations")
+    current_paths = list(getattr(current, "____path__", []))
+
+    # Check if both paths are already registered
+    if current is not None and all(p in current_paths for p in _BOTH_PATHS):
+        return  # Already correctly registered
+
+    # Create or update the namespace package with both paths
+    if current is None:
+        pkg = types.ModuleType("integrations")
+    else:
+        pkg = current
+
+    pkg.__path__ = _BOTH_PATHS[:]
+    pkg.__package__ = "integrations"
+    pkg.__file__ = os.path.join(_TOP_INTEGRATIONS, "__init__.py")
+    pkg.__spec__ = None
+    sys.modules["integrations"] = pkg
+
+
+# Register immediately at conftest load time
+_register_integrations()
 
 
 def pytest_configure(config):
-    """Register custom markers."""
-    config.addinivalue_line("markers", "slow: marks tests as slow (deselect with -m 'not slow')")
-    config.addinivalue_line("markers", "integration: marks integration tests requiring external services")
+    """Re-register integrations namespace package when pytest is configured."""
+    _register_integrations()
+
+
+def pytest_collectstart(collector):
+    """Re-register integrations namespace package before each file is collected."""
+    _register_integrations()

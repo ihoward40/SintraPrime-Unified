@@ -5,7 +5,7 @@
 **Category:** `isort` — import block formatting and ordering
 **Total violations:** 51 across 46 files
 **Auto-fixable:** 51/51 (100%)
-**Behavior-changing:** No — import order has no semantic effect in Python
+**Behavior-changing:** No — import order is low semantic risk; CI/test verification guards against circular-import or side-effect surprises
 
 ## Why I001 First
 
@@ -13,7 +13,7 @@
 |-----------|------------|
 | Mechanical? | ✅ Yes — ruff auto-fix handles 100% |
 | Behavior-changing? | ❌ No — import order is cosmetic |
-| Risk of breakage? | Near zero — isort has no semantic effect unless circular imports exist (checked: none found) |
+| Risk of breakage? | Near zero — import order is low semantic risk; checked for circular imports (none found), CI/test verification guards against surprises |
 | Touches excluded dirs? | ❌ No — only active (non-excluded) directories |
 | Per-file-ignore cleanup? | ✅ I001 can be removed from 11 per-file-ignore entries |
 | CI enforced after? | ✅ New unsorted imports will fail CI immediately |
@@ -158,13 +158,12 @@ ruff check .
 
 # Run test suite
 pytest tests/ --tb=short
-# → All tests pass (import order has no semantic effect)
+# → All tests pass (import order is low semantic risk; CI/test verification confirms no surprises)
 ```
 
 ### Step 4: Update baseline docs
 Update `docs/ci/ruff-baseline.md`:
-- Reduce I001 count from 628 → 0 (active dirs)
-- Note: excluded dirs still have I001 violations — will be cleaned on re-inclusion
+- Reduce active-dir I001 count from 51 → 0. The historical all-directory import-sorting backlog remains tracked separately because excluded directories are not re-included in this phase.
 - Update per-file-ignores entry count
 
 ## What This Does NOT Do
@@ -202,7 +201,7 @@ Rollback is trivial because the fix is a single `ruff check --fix` command.
 | Risk | Likelihood | Mitigation |
 |------|-----------|------------|
 | Circular import exposed by reorder | Very low | Python resolves imports by module, not by line position within an import block. Ruff's isort only reorders within blocks, not across them. |
-| Test breakage | Near zero | Import order has no semantic effect. Tests will be run in CI. |
+| Test breakage | Near zero | Import order is low semantic risk; CI/test verification guards against circular-import or side-effect surprises. |
 | New violations surface | None | Only I001 is being fixed; per-file-ignores for other rules remain. |
 | Excluded dirs affected | None | Excluded dirs are not linted at all. |
 
@@ -221,5 +220,5 @@ After I001 is clean:
 
 - **Target:** I001 (import sorting) — 51 violations, 46 files
 - **Method:** `ruff check . --select I001 --fix` + per-file-ignore cleanup
-- **Risk:** Near zero — mechanical, auto-fixable, no semantic effect
+- **Risk:** Near zero — mechanical, auto-fixable, low semantic risk with CI/test verification
 - **Outcome:** Import sorting enforced across all active directories going forward

@@ -34,6 +34,7 @@ dependencies = [
     "websockets>=12.0",
     "pytz>=2023.3",
     "tzlocal>=5.2",
+    "numpy>=1.24.0",
 ]
 
 [project.optional-dependencies]

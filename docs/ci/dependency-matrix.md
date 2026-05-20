@@ -94,11 +94,11 @@ Zero collection errors guaranteed. These run with `pip install .[test]`.
 | `tests/` | 3 | pytest | ✅ Sigma Gate: 146 pass |
 | `backend/stripe-payments/tests/` | 1 | pytest, stripe | ✅ stripe in core deps |
 | `backend/lead-router/tests/` | 1 | pytest | ✅ stdlib only |
-| `core/tests/` | 6 | pytest, numpy | ✅ numpy in core deps |
+
 
 **Default CI command:**
 ```bash
-python -m pytest tests/ backend/ core/tests/ --tb=short -q
+python -m pytest tests/ backend/lead-router/tests/ backend/stripe-payments/tests/ --tb=short -q --import-mode=importlib
 ```
 
 ### Tier 2 — Portal (requires `.[test,portal]`)
@@ -112,7 +112,7 @@ python -m pytest tests/ backend/ core/tests/ --tb=short -q
 **Extended CI command:**
 ```bash
 pip install .[test,portal]
-python -m pytest tests/ backend/ core/tests/ portal/tests/ portal/routers/tests/ portal/sso/tests/ --tb=short -q
+python -m pytest tests/ backend/lead-router/tests/ backend/stripe-payments/tests/ portal/tests/ portal/routers/tests/ portal/sso/tests/ --tb=short -q --import-mode=importlib
 ```
 
 ### Tier 3 — Predictive (requires `.[test,predictive]`)
@@ -135,6 +135,7 @@ their dependency requirements are verified.
 
 | Lane | Test files | Reason deferred |
 |------|-----------|----------------|
+| core/tests/ | 6 | test_slack_integration chains to discord (undeclared) |
 | agents/chat/tests/ | 1 | Transitive imports unverified |
 | agent_protocol/tests/ | 1 | Transitive imports unverified |
 | ai_compliance/tests/ | 1 | Transitive imports unverified |

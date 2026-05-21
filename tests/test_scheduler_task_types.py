@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
+import pytest
+
 from scheduler.task_types import (
     Schedule,
     ScheduledTask,

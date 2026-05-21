@@ -33,12 +33,12 @@ ruff check portal tests --select F401 --isolated --output-format=concise
 
 ## 3) Classification of each remaining import
 
-| File:Line | Import | Classification |
+| File:Line:Col | Import | Classification |
 |---|---|---|
-| `portal/routers/__init__.py:2` | `.auth` | keep/export surface |
-| `portal/routers/__init__.py:2` | `.billing` | keep/export surface |
-| `portal/routers/__init__.py:2` | `.cases` | keep/export surface |
-| `portal/routers/__init__.py:2` | `.documents` | keep/export surface |
+| `portal/routers/__init__.py:2:15` | `.auth` | keep/export surface |
+| `portal/routers/__init__.py:2:21` | `.billing` | keep/export surface |
+| `portal/routers/__init__.py:2:30` | `.cases` | keep/export surface |
+| `portal/routers/__init__.py:2:37` | `.documents` | keep/export surface |
 | `portal/services/document_processor.py:64` | `pytesseract` | keep/availability probe |
 | `portal/tests/test_app_startup.py:25` | `portal.config.get_settings` | keep/availability probe |
 | `portal/tests/test_app_startup.py:26` | `portal.main.create_app` | keep/availability probe |
@@ -62,9 +62,9 @@ ruff check portal tests --select F401 --isolated --output-format=concise
 | `tests/test_scheduler_recurring.py:20` | `scheduler.task_types.TaskStatus` | audit fixture import |
 | `tests/test_scheduler_recurring.py:144` | `scheduler.task_scheduler.TaskScheduler` | audit fixture import |
 | `tests/test_scheduler_task_types.py:11` | `pytest` | safe cleanup candidate |
-| `tests/test_sigma_agent.py:6` | `unittest.mock.MagicMock` | audit framework import |
-| `tests/test_sigma_agent.py:6` | `unittest.mock.PropertyMock` | audit framework import |
-| `tests/test_sigma_agent.py:6` | `unittest.mock.patch` | audit framework import |
+| `tests/test_sigma_agent.py:6:27` | `unittest.mock.MagicMock` | audit framework import |
+| `tests/test_sigma_agent.py:6:38` | `unittest.mock.PropertyMock` | audit framework import |
+| `tests/test_sigma_agent.py:6:52` | `unittest.mock.patch` | audit framework import |
 | `tests/test_sigma_agent.py:19` | `agents.sigma.sigma_agent.GateReport` | audit fixture import |
 | `tests/test_zero_agent.py:9` | `unittest.mock.patch` | audit framework import |
 | `tests/test_zero_agent.py:16` | `agents.zero.health_monitor.Alert` | audit fixture import |

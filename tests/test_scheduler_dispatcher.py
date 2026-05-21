@@ -10,7 +10,7 @@ import pytest
 
 from scheduler.task_dispatcher import TaskDispatcher, _parse_time
 from scheduler.task_scheduler import TaskScheduler
-from scheduler.task_types import Schedule, ScheduledTask, TaskType
+from scheduler.task_types import ScheduledTask, TaskType
 
 # ---------------------------------------------------------------------------
 # Fixtures

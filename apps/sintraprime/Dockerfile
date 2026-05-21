@@ -33,6 +33,7 @@ COPY airlock_server/ ./airlock_server/
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S airlock -u 1001
+RUN mkdir -p /app/airlock_server/tmp/files && chown -R airlock:nodejs /app/airlock_server/tmp
 USER airlock
 
 # Health check

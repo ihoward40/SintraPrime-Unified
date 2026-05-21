@@ -15,7 +15,6 @@ from scheduler.task_scheduler import TaskScheduler
 from scheduler.task_types import (
     Schedule,
     ScheduledTask,
-    TaskResult,
     TaskStatus,
     TaskType,
 )

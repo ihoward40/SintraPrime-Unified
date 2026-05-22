@@ -123,6 +123,9 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
+      MANUS_SHARED_SECRET: ${MANUS_SHARED_SECRET:-sintra_local_manus_secret}
+      AIRLOCK_SHARED_SECRET: ${AIRLOCK_SHARED_SECRET:-sintra_local_airlock_secret}
+      MAKE_WEBHOOK_URL: ${MAKE_WEBHOOK_URL:-http://host.docker.internal:9999/mock}
     ports:
       - "3001:3001"
     depends_on:

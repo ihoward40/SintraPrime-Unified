@@ -1,0 +1,12 @@
+{
+  "case_name": "AFF",
+  "evidence_type": "email",
+  "title": "AFF / FinWise evidence title here",
+  "source": "Gmail / CFPB / state complaint / credit report / account statement",
+  "date_found": "2026-05-29",
+  "amount": "",
+  "account_identifier": "American First Finance / FinWise Bank",
+  "gmail_link": "",
+  "file_path": "",
+  "notes": "Describe the AFF/FinWise record. Include complaint number, dispute record, tradeline issue, rent-a-bank/usury issue, or billing/accounting issue if supported by evidence. External action remains locked."
+}

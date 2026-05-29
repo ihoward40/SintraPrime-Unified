@@ -1,0 +1,12 @@
+{
+  "case_name": "Self",
+  "evidence_type": "credit report",
+  "title": "Self Financial / Lead Bank evidence title here",
+  "source": "Experian / Equifax / TransUnion / Credit monitoring / Gmail",
+  "date_found": "2026-05-29",
+  "amount": "",
+  "account_identifier": "Self Financial / Lead Bank",
+  "gmail_link": "",
+  "file_path": "",
+  "notes": "Describe the tradeline, alert, derogatory reporting, dispute result, balance issue, date issue, or account-status issue. External action remains locked."
+}

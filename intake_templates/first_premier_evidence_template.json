@@ -1,0 +1,31 @@
+{
+  "case_name": "FIRST_PREMIER",
+  "evidence_type": "credit_report_tradeline",
+  "title": "First Premier Bank — Charge-off Tradeline Dispute (TransUnion · Experian · Equifax)",
+  "source": "TransUnion credit report pull — June 6, 2026 (via AnnualCreditReport.com)",
+  "date_found": "2026-06-06",
+  "amount": "777.00",
+  "account_identifier": "First Premier Bank — Credit Card",
+  "gmail_link": "",
+  "file_path": "intake_templates/dispute_packets/first_premier_dispute_packet/",
+  "notes": "CHARGE-OFF SINCE APPROX. 2022. Credit limit: $400. Reported balance: $777 (194% utilization). First Premier Bank has likely profited significantly from this account — years of interest/fee revenue collected pre-charge-off, tax deduction claimed on charged-off balance, and probable debt sale to third party at commercial profit. Despite full monetization, continues to report an inflated over-limit balance across all three bureaus causing ongoing, compounding harm. Dispute grounds: (1) balance exceeds credit limit by 94% without itemization — FCRA § 623(a)(8); (2) credit limit omitted/inaccurate distorting utilization; (3) continued reporting after profit extraction lacks legitimate purpose; (4) method of verification demanded under FCRA § 611(a)(7). Relief sought: delete tradeline OR correct balance to verified, itemized amount. Dispute letters sent to: TransUnion, Experian, Equifax (bureau disputes) + First Premier Bank direct (furnisher dispute). DRAFT ONLY — external action locked pending Isiah Howard approval.",
+  "dispute_status": "DRAFT",
+  "dispute_type": "bureau_and_furnisher",
+  "bureaus_disputed": ["TransUnion", "Experian", "Equifax"],
+  "legal_theories": [
+    "FCRA § 611 — failure to conduct reasonable reinvestigation",
+    "FCRA § 623(a)(8) — furnisher accuracy obligation, over-limit balance without itemization",
+    "FCRA § 611(a)(7) — method of verification demand",
+    "FCRA § 1681e(b) — maximum possible accuracy requirement"
+  ],
+  "leverage_notes": "Account charged off ~2022. Approx. 4 years of post-charge-off continued reporting. Furnisher has extracted full commercial value (interest/fee revenue + tax write-off + probable debt sale). Continued inaccurate reporting with zero remaining legitimate commercial purpose is strong FCRA willful-noncompliance argument under § 1681n.",
+  "documents_generated": [
+    "first_premier_transunion_bureau_dispute.pdf",
+    "first_premier_experian_bureau_dispute.pdf",
+    "first_premier_equifax_bureau_dispute.pdf",
+    "first_premier_furnisher_dispute.pdf"
+  ],
+  "next_action": "Isiah Howard to review and approve before any submission",
+  "approval_required": true,
+  "external_action_locked": true
+}

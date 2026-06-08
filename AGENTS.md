@@ -80,4 +80,10 @@ When the user requests a durable behavior change, record it here or in the relev
 
 ## Child DOX Index
 
-This project is not yet indexed. Before continuing you must scan the project, build the DOX tree and replace this message with the actual index. Go deep and scan files recursively to properly evaluate complexity and create nested DOX files where needed.
+| Path | Scope | Controls |
+|---|---|---|
+| `portal/AGENTS.md` | Client portal (FastAPI) | Auth, models, routes, services, middleware, SSO, WebSocket, DB schema, portal-level tests |
+| `portal/routers/AGENTS.md` | API route handlers | Router modules and their tests; delegates business logic to `services/` |
+| `agents/AGENTS.md` | Autonomous agent system | Nova, Sigma, Zero, Chat, Howard agents (Howard is approval-gated — evidence-intake only) |
+| `intake_templates/AGENTS.md` | Evidence intake template library | JSON template definitions and usage guide |
+| `tests/AGENTS.md` | Root-level tests | Scheduler tests, agent unit tests, security tests (not portal-level tests)

@@ -23,13 +23,13 @@ def now_iso():
 
 
 def api_get(path):
-    response = requests.get(f"{BASE_URL}{path}")
+    response = requests.get(f"{BASE_URL}{path}", timeout=10)
     response.raise_for_status()
     return response.json()
 
 
 def api_post(path, payload):
-    response = requests.post(f"{BASE_URL}{path}", json=payload)
+    response = requests.post(f"{BASE_URL}{path}", json=payload, timeout=10)
     response.raise_for_status()
     return response.json()
 

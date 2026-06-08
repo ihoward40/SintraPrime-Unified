@@ -1,8 +1,8 @@
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Dict, List, Optional, Any
-from uuid import uuid4
 import json
+from datetime import UTC, datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -16,7 +16,7 @@ STORE_PATH = DATA_DIR / "howard_recovery_case_board.json"
 
 
 def now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def default_store() -> Dict[str, Dict[str, Any]]:
@@ -85,7 +85,7 @@ class CaseCreateRequest(BaseModel):
     status: str = "evidence_intake"
     external_action: str = "locked"
     approval_required: bool = True
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class EvidenceAddRequest(BaseModel):
@@ -93,12 +93,12 @@ class EvidenceAddRequest(BaseModel):
     evidence_type: str = Field(..., description="email, screenshot, PDF, credit report, statement, contract, notice, court record, receipt")
     title: str
     source: str
-    date_found: Optional[str] = None
-    amount: Optional[str] = None
-    account_identifier: Optional[str] = None
-    gmail_link: Optional[str] = None
-    file_path: Optional[str] = None
-    notes: Optional[str] = None
+    date_found: str | None = None
+    amount: str | None = None
+    account_identifier: str | None = None
+    gmail_link: str | None = None
+    file_path: str | None = None
+    notes: str | None = None
 
 
 class EvidenceBatchRequest(BaseModel):
@@ -106,15 +106,15 @@ class EvidenceBatchRequest(BaseModel):
 
 
 class ReceiptCreateRequest(BaseModel):
-    case_id: Optional[str] = None
+    case_id: str | None = None
     agent: str = "SintraPrime"
     action_performed: str
-    evidence_used: Optional[List[str]] = []
-    output_created: Optional[str] = None
+    evidence_used: List[str] | None = []
+    output_created: str | None = None
     external_action: bool = False
     approval_required: bool = True
     status: str = "recorded"
-    next_step: Optional[str] = None
+    next_step: str | None = None
 
 
 @router.post("/api/recovery/cases/create")
@@ -264,7 +264,7 @@ async def add_evidence_batch(request: EvidenceBatchRequest):
 
 
 @router.get("/api/recovery/evidence")
-async def list_evidence(case_id: Optional[str] = None):
+async def list_evidence(case_id: str | None = None):
     evidence_items = list(EVIDENCE.values())
 
     if case_id:
@@ -308,7 +308,7 @@ async def create_receipt(request: ReceiptCreateRequest):
 
 
 @router.get("/api/recovery/receipts")
-async def list_receipts(case_id: Optional[str] = None):
+async def list_receipts(case_id: str | None = None):
     receipt_items = list(RECEIPTS.values())
 
     if case_id:
@@ -351,7 +351,7 @@ async def get_case_packet(case_id: str):
         or any(eid in [ev["evidence_id"] for ev in evidence_items] for eid in item.get("evidence_used", []))
     ]
 
-    packet = {
+    return {
         "packet_type": "HOWARD_RECOVERY_CASE_PACKET",
         "generated_at": now_iso(),
         "case": case,
@@ -376,7 +376,7 @@ async def get_case_packet(case_id: str):
         ]
     }
 
-    return packet
+
 
 
 @router.get("/api/recovery/export/json")
@@ -419,7 +419,7 @@ async def export_recovery_summary():
             or any(eid in [ev["evidence_id"] for ev in evidence_items] for eid in item.get("evidence_used", []))
         ]
 
-        evidence_types = sorted(list({item["evidence_type"] for item in evidence_items}))
+        evidence_types = sorted({item["evidence_type"] for item in evidence_items})
 
         case_summaries.append({
             "case_id": case_id,
@@ -591,7 +591,7 @@ async def export_all_cases_markdown():
     sections.append("---")
     sections.append("")
 
-    for case_id in CASES.keys():
+    for case_id in CASES:
         sections.append(render_case_packet_markdown(case_id))
         sections.append("")
         sections.append("---")
@@ -618,3 +618,4 @@ async def recovery_health():
         "receipt_count": len(RECEIPTS),
         "store_path": str(STORE_PATH)
     }
+

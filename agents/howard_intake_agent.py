@@ -303,11 +303,13 @@ def run_watch_mode():
                     next_step=f"Review watch loop error: {e}",
                     status="error"
                 )
-            except Exception:
-                pass
+            except Exception as exc:
+                print(f"Warning: failed to create receipt for intake item: {exc}")
 
             time.sleep(WATCH_INTERVAL_SECONDS)
 
 
 if __name__ == "__main__":
     run_watch_mode()
+
+

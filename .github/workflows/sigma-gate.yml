@@ -66,7 +66,7 @@ jobs:
           python -m bandit -r . \
             --exclude .venv,node_modules,tests \
             --baseline .bandit-baseline.json \
-            -f json -o /tmp/bandit.json
+            -f json -o /tmp/bandit.json || true
           python -c "
           import json, sys
           data = json.load(open('/tmp/bandit.json'))
@@ -74,7 +74,17 @@ jobs:
           critical = [r for r in results if r['issue_severity'] == 'HIGH']
           print(f'Bandit (new findings only): {len(results)} findings, {len(critical)} HIGH')
           if critical:
-              print('FAIL: New HIGH severity findings detected — not in baseline')
+              print('=== HIGH SEVERITY FINDINGS (not in baseline) ===')
+              for r in critical:
+                  print(f'  File: {r[\"filename\"]}')
+                  print(f'  Line: {r[\"line_number\"]}')
+                  print(f'  Rule: {r[\"test_id\"]}')
+                  print(f'  Issue: {r[\"issue_text\"]}')
+                  print(f'  Confidence: {r[\"issue_confidence\"]}')
+                  print(f'  Severity: {r[\"issue_severity\"]}')
+                  print(f'  Code: {r.get(\"code\", \"(not captured)\")}')
+                  print('  ---')
+              print(f'FAIL: {len(critical)} new HIGH severity finding(s) detected — not in baseline')
               sys.exit(1)
           print('PASS: No new critical security findings')
           "

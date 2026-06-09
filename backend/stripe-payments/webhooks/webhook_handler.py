@@ -3,14 +3,15 @@ Stripe Webhook Handler
 Processes Stripe webhook events and updates local system
 """
 
-import logging
 import json
-from fastapi import APIRouter, Request, HTTPException
+import logging
+
 import stripe
+from fastapi import APIRouter, HTTPException, Request
 
 from ..config import STRIPE_WEBHOOK_SECRET
-from ..stripe_client import stripe_client
 from ..services.airtable_sync import airtable_sync_service
+from ..stripe_client import stripe_client
 
 logger = logging.getLogger(__name__)
 

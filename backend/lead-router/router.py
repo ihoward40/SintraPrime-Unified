@@ -3,21 +3,21 @@ Lead Router - Main orchestration logic.
 Receives intake data, routes to best agent, and triggers workflows.
 """
 
-import uuid
 import logging
+import uuid
 from datetime import datetime
-from typing import Dict, Any, Tuple
+from typing import Any, Dict, Tuple
 
-from models.lead import Lead, IntakeData, AgentType, LeadStatus
-from utils.matching import (
-    route_lead,
-    calculate_qualification_score,
-    get_agent_display_name,
-)
+from models.lead import AgentType, IntakeData, Lead, LeadStatus
 from services import (
+    get_agent_service,
     get_airtable_service,
     get_email_service,
-    get_agent_service,
+)
+from utils.matching import (
+    calculate_qualification_score,
+    get_agent_display_name,
+    route_lead,
 )
 
 logger = logging.getLogger(__name__)

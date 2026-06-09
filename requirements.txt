@@ -1,6 +1,16 @@
-# SintraPrime-Unified Dependencies
-# Single source of truth: pyproject.toml
-# For production: pip install .  |  For dev: pip install ".[dev]"
+# ============================================================================
+# SintraPrime-Unified — Production Dependencies (DERIVED FILE)
+# ============================================================================
+# SOURCE OF TRUTH: pyproject.toml
+#
+# This file is maintained as a deployment export for environments that need
+# a flat requirements.txt (e.g., Docker builds, CI pip install).
+#
+# To regenerate from pyproject.toml:
+#   pip-compile pyproject.toml -o requirements.txt
+#
+# Do NOT manually add packages here. Add them to pyproject.toml instead.
+# ============================================================================
 
 fastapi>=0.115.0
 uvicorn[standard]>=0.24.0

@@ -1,6 +1,6 @@
+from .agent_service import AgentService, get_agent_service
 from .airtable_service import AirtableService, get_airtable_service
 from .email_service import EmailService, get_email_service
-from .agent_service import AgentService, get_agent_service
 
 __all__ = [
     "AirtableService",

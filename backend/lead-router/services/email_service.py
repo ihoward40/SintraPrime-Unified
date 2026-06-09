@@ -3,11 +3,12 @@ Email Service for Lead Confirmation and Follow-up.
 Sends automated emails via SendGrid or AWS SES.
 """
 
-import os
 import logging
-from typing import Dict, Any, Optional
+import os
 from datetime import datetime, timedelta
-from models.lead import Lead, AgentType
+from typing import Any, Dict, Optional
+
+from models.lead import AgentType, Lead
 from utils.matching import get_agent_display_name
 
 logger = logging.getLogger(__name__)

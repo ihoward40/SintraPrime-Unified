@@ -35,7 +35,7 @@ playwright==1.59.0
 # LLM & AI
 langchain==0.3.30
 langchain-community==0.2.12
-langchain-openai==0.1.20
+langchain-openai==1.1.14
 langchain-anthropic==0.1.15
 langgraph==0.2.28
 

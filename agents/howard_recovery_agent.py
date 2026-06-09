@@ -11,12 +11,12 @@ def now_iso():
     return datetime.now(timezone.utc).isoformat()
 
 def check_health():
-    r = requests.get(f"{BASE_URL}/api/recovery/health")
+    r = requests.get(f"{BASE_URL}/api/recovery/health", timeout=10)
     r.raise_for_status()
     return r.json()
 
 def export_master_markdown():
-    r = requests.get(f"{BASE_URL}/api/recovery/export/markdown")
+    r = requests.get(f"{BASE_URL}/api/recovery/export/markdown", timeout=10)
     r.raise_for_status()
     data = r.json()
 
@@ -44,7 +44,7 @@ def create_receipt(action, evidence_used=None, output_created=None, next_step=No
         "next_step": next_step or "Continue evidence intake and case packet generation."
     }
 
-    r = requests.post(f"{BASE_URL}/api/recovery/receipts/create", json=payload)
+    r = requests.post(f"{BASE_URL}/api/recovery/receipts/create", json=payload, timeout=10)
     r.raise_for_status()
     return r.json()
 

@@ -64,7 +64,7 @@ jobs:
         if: always()
         run: |
           python -m bandit -r . \
-            --exclude .venv,node_modules,tests \
+            --exclude .venv,node_modules,./tests,__pycache__,.git,.nova,.mypy_cache,.pytest_cache,*.egg-info,dist,build,htmlcov,site-packages \
             --baseline .bandit-baseline.json \
             -f json -o /tmp/bandit.json
           python -c "

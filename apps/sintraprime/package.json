@@ -54,7 +54,9 @@
   },
   "dependencies": {
     "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
     "fast-glob": "^3.3.3",
+    "helmet": "^8.1.0",
     "rrule": "^2.8.1",
     "yaml": "^2.8.0",
     "yauzl": "^3.2.0",

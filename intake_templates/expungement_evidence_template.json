@@ -1,0 +1,12 @@
+{
+  "case_name": "Expungement",
+  "evidence_type": "court record",
+  "title": "Expungement evidence title here",
+  "source": "Court record / disposition / attorney email / docket / background check",
+  "date_found": "2026-05-29",
+  "amount": "",
+  "account_identifier": "New Jersey / Bergen County / criminal record matter",
+  "gmail_link": "",
+  "file_path": "",
+  "notes": "Describe the case record, charge, disposition, docket, PCR issue, attorney communication, background-check harm, or expungement eligibility item. External action remains locked."
+}

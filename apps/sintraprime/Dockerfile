@@ -33,6 +33,7 @@ COPY airlock_server/ ./airlock_server/
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S airlock -u 1001
+RUN mkdir -p /app/airlock_server/tmp/files && chown -R airlock:nodejs /app/airlock_server/tmp
 USER airlock
 
 # Health check
@@ -42,4 +43,4 @@ HEALTHCHECK --interval=15s --timeout=10s --start-period=30s --retries=3 \
 EXPOSE 3001
 
 # Try built TypeScript app first, fallback to airlock_server raw JS
-CMD ["node", "dist/index.js"]
+CMD ["node", "airlock_server/index.mjs"]

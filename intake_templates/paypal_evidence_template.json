@@ -1,0 +1,12 @@
+{
+  "case_name": "PayPal",
+  "evidence_type": "screenshot",
+  "title": "PayPal evidence title here",
+  "source": "PayPal screenshot / PayPal account page / Gmail",
+  "date_found": "2026-05-29",
+  "amount": "$1000.41",
+  "account_identifier": "isiahhoward49@gmail.com",
+  "gmail_link": "",
+  "file_path": "",
+  "notes": "Describe exactly what the PayPal record shows. Example: account limitation, negative balance, transaction ID, notice, restriction, or ledger issue. External action remains locked."
+}

@@ -123,6 +123,9 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
+      MANUS_SHARED_SECRET: ${MANUS_SHARED_SECRET:-sintra_local_manus_secret}
+      AIRLOCK_SHARED_SECRET: ${AIRLOCK_SHARED_SECRET:-sintra_local_airlock_secret}
+      MAKE_WEBHOOK_URL: ${MAKE_WEBHOOK_URL:-http://host.docker.internal:9999/mock}
     ports:
       - "3001:3001"
     depends_on:
@@ -184,8 +187,8 @@ services:
     image: minio/minio:latest
     container_name: sintraprime-minio
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-minioadmin123}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:?Set MINIO_PASSWORD in .env}
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -218,7 +221,7 @@ services:
       - ./twin_layer:/app/twin_layer:ro
     environment:
       PYTHONPATH: /app
-      TWIN_AUTH_TOKEN: ${TWIN_AUTH_TOKEN:-change-me-in-production}
+      TWIN_AUTH_TOKEN: ${TWIN_AUTH_TOKEN:?Set TWIN_AUTH_TOKEN in .env}
     healthcheck:
       test: ["CMD-SHELL", "python3 -c \"import socket; s=socket.create_connection(('localhost', 8765), 2); s.close()\""]
       interval: 15s

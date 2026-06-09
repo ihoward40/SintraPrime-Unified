@@ -5,8 +5,8 @@ Scores leads on legal, financial, and urgency dimensions.
 
 import re
 from typing import Tuple
-from models.lead import IntakeData, AgentType, RoutingResult
 
+from models.lead import AgentType, IntakeData, RoutingResult
 
 # Keyword dictionaries for scoring
 LEGAL_KEYWORDS = {

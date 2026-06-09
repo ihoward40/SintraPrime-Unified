@@ -9,7 +9,7 @@ Mount in your main FastAPI app:
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 try:
@@ -214,7 +214,7 @@ def scheduler_status():
         "total_tasks": len(all_tasks),
         "by_status": by_status,
         "report": _dispatcher.status_report(),
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 

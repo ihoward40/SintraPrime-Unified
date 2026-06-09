@@ -2,14 +2,15 @@
 Unit tests for lead router and routing algorithm.
 """
 
-import pytest
 from datetime import datetime
-from models.lead import IntakeData, AgentType, Lead, LeadStatus
+
+import pytest
+from models.lead import AgentType, IntakeData, Lead, LeadStatus
 from utils.matching import (
-    calculate_legal_score,
     calculate_financial_score,
-    calculate_urgency_score,
+    calculate_legal_score,
     calculate_qualification_score,
+    calculate_urgency_score,
     route_lead,
 )
 

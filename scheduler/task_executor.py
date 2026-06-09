@@ -17,7 +17,7 @@ import threading
 import time
 import traceback
 from contextlib import redirect_stderr, redirect_stdout
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from .task_types import ScheduledTask, TaskResult, TaskStatus
@@ -105,7 +105,7 @@ class TaskExecutor:
 
     def _execute_once(self, task: ScheduledTask, timeout: int) -> TaskResult:
         """Run the task's callable once with timeout and output capture."""
-        start = datetime.utcnow()
+        start = datetime.now(timezone.utc)
         result_holder: Dict[str, Any] = {}
         stdout_buf = io.StringIO()
         stderr_buf = io.StringIO()
@@ -124,7 +124,7 @@ class TaskExecutor:
         thread.start()
         thread.join(timeout=timeout)
 
-        duration_ms = (datetime.utcnow() - start).total_seconds() * 1000
+        duration_ms = (datetime.now(timezone.utc) - start).total_seconds() * 1000
 
         if thread.is_alive():
             # Thread timed out — we can't forcefully kill it in CPython,

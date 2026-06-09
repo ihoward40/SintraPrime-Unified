@@ -11,12 +11,12 @@ Inspired by:
 - Enterprise AI governance: SOC2, audit trails, intervention controls
 """
 
-from governance.governance_engine import GovernanceEngine
 from governance.approval_gate import ApprovalGate
 from governance.audit_trail import AuditTrail
-from governance.risk_assessor import RiskAssessor
-from governance.intervention_controller import InterventionController
 from governance.compliance_monitor import ComplianceMonitor
+from governance.governance_engine import GovernanceEngine
+from governance.intervention_controller import InterventionController
+from governance.risk_assessor import RiskAssessor
 
 __all__ = [
     "GovernanceEngine",

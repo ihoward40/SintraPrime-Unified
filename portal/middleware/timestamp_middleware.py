@@ -2,6 +2,7 @@
 import logging
 from datetime import datetime, timezone
 from typing import Callable
+
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 

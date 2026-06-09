@@ -1,0 +1,12 @@
+{
+  "case_name": "Chase",
+  "evidence_type": "bank record",
+  "title": "Chase / Wells Fargo / EWS evidence title here",
+  "source": "Bank statement / Early Warning disclosure / adverse action notice / Gmail",
+  "date_found": "2026-05-29",
+  "amount": "",
+  "account_identifier": "Chase / Wells Fargo / Early Warning Services",
+  "gmail_link": "",
+  "file_path": "",
+  "notes": "Describe the bank-screening record, adverse action, account closure, NSF/post-no-debits notation, EWS disclosure item, or statement issue. External action remains locked."
+}

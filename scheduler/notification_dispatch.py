@@ -9,7 +9,7 @@ import json
 import logging
 import smtplib
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timezone
 from email.mime.text import MIMEText
 from typing import Any, Dict, List, Optional
 
@@ -174,7 +174,7 @@ class NotificationDispatch:
         elif ch == "webhook":
             self._send_webhook(
                 self._config.get("webhook_url", ""),
-                payload={"message": body, "timestamp": datetime.utcnow().isoformat()},
+                payload={"message": body, "timestamp": datetime.now(timezone.utc).isoformat()},
             )
         else:
             logger.warning("Unknown notification channel: '%s'", channel)

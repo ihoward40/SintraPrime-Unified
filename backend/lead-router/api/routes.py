@@ -3,9 +3,9 @@ FastAPI routes for lead submission and management.
 """
 
 import logging
+
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
-
 from models.lead import IntakeData, LeadSubmissionResponse
 from router import get_router
 

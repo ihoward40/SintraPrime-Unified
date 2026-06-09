@@ -1,3 +1,3 @@
-from .lead import Lead, IntakeData, LeadSubmissionResponse
+from .lead import IntakeData, Lead, LeadSubmissionResponse
 
 __all__ = ["Lead", "IntakeData", "LeadSubmissionResponse"]

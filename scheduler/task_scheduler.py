@@ -10,7 +10,7 @@ import logging
 import sqlite3
 import threading
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Callable, Dict, List, Optional
 
 from .task_types import Schedule, ScheduledTask, TaskResult, TaskStatus, TaskType
@@ -230,7 +230,7 @@ class TaskScheduler:
         if sched is None:
             return
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         if sched.run_at:
             delay = max(0.0, (sched.run_at - now).total_seconds())
@@ -253,7 +253,7 @@ class TaskScheduler:
                 task = self._tasks.get(task_id)
             if task and task.status not in (TaskStatus.CANCELLED, TaskStatus.PAUSED):
                 self._run_task(task_id)
-                task.next_run = datetime.utcnow() + timedelta(seconds=interval_seconds)
+                task.next_run = datetime.now(timezone.utc) + timedelta(seconds=interval_seconds)
                 self._persist_task(task)
                 timer = threading.Timer(interval_seconds, _fire)
                 timer.daemon = True
@@ -282,7 +282,7 @@ class TaskScheduler:
         if not task or task.fn is None:
             return
 
-        start = datetime.utcnow()
+        start = datetime.now(timezone.utc)
         task.status = TaskStatus.RUNNING
         task.last_run = start
         task.run_count += 1
@@ -290,7 +290,7 @@ class TaskScheduler:
 
         try:
             output = task.fn(**task.payload)
-            duration_ms = (datetime.utcnow() - start).total_seconds() * 1000
+            duration_ms = (datetime.now(timezone.utc) - start).total_seconds() * 1000
             result = TaskResult(
                 task_id=task_id,
                 success=True,
@@ -308,7 +308,7 @@ class TaskScheduler:
                 except Exception:
                     pass
         except Exception as exc:  # noqa: BLE001
-            duration_ms = (datetime.utcnow() - start).total_seconds() * 1000
+            duration_ms = (datetime.now(timezone.utc) - start).total_seconds() * 1000
             import traceback
 
             result = TaskResult(
@@ -364,7 +364,7 @@ class TaskScheduler:
             with sqlite3.connect(self._db_path) as conn:
                 conn.execute(
                     "INSERT OR REPLACE INTO tasks (id, data, updated_at) VALUES (?, ?, ?)",
-                    (task.id, json.dumps(task.to_dict()), datetime.utcnow().isoformat()),
+                    (task.id, json.dumps(task.to_dict()), datetime.now(timezone.utc).isoformat()),
                 )
                 conn.commit()
         except Exception as exc:

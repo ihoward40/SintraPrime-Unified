@@ -6,9 +6,21 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
+
+
+def _utcnow() -> datetime:
+    """Return current UTC time as a timezone-aware datetime."""
+    return datetime.now(timezone.utc)
+
+
+def _make_aware(dt: datetime) -> datetime:
+    """Ensure a datetime is timezone-aware (assume UTC if naive)."""
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
 
 
 # ---------------------------------------------------------------------------
@@ -77,7 +89,7 @@ class ScheduledTask:
     payload: Dict[str, Any] = field(default_factory=dict)
     status: TaskStatus = TaskStatus.PENDING
     created_by: str = "system"
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=_utcnow)
     last_run: Optional[datetime] = None
     next_run: Optional[datetime] = None
     run_count: int = 0
@@ -135,7 +147,7 @@ class ScheduledTask:
                 cron_expr=schedule_data.get("cron_expr"),
                 interval_minutes=schedule_data.get("interval_minutes"),
                 trigger_event=schedule_data.get("trigger_event"),
-                run_at=datetime.fromisoformat(run_at) if run_at else None,
+                run_at=_make_aware(datetime.fromisoformat(run_at)) if run_at else None,
             )
         return cls(
             id=data["id"],
@@ -146,14 +158,14 @@ class ScheduledTask:
             payload=data.get("payload", {}),
             status=TaskStatus(data.get("status", "pending")),
             created_by=data.get("created_by", "system"),
-            created_at=datetime.fromisoformat(data["created_at"]),
+            created_at=_make_aware(datetime.fromisoformat(data["created_at"])),
             last_run=(
-                datetime.fromisoformat(data["last_run"])
+                _make_aware(datetime.fromisoformat(data["last_run"]))
                 if data.get("last_run")
                 else None
             ),
             next_run=(
-                datetime.fromisoformat(data["next_run"])
+                _make_aware(datetime.fromisoformat(data["next_run"]))
                 if data.get("next_run")
                 else None
             ),
@@ -173,7 +185,7 @@ class TaskResult:
     output: Any = None
     error: Optional[str] = None
     duration_ms: float = 0.0
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=_utcnow)
 
     def to_dict(self) -> Dict[str, Any]:
         return {

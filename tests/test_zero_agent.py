@@ -2,30 +2,29 @@
 
 import json
 import os
-import tempfile
+
+# We test in isolation by importing the modules directly
+import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-# We test in isolation by importing the modules directly
-import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from agents.zero.zero_agent import (
-    ZeroAgent,
-    ImportError_,
-    TestFailure,
-    Patch,
-    HealthReport,
-    COMMON_IMPORT_FIXES,
-)
 from agents.zero.health_monitor import (
+    Alert,
     HealthMonitor,
     HealthSnapshot,
-    Alert,
 )
-
+from agents.zero.zero_agent import (
+    COMMON_IMPORT_FIXES,
+    HealthReport,
+    ImportError_,
+    Patch,
+    TestFailure,
+    ZeroAgent,
+)
 
 # ── Fixtures ──────────────────────────────────────────────────────
 

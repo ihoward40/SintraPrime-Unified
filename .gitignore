@@ -39,6 +39,7 @@ dist/
 .DS_Store
 .idea/
 .vscode/
+.nova/
 *.swp
 *.swo
 Thumbs.db

@@ -56,3 +56,23 @@ coverage/
 # Logs
 *.log
 logs/
+
+# Runtime / generated operational files
+data/
+errors/
+exports/
+processed/
+
+# Python / local cache
+__pycache__/
+*.pyc
+
+# Environment / secrets
+.env
+.env.*
+*.key
+*.pem
+
+# Logs
+*.log
+logs/

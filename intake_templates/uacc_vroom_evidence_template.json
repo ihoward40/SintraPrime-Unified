@@ -1,0 +1,12 @@
+{
+  "case_name": "UACC",
+  "evidence_type": "email",
+  "title": "UACC / Vroom evidence title here",
+  "source": "Gmail / contract / statement / credit report / PDF",
+  "date_found": "2026-05-29",
+  "amount": "",
+  "account_identifier": "UACC / Vroom / 2015 Ford Taurus / VIN ending FG124116",
+  "gmail_link": "",
+  "file_path": "",
+  "notes": "Describe the UACC/Vroom record. Include balance claimed, charge-off, settlement, validation issue, assignment issue, repo/deficiency issue, or reporting issue. External action remains locked."
+}

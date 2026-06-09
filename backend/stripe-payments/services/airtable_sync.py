@@ -4,16 +4,16 @@ Synchronizes payment and subscription data to Airtable
 """
 
 import logging
-from typing import Optional, Dict, Any
-from datetime import datetime
-import sys
 import os
+import sys
+from datetime import datetime
+from typing import Any, Dict, Optional
 
 # Add parent directory to path to import airtable_client
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
 
-from ..models import Subscription
 from ..config import AIRTABLE_PAYMENTS_TABLE
+from ..models import Subscription
 
 logger = logging.getLogger(__name__)
 

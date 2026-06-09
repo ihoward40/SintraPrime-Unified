@@ -2,26 +2,21 @@
 Unit tests for Stripe payment system
 """
 
-import pytest
 import json
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
-from datetime import datetime, timedelta
-from typing import Dict, Any
+import os
 
 # Import modules to test
 import sys
-import os
+from datetime import datetime, timedelta
+from typing import Any, Dict
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from models import (
-    Subscription,
-    Customer,
-    Payment,
-    SubscriptionStatus,
-    PaymentStatus,
-    Tier
-)
-from config import TIER_AMOUNTS, TRIAL_DAYS, TIER_PRICE_IDS
+from config import TIER_AMOUNTS, TIER_PRICE_IDS, TRIAL_DAYS
+from models import Customer, Payment, PaymentStatus, Subscription, SubscriptionStatus, Tier
 from stripe_client import StripeClient
 from utils.pricing import PricingCalculator
 

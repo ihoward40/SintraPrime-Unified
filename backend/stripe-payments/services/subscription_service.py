@@ -4,19 +4,19 @@ Handles subscription creation, upgrades, and cancellations
 """
 
 import logging
-from typing import Optional
 from datetime import datetime, timedelta
+from typing import Optional
 
-from ..stripe_client import stripe_client
+from ..config import REFUND_PERCENTAGE, REFUND_WINDOW_DAYS, TIER_AMOUNTS, TRIAL_DAYS
 from ..models import (
-    Subscription,
     Customer,
-    SubscriptionStatus,
+    RefundRequest,
+    Subscription,
     SubscriptionRequest,
+    SubscriptionStatus,
     UpgradeRequest,
-    RefundRequest
 )
-from ..config import TIER_AMOUNTS, TRIAL_DAYS, REFUND_WINDOW_DAYS, REFUND_PERCENTAGE
+from ..stripe_client import stripe_client
 from .airtable_sync import AirtableSyncService
 
 logger = logging.getLogger(__name__)

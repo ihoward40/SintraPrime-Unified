@@ -9,14 +9,14 @@ This is the backend service that:
 5. Alerts assigned agents to review cases
 """
 
-import os
 import logging
+import os
+
+from api.routes import router as leads_router
+from config import config
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-
-from config import config
-from api.routes import router as leads_router
 
 # Configure logging
 logging.basicConfig(

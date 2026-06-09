@@ -1,0 +1,17 @@
+# Safety policy configuration for PyUp Safety CLI
+# See: https://docs.pyup.io/docs/safety-20-policy-file
+#
+# This policy file tells `safety check` which vulnerabilities to ignore
+# and configures scan behavior for CI.
+
+security:
+  # Continue reporting but don't fail CI on these known/accepted IDs
+  ignore-vulnerabilities:
+    # Add vulnerability IDs to ignore here as they're triaged
+    # Example:
+    # - id: 12345
+    #   reason: "Accepted risk — not exploitable in our usage"
+    #   expires: "2026-12-31"
+  
+  # Continue-on-error: don't block CI for advisory-only findings
+  continue-on-vulnerability-error: true

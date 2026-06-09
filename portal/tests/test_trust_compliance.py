@@ -1,6 +1,8 @@
 
 import pytest
+
 from portal.services.trust_compliance_service import TrustComplianceService
+
 
 @pytest.fixture
 def trust_compliance_service():

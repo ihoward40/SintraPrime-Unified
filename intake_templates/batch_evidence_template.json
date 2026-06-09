@@ -1,0 +1,28 @@
+{
+  "evidence_items": [
+    {
+      "case_name": "PayPal",
+      "evidence_type": "screenshot",
+      "title": "Batch evidence item 1 title",
+      "source": "Screenshot / Gmail / PDF",
+      "date_found": "2026-05-29",
+      "amount": "",
+      "account_identifier": "",
+      "gmail_link": "",
+      "file_path": "",
+      "notes": "Describe evidence item 1. External action remains locked."
+    },
+    {
+      "case_name": "Verizon",
+      "evidence_type": "complaint record",
+      "title": "Batch evidence item 2 title",
+      "source": "Complaint portal / Gmail / account record",
+      "date_found": "2026-05-29",
+      "amount": "",
+      "account_identifier": "",
+      "gmail_link": "",
+      "file_path": "",
+      "notes": "Describe evidence item 2. External action remains locked."
+    }
+  ]
+}

@@ -6,7 +6,7 @@ All tasks are designed for 24/7 autonomous operation.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from .task_types import Schedule, ScheduledTask, TaskType
@@ -28,7 +28,7 @@ def daily_case_law_digest(**kwargs) -> Dict:
     logger.info("[RecurringTask] Running daily_case_law_digest")
     practice_areas = kwargs.get("practice_areas", ["civil", "criminal", "tax"])
     result = {
-        "fetched_at": datetime.utcnow().isoformat(),
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
         "practice_areas": practice_areas,
         "new_cases": [],        # populated by real API call
         "summary": "Daily case law digest completed (stub).",
@@ -45,7 +45,7 @@ def weekly_deadline_check(**kwargs) -> Dict:
     logger.info("[RecurringTask] Running weekly_deadline_check")
     warning_days = kwargs.get("warning_days", 14)
     result = {
-        "checked_at": datetime.utcnow().isoformat(),
+        "checked_at": datetime.now(timezone.utc).isoformat(),
         "warning_days": warning_days,
         "upcoming_deadlines": [],   # populated from matters DB
         "overdue": [],
@@ -59,7 +59,7 @@ def monthly_credit_report(**kwargs) -> Dict:
     """Generates a financial health summary for the firm (AR, collections, trust accounts)."""
     logger.info("[RecurringTask] Running monthly_credit_report")
     result = {
-        "period": datetime.utcnow().strftime("%Y-%m"),
+        "period": datetime.now(timezone.utc).strftime("%Y-%m"),
         "total_ar": 0.0,
         "collected": 0.0,
         "trust_balance": 0.0,
@@ -78,7 +78,7 @@ def court_docket_monitor(**kwargs) -> Dict:
     logger.info("[RecurringTask] Running court_docket_monitor")
     case_numbers = kwargs.get("case_numbers", [])
     result = {
-        "checked_at": datetime.utcnow().isoformat(),
+        "checked_at": datetime.now(timezone.utc).isoformat(),
         "case_numbers": case_numbers,
         "new_filings": [],      # populated by PACER / court API
         "summary": f"Docket monitor checked {len(case_numbers)} case(s) (stub).",
@@ -94,7 +94,7 @@ def regulatory_update_check(**kwargs) -> Dict:
     logger.info("[RecurringTask] Running regulatory_update_check")
     agencies = kwargs.get("agencies", ["IRS", "SEC", "CFPB", "DOJ"])
     result = {
-        "checked_at": datetime.utcnow().isoformat(),
+        "checked_at": datetime.now(timezone.utc).isoformat(),
         "agencies": agencies,
         "new_rules": [],        # populated by agency RSS / API
         "summary": f"Regulatory update check for {agencies} completed (stub).",
@@ -109,7 +109,7 @@ def client_followup_reminders(**kwargs) -> Dict:
     """
     logger.info("[RecurringTask] Running client_followup_reminders")
     result = {
-        "checked_at": datetime.utcnow().isoformat(),
+        "checked_at": datetime.now(timezone.utc).isoformat(),
         "reminders_sent": 0,
         "matters_reviewed": 0,
         "summary": "Client follow-up reminders completed (stub).",
@@ -129,7 +129,7 @@ def system_health_check(**kwargs) -> Dict:
     logger.info("[RecurringTask] Running system_health_check")
     disk = shutil.disk_usage("/")
     result = {
-        "checked_at": datetime.utcnow().isoformat(),
+        "checked_at": datetime.now(timezone.utc).isoformat(),
         "python_version": sys.version,
         "disk_free_gb": round(disk.free / 1e9, 2),
         "disk_used_pct": round(disk.used / disk.total * 100, 1),

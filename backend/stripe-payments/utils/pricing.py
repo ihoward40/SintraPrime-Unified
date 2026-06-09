@@ -3,9 +3,9 @@ Pricing Calculator
 Handles pricing calculations, prorations, discounts, etc.
 """
 
-from typing import Dict, Tuple
-from datetime import datetime
 import logging
+from datetime import datetime
+from typing import Dict, Tuple
 
 from ..config import TIER_AMOUNTS
 

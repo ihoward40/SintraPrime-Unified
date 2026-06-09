@@ -23,13 +23,13 @@ def now_iso():
 
 
 def api_get(path):
-    response = requests.get(f"{BASE_URL}{path}")
+    response = requests.get(f"{BASE_URL}{path}", timeout=10)
     response.raise_for_status()
     return response.json()
 
 
 def api_post(path, payload):
-    response = requests.post(f"{BASE_URL}{path}", json=payload)
+    response = requests.post(f"{BASE_URL}{path}", json=payload, timeout=10)
     response.raise_for_status()
     return response.json()
 
@@ -303,11 +303,13 @@ def run_watch_mode():
                     next_step=f"Review watch loop error: {e}",
                     status="error"
                 )
-            except Exception:
-                pass
+            except Exception as exc:
+                print(f"Warning: failed to create receipt for intake item: {exc}")
 
             time.sleep(WATCH_INTERVAL_SECONDS)
 
 
 if __name__ == "__main__":
     run_watch_mode()
+
+

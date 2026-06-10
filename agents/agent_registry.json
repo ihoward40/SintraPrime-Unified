@@ -1,0 +1,74 @@
+{
+  "agents": [
+    {
+      "role": "research-agent",
+      "purpose": "Gather information, search case law, look up statutes, retrieve public records, and compile background research for legal/admin tasks.",
+      "primary_skills": ["email-intake-triage", "evidence-manifest-builder", "repo-review"],
+      "boundaries": "Read-only except for saving research notes to docs/. Cannot draft legal filings.",
+      "approval_tier": "T1"
+    },
+    {
+      "role": "drafting-agent",
+      "purpose": "Draft legal documents, affidavits, dispute letters, court filings, and correspondence based on research provided by Research Agent.",
+      "primary_skills": ["affidavit-builder", "court-packet-builder", "credit-report-review"],
+      "boundaries": "Draft-only. Outputs are saved as drafts and must pass through QA Agent before use.",
+      "approval_tier": "T2"
+    },
+    {
+      "role": "citation-agent",
+      "purpose": "Verify legal citations, statutes, case references, and regulatory provisions. Ensure every legal assertion has a supporting citation.",
+      "primary_skills": ["credit-report-review", "trust-admin-checklist"],
+      "boundaries": "Read-only. Cross-references citations against verified sources. Flags uncited assertions.",
+      "approval_tier": "T1"
+    },
+    {
+      "role": "evidence-agent",
+      "purpose": "Organize, hash-verify, and catalog evidence. Maintain chain of custody and evidence manifests for all case materials.",
+      "primary_skills": ["evidence-manifest-builder", "email-intake-triage"],
+      "boundaries": "Write-local-only. Evidence manifests saved to artifacts/. Cannot delete or modify source evidence.",
+      "approval_tier": "T1"
+    },
+    {
+      "role": "qa-agent",
+      "purpose": "Review all outputs before delivery. Check for errors, missing citations, formatting issues, broken links, and policy compliance.",
+      "primary_skills": ["smoke-runner", "repo-review"],
+      "boundaries": "Read-only review. Can reject outputs for revision but cannot modify them directly.",
+      "approval_tier": "T1"
+    },
+    {
+      "role": "repo-agent",
+      "purpose": "Maintain repository health: run smoke tests, check CI status, audit dependencies, review PRs, and enforce repo standards.",
+      "primary_skills": ["repo-review", "smoke-runner"],
+      "boundaries": "Read-only for inspection. T2 for commits/pushes. Cannot merge without approval.",
+      "approval_tier": "T2"
+    },
+    {
+      "role": "social-media-agent",
+      "purpose": "Plan and repurpose content for social platforms. Manage content calendar, hashtag strategy, and cross-platform formatting.",
+      "primary_skills": ["social-post-repurposer", "music-release-planner"],
+      "boundaries": "Draft-only. Posts are saved as drafts and reviewed before any publishing.",
+      "approval_tier": "T2"
+    },
+    {
+      "role": "music-release-agent",
+      "purpose": "Plan music releases, manage metadata, coordinate distribution platforms, and track promotion timelines.",
+      "primary_skills": ["music-release-planner", "social-post-repurposer"],
+      "boundaries": "Draft-only. Release plans saved as drafts. No direct publishing.",
+      "approval_tier": "T2"
+    },
+    {
+      "role": "intake-agent",
+      "purpose": "Triage incoming client communications, classify by case/urgency, extract key information, and route to the appropriate agent lane.",
+      "primary_skills": ["email-intake-triage", "evidence-manifest-builder"],
+      "boundaries": "Read-only for existing data. Can create triage summaries and intake records.",
+      "approval_tier": "T1"
+    },
+    {
+      "role": "compliance-safety-agent",
+      "purpose": "Enforce permission boundaries, verify audit trails, check for policy violations, and ensure all outputs meet safety standards before external action.",
+      "primary_skills": ["smoke-runner", "repo-review", "trust-admin-checklist"],
+      "boundaries": "Read-only oversight. Can block outputs that violate policy. Reports to Isiah directly.",
+      "approval_tier": "T1"
+    }
+  ]
+}

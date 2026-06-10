@@ -1,0 +1,84 @@
+{
+  "skills": [
+    {
+      "name": "credit-report-review",
+      "version": "1.0.0",
+      "description": "Analyze credit reports from Experian, Equifax, and TransUnion for errors, UCC filings, inaccurate furnisher reporting, and violations under FCRA/FDCPA.",
+      "inputs": ["credit_report_file", "bureau_name", "consumer_info"],
+      "outputs": ["error_report", "violation_summary", "dispute_letter_draft"],
+      "path": "skills/credit-report-review/SKILL.md"
+    },
+    {
+      "name": "affidavit-builder",
+      "version": "1.0.0",
+      "description": "Draft sworn affidavits for UCC disputes, credit reporting disputes, and court filings with proper jurat and notary blocks.",
+      "inputs": ["case_facts", "affidavit_type", "jurisdiction", "exhibits"],
+      "outputs": ["affidavit_draft", "exhibit_list", "notary_instructions"],
+      "path": "skills/affidavit-builder/SKILL.md"
+    },
+    {
+      "name": "court-packet-builder",
+      "version": "1.0.0",
+      "description": "Assemble complete court filing packets including motion, memorandum, exhibits, certificates of service, and proposed orders.",
+      "inputs": ["case_type", "documents", "court_rules", "deadline"],
+      "outputs": ["filing_packet", "service_list", "checklist"],
+      "path": "skills/court-packet-builder/SKILL.md"
+    },
+    {
+      "name": "email-intake-triage",
+      "version": "1.0.0",
+      "description": "Classify and route incoming email by case number, urgency, sender type, and required action. Generate triage summary for review.",
+      "inputs": ["email_body", "sender_address", "attachments", "thread_history"],
+      "outputs": ["classification", "priority_score", "suggested_action", "triage_summary"],
+      "path": "skills/email-intake-triage/SKILL.md"
+    },
+    {
+      "name": "evidence-manifest-builder",
+      "version": "1.0.0",
+      "description": "Create evidence manifests with chain-of-custody tracking, hash verification, exhibit numbering, and source attribution.",
+      "inputs": ["evidence_files", "case_id", "custodian_info"],
+      "outputs": ["evidence_manifest", "hash_verification_log", "chain_of_custody_record"],
+      "path": "skills/evidence-manifest-builder/SKILL.md"
+    },
+    {
+      "name": "social-post-repurposer",
+      "version": "1.0.0",
+      "description": "Repurpose content across social platforms with platform-specific formatting, character limits, hashtag strategy, and posting schedule.",
+      "inputs": ["source_content", "target_platforms", "brand_voice", "posting_schedule"],
+      "outputs": ["platform_posts", "hashtag_sets", "content_calendar"],
+      "path": "skills/social-post-repurposer/SKILL.md"
+    },
+    {
+      "name": "music-release-planner",
+      "version": "1.0.0",
+      "description": "Plan music releases with distribution checklist, metadata requirements, platform optimization, artwork specs, and promotion timeline.",
+      "inputs": ["track_info", "release_date", "distribution_platforms", "promo_budget"],
+      "outputs": ["release_checklist", "metadata_sheet", "promotion_calendar"],
+      "path": "skills/music-release-planner/SKILL.md"
+    },
+    {
+      "name": "trust-admin-checklist",
+      "version": "1.0.0",
+      "description": "Run trust administration checklists for beneficiary actions, required filings, distribution tracking, and compliance deadlines.",
+      "inputs": ["trust_type", "beneficiary_list", "tax_year", "action_type"],
+      "outputs": ["admin_checklist", "filing_schedule", "distribution_log"],
+      "path": "skills/trust-admin-checklist/SKILL.md"
+    },
+    {
+      "name": "repo-review",
+      "version": "1.0.0",
+      "description": "Review repository health: git status, branch state, CI status, dependency audit, lint results, and test pass rates.",
+      "inputs": ["repo_path", "branch_name"],
+      "outputs": ["health_report", "action_items", "dependency_findings"],
+      "path": "skills/repo-review/SKILL.md"
+    },
+    {
+      "name": "smoke-runner",
+      "version": "1.0.0",
+      "description": "Execute smoke tests (repo_truth_check.py, verify_aios_output.py) and report pass/fail status with receipt trail.",
+      "inputs": ["smoke_type", "repo_path"],
+      "outputs": ["smoke_report", "receipt_ref", "status_badge"],
+      "path": "skills/smoke-runner/SKILL.md"
+    }
+  ]
+}

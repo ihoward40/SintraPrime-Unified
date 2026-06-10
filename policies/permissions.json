@@ -1,0 +1,76 @@
+{
+  "permissions": [
+    {
+      "name": "read_only",
+      "description": "Agent may read files and directories but may not create, modify, or delete any content. This is the most restrictive operational mode.",
+      "default": true,
+      "override_conditions": [
+        "Explicit user approval via 'confirm_write' command",
+        "Escalation to write_local_only via profile override"
+      ]
+    },
+    {
+      "name": "draft_only",
+      "description": "Agent may create new files but only in designated draft/ or tmp/ directories. No edits to existing production files.",
+      "default": false,
+      "override_conditions": [
+        "User issues 'draft: <path>' command",
+        "Auto-enabled when working_directory contains 'draft' or 'tmp'"
+      ]
+    },
+    {
+      "name": "write_local_only",
+      "description": "Agent may create and modify files within the local repository only. No writes to system paths, user home outside repo, or network mounts.",
+      "default": false,
+      "override_conditions": [
+        "User issues 'write_local' command",
+        "Auto-granted for paths under the repository root"
+      ]
+    },
+    {
+      "name": "external_send_requires_confirmation",
+      "description": "Any outbound communication (email, API call, webhook, Slack message) requires explicit user confirmation before being sent.",
+      "default": true,
+      "override_conditions": [
+        "User issues 'confirm_send' command for a specific message",
+        "Pre-approved send window via cadence schedule"
+      ]
+    },
+    {
+      "name": "destructive_action_blocked",
+      "description": "Actions that delete, overwrite, or irreversibly transform data are blocked unless explicitly approved. Includes file deletion, database truncation, and bulk rename.",
+      "default": true,
+      "override_conditions": [
+        "User issues 'allow_destructive' command with specific scope",
+        "Override expires after single use or 5 minutes, whichever comes first"
+      ]
+    },
+    {
+      "name": "legal_output_requires_review",
+      "description": "Any output intended for legal proceedings, court filings, or regulatory submissions must be flagged for human review before delivery.",
+      "default": true,
+      "override_conditions": [
+        "User issues 'review_approved' with explicit version hash",
+        "Legal counsel provides written sign-off stored in matters/<case>/approvals/"
+      ]
+    },
+    {
+      "name": "financial_output_requires_review",
+      "description": "Any output containing financial figures, monetary demands, settlement amounts, or payment instructions must be reviewed by a human before release.",
+      "default": true,
+      "override_conditions": [
+        "User issues 'finance_reviewed' with explicit figure confirmation",
+        "Output is a draft/working document not intended for external delivery"
+      ]
+    },
+    {
+      "name": "identity_data_requires_redaction",
+      "description": "Any output containing PII (names, SSNs, DOBs, addresses, account numbers) must be redacted or flagged before external delivery.",
+      "default": true,
+      "override_conditions": [
+        "User confirms redaction is complete via 'redaction_confirmed'",
+        "Output is for internal use only and stays within the repository"
+      ]
+    }
+  ]
+}

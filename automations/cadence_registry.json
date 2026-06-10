@@ -1,0 +1,81 @@
+{
+  "cadences": [
+    {
+      "name": "daily_inbox_triage",
+      "schedule": "daily at 09:00",
+      "actions": [
+        "Check all monitored inboxes (email, Slack, portal submissions)",
+        "Categorize each item: urgent / action-required / FYI / spam",
+        "Create or update tasks in the task tracker",
+        "Flag items requiring escalation to the owner"
+      ],
+      "owner": "Nova agent (automated triage); human review for urgent items",
+      "verification": "Receipt generated at reports/cadence/daily-triage-<date>.md with item count and category breakdown"
+    },
+    {
+      "name": "weekly_credit_command_center_review",
+      "schedule": "weekly on Monday at 10:00",
+      "actions": [
+        "Review all active credit report disputes and their status",
+        "Check for new credit report data (Experian, TransUnion, Equifax)",
+        "Update violation scorecards for each active case",
+        "Generate weekly progress summary",
+        "Flag any deadlines or response windows at risk"
+      ],
+      "owner": "Howard agent (evidence-intake); human oversight",
+      "verification": "Updated scorecards exist; weekly summary written to reports/cadence/credit-review-<date>.md"
+    },
+    {
+      "name": "weekly_social_media_music_content_sprint",
+      "schedule": "weekly on Wednesday at 14:00",
+      "actions": [
+        "Review social media analytics from the past week",
+        "Select and repurpose music content for social posts",
+        "Schedule posts for the upcoming week",
+        "Update content calendar and platform profile trackers",
+        "Log growth metrics"
+      ],
+      "owner": "Sigma agent (content); human approval for publishing",
+      "verification": "Content calendar updated; posts scheduled; growth metrics logged in social-media/analytics/"
+    },
+    {
+      "name": "weekly_repo_smoke_check",
+      "schedule": "weekly on Friday at 16:00",
+      "actions": [
+        "Run python scripts/smoke/repo_truth_check.py",
+        "Run python scripts/smoke/verify_aios_output.py",
+        "Run pytest (if test suite exists and is stable)",
+        "Check for any uncommitted changes or stale branches",
+        "Generate weekly repo health report"
+      ],
+      "owner": "Zero agent (system health); automated",
+      "verification": "Smoke check exit code 0; report written to reports/cadence/repo-smoke-<date>.md"
+    },
+    {
+      "name": "monthly_trust_admin_records_audit",
+      "schedule": "monthly on 1st at 09:00",
+      "actions": [
+        "Audit all trust-related documents (Howard Trust, IKE Solutions)",
+        "Verify evidence manifests are current for all active matters",
+        "Check that all admin records (invoices, receipts, filings) are filed",
+        "Identify any missing or stale records",
+        "Generate monthly audit report"
+      ],
+      "owner": "Human (admin/legal); agent support for data gathering",
+      "verification": "Audit report written to reports/cadence/monthly-audit-<date>.md with checklist of all verified records"
+    },
+    {
+      "name": "monthly_public_records_evidence_archive_update",
+      "schedule": "monthly on 15th at 10:00",
+      "actions": [
+        "Check for new public records relevant to active matters",
+        "Download and archive any new evidence documents",
+        "Update evidence manifests with new entries",
+        "Verify chain of custody for all archived evidence",
+        "Generate evidence archive update report"
+      ],
+      "owner": "Howard agent (evidence-intake); human verification",
+      "verification": "Evidence manifests updated; archive report written to reports/cadence/evidence-archive-<date>.md"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "case_id": "CASE-UACC-2026-001",
+  "exhibit_count": 4,
+  "exhibits": [
+    {
+      "exhibit_number": "Exhibit A",
+      "evidence_ids": [
+        "EV-UACC-001"
+      ],
+      "description": "evidence/EV-UACC-001_loan_agreement.pdf",
+      "page_count": 0,
+      "hash": ""
+    },
+    {
+      "exhibit_number": "Exhibit B",
+      "evidence_ids": [
+        "EV-UACC-002"
+      ],
+      "description": "evidence/EV-UACC-002_payment_records.pdf",
+      "page_count": 0,
+      "hash": ""
+    },
+    {
+      "exhibit_number": "Exhibit C",
+      "evidence_ids": [
+        "EV-UACC-003"
+      ],
+      "description": "evidence/EV-UACC-003_deficiency_notice.pdf",
+      "page_count": 0,
+      "hash": ""
+    },
+    {
+      "exhibit_number": "Exhibit D",
+      "evidence_ids": [
+        "EV-UACC-004"
+      ],
+      "description": "evidence/EV-UACC-004_experian_report.pdf",
+      "page_count": 0,
+      "hash": ""
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "case_id": "CASE-UACC-2026-001",
+  "client_id": "C-0001",
+  "case_type": "consumer_defense",
+  "matter_type": "auto_repossession",
+  "creditor": "UACC",
+  "opened_date": "2026-01-15",
+  "status": "investigation",
+  "jurisdiction": "state",
+  "applicable_statutes": [
+    "FCRA",
+    "UCC Article 9",
+    "State Consumer Protection Act"
+  ],
+  "case_summary": "Client's vehicle was repossessed by UACC. Investigating potential violations including improper notice, deficiency calculation errors, credit reporting inaccuracies, and UCC Article 9 non-compliance.",
+  "timeline": {
+    "loan_origination": "2023-03-15",
+    "first_default": "2025-08-01",
+    "repossession_date": "2025-11-10",
+    "deficiency_notice_date": "2025-12-05",
+    "credit_reporting_date": "2025-12-15",
+    "client_intake": "2026-01-15"
+  }
+}

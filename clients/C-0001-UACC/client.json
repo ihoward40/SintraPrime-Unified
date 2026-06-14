@@ -1,0 +1,9 @@
+{
+  "client_id": "C-0001",
+  "case_id": "CASE-UACC-2026-001",
+  "status": "active",
+  "intake_date": "2026-01-15",
+  "client_type": "consumer_defense",
+  "primary_matter": "auto_repossession_defense",
+  "notes": "UACC auto loan repossession - potential FCRA, UCC, and contract violations"
+}

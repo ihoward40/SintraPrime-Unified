@@ -1,0 +1,103 @@
+{
+  "case_id": "CASE-UACC-2026-001",
+  "violation_count": 6,
+  "violations": [
+    {
+      "violation_id": "VIO-UACC-001",
+      "statute": "UCC",
+      "section": "9-614",
+      "category": "repossession_notice",
+      "severity": "high",
+      "description": "Failure to provide required notice of intent to dispose of collateral",
+      "supporting_evidence": ["EV-UACC-005"],
+      "status": "candidate",
+      "confidence": 0.75,
+      "legal_basis": "UCC Article 9-614 requires secured party to send debtor notice of disposition of collateral. Client claims no notice received.",
+      "potential_remedy": "Deficiency elimination or reduction",
+      "notes": "Missing evidence weakens claim. Need confirmation client did not receive notice."
+    },
+    {
+      "violation_id": "VIO-UACC-002",
+      "statute": "UCC",
+      "section": "9-613",
+      "category": "sale_notice",
+      "severity": "high",
+      "description": "Failure to provide notice of private sale",
+      "supporting_evidence": ["EV-UACC-006"],
+      "status": "candidate",
+      "confidence": 0.70,
+      "legal_basis": "UCC Article 9-613 requires notice of time and place of private disposition. No evidence notice was provided.",
+      "potential_remedy": "Deficiency elimination or reduction",
+      "notes": "Private sale without proper notice may violate commercially reasonable standard."
+    },
+    {
+      "violation_id": "VIO-UACC-003",
+      "statute": "UCC",
+      "section": "9-610",
+      "category": "commercially_reasonable_sale",
+      "severity": "medium",
+      "description": "Potential failure to conduct commercially reasonable sale",
+      "supporting_evidence": ["EV-UACC-007", "EV-UACC-008"],
+      "status": "candidate",
+      "confidence": 0.50,
+      "legal_basis": "UCC Article 9-610 requires disposition be commercially reasonable. Sale amount ($18,500) may be below market value for 2020 Honda Accord.",
+      "potential_remedy": "Deficiency reduction based on fair market value",
+      "notes": "Need vehicle appraisal and sale documentation to substantiate claim."
+    },
+    {
+      "violation_id": "VIO-UACC-004",
+      "statute": "UCC",
+      "section": "9-616",
+      "category": "deficiency_calculation",
+      "severity": "high",
+      "description": "Deficiency calculation discrepancy",
+      "supporting_evidence": ["EV-UACC-003", "EV-UACC-007"],
+      "status": "candidate",
+      "confidence": 0.85,
+      "legal_basis": "Deficiency notice claims $12,800 but calculation shows $10,800. $2,000 unexplained discrepancy violates duty to provide accurate accounting under UCC 9-616.",
+      "potential_remedy": "Deficiency reduction by $2,000 minimum",
+      "notes": "Strong evidence from deficiency notice itself. UACC must explain discrepancy."
+    },
+    {
+      "violation_id": "VIO-UACC-005",
+      "statute": "FCRA",
+      "section": "1681s-2(a)",
+      "category": "furnisher_accuracy",
+      "severity": "medium",
+      "description": "Inaccurate credit reporting of deficiency balance",
+      "supporting_evidence": ["EV-UACC-003", "EV-UACC-004"],
+      "status": "candidate",
+      "confidence": 0.80,
+      "legal_basis": "FCRA Section 623(a) requires furnishers to report accurate information. UACC reported $12,800 deficiency despite calculation showing $10,800.",
+      "potential_remedy": "Credit report correction, statutory damages, actual damages",
+      "notes": "Deficiency discrepancy directly impacts credit reporting accuracy."
+    },
+    {
+      "violation_id": "VIO-UACC-006",
+      "statute": "FCRA",
+      "section": "1681s-2(b)",
+      "category": "dispute_investigation",
+      "severity": "low",
+      "description": "Potential failure to properly investigate credit report dispute",
+      "supporting_evidence": [],
+      "status": "future_investigation",
+      "confidence": 0.30,
+      "legal_basis": "If client disputes credit reporting and UACC fails to conduct reasonable investigation, FCRA Section 623(b) violation may exist.",
+      "potential_remedy": "Statutory damages, actual damages, attorney fees",
+      "notes": "Requires client to file dispute and UACC to fail investigation. Not yet applicable."
+    }
+  ],
+  "statute_summary": {
+    "UCC": 4,
+    "FCRA": 2
+  },
+  "severity_summary": {
+    "high": 3,
+    "medium": 2,
+    "low": 1
+  },
+  "status_summary": {
+    "candidate": 5,
+    "future_investigation": 1
+  }
+}

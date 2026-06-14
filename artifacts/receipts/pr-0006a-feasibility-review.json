@@ -226,9 +226,11 @@
   },
   
   "commit_info": {
-    "commit_hash": "(to be added after commit)",
-    "files_changed": 2,
-    "working_tree_status": "Clean after commit"
+    "commit_hash": "655dd38",
+    "full_hash": "655dd38ce984bd5c4c34e04da64bfdb93e3dcac5",
+    "files_changed": 3,
+    "insertions": 1051,
+    "working_tree_status": "Clean"
   },
   
   "validation_checklist": {

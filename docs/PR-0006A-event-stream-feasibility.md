@@ -497,7 +497,7 @@ The following claims require additional validation:
 
 ## Commit Hash
 
-(To be added after document commit)
+**655dd38** - `feat(pr-0006a): Complete Event Stream Feasibility Review with evidence-based findings`
 
 ## Receipt
 

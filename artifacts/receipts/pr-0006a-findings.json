@@ -1,0 +1,40 @@
+{
+  "decision_table": {
+    "risk_proven": "PROVEN via tests",
+    "blocking_status": "CRITICAL",
+    "recoverability_risk_real": "YES (HIGH confidence)",
+    "durable_store_viable": "YES (HIGH confidence)",
+    "proceed_with_0006B": "YES (HIGH confidence)"
+  },
+  "artifacts": {
+    "receipt": "artifacts/receipts/pr-0006a-findings.json",
+    "restart_tests": "tests/test_pr0006a_restart_recovery.py",
+    "findings_report": "docs/architecture/PR-0006A-findings-report.md"
+  },
+  "findings": {
+    "confidence": "HIGH",
+    "recoverability_risk": "CONFIRMED",
+    "root_cause": "InMemoryCheckpointer default",
+    "solution_exists": "DurableStore (not wired)",
+    "tests_passed": "4/4"
+  },
+  "evidence": {
+    "test_results": "4 passed in 0.66s",
+    "restart_tests": "tests/test_pr0006a_restart_recovery.py",
+    "code_inspection": "orchestration/langgraph_engine.py:369"
+  },
+  "pr_id": "PR-0006A",
+  "recommendation": {
+    "approach": "Wire DurableStore as default checkpointer",
+    "unblocks": [
+      "Evidence Command Center",
+      "Credit Command Center"
+    ],
+    "effort_days": "1-2",
+    "risk": "Low",
+    "action": "Proceed with PR-0006B"
+  },
+  "title": "Event Stream Feasibility Review",
+  "status": "complete",
+  "date": "2026-06-14"
+}

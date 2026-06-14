@@ -175,15 +175,19 @@ class TestOllamaAdapterHealthCheck:
         adapter = make_ollama_adapter()
         mock_resp = MagicMock()
         mock_resp.status_code = 200
+        mock_tags_resp = MagicMock()
+        mock_tags_resp.status_code = 200
+        mock_tags_resp.json.return_value = {"models": [{"name": "hermes3"}]}
+        mock_tags_resp.raise_for_status = MagicMock()
         with patch.object(adapter, "_get_client") as mock_get_client:
             mock_client = AsyncMock()
-            mock_client.get = AsyncMock(return_value=mock_resp)
+            mock_client.get = AsyncMock(side_effect=[mock_resp, mock_tags_resp])
             mock_get_client.return_value = mock_client
             result = await adapter.health_check()
         assert result is True
 
     @pytest.mark.asyncio
-    async def test_health_check_failure(self):
+    async def test_health_check_daemon_unreachable(self):
         adapter = make_ollama_adapter()
         with patch.object(adapter, "_get_client") as mock_get_client:
             mock_client = AsyncMock()
@@ -191,6 +195,64 @@ class TestOllamaAdapterHealthCheck:
             mock_get_client.return_value = mock_client
             result = await adapter.health_check()
         assert result is False
+
+    @pytest.mark.asyncio
+    async def test_health_check_failure(self):
+        """Alias kept for backwards compatibility — daemon unreachable."""
+        adapter = make_ollama_adapter()
+        with patch.object(adapter, "_get_client") as mock_get_client:
+            mock_client = AsyncMock()
+            mock_client.get = AsyncMock(side_effect=Exception("refused"))
+            mock_get_client.return_value = mock_client
+            result = await adapter.health_check()
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_health_check_model_not_found(self):
+        """health_check returns False when the model is missing from the registry."""
+        adapter = make_ollama_adapter()
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_tags_resp = MagicMock()
+        mock_tags_resp.status_code = 200
+        mock_tags_resp.json.return_value = {"models": [{"name": "llama3.2"}]}
+        mock_tags_resp.raise_for_status = MagicMock()
+        with patch.object(adapter, "_get_client") as mock_get_client:
+            mock_client = AsyncMock()
+            mock_client.get = AsyncMock(side_effect=[mock_resp, mock_tags_resp])
+            mock_get_client.return_value = mock_client
+            result = await adapter.health_check()
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_health_check_model_tag_variant(self):
+        """health_check returns True when the model is present with a :tag suffix."""
+        adapter = make_ollama_adapter()
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_tags_resp = MagicMock()
+        mock_tags_resp.status_code = 200
+        mock_tags_resp.json.return_value = {"models": [{"name": "hermes3:latest"}]}
+        mock_tags_resp.raise_for_status = MagicMock()
+        with patch.object(adapter, "_get_client") as mock_get_client:
+            mock_client = AsyncMock()
+            mock_client.get = AsyncMock(side_effect=[mock_resp, mock_tags_resp])
+            mock_get_client.return_value = mock_client
+            result = await adapter.health_check()
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_is_daemon_reachable_true(self):
+        """is_daemon_reachable is model-agnostic."""
+        adapter = make_ollama_adapter()
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        with patch.object(adapter, "_get_client") as mock_get_client:
+            mock_client = AsyncMock()
+            mock_client.get = AsyncMock(return_value=mock_resp)
+            mock_get_client.return_value = mock_client
+            result = await adapter.is_daemon_reachable()
+        assert result is True
 
 
 # ===========================================================================

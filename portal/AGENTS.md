@@ -19,6 +19,7 @@ Owns the SintraPrime client portal — the FastAPI application that provides sec
 - All changes must preserve: AES-256 encryption, immutable audit log, soft deletes
 - No raw SQL in application code (SQLAlchemy ORM only; migrations exempt)
 - JWT access tokens 15-min, refresh tokens 30d httpOnly cookie, TOTP MFA
+- `workflow_builder.workflow_api.router` is mounted at `/workflows` via `portal/main.py`
 
 ## Work Guidance
 

@@ -3,9 +3,9 @@ SintraPrime-Unified Web TUI (Terminal UI in Browser)
 WebSocket-based terminal emulator server with VT100/ANSI escape code support.
 Provides an xterm.js-compatible terminal over WebSocket.
 """
+from __future__ import annotations
 
 from pathlib import Path
-from __future__ import annotations
 
 import asyncio
 import json

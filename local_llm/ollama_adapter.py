@@ -175,13 +175,59 @@ class OllamaAdapter(LocalLLMProvider):
         return embedding
 
     async def health_check(self) -> bool:
-        """Return True if Ollama daemon is reachable."""
+        """
+        Return True if the Ollama daemon is reachable AND the configured model is present.
+
+        Distinguishes three failure modes logged at distinct levels:
+        - Daemon unreachable: WARNING "Ollama daemon not reachable"
+        - Model absent: WARNING "Ollama model '<name>' not found in local registry"
+        - Unexpected error: WARNING with exception detail
+        """
+        client = self._get_client()
+        # 1. Daemon reachability
+        try:
+            response = await client.get("/")
+            if response.status_code != 200:
+                self.logger.warning(
+                    "Ollama daemon not reachable (HTTP %d)", response.status_code
+                )
+                return False
+        except Exception as exc:
+            self.logger.warning("Ollama daemon not reachable: %s", exc)
+            return False
+
+        # 2. Model presence
+        try:
+            models = await self.list_models()
+            model_names = [m.get("name", "") for m in models]
+            # Ollama names may include a tag (e.g. "hermes3:latest"); match both
+            target = self.config.model
+            found = any(
+                name == target or name.startswith(f"{target}:")
+                for name in model_names
+            )
+            if not found:
+                self.logger.warning(
+                    "Ollama model '%s' not found in local registry. "
+                    "Run: ollama pull %s",
+                    target,
+                    target,
+                )
+                return False
+        except Exception as exc:
+            self.logger.warning("Ollama model presence check failed: %s", exc)
+            return False
+
+        return True
+
+    async def is_daemon_reachable(self) -> bool:
+        """Return True if the Ollama daemon is reachable (daemon-only check, model-agnostic)."""
         client = self._get_client()
         try:
             response = await client.get("/")
             return response.status_code == 200
         except Exception as exc:
-            self.logger.warning("Ollama health check failed: %s", exc)
+            self.logger.warning("Ollama daemon not reachable: %s", exc)
             return False
 
     async def list_models(self) -> list[dict]:

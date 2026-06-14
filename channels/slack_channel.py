@@ -192,33 +192,69 @@ class SlackChannel:
     # Listening
     # ------------------------------------------------------------------
 
+    _RECONNECT_DELAYS = [2.0, 4.0, 8.0, 16.0, 32.0]  # seconds; caps at 32 s
+
     async def listen(self, handler_fn: Callable) -> None:
-        """Start the Slack Socket Mode listener."""
+        """
+        Start the Slack Socket Mode listener with automatic reconnect.
+
+        On disconnect or unexpected error the listener retries with exponential
+        backoff (2 → 4 → 8 → 16 → 32 s, then stays at 32 s).  The loop exits
+        only on asyncio.CancelledError or when ``slack_bolt`` is not installed.
+        """
         self._handler = handler_fn
         logger.info("SlackChannel: starting Socket Mode listener.")
 
         try:
             from slack_bolt.async_app import AsyncApp  # type: ignore[import]
             from slack_bolt.adapter.socket_mode.aiohttp import AsyncSocketModeHandler  # type: ignore[import]
-
-            app = AsyncApp(token=self.token, signing_secret=self.signing_secret)
-            self._app = app
-            self.connected = True
-
-            @app.message("")
-            async def handle_message(message, say):
-                incoming = self._parse_event(message)
-                if incoming:
-                    await handler_fn(incoming)
-
-            app_token = self.config.extra.get("app_token", "")
-            handler = AsyncSocketModeHandler(app, app_token)
-            await handler.start_async()
         except ImportError:
             logger.warning("slack_bolt not installed — running in stub mode.")
             await asyncio.sleep(3600)
-        except asyncio.CancelledError:
-            logger.info("SlackChannel: listener cancelled.")
+            return
+
+        attempt = 0
+        while True:
+            try:
+                app = AsyncApp(token=self.token, signing_secret=self.signing_secret)
+                self._app = app
+                self.connected = True
+
+                @app.message("")
+                async def handle_message(message, say):
+                    incoming = self._parse_event(message)
+                    if incoming:
+                        await handler_fn(incoming)
+
+                app_token = self.config.extra.get("app_token", "")
+                handler = AsyncSocketModeHandler(app, app_token)
+                logger.info("SlackChannel: listener connected (attempt %d).", attempt + 1)
+                attempt = 0  # reset on successful connection
+                await handler.start_async()
+            except asyncio.CancelledError:
+                logger.info("SlackChannel: listener cancelled.")
+                self.connected = False
+                return
+            except Exception as exc:
+                self.connected = False
+                delay = self._RECONNECT_DELAYS[min(attempt, len(self._RECONNECT_DELAYS) - 1)]
+                logger.warning(
+                    "SlackChannel: listener disconnected (%s). Reconnecting in %.0fs (attempt %d).",
+                    exc,
+                    delay,
+                    attempt + 1,
+                )
+                attempt += 1
+                try:
+                    await asyncio.sleep(delay)
+                except asyncio.CancelledError:
+                    logger.info("SlackChannel: reconnect sleep cancelled.")
+                    self.connected = False
+                    return
+
+    async def health_check(self) -> bool:
+        """Return True if the listener is connected."""
+        return self.connected
 
     def _parse_event(self, event: Dict) -> Optional[IncomingMessage]:
         """Convert a raw Slack event dict to IncomingMessage."""

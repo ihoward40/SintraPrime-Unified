@@ -163,7 +163,29 @@ class SlackBot:
         self.event_queue = asyncio.Queue()
         self.running = False
 
+        self._ensure_schema()
         logger.info("SlackBot initialized")
+
+    def _ensure_schema(self) -> None:
+        """Create required database tables if they do not already exist."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS slack_interactions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    team_id TEXT NOT NULL,
+                    user_id TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    payload TEXT NOT NULL,
+                    timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.commit()
+            conn.close()
+            logger.debug("slack_interactions schema verified")
+        except Exception as exc:
+            logger.error("Failed to initialize slack_interactions schema: %s", exc)
 
     def register_slash_handler(
         self, command: str, handler: Callable

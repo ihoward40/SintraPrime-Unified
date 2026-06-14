@@ -193,6 +193,7 @@ class SlackChannel:
     # ------------------------------------------------------------------
 
     _RECONNECT_DELAYS = [2.0, 4.0, 8.0, 16.0, 32.0]  # seconds; caps at 32 s
+    _MAX_DELAY_INDEX = len(_RECONNECT_DELAYS) - 1
 
     async def listen(self, handler_fn: Callable) -> None:
         """
@@ -237,7 +238,7 @@ class SlackChannel:
                 return
             except Exception as exc:
                 self.connected = False
-                delay = self._RECONNECT_DELAYS[min(attempt, len(self._RECONNECT_DELAYS) - 1)]
+                delay = self._RECONNECT_DELAYS[min(attempt, self._MAX_DELAY_INDEX)]
                 logger.warning(
                     "SlackChannel: listener disconnected (%s). Reconnecting in %.0fs (attempt %d).",
                     exc,

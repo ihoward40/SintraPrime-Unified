@@ -200,12 +200,11 @@ class OllamaAdapter(LocalLLMProvider):
         try:
             models = await self.list_models()
             model_names = [m.get("name", "") for m in models]
-            # Ollama names may include a tag (e.g. "hermes3:latest"); match both
+            # Ollama names may include a tag (e.g. "hermes3:latest");
+            # strip the tag before comparing to avoid false positives
+            # (e.g. "hermes30:latest" must not match target "hermes3").
             target = self.config.model
-            found = any(
-                name == target or name.startswith(f"{target}:")
-                for name in model_names
-            )
+            found = any(name.split(":")[0] == target for name in model_names)
             if not found:
                 self.logger.warning(
                     "Ollama model '%s' not found in local registry. "

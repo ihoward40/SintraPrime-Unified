@@ -56,6 +56,9 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       API_PORT: "8080"
       SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
+      MANUS_SHARED_SECRET: ${MANUS_SHARED_SECRET:-sintra_local_manus_secret}
+      AIRLOCK_SHARED_SECRET: ${AIRLOCK_SHARED_SECRET:-sintra_local_airlock_secret}
+      MAKE_WEBHOOK_URL: ${MAKE_WEBHOOK_URL:-http://host.docker.internal:9999/mock}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       ENABLE_SUPERINTELLIGENCE: ${ENABLE_SUPERINTELLIGENCE:-true}
       ENABLE_TWIN_TUI: ${ENABLE_TWIN_TUI:-true}
@@ -119,13 +122,13 @@ services:
       REDIS_URL: redis://${REDIS_PASSWORD:+:$REDIS_PASSWORD@}redis:6379
       HIVE_MIND_API: http://api:8080
       SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
+      MANUS_SHARED_SECRET: ${MANUS_SHARED_SECRET:-sintra_local_manus_secret}
+      AIRLOCK_SHARED_SECRET: ${AIRLOCK_SHARED_SECRET:-sintra_local_airlock_secret}
+      MAKE_WEBHOOK_URL: ${MAKE_WEBHOOK_URL:-http://host.docker.internal:9999/mock}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
-      MANUS_SHARED_SECRET: ${MANUS_SHARED_SECRET:-sintra_local_manus_secret}
-      AIRLOCK_SHARED_SECRET: ${AIRLOCK_SHARED_SECRET:-sintra_local_airlock_secret}
-      MAKE_WEBHOOK_URL: ${MAKE_WEBHOOK_URL:-http://host.docker.internal:9999/mock}
     ports:
       - "3001:3001"
     depends_on:
@@ -265,3 +268,4 @@ volumes:
 networks:
   sintraprime_network:
     driver: bridge
+

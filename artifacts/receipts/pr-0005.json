@@ -1,0 +1,12 @@
+{
+  "pr_id": "PR-0005",
+  "title": "Persistence & Recoverability Audit",
+  "status": "complete",
+  "overall_score": 6.1,
+  "recommendation": "phase_a_b_required",
+  "timeline": "3-4 weeks to unblock Evidence Command Center",
+  "artifacts": {
+    "report": "docs/persistence-recoverability-audit.md",
+    "receipt": "artifacts/receipts/pr-0005.json"
+  }
+}

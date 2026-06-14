@@ -1,0 +1,63 @@
+{
+  "account_id": "UACC-ACC-789456",
+  "creditor": "UACC",
+  "account_type": "auto_loan",
+  "original_creditor": "UACC",
+  "current_creditor": "UACC",
+  "loan_details": {
+    "vehicle": "2020 Honda Accord",
+    "vin": "1HGCV1F3XLA123456",
+    "original_amount": 28500.00,
+    "interest_rate": 12.5,
+    "term_months": 72,
+    "monthly_payment": 495.00,
+    "loan_date": "2023-03-15"
+  },
+  "payment_history": {
+    "total_payments_made": 29,
+    "last_payment_date": "2025-07-15",
+    "last_payment_amount": 495.00,
+    "total_paid": 14355.00
+  },
+  "default_details": {
+    "first_missed_payment": "2025-08-01",
+    "total_missed_payments": 4,
+    "default_amount": 1980.00
+  },
+  "repossession": {
+    "repossession_date": "2025-11-10",
+    "notice_provided": "disputed",
+    "notice_date": "unknown",
+    "repo_agent": "Metro Recovery Services"
+  },
+  "post_repossession": {
+    "sale_date": "2025-11-28",
+    "sale_amount": 18500.00,
+    "sale_method": "private_sale",
+    "deficiency_claimed": 12800.00,
+    "deficiency_notice_date": "2025-12-05",
+    "deficiency_breakdown": {
+      "remaining_principal": 25200.00,
+      "accrued_interest": 1850.00,
+      "late_fees": 380.00,
+      "repossession_costs": 1450.00,
+      "storage_fees": 420.00,
+      "total_owed": 29300.00,
+      "sale_proceeds": 18500.00,
+      "net_deficiency": 10800.00,
+      "claimed_deficiency": 12800.00,
+      "discrepancy": 2000.00
+    }
+  },
+  "credit_reporting": {
+    "reported_to": ["Experian", "Equifax", "TransUnion"],
+    "reported_date": "2025-12-15",
+    "reported_status": "charge_off",
+    "reported_balance": 12800.00,
+    "reporting_concerns": [
+      "Balance discrepancy",
+      "Missing repossession date",
+      "Inaccurate payment history"
+    ]
+  }
+}

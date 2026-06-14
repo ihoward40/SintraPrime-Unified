@@ -1,0 +1,19 @@
+ECC MVP Smoke Receipt
+=====================
+Timestamp: 2026-06-14T13:49:40.529Z
+Branch: feature/ecc-mvp  
+Commit: 3804384affad92629aaf7db6da402edeab4a4094
+
+Tests: 100/100 PASSED (1.38s)
+Warnings: 0
+
+Modules Created: 5
+Tests Created: 4
+Total Lines: 3,246
+
+Scoring Formula Verified:
+- Deterministic: ✓
+- Bounded (0-100): ✓
+- Transparent weights: ✓
+
+Status: READY FOR UACC FIXTURE

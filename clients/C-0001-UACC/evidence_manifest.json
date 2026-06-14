@@ -1,0 +1,141 @@
+{
+  "case_id": "CASE-UACC-2026-001",
+  "evidence_count": 8,
+  "evidence_items": [
+    {
+      "evidence_id": "EV-UACC-001",
+      "description": "Original Loan Agreement",
+      "category": "contract",
+      "acquisition_date": "2026-01-20",
+      "source": "client_provided",
+      "hash": "a7f3e9d2c1b8a5e4f6d3c2b1a9e8d7c6b5a4f3e2d1c9b8a7f6e5d4c3b2a1",
+      "status": "verified",
+      "custodian": "SintraPrime Evidence Command Center",
+      "file_location": "evidence/EV-UACC-001_loan_agreement.pdf",
+      "page_count": 12,
+      "metadata": {
+        "document_type": "retail_installment_contract",
+        "execution_date": "2023-03-15",
+        "parties": ["Client", "UACC"]
+      }
+    },
+    {
+      "evidence_id": "EV-UACC-002",
+      "description": "Payment History Records",
+      "category": "financial_records",
+      "acquisition_date": "2026-01-20",
+      "source": "client_provided",
+      "hash": "b8e4f0d3c2b9a6e5f7d4c3b2a0e9d8c7b6a5f4e3d2c0b9a8f7e6d5c4b3a2",
+      "status": "verified",
+      "custodian": "SintraPrime Evidence Command Center",
+      "file_location": "evidence/EV-UACC-002_payment_records.pdf",
+      "page_count": 4,
+      "metadata": {
+        "date_range": "2023-03 to 2025-07",
+        "payment_count": 29
+      }
+    },
+    {
+      "evidence_id": "EV-UACC-003",
+      "description": "Deficiency Notice",
+      "category": "correspondence",
+      "acquisition_date": "2026-01-22",
+      "source": "client_provided",
+      "hash": "c9f5e1d4c3b0a7e6f8d5c4b3a1e0d9c8b7a6f5e4d3c1b0a9f8e7d6c5b4a3",
+      "status": "verified",
+      "custodian": "SintraPrime Evidence Command Center",
+      "file_location": "evidence/EV-UACC-003_deficiency_notice.pdf",
+      "page_count": 2,
+      "metadata": {
+        "notice_date": "2025-12-05",
+        "claimed_deficiency": 12800.00
+      }
+    },
+    {
+      "evidence_id": "EV-UACC-004",
+      "description": "Credit Report - Experian",
+      "category": "credit_report",
+      "acquisition_date": "2026-01-25",
+      "source": "client_obtained",
+      "hash": "d0a6f2e5d4c1b8a7e9f6d5c4b2a1e0d9c8b7a6f5e4d3c2b1a0f9e8d7c6b5",
+      "status": "verified",
+      "custodian": "SintraPrime Evidence Command Center",
+      "file_location": "evidence/EV-UACC-004_experian_report.pdf",
+      "page_count": 18,
+      "metadata": {
+        "report_date": "2026-01-10",
+        "bureau": "Experian",
+        "tradeline_count": 12
+      }
+    },
+    {
+      "evidence_id": "EV-UACC-005",
+      "description": "Repossession Notice",
+      "category": "correspondence",
+      "acquisition_date": "2026-01-20",
+      "source": "claimed_missing",
+      "hash": null,
+      "status": "missing",
+      "custodian": null,
+      "file_location": null,
+      "page_count": null,
+      "metadata": {
+        "required_by": "UCC 9-614",
+        "impact": "UCC compliance violation candidate"
+      }
+    },
+    {
+      "evidence_id": "EV-UACC-006",
+      "description": "Post-Repossession Sale Notice",
+      "category": "correspondence",
+      "acquisition_date": "2026-01-20",
+      "source": "claimed_missing",
+      "hash": null,
+      "status": "missing",
+      "custodian": null,
+      "file_location": null,
+      "page_count": null,
+      "metadata": {
+        "required_by": "UCC 9-613",
+        "impact": "UCC compliance violation candidate"
+      }
+    },
+    {
+      "evidence_id": "EV-UACC-007",
+      "description": "Sale Documentation and Accounting",
+      "category": "financial_records",
+      "acquisition_date": "2026-01-20",
+      "source": "requested_not_provided",
+      "hash": null,
+      "status": "missing",
+      "custodian": null,
+      "file_location": null,
+      "page_count": null,
+      "metadata": {
+        "required_by": "UCC 9-616",
+        "impact": "Deficiency calculation cannot be verified"
+      }
+    },
+    {
+      "evidence_id": "EV-UACC-008",
+      "description": "Vehicle Condition Assessment",
+      "category": "appraisal",
+      "acquisition_date": "2026-01-20",
+      "source": "not_yet_requested",
+      "hash": null,
+      "status": "missing",
+      "custodian": null,
+      "file_location": null,
+      "page_count": null,
+      "metadata": {
+        "impact": "Sale price reasonableness cannot be verified"
+      }
+    }
+  ],
+  "verification_summary": {
+    "verified": 4,
+    "partial": 0,
+    "missing": 4,
+    "disputed": 0
+  }
+}

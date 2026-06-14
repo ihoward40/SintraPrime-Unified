@@ -56,3 +56,6 @@ coverage/
 # Logs
 *.log
 logs/
+
+# IDE directories
+.nova/

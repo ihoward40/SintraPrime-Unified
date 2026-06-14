@@ -1,7 +1,9 @@
-{
-  "command": "python -m pytest tests/ -v --tb=short -x",
-  "timestamp": "2026-06-14T13:32:17.957Z",
-  "commit": "5241cd9f1a8fa6df05d5c8433ec4a11c6d692a58",
-  "exit_code": 0,
-  "output_preview": "============================= test session starts =============================\nplatform win32 -- Python 3.14.0, pytest-9.1.0, pluggy-1.6.0\nrootdir: C:\\SintraPrime-Unified\nconfigfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)\nplugins: anyio-4.11.0\ncollected 330 items\n\ntests\\security\\test_no_runtime_exec.py ............................      [  8%]\ntests\\test_nova_agent.py ............................................... [ 22%]\n.....                                                                    [ 24%]\ntests\\test_scheduler_core.py ....................................F\n\n================================== FAILURES ===================================\n____________________ TestArming.test_arm_threading_run_at _____________________\ntests\\test_scheduler_core.py:404: in test_arm_threading_run_at\n    assert task.id in scheduler._timer_threads\nE   AssertionError: assert '08cf8afb-8070-49fb-a783-c198c1283ef8' in {}\nE    +  where '08cf8afb-8070-49fb-a783-c198c1283ef8' = ScheduledTask(name='task', description='Test task: task', task_type=<TaskType.ONE_TIME: 'one_time'>, schedule=Schedule...try_count=0, on_success=None, on_failure=None, tags=[], timeout_seconds=300, id='08cf8afb-8070-49fb-a783-c198c1283ef8').id\nE    +  and   {} = <scheduler.task_scheduler.TaskScheduler object at 0x000001BCA6020850>._timer_threads\n------------------------------ Captured log call ------------------------------"
-}
+Timestamp: 2026-06-14T13:32:46.157Z
+Commit: 62df50512d5041fb17f632cda5f94c6d2210ec24
+Command: python -m pytest tests/ -v --tb=short -x
+Result: 1 failed, 116 passed, 3 warnings in 4.26s
+Status: PARTIAL PASS (scheduler test failure)
+
+Failure:
+tests/test_scheduler_core.py::TestArming::test_arm_threading_run_at
+AssertionError: Expected task in _timer_threads

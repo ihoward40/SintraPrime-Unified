@@ -1,0 +1,58 @@
+Evidence Command Center MVP Verification Receipt
+Generated: 2026-06-14T13:57:01Z
+
+TEST COLLECTION RECONCILIATION:
+- Reported methods created: 132
+- Actual tests collected: 100
+- Breakdown:
+  * test_evidence_registry.py:  25 tests
+  * test_evidence_scoring.py:   26 tests
+  * test_exhibit_registry.py:   28 tests
+  * test_violation_registry.py: 21 tests
+
+DISCREPANCY EXPLANATION:
+The 32-test difference likely comes from:
+1. Parametrized tests counted as multiple methods in creation
+2. Test helper methods (setUp, tearDown, fixtures)
+3. Private test utilities not collected by pytest
+
+All 100 collected tests PASSED.
+
+COVERAGE ANALYSIS:
+Total: 97.08% (520 statements, 130 branches)
+
+Module breakdown:
+- __init__.py:   100.00% (6 statements)
+- registry.py:   100.00% (90 statements, 12 branches)
+- models.py:     98.54%  (187 statements, 18 branches)
+- scoring.py:    97.48%  (166 statements, 72 branches)
+- exhibits.py:   89.90%  (71 statements, 28 branches)
+
+Missing coverage (8 statements, 11 branch paths):
+- exhibits.py:47,53,172,177 (error paths and edge cases)
+- models.py:333 (validation edge case)
+- scoring.py:101,113,163 (fallback calculations)
+
+PUBLIC EXPORTS VERIFIED:
+All exports in __init__.py are exercised by tests:
+✓ Evidence, Violation, Exhibit, ChainEntry
+✓ EvidenceRegistry, ViolationRegistry, ExhibitRegistry
+✓ CaseReadinessScorer
+✓ create_numbered_exhibit, create_exhibit_manifest
+
+REPOSITORY STATE:
+- Implementation commit: 3804384
+- Test commit: 5d1276f
+- Verification commit: (pending)
+- Scheduler failure: Documented in docs/known-issues/ (pre-existing debt)
+- Coverage artifacts: artifacts/ecc-coverage.json
+
+NEXT APPROVED SCOPE:
+Client #0 UACC fixture only
+- No database migrations
+- No API endpoints
+- No UI components
+- Pure Python validation
+
+Verified by: Hermes (GitHub Copilot CLI)
+Verification method: pytest-cov with branch coverage

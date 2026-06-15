@@ -1,0 +1,8 @@
+{
+  "ExitCode": 1,
+  "FailedTests": [
+    "tests/test_scheduler_core.py::TestArming::test_arm_threading_run_at"
+  ],
+  "Passed": 205,
+  "Failed": 1
+}

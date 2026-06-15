@@ -1,0 +1,4 @@
+First run completed: {'start': True, 'progress': 100}
+Attempting resume from checkpoint...
+FAILURE: DurableCheckpointer missing load_latest() method
+Error: 'DurableCheckpointer' object has no attribute 'load_latest'

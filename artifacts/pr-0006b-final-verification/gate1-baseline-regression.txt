@@ -1,0 +1,7 @@
+=== GATE 1: BASELINE REGRESSION COMPARISON ===
+Start Time: 2026-06-15T17:53:44Z
+Working Directory: C:\SintraPrime-Unified
+Current Commit: b36da27965f8bde3640ddd3079fd5689b9abb9a2
+Baseline Commit: 5a7404f
+
+Running pytest against current HEAD...

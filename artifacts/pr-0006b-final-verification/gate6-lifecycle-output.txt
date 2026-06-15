@@ -1,0 +1,28 @@
+=== GATE 6: SQLITE CONNECTION LIFECYCLE ===
+
+[1] Testing explicit close()...
+[OK] store.close() completed
+[OK] Database file exists: C:\Users\admin\AppData\Local\Temp\tmpm499cfwx\lifecycle_test.db
+
+[2] Testing reopen after close...
+[OK] Checkpoint loaded after reopen
+
+[3] Testing context manager...
+[OK] Checkpoint saved in context manager
+[OK] Context manager auto-closed
+[OK] Data persisted after context manager close
+
+[4] Testing multiple sequential connections...
+[OK] 5 sequential connections succeeded (no file locks)
+
+[5] Checking WAL mode artifacts...
+  WAL file exists: False
+  SHM file exists: False
+[OK] Database accessible after WAL operations
+
+[6] All connection lifecycle tests passed
+[OK] Explicit close() works
+[OK] Reopen after close works
+[OK] Context manager cleanup works
+[OK] No file lock conflicts
+[OK] WAL mode managed properly

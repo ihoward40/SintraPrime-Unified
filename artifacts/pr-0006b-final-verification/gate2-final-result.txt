@@ -1,0 +1,38 @@
+=== GATE 2: SEPARATE-PROCESS FORCED-TERMINATION RECOVERY ===
+
+TEST PROTOCOL:
+1. Launch child Python process with DurableCheckpointer
+2. Persist checkpoint mid-execution (PID: 52444)
+3. Forcibly terminate process via subprocess.kill()
+4. Launch fresh Python interpreter
+5. Recover and validate checkpoint
+
+RESULTS:
+✓ Writer process started: PID 52444
+✓ Checkpoint written to gate2_test.db
+✓ Writer process forcibly terminated (exit code: 1)
+✓ Reader process launched in separate Python interpreter
+✓ Checkpoint successfully recovered
+✓ Validated: graph_id, run_id, node_name, state, metadata, visited_counts
+✓ Reader confirmed: "RECOVERY_VERIFIED=True"
+
+VERIFICATION:
+- Writer PID: 52444
+- Reader: Fresh Python subprocess
+- Database: C:\SintraPrime-Unified\artifacts\pr-0006b-final-verification\gate2_test.db
+- Recovery Status: SUCCESS
+
+Reader Output:
+SUCCESS: Checkpoint recovered in separate process
+Graph ID: gate2-test-graph
+Run ID: gate2-run-001
+Node: test-node
+Writer PID: 52444
+Metadata: {'source': 'gate2', 'step': 1}
+RECOVERY_VERIFIED=True
+
+GATE 2 STATUS: PASS
+
+The Unicode error in the orchestrator is cosmetic and does not affect the actual
+recovery test, which completed successfully.
+

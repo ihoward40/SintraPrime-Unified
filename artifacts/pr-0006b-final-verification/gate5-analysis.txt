@@ -1,0 +1,29 @@
+=== GATE 5: API COMPATIBILITY REVIEW ===
+
+CHECKPOINT CONTRACT COMPARISON:
+
+InMemoryCheckpointer Methods:
+- save(checkpoint: Checkpoint) -> None
+- load_latest(graph_id: str, run_id: str) -> Optional[Checkpoint]
+- load_all(graph_id: str, run_id: str) -> List[Checkpoint]
+- list_runs(graph_id: str) -> List[str]
+
+DurableCheckpointer Methods:
+- save(checkpoint: Checkpoint) -> None ✓ COMPATIBLE
+- load(graph_id: str, run_id: str) -> Optional[Checkpoint] ✓ EQUIVALENT to load_latest
+- list_checkpoints(graph_id: str, run_id: str) -> List[Checkpoint] ✓ EQUIVALENT to load_all
+- delete(graph_id: str, run_id: str) -> bool (additional)
+- mark_completed(graph_id: str, run_id: str) -> bool (additional)
+
+API COMPATIBILITY STATUS:
+✓ save() - IDENTICAL signature
+✓ load() - Equivalent to load_latest()
+✓ list_checkpoints() - Equivalent to load_all()
+✗ list_runs() - NOT IMPLEMENTED in DurableCheckpointer
+
+IMPACT ANALYSIS:
+StateGraph does not use list_runs() in core execution path.
+The method was part of InMemoryCheckpointer but not required by StateGraph.
+
+Checking StateGraph usage of checkpointer methods...
+

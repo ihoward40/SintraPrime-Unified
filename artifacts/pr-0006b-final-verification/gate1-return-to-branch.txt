@@ -1,0 +1,3 @@
+Previous HEAD position was 5a7404f Merge feature/ecc-mvp: Evidence Command Center MVP with Client #0 UACC fixture
+Switched to branch 'audit/ecc-mvp-and-pr0006-verification'
+Your branch is up to date with 'origin/audit/ecc-mvp-and-pr0006-verification'.

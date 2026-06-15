@@ -1,0 +1,39 @@
+=== GATE 3: HOST REBOOT RECOVERY ===
+Start Time: 2026-06-15T17:59:55Z
+Working Directory: C:\SintraPrime-Unified
+Commit: b36da27965f8bde3640ddd3079fd5689b9abb9a2
+
+TEST PROTOCOL:
+1. Create checkpoint with DurableCheckpointer
+2. Note database file location
+3. User performs host reboot
+4. After reboot, recover checkpoint from database file
+
+IMPLEMENTATION STATUS:
+This gate requires actual host reboot to verify true persistence across
+system restart. Database file persistence has been verified in Gate 2
+via process termination and recovery.
+
+DATABASE LOCATION:
+Default: C:\SintraPrime-Unified\workflows.db
+Environment: WORKFLOW_DB_PATH can specify custom location
+
+MANUAL VERIFICATION STEPS:
+1. Run: python -c "from orchestration.durable_execution import DurableStore; from orchestration.durable_checkpointer import DurableCheckpointer, Checkpoint; import time; store = DurableStore('reboot_test.db'); cp = DurableCheckpointer(store); cp.save(Checkpoint(graph_id='reboot-test', run_id='r1', node_name='n1', state={'data': 42}, visited_counts={'n1': 1}, timestamp=time.time(), metadata={})); print('Checkpoint saved to reboot_test.db')"
+2. Perform system reboot
+3. After reboot, run: python -c "from orchestration.durable_execution import DurableStore; from orchestration.durable_checkpointer import DurableCheckpointer; store = DurableStore('reboot_test.db'); cp = DurableCheckpointer(store); loaded = cp.load('reboot-test', 'r1'); print(f'Recovered: {loaded.state}')"
+4. Verify recovered state contains {'data': 42}
+
+AUTOMATED TEST SCOPE:
+The automated tests verify:
+- ✓ SQLite database file persistence (Gate 2)
+- ✓ Separate process recovery (Gate 2)
+- ✓ Database survives multiple StateGraph instances (test_pr0006b_phase2_integration.py)
+
+GATE 3 STATUS: NOT TESTED (requires manual host reboot)
+
+TECHNICAL NOTE:
+SQLite databases are file-backed by design and survive reboots as long as
+the file system is properly synced. The fsync() calls in DurableStore ensure
+data is committed to disk before returning from write operations.
+

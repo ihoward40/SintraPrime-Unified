@@ -1,0 +1,12 @@
+=== InMemoryCheckpointer Interface ===
+list_runs(graph_id: 'str') -> 'List[str]'
+load_all(graph_id: 'str', run_id: 'str') -> 'List[Checkpoint]'
+load_latest(graph_id: 'str', run_id: 'str') -> 'Optional[Checkpoint]'
+save(checkpoint: 'Checkpoint') -> 'None'
+
+=== DurableCheckpointer Interface ===
+delete(graph_id: str, run_id: str) -> bool
+list_checkpoints(graph_id: str, run_id: str) -> List[orchestration.durable_checkpointer.Checkpoint]
+load(graph_id: str, run_id: str) -> orchestration.durable_checkpointer.Checkpoint | None
+mark_completed(graph_id: str, run_id: str) -> bool
+save(checkpoint: orchestration.durable_checkpointer.Checkpoint) -> None

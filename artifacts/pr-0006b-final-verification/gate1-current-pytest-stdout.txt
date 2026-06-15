@@ -1,0 +1,37 @@
+C:\SintraPrime-Unified\tests\test_scheduler_queue.py:276: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+  @pytest.mark.asyncio
+C:\SintraPrime-Unified\agents\sigma\sigma_agent.py:23: PytestCollectionWarning: cannot collect test class 'TestResult' because it has a __init__ constructor (from: tests/test_sigma_agent.py)
+  @dataclass
+C:\SintraPrime-Unified\agents\zero\zero_agent.py:35: PytestCollectionWarning: cannot collect test class 'TestFailure' because it has a __init__ constructor (from: tests/test_zero_agent.py)
+  @dataclass
+============================= test session starts =============================
+platform win32 -- Python 3.14.0, pytest-9.1.0, pluggy-1.6.0
+rootdir: C:\SintraPrime-Unified
+configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
+testpaths: tests
+plugins: anyio-4.11.0, cov-7.1.0
+collected 458 items
+
+tests\security\test_no_runtime_exec.py ............................
+tests\test_durable_checkpointer.py .
+tests\test_evidence_registry.py .........................
+tests\test_evidence_scoring.py ..........................
+tests\test_exhibit_registry.py ............................
+tests\test_nova_agent.py ....................................................
+tests\test_pr0006a_restart_recovery.py ....
+tests\test_pr0006b_phase2_integration.py .....
+tests\test_scheduler_core.py ....................................F
+
+================================== FAILURES ===================================
+____________________ TestArming.test_arm_threading_run_at _____________________
+tests\test_scheduler_core.py:404: in test_arm_threading_run_at
+    assert task.id in scheduler._timer_threads
+E   AssertionError: assert '4a30ca58-4e18-4eac-b746-e7474f255960' in {}
+E    +  where '4a30ca58-4e18-4eac-b746-e7474f255960' = ScheduledTask(name='task', description='Test task: task', task_type=<TaskType.ONE_TIME: 'one_time'>, schedule=Schedule...try_count=0, on_success=None, on_failure=None, tags=[], timeout_seconds=300, id='4a30ca58-4e18-4eac-b746-e7474f255960').id
+E    +  and   {} = <scheduler.task_scheduler.TaskScheduler object at 0x000002B27B9519D0>._timer_threads
+------------------------------ Captured log call ------------------------------
+ERROR    scheduler.task_scheduler:task_scheduler.py:225 APScheduler arm failed for task 4a30ca58-4e18-4eac-b746-e7474f255960: Expected a trigger instance or string, got datetime instead
+=========================== short test summary info ===========================
+FAILED tests/test_scheduler_core.py::TestArming::test_arm_threading_run_at - ...
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+======================== 1 failed, 205 passed in 6.22s ========================

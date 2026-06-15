@@ -145,6 +145,20 @@ class DurableCheckpointer:
             metadata=metadata,
         )
     
+    def load_latest(self, graph_id: str, run_id: str) -> Optional[Checkpoint]:
+        """Load most recent checkpoint for given workflow run.
+        
+        Alias for load() to match InMemoryCheckpointer API.
+        
+        Args:
+            graph_id: Workflow graph identifier
+            run_id: Specific execution run identifier
+            
+        Returns:
+            Checkpoint if found, None otherwise
+        """
+        return self.load(graph_id, run_id)
+    
     def list_checkpoints(self, graph_id: str, run_id: str) -> List[Checkpoint]:
         """List all checkpoints for a workflow run (newest first).
         

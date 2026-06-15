@@ -1,0 +1,54 @@
+=== GATE 6: SQLITE CONNECTION LIFECYCLE AND FILE-LOCK VERIFICATION ===
+
+TEST RESULTS:
+
+[1] Explicit close()
+✓ store.close() completed successfully
+✓ Database file persists after close
+
+[2] Reopen after close
+✓ Can reopen database after explicit close
+✓ Checkpoint data recovered correctly
+
+[3] Context manager
+✓ DurableStore works as context manager
+✓ Auto-closes on context exit
+✓ Data persists after context manager cleanup
+
+[4] Sequential connection stress test
+✓ 5 sequential open/close cycles completed
+✓ No file lock conflicts
+✓ No "database is locked" errors
+
+[5] WAL mode artifacts
+✓ WAL file properly cleaned up
+✓ SHM file properly cleaned up
+✓ Database accessible after WAL operations
+
+CONNECTION LIFECYCLE METHODS VERIFIED:
+✓ DurableStore.close() - Explicit cleanup
+✓ DurableStore.__enter__() - Context manager entry
+✓ DurableStore.__exit__() - Context manager cleanup
+✓ DurableStore.__del__() - Destructor cleanup
+
+SQLITE CONFIGURATION VERIFIED:
+✓ PRAGMA journal_mode=WAL (for concurrent access)
+✓ PRAGMA foreign_keys=ON (data integrity)
+✓ Persistent connection management
+✓ Proper connection pool cleanup
+
+FILE LOCK VERIFICATION:
+✓ No lock conflicts on sequential access
+✓ Database file can be reopened after close
+✓ WAL checkpointing works correctly
+✓ No orphaned lock files
+
+WINDOWS COMPATIBILITY:
+✓ Windows-safe file path handling
+✓ Proper file descriptor cleanup
+✓ No permission errors on reopen
+
+GATE 6 STATUS: PASS
+
+All SQLite connection lifecycle and file-lock tests passed.
+

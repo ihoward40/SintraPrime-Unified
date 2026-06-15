@@ -1,0 +1,20 @@
+Evidence Items: 8
+Exhibit Items: 4
+
+Provenance Issues Found:
+  - EV-UACC-005: Missing custodian
+  - EV-UACC-005: Missing hash
+  - EV-UACC-006: Missing custodian
+  - EV-UACC-006: Missing hash
+  - EV-UACC-007: Missing custodian
+  - EV-UACC-007: Missing hash
+  - EV-UACC-008: Missing custodian
+  - EV-UACC-008: Missing hash
+  - None: Missing created_date
+  - None: Missing source_evidence
+  - None: Missing created_date
+  - None: Missing source_evidence
+  - None: Missing created_date
+  - None: Missing source_evidence
+  - None: Missing created_date
+  - None: Missing source_evidence

@@ -1,0 +1,17 @@
+=== GATE 1 RESULT: PASS ===
+
+The failing test exists identically in baseline commit 5a7404f.
+
+CURRENT (b36da27):
+- 205 passed, 1 failed
+- Failed: test_scheduler_core.py::TestArming::test_arm_threading_run_at
+- Error: Expected a trigger instance or string, got datetime instead
+
+BASELINE (5a7404f):
+- 1 failed (same test)
+- Failed: test_scheduler_core.py::TestArming::test_arm_threading_run_at
+- Error: Expected a trigger instance or string, got datetime instead (identical)
+
+CONCLUSION: No regression. The failure is pre-existing.
+GATE 1 STATUS: PASS
+

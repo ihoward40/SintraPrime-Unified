@@ -1,0 +1,41 @@
+Traceback (most recent call last):
+  File "C:\SintraPrime-Unified\artifacts\pr-0006b-final-verification\gate2_orchestrator.py", line 116, in <module>
+    success = test_process_recovery()
+=== GATE 2: SEPARATE-PROCESS FORCED-TERMINATION RECOVERY ===
+Working Directory: C:\SintraPrime-Unified
+Artifacts Directory: C:\SintraPrime-Unified\artifacts\pr-0006b-final-verification
+Cleaned up: C:\SintraPrime-Unified\artifacts\pr-0006b-final-verification\gate2_test.db
+
+[1] Launching writer subprocess...
+Writer PID: 52444
+Writer process running: True
+Database created: C:\SintraPrime-Unified\artifacts\pr-0006b-final-verification\gate2_test.db
+
+  File "C:\SintraPrime-Unified\artifacts\pr-0006b-final-verification\gate2_orchestrator.py", line 107, in test_process_recovery
+[2] Forcibly terminating writer (PID 52444)...
+    print("\n[4] \u2713 GATE 2 PASSED: Checkpoint recovered in separate process after forced termination")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2713' in position 6: character maps to <undefined>
+Writer terminated. Exit code: 1
+Writer STDOUT: PID=52444
+Checkpoint written
+DB path: C:\SintraPrime-Unified\artifacts\pr-0006b-final-verification\gate2_test.db
+
+Writer process confirmed dead
+
+[3] Launching reader subprocess (fresh Python interpreter)...
+Reader exit code: 0
+Reader STDOUT:
+SUCCESS: Checkpoint recovered in separate process
+Graph ID: gate2-test-graph
+Run ID: gate2-run-001
+Node: test-node
+Writer PID: 52444
+Metadata: {'source': 'gate2', 'step': 1}
+RECOVERY_VERIFIED=True
+
+
+[ERROR] Exception during test: 'charmap' codec can't encode character '\u2713' in position 6: character maps to <undefined>

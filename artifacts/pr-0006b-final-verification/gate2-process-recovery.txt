@@ -1,0 +1,13 @@
+=== GATE 2: SEPARATE-PROCESS FORCED-TERMINATION RECOVERY ===
+Start Time: 2026-06-15T17:55:19Z
+Working Directory: C:\SintraPrime-Unified
+Commit: b36da27965f8bde3640ddd3079fd5689b9abb9a2
+
+Test Protocol:
+1. Launch child Python process with DurableCheckpointer
+2. Persist checkpoint mid-execution
+3. Record process PID
+4. Forcibly terminate process via PID
+5. Launch fresh Python interpreter
+6. Recover and validate checkpoint
+

@@ -1,0 +1,4 @@
+=== GATE 9: SHA-256 ARTIFACT MANIFEST ===
+Start Time: 2026-06-15T18:08:54Z
+Computing SHA-256 hashes for all verification artifacts...
+

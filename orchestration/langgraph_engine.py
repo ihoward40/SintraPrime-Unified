@@ -13,6 +13,7 @@ import asyncio
 import copy
 import json
 import logging
+import os
 import time
 import uuid
 from collections import defaultdict, deque
@@ -362,11 +363,27 @@ class StateGraph:
     def __init__(
         self,
         graph_id: Optional[str] = None,
-        checkpointer: Optional[InMemoryCheckpointer] = None,
+        checkpointer = None,  # Removed type hint to support both InMemory and DurableCheckpointer
         max_cycles: int = MAX_CYCLE_LIMIT,
     ) -> None:
         self.graph_id = graph_id or f"graph_{uuid.uuid4().hex[:8]}"
-        self.checkpointer = checkpointer or InMemoryCheckpointer()
+        
+        # Default to DurableStore-backed persistence
+        if checkpointer is None:
+            try:
+                from .durable_execution import DurableStore
+                from .durable_checkpointer import DurableCheckpointer
+                
+                db_path = os.environ.get("WORKFLOW_DB_PATH", "workflows.db")
+                durable_store = DurableStore(db_path=db_path)
+                checkpointer = DurableCheckpointer(durable_store)
+                logger.info(f"StateGraph {self.graph_id}: Using DurableCheckpointer (db_path={db_path})")
+            except ImportError:
+                # Fallback to InMemoryCheckpointer if DurableStore not available
+                checkpointer = InMemoryCheckpointer()
+                logger.warning(f"StateGraph {self.graph_id}: DurableStore unavailable, using InMemoryCheckpointer")
+        
+        self.checkpointer = checkpointer
         self.max_cycles = max_cycles
 
         self._nodes: Dict[str, Node] = {}

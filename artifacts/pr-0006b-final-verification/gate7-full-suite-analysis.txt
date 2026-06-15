@@ -1,0 +1,66 @@
+==============================================================================
+FULL TEST SUITE RESULTS (WITHOUT -x FLAG)
+==============================================================================
+Timestamp: 2026-06-15T19:26:38Z
+Commit: 781c84b
+Branch: audit/ecc-mvp-and-pr0006-verification
+
+SUMMARY:
+========
+Total Collected: 458 tests
+Total Executed: 458 tests
+Passed: 451 tests
+Failed: 7 tests
+Exit Code: 1
+Duration: 91.30 seconds (0:01:31)
+
+FAILED TESTS:
+=============
+
+1. tests/test_scheduler_core.py::TestArming::test_arm_threading_run_at
+   Error: AssertionError - APScheduler trigger type mismatch
+   Status: PRE-EXISTING (confirmed in Gate 1 baseline)
+
+2. tests/test_scheduler_core.py::TestArming::test_arm_threading_interval
+   Error: AssertionError - APScheduler trigger type mismatch
+   Status: PRE-EXISTING (same pattern as #1)
+
+3. tests/test_scheduler_executor.py::TestRestrictedShell::test_basic_command
+   Error: FileNotFoundError - The system cannot find the file specified
+   Status: PRE-EXISTING (Unix shell commands on Windows)
+
+4. tests/test_scheduler_executor.py::TestRestrictedShell::test_unsafe_mode_allows
+   Error: FileNotFoundError - The system cannot find the file specified
+   Status: PRE-EXISTING (Unix shell commands on Windows)
+
+5. tests/test_scheduler_executor.py::TestRestrictedShell::test_shell_timeout
+   Error: FileNotFoundError - The system cannot find the file specified
+   Status: PRE-EXISTING (Unix shell commands on Windows)
+
+6. tests/test_scheduler_executor.py::TestRestrictedShell::test_nonzero_exit_code
+   Error: FileNotFoundError - The system cannot find the file specified
+   Status: PRE-EXISTING (Unix shell commands on Windows)
+
+7. tests/test_scheduler_queue.py::TestAsyncBridge::test_async_enqueue_dequeue
+   Error: async functions are not natively supported (missing pytest plugin)
+   Status: PRE-EXISTING (configuration issue)
+
+PR-0006B RELATED TESTS:
+=======================
+✓ tests/test_durable_checkpointer.py: 1/1 passed
+✓ tests/test_pr0006a_restart_recovery.py: 4/4 passed
+✓ tests/test_pr0006b_phase2_integration.py: 5/5 passed
+Total: 10/10 PR-0006B tests passed (100%)
+
+ANALYSIS:
+=========
+All 7 failures are PRE-EXISTING issues unrelated to PR-0006B:
+- 2 scheduler APScheduler integration failures
+- 4 Windows/Unix shell compatibility failures
+- 1 async test configuration failure
+
+PR-0006B introduced ZERO new test failures.
+All PR-0006B functionality tests pass.
+
+==============================================================================
+

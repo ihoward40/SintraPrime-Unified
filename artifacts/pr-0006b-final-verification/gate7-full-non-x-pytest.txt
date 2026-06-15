@@ -1,0 +1,119 @@
+C:\SintraPrime-Unified\agents\sigma\sigma_agent.py:23: PytestCollectionWarning: cannot collect test class 'TestResult' because it has a __init__ constructor (from: tests/test_sigma_agent.py)
+  @dataclass
+C:\SintraPrime-Unified\agents\zero\zero_agent.py:35: PytestCollectionWarning: cannot collect test class 'TestFailure' because it has a __init__ constructor (from: tests/test_zero_agent.py)
+  @dataclass
+============================= test session starts =============================
+platform win32 -- Python 3.14.0, pytest-9.1.0, pluggy-1.6.0
+rootdir: C:\SintraPrime-Unified
+configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
+testpaths: tests
+plugins: anyio-4.11.0, cov-7.1.0
+collected 458 items
+
+tests\security\test_no_runtime_exec.py ............................      [  6%]
+tests\test_durable_checkpointer.py .                                     [  6%]
+tests\test_evidence_registry.py .........................                [ 11%]
+tests\test_evidence_scoring.py ..........................                [ 17%]
+tests\test_exhibit_registry.py ............................              [ 23%]
+tests\test_nova_agent.py ............................................... [ 33%]
+.....                                                                    [ 34%]
+tests\test_pr0006a_restart_recovery.py ....                              [ 35%]
+tests\test_pr0006b_phase2_integration.py .....                           [ 36%]
+tests\test_scheduler_core.py ....................................FF....  [ 46%]
+tests\test_scheduler_dispatcher.py ..................................... [ 54%]
+..........                                                               [ 56%]
+tests\test_scheduler_executor.py ..............F...FFF                   [ 60%]
+tests\test_scheduler_queue.py ........................F                  [ 66%]
+tests\test_scheduler_recurring.py .........................              [ 71%]
+tests\test_scheduler_task_types.py ........................              [ 77%]
+tests\test_sigma_agent.py ..................................             [ 84%]
+tests\test_uacc_fixture.py ..................                            [ 88%]
+tests\test_violation_registry.py .....................                   [ 93%]
+tests\test_zero_agent.py ................................                [100%]
+
+================================== FAILURES ===================================
+____________________ TestArming.test_arm_threading_run_at _____________________
+tests\test_scheduler_core.py:404: in test_arm_threading_run_at
+    assert task.id in scheduler._timer_threads
+E   AssertionError: assert 'ead5e8da-89be-4c95-89e1-0c9806ba2bf2' in {}
+E    +  where 'ead5e8da-89be-4c95-89e1-0c9806ba2bf2' = ScheduledTask(name='task', description='Test task: task', task_type=<TaskType.ONE_TIME: 'one_time'>, schedule=Schedule...try_count=0, on_success=None, on_failure=None, tags=[], timeout_seconds=300, id='ead5e8da-89be-4c95-89e1-0c9806ba2bf2').id
+E    +  and   {} = <scheduler.task_scheduler.TaskScheduler object at 0x000001952B5F6650>._timer_threads
+------------------------------ Captured log call ------------------------------
+ERROR    scheduler.task_scheduler:task_scheduler.py:225 APScheduler arm failed for task ead5e8da-89be-4c95-89e1-0c9806ba2bf2: Expected a trigger instance or string, got datetime instead
+___________________ TestArming.test_arm_threading_interval ____________________
+tests\test_scheduler_core.py:415: in test_arm_threading_interval
+    assert task.id in scheduler._timer_threads
+E   AssertionError: assert '4bb723a0-56fd-4ddc-94f6-647acf708612' in {}
+E    +  where '4bb723a0-56fd-4ddc-94f6-647acf708612' = ScheduledTask(name='task', description='Test task: task', task_type=<TaskType.RECURRING: 'recurring'>, schedule=Schedu...try_count=0, on_success=None, on_failure=None, tags=[], timeout_seconds=300, id='4bb723a0-56fd-4ddc-94f6-647acf708612').id
+E    +  and   {} = <scheduler.task_scheduler.TaskScheduler object at 0x000001952B61AE50>._timer_threads
+___________________ TestRestrictedShell.test_basic_command ____________________
+tests\test_scheduler_executor.py:210: in test_basic_command
+    output = executor.execute_shell("echo hello")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scheduler\task_executor.py:224: in execute_shell
+    proc = subprocess.run(
+C:\Python314\Lib\subprocess.py:554: in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\subprocess.py:1038: in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+C:\Python314\Lib\subprocess.py:1552: in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+E   FileNotFoundError: [WinError 2] The system cannot find the file specified
+_________________ TestRestrictedShell.test_unsafe_mode_allows _________________
+tests\test_scheduler_executor.py:226: in test_unsafe_mode_allows
+    output = executor.execute_shell("echo allowed", safe_mode=False)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scheduler\task_executor.py:224: in execute_shell
+    proc = subprocess.run(
+C:\Python314\Lib\subprocess.py:554: in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\subprocess.py:1038: in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+C:\Python314\Lib\subprocess.py:1552: in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+E   FileNotFoundError: [WinError 2] The system cannot find the file specified
+___________________ TestRestrictedShell.test_shell_timeout ____________________
+tests\test_scheduler_executor.py:232: in test_shell_timeout
+    executor.execute_shell("sleep 120")
+scheduler\task_executor.py:224: in execute_shell
+    proc = subprocess.run(
+C:\Python314\Lib\subprocess.py:554: in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\subprocess.py:1038: in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+C:\Python314\Lib\subprocess.py:1552: in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+E   FileNotFoundError: [WinError 2] The system cannot find the file specified
+_________________ TestRestrictedShell.test_nonzero_exit_code __________________
+tests\test_scheduler_executor.py:236: in test_nonzero_exit_code
+    executor.execute_shell("false")
+scheduler\task_executor.py:224: in execute_shell
+    proc = subprocess.run(
+C:\Python314\Lib\subprocess.py:554: in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Python314\Lib\subprocess.py:1038: in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+C:\Python314\Lib\subprocess.py:1552: in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+E   FileNotFoundError: [WinError 2] The system cannot find the file specified
+_________________ TestAsyncBridge.test_async_enqueue_dequeue __________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+=========================== short test summary info ===========================
+FAILED tests/test_scheduler_core.py::TestArming::test_arm_threading_run_at - ...
+FAILED tests/test_scheduler_core.py::TestArming::test_arm_threading_interval
+FAILED tests/test_scheduler_executor.py::TestRestrictedShell::test_basic_command
+FAILED tests/test_scheduler_executor.py::TestRestrictedShell::test_unsafe_mode_allows
+FAILED tests/test_scheduler_executor.py::TestRestrictedShell::test_shell_timeout
+FAILED tests/test_scheduler_executor.py::TestRestrictedShell::test_nonzero_exit_code
+FAILED tests/test_scheduler_queue.py::TestAsyncBridge::test_async_enqueue_dequeue
+================== 7 failed, 451 passed in 91.30s (0:01:31) ===================

@@ -1,0 +1,227 @@
+{
+  "receipt_id": "pr-0006b-verification-20260615",
+  "verification_type": "evidence_based_runtime_validation",
+  "date": "2026-06-15T11:24:00Z",
+  "pr_number": "PR-0006B",
+  "pr_title": "Wire DurableStore as Default Checkpointer",
+  "verification_status": "PARTIAL_WITH_BLOCKERS",
+  "overall_verdict": "ARCHITECTURALLY_SOUND_OPERATIONALLY_BLOCKED",
+  
+  "code_validation": {
+    "status": "VERIFIED",
+    "confidence": "HIGH",
+    "files_verified": [
+      {
+        "path": "orchestration/durable_checkpointer.py",
+        "status": "EXISTS",
+        "lines": 262,
+        "purpose": "LangGraph adapter for DurableStore"
+      },
+      {
+        "path": "orchestration/langgraph_engine.py",
+        "status": "MODIFIED",
+        "lines_changed": 2,
+        "purpose": "Defaults to DurableCheckpointer"
+      },
+      {
+        "path": "tests/test_durable_checkpointer.py",
+        "status": "EXISTS",
+        "lines": 317,
+        "purpose": "Phase 1 adapter tests"
+      },
+      {
+        "path": "tests/test_pr0006b_phase2_integration.py",
+        "status": "EXISTS",
+        "lines": 164,
+        "purpose": "Phase 2 integration tests"
+      }
+    ],
+    "documentation_artifacts": [
+      "docs/PR-0006B-implementation-plan.md",
+      "docs/PR-0006B-phase1-completion.md",
+      "docs/PR-0006B-phase2-completion.md",
+      "docs/PR-0006B-COMPLETE.md",
+      "artifacts/receipts/pr-0006b-complete.json"
+    ]
+  },
+  
+  "runtime_test_validation": {
+    "phase_1_tests": {
+      "test_file": "tests/test_durable_checkpointer.py",
+      "command": "python -m pytest tests/test_durable_checkpointer.py -v --tb=short",
+      "status": "PARTIAL",
+      "passed": 1,
+      "failed": 0,
+      "errors": 1,
+      "error_type": "Windows file-locking in teardown",
+      "impact": "LOW",
+      "details": "Test logic passed, teardown failed due to SQLite file lock (cosmetic only)",
+      "error_message": "PermissionError: [WinError 32] The process cannot access the file because it is being used by another process"
+    },
+    "phase_2_tests": {
+      "test_file": "tests/test_pr0006b_phase2_integration.py",
+      "command": "python -m pytest tests/test_pr0006b_phase2_integration.py -v --tb=short",
+      "status": "PARTIAL",
+      "collected": 5,
+      "passed": 2,
+      "failed": 3,
+      "failures": [
+        {
+          "test": "test_stategraph_respects_workflow_db_path",
+          "error_type": "Windows file-locking",
+          "impact": "LOW"
+        },
+        {
+          "test": "test_checkpoint_persists_across_stategraph_instances",
+          "error_type": "API incompatibility",
+          "error_message": "AttributeError: 'StateGraph' object has no attribute 'set_terminal_node'",
+          "expected_method": "add_terminal_nodes()",
+          "impact": "MEDIUM",
+          "fix_required": true
+        }
+      ]
+    }
+  },
+  
+  "uacc_fixture_provenance_audit": {
+    "status": "FAILED",
+    "confidence": "LOW",
+    "critical_finding": "EVIDENCE_INTEGRITY_VIOLATION",
+    "details": {
+      "claimed_verified_evidence": 4,
+      "actual_evidence_files": 0,
+      "evidence_directory_exists": false,
+      "verification_command": "Test-Path \"C:\\SintraPrime-Unified\\clients\\C-0001-UACC\\evidence\\*.pdf\"",
+      "verification_result": false
+    },
+    "provenance_violations": [
+      {
+        "evidence_id": "EV-UACC-001",
+        "claimed_status": "verified",
+        "claimed_file": "evidence/EV-UACC-001_loan_agreement.pdf",
+        "file_exists": false,
+        "hash_provided": "a7f3e9d2c1b8a5e4f6d3c2b1a9e8d7c6b5a4f3e2d1c9b8a7f6e5d4c3b2a1",
+        "violation_type": "FALSE_VERIFICATION_CLAIM"
+      },
+      {
+        "evidence_id": "EV-UACC-002",
+        "claimed_status": "verified",
+        "claimed_file": "evidence/EV-UACC-002_payment_records.pdf",
+        "file_exists": false,
+        "hash_provided": "b8e4f0d3c2b9a6e5f7d4c3b2a0e9d8c7b6a5f4e3d2c0b9a8f7e6d5c4b3a2",
+        "violation_type": "FALSE_VERIFICATION_CLAIM"
+      },
+      {
+        "evidence_id": "EV-UACC-003",
+        "claimed_status": "verified",
+        "claimed_file": "evidence/EV-UACC-003_deficiency_notice.pdf",
+        "file_exists": false,
+        "hash_provided": "c9f5e1d4c3b0a7e6f8d5c4b3a1e0d9c8b7a6f5e4d3c1b0a9f8e7d6c5b4a3",
+        "violation_type": "FALSE_VERIFICATION_CLAIM"
+      },
+      {
+        "evidence_id": "EV-UACC-004",
+        "claimed_status": "verified",
+        "claimed_file": "evidence/EV-UACC-004_experian_report.pdf",
+        "file_exists": false,
+        "hash_provided": "d0a6f2e5d4c1b8a7e9f6d5c4b2a1e0d9c8b7a6f5e4d3c2b1a0f9e8d7c6b5",
+        "violation_type": "FALSE_VERIFICATION_CLAIM"
+      }
+    ],
+    "readiness_score_validity": {
+      "claimed_score": 48.333333333333336,
+      "claimed_evidence_count": "4/8 verified",
+      "actual_evidence_count": "0/8 exist",
+      "score_valid": false,
+      "corrected_score_estimate": "<20%"
+    },
+    "gate_requirement_violated": "Do not invent facts, documents, dates, account details, or evidence. Missing source documents must reduce readiness rather than be treated as present.",
+    "impact": "CRITICAL_FOR_EVIDENCE_INTEGRITY"
+  },
+  
+  "blockers": [
+    {
+      "id": "BLOCKER-1",
+      "severity": "MEDIUM",
+      "component": "Phase 2 Tests",
+      "issue": "API incompatibility: set_terminal_node() does not exist",
+      "fix": "Replace with add_terminal_nodes()",
+      "estimated_effort": "5 minutes"
+    },
+    {
+      "id": "BLOCKER-2",
+      "severity": "LOW",
+      "component": "All Tests",
+      "issue": "Windows file-locking in test teardown",
+      "fix": "Add ignore_cleanup_errors=True to TemporaryDirectory()",
+      "estimated_effort": "10 minutes"
+    },
+    {
+      "id": "BLOCKER-3",
+      "severity": "CRITICAL",
+      "component": "UACC Fixture",
+      "issue": "Evidence provenance violations - claimed files don't exist",
+      "fix": "Rebuild fixture with real provenance or mark all as fixture_placeholder",
+      "estimated_effort": "1-2 hours",
+      "options": [
+        "Create placeholder PDFs with SAMPLE DOCUMENT watermarks",
+        "Mark all evidence as 'fixture_placeholder' with no files",
+        "Remove UACC fixture until real test case available"
+      ]
+    }
+  ],
+  
+  "recommended_actions": {
+    "immediate": [
+      "Fix Phase 2 test API: graph1.set_terminal_node('step2') → graph1.add_terminal_nodes(['step2'])",
+      "Fix Windows cleanup: TemporaryDirectory(ignore_cleanup_errors=True)",
+      "Re-run tests and verify all pass"
+    ],
+    "short_term": [
+      "Rebuild UACC fixture with integrity",
+      "Add evidence integrity validation to ECC",
+      "Document fixture as test data with simulated facts"
+    ],
+    "before_production": [
+      "Live restart recovery test with actual process termination",
+      "Finalize ADR-0001 event stream decision",
+      "Performance benchmark: InMemoryCheckpointer vs DurableCheckpointer",
+      "Database backup strategy for workflows.db"
+    ]
+  },
+  
+  "final_assessment": {
+    "pr_0006b_core_implementation": {
+      "status": "VERIFIED",
+      "confidence": "HIGH",
+      "architectural_soundness": "EXCELLENT",
+      "test_quality": "NEEDS_MINOR_FIXES",
+      "production_readiness": "BLOCKED_BY_TEST_FIXES"
+    },
+    "evidence_command_center_validation": {
+      "status": "FAILED",
+      "reason": "UACC fixture provenance integrity violated",
+      "must_fix_before": "Claiming ECC validation complete"
+    }
+  },
+  
+  "verification_evidence": {
+    "commit_verified": "913e0a9",
+    "branch": "main",
+    "working_tree": "clean",
+    "test_commands": [
+      "python -m pytest tests/test_durable_checkpointer.py -v",
+      "python -m pytest tests/test_pr0006b_phase2_integration.py -v",
+      "Test-Path \"C:\\SintraPrime-Unified\\clients\\C-0001-UACC\\evidence\\*.pdf\"",
+      "Get-ChildItem \"C:\\SintraPrime-Unified\\clients\\C-0001-UACC\" -Recurse"
+    ],
+    "artifacts_generated": [
+      "docs/PR-0006B-VERIFICATION-REPORT.md",
+      "artifacts/receipts/pr-0006b-verification.json"
+    ]
+  },
+  
+  "next_verification_required": "After test fixes and UACC provenance correction",
+  "verification_complete": false,
+  "production_deployment_approved": false
+}

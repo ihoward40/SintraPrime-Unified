@@ -124,21 +124,41 @@ class DurableStore:
     def __init__(self, db_path: str = ":memory:") -> None:
         self.db_path = db_path
         self._persistent_conn: Optional[sqlite3.Connection] = None
-        if db_path == ":memory:":
-            # For in-memory databases, reuse a single connection so tables persist
-            self._persistent_conn = sqlite3.connect(":memory:", check_same_thread=False)
-            self._persistent_conn.row_factory = sqlite3.Row
-            self._persistent_conn.execute("PRAGMA foreign_keys=ON")
+        # Always use persistent connection for deterministic cleanup
+        self._persistent_conn = sqlite3.connect(db_path, check_same_thread=False)
+        self._persistent_conn.row_factory = sqlite3.Row
+        if db_path != ":memory:":
+            self._persistent_conn.execute("PRAGMA journal_mode=WAL")
+        self._persistent_conn.execute("PRAGMA foreign_keys=ON")
         self._init_db()
 
     def _connect(self) -> sqlite3.Connection:
+        # Always return the persistent connection for deterministic cleanup
+        if self._persistent_conn is None:
+            raise RuntimeError("DurableStore has been closed")
+        return self._persistent_conn
+
+    def close(self) -> None:
+        """Close database connections explicitly (Windows-safe cleanup)."""
         if self._persistent_conn is not None:
-            return self._persistent_conn
-        conn = sqlite3.connect(self.db_path, check_same_thread=False)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA foreign_keys=ON")
-        return conn
+            try:
+                self._persistent_conn.close()
+            except Exception as e:
+                logger.warning(f"Error closing persistent connection: {e}")
+            finally:
+                self._persistent_conn = None
+
+    def __enter__(self) -> "DurableStore":
+        """Context manager support."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Context manager cleanup."""
+        self.close()
+
+    def __del__(self) -> None:
+        """Destructor cleanup."""
+        self.close()
 
     def _init_db(self) -> None:
         with self._connect() as conn:

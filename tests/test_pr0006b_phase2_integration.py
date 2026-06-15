@@ -34,6 +34,7 @@ def test_stategraph_respects_workflow_db_path():
         original_value = os.environ.get("WORKFLOW_DB_PATH")
         os.environ["WORKFLOW_DB_PATH"] = custom_path
         
+        graph = None
         try:
             graph = StateGraph(graph_id="test-env-var")
             
@@ -45,6 +46,10 @@ def test_stategraph_respects_workflow_db_path():
                 f"Expected database at {custom_path}"
                 
         finally:
+            # Clean up graph and close database connections
+            if graph is not None and hasattr(graph.checkpointer, 'store'):
+                graph.checkpointer.store.close()
+            
             # Restore original environment
             if original_value is None:
                 os.environ.pop("WORKFLOW_DB_PATH", None)
@@ -79,30 +84,53 @@ def test_checkpoint_persists_across_stategraph_instances():
         os.environ["WORKFLOW_DB_PATH"] = db_path
         
         try:
-            # Instance 1: Create and execute workflow
+            # Instance 1: Create graph and save checkpoint directly
             graph1 = StateGraph(graph_id="restart-workflow")
             graph1.add_node("step1", lambda state: {"progress": 50})
-            graph1.add_node("step2", lambda state: {"progress": 100})
-            graph1.add_edge("step1", "step2")
             graph1.set_entry_point("step1")
-            graph1.set_terminal_node("step2")
+            graph1.add_terminal_nodes("step1")
             
-            # Execute partially (stop after step1)
-            # This should save checkpoint
-            result1 = graph1.invoke({"input": "test"})
+            # Manually save a checkpoint via checkpointer
+            from orchestration.langgraph_engine import Checkpoint
+            test_checkpoint = Checkpoint(
+                graph_id="restart-workflow",
+                run_id="test-run-001",
+                node_name="step1",
+                state={"progress": 50, "test": "data"},
+                visited_counts={"step1": 1}
+            )
+            graph1.checkpointer.save(test_checkpoint)
+            
+            # Close first graph's connection
+            if hasattr(graph1.checkpointer, 'store'):
+                graph1.checkpointer.store.close()
             
             # Instance 2: New StateGraph with same graph_id (simulates restart)
             graph2 = StateGraph(graph_id="restart-workflow")
             
-            # Both should use same DurableCheckpointer pointing to same DB
+            # Both should use DurableCheckpointer
             assert isinstance(graph1.checkpointer, DurableCheckpointer)
             assert isinstance(graph2.checkpointer, DurableCheckpointer)
             
-            # Verify checkpoint from graph1 is visible to graph2
-            # (this tests that checkpoints persist at the DurableStore level)
+            # Load checkpoint from graph2's checkpointer
+            loaded = graph2.checkpointer.load("restart-workflow", "test-run-001")
+            
+            # Verify checkpoint persisted across instances
+            assert loaded is not None, "Checkpoint should persist across StateGraph instances"
+            assert loaded.node_name == "step1"
+            assert loaded.state["progress"] == 50
+            assert loaded.state["test"] == "data"
+            
+            # Verify database file exists
             assert Path(db_path).exists(), "Database should exist after first execution"
             
         finally:
+            # Clean up connections
+            if 'graph1' in locals() and hasattr(graph1.checkpointer, 'store'):
+                graph1.checkpointer.store.close()
+            if 'graph2' in locals() and hasattr(graph2.checkpointer, 'store'):
+                graph2.checkpointer.store.close()
+            
             # Restore environment
             if original_value is None:
                 os.environ.pop("WORKFLOW_DB_PATH", None)
@@ -135,6 +163,12 @@ def test_multiple_graphs_isolated_checkpoints():
             assert Path(db_path).exists()
             
         finally:
+            # Clean up connections
+            if 'graph_a' in locals() and hasattr(graph_a.checkpointer, 'store'):
+                graph_a.checkpointer.store.close()
+            if 'graph_b' in locals() and hasattr(graph_b.checkpointer, 'store'):
+                graph_b.checkpointer.store.close()
+            
             if original_value is None:
                 os.environ.pop("WORKFLOW_DB_PATH", None)
             else:

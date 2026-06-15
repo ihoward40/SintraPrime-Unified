@@ -40,7 +40,7 @@ class TestInMemoryCheckpointerRecovery:
         )
         cp1.save(ckpt)
         
-        # Verify saved
+        # Verify saved in same instance
         loaded = cp1.load_latest("test-graph", "run-001")
         assert loaded is not None
         assert loaded.state["tradeline_index"] == 247
@@ -112,24 +112,28 @@ class TestDurableStoreRecovery:
 class TestDefaultCheckpointerUsage:
     """Test which checkpointer is actually used by default"""
 
-    def test_stategraph_defaults_to_inmemory(self):
-        """Verify StateGraph uses InMemoryCheckpointer by default"""
+    def test_stategraph_defaults_to_durable(self):
+        """Verify StateGraph now uses DurableCheckpointer by default (PR-0006B)"""
         
         graph = StateGraph(graph_id="test-default")
         
-        # Check the checkpointer type
-        assert isinstance(graph.checkpointer, InMemoryCheckpointer), (
-            "StateGraph defaults to InMemoryCheckpointer - NOT durable!"
+        # After PR-0006B implementation, StateGraph defaults to DurableCheckpointer
+        from orchestration.durable_checkpointer import DurableCheckpointer
+        assert isinstance(graph.checkpointer, DurableCheckpointer), (
+            "StateGraph should default to DurableCheckpointer after PR-0006B"
         )
+        
+        # Clean up
+        if hasattr(graph.checkpointer, 'store'):
+            graph.checkpointer.store.close()
 
 
 def test_workflow_restart_scenario_simplified():
     """
-    Simplified restart scenario proving the gap:
-    Without DurableStore, checkpoint is lost after restart
+    After PR-0006B: Verify StateGraph checkpoints now survive restart
     """
     
-    # Create workflow with default checkpointer
+    # Create workflow with default checkpointer (now DurableCheckpointer)
     graph = StateGraph(graph_id="credit-audit-restart")
     
     # Save a checkpoint directly
@@ -143,20 +147,27 @@ def test_workflow_restart_scenario_simplified():
     graph.checkpointer.save(checkpoint)
     
     # Verify saved
-    loaded = graph.checkpointer.load_latest("credit-audit-restart", "run-001")
+    loaded = graph.checkpointer.load("credit-audit-restart", "run-001")
     assert loaded is not None
     assert loaded.state["tradeline_index"] == 247
     
     # Simulate restart: New graph instance
     graph_after_restart = StateGraph(graph_id="credit-audit-restart")
-    recovered = graph_after_restart.checkpointer.load_latest("credit-audit-restart", "run-001")
+    recovered = graph_after_restart.checkpointer.load("credit-audit-restart", "run-001")
     
-    # EXPECTED: None - default InMemoryCheckpointer loses state
-    assert recovered is None, (
-        "❌ BLOCKING ISSUE: Checkpoint lost after restart\n"
-        "   Credit audit at tradeline 247/500 would restart from 0\n"
-        "   This blocks Evidence Command Center production deployment"
+    # AFTER PR-0006B: Checkpoint SHOULD persist
+    assert recovered is not None, (
+        "✅ PR-0006B SUCCESS: Checkpoint should survive restart\n"
+        "   Credit audit at tradeline 247/500 can resume from checkpoint"
     )
+    assert recovered.state["tradeline_index"] == 247
+    assert recovered.node_name == "tradeline_analysis"
+    
+    # Clean up
+    if hasattr(graph.checkpointer, 'store'):
+        graph.checkpointer.store.close()
+    if hasattr(graph_after_restart.checkpointer, 'store'):
+        graph_after_restart.checkpointer.store.close()
 
 
 if __name__ == "__main__":

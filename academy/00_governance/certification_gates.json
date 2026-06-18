@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "minimum_overall_score": 90,
+  "minimum_category_scores": {
+    "factual_accuracy": 90,
+    "source_quality": 90
+  },
+  "maximum_confidence_calibration_error": 10,
+  "allowed_review_dispositions": [
+    "PASS",
+    "PASS WITH CORRECTIONS"
+  ],
+  "corrections_must_be_closed_for": [
+    "PASS WITH CORRECTIONS"
+  ],
+  "required_exam_status": "completed",
+  "required_reviewer_identity": true,
+  "reviewer_must_differ_from_agent": true,
+  "critical_failure_override": true,
+  "require_submission_hash": true,
+  "require_exam_hash": true,
+  "require_review_hash": true,
+  "require_answer_key_hash": true,
+  "require_certification_history": true
+}

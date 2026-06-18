@@ -1,0 +1,47 @@
+{
+  "exam_id": "JUSTICE-SCRIBE-PROFESSIONAL-001",
+  "version": "2.0.0",
+  "agent_id": "justice_scribe",
+  "required_modules": [
+    "01",
+    "02",
+    "03",
+    "04",
+    "05",
+    "06",
+    "07",
+    "08",
+    "09",
+    "10"
+  ],
+  "required_case": "JS-CASE-001",
+  "status": "active",
+  "sections": [
+    {
+      "id": "S1",
+      "type": "knowledge",
+      "points": 20
+    },
+    {
+      "id": "S2",
+      "type": "citation_integrity",
+      "points": 20
+    },
+    {
+      "id": "S3",
+      "type": "chronology",
+      "points": 20
+    },
+    {
+      "id": "S4",
+      "type": "case_analysis",
+      "points": 25
+    },
+    {
+      "id": "S5",
+      "type": "red_team_response",
+      "points": 15
+    }
+  ],
+  "passing_score": 90
+}

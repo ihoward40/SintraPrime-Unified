@@ -1,0 +1,11 @@
+﻿{
+    "academy":  {
+                    "version":  "2.0.0",
+                    "name":  "SintraPrime Intelligence Academy",
+                    "hard_gates":  true,
+                    "installed_at":  "2026-06-18T23:28:28.0069361Z",
+                    "path":  "C:\\Users\\admin\\Desktop\\SintraPrime-Unified\\academy",
+                    "audit_hashing":  "SHA-256",
+                    "enabled":  true
+                }
+}

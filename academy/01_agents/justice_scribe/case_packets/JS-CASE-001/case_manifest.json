@@ -1,0 +1,20 @@
+{
+  "case_id": "JS-CASE-001",
+  "title": "Conflicting Notice and Deadline Certification Case",
+  "jurisdiction": "Training jurisdiction; candidate must identify missing controlling law",
+  "competencies": [
+    "chronology",
+    "source classification",
+    "deadline analysis",
+    "evidence handling",
+    "red-team readiness"
+  ],
+  "issued_at": "2026-06-18T00:00:00Z",
+  "known_traps": [
+    "unverified training manual overstates legal effect",
+    "mailing date is alleged but not proven",
+    "receipt date differs from document date",
+    "requested action is irreversible",
+    "one source is official guidance but not controlling law"
+  ]
+}

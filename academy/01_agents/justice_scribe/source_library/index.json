@@ -1,0 +1,62 @@
+{
+  "agent_id": "justice_scribe",
+  "library_version": "2.0.0",
+  "required_source_classes": [
+    {
+      "class": "binding_authority",
+      "examples": [
+        "constitution",
+        "statute",
+        "regulation",
+        "controlling precedent"
+      ]
+    },
+    {
+      "class": "primary_evidence",
+      "examples": [
+        "contract",
+        "trust instrument",
+        "filing",
+        "correspondence",
+        "account record"
+      ]
+    },
+    {
+      "class": "official_guidance",
+      "examples": [
+        "agency manual",
+        "FAQ",
+        "administrative publication"
+      ]
+    },
+    {
+      "class": "persuasive_authority",
+      "examples": [
+        "treatise",
+        "practice guide",
+        "law review",
+        "nonbinding decision"
+      ]
+    },
+    {
+      "class": "lead_material",
+      "examples": [
+        "video",
+        "course",
+        "ebook",
+        "template",
+        "social post"
+      ]
+    }
+  ],
+  "required_metadata": [
+    "title",
+    "issuer",
+    "jurisdiction",
+    "effective_date",
+    "last_verified",
+    "pinpoint",
+    "limitations",
+    "hash"
+  ]
+}

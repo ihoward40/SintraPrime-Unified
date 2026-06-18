@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "submission_id",
+    "exam_id",
+    "exam_version",
+    "agent_id",
+    "exam_status",
+    "answers",
+    "predicted_confidence",
+    "submitted_at",
+    "exam_hash"
+  ],
+  "properties": {
+    "submission_id": {
+      "type": "string",
+      "minLength": 5
+    },
+    "exam_id": {
+      "type": "string"
+    },
+    "exam_version": {
+      "type": "string"
+    },
+    "agent_id": {
+      "type": "string"
+    },
+    "exam_status": {
+      "const": "completed"
+    },
+    "answers": {
+      "type": "array",
+      "minItems": 1
+    },
+    "predicted_confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "submitted_at": {
+      "type": "string"
+    },
+    "exam_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}

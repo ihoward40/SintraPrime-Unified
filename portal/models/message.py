@@ -67,6 +67,7 @@ class Message(Base):
     thread_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("message_threads.id", ondelete="CASCADE"), nullable=False)
     tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
     sender_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    idempotency_key: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
 
     # Content (stored encrypted if thread.is_encrypted)
     content: Mapped[str]            = mapped_column(Text, nullable=False)
@@ -90,6 +91,7 @@ class Message(Base):
     read_by: Mapped[dict | None] = mapped_column(JSONB, nullable=True, default=dict)
 
     created_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     thread: Mapped[MessageThread] = relationship("MessageThread", back_populates="messages")
     sender: Mapped[User]          = relationship("User", foreign_keys=[sender_id])

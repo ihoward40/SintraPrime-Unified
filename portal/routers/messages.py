@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth.rbac import CurrentUser, Permission, require_permissions
@@ -145,6 +146,7 @@ async def send_message(
         thread_id=thread_id,
         tenant_id=current_user.tenant_id,
         sender_id=current_user.user_id,
+        idempotency_key=body.idempotency_key,
         content=encrypted_content,
         content_encrypted=True,
         encryption_iv=iv.hex(),
@@ -169,7 +171,16 @@ async def send_message(
             )
             db.add(attachment)
 
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        if "ix_messages_idempotency_key" in str(exc):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Message with this idempotency key already exists"
+            )
+        raise
     await db.refresh(msg)
 
     # Decrypt for response
@@ -181,7 +192,7 @@ async def send_message(
         "thread_id": str(thread_id),
         "message_id": str(msg.id),
         "sender_id": str(current_user.user_id),
-        "preview": body.content[:100],
+        "preview": "[message]",
     }
     for participant_id in (thread.participants or []):
         if participant_id != str(current_user.user_id):

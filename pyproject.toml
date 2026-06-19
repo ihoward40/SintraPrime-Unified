@@ -84,7 +84,6 @@ all = [
 [tool.poetry]
 packages = [
     {include = "portal"},
-    {include = "ops"},
     {include = "packages"}
 ]
 
@@ -232,11 +231,6 @@ known-first-party = ["portal", "operator"]
 "portal/websocket/**" = ["ARG002", "N999", "RUF012"]
 # tests
 "tests/**" = ["ARG002", "F401", "F811", "F841", "N802", "N999", "PT009", "PT011", "PT027", "RUF059"]
-
-[tool.pytest.ini_options]
-testpaths = ["portal/tests", "packages/tests"]
-python_files = "test_*.py"
-asyncio_mode = "auto"
 
 [tool.coverage.run]
 # ── Coverage measurement ──────────────────────────────────────────────

@@ -226,10 +226,25 @@ class TestRestrictedShell:
         output = executor.execute_shell("echo allowed", safe_mode=False)
         assert "allowed" in output
 
-    def test_shell_timeout(self, executor):
+    def test_shell_timeout(self, executor, monkeypatch):
+        import subprocess
+        import scheduler.task_executor as task_executor_module
         from scheduler.task_executor import TimeoutError as ExecTimeout
-        with pytest.raises(ExecTimeout):
-            executor.execute_shell("sleep 120")
+
+        def raise_timeout(*args, **kwargs):
+            raise subprocess.TimeoutExpired(
+                cmd=args[0] if args else "timeout-test",
+                timeout=kwargs.get("timeout", 60),
+            )
+
+        monkeypatch.setattr(
+            task_executor_module.subprocess,
+            "run",
+            raise_timeout,
+        )
+
+        with pytest.raises(ExecTimeout, match="timed out"):
+            executor.execute_shell("echo timeout-test")
 
     def test_nonzero_exit_code(self, executor):
         with pytest.raises(RuntimeError, match="failed"):

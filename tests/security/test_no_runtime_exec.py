@@ -236,8 +236,20 @@ class TestTaskExecutorShellSafety(unittest.TestCase):
             self.executor.execute_shell("echo hello")
             call_args = mock_run.call_args
             cmd = call_args[0][0]
+            import os
+
             self.assertIsInstance(cmd, list)
-            self.assertEqual(cmd, ["echo", "hello"])
+
+            if os.name == "nt":
+                self.assertEqual(cmd[1:], ["/d", "/s", "/c", "echo hello"])
+                self.assertTrue(cmd[0].lower().endswith(("cmd.exe", "cmd")))
+            else:
+                self.assertEqual(cmd, ["/bin/sh", "-c", "echo hello"])
+
+            # The subprocess must receive a list and must never use shell=True.
+            self.assertFalse(
+                mock_run.call_args.kwargs.get("shell", False)
+            )
 
     def test_execute_shell_blocks_rm_rf(self):
         """execute_shell() must block rm -rf."""

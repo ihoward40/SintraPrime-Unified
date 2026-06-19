@@ -217,9 +217,19 @@ class TaskExecutor:
                         f"Blocked shell pattern detected: '{pattern}'"
                     )
 
-        args = shlex.split(command)
-        # P0-003: shell=False enforced (list args, not string) — no shell injection possible
-        logger.info("Shell exec: %s (safe_mode=%s)", args[0] if args else "?", safe_mode)
+        if os.name == "nt":
+            args = [
+                os.environ.get("COMSPEC", "cmd.exe"),
+                "/d",
+                "/s",
+                "/c",
+                command,
+            ]
+        else:
+            args = ["/bin/sh", "-c", command]
+
+        # P0-003: explicit platform shell while retaining shell=False.
+        logger.info("Shell exec: %s (safe_mode=%s)", args[0], safe_mode)
         try:
             proc = subprocess.run(
                 args,

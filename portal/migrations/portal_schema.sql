@@ -560,15 +560,19 @@ CREATE TABLE IF NOT EXISTS messages (
     tenant_id           UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     sender_id           UUID REFERENCES users(id),
     reply_to_id         UUID REFERENCES messages(id),
+    idempotency_key     VARCHAR(64),  -- Client-provided key for deduplication
     
     content             TEXT NOT NULL,
     content_encrypted   BOOLEAN NOT NULL DEFAULT TRUE,
-    encryption_iv       VARCHAR(64),
+    encryption_iv       VARCHAR(32),
     
-    mentions            TEXT[],              -- User IDs mentioned
+    mentions            JSONB DEFAULT '[]',  -- User IDs mentioned
     read_by             JSONB DEFAULT '{}',  -- {user_id: timestamp}
     is_deleted          BOOLEAN NOT NULL DEFAULT FALSE,
     deleted_at          TIMESTAMPTZ,
+    deleted_by          UUID REFERENCES users(id),
+    is_edited           BOOLEAN NOT NULL DEFAULT FALSE,
+    edited_at           TIMESTAMPTZ,
     
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -577,6 +581,8 @@ CREATE TABLE IF NOT EXISTS messages (
 CREATE INDEX ix_messages_thread_id ON messages(thread_id);
 CREATE INDEX ix_messages_sender_id ON messages(sender_id);
 CREATE INDEX ix_messages_created_at ON messages(created_at DESC);
+CREATE INDEX ix_messages_edited_at ON messages(edited_at) WHERE is_edited = TRUE;
+CREATE UNIQUE INDEX ix_messages_idempotency_key ON messages(idempotency_key) WHERE idempotency_key IS NOT NULL;
 
 -- =============================================================================
 -- MESSAGE ATTACHMENTS

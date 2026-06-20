@@ -1,0 +1,24 @@
+{
+  "assignment_id": "",
+  "agent_id": "",
+  "exam_or_task_type": "",
+  "scores": {
+    "factual_accuracy": 0,
+    "source_quality": 0,
+    "reasoning_quality": 0,
+    "issue_spotting": 0,
+    "counterargument_strength": 0,
+    "risk_recognition": 0,
+    "actionability": 0,
+    "clarity": 0,
+    "memory_contribution": 0
+  },
+  "predicted_confidence": 0,
+  "actual_correctness": 0,
+  "critical_failures": [],
+  "review_disposition": "",
+  "overall_score": 0,
+  "certification_band": "",
+  "reviewer": "",
+  "timestamp": ""
+}

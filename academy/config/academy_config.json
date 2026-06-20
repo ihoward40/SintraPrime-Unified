@@ -1,0 +1,19 @@
+{
+  "academy_name": "SintraPrime Intelligence Academy",
+  "minimum_passing_score": 90,
+  "elite_score": 95,
+  "retest_days": 90,
+  "critical_failure_suspends": true,
+  "require_red_team_for_risk": [
+    "high",
+    "critical"
+  ],
+  "require_human_approval_for": [
+    "external_send",
+    "filing",
+    "payment",
+    "account_change",
+    "legal_deadline",
+    "sensitive_data_release"
+  ]
+}

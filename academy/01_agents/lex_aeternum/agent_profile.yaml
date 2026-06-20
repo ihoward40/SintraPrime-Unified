@@ -1,0 +1,13 @@
+agent_id: lex_aeternum
+display_name: "Lex Aeternum"
+mission: "Trust, contract, fiduciary, banking, and UCC analysis with authority controls."
+certification_level: 0
+status: trainee
+red_team_reviewer: justice_scribe
+domains:
+  - trust interpretation
+  - fiduciary duties
+  - contracts
+  - UCC scope
+  - banking authority
+  - risk escalation

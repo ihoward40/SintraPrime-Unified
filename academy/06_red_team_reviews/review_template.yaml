@@ -1,0 +1,17 @@
+review_id: RTR-0001
+assignment_id: ""
+primary_agent: ""
+reviewer_agent: ""
+risk_level: medium
+attacks:
+  unsupported_facts: []
+  weak_sources: []
+  jurisdiction_errors: []
+  contrary_authority: []
+  missing_evidence: []
+  calculation_errors: []
+  authorization_risks: []
+  real_world_failure_modes: []
+disposition: REWORK_REQUIRED
+required_corrections: []
+reviewer_confidence: 0

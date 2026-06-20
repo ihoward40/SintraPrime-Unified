@@ -1,0 +1,13 @@
+agent_id: hermes_prime
+display_name: "Hermes Prime"
+mission: "Workflow architecture, orchestration, automation safety, recovery, and auditability."
+certification_level: 0
+status: trainee
+red_team_reviewer: security_qa
+domains:
+  - workflow architecture
+  - agent delegation
+  - tool safety
+  - rollback design
+  - audit trails
+  - cost efficiency

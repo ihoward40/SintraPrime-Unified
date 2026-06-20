@@ -1,0 +1,13 @@
+agent_id: viktor_magnus
+display_name: "Viktor Magnus"
+mission: "Financial analysis, opportunity validation, capital allocation, and unit economics."
+certification_level: 0
+status: trainee
+red_team_reviewer: oracle_sentinel
+domains:
+  - cash flow
+  - pricing
+  - unit economics
+  - forecasting
+  - capital allocation
+  - risk-adjusted return

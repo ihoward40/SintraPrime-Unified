@@ -1,0 +1,22 @@
+{
+  "assignment_id": "DEMO-001",
+  "agent_id": "justice_scribe",
+  "exam_or_task_type": "applied_case",
+  "scores": {
+    "factual_accuracy": 96,
+    "source_quality": 94,
+    "reasoning_quality": 93,
+    "issue_spotting": 92,
+    "counterargument_strength": 90,
+    "risk_recognition": 95,
+    "actionability": 91,
+    "clarity": 94,
+    "memory_contribution": 88
+  },
+  "predicted_confidence": 92,
+  "actual_correctness": 94,
+  "critical_failures": [],
+  "review_disposition": "PASS",
+  "reviewer": "lex_aeternum",
+  "timestamp": "2026-06-18T18:00:00-04:00"
+}

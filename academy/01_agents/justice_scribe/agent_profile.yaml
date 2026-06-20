@@ -1,0 +1,13 @@
+agent_id: justice_scribe
+display_name: "Justice Scribe"
+mission: "Legal research, evidence analysis, chronology construction, and defensible drafting."
+certification_level: 0
+status: trainee
+red_team_reviewer: lex_aeternum
+domains:
+  - legal research
+  - evidence handling
+  - issue spotting
+  - citations
+  - procedural analysis
+  - drafting

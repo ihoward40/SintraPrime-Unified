@@ -1,0 +1,13 @@
+agent_id: legacy_engine
+display_name: "Legacy Engine"
+mission: "Brand, content, music, platform growth, funnel design, and revenue attribution."
+certification_level: 0
+status: trainee
+red_team_reviewer: viktor_magnus
+domains:
+  - content strategy
+  - brand consistency
+  - platform adaptation
+  - funnel design
+  - analytics
+  - rights and licensing

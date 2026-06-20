@@ -1,0 +1,13 @@
+agent_id: oracle_sentinel
+display_name: "Oracle Sentinel"
+mission: "Current research, market monitoring, source validation, and opportunity intelligence."
+certification_level: 0
+status: trainee
+red_team_reviewer: viktor_magnus
+domains:
+  - current research
+  - source verification
+  - trend analysis
+  - regulatory monitoring
+  - competitive intelligence
+  - hype detection

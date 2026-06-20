@@ -1,0 +1,205 @@
+{
+  "version": "1.0.0",
+  "files": [
+    {
+      "path": "00_governance/academy_charter.md",
+      "bytes": 1324
+    },
+    {
+      "path": "00_governance/certification_rules.md",
+      "bytes": 1051
+    },
+    {
+      "path": "00_governance/escalation_policy.md",
+      "bytes": 715
+    },
+    {
+      "path": "00_governance/scoring_rubric.json",
+      "bytes": 618
+    },
+    {
+      "path": "01_agents/hermes_prime/agent_profile.yaml",
+      "bytes": 347
+    },
+    {
+      "path": "01_agents/hermes_prime/case_studies/certification_case_001.md",
+      "bytes": 901
+    },
+    {
+      "path": "01_agents/hermes_prime/checklists/specialty_checklist.md",
+      "bytes": 333
+    },
+    {
+      "path": "01_agents/hermes_prime/curriculum/foundational_curriculum.md",
+      "bytes": 1238
+    },
+    {
+      "path": "01_agents/hermes_prime/exams/foundation_exam.json",
+      "bytes": 1184
+    },
+    {
+      "path": "01_agents/justice_scribe/agent_profile.yaml",
+      "bytes": 343
+    },
+    {
+      "path": "01_agents/justice_scribe/case_studies/certification_case_001.md",
+      "bytes": 903
+    },
+    {
+      "path": "01_agents/justice_scribe/checklists/specialty_checklist.md",
+      "bytes": 326
+    },
+    {
+      "path": "01_agents/justice_scribe/curriculum/foundational_curriculum.md",
+      "bytes": 1231
+    },
+    {
+      "path": "01_agents/justice_scribe/exams/foundation_exam.json",
+      "bytes": 1188
+    },
+    {
+      "path": "01_agents/legacy_engine/agent_profile.yaml",
+      "bytes": 350
+    },
+    {
+      "path": "01_agents/legacy_engine/case_studies/certification_case_001.md",
+      "bytes": 902
+    },
+    {
+      "path": "01_agents/legacy_engine/checklists/specialty_checklist.md",
+      "bytes": 338
+    },
+    {
+      "path": "01_agents/legacy_engine/curriculum/foundational_curriculum.md",
+      "bytes": 1243
+    },
+    {
+      "path": "01_agents/legacy_engine/exams/foundation_exam.json",
+      "bytes": 1186
+    },
+    {
+      "path": "01_agents/lex_aeternum/agent_profile.yaml",
+      "bytes": 340
+    },
+    {
+      "path": "01_agents/lex_aeternum/case_studies/certification_case_001.md",
+      "bytes": 901
+    },
+    {
+      "path": "01_agents/lex_aeternum/checklists/specialty_checklist.md",
+      "bytes": 329
+    },
+    {
+      "path": "01_agents/lex_aeternum/curriculum/foundational_curriculum.md",
+      "bytes": 1234
+    },
+    {
+      "path": "01_agents/lex_aeternum/exams/foundation_exam.json",
+      "bytes": 1184
+    },
+    {
+      "path": "01_agents/oracle_sentinel/agent_profile.yaml",
+      "bytes": 374
+    },
+    {
+      "path": "01_agents/oracle_sentinel/case_studies/certification_case_001.md",
+      "bytes": 904
+    },
+    {
+      "path": "01_agents/oracle_sentinel/checklists/specialty_checklist.md",
+      "bytes": 354
+    },
+    {
+      "path": "01_agents/oracle_sentinel/curriculum/foundational_curriculum.md",
+      "bytes": 1259
+    },
+    {
+      "path": "01_agents/oracle_sentinel/exams/foundation_exam.json",
+      "bytes": 1190
+    },
+    {
+      "path": "01_agents/viktor_magnus/agent_profile.yaml",
+      "bytes": 341
+    },
+    {
+      "path": "01_agents/viktor_magnus/case_studies/certification_case_001.md",
+      "bytes": 902
+    },
+    {
+      "path": "01_agents/viktor_magnus/checklists/specialty_checklist.md",
+      "bytes": 323
+    },
+    {
+      "path": "01_agents/viktor_magnus/curriculum/foundational_curriculum.md",
+      "bytes": 1228
+    },
+    {
+      "path": "01_agents/viktor_magnus/exams/foundation_exam.json",
+      "bytes": 1186
+    },
+    {
+      "path": "02_source_libraries/source_authority_policy.md",
+      "bytes": 971
+    },
+    {
+      "path": "02_source_libraries/source_record_template.yaml",
+      "bytes": 191
+    },
+    {
+      "path": "03_case_studies/case_study_template.md",
+      "bytes": 328
+    },
+    {
+      "path": "04_exams/exam_types.md",
+      "bytes": 443
+    },
+    {
+      "path": "05_checklists/universal_intelligence_checklist.md",
+      "bytes": 662
+    },
+    {
+      "path": "06_red_team_reviews/red_team_protocol.md",
+      "bytes": 642
+    },
+    {
+      "path": "06_red_team_reviews/review_template.yaml",
+      "bytes": 379
+    },
+    {
+      "path": "07_scorecards/scorecard_template.json",
+      "bytes": 525
+    },
+    {
+      "path": "08_certifications/certificate_template.md",
+      "bytes": 227
+    },
+    {
+      "path": "09_failure_archive/failure_record_template.yaml",
+      "bytes": 241
+    },
+    {
+      "path": "10_shared_precedents/precedent_template.md",
+      "bytes": 183
+    },
+    {
+      "path": "README.md",
+      "bytes": 1521
+    },
+    {
+      "path": "config/academy_config.json",
+      "bytes": 393
+    },
+    {
+      "path": "data/sample_score.json",
+      "bytes": 561
+    },
+    {
+      "path": "install_academy.ps1",
+      "bytes": 1694
+    },
+    {
+      "path": "scripts/academy_cli.py",
+      "bytes": 2338
+    }
+  ]
+}

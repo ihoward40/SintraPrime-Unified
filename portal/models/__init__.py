@@ -4,6 +4,7 @@ from .billing import Expense, Invoice, InvoiceLineItem, Payment, TimeEntry, Trus
 from .case import Case, CaseDeadline, CaseEvent, CaseNote, CaseTask
 from .client import Client, Matter
 from .document import Document, DocumentFolder, DocumentShare, DocumentVersion
+from .evidence_snapshot import EvidenceSnapshot
 from .message import Message, MessageAttachment, MessageThread
 from .user import Permission as UserPermission
 from .user import Role as UserRole
@@ -21,6 +22,7 @@ __all__ = [
     "DocumentFolder",
     "DocumentShare",
     "DocumentVersion",
+    "EvidenceSnapshot",
     "Expense",
     "Invoice",
     "InvoiceLineItem",

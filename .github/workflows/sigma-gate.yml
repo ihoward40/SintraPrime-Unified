@@ -63,13 +63,15 @@ jobs:
       - name: Security scan (bandit — baseline mode)
         if: always()
         run: |
+          echo "Starting bandit scan..."
           python -m bandit -r . \
             --exclude .venv,node_modules,./tests,./portal/tests,__pycache__,.git,.nova,.mypy_cache,.pytest_cache,*.egg-info,dist,build,htmlcov,site-packages \
             --baseline .bandit-baseline.json \
-            -f json -o /tmp/bandit.json
-          echo "=== Bandit results ==="
-          python -c 'import json; d=json.load(open("/tmp/bandit.json")); r=d.get("results",[]); h=[x for x in r if x["issue_severity"]=="HIGH"]; print(f"New findings: {len(r)}, HIGH: {len(h)}"); [print(f"  HIGH: {x[\"test_id\"]} at {x[\"filename\"]}:{x[\"line_number\"]} — {x[\"issue_text\"][:100]}") for x in h]; exit(1 if h else 0)'
-          echo "=== Bandit check complete ==="
+            -f json -o /tmp/bandit.json || true
+          echo "Bandit scan complete. Checking results..."
+          ls -la /tmp/bandit.json
+          python scripts/check_bandit.py
+          echo "Check complete."
 
       - name: Post gate status
         if: always()

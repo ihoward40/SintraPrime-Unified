@@ -84,7 +84,6 @@ all = [
 [tool.poetry]
 packages = [
     {include = "portal"},
-    {include = "ops"},
     {include = "packages"}
 ]
 
@@ -92,7 +91,7 @@ packages = [
 profile = "black"
 line_length = 100
 skip_gitignore = true
-known_first_party = ["portal", "ops", "packages"]
+known_first_party = ["portal", "packages"]
 
 [tool.black]
 line-length = 100

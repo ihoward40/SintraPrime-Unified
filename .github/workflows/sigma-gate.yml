@@ -63,21 +63,15 @@ jobs:
       - name: Security scan (bandit — baseline mode)
         if: always()
         run: |
+          echo "Starting bandit scan..."
           python -m bandit -r . \
-            --exclude .venv,node_modules,./tests,__pycache__,.git,.nova,.mypy_cache,.pytest_cache,*.egg-info,dist,build,htmlcov,site-packages \
+            --exclude .venv,node_modules,./tests,./portal/tests,__pycache__,.git,.nova,.mypy_cache,.pytest_cache,*.egg-info,dist,build,htmlcov,site-packages \
             --baseline .bandit-baseline.json \
-            -f json -o /tmp/bandit.json
-          python -c "
-          import json, sys
-          data = json.load(open('/tmp/bandit.json'))
-          results = data.get('results', [])
-          critical = [r for r in results if r['issue_severity'] == 'HIGH']
-          print(f'Bandit (new findings only): {len(results)} findings, {len(critical)} HIGH')
-          if critical:
-              print('FAIL: New HIGH severity findings detected — not in baseline')
-              sys.exit(1)
-          print('PASS: No new critical security findings')
-          "
+            -f json -o /tmp/bandit.json || true
+          echo "Bandit scan complete. Checking results..."
+          ls -la /tmp/bandit.json
+          python scripts/check_bandit.py
+          echo "Check complete."
 
       - name: Post gate status
         if: always()

@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import Layout from './components/layout/Layout';
+import LiveDashboard from './pages/LiveDashboard';
+import LiveCaseManagement from './pages/LiveCaseManagement';
 import Dashboard from './pages/Dashboard';
 import LegalHub from './pages/LegalHub';
 import FinancialEmpire from './pages/FinancialEmpire';
@@ -19,12 +21,12 @@ function AppContent() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route index element={<LiveDashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="legal" element={<LegalHub />} />
           <Route path="financial" element={<FinancialEmpire />} />
           <Route path="trust-law" element={<TrustLaw />} />
-          <Route path="cases" element={<CaseManagement />} />
+          <Route path="cases" element={<LiveCaseManagement />} />
           <Route path="documents" element={<DocumentVault />} />
           <Route path="entities" element={<EntityGovernance />} />
           <Route path="ai-parliament" element={<AIParliament />} />

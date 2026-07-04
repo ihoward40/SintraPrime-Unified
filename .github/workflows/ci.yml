@@ -45,4 +45,4 @@ jobs:
       # P0-002: bandit uses baseline to suppress pre-existing findings;
       # only NEW issues (not in .bandit-baseline.json) will fail the build.
       - name: Security lint (bandit — baseline mode)
-        run: bandit -r . -x tests/ -ll --baseline .bandit-baseline.json
+        run: bandit -r . -x tests/,portal/tests/ -ll --baseline .bandit-baseline.json

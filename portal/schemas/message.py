@@ -48,6 +48,7 @@ class MessageSend(BaseModel):
     mentions: list[uuid.UUID] | None = None
     reply_to_id: uuid.UUID | None = None
     attachment_document_ids: list[uuid.UUID] | None = None
+    idempotency_key: str | None = Field(None, max_length=64)
 
 
 class MessageResponse(BaseModel):

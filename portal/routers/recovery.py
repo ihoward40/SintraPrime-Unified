@@ -619,3 +619,57 @@ async def recovery_health():
         "store_path": str(STORE_PATH)
     }
 
+
+@router.get("/api/recovery/dashboard")
+async def recovery_dashboard():
+    """Public dashboard stats — no auth required. Powers the frontend Dashboard."""
+    high_priority = [c for c in CASES.values() if c.get("priority") == "high"]
+    medium_priority = [c for c in CASES.values() if c.get("priority") == "medium"]
+    evidence_intake = [c for c in CASES.values() if c.get("status") == "evidence_intake"]
+
+    # Check evidence platform for readiness scores
+    evidence_base = Path(__file__).parent.parent.parent / "evidence"
+    case_readiness = []
+    for case_dir in evidence_base.iterdir() if evidence_base.exists() else []:
+        if case_dir.is_dir() and case_dir.name.startswith("CASE-"):
+            readiness_file = case_dir / "readiness_score.json"
+            if readiness_file.exists():
+                try:
+                    with readiness_file.open("r", encoding="utf-8") as f:
+                        r = json.load(f)
+                    case_readiness.append({
+                        "case_id": r.get("case_id", case_dir.name),
+                        "overall": r.get("overall_readiness", 0),
+                        "grade": r.get("grade", "F"),
+                        "repository": r.get("dimensions", {}).get("repository_completeness", {}).get("score", 0),
+                        "evidence": r.get("dimensions", {}).get("evidence_strength", {}).get("score", 0),
+                        "legal": r.get("dimensions", {}).get("legal_readiness", {}).get("score", 0),
+                        "procedural": r.get("dimensions", {}).get("procedural_readiness", {}).get("score", 0),
+                    })
+                except Exception:
+                    pass
+
+    return {
+        "status": "ok",
+        "tenant": "IKE Solutions",
+        "cases": {
+            "total": len(CASES),
+            "high_priority": len(high_priority),
+            "medium_priority": len(medium_priority),
+            "evidence_intake": len(evidence_intake),
+        },
+        "evidence": {
+            "total_items": len(EVIDENCE),
+            "total_receipts": len(RECEIPTS),
+        },
+        "case_readiness": case_readiness,
+        "high_priority_cases": [
+            {"case_id": c["case_id"], "name": c["case_name"], "status": c["status"]}
+            for c in high_priority
+        ],
+        "external_action": "locked",
+        "platform_version": "SintraPrime-Unified 1.0.0",
+        "evidence_kernel": "CaseTemplate v2.1.0",
+        "timestamp": now_iso(),
+    }
+

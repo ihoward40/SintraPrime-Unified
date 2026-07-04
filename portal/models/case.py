@@ -8,8 +8,7 @@ import enum as _enum
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, String, Text, func
-from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR, UUID
+from sqlalchemy import JSON, Boolean, Date, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
@@ -32,10 +31,10 @@ class CaseStage(_enum.StrEnum):
 class Case(Base):
     __tablename__ = "cases"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
-    client_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False)
-    matter_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("matters.id"), nullable=True)
+    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    client_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("clients.id"), nullable=False)
+    matter_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("matters.id"), nullable=True)
 
     case_number: Mapped[str]        = mapped_column(String(50), nullable=False)
     title: Mapped[str]              = mapped_column(String(500), nullable=False)
@@ -53,8 +52,8 @@ class Case(Base):
     # intake | active | discovery | trial | pending | appeal | closed | archived
 
     # Staff assignments
-    lead_attorney_id: Mapped[uuid.UUID | None]   = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    assigned_staff: Mapped[list | None]          = mapped_column(JSONB, nullable=True, default=list)  # list of user_ids
+    lead_attorney_id: Mapped[uuid.UUID | None]   = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    assigned_staff: Mapped[list | None]          = mapped_column(JSON, nullable=True, default=list)  # list of user_ids
 
     # Opposing party (conflict check)
     opposing_party: Mapped[str | None]           = mapped_column(String(500), nullable=True)
@@ -78,12 +77,11 @@ class Case(Base):
     settlement_amount: Mapped[float | None] = mapped_column(nullable=True)
 
     # Custom intake form data
-    intake_data: Mapped[dict | None] = mapped_column(JSONB, nullable=True, default=dict)
-    custom_fields: Mapped[dict | None] = mapped_column(JSONB, nullable=True, default=dict)
-    tags: Mapped[list | None]        = mapped_column(JSONB, nullable=True, default=list)
+    intake_data: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=dict)
+    custom_fields: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=dict)
+    tags: Mapped[list | None]        = mapped_column(JSON, nullable=True, default=list)
 
     # Full-text search
-    search_vector: Mapped[str | None] = mapped_column(TSVECTOR, nullable=True)
 
     # Timestamps
     created_at: Mapped[datetime]           = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -99,12 +97,6 @@ class Case(Base):
     tasks: Mapped[list[CaseTask]]      = relationship("CaseTask", back_populates="case", lazy="select")
 
     __table_args__ = (
-        Index("ix_cases_tenant_id", "tenant_id"),
-        Index("ix_cases_client_id", "client_id"),
-        Index("ix_cases_stage", "stage"),
-        Index("ix_cases_lead_attorney", "lead_attorney_id"),
-        Index("ix_cases_search", "search_vector", postgresql_using="gin"),
-        Index("ix_cases_deleted", "deleted_at"),
     )
 
 
@@ -112,10 +104,10 @@ class CaseEvent(Base):
     """Timeline events for a case (hearings, filings, communications, etc.)."""
     __tablename__ = "case_events"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    case_id: Mapped[uuid.UUID]      = mapped_column(UUID(as_uuid=True), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    created_by: Mapped[uuid.UUID]   = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    case_id: Mapped[uuid.UUID]      = mapped_column(String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False)
+    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    created_by: Mapped[uuid.UUID]   = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
 
     event_type: Mapped[str]         = mapped_column(String(50), nullable=False)
     # hearing | filing | correspondence | note | stage_change | assignment | deadline
@@ -127,7 +119,7 @@ class CaseEvent(Base):
 
     is_client_visible: Mapped[bool] = mapped_column(Boolean, default=False)
     # Renamed from metadata to avoid SQLAlchemy Declarative API collision. Phase 21E.
-    event_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    event_metadata: Mapped[dict | None] = mapped_column("metadata", JSON, nullable=True)
 
     created_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -135,8 +127,6 @@ class CaseEvent(Base):
     creator: Mapped[User]         = relationship("User", foreign_keys=[created_by])
 
     __table_args__ = (
-        Index("ix_case_events_case_id", "case_id"),
-        Index("ix_case_events_event_date", "event_date"),
     )
 
 
@@ -144,11 +134,11 @@ class CaseDeadline(Base):
     """Important deadlines with reminder configuration."""
     __tablename__ = "case_deadlines"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    case_id: Mapped[uuid.UUID]      = mapped_column(UUID(as_uuid=True), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    assigned_to: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    created_by: Mapped[uuid.UUID]   = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    case_id: Mapped[uuid.UUID]      = mapped_column(String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False)
+    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    assigned_to: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    created_by: Mapped[uuid.UUID]   = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
 
     title: Mapped[str]              = mapped_column(String(500), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -156,7 +146,7 @@ class CaseDeadline(Base):
     # court | filing | statute | response | discovery | hearing | custom
 
     due_date: Mapped[datetime]      = mapped_column(DateTime(timezone=True), nullable=False)
-    reminder_days: Mapped[list]     = mapped_column(JSONB, default=lambda: [7, 1])  # remind N days before
+    reminder_days: Mapped[list]     = mapped_column(JSON, default=lambda: [7, 1])  # remind N days before
 
     is_completed: Mapped[bool]      = mapped_column(Boolean, default=False)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -168,9 +158,6 @@ class CaseDeadline(Base):
     case: Mapped[Case]            = relationship("Case", back_populates="deadlines")
 
     __table_args__ = (
-        Index("ix_case_deadlines_case_id", "case_id"),
-        Index("ix_case_deadlines_due_date", "due_date"),
-        Index("ix_case_deadlines_completed", "is_completed"),
     )
 
 
@@ -178,10 +165,10 @@ class CaseNote(Base):
     """Private staff notes and client-visible notes on a case."""
     __tablename__ = "case_notes"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    case_id: Mapped[uuid.UUID]      = mapped_column(UUID(as_uuid=True), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    created_by: Mapped[uuid.UUID]   = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    case_id: Mapped[uuid.UUID]      = mapped_column(String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False)
+    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    created_by: Mapped[uuid.UUID]   = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
 
     title: Mapped[str | None]    = mapped_column(String(500), nullable=True)
     content: Mapped[str]            = mapped_column(Text, nullable=False)
@@ -195,18 +182,17 @@ class CaseNote(Base):
     case: Mapped[Case]            = relationship("Case", back_populates="notes")
     author: Mapped[User]          = relationship("User", foreign_keys=[created_by])
 
-    __table_args__ = (Index("ix_case_notes_case_id", "case_id"),)
 
 
 class CaseTask(Base):
     """Actionable tasks assigned to staff members on a case."""
     __tablename__ = "case_tasks"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    case_id: Mapped[uuid.UUID]      = mapped_column(UUID(as_uuid=True), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    assigned_to: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    created_by: Mapped[uuid.UUID]   = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    case_id: Mapped[uuid.UUID]      = mapped_column(String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False)
+    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    assigned_to: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    created_by: Mapped[uuid.UUID]   = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
 
     title: Mapped[str]              = mapped_column(String(500), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -226,7 +212,4 @@ class CaseTask(Base):
     assignee: Mapped[User | None] = relationship("User", foreign_keys=[assigned_to])
 
     __table_args__ = (
-        Index("ix_case_tasks_case_id", "case_id"),
-        Index("ix_case_tasks_assigned_to", "assigned_to"),
-        Index("ix_case_tasks_status", "status"),
     )

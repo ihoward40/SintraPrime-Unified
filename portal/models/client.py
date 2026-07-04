@@ -8,8 +8,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Numeric, String, Text, func
-from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR, UUID
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
@@ -18,8 +17,8 @@ from ..database import Base
 class Client(Base):
     __tablename__ = "clients"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
 
     # Type: individual or organization
     client_type: Mapped[str]        = mapped_column(String(20), nullable=False, default="individual")  # individual | organization
@@ -50,21 +49,20 @@ class Client(Base):
     country: Mapped[str]                 = mapped_column(String(2), default="US")
 
     # Portal access
-    portal_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    portal_user_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     portal_access: Mapped[bool]                 = mapped_column(Boolean, default=False)
 
     # Assigned attorney
-    primary_attorney_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    primary_attorney_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
 
     # Client status
     status: Mapped[str]           = mapped_column(String(20), default="active")  # prospect | active | inactive | archived
     intake_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     notes: Mapped[str | None]  = mapped_column(Text, nullable=True)
-    tags: Mapped[list | None]  = mapped_column(JSONB, nullable=True, default=list)
-    custom_fields: Mapped[dict | None] = mapped_column(JSONB, nullable=True, default=dict)
+    tags: Mapped[list | None]  = mapped_column(JSON, nullable=True, default=list)
+    custom_fields: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=dict)
 
     # Full-text search
-    search_vector: Mapped[str | None] = mapped_column(TSVECTOR, nullable=True)
 
     # Timestamps
     created_at: Mapped[datetime]           = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -77,11 +75,6 @@ class Client(Base):
     portal_user: Mapped[User | None]      = relationship("User", foreign_keys=[portal_user_id])
 
     __table_args__ = (
-        Index("ix_clients_tenant_id", "tenant_id"),
-        Index("ix_clients_email", "email"),
-        Index("ix_clients_status", "status"),
-        Index("ix_clients_search", "search_vector", postgresql_using="gin"),
-        Index("ix_clients_deleted", "deleted_at"),
     )
 
     @property
@@ -99,9 +92,9 @@ class Matter(Base):
     """
     __tablename__ = "matters"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
-    client_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    client_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
 
     matter_number: Mapped[str]      = mapped_column(String(50), nullable=False)  # e.g., "2024-001"
     title: Mapped[str]              = mapped_column(String(255), nullable=False)
@@ -117,8 +110,8 @@ class Matter(Base):
     contingency_pct: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
 
     # Staff
-    responsible_attorney_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    billing_attorney_id: Mapped[uuid.UUID | None]     = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    responsible_attorney_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    billing_attorney_id: Mapped[uuid.UUID | None]     = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
 
     opened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -134,7 +127,4 @@ class Matter(Base):
     billing_attorney: Mapped[User | None]     = relationship("User", foreign_keys=[billing_attorney_id])
 
     __table_args__ = (
-        Index("ix_matters_client_id", "client_id"),
-        Index("ix_matters_tenant_id", "tenant_id"),
-        Index("ix_matters_status", "status"),
     )

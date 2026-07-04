@@ -18,6 +18,67 @@ Resolution:
   changes between renderings (timestamps, packet numbers, footer text,
   download info) is EXCLUDED from the hash boundary.
 
+═══════════════════════════════════════════════════════════════════════
+Canonical Serialization Specification v1
+═══════════════════════════════════════════════════════════════════════
+
+Version: 1
+Identifier: CANONICAL_SERIALIZATION_V1
+
+This specification defines how evidence is serialized for hashing.
+Future changes to the serialization format MUST increment the version
+number. Old evidence remains reproducible because the version is
+embedded in the canonical form.
+
+Rules:
+  1. Keys are sorted alphabetically at every nesting level.
+  2. No whitespace between tokens (separators = (',', ':')).
+  3. Unicode is NOT escaped (ensure_ascii=False).
+  4. Encoding: UTF-8.
+  5. Items are ordered by (sequence, item_id) — deterministic.
+  6. Only evidence content enters the canonical form.
+  7. Serialization version is embedded in the canonical form.
+
+INCLUDED in hash boundary:
+  - serialization_version (integer — THIS field)
+  - case_id (string)
+  - items (array of evidence items, each with:)
+    - item_id (string)
+    - item_type (string: "exhibit", "fact", "authority", "analysis",
+                 "request", "manifest")
+    - title (string)
+    - content (string)
+    - sequence (integer)
+
+EXCLUDED from hash boundary:
+  - Timestamps (created_at, rendered_at, etc.)
+  - Rendering metadata (packet_number, footer, download_info)
+  - Packet version / renderer version
+  - Snapshot version (snapshot_version is a lifecycle concept,
+    NOT evidence content)
+
+Canonical Form (JSON):
+  {
+    "case_id": "...",
+    "items": [
+      {"content": "...", "item_id": "...", "item_type": "...",
+       "sequence": N, "title": "..."},
+      ...
+    ],
+    "serialization_version": 1
+  }
+
+Reproducibility Guarantee:
+  Given the same evidence items, case_id, and serialization_version,
+  this specification produces byte-identical JSON on every invocation,
+  across time, across machines, across Python versions.
+
+If canonicalization evolves (e.g., Unicode normalization, numeric
+normalization), the version increments to 2. Version 1 evidence
+remains reproducible by selecting the v1 canonicalizer.
+
+═══════════════════════════════════════════════════════════════════════
+
 Hash Boundary (user-confirmed):
   INCLUDED:
     - Evidence manifests
@@ -26,6 +87,7 @@ Hash Boundary (user-confirmed):
     - Authorities
     - Legal analyses
     - Requests
+    - Serialization version
 
   EXCLUDED:
     - Timestamps (created_at, rendered_at, etc.)
@@ -41,10 +103,16 @@ import hashlib
 import json
 from dataclasses import dataclass
 
+# ── Serialization Version ────────────────────────────────────────────────────
+# This is a PERMANENT architectural constant. If the canonical serialization
+# format changes, increment this and keep the old canonicalizer available
+# for historical hash reproduction.
+
+SERIALIZATION_VERSION: int = 1
+
 
 class HashBoundaryError(Exception):
     """Raised when evidence cannot be canonicalized or hashed."""
-    pass
 
 
 @dataclass(frozen=True)
@@ -96,30 +164,37 @@ class EvidenceCollection:
                 { canonical item 1 },
                 { canonical item 2 },
                 ...
-            ]
+            ],
+            "serialization_version": 1
         }
 
         Items are ordered by their 'sequence' field, NOT by insertion order.
         This ensures the same evidence always produces the same canonical form
         regardless of the order in which items were added.
+
+        The serialization_version is embedded so that future format changes
+        can be detected and historical hashes reproduced.
         """
         sorted_items = sorted(self.items, key=lambda i: (i.sequence, i.item_id))
         return {
             "case_id": self.case_id,
             "items": [item.to_canonical() for item in sorted_items],
+            "serialization_version": SERIALIZATION_VERSION,
         }
 
 
 def canonicalize(evidence: EvidenceCollection) -> str:
     """Produce the canonical JSON string for evidence hashing.
 
-    Canonical serialization rules:
+    Canonical serialization rules (Specification v1):
       1. Keys are sorted alphabetically at every level.
       2. No whitespace (separators = (',', ':')).
       3. Unicode is NOT escaped (ensure_ascii=False).
-      4. Items are ordered by (sequence, item_id).
-      5. Only evidence content enters the canonical form.
+      4. Encoding target: UTF-8.
+      5. Items are ordered by (sequence, item_id).
+      6. Only evidence content enters the canonical form.
          NO timestamps, NO rendering metadata, NO packet numbers.
+      7. serialization_version is embedded in the canonical form.
 
     This function is the SINGLE entry point for evidence canonicalization.
     All hash computations MUST use this function.
@@ -204,6 +279,7 @@ def compute_manifest_hash(evidence: EvidenceCollection) -> str:
                 }
                 for item in sorted_items
             ],
+            "serialization_version": SERIALIZATION_VERSION,
         }
         canonical = json.dumps(
             manifest,

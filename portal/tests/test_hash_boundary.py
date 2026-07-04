@@ -318,7 +318,7 @@ class TestMetadataExcludedFromHash:
         parsed = json.loads(canonical)
 
         # Top level: only case_id and items
-        assert set(parsed.keys()) == {"case_id", "items"}
+        assert set(parsed.keys()) == {"case_id", "items", "serialization_version"}
 
         # Each item: only content, item_id, item_type, sequence, title
         expected_item_keys = {"content", "item_id", "item_type", "sequence", "title"}

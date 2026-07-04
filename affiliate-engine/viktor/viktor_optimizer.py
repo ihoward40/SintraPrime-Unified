@@ -20,12 +20,10 @@ from __future__ import annotations
 import json
 import re
 import sys
-from dataclasses import dataclass, field, asdict
-from datetime import datetime
-from enum import Enum
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from enum import StrEnum
 from pathlib import Path
-from typing import Optional
-
 
 # ─────────────────────────────────────────────────────────────
 # CONFIG — Isiah Howard / IKE Solutions brand context
@@ -109,7 +107,7 @@ DIMENSION_WEIGHTS = {
     "brand_signal": 0.15,   # Differentiators vs generic content
 }
 
-# Minimum publish threshold (0–10 scale)
+# Minimum publish threshold (0-10 scale)
 MIN_PUBLISH_SCORE = 6.5
 
 
@@ -117,7 +115,7 @@ MIN_PUBLISH_SCORE = 6.5
 # DATA MODELS
 # ─────────────────────────────────────────────────────────────
 
-class ContentType(str, Enum):
+class ContentType(StrEnum):
     TIKTOK_SCRIPT = "tiktok_script"
     YOUTUBE_SCRIPT = "youtube_script"
     SHORTS_SCRIPT = "shorts_script"
@@ -134,7 +132,7 @@ class ContentType(str, Enum):
 @dataclass
 class DimensionScore:
     name: str
-    raw_score: float        # 0–10
+    raw_score: float        # 0-10
     weight: float
     weighted_score: float
     issues: list[str] = field(default_factory=list)
@@ -155,7 +153,7 @@ class ViktorReport:
     platform_fit_score: DimensionScore
     brand_signal_score: DimensionScore
 
-    overall_score: float            # 0–10 weighted
+    overall_score: float            # 0-10 weighted
     publish_gate: str               # APPROVED / HOLD / REJECTED
     priority_fix: str               # Single most important improvement
 
@@ -170,7 +168,7 @@ class ViktorReport:
     def to_markdown(self) -> str:
         gate_emoji = {"APPROVED": "✅", "HOLD": "⚠️", "REJECTED": "🔴"}.get(self.publish_gate, "❓")
         lines = [
-            f"# Viktor Optimization Report",
+            "# Viktor Optimization Report",
             f"**Topic:** {self.topic}  |  **Type:** {self.content_type}  |  **Words:** {self.word_count}",
             f"**Evaluated:** {self.evaluated_at}",
             "",
@@ -196,7 +194,7 @@ class ViktorReport:
 
         lines += [
             "",
-            f"## Priority Fix",
+            "## Priority Fix",
             f"**{self.priority_fix}**",
             "",
             "## Predictions",
@@ -291,7 +289,7 @@ class ViktorOptimizer:
         return ViktorReport(
             content_type=ct,
             topic=topic or "(unspecified)",
-            evaluated_at=datetime.now().strftime("%Y-%m-%d %H:%M"),
+            evaluated_at=datetime.now(UTC).strftime("%Y-%m-%d %H:%M"),
             word_count=word_count,
             hook_score=hook,
             cta_score=cta,
@@ -474,13 +472,13 @@ class ViktorOptimizer:
         if word_count < ideal_min:
             deficit = ideal_min - word_count
             score -= min(4.0, deficit / ideal_min * 8)
-            issues.append(f"Content too short for {ct}: {word_count} words (ideal: {ideal_min}–{ideal_max})")
+            issues.append(f"Content too short for {ct}: {word_count} words (ideal: {ideal_min}-{ideal_max})")
             patches.append(f"Expand by ~{deficit} words — add more specific steps, examples, or social proof")
 
         elif word_count > ideal_max:
             excess = word_count - ideal_max
             score -= min(3.0, excess / ideal_max * 6)
-            issues.append(f"Content too long for {ct}: {word_count} words (ideal: {ideal_min}–{ideal_max})")
+            issues.append(f"Content too long for {ct}: {word_count} words (ideal: {ideal_min}-{ideal_max})")
             patches.append(f"Trim ~{excess} words — cut filler phrases, consolidate repetitive points")
 
         # Platform-specific checks
@@ -597,7 +595,6 @@ class ViktorOptimizer:
         Generates inline improvement notes embedded in the content.
         For full AI rewrite, pass content to your LLM with the patches as instructions.
         """
-        improved = content
 
         # Add improvement header with patches as inline comments
         all_patches = hook.patches + cta.patches + seo.patches + platform.patches + brand.patches
@@ -605,8 +602,7 @@ class ViktorOptimizer:
             return content + "\n\n<!-- Viktor: No changes needed. Approved as-is. -->"
 
         patch_block = "\n".join(f"<!-- PATCH {i+1}: {p} -->" for i, p in enumerate(all_patches))
-        improved = f"{content}\n\n{patch_block}\n\n<!-- Viktor: Apply patches above before publishing. -->"
-        return improved
+        return f"{content}\n\n{patch_block}\n\n<!-- Viktor: Apply patches above before publishing. -->"
 
 
 # ─────────────────────────────────────────────────────────────
@@ -650,7 +646,7 @@ class WeeklyViktorReport:
             hermes_directives.append("CTA failures recurring — mandate explicit CTA template in every Tasklet output")
 
         return {
-            "week_ending": datetime.now().strftime("%Y-%m-%d"),
+            "week_ending": datetime.now(UTC).strftime("%Y-%m-%d"),
             "total_pieces": len(self.reports),
             "approved": len(approved),
             "held": len(held),
@@ -667,8 +663,8 @@ class WeeklyViktorReport:
             "# Viktor Weekly Summary",
             f"**Week Ending:** {s.get('week_ending')}",
             "",
-            f"| Metric | Value |",
-            f"|--------|-------|",
+            "| Metric | Value |",
+            "|--------|-------|",
             f"| Total Pieces | {s.get('total_pieces')} |",
             f"| Approved | {s.get('approved')} ✅ |",
             f"| Hold | {s.get('held')} ⚠️ |",

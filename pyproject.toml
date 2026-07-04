@@ -230,6 +230,8 @@ known-first-party = ["portal", "operator"]
 "portal/sso/**" = ["ARG001", "ARG002", "B008", "B904", "DTZ003", "N999", "PT011", "RUF012", "RUF043"]
 "portal/tests/**" = ["ARG001", "ARG002", "ARG005", "B017", "DTZ003", "F401", "N802", "N999", "PT011", "RUF002", "RUF012", "SIM117"]
 "portal/websocket/**" = ["ARG002", "N999", "RUF012"]
+# affiliate-engine
+"affiliate-engine/**" = ["ARG002"]
 # tests
 "tests/**" = ["ARG002", "F401", "F811", "F841", "N802", "N999", "PT009", "PT011", "PT027", "RUF059"]
 

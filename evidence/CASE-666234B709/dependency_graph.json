@@ -1,0 +1,74 @@
+{
+  "case_id": "CASE-666234B709",
+  "dependencies": [
+    {
+      "claim_id": "FCT-0001",
+      "claim_text": "LVNV Funding LLC owns the Celtic Bank/Reflex account ending 9370",
+      "required_evidence": [
+        "Bill of sale",
+        "Assignment chain",
+        "Account-level transfer record"
+      ],
+      "current_evidence": [
+        "EV-2026-00420"
+      ],
+      "outstanding_requests": [
+        "REQ-0003",
+        "REQ-0004"
+      ],
+      "gap_count": 2,
+      "registered_at": "2026-07-03T10:17:07.102876+00:00"
+    },
+    {
+      "claim_id": "FCT-0002",
+      "claim_text": "The claimed balance of $2,121.52 is accurate",
+      "required_evidence": [
+        "Complete itemized transaction history",
+        "Complete payment history"
+      ],
+      "current_evidence": [
+        "EV-2026-00420"
+      ],
+      "outstanding_requests": [
+        "REQ-0002"
+      ],
+      "gap_count": 1,
+      "registered_at": "2026-07-03T10:17:07.241481+00:00"
+    },
+    {
+      "claim_id": "FCT-0003",
+      "claim_text": "Resurgent Capital Services has authority to collect this debt",
+      "required_evidence": [
+        "Servicing agreement",
+        "Collection authority documentation"
+      ],
+      "current_evidence": [
+        "EV-2026-00420"
+      ],
+      "outstanding_requests": [
+        "REQ-0005"
+      ],
+      "gap_count": 1,
+      "registered_at": "2026-07-03T10:17:07.384780+00:00"
+    },
+    {
+      "claim_id": "LEG-0001",
+      "claim_text": "Resurgent's June 24, 2026 response constitutes adequate debt validation under FDCPA 1692g",
+      "required_evidence": [
+        "Signed agreement",
+        "Complete payment history",
+        "Assignment chain",
+        "Custodian affidavit"
+      ],
+      "current_evidence": [
+        "EV-2026-00420"
+      ],
+      "outstanding_requests": [
+        "REQ-0001",
+        "REQ-0007"
+      ],
+      "gap_count": 3,
+      "registered_at": "2026-07-03T10:17:07.578049+00:00"
+    }
+  ]
+}

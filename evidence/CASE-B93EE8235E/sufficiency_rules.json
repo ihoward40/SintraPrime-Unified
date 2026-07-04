@@ -1,0 +1,61 @@
+{
+  "case_id": "CASE-B93EE8235E",
+  "rules": [
+    {
+      "rule_id": "SUF-0001",
+      "rule_name": "Payment Evidence",
+      "claim_description": "The $250,000 estimated tax payment was actually made",
+      "required_documents": [
+        "EFTPS confirmation",
+        "Cancelled check",
+        "Treasury payment receipt",
+        "Bank statement showing debit",
+        "IRS transcript showing TC 670"
+      ],
+      "minimum_required": 1,
+      "notes": "",
+      "registered_at": "2026-07-03T12:30:55.819271+00:00"
+    },
+    {
+      "rule_id": "SUF-0002",
+      "rule_name": "Income Documentation",
+      "claim_description": "The 2024 Schedule C income figure is accurate",
+      "required_documents": [
+        "Bank statements Jan-Dec 2024",
+        "Payment app records",
+        "Invoices",
+        "Business expense receipts"
+      ],
+      "minimum_required": 2,
+      "notes": "",
+      "registered_at": "2026-07-03T12:30:55.859742+00:00"
+    },
+    {
+      "rule_id": "SUF-0003",
+      "rule_name": "IRS Receipt Proof",
+      "claim_description": "IRS received and processed the submitted packages",
+      "required_documents": [
+        "Certified mail green cards",
+        "IRS internal records",
+        "IDRS activity log"
+      ],
+      "minimum_required": 2,
+      "notes": "",
+      "registered_at": "2026-07-03T12:30:55.900189+00:00"
+    },
+    {
+      "rule_id": "SUF-0004",
+      "rule_name": "Hardship Qualification",
+      "claim_description": "Taxpayer qualifies for Currently Not Collectible status",
+      "required_documents": [
+        "Form 433-F",
+        "Income documentation",
+        "Expense documentation",
+        "Asset documentation"
+      ],
+      "minimum_required": 3,
+      "notes": "",
+      "registered_at": "2026-07-03T12:30:55.952721+00:00"
+    }
+  ]
+}

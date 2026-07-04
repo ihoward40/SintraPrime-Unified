@@ -1,6 +1,10 @@
 from __future__ import annotations
-import argparse, hashlib, json, sys
-from datetime import datetime, timezone
+
+import argparse
+import hashlib
+import json
+import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 WEIGHTS = {
@@ -97,17 +101,17 @@ def certify(payload: dict) -> dict:
         "certified":certified,
         "decision":"CERTIFIED" if certified else "NOT_CERTIFIED",
         "gate_failures":gate_failures,
-        "evaluated_at":datetime.now(timezone.utc).isoformat(),
+        "evaluated_at":datetime.now(UTC).isoformat(),
     }
 
 def write_audit(result: dict, output_dir: str) -> Path:
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     path = out / f"{result.get('agent_id','unknown')}-{stamp}.audit.json"
     record = {
         "audit_version":"2.0.0",
-        "recorded_at":datetime.now(timezone.utc).isoformat(),
+        "recorded_at":datetime.now(UTC).isoformat(),
         "decision":result.get("decision"),
         "agent_id":result.get("agent_id"),
         "exam_id":result.get("exam_id"),
@@ -127,7 +131,7 @@ def self_test():
     valid_hash = "a"*64
     payload = {
         "agent_id":"justice_scribe","exam_id":"TEST","exam_status":"completed",
-        "scores":{k:95 for k in WEIGHTS},"predicted_confidence":94,"actual_correctness":95,
+        "scores":dict.fromkeys(WEIGHTS, 95),"predicted_confidence":94,"actual_correctness":95,
         "critical_failures":[],"review_disposition":"PASS","reviewer_identity":"lex_aeternum",
         "corrections_closed":True,"submission_hash":valid_hash,"exam_hash":valid_hash,
         "review_hash":valid_hash,"answer_key_hash":valid_hash,

@@ -10,7 +10,8 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, Index, String, Text, func
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import JSON
+from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..database import Base
@@ -24,9 +25,9 @@ class AuditLog(Base):
     """
     __tablename__ = "audit_logs"
 
-    id: Mapped[uuid.UUID]            = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=True)
-    user_id: Mapped[uuid.UUID | None]   = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    id: Mapped[uuid.UUID]            = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=True)
+    user_id: Mapped[uuid.UUID | None]   = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
 
     # Who
     actor_email: Mapped[str | None]  = mapped_column(String(255), nullable=True)
@@ -55,8 +56,8 @@ class AuditLog(Base):
     status: Mapped[str]              = mapped_column(String(10), default="success")  # success | failure | error
 
     # Details
-    details: Mapped[dict | None]  = mapped_column(JSONB, nullable=True)
-    changes: Mapped[dict | None]  = mapped_column(JSONB, nullable=True)  # before/after for updates
+    details: Mapped[dict | None]  = mapped_column(JSON, nullable=True)
+    changes: Mapped[dict | None]  = mapped_column(JSON, nullable=True)  # before/after for updates
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Request context
@@ -78,11 +79,4 @@ class AuditLog(Base):
     )
 
     __table_args__ = (
-        Index("ix_audit_tenant_id", "tenant_id"),
-        Index("ix_audit_user_id", "user_id"),
-        Index("ix_audit_action", "action"),
-        Index("ix_audit_resource", "resource_type", "resource_id"),
-        Index("ix_audit_created_at", "created_at"),
-        Index("ix_audit_actor_ip", "actor_ip"),
-        Index("ix_audit_session", "session_id"),
     )

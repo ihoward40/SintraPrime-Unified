@@ -1,0 +1,170 @@
+{
+  "case_id": "CASE-B93EE8235E",
+  "decisions": [
+    {
+      "decision_id": "DEC-0001",
+      "question": "Should we file another voucher/remittance package?",
+      "decision": "NO",
+      "reason": "Letter 3176C classifies the return as frivolous. Another voucher submission would trigger $5,000 penalty under IRC 6702 and strengthen IRS position.",
+      "inputs": [
+        "LEG-0002",
+        "LEG-0003"
+      ],
+      "alternatives_considered": [
+        "Continue voucher strategy",
+        "File corrected return instead"
+      ],
+      "decision_date": "2026-07-03",
+      "author": "ChatGPT + Hermes",
+      "notes": "",
+      "registered_at": "2026-07-03T12:30:55.678294+00:00"
+    },
+    {
+      "decision_id": "DEC-0002",
+      "question": "Should we file a corrected 2024 Form 1040-X?",
+      "decision": "YES - PENDING INCOME RECONSTRUCTION",
+      "reason": "Corrected return removes frivolous position and establishes real tax liability. Must reconstruct actual 2024 income from bank statements first.",
+      "inputs": [
+        "LEG-0004"
+      ],
+      "alternatives_considered": [
+        "Accept current assessment",
+        "File another voucher"
+      ],
+      "decision_date": "2026-07-03",
+      "author": "ChatGPT + Hermes",
+      "notes": "Do NOT file until income reconstruction is complete from bank statements",
+      "registered_at": "2026-07-03T12:30:55.713669+00:00"
+    },
+    {
+      "decision_id": "DEC-0003",
+      "question": "Should we request hardship/CNC status?",
+      "decision": "YES - IN PARALLEL",
+      "reason": "Stops collection activity while correction is processed. Reduces pressure from levies and notices.",
+      "inputs": [
+        "LEG-0005"
+      ],
+      "alternatives_considered": [
+        "Wait for correction to process",
+        "Set up installment agreement"
+      ],
+      "decision_date": "2026-07-03",
+      "author": "ChatGPT + Hermes",
+      "notes": "",
+      "registered_at": "2026-07-03T12:30:55.747743+00:00"
+    },
+    {
+      "decision_id": "DEC-0004",
+      "question": "Should we request IRS internal records via 26 CFR 601.506?",
+      "decision": "YES",
+      "reason": "Need to determine what IRS did with the three certified mail packages. This is a records request, not a tax theory argument.",
+      "inputs": [
+        "LEG-0001"
+      ],
+      "alternatives_considered": [
+        "Assume IRS discarded packages",
+        "File TIGTA complaint"
+      ],
+      "decision_date": "2026-07-03",
+      "author": "ChatGPT + Hermes",
+      "notes": "Request IDRS history, payment posting records, and correspondence file for all three delivery dates",
+      "registered_at": "2026-07-03T12:30:55.787894+00:00"
+    },
+    {
+      "decision_id": "DEC-0005",
+      "question": "Should we pursue sovereign citizen / SPC / UCC redemption theories in the IRS case?",
+      "decision": "NO - abandon entirely",
+      "reason": "Courts consistently reject these theories. IRS already issued Letter 3176C classifying return as frivolous. Pursuing these theories risks ,000 penalty under IRC 6702 and strengthens IRS position. Real protections (due process, Taxpayer Bill of Rights, hardship/CNC, records inspection) are available and productive.",
+      "inputs": [
+        "FCT-0013",
+        "FCT-0014",
+        "LEG-0006"
+      ],
+      "alternatives_considered": [
+        "Pursue SPC/UCC redemption",
+        "File A4V/lawful money response",
+        "Use real constitutional protections instead"
+      ],
+      "decision_date": "2026-07-03",
+      "author": "ChatGPT (strategic reviewer) + Hermes (chief of staff)",
+      "notes": "This decision is final. Sovereign citizen theories are closed lanes for this case. All future strategy must use recognized legal protections.",
+      "registered_at": "2026-07-03T12:34:13.665381+00:00"
+    },
+    {
+      "decision_id": "DEC-0006",
+      "question": "What is the overall strategic direction for the IRS case?",
+      "decision": "Use the system rules effectively, not argue outside the system",
+      "reason": "Courts consistently reject sovereign citizen theories. Real power comes from using taxpayer rights, evidence, accounting, fiduciary administration, and procedural law. Insist IRS prove calculations, correct inaccurate income, document legitimate trustee services, substantiate expenses, preserve appeal rights, assert every taxpayer protection.",
+      "inputs": [
+        "LEG-0006",
+        "LEG-0007"
+      ],
+      "alternatives_considered": [
+        "Argue federal tax law does not apply",
+        "Use UCC/SPC redemption theories",
+        "Refuse to participate in the system"
+      ],
+      "decision_date": "2026-07-03",
+      "author": "ChatGPT (strategic advisor)",
+      "notes": "Channel knowledge of UCC, trusts, and commercial law into evidence, accounting, fiduciary administration, and procedural law. Those withstand scrutiny. Sovereign theories do not.",
+      "registered_at": "2026-07-03T12:36:01.831789+00:00"
+    },
+    {
+      "decision_id": "DEC-0007",
+      "question": "How should we distinguish between normative and descriptive legal questions in this case?",
+      "decision": "Use descriptive law (what courts currently recognize) for all filings and arguments. Reserve normative questions (should the law be different) for advocacy and scholarship, not case strategy.",
+      "reason": "Courts decide cases based on what the law currently is, not what it should be. Mixing the two weakens both. For the IRS case, every argument must be grounded in recognized statutes, regulations, and case law. Normative arguments about whether the tax system should work differently are legitimate intellectual pursuits but will not help in an IRS appeal or Tax Court.",
+      "inputs": [
+        "LEG-0006",
+        "LEG-0007"
+      ],
+      "alternatives_considered": [
+        "Mix normative and descriptive arguments in filings",
+        "Use only normative arguments",
+        "Use only descriptive arguments"
+      ],
+      "decision_date": "2026-07-03",
+      "author": "ChatGPT (strategic advisor)",
+      "notes": "Normative: Should the law be this way? Descriptive: What do courts currently recognize as the law? Both important, different purposes. Case strategy uses descriptive. Advocacy uses normative.",
+      "registered_at": "2026-07-03T12:41:44.374262+00:00"
+    },
+    {
+      "decision_id": "DEC-0008",
+      "question": "Should the Wealth Creation Blueprint include TDA, A4V, zero-out-bills, or birth certificate monetization strategies?",
+      "decision": "NO - separate them from the blueprint entirely",
+      "reason": "These are the same category of strategies that triggered IRS Letter 3176C. Using or promoting them while under an open frivolous return examination strengthens the IRS position. Courts consistently reject TDA, A4V, zero-out, and birth certificate monetization. The blueprint should include only legally recognized strategies: educational content sales, FDCPA debt validation, business credit building, proper trust structures, legitimate UCC secured transactions, and tax optimization through real accounting.",
+      "inputs": [
+        "LEG-0006",
+        "LEG-0007"
+      ],
+      "alternatives_considered": [
+        "Include all strategies regardless of legal status",
+        "Include with disclaimers",
+        "Separate real from frivolous"
+      ],
+      "decision_date": "2026-07-03",
+      "author": "Hermes (chief of staff) + ChatGPT (strategic advisor)",
+      "notes": "This decision protects the IRS case. The blueprint can include legitimate wealth creation strategies. The trap door strategies must be excluded from any operational use while the IRS matter is open.",
+      "registered_at": "2026-07-03T16:27:46.883091+00:00"
+    },
+    {
+      "decision_id": "DEC-0009",
+      "question": "Should we file Form 433-F (Collection Information Statement) to request Currently Not Collectible status based on hardship?",
+      "decision": "YES - FILE IMMEDIATELY",
+      "reason": "Taxpayer is homeless, no steady income, no SSI, relying on Medicaid. This qualifies for CNC status under IRC 6343. Filing stops collection activity (levies, liens) while the corrected return and records request are processed. This is a real statutory protection, not a theory.",
+      "inputs": [
+        "LEG-0005"
+      ],
+      "alternatives_considered": [
+        "Wait for corrected return first",
+        "Set up installment agreement",
+        "Do nothing"
+      ],
+      "decision_date": "2026-07-03",
+      "author": "Hermes (chief of staff)",
+      "notes": "This is the most urgent action. CNC status protects from levy while everything else gets sorted. No bank statements needed for this - just the hardship documentation.",
+      "registered_at": "2026-07-03T16:28:53.444420+00:00"
+    }
+  ],
+  "ledger_revision": 9
+}

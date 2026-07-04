@@ -39,7 +39,7 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
         now_utc = datetime.now(timezone.utc)
 
         if client_ip not in self.request_history:
-            self.request_history[client_ip] = [
+            self.request_history[client_ip] = []
 
         cutoff = datetime.fromtimestamp(now_utc.timestamp() - 60, tz=timezone.utc)
         self.request_history[client_ip] = [
@@ -60,7 +60,7 @@ def setup_middleware(app):
     app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
     app.add_middleware(
         CORSMiddleware,
-        allow_vigins=settings.CORS_ORIGINS,
+        allow_origins=settings.CORS_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

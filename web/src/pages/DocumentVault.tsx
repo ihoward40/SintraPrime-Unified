@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   FileText,
@@ -147,7 +147,7 @@ export default function DocumentVault() {
                   )}
                 >
                   <div className="flex items-center gap-2">
-                    {cat === 'all' ? <FolderOpen className="w-4 h-4" /> : (categoryIcons[cat] && <categoryIcons[cat] className="w-4 h-4" /> || <File className="w-4 h-4" />)}
+                    {cat === 'all' ? <FolderOpen className="w-4 h-4" /> : (categoryIcons[cat] ? React.createElement(categoryIcons[cat], {className: "w-4 h-4"}) : <File className="w-4 h-4" />)}
                     <span className="capitalize">{cat}</span>
                   </div>
                   <span className="text-xs bg-slate-700/50 px-1.5 py-0.5 rounded-md">

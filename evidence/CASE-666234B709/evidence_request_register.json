@@ -1,0 +1,93 @@
+{
+  "case_id": "CASE-666234B709",
+  "requests": [
+    {
+      "request_id": "REQ-0001",
+      "document_requested": "Signed application/cardmember agreement",
+      "requested_from": "Resurgent Capital Services",
+      "date_requested": "2026-07-03",
+      "status": "outstanding",
+      "response_received": "",
+      "response_date": "",
+      "notes": "Requested via deficiency notice (EV-2026-00421). Not yet submitted — awaiting approval.",
+      "registered_at": "2026-07-03T10:06:59.210964+00:00"
+    },
+    {
+      "request_id": "REQ-0002",
+      "document_requested": "Complete itemized transaction and payment history",
+      "requested_from": "Resurgent Capital Services",
+      "date_requested": "2026-07-03",
+      "status": "outstanding",
+      "response_received": "",
+      "response_date": "",
+      "notes": "Requested via deficiency notice (EV-2026-00421). Not yet submitted — awaiting approval.",
+      "registered_at": "2026-07-03T10:06:59.299677+00:00"
+    },
+    {
+      "request_id": "REQ-0003",
+      "document_requested": "Bill of sale and complete chain of assignment",
+      "requested_from": "LVNV Funding LLC",
+      "date_requested": "2026-07-03",
+      "status": "outstanding",
+      "response_received": "",
+      "response_date": "",
+      "notes": "Requested via deficiency notice (EV-2026-00421). Not yet submitted — awaiting approval.",
+      "registered_at": "2026-07-03T10:06:59.416197+00:00"
+    },
+    {
+      "request_id": "REQ-0004",
+      "document_requested": "Account-level transfer record identifying this account",
+      "requested_from": "LVNV Funding LLC",
+      "date_requested": "2026-07-03",
+      "status": "outstanding",
+      "response_received": "",
+      "response_date": "",
+      "notes": "Requested via deficiency notice (EV-2026-00421). Not yet submitted — awaiting approval.",
+      "registered_at": "2026-07-03T10:06:59.761749+00:00"
+    },
+    {
+      "request_id": "REQ-0005",
+      "document_requested": "Documentary proof of Resurgent's current collection authority",
+      "requested_from": "Resurgent Capital Services",
+      "date_requested": "2026-07-03",
+      "status": "outstanding",
+      "response_received": "",
+      "response_date": "",
+      "notes": "Requested via deficiency notice (EV-2026-00421). Not yet submitted — awaiting approval.",
+      "registered_at": "2026-07-03T10:06:59.979603+00:00"
+    },
+    {
+      "request_id": "REQ-0006",
+      "document_requested": "Records supporting alleged March 2, 2025 last-payment date",
+      "requested_from": "Resurgent Capital Services",
+      "date_requested": "2026-07-03",
+      "status": "outstanding",
+      "response_received": "",
+      "response_date": "",
+      "notes": "Requested via deficiency notice (EV-2026-00421). Not yet submitted — awaiting approval.",
+      "registered_at": "2026-07-03T10:07:00.032728+00:00"
+    },
+    {
+      "request_id": "REQ-0007",
+      "document_requested": "Records custodian identification and basis of knowledge",
+      "requested_from": "Resurgent Capital Services",
+      "date_requested": "2026-07-03",
+      "status": "outstanding",
+      "response_received": "",
+      "response_date": "",
+      "notes": "Requested via deficiency notice (EV-2026-00421). Not yet submitted — awaiting approval.",
+      "registered_at": "2026-07-03T10:07:00.079406+00:00"
+    },
+    {
+      "request_id": "REQ-0008",
+      "document_requested": "Credit reporting status and dispute notation",
+      "requested_from": "Resurgent Capital Services",
+      "date_requested": "2026-07-03",
+      "status": "outstanding",
+      "response_received": "",
+      "response_date": "",
+      "notes": "Requested via deficiency notice (EV-2026-00421). Not yet submitted — awaiting approval.",
+      "registered_at": "2026-07-03T10:07:00.119581+00:00"
+    }
+  ]
+}

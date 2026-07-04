@@ -1,0 +1,228 @@
+{
+  "case_id": "CASE-B93EE8235E",
+  "authorities": [
+    {
+      "authority_id": "AUTH-0001",
+      "authority": "IRC 6702 - Frivolous Tax Submissions Penalty",
+      "citation": "26 U.S.C. 6702",
+      "authority_type": "federal_statute",
+      "jurisdiction": "federal",
+      "supports": [],
+      "strength": "primary",
+      "status": "applicable",
+      "quoted": false,
+      "mandatory": true,
+      "weight": 1.0,
+      "notes": "The $5,000 penalty IRS is threatening. Must be responded to within 30 days.",
+      "registered_at": "2026-07-03T12:30:54.688149+00:00"
+    },
+    {
+      "authority_id": "AUTH-0002",
+      "authority": "IRC 6651 - Failure to Pay Penalty",
+      "citation": "26 U.S.C. 6651",
+      "authority_type": "federal_statute",
+      "jurisdiction": "federal",
+      "supports": [],
+      "strength": "primary",
+      "status": "applicable",
+      "quoted": false,
+      "mandatory": true,
+      "weight": 0.8,
+      "notes": "Penalties being added to balance",
+      "registered_at": "2026-07-03T12:30:54.734281+00:00"
+    },
+    {
+      "authority_id": "AUTH-0003",
+      "authority": "IRC 6601 - Interest on Underpayment",
+      "citation": "26 U.S.C. 6601",
+      "authority_type": "federal_statute",
+      "jurisdiction": "federal",
+      "supports": [],
+      "strength": "primary",
+      "status": "applicable",
+      "quoted": false,
+      "mandatory": true,
+      "weight": 0.8,
+      "notes": "Interest accruing on assessed balance",
+      "registered_at": "2026-07-03T12:30:54.796676+00:00"
+    },
+    {
+      "authority_id": "AUTH-0004",
+      "authority": "26 CFR 601.506 - Inspection of IRS Records",
+      "citation": "26 C.F.R. 601.506",
+      "authority_type": "regulation",
+      "jurisdiction": "federal",
+      "supports": [],
+      "strength": "persuasive",
+      "status": "applicable",
+      "quoted": false,
+      "mandatory": false,
+      "weight": 0.5,
+      "notes": "Can be used to request IRS internal records showing what happened to submitted packages",
+      "registered_at": "2026-07-03T12:30:54.923536+00:00"
+    },
+    {
+      "authority_id": "AUTH-0005",
+      "authority": "IRC 7433 - Civil Action for IRS Unauthorized Collection",
+      "citation": "26 U.S.C. 7433",
+      "authority_type": "federal_statute",
+      "jurisdiction": "federal",
+      "supports": [],
+      "strength": "persuasive",
+      "status": "applicable",
+      "quoted": false,
+      "mandatory": false,
+      "weight": 0.4,
+      "notes": "Potential cause of action if IRS mishandled submissions",
+      "registered_at": "2026-07-03T12:30:55.041395+00:00"
+    },
+    {
+      "authority_id": "AUTH-0006",
+      "authority": "IRC 6151 - Time for Payment",
+      "citation": "26 U.S.C. 6151",
+      "authority_type": "federal_statute",
+      "jurisdiction": "federal",
+      "supports": [],
+      "strength": "primary",
+      "status": "applicable",
+      "quoted": false,
+      "mandatory": true,
+      "weight": 0.6,
+      "notes": "Governs when tax must be paid",
+      "registered_at": "2026-07-03T12:30:55.143798+00:00"
+    },
+    {
+      "authority_id": "AUTH-0007",
+      "authority": "Notice 2010-33 - Frivolous Positions List",
+      "citation": "IRS Notice 2010-33",
+      "authority_type": "administrative_guidance",
+      "jurisdiction": "federal",
+      "supports": [],
+      "strength": "primary",
+      "status": "applicable",
+      "quoted": false,
+      "mandatory": true,
+      "weight": 0.9,
+      "notes": "IRS list of frivolous positions. Voucher/lawful money theories likely on this list.",
+      "registered_at": "2026-07-03T12:30:55.244525+00:00"
+    },
+    {
+      "authority_id": "AUTH-0008",
+      "authority": "IRC 6343 - Levy Restrictions",
+      "citation": "26 U.S.C. 6343",
+      "authority_type": "federal_statute",
+      "jurisdiction": "federal",
+      "supports": [],
+      "strength": "persuasive",
+      "status": "applicable",
+      "quoted": false,
+      "mandatory": false,
+      "weight": 0.5,
+      "notes": "Hardship levy protection. Can request Currently Not Collectible status.",
+      "registered_at": "2026-07-03T12:30:55.323253+00:00"
+    },
+    {
+      "authority_id": "AUTH-0009",
+      "authority": "Taxpayer Bill of Rights - Right to Pay No More Than the Correct Amount of Tax",
+      "citation": "IRS Publication 1, TBOR Item 3",
+      "authority_type": "administrative_guidance",
+      "jurisdiction": "federal",
+      "supports": [
+        "LEG-0006"
+      ],
+      "strength": "primary",
+      "status": "applicable",
+      "quoted": false,
+      "mandatory": true,
+      "weight": 1.0,
+      "notes": "Taxpayers have the right to pay only the amount of tax legally due, including interest and penalties, and to have the IRS apply all tax payments properly. This is the core principle: pay no more than the correct amount.",
+      "registered_at": "2026-07-03T12:35:01.867559+00:00"
+    },
+    {
+      "authority_id": "AUTH-0010",
+      "authority": "Taxpayer Bill of Rights - Right to Appeal a Decision in an Independent Forum",
+      "citation": "IRS Pub 1, TBOR Item 4",
+      "authority_type": "administrative_guidance",
+      "jurisdiction": "federal",
+      "supports": [
+        "LEG-0007"
+      ],
+      "strength": "primary",
+      "status": "applicable",
+      "quoted": false,
+      "mandatory": true,
+      "weight": 1.0,
+      "notes": "Enforceable through established administrative and judicial processes.",
+      "registered_at": "2026-07-03T12:36:01.344688+00:00"
+    },
+    {
+      "authority_id": "AUTH-0011",
+      "authority": "Taxpayer Bill of Rights - Right to Privacy",
+      "citation": "IRS Pub 1, TBOR Item 5",
+      "authority_type": "administrative_guidance",
+      "jurisdiction": "federal",
+      "supports": [
+        "LEG-0007"
+      ],
+      "strength": "primary",
+      "status": "applicable",
+      "quoted": false,
+      "mandatory": true,
+      "weight": 1.0,
+      "notes": "Enforceable through established administrative and judicial processes.",
+      "registered_at": "2026-07-03T12:36:01.559647+00:00"
+    },
+    {
+      "authority_id": "AUTH-0012",
+      "authority": "Taxpayer Bill of Rights - Right to Confidentiality",
+      "citation": "IRS Pub 1, TBOR Item 6",
+      "authority_type": "administrative_guidance",
+      "jurisdiction": "federal",
+      "supports": [
+        "LEG-0007"
+      ],
+      "strength": "primary",
+      "status": "applicable",
+      "quoted": false,
+      "mandatory": true,
+      "weight": 1.0,
+      "notes": "Enforceable through established administrative and judicial processes.",
+      "registered_at": "2026-07-03T12:36:01.679330+00:00"
+    },
+    {
+      "authority_id": "AUTH-0013",
+      "authority": "Taxpayer Bill of Rights - Right to Retain Representation",
+      "citation": "IRS Pub 1, TBOR Item 7",
+      "authority_type": "administrative_guidance",
+      "jurisdiction": "federal",
+      "supports": [
+        "LEG-0007"
+      ],
+      "strength": "primary",
+      "status": "applicable",
+      "quoted": false,
+      "mandatory": true,
+      "weight": 1.0,
+      "notes": "Enforceable through established administrative and judicial processes.",
+      "registered_at": "2026-07-03T12:36:01.750267+00:00"
+    },
+    {
+      "authority_id": "AUTH-0014",
+      "authority": "Taxpayer Bill of Rights - Right to a Fair and Just Tax System",
+      "citation": "IRS Pub 1, TBOR Item 8",
+      "authority_type": "administrative_guidance",
+      "jurisdiction": "federal",
+      "supports": [
+        "LEG-0007"
+      ],
+      "strength": "primary",
+      "status": "applicable",
+      "quoted": false,
+      "mandatory": true,
+      "weight": 1.0,
+      "notes": "Enforceable through established administrative and judicial processes.",
+      "registered_at": "2026-07-03T12:36:01.823579+00:00"
+    }
+  ],
+  "ledger_revision": 14
+}

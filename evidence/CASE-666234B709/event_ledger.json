@@ -1,0 +1,14 @@
+{
+  "case_id": "CASE-666234B709",
+  "events": [
+    {
+      "event_id": "EVT-0001",
+      "date": "2026-07-03",
+      "type": "witness_identified",
+      "description": "Crystal Hall identified as document witness. Born May 9, 1974, Newark NJ. Resides at 991 Frelinghuysen Ave Apt 1K, Newark NJ 07114.",
+      "related_evidence": [],
+      "notes": "Witness for affidavit and legal document signing.",
+      "registered_at": "2026-07-03T16:28:53.411111+00:00"
+    }
+  ]
+}

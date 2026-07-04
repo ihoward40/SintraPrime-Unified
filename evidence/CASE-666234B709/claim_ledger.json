@@ -1,0 +1,87 @@
+{
+  "case_id": "CASE-666234B709",
+  "claims": [
+    {
+      "claim_id": "CLM-0001",
+      "claim": "LVNV Funding LLC owns the Celtic Bank/Reflex account ending 9370",
+      "claim_type": "factual",
+      "supporting_evidence_ids": [
+        "EV-2026-00420"
+      ],
+      "status": "partially_supported",
+      "missing": "Bill of sale, complete assignment chain, account-level transfer record",
+      "notes": "Resurgent's response claims LVNV acquired the account on Jan 27, 2026, but provides no assignment chain documentation.",
+      "registered_at": "2026-07-03T10:06:58.326518+00:00"
+    },
+    {
+      "claim_id": "CLM-0002",
+      "claim": "The claimed balance of $2,121.52 is accurate",
+      "claim_type": "factual",
+      "supporting_evidence_ids": [
+        "EV-2026-00420"
+      ],
+      "status": "partially_supported",
+      "missing": "Complete itemized transaction and payment history",
+      "notes": "Resurgent provided an account summary and March 2025 billing statement, but not complete payment history.",
+      "registered_at": "2026-07-03T10:06:58.438758+00:00"
+    },
+    {
+      "claim_id": "CLM-0003",
+      "claim": "Resurgent Capital Services has authority to collect this debt",
+      "claim_type": "factual",
+      "supporting_evidence_ids": [
+        "EV-2026-00420"
+      ],
+      "status": "partially_supported",
+      "missing": "Documentary proof of current servicing/collection authority",
+      "notes": "Resurgent's letter implies authority but does not provide a servicing agreement or assignment documentation.",
+      "registered_at": "2026-07-03T10:06:58.590408+00:00"
+    },
+    {
+      "claim_id": "CLM-0004",
+      "claim": "A payment was made on March 2, 2025",
+      "claim_type": "factual",
+      "supporting_evidence_ids": [
+        "EV-2026-00420"
+      ],
+      "status": "partially_supported",
+      "missing": "Records supporting the alleged last-payment date",
+      "notes": "Claimed by Resurgent — no payment record provided. Needs verification. Could affect statute of limitations.",
+      "registered_at": "2026-07-03T10:06:58.694237+00:00"
+    },
+    {
+      "claim_id": "CLM-0005",
+      "claim": "The account was charged off on August 31, 2025",
+      "claim_type": "factual",
+      "supporting_evidence_ids": [
+        "EV-2026-00420"
+      ],
+      "status": "partially_supported",
+      "missing": "Original creditor charge-off documentation",
+      "notes": "Stated in Resurgent's response. Needs verification with original creditor records.",
+      "registered_at": "2026-07-03T10:06:58.991309+00:00"
+    },
+    {
+      "claim_id": "CLM-0006",
+      "claim": "The account is being reported as disputed to credit bureaus",
+      "claim_type": "factual",
+      "supporting_evidence_ids": [],
+      "status": "unsupported",
+      "missing": "Credit reporting status documentation, bureau dispute confirmations",
+      "notes": "No evidence that the account is being reported as disputed. This is a FCRA compliance concern.",
+      "registered_at": "2026-07-03T10:06:59.134267+00:00"
+    },
+    {
+      "claim_id": "CLM-0007",
+      "claim": "Resurgent's June 24, 2026 response constitutes adequate debt validation under FDCPA 1692g",
+      "claim_type": "legal",
+      "supporting_evidence_ids": [
+        "EV-2026-00420"
+      ],
+      "status": "unsupported",
+      "missing": "Signed agreement, complete payment history, assignment chain",
+      "notes": "The response is deficient under FDCPA validation requirements. Missing 8 categories of documentation.",
+      "registered_at": "2026-07-03T10:06:59.207392+00:00"
+    }
+  ]
+}

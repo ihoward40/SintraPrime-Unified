@@ -19,7 +19,8 @@ from sqlalchemy import (
     Text,
     func,
 )
-from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR, UUID
+from sqlalchemy import JSON
+from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
@@ -29,18 +30,18 @@ class DocumentFolder(Base):
     """Hierarchical folder structure for organizing documents."""
     __tablename__ = "document_folders"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    parent_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("document_folders.id", ondelete="SET NULL"), nullable=True)
+    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    parent_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("document_folders.id", ondelete="SET NULL"), nullable=True)
 
     name: Mapped[str]               = mapped_column(String(255), nullable=False)
     path: Mapped[str]               = mapped_column(Text, nullable=False)  # materialized path: /root/parent/folder
 
     # Context: can belong to a client, case, or be global
-    client_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=True)
-    case_id: Mapped[uuid.UUID | None]   = mapped_column(UUID(as_uuid=True), ForeignKey("cases.id"), nullable=True)
+    client_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("clients.id"), nullable=True)
+    case_id: Mapped[uuid.UUID | None]   = mapped_column(String(36), ForeignKey("cases.id"), nullable=True)
 
-    created_by: Mapped[uuid.UUID]   = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    created_by: Mapped[uuid.UUID]   = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
     color: Mapped[str | None]    = mapped_column(String(7), nullable=True)  # hex color
     icon: Mapped[str | None]     = mapped_column(String(50), nullable=True)
 
@@ -52,24 +53,21 @@ class DocumentFolder(Base):
     documents: Mapped[list[Document]]      = relationship("Document", back_populates="folder", lazy="select")
 
     __table_args__ = (
-        Index("ix_doc_folders_tenant", "tenant_id"),
-        Index("ix_doc_folders_parent", "parent_id"),
-        Index("ix_doc_folders_path", "path", postgresql_using="btree"),
     )
 
 
 class Document(Base):
     __tablename__ = "documents"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
 
     # Ownership context
-    client_id: Mapped[uuid.UUID | None]  = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=True)
-    case_id: Mapped[uuid.UUID | None]    = mapped_column(UUID(as_uuid=True), ForeignKey("cases.id"), nullable=True)
-    matter_id: Mapped[uuid.UUID | None]  = mapped_column(UUID(as_uuid=True), ForeignKey("matters.id"), nullable=True)
-    folder_id: Mapped[uuid.UUID | None]  = mapped_column(UUID(as_uuid=True), ForeignKey("document_folders.id"), nullable=True)
-    uploaded_by: Mapped[uuid.UUID]          = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    client_id: Mapped[uuid.UUID | None]  = mapped_column(String(36), ForeignKey("clients.id"), nullable=True)
+    case_id: Mapped[uuid.UUID | None]    = mapped_column(String(36), ForeignKey("cases.id"), nullable=True)
+    matter_id: Mapped[uuid.UUID | None]  = mapped_column(String(36), ForeignKey("matters.id"), nullable=True)
+    folder_id: Mapped[uuid.UUID | None]  = mapped_column(String(36), ForeignKey("document_folders.id"), nullable=True)
+    uploaded_by: Mapped[uuid.UUID]          = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
 
     # File metadata
     name: Mapped[str]               = mapped_column(String(512), nullable=False)
@@ -94,7 +92,7 @@ class Document(Base):
     ocr_completed: Mapped[bool]     = mapped_column(Boolean, default=False)
     ocr_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     ai_category: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    ai_tags: Mapped[list | None] = mapped_column(JSONB, nullable=True, default=list)
+    ai_tags: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
 
     # Document state
     status: Mapped[str]             = mapped_column(String(20), default="active")  # active | archived | deleted
@@ -104,18 +102,17 @@ class Document(Base):
 
     # Digital signature
     signed_at: Mapped[datetime | None]       = mapped_column(DateTime(timezone=True), nullable=True)
-    signed_by: Mapped[uuid.UUID | None]      = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    signature_data: Mapped[dict | None]      = mapped_column(JSONB, nullable=True)
+    signed_by: Mapped[uuid.UUID | None]      = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    signature_data: Mapped[dict | None]      = mapped_column(JSON, nullable=True)
 
     # Full-text search
-    search_vector: Mapped[str | None]        = mapped_column(TSVECTOR, nullable=True)
 
     # Version tracking
     current_version: Mapped[int]    = mapped_column(Integer, default=1)
 
     # Custom metadata
-    custom_fields: Mapped[dict | None] = mapped_column(JSONB, nullable=True, default=dict)
-    tags: Mapped[list | None]    = mapped_column(JSONB, nullable=True, default=list)
+    custom_fields: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=dict)
+    tags: Mapped[list | None]    = mapped_column(JSON, nullable=True, default=list)
 
     # Watermark
     watermark_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -133,13 +130,6 @@ class Document(Base):
     uploader: Mapped[User]                  = relationship("User", foreign_keys=[uploaded_by])
 
     __table_args__ = (
-        Index("ix_documents_tenant_id", "tenant_id"),
-        Index("ix_documents_client_id", "client_id"),
-        Index("ix_documents_case_id", "case_id"),
-        Index("ix_documents_uploaded_by", "uploaded_by"),
-        Index("ix_documents_status", "status"),
-        Index("ix_documents_search", "search_vector", postgresql_using="gin"),
-        Index("ix_documents_deleted", "deleted_at"),
     )
 
 
@@ -147,8 +137,8 @@ class DocumentVersion(Base):
     """Immutable version history for documents."""
     __tablename__ = "document_versions"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    document_id: Mapped[uuid.UUID]  = mapped_column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    document_id: Mapped[uuid.UUID]  = mapped_column(String(36), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
     version_number: Mapped[int]     = mapped_column(Integer, nullable=False)
 
     # File details for this version
@@ -158,7 +148,7 @@ class DocumentVersion(Base):
     mime_type: Mapped[str]          = mapped_column(String(255), nullable=False)
 
     change_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
-    uploaded_by: Mapped[uuid.UUID]  = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    uploaded_by: Mapped[uuid.UUID]  = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
 
     is_encrypted: Mapped[bool]      = mapped_column(Boolean, default=True)
     encryption_iv: Mapped[str | None] = mapped_column(String(32), nullable=True)
@@ -169,7 +159,6 @@ class DocumentVersion(Base):
     uploader: Mapped[User]        = relationship("User", foreign_keys=[uploaded_by])
 
     __table_args__ = (
-        Index("ix_doc_versions_document_id", "document_id"),
     )
 
 
@@ -177,15 +166,15 @@ class DocumentShare(Base):
     """Secure share links for documents (internal or external)."""
     __tablename__ = "document_shares"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    document_id: Mapped[uuid.UUID]  = mapped_column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    document_id: Mapped[uuid.UUID]  = mapped_column(String(36), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
+    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
 
     share_token: Mapped[str]        = mapped_column(String(64), unique=True, nullable=False, index=True)
-    created_by: Mapped[uuid.UUID]   = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    created_by: Mapped[uuid.UUID]   = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
 
     # Share target (optional — if None, it's a public link)
-    shared_with_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    shared_with_user_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     shared_with_email: Mapped[str | None]         = mapped_column(String(255), nullable=True)
 
     # Access controls
@@ -209,14 +198,11 @@ class DocumentShare(Base):
     last_accessed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     revoked_at: Mapped[datetime | None]       = mapped_column(DateTime(timezone=True), nullable=True)
 
-    # Access log (stored as JSONB list)
-    access_log: Mapped[list | None] = mapped_column(JSONB, nullable=True, default=list)
+    # Access log (stored as JSON list)
+    access_log: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
 
     document: Mapped[Document]    = relationship("Document", back_populates="shares")
     creator: Mapped[User]         = relationship("User", foreign_keys=[created_by])
 
     __table_args__ = (
-        Index("ix_doc_shares_document_id", "document_id"),
-        Index("ix_doc_shares_token", "share_token"),
-        Index("ix_doc_shares_expires", "expires_at"),
     )

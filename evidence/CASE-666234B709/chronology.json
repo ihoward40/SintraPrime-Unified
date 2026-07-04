@@ -1,0 +1,64 @@
+{
+  "case_id": "CASE-666234B709",
+  "case_name": "Halsted / LVNV / Bank of Missouri / Milestone",
+  "events": [
+    {
+      "date": "2025-08-31",
+      "event": "Celtic Bank/Reflex account charged off (account ending 9370)",
+      "category": "original_creditor",
+      "evidence_ids": [],
+      "notes": "Charge-off date per Resurgent's June 24, 2026 response",
+      "recorded_at": "2026-07-03T09:57:44.767362+00:00"
+    },
+    {
+      "date": "2026-01-27",
+      "event": "Account acquired by LVNV Funding LLC",
+      "category": "collection",
+      "evidence_ids": [],
+      "notes": "Acquisition date per Resurgent's response",
+      "recorded_at": "2026-07-03T09:57:44.808807+00:00"
+    },
+    {
+      "date": "2026-03-02",
+      "event": "Alleged last payment date",
+      "category": "payment_history",
+      "evidence_ids": [],
+      "notes": "Claimed by Resurgent — needs verification. No payment evidence provided.",
+      "recorded_at": "2026-07-03T09:57:44.844154+00:00"
+    },
+    {
+      "date": "2026-06-24",
+      "event": "Resurgent Capital Services response received (reference 835167536)",
+      "category": "correspondence_incoming",
+      "evidence_ids": [],
+      "notes": "6-page response with account summary and March 2025 billing statement. Did NOT include signed agreement, complete payment history, bill of sale, assignment chain, or custodian identification.",
+      "recorded_at": "2026-07-03T09:57:44.881618+00:00"
+    },
+    {
+      "date": "2026-07-02",
+      "event": "Evidence repository established for CASE-666234B709",
+      "category": "system",
+      "evidence_ids": [],
+      "notes": "Litigation-grade evidence repository created with immutable evidence IDs, SHA-256 hashing, and chain-of-custody metadata.",
+      "recorded_at": "2026-07-03T09:57:44.907174+00:00"
+    },
+    {
+      "date": "2026-07-03",
+      "event": "Deficiency notice drafted for Resurgent portal submission",
+      "category": "correspondence_outgoing",
+      "evidence_ids": [],
+      "notes": "Notice of Specific Deficiencies prepared. NOT YET SUBMITTED. External action locked pending approval.",
+      "recorded_at": "2026-07-03T09:57:44.936735+00:00"
+    },
+    {
+      "date": "2026-07-03",
+      "event": "Deficiency notice registered as evidence (DRAFT - not submitted)",
+      "category": "system",
+      "evidence_ids": [
+        "EV-2026-00421"
+      ],
+      "notes": "Registered as EV-2026-00421. SHA-256: a9e80f85773dedae...",
+      "recorded_at": "2026-07-03T09:58:04.815758+00:00"
+    }
+  ]
+}

@@ -228,6 +228,7 @@ class TestRestrictedShell:
 
     def test_shell_timeout(self, executor, monkeypatch):
         import subprocess
+
         import scheduler.task_executor as task_executor_module
         from scheduler.task_executor import TimeoutError as ExecTimeout
 

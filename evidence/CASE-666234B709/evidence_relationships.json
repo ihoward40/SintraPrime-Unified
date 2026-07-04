@@ -1,0 +1,19 @@
+{
+  "case_id": "CASE-666234B709",
+  "relationships": [
+    {
+      "source": "EV-2026-00420",
+      "target": "EV-2026-00421",
+      "type": "references",
+      "notes": "Deficiency notice references the Resurgent response packet",
+      "registered_at": "2026-07-03T11:49:16.184968+00:00"
+    },
+    {
+      "source": "EV-2026-00420",
+      "target": "EV-2026-00421",
+      "type": "references",
+      "notes": "Deficiency notice references the Resurgent response packet",
+      "registered_at": "2026-07-03T11:49:37.284471+00:00"
+    }
+  ]
+}

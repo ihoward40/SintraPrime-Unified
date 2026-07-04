@@ -1,0 +1,151 @@
+{
+  "case_id": "CASE-B93EE8235E",
+  "analyses": [
+    {
+      "analysis_id": "LEG-0001",
+      "question": "Did the IRS receive the taxpayer's submissions?",
+      "analysis": "Certified mail receipts confirm delivery to IRS Kansas City on three dates. However, receipt of mail is not the same as processing or crediting payments.",
+      "supporting_fact_ids": [
+        "FCT-0008"
+      ],
+      "legal_authority_ids": [
+        "AUTH-0004"
+      ],
+      "supporting_evidence_ids": [],
+      "status": "partially_supported",
+      "confidence": {
+        "score": 0.5,
+        "label": "moderate"
+      },
+      "conclusion": "IRS received packages but transcript shows no corresponding payment credit",
+      "notes": "Need IRS internal records via 601.506 request to determine what happened after receipt",
+      "registered_at": "2026-07-03T12:30:55.470402+00:00"
+    },
+    {
+      "analysis_id": "LEG-0002",
+      "question": "Is the $250,000 estimated tax payment claim supported by evidence?",
+      "analysis": "The return claims $250,000 but no conventional payment evidence (EFTPS, cancelled check, Treasury receipt) has been located. Vouchers show intent but not payment.",
+      "supporting_fact_ids": [
+        "FCT-0002",
+        "FCT-0011",
+        "FCT-0012"
+      ],
+      "legal_authority_ids": [
+        "AUTH-0007"
+      ],
+      "supporting_evidence_ids": [],
+      "status": "unsupported",
+      "confidence": {
+        "score": 0.2,
+        "label": "low"
+      },
+      "conclusion": "Claim is not supported by conventional payment evidence",
+      "notes": "CRITICAL: Without payment proof, IRS position that no payment was made is stronger",
+      "registered_at": "2026-07-03T12:30:55.512767+00:00"
+    },
+    {
+      "analysis_id": "LEG-0003",
+      "question": "Should the frivolous return designation be challenged directly?",
+      "analysis": "Notice 2010-33 lists positions similar to voucher/lawful money theories as frivolous. Direct challenge risks $5,000 penalty. Safer path: file corrected return.",
+      "supporting_fact_ids": [
+        "FCT-0009"
+      ],
+      "legal_authority_ids": [
+        "AUTH-0001",
+        "AUTH-0007"
+      ],
+      "supporting_evidence_ids": [],
+      "status": "partially_supported",
+      "confidence": {
+        "score": 0.6,
+        "label": "moderate"
+      },
+      "conclusion": "Direct challenge is risky. Corrected return is safer.",
+      "notes": "ChatGPT recommendation: withdraw frivolous position, file corrected 1040-X",
+      "registered_at": "2026-07-03T12:30:55.551104+00:00"
+    },
+    {
+      "analysis_id": "LEG-0004",
+      "question": "Can the assessed tax be reduced through a corrected return?",
+      "analysis": "If 2024 Schedule C income was overstated, a corrected return with actual income figures could reduce the $74,280 assessment. Requires bank statement reconstruction.",
+      "supporting_fact_ids": [
+        "FCT-0003",
+        "FCT-0004"
+      ],
+      "legal_authority_ids": [],
+      "supporting_evidence_ids": [],
+      "status": "partially_supported",
+      "confidence": {
+        "score": 0.5,
+        "label": "moderate"
+      },
+      "conclusion": "Possible but requires income reconstruction from bank records",
+      "notes": "Need to collect all 2024 bank statements, payment app records, and business expense documentation",
+      "registered_at": "2026-07-03T12:30:55.591169+00:00"
+    },
+    {
+      "analysis_id": "LEG-0005",
+      "question": "Should hardship/CNC status be requested?",
+      "analysis": "If taxpayer cannot pay the assessed balance, IRC 6343 allows hardship protection. This stops collection while the correction is processed.",
+      "supporting_fact_ids": [
+        "FCT-0010"
+      ],
+      "legal_authority_ids": [
+        "AUTH-0008"
+      ],
+      "supporting_evidence_ids": [],
+      "status": "partially_supported",
+      "confidence": {
+        "score": 0.5,
+        "label": "moderate"
+      },
+      "conclusion": "Recommended parallel action while correcting the return",
+      "notes": "File Form 433-F or 433-A with hardship request",
+      "registered_at": "2026-07-03T12:30:55.638452+00:00"
+    },
+    {
+      "analysis_id": "LEG-0006",
+      "question": "Which real legal protections apply to the IRS 2024 dispute?",
+      "analysis": "The productive legal protections for this case are: (1) Due process - right to notice and challenge collection actions, (2) Taxpayer Bill of Rights - right to be informed, challenge IRS, be heard, (3) IRC 6343 - hardship/CNC protection from levy, (4) 26 CFR 601.506 - right to inspect IRS records, (5) Property exemptions from levy under federal law. Sovereign citizen theories (A4V, lawful money, UCC redemption, trust reclassification) are NOT productive and have been consistently rejected. The strategy must use real protections, not fringe theories.",
+      "supporting_fact_ids": [
+        "FCT-0013",
+        "FCT-0014"
+      ],
+      "legal_authority_ids": [
+        "AUTH-0004",
+        "AUTH-0008"
+      ],
+      "supporting_evidence_ids": [],
+      "status": "supported",
+      "confidence": {
+        "score": 0.85,
+        "label": "high"
+      },
+      "conclusion": "Use real constitutional and statutory protections. Abandon sovereign citizen theories entirely.",
+      "notes": "This analysis separates productive legal strategy from frivolous positions. Critical for avoiding IRC 6702 penalty.",
+      "registered_at": "2026-07-03T12:34:13.659619+00:00"
+    },
+    {
+      "analysis_id": "LEG-0007",
+      "question": "What is the correct amount of tax owed for 2024?",
+      "analysis": "Under the Taxpayer Bill of Rights, Isiah has the right to pay no more than the correct amount of tax. The correct amount cannot be determined yet because (1) the original Schedule C income figure of 50,799 has not been verified against actual bank records, (2) business expenses have not been documented, (3) the 50,000 estimated payment claim lacks conventional payment evidence. The IRS currently assesses 4,280 in tax plus penalties and interest totaling approximately 9,458. This assessment is based on the originally filed return. If the actual income is different, the correct tax amount changes. The path to paying the correct amount is: reconstruct actual 2024 income, file corrected 1040-X, and request hardship protection while the correction is processed.",
+      "supporting_fact_ids": [
+        "FCT-0015"
+      ],
+      "legal_authority_ids": [
+        "AUTH-0009",
+        "AUTH-0008"
+      ],
+      "supporting_evidence_ids": [],
+      "status": "partially_supported",
+      "confidence": {
+        "score": 0.7,
+        "label": "moderate"
+      },
+      "conclusion": "Correct tax amount is unknown. Must reconstruct income from bank statements to determine it. Current IRS assessment of 4,280 may be too high or too low.",
+      "notes": "This is the productive legal lane: determine the correct amount, then pay only that amount. Not a sovereign citizen argument - this is a recognized taxpayer right.",
+      "registered_at": "2026-07-03T12:35:02.006476+00:00"
+    }
+  ],
+  "ledger_revision": 7
+}

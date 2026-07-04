@@ -31,7 +31,7 @@ def check_json_valid(path: Path) -> bool:
     if not path.exists():
         return check(f"{path.name} exists", False, "file not found")
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        json.loads(path.read_text(encoding="utf-8"))
         return check(f"{path.name} is valid JSON", True)
     except json.JSONDecodeError as e:
         return check(f"{path.name} is valid JSON", False, str(e))

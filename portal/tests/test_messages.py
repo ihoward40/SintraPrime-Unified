@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
 from fastapi import HTTPException
@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from portal.models.message import Message, MessageAttachment, MessageThread
-from portal.routers.messages import send_message, list_messages, create_thread, get_thread
+from portal.routers.messages import create_thread, get_thread, list_messages, send_message
 from portal.schemas.message import MessageSend, ThreadCreate
 
 
@@ -211,14 +211,14 @@ class TestMessageCRUD:
                     category="general",
                     participant_ids=[str(uuid.uuid4())],
                 )
-                result = await create_thread(thread_data, mock_current_user, mock_db)
+                await create_thread(thread_data, mock_current_user, mock_db)
 
                 # Verify MessageThread was instantiated with correct args
                 mock_thread_class.assert_called_once()
                 call_kwargs = mock_thread_class.call_args[1]
                 assert call_kwargs["subject"] == "New Thread"
                 assert call_kwargs["category"] == "general"
-                
+
                 mock_db.add.assert_called()
                 mock_db.commit.assert_awaited()
                 mock_db.refresh.assert_awaited()
@@ -269,7 +269,7 @@ class TestMessageCRUD:
         mock_db.execute.return_value = mock_result
 
         msg_data = MessageSend(content="Hello")
-        with pytest.raises(HTTPException) as exc:
+        with pytest.raises(HTTPException):
             await send_message(thread_id, msg_data, mock_current_user, mock_db)
         @pytest.mark.asyncio
         async def test_send_message_duplicate_idempotency_key(self, mock_db, mock_current_user, mock_thread):
@@ -337,7 +337,7 @@ class TestEncryptionRoundTrip:
     """Test encryption/decryption round-trip for messages."""
 
     def test_encrypt_decrypt_text(self):
-        from portal.services.encryption_service import encrypt_text, decrypt_text
+        from portal.services.encryption_service import decrypt_text, encrypt_text
 
         plaintext = "This is a secret legal message"
         ciphertext_b64, nonce = encrypt_text(plaintext)
@@ -345,7 +345,7 @@ class TestEncryptionRoundTrip:
         assert decrypted == plaintext
 
     def test_encrypt_decrypt_empty_string(self):
-        from portal.services.encryption_service import encrypt_text, decrypt_text
+        from portal.services.encryption_service import decrypt_text, encrypt_text
 
         plaintext = ""
         ciphertext_b64, nonce = encrypt_text(plaintext)
@@ -353,7 +353,7 @@ class TestEncryptionRoundTrip:
         assert decrypted == plaintext
 
     def test_encrypt_decrypt_unicode(self):
-        from portal.services.encryption_service import encrypt_text, decrypt_text
+        from portal.services.encryption_service import decrypt_text, encrypt_text
 
         plaintext = "Legal terms: §123, €5000, 日本語"
         ciphertext_b64, nonce = encrypt_text(plaintext)

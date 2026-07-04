@@ -1,0 +1,273 @@
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[project]
+name = "sintraprime-unified"
+version = "0.25.0"
+description = "SintraPrime Unified: Multi-Agent AI Platform"
+requires-python = ">=3.11"
+authors = [
+    {name = "Isiah Howard", email = "ihoward40@github.com"}
+]
+license = {text = "MIT"}
+
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "sqlalchemy>=2.0.0",
+    "psycopg2-binary>=2.9.9",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "python-jose>=3.3.0",
+    "passlib>=1.7.4",
+    "bcrypt>=4.1.1",
+    "python-multipart>=0.0.27",
+    "httpx>=0.25.2",
+    "aioredis>=2.0.1",
+    "celery>=5.3.4",
+    "redis>=5.0.1",
+    "stripe>=7.4.0",
+    "python-dotenv>=1.2.2",
+    "openai>=1.3.0",
+    "anthropic>=0.7.0",
+    "websockets>=12.0",
+    "pytz>=2023.3",
+    "tzlocal>=5.2",
+    "numpy>=1.24.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.3",
+    "pytest-asyncio>=0.21.1",
+    "pytest-cov>=4.1.0",
+    "black>=23.12.0",
+    "ruff>=0.1.8",
+    "isort>=5.13.2",
+    "mypy>=1.7.1",
+    "pytest-mock>=3.12.0",
+    "responses>=0.24.1",
+    "bandit>=1.7.5",
+]
+test = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "pytest-asyncio>=0.21",
+]
+portal = [
+    "PyJWT>=2.0",
+    "requests>=2.31",
+    "email-validator>=2.0",
+]
+predictive = [
+    "pandas>=2.0",
+    "scikit-learn>=1.3",
+]
+integrations = [
+    "aiohttp>=3.14.0",
+    "plaid-python>=14.0",
+]
+all = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "pytest-asyncio>=0.21",
+    "PyJWT>=2.0",
+    "requests>=2.31",
+    "email-validator>=2.0",
+    "pandas>=2.0",
+    "scikit-learn>=1.3",
+    "aiohttp>=3.14.0",
+    "plaid-python>=14.0",
+]
+
+[tool.poetry]
+packages = [
+    {include = "portal"},
+    {include = "ops"},
+    {include = "packages"}
+]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+skip_gitignore = true
+known_first_party = ["portal", "ops", "packages"]
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+# ── Baseline exclude list ──────────────────────────────────────────────
+# Legacy/phase directories excluded from linting until cleanup.
+# Each directory is documented in docs/ci/ruff-baseline.md with violation
+# counts and cleanup priority.  As a directory is cleaned, remove it from
+# this list so ruff enforces rules on new commits.
+exclude = [
+    # --- legacy phase directories ---
+    "phase15",
+    "phase16",
+    "phase17",
+    "phase18",
+    "phase19",
+    "PHASE_11_14_INTEGRATION_ORCHESTRATOR.py",
+    # --- feature modules (not actively linted yet) ---
+    "agent_protocol",
+    "agents",
+    "ai_compliance",
+    "app_builder",
+    "apps",
+    "artifacts",
+    "benchmarks",
+    "channels",
+    "claude_code",
+    "core",
+    "cross_platform",
+    "developer_experience",
+    "docket",
+    "emotional_intelligence",
+    "esignature",
+    "federal_agencies",
+    "financial_mastery",
+    "integrations",
+    "legal_integrations",
+    "legal_intelligence",
+    "life_governance",
+    "local_llm",
+    "local_models",
+    "mcp_server",
+    "memory",
+    "multimodal",
+    "observability",
+    "operator",
+    "orchestration",
+    "parl",
+    "performance",
+    "predictive",
+    "rag",
+    "saas",
+    "scheduler",
+    "secure_execution",
+    "security",
+    "skill_evolution",
+    "superintelligence",
+    "trust_law",
+    "twin_layer",
+    "voice",
+    "workflow_builder",
+    # --- non-Python / build artifacts ---
+    "web",
+    "mobile",
+    "node_modules",
+    ".venv",
+    # --- files with known syntax errors ---
+    "portal/middleware.py",
+]
+
+[tool.ruff.lint]
+# ── Target rule set ────────────────────────────────────────────────────
+# These are the rules we WANT enforced long-term.  Rules in `ignore` are
+# globally suppressed; per-file-ignores handles directory-level backlog.
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # Pyflakes
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "A",     # flake8-builtins
+    "C4",    # flake8-comprehensions
+    "SIM",   # flake8-simplify
+    "RET",   # flake8-return
+    "ARG",   # flake8-unused-arguments
+    "DTZ",   # flake8-datetimez
+    "PT",    # flake8-pytest-style
+    "RUF",   # ruff-specific
+]
+ignore = [
+    "E501",   # line-too-long (handled by formatter)
+    "E701",   # multiple-statements-on-one-line-colon
+    "E702",   # multiple-statements-on-one-line-semicolon
+    "E722",   # bare-except
+    "SIM102", # nested-if-statements
+    "DTZ011", # datetime.today() (noqa per file)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["portal", "operator"]
+
+[tool.ruff.lint.per-file-ignores]
+# ── Per-file baseline ──────────────────────────────────────────────────
+# Existing violations in active directories, suppressed by path.
+# As violations are fixed in a directory, remove its entry here.
+# See docs/ci/ruff-baseline.md for counts and cleanup priorities.
+#
+# Root-level files
+"__init__.py" = ["N999"]
+"load_test_runner.py" = ["W292", "W293"]
+"conftest.py" = ["ARG001", "SIM108"]
+"scripts/**" = ["F401", "F541"]
+# backend
+"backend/lead-router/**" = ["ARG001", "ARG002", "B007", "B028", "B904", "DTZ003", "F401", "F841", "PT011", "RUF010", "RUF012", "RUF022", "UP006", "UP035", "UP042", "UP045", "W291", "W293"]
+"backend/stripe-payments/**" = ["ARG002", "B904", "DTZ003", "DTZ006", "F401", "N999", "PT011", "RET504", "RET505", "RUF012", "RUF022", "UP006", "UP035", "UP042", "UP045", "W293"]
+# governance
+"governance/**" = ["ARG002", "B007", "F401", "F841", "N999", "RET504", "RET505", "RUF001", "RUF022", "RUF100", "SIM300", "UP006", "UP017", "UP035", "UP037", "UP042", "UP045"]
+# portal
+"portal/admin/**" = ["ARG001"]
+"portal/auth/**" = ["ARG001", "B008", "B904", "N999"]
+"portal/main.py" = ["E402", "W293"]
+"portal/middleware/**" = ["N999", "RET504", "UP017", "UP035"]
+"portal/models/**" = ["F821", "N999"]
+"portal/routers/**" = ["ARG001", "ARG002", "B008", "B904", "DTZ003", "E741", "F401", "F811", "N999", "UP006", "UP035"]
+"portal/schemas/**" = ["B904", "N999"]
+"portal/security/**" = ["ARG002", "N999", "W292", "W293"]
+"portal/services/**" = ["ARG001", "ARG002", "F401", "N806", "N999", "RUF006", "UP006", "UP015", "UP035"]
+"portal/sso/**" = ["ARG001", "ARG002", "B008", "B904", "DTZ003", "N999", "PT011", "RUF012", "RUF043"]
+"portal/tests/**" = ["ARG001", "ARG002", "ARG005", "B017", "DTZ003", "F401", "N802", "N999", "PT011", "RUF002", "RUF012", "SIM117"]
+"portal/websocket/**" = ["ARG002", "N999", "RUF012"]
+# tests
+"tests/**" = ["ARG002", "F401", "F811", "F841", "N802", "N999", "PT009", "PT011", "PT027", "RUF059"]
+
+[tool.pytest.ini_options]
+testpaths = ["portal/tests", "packages/tests"]
+python_files = "test_*.py"
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+# ── Coverage measurement ──────────────────────────────────────────────
+# `branch = true` removed: was causing DataError when subprocess coverage
+# data (statement-only) was combined with main process data (branch mode).
+# See docs/ci/sigma-gate-coverage.md for the full root cause analysis.
+#
+# source is not set here because the Sigma Gate workflow uses `--cov=.`
+# which overrides [tool.coverage.run] source entirely. Coverage scope is
+# controlled via [tool.coverage.report] include below.
+
+[tool.coverage.report]
+# ── Coverage report scope ─────────────────────────────────────────────
+# Only count coverage for modules with associated tests in tests/.
+# The Sigma Gate workflow measures everything (`--cov=.`), but this
+# `include` filter narrows what appears in the percentage calculation.
+#
+# To add a module to coverage tracking:
+# 1. Write tests for it in tests/
+# 2. Add the module path pattern here
+# 3. Run locally to verify: pytest tests/ --cov=. --cov-report=term-missing
+include = [
+    "agents/nova/*",
+    "agents/sigma/*",
+    "agents/zero/*",
+    "scheduler/__init__.py",
+    "scheduler/task_types.py",
+    "scheduler/task_executor.py",
+    "scheduler/task_scheduler.py",
+    "scheduler/task_dispatcher.py",
+    "scheduler/task_queue.py",
+    "scheduler/recurring_tasks.py",
+]
+

@@ -12,7 +12,7 @@ def valid_payload():
         "agent_id":"justice_scribe",
         "exam_id":"TEST",
         "exam_status":"completed",
-        "scores":{k:95 for k in m.WEIGHTS},
+        "scores":dict.fromkeys(m.WEIGHTS, 95),
         "predicted_confidence":94,
         "actual_correctness":95,
         "critical_failures":[],

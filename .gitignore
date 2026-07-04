@@ -76,4 +76,4 @@ __pycache__/
 
 # Logs
 *.log
-logs/
+logs/.bandit-new-findings.json

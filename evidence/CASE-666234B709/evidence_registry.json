@@ -1,0 +1,81 @@
+{
+  "case_id": "CASE-666234B709",
+  "case_name": "Halsted / LVNV / Bank of Missouri / Milestone",
+  "created_at": "2026-07-03T09:57:44.938532+00:00",
+  "evidence_items": [
+    {
+      "evidence_id": "EV-2026-00420",
+      "title": "Resurgent Capital response packet (June 24, 2026)",
+      "description": "6-page response from Resurgent Capital Services re: Celtic Bank/Reflex account ending 9370, reference 835167536. Contains account summary and March 2025 billing statement.",
+      "evidence_type": "pdf",
+      "source": "Resurgent Capital Services L.P.",
+      "custodian": "Isiah Howard",
+      "folder": "10_Responses",
+      "file_name": "Resurgent Capital for LVNV Funding.pdf",
+      "stored_path": "C:\\Users\\admin\\Desktop\\SintraPrime-Unified\\evidence\\CASE-666234B709\\10_Responses\\EV-2026-00420_Resurgent Capital for LVNV Funding.pdf",
+      "sha256": "97334c01e9afb9b59e9bb8cfaeaa80e3230ef1bc0dc4683d8d84dfa08c0c5fa5",
+      "file_size_bytes": 5898633,
+      "registered_at": "2026-07-03T09:57:44.938558+00:00",
+      "date_of_event": "2026-06-24",
+      "notes": "Deficient response — missing signed agreement, complete payment history, bill of sale, assignment chain, and custodian identification.",
+      "chain_of_custody": [
+        {
+          "action": "registered",
+          "actor": "Hermes",
+          "timestamp": "2026-07-03T09:57:44.938558+00:00",
+          "notes": "Initial registration into evidence repository"
+        }
+      ],
+      "provenance": {
+        "acquisition_method": "",
+        "acquisition_date": "2026-06-24",
+        "obtained_from": "Resurgent Capital Services L.P.",
+        "authenticity_status": "unverified",
+        "verification_status": "verified",
+        "verified_by": "SHA-256",
+        "verification_date": "2026-07-03T09:57:44.938558+00:00"
+      },
+      "parent_evidence_id": "",
+      "version": 1,
+      "related_evidence": []
+    },
+    {
+      "evidence_id": "EV-2026-00421",
+      "title": "Notice of Specific Deficiencies - Resurgent LVNV (DRAFT)",
+      "description": "Deficiency notice demanding 8 categories of missing documentation from Resurgent Capital. Draft - not yet submitted. External action locked pending approval.",
+      "evidence_type": "draft",
+      "source": "Isiah Howard (drafted with ChatGPT assistance)",
+      "custodian": "Isiah Howard",
+      "folder": "08_Drafts",
+      "file_name": "EV-2026-00421_Notice_of_Specific_Deficiencies_-_Resurgent_LVNV_(DRAFT).txt",
+      "stored_path": "C:\\Users\\admin\\Desktop\\SintraPrime-Unified\\evidence\\CASE-666234B709\\08_Drafts\\EV-2026-00421_Notice_of_Specific_Deficiencies_-_Resurgent_LVNV_(DRAFT).txt",
+      "sha256": "a9e80f85773dedae4e7d4048c70eab2f2787be18a68c50a2831cf41c3599d7bc",
+      "file_size_bytes": 1499,
+      "registered_at": "2026-07-03T09:58:04.785490+00:00",
+      "date_of_event": "2026-07-03",
+      "notes": "DRAFT. Portal submission instructions prepared. Do not submit without explicit approval.",
+      "chain_of_custody": [
+        {
+          "action": "registered",
+          "actor": "Hermes",
+          "timestamp": "2026-07-03T09:58:04.785490+00:00",
+          "notes": "Initial registration into evidence repository"
+        }
+      ],
+      "provenance": {
+        "acquisition_method": "",
+        "acquisition_date": "2026-07-03",
+        "obtained_from": "Isiah Howard (drafted with ChatGPT assistance)",
+        "authenticity_status": "unverified",
+        "verification_status": "verified",
+        "verified_by": "SHA-256",
+        "verification_date": "2026-07-03T09:58:04.785490+00:00"
+      },
+      "parent_evidence_id": "",
+      "version": 1,
+      "related_evidence": []
+    }
+  ],
+  "next_evidence_number": 422,
+  "registry_revision": 2
+}

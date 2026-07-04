@@ -1,0 +1,68 @@
+{
+  "case_id": "CASE-666234B709",
+  "authorities": [
+    {
+      "authority_id": "AUTH-0001",
+      "authority": "FDCPA Section 1692g - Validation of Debts",
+      "citation": "15 U.S.C. 1692g",
+      "supports": [
+        "LEG-0001"
+      ],
+      "status": "applicable",
+      "quoted": false,
+      "notes": "Requires debt collector to provide name of creditor, amount of debt, and statement that consumer disputes within 30 days. Resurgent's response is deficient under this section.",
+      "registered_at": "2026-07-03T10:17:06.577873+00:00",
+      "authority_type": "federal_statute",
+      "jurisdiction": "federal",
+      "strength": "primary",
+      "mandatory": true,
+      "weight": 1.0
+    },
+    {
+      "authority_id": "AUTH-0002",
+      "authority": "FDCPA Section 1692e - False or Misleading Representations",
+      "citation": "15 U.S.C. 1692e",
+      "supports": [],
+      "status": "potentially_applicable",
+      "quoted": false,
+      "notes": "Prohibits false or misleading representations in debt collection. May apply if Resurgent misrepresents the debt or its authority.",
+      "registered_at": "2026-07-03T10:17:06.659682+00:00",
+      "authority_type": "federal_statute",
+      "jurisdiction": "federal",
+      "strength": "primary",
+      "mandatory": true,
+      "weight": 1.0
+    },
+    {
+      "authority_id": "AUTH-0003",
+      "authority": "FCRA - Accuracy and Dispute Requirements",
+      "citation": "15 U.S.C. 1681",
+      "supports": [],
+      "status": "applicable",
+      "quoted": false,
+      "notes": "Requires accurate credit reporting. Account should be reported as disputed. Potential FCRA violation if not.",
+      "registered_at": "2026-07-03T10:17:06.754884+00:00",
+      "authority_type": "federal_statute",
+      "jurisdiction": "federal",
+      "strength": "primary",
+      "mandatory": true,
+      "weight": 1.0
+    },
+    {
+      "authority_id": "AUTH-0004",
+      "authority": "UCC Article 9 - Secured Transactions",
+      "citation": "UCC Article 9",
+      "supports": [],
+      "status": "potentially_applicable",
+      "quoted": false,
+      "notes": "Governs assignment of debts. Requires valid chain of assignment. LVNV has not provided bill of sale or assignment chain.",
+      "registered_at": "2026-07-03T10:17:06.842270+00:00",
+      "authority_type": "state_statute",
+      "jurisdiction": "state",
+      "strength": "persuasive",
+      "mandatory": false,
+      "weight": 0.7
+    }
+  ],
+  "ledger_revision": 4
+}

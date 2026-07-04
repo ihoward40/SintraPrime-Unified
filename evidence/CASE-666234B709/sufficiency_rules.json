@@ -1,0 +1,59 @@
+{
+  "case_id": "CASE-666234B709",
+  "rules": [
+    {
+      "rule_id": "SUF-0001",
+      "rule_name": "Ownership Established",
+      "claim_description": "LVNV Funding LLC legally owns the Celtic Bank/Reflex account ending 9370",
+      "required_documents": [
+        "Bill of sale",
+        "Assignment chain",
+        "Account-level transfer record"
+      ],
+      "minimum_required": 3,
+      "notes": "All 3 required for ownership to be established. Currently 0 of 3 held.",
+      "registered_at": "2026-07-03T11:55:47.776756+00:00"
+    },
+    {
+      "rule_id": "SUF-0002",
+      "rule_name": "Balance Verified",
+      "claim_description": "The claimed balance of $2,121.52 is accurate",
+      "required_documents": [
+        "Complete itemized transaction history",
+        "Complete payment history",
+        "Original creditor statement"
+      ],
+      "minimum_required": 2,
+      "notes": "At least 2 of 3 required. Currently 1 of 3 (March 2025 billing statement).",
+      "registered_at": "2026-07-03T11:55:47.804597+00:00"
+    },
+    {
+      "rule_id": "SUF-0003",
+      "rule_name": "Collection Authority Established",
+      "claim_description": "Resurgent Capital Services has authority to collect this debt",
+      "required_documents": [
+        "Servicing agreement",
+        "Collection authority documentation",
+        "Records custodian identification"
+      ],
+      "minimum_required": 2,
+      "notes": "At least 2 of 3 required. Currently 0 of 3.",
+      "registered_at": "2026-07-03T11:55:47.831777+00:00"
+    },
+    {
+      "rule_id": "SUF-0004",
+      "rule_name": "FDCPA Validation Satisfied",
+      "claim_description": "Resurgent's response satisfies FDCPA 1692g validation requirements",
+      "required_documents": [
+        "Signed cardmember agreement",
+        "Complete payment history",
+        "Bill of sale",
+        "Assignment chain",
+        "Custodian affidavit"
+      ],
+      "minimum_required": 4,
+      "notes": "4 of 5 required for adequate validation. Currently 1 of 5 (account summary only).",
+      "registered_at": "2026-07-03T11:55:47.860922+00:00"
+    }
+  ]
+}

@@ -1,0 +1,548 @@
+{
+  "case_id": "CASE-B93EE8235E",
+  "case_name": "IRS CP23 / Letter 3176C / 2024 Tax Dispute",
+  "evidence_items": [
+    {
+      "evidence_id": "EV-2026-00600",
+      "parent_evidence_id": "",
+      "version": 1,
+      "title": "CP23 Notice - IRS applied payment differently than intended",
+      "description": "Source: IRS cp23.pdf",
+      "evidence_type": "pdf",
+      "source": "IRS / TurboTax / ChatGPT analysis",
+      "custodian": "Isiah Howard",
+      "folder": "10_Responses",
+      "file_name": "IRS cp23.pdf",
+      "stored_path": "C:\\Users\\admin\\Desktop\\SintraPrime-Unified\\evidence\\CASE-B93EE8235E\\10_Responses\\EV-2026-00600_IRS cp23.pdf",
+      "sha256": "536da15408a9080a0e37766c569a9772df14fbbd7ed3ee303ac1394793b9d414",
+      "file_size_bytes": 49995,
+      "registered_at": "2026-07-03T12:30:47.399536+00:00",
+      "date_of_event": "2026-01-01",
+      "notes": "",
+      "related_evidence": [],
+      "provenance": {
+        "acquisition_method": "download",
+        "acquisition_date": "2026-07-03",
+        "obtained_from": "Downloads folder",
+        "authenticity_status": "original",
+        "verification_status": "unverified",
+        "verified_by": "SHA-256",
+        "verification_date": "2026-07-03T12:30:47.399536+00:00"
+      },
+      "chain_of_custody": [
+        {
+          "action": "registered",
+          "actor": "Hermes",
+          "timestamp": "2026-07-03T12:30:47.399536+00:00",
+          "notes": "Initial registration"
+        }
+      ]
+    },
+    {
+      "evidence_id": "EV-2026-00601",
+      "parent_evidence_id": "",
+      "version": 1,
+      "title": "Letter 3176C - Frivolous return warning, 30-day response deadline",
+      "description": "Source: IRS LTR 3176C.pdf",
+      "evidence_type": "pdf",
+      "source": "IRS / TurboTax / ChatGPT analysis",
+      "custodian": "Isiah Howard",
+      "folder": "10_Responses",
+      "file_name": "IRS LTR 3176C.pdf",
+      "stored_path": "C:\\Users\\admin\\Desktop\\SintraPrime-Unified\\evidence\\CASE-B93EE8235E\\10_Responses\\EV-2026-00601_IRS LTR 3176C.pdf",
+      "sha256": "7432e7dc3e776a955a0aec2f97ceb39116bac51654d3bf14c43038674d709a30",
+      "file_size_bytes": 6452743,
+      "registered_at": "2026-07-03T12:30:47.628937+00:00",
+      "date_of_event": "2026-06-03",
+      "notes": "",
+      "related_evidence": [],
+      "provenance": {
+        "acquisition_method": "download",
+        "acquisition_date": "2026-07-03",
+        "obtained_from": "Downloads folder",
+        "authenticity_status": "original",
+        "verification_status": "unverified",
+        "verified_by": "SHA-256",
+        "verification_date": "2026-07-03T12:30:47.628937+00:00"
+      },
+      "chain_of_custody": [
+        {
+          "action": "registered",
+          "actor": "Hermes",
+          "timestamp": "2026-07-03T12:30:47.628937+00:00",
+          "notes": "Initial registration"
+        }
+      ]
+    },
+    {
+      "evidence_id": "EV-2026-00602",
+      "parent_evidence_id": "",
+      "version": 1,
+      "title": "CP504 - Final Balance Due Reminder, Notice of Intent to Levy",
+      "description": "Source: IRS cp504.pdf",
+      "evidence_type": "pdf",
+      "source": "IRS / TurboTax / ChatGPT analysis",
+      "custodian": "Isiah Howard",
+      "folder": "10_Responses",
+      "file_name": "IRS cp504.pdf",
+      "stored_path": "C:\\Users\\admin\\Desktop\\SintraPrime-Unified\\evidence\\CASE-B93EE8235E\\10_Responses\\EV-2026-00602_IRS cp504.pdf",
+      "sha256": "5d287a1a8129cecd02ac31907e3b773f80130f8d9cee3ff66d004932280d9f0b",
+      "file_size_bytes": 71037,
+      "registered_at": "2026-07-03T12:30:47.826706+00:00",
+      "date_of_event": "2026-01-01",
+      "notes": "",
+      "related_evidence": [],
+      "provenance": {
+        "acquisition_method": "download",
+        "acquisition_date": "2026-07-03",
+        "obtained_from": "Downloads folder",
+        "authenticity_status": "original",
+        "verification_status": "unverified",
+        "verified_by": "SHA-256",
+        "verification_date": "2026-07-03T12:30:47.826706+00:00"
+      },
+      "chain_of_custody": [
+        {
+          "action": "registered",
+          "actor": "Hermes",
+          "timestamp": "2026-07-03T12:30:47.826706+00:00",
+          "notes": "Initial registration"
+        }
+      ]
+    },
+    {
+      "evidence_id": "EV-2026-00603",
+      "parent_evidence_id": "",
+      "version": 1,
+      "title": "CP71C - IRS balance due notice",
+      "description": "Source: cp71c.pdf",
+      "evidence_type": "pdf",
+      "source": "IRS / TurboTax / ChatGPT analysis",
+      "custodian": "Isiah Howard",
+      "folder": "10_Responses",
+      "file_name": "cp71c.pdf",
+      "stored_path": "C:\\Users\\admin\\Desktop\\SintraPrime-Unified\\evidence\\CASE-B93EE8235E\\10_Responses\\EV-2026-00603_cp71c.pdf",
+      "sha256": "fc961b36d40c7d102e0c3a21e6f33730c4e08e4397519be4dbacb2534d51eb7b",
+      "file_size_bytes": 54890,
+      "registered_at": "2026-07-03T12:30:47.992214+00:00",
+      "date_of_event": "2026-01-01",
+      "notes": "",
+      "related_evidence": [],
+      "provenance": {
+        "acquisition_method": "download",
+        "acquisition_date": "2026-07-03",
+        "obtained_from": "Downloads folder",
+        "authenticity_status": "original",
+        "verification_status": "unverified",
+        "verified_by": "SHA-256",
+        "verification_date": "2026-07-03T12:30:47.992214+00:00"
+      },
+      "chain_of_custody": [
+        {
+          "action": "registered",
+          "actor": "Hermes",
+          "timestamp": "2026-07-03T12:30:47.992214+00:00",
+          "notes": "Initial registration"
+        }
+      ]
+    },
+    {
+      "evidence_id": "EV-2026-00604",
+      "parent_evidence_id": "",
+      "version": 1,
+      "title": "CP71C - Additional IRS balance notice",
+      "description": "Source: IRS cp71c (1).pdf",
+      "evidence_type": "pdf",
+      "source": "IRS / TurboTax / ChatGPT analysis",
+      "custodian": "Isiah Howard",
+      "folder": "10_Responses",
+      "file_name": "IRS cp71c (1).pdf",
+      "stored_path": "C:\\Users\\admin\\Desktop\\SintraPrime-Unified\\evidence\\CASE-B93EE8235E\\10_Responses\\EV-2026-00604_IRS cp71c (1).pdf",
+      "sha256": "fc961b36d40c7d102e0c3a21e6f33730c4e08e4397519be4dbacb2534d51eb7b",
+      "file_size_bytes": 54890,
+      "registered_at": "2026-07-03T12:30:48.305766+00:00",
+      "date_of_event": "2026-01-01",
+      "notes": "",
+      "related_evidence": [],
+      "provenance": {
+        "acquisition_method": "download",
+        "acquisition_date": "2026-07-03",
+        "obtained_from": "Downloads folder",
+        "authenticity_status": "original",
+        "verification_status": "unverified",
+        "verified_by": "SHA-256",
+        "verification_date": "2026-07-03T12:30:48.305766+00:00"
+      },
+      "chain_of_custody": [
+        {
+          "action": "registered",
+          "actor": "Hermes",
+          "timestamp": "2026-07-03T12:30:48.305766+00:00",
+          "notes": "Initial registration"
+        }
+      ]
+    },
+    {
+      "evidence_id": "EV-2026-00605",
+      "parent_evidence_id": "",
+      "version": 1,
+      "title": "IRS Tax Compliance Report dated June 18, 2026",
+      "description": "Source: IRS Letter 2026-06-17.pdf",
+      "evidence_type": "pdf",
+      "source": "IRS / TurboTax / ChatGPT analysis",
+      "custodian": "Isiah Howard",
+      "folder": "10_Responses",
+      "file_name": "IRS Letter 2026-06-17.pdf",
+      "stored_path": "C:\\Users\\admin\\Desktop\\SintraPrime-Unified\\evidence\\CASE-B93EE8235E\\10_Responses\\EV-2026-00605_IRS Letter 2026-06-17.pdf",
+      "sha256": "da3c0f4866b22966815cee87cbe04147df1f8d203aafdcba3cf6747f32090277",
+      "file_size_bytes": 3926125,
+      "registered_at": "2026-07-03T12:30:48.437311+00:00",
+      "date_of_event": "2026-06-18",
+      "notes": "",
+      "related_evidence": [],
+      "provenance": {
+        "acquisition_method": "download",
+        "acquisition_date": "2026-07-03",
+        "obtained_from": "Downloads folder",
+        "authenticity_status": "original",
+        "verification_status": "unverified",
+        "verified_by": "SHA-256",
+        "verification_date": "2026-07-03T12:30:48.437311+00:00"
+      },
+      "chain_of_custody": [
+        {
+          "action": "registered",
+          "actor": "Hermes",
+          "timestamp": "2026-07-03T12:30:48.437311+00:00",
+          "notes": "Initial registration"
+        }
+      ]
+    },
+    {
+      "evidence_id": "EV-2026-00606",
+      "parent_evidence_id": "",
+      "version": 1,
+      "title": "2024 IRS Account Transcript - shows TC 150, TC 810 freeze, no $250k credit",
+      "description": "Source: 2024 IRS account trans.pdf",
+      "evidence_type": "pdf",
+      "source": "IRS / TurboTax / ChatGPT analysis",
+      "custodian": "Isiah Howard",
+      "folder": "02_Credit_Reports",
+      "file_name": "2024 IRS account trans.pdf",
+      "stored_path": "C:\\Users\\admin\\Desktop\\SintraPrime-Unified\\evidence\\CASE-B93EE8235E\\02_Credit_Reports\\EV-2026-00606_2024 IRS account trans.pdf",
+      "sha256": "8d6a7ea34bf335529a5ffbf47cbc55753b5d5da32da66e8230294edcfc28d281",
+      "file_size_bytes": 10072,
+      "registered_at": "2026-07-03T12:30:48.692820+00:00",
+      "date_of_event": "2026-01-01",
+      "notes": "",
+      "related_evidence": [],
+      "provenance": {
+        "acquisition_method": "download",
+        "acquisition_date": "2026-07-03",
+        "obtained_from": "Downloads folder",
+        "authenticity_status": "original",
+        "verification_status": "unverified",
+        "verified_by": "SHA-256",
+        "verification_date": "2026-07-03T12:30:48.692820+00:00"
+      },
+      "chain_of_custody": [
+        {
+          "action": "registered",
+          "actor": "Hermes",
+          "timestamp": "2026-07-03T12:30:48.692820+00:00",
+          "notes": "Initial registration"
+        }
+      ]
+    },
+    {
+      "evidence_id": "EV-2026-00607",
+      "parent_evidence_id": "",
+      "version": 1,
+      "title": "2024 Record of Account Transcript",
+      "description": "Source: 2024 IRS Record of account trans.pdf",
+      "evidence_type": "pdf",
+      "source": "IRS / TurboTax / ChatGPT analysis",
+      "custodian": "Isiah Howard",
+      "folder": "02_Credit_Reports",
+      "file_name": "2024 IRS Record of account trans.pdf",
+      "stored_path": "C:\\Users\\admin\\Desktop\\SintraPrime-Unified\\evidence\\CASE-B93EE8235E\\02_Credit_Reports\\EV-2026-00607_2024 IRS Record of account trans.pdf",
+      "sha256": "7d1e728388d0353631876136aae0b4beb050e0de771e8f32fa50ffa1db3537ab",
+      "file_size_bytes": 24085,
+      "registered_at": "2026-07-03T12:30:49.030937+00:00",
+      "date_of_event": "2026-01-01",
+      "notes": "",
+      "related_evidence": [],
+      "provenance": {
+        "acquisition_method": "download",
+        "acquisition_date": "2026-07-03",
+        "obtained_from": "Downloads folder",
+        "authenticity_status": "original",
+        "verification_status": "unverified",
+        "verified_by": "SHA-256",
+        "verification_date": "2026-07-03T12:30:49.030937+00:00"
+      },
+      "chain_of_custody": [
+        {
+          "action": "registered",
+          "actor": "Hermes",
+          "timestamp": "2026-07-03T12:30:49.030937+00:00",
+          "notes": "Initial registration"
+        }
+      ]
+    },
+    {
+      "evidence_id": "EV-2026-00608",
+      "parent_evidence_id": "",
+      "version": 1,
+      "title": "2024 Return Transcript",
+      "description": "Source: 2024 IRS Return trans.pdf",
+      "evidence_type": "pdf",
+      "source": "IRS / TurboTax / ChatGPT analysis",
+      "custodian": "Isiah Howard",
+      "folder": "02_Credit_Reports",
+      "file_name": "2024 IRS Return trans.pdf",
+      "stored_path": "C:\\Users\\admin\\Desktop\\SintraPrime-Unified\\evidence\\CASE-B93EE8235E\\02_Credit_Reports\\EV-2026-00608_2024 IRS Return trans.pdf",
+      "sha256": "6c3a5c6481ecfa574af5e0c50edeaf9d8c566846ea8f9e74eef21a7eac3dd3a5",
+      "file_size_bytes": 21697,
+      "registered_at": "2026-07-03T12:30:49.585556+00:00",
+      "date_of_event": "2026-01-01",
+      "notes": "",
+      "related_evidence": [],
+      "provenance": {
+        "acquisition_method": "download",
+        "acquisition_date": "2026-07-03",
+        "obtained_from": "Downloads folder",
+        "authenticity_status": "original",
+        "verification_status": "unverified",
+        "verified_by": "SHA-256",
+        "verification_date": "2026-07-03T12:30:49.585556+00:00"
+      },
+      "chain_of_custody": [
+        {
+          "action": "registered",
+          "actor": "Hermes",
+          "timestamp": "2026-07-03T12:30:49.585556+00:00",
+          "notes": "Initial registration"
+        }
+      ]
+    },
+    {
+      "evidence_id": "EV-2026-00609",
+      "parent_evidence_id": "",
+      "version": 1,
+      "title": "2024 Wage and Income Transcript",
+      "description": "Source: 2024 IRS Wages.pdf",
+      "evidence_type": "pdf",
+      "source": "IRS / TurboTax / ChatGPT analysis",
+      "custodian": "Isiah Howard",
+      "folder": "02_Credit_Reports",
+      "file_name": "2024 IRS Wages.pdf",
+      "stored_path": "C:\\Users\\admin\\Desktop\\SintraPrime-Unified\\evidence\\CASE-B93EE8235E\\02_Credit_Reports\\EV-2026-00609_2024 IRS Wages.pdf",
+      "sha256": "75c2f92e3fe6bdd2ec8947830e38fed4b44c2517e93ef49253092dc92787f0d1",
+      "file_size_bytes": 21477,
+      "registered_at": "2026-07-03T12:30:49.910770+00:00",
+      "date_of_event": "2026-01-01",
+      "notes": "",
+      "related_evidence": [],
+      "provenance": {
+        "acquisition_method": "download",
+        "acquisition_date": "2026-07-03",
+        "obtained_from": "Downloads folder",
+        "authenticity_status": "original",
+        "verification_status": "unverified",
+        "verified_by": "SHA-256",
+        "verification_date": "2026-07-03T12:30:49.910770+00:00"
+      },
+      "chain_of_custody": [
+        {
+          "action": "registered",
+          "actor": "Hermes",
+          "timestamp": "2026-07-03T12:30:49.910770+00:00",
+          "notes": "Initial registration"
+        }
+      ]
+    },
+    {
+      "evidence_id": "EV-2026-00610",
+      "parent_evidence_id": "",
+      "version": 1,
+      "title": "2024 Form 1040 - claimed $250k estimated payments, $74,280 tax",
+      "description": "Source: 2024_TaxReturn.pdf",
+      "evidence_type": "pdf",
+      "source": "IRS / TurboTax / ChatGPT analysis",
+      "custodian": "Isiah Howard",
+      "folder": "03_Original_Creditor",
+      "file_name": "2024_TaxReturn.pdf",
+      "stored_path": "C:\\Users\\admin\\Desktop\\SintraPrime-Unified\\evidence\\CASE-B93EE8235E\\03_Original_Creditor\\EV-2026-00610_2024_TaxReturn.pdf",
+      "sha256": "7dca258e4e11a5383b2ea42048016047ecbbabcea4ff0ab1261fa0d6d73b4e23",
+      "file_size_bytes": 1916004,
+      "registered_at": "2026-07-03T12:30:50.151812+00:00",
+      "date_of_event": "2025-02-05",
+      "notes": "",
+      "related_evidence": [],
+      "provenance": {
+        "acquisition_method": "download",
+        "acquisition_date": "2026-07-03",
+        "obtained_from": "Downloads folder",
+        "authenticity_status": "original",
+        "verification_status": "unverified",
+        "verified_by": "SHA-256",
+        "verification_date": "2026-07-03T12:30:50.151812+00:00"
+      },
+      "chain_of_custody": [
+        {
+          "action": "registered",
+          "actor": "Hermes",
+          "timestamp": "2026-07-03T12:30:50.151812+00:00",
+          "notes": "Initial registration"
+        }
+      ]
+    },
+    {
+      "evidence_id": "EV-2026-00611",
+      "parent_evidence_id": "",
+      "version": 1,
+      "title": "Conditional Acceptance response to CP23 (draft)",
+      "description": "Source: IRS_CP23_Conditional_Acceptance_2024.pdf",
+      "evidence_type": "pdf",
+      "source": "IRS / TurboTax / ChatGPT analysis",
+      "custodian": "Isiah Howard",
+      "folder": "08_Drafts",
+      "file_name": "IRS_CP23_Conditional_Acceptance_2024.pdf",
+      "stored_path": "C:\\Users\\admin\\Desktop\\SintraPrime-Unified\\evidence\\CASE-B93EE8235E\\08_Drafts\\EV-2026-00611_IRS_CP23_Conditional_Acceptance_2024.pdf",
+      "sha256": "f2cc8b9b1f22fe223af704f00aab5a7e75e24f22c91d46bd3a26f5b410c03c41",
+      "file_size_bytes": 34117,
+      "registered_at": "2026-07-03T12:30:50.518880+00:00",
+      "date_of_event": "2026-01-01",
+      "notes": "",
+      "related_evidence": [],
+      "provenance": {
+        "acquisition_method": "download",
+        "acquisition_date": "2026-07-03",
+        "obtained_from": "Downloads folder",
+        "authenticity_status": "original",
+        "verification_status": "unverified",
+        "verified_by": "SHA-256",
+        "verification_date": "2026-07-03T12:30:50.518880+00:00"
+      },
+      "chain_of_custody": [
+        {
+          "action": "registered",
+          "actor": "Hermes",
+          "timestamp": "2026-07-03T12:30:50.518880+00:00",
+          "notes": "Initial registration"
+        }
+      ]
+    },
+    {
+      "evidence_id": "EV-2026-00612",
+      "parent_evidence_id": "",
+      "version": 1,
+      "title": "Conditional Acceptance response to CP23 (version 2)",
+      "description": "Source: IRS_CP23_Conditional_Acceptance_2024 (1).pdf",
+      "evidence_type": "pdf",
+      "source": "IRS / TurboTax / ChatGPT analysis",
+      "custodian": "Isiah Howard",
+      "folder": "08_Drafts",
+      "file_name": "IRS_CP23_Conditional_Acceptance_2024 (1).pdf",
+      "stored_path": "C:\\Users\\admin\\Desktop\\SintraPrime-Unified\\evidence\\CASE-B93EE8235E\\08_Drafts\\EV-2026-00612_IRS_CP23_Conditional_Acceptance_2024 (1).pdf",
+      "sha256": "f2cc8b9b1f22fe223af704f00aab5a7e75e24f22c91d46bd3a26f5b410c03c41",
+      "file_size_bytes": 34117,
+      "registered_at": "2026-07-03T12:30:50.783891+00:00",
+      "date_of_event": "2026-01-01",
+      "notes": "",
+      "related_evidence": [],
+      "provenance": {
+        "acquisition_method": "download",
+        "acquisition_date": "2026-07-03",
+        "obtained_from": "Downloads folder",
+        "authenticity_status": "original",
+        "verification_status": "unverified",
+        "verified_by": "SHA-256",
+        "verification_date": "2026-07-03T12:30:50.783891+00:00"
+      },
+      "chain_of_custody": [
+        {
+          "action": "registered",
+          "actor": "Hermes",
+          "timestamp": "2026-07-03T12:30:50.783891+00:00",
+          "notes": "Initial registration"
+        }
+      ]
+    },
+    {
+      "evidence_id": "EV-2026-00613",
+      "parent_evidence_id": "",
+      "version": 1,
+      "title": "Challenge to IRS frivolous return designation (draft)",
+      "description": "Source: IRS_Frivolous_Designation_Challenge.pdf",
+      "evidence_type": "pdf",
+      "source": "IRS / TurboTax / ChatGPT analysis",
+      "custodian": "Isiah Howard",
+      "folder": "08_Drafts",
+      "file_name": "IRS_Frivolous_Designation_Challenge.pdf",
+      "stored_path": "C:\\Users\\admin\\Desktop\\SintraPrime-Unified\\evidence\\CASE-B93EE8235E\\08_Drafts\\EV-2026-00613_IRS_Frivolous_Designation_Challenge.pdf",
+      "sha256": "84614a279d74bf50684e385a50d5595333737e8e89236ca97bcd4f67a64672ef",
+      "file_size_bytes": 65004,
+      "registered_at": "2026-07-03T12:30:51.081545+00:00",
+      "date_of_event": "2026-01-01",
+      "notes": "",
+      "related_evidence": [],
+      "provenance": {
+        "acquisition_method": "download",
+        "acquisition_date": "2026-07-03",
+        "obtained_from": "Downloads folder",
+        "authenticity_status": "original",
+        "verification_status": "unverified",
+        "verified_by": "SHA-256",
+        "verification_date": "2026-07-03T12:30:51.081545+00:00"
+      },
+      "chain_of_custody": [
+        {
+          "action": "registered",
+          "actor": "Hermes",
+          "timestamp": "2026-07-03T12:30:51.081545+00:00",
+          "notes": "Initial registration"
+        }
+      ]
+    },
+    {
+      "evidence_id": "EV-2026-00614",
+      "parent_evidence_id": "",
+      "version": 1,
+      "title": "Defense and refund credit strategy document",
+      "description": "Source: Defense_and_Refund_Credit_Strategy_for_Isiah_Howard.pdf",
+      "evidence_type": "pdf",
+      "source": "IRS / TurboTax / ChatGPT analysis",
+      "custodian": "Isiah Howard",
+      "folder": "07_Legal_Research",
+      "file_name": "Defense_and_Refund_Credit_Strategy_for_Isiah_Howard.pdf",
+      "stored_path": "C:\\Users\\admin\\Desktop\\SintraPrime-Unified\\evidence\\CASE-B93EE8235E\\07_Legal_Research\\EV-2026-00614_Defense_and_Refund_Credit_Strategy_for_Isiah_Howard.pdf",
+      "sha256": "4e15f296efee5d452e9eb9a6cc75c39e3ed8e83ce961e175e8b0d12543125acf",
+      "file_size_bytes": 66206,
+      "registered_at": "2026-07-03T12:30:51.307911+00:00",
+      "date_of_event": "2026-01-01",
+      "notes": "",
+      "related_evidence": [],
+      "provenance": {
+        "acquisition_method": "download",
+        "acquisition_date": "2026-07-03",
+        "obtained_from": "Downloads folder",
+        "authenticity_status": "original",
+        "verification_status": "unverified",
+        "verified_by": "SHA-256",
+        "verification_date": "2026-07-03T12:30:51.307911+00:00"
+      },
+      "chain_of_custody": [
+        {
+          "action": "registered",
+          "actor": "Hermes",
+          "timestamp": "2026-07-03T12:30:51.307911+00:00",
+          "notes": "Initial registration"
+        }
+      ]
+    }
+  ],
+  "next_evidence_number": 615,
+  "registry_revision": 15
+}

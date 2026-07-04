@@ -1,0 +1,61 @@
+{
+  "case_id": "CASE-666234B709",
+  "decisions": [
+    {
+      "decision_id": "DEC-0001",
+      "question": "Should a deficiency notice be sent to Resurgent Capital?",
+      "decision": "Yes",
+      "reason": "Resurgent's June 24, 2026 response is deficient under FDCPA 1692g. Missing 8 categories of documentation including signed agreement, assignment chain, and custodian identification.",
+      "inputs": [
+        "LEG-0001"
+      ],
+      "alternatives_considered": [
+        "Wait for CFPB response",
+        "Accept the verification as adequate",
+        "Send a simpler dispute letter"
+      ],
+      "decision_date": "2026-07-03",
+      "author": "ChatGPT (strategic reviewer) + Hermes (chief of staff)",
+      "notes": "Deficiency notice drafted as EV-2026-00421. External submission locked pending Isiah's approval.",
+      "registered_at": "2026-07-03T11:55:47.690325+00:00"
+    },
+    {
+      "decision_id": "DEC-0002",
+      "question": "Should we submit via Resurgent's online portal or mail?",
+      "decision": "Portal submission (electronic)",
+      "reason": "Resurgent's packet directs consumers to the online portal. Electronic delivery is faster, free, and creates a timestamped confirmation.",
+      "inputs": [
+        "EV-2026-00420"
+      ],
+      "alternatives_considered": [
+        "Certified mail",
+        "Regular mail",
+        "Fax"
+      ],
+      "decision_date": "2026-07-03",
+      "author": "ChatGPT",
+      "notes": "Must select Celtic Bank/Reflex account ending 9370 in portal, NOT Bank of Missouri accounts. Take screenshots of submission.",
+      "registered_at": "2026-07-03T11:55:47.718392+00:00"
+    },
+    {
+      "decision_id": "DEC-0003",
+      "question": "Should we acknowledge the debt or make any payment?",
+      "decision": "No",
+      "reason": "Acknowledging the debt or making a payment could restart the statute of limitations. The deficiency notice explicitly states this is not an acknowledgment.",
+      "inputs": [
+        "LEG-0001",
+        "AUTH-0001"
+      ],
+      "alternatives_considered": [
+        "Accept settlement offer",
+        "Make partial payment",
+        "Set up payment plan"
+      ],
+      "decision_date": "2026-07-03",
+      "author": "ChatGPT",
+      "notes": "Do not enter payment information, accept settlement, or click anything acknowledging liability.",
+      "registered_at": "2026-07-03T11:55:47.746712+00:00"
+    }
+  ],
+  "ledger_revision": 3
+}

@@ -1,0 +1,22 @@
+{
+  "case_id": "CASE-666234B709",
+  "analyses": [
+    {
+      "analysis_id": "LEG-0001",
+      "analysis": "Resurgent's June 24, 2026 response constitutes adequate debt validation under FDCPA 1692g",
+      "legal_authority_ids": [],
+      "supporting_fact_ids": [],
+      "supporting_evidence_ids": [],
+      "status": "unsupported",
+      "confidence": {
+        "score": 0.3,
+        "label": "low"
+      },
+      "conclusion": "The response is deficient under FDCPA validation requirements. Missing 8 categories of documentation.",
+      "notes": "Signed agreement, complete payment history, assignment chain",
+      "registered_at": "2026-07-03T10:17:06.477456+00:00",
+      "question": "Resurgent's June 24, 2026 response constitutes adequate debt validation under FD..."
+    }
+  ],
+  "ledger_revision": 1
+}

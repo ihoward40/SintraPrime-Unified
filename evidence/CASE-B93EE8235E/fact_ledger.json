@@ -1,0 +1,237 @@
+{
+  "case_id": "CASE-B93EE8235E",
+  "facts": [
+    {
+      "fact_id": "FCT-0001",
+      "fact": "2024 Form 1040 was filed on February 5, 2025",
+      "supporting_evidence_ids": [
+        "EV-2026-00611",
+        "EV-2026-00612"
+      ],
+      "status": "supported",
+      "confidence": {
+        "score": 0.9,
+        "label": "high"
+      },
+      "missing": "",
+      "notes": "Confirmed by Return Transcript and filing package",
+      "registered_at": "2026-07-03T12:30:54.134541+00:00"
+    },
+    {
+      "fact_id": "FCT-0002",
+      "fact": "The return claimed $250,000 in estimated tax payments on Line 26",
+      "supporting_evidence_ids": [
+        "EV-2026-00611"
+      ],
+      "status": "supported",
+      "confidence": {
+        "score": 0.9,
+        "label": "high"
+      },
+      "missing": "",
+      "notes": "Visible on Form 1040",
+      "registered_at": "2026-07-03T12:30:54.210521+00:00"
+    },
+    {
+      "fact_id": "FCT-0003",
+      "fact": "The return reported $74,280 total tax",
+      "supporting_evidence_ids": [
+        "EV-2026-00611"
+      ],
+      "status": "supported",
+      "confidence": {
+        "score": 0.9,
+        "label": "high"
+      },
+      "missing": "",
+      "notes": "Visible on Form 1040",
+      "registered_at": "2026-07-03T12:30:54.285410+00:00"
+    },
+    {
+      "fact_id": "FCT-0004",
+      "fact": "The return claimed $175,720 refund",
+      "supporting_evidence_ids": [
+        "EV-2026-00611"
+      ],
+      "status": "supported",
+      "confidence": {
+        "score": 0.9,
+        "label": "high"
+      },
+      "missing": "",
+      "notes": "Calculated from $250,000 payments minus $74,280 tax",
+      "registered_at": "2026-07-03T12:30:54.333841+00:00"
+    },
+    {
+      "fact_id": "FCT-0005",
+      "fact": "IRS processed the return on March 31, 2025 (TC 150)",
+      "supporting_evidence_ids": [
+        "EV-2026-00607"
+      ],
+      "status": "supported",
+      "confidence": {
+        "score": 0.9,
+        "label": "high"
+      },
+      "missing": "",
+      "notes": "Visible on Account Transcript",
+      "registered_at": "2026-07-03T12:30:54.380996+00:00"
+    },
+    {
+      "fact_id": "FCT-0006",
+      "fact": "IRS placed TC 810 Refund Freeze on January 21, 2025",
+      "supporting_evidence_ids": [
+        "EV-2026-00607"
+      ],
+      "status": "supported",
+      "confidence": {
+        "score": 0.9,
+        "label": "high"
+      },
+      "missing": "",
+      "notes": "Visible on Account Transcript",
+      "registered_at": "2026-07-03T12:30:54.415977+00:00"
+    },
+    {
+      "fact_id": "FCT-0007",
+      "fact": "IRS Account Transcript does NOT show a $250,000 payment posting (TC 670)",
+      "supporting_evidence_ids": [
+        "EV-2026-00607"
+      ],
+      "status": "supported",
+      "confidence": {
+        "score": 0.85,
+        "label": "high"
+      },
+      "missing": "",
+      "notes": "No TC 670 for $250,000 visible on transcript",
+      "registered_at": "2026-07-03T12:30:54.452615+00:00"
+    },
+    {
+      "fact_id": "FCT-0008",
+      "fact": "Certified mail confirms IRS received packages on Dec 5 2024, Jan 8 2025, Jan 28 2025",
+      "supporting_evidence_ids": [],
+      "status": "partially_supported",
+      "confidence": {
+        "score": 0.6,
+        "label": "moderate"
+      },
+      "missing": "Green card photos need to be registered as evidence",
+      "notes": "ChatGPT analysis confirms receipt dates",
+      "registered_at": "2026-07-03T12:30:54.491770+00:00"
+    },
+    {
+      "fact_id": "FCT-0009",
+      "fact": "IRS issued Letter 3176C classifying the return as frivolous on June 3, 2026",
+      "supporting_evidence_ids": [
+        "EV-2026-00602"
+      ],
+      "status": "supported",
+      "confidence": {
+        "score": 0.9,
+        "label": "high"
+      },
+      "missing": "",
+      "notes": "Letter in evidence",
+      "registered_at": "2026-07-03T12:30:54.527074+00:00"
+    },
+    {
+      "fact_id": "FCT-0010",
+      "fact": "IRS balance for 2024 is approximately $89,458 including penalties and interest",
+      "supporting_evidence_ids": [
+        "EV-2026-00606"
+      ],
+      "status": "supported",
+      "confidence": {
+        "score": 0.85,
+        "label": "high"
+      },
+      "missing": "",
+      "notes": "Per IRS Tax Compliance Report June 18, 2026",
+      "registered_at": "2026-07-03T12:30:54.563054+00:00"
+    },
+    {
+      "fact_id": "FCT-0011",
+      "fact": "The $250,000 in vouchers were prepared as 1040-ES estimated payment vouchers",
+      "supporting_evidence_ids": [],
+      "status": "partially_supported",
+      "confidence": {
+        "score": 0.5,
+        "label": "moderate"
+      },
+      "missing": "Physical voucher evidence needs registration",
+      "notes": "ChatGPT analysis of photographs",
+      "registered_at": "2026-07-03T12:30:54.604257+00:00"
+    },
+    {
+      "fact_id": "FCT-0012",
+      "fact": "No EFTPS confirmation, cancelled check, or Treasury payment receipt has been located",
+      "supporting_evidence_ids": [],
+      "status": "supported",
+      "confidence": {
+        "score": 0.7,
+        "label": "moderate"
+      },
+      "missing": "May exist but not yet found in evidence",
+      "notes": "Critical evidence gap",
+      "registered_at": "2026-07-03T12:30:54.649047+00:00"
+    },
+    {
+      "fact_id": "FCT-0013",
+      "fact": "Sovereign citizen theories (unilateral opt-out from government authority, A4V, lawful money redemption, birth certificate trust) have been consistently rejected by federal courts",
+      "supporting_evidence_ids": [
+        "EV-2026-00613"
+      ],
+      "status": "supported",
+      "confidence": {
+        "score": 0.95,
+        "label": "high"
+      },
+      "missing": "",
+      "notes": "ChatGPT analysis confirmed. Notice 2010-33 lists these as frivolous positions. Courts routinely dismiss these arguments.",
+      "registered_at": "2026-07-03T12:34:13.506559+00:00"
+    },
+    {
+      "fact_id": "FCT-0014",
+      "fact": "Real constitutional and statutory protections exist for privacy, property rights, due process, and autonomy - these are separate from sovereign citizen theories",
+      "supporting_evidence_ids": [],
+      "status": "supported",
+      "confidence": {
+        "score": 0.9,
+        "label": "high"
+      },
+      "missing": "",
+      "notes": "Due process (5th/14th Am), property rights, 4th Am search limits, Taxpayer Bill of Rights, trust law, business entities. These are real and usable.",
+      "registered_at": "2026-07-03T12:34:13.591256+00:00"
+    },
+    {
+      "fact_id": "FCT-0015",
+      "fact": "The correct amount of 2024 federal tax cannot be determined until actual Schedule C income is reconstructed from bank statements and payment app records",
+      "supporting_evidence_ids": [
+        "EV-2026-00610"
+      ],
+      "status": "partially_supported",
+      "confidence": {
+        "score": 0.7,
+        "label": "moderate"
+      },
+      "missing": "Bank statements Jan-Dec 2024, PayPal/Cash App/Venmo/Stripe records, business expense documentation",
+      "notes": "The original return reported 50,799 net Schedule C income. This figure may be overstated or understated. Cannot determine correct tax until real income is verified.",
+      "registered_at": "2026-07-03T12:35:01.874486+00:00"
+    },
+    {
+      "fact_id": "FCT-0016",
+      "fact": "Taxpayer is experiencing severe financial hardship - homeless, no steady income, no SSI, staying with friend Crystal Hall, relying on Medicaid",
+      "supporting_evidence_ids": [],
+      "status": "supported",
+      "confidence": {
+        "score": 0.9,
+        "label": "high"
+      },
+      "missing": "Form 433-F or 433-A to formally document hardship for IRS CNC status",
+      "notes": "This hardship directly supports the Currently Not Collectible (CNC) request under IRC 6343. Critical for stopping IRS collection while corrected return is prepared.",
+      "registered_at": "2026-07-03T16:28:53.431959+00:00"
+    }
+  ],
+  "ledger_revision": 16
+}

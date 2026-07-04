@@ -1,0 +1,54 @@
+{
+  "case_id": "CASE-B93EE8235E",
+  "calculated_at": "2026-07-03T16:28:54.057488+00:00",
+  "dimensions": {
+    "repository_completeness": {
+      "score": 85,
+      "categories": {
+        "Evidence": {
+          "weight": 0.25,
+          "score": 100,
+          "detail": "15 items"
+        },
+        "Timeline": {
+          "weight": 0.2,
+          "score": 100,
+          "detail": "16 events"
+        },
+        "Authentication": {
+          "weight": 0.2,
+          "score": 100,
+          "detail": "All SHA-256 hashed"
+        },
+        "Correspondence": {
+          "weight": 0.15,
+          "score": 0,
+          "detail": "0 items"
+        },
+        "Preservation": {
+          "weight": 0.2,
+          "score": 100,
+          "detail": "All stored"
+        }
+      }
+    },
+    "evidence_strength": {
+      "score": 92,
+      "facts_count": 16
+    },
+    "legal_readiness": {
+      "score": 75,
+      "analyses_count": 7,
+      "authorities_count": 14
+    },
+    "procedural_readiness": {
+      "score": 100,
+      "requests_total": 0,
+      "outstanding": 0,
+      "received": 0
+    }
+  },
+  "overall_readiness": 87,
+  "grade": "B",
+  "note": "Four dimensions: Repository (file completeness), Evidence (fact confidence), Legal (analysis + authority coverage), Procedural (request resolution)."
+}

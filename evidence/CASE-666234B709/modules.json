@@ -1,0 +1,7 @@
+{
+  "case_id": "CASE-666234B709",
+  "enabled_modules": [
+    "debt_collection"
+  ],
+  "template_version": "2.1.0"
+}

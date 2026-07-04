@@ -1,0 +1,134 @@
+{
+  "case_id": "CASE-B93EE8235E",
+  "case_name": "IRS CP23 / Letter 3176C / 2024 Tax Dispute",
+  "events": [
+    {
+      "date": "2023-04-01",
+      "event": "Q1 2024 estimated tax payment voucher prepared ($62,500)",
+      "category": "payment_voucher",
+      "evidence_ids": [],
+      "notes": "",
+      "recorded_at": "2026-07-03T12:30:52.033336+00:00"
+    },
+    {
+      "date": "2023-06-01",
+      "event": "Q2 2024 estimated tax payment voucher prepared ($62,500)",
+      "category": "payment_voucher",
+      "evidence_ids": [],
+      "notes": "",
+      "recorded_at": "2026-07-03T12:30:52.147344+00:00"
+    },
+    {
+      "date": "2023-09-01",
+      "event": "Q3 2024 estimated tax payment voucher prepared ($62,500)",
+      "category": "payment_voucher",
+      "evidence_ids": [],
+      "notes": "",
+      "recorded_at": "2026-07-03T12:30:52.261095+00:00"
+    },
+    {
+      "date": "2024-01-01",
+      "event": "Q4 2024 estimated tax payment voucher prepared ($62,500)",
+      "category": "payment_voucher",
+      "evidence_ids": [],
+      "notes": "",
+      "recorded_at": "2026-07-03T12:30:52.456337+00:00"
+    },
+    {
+      "date": "2024-11-30",
+      "event": "Cover letter transmitting vouchers and payment instruments to IRS",
+      "category": "correspondence_outgoing",
+      "evidence_ids": [],
+      "notes": "",
+      "recorded_at": "2026-07-03T12:30:52.552932+00:00"
+    },
+    {
+      "date": "2024-12-05",
+      "event": "IRS Kansas City received package (certified mail)",
+      "category": "delivery_confirmed",
+      "evidence_ids": [],
+      "notes": "",
+      "recorded_at": "2026-07-03T12:30:52.645506+00:00"
+    },
+    {
+      "date": "2025-01-08",
+      "event": "IRS Kansas City received second package (certified mail)",
+      "category": "delivery_confirmed",
+      "evidence_ids": [],
+      "notes": "",
+      "recorded_at": "2026-07-03T12:30:52.729909+00:00"
+    },
+    {
+      "date": "2025-01-21",
+      "event": "IRS placed TC 810 Refund Freeze on account",
+      "category": "irs_action",
+      "evidence_ids": [],
+      "notes": "",
+      "recorded_at": "2026-07-03T12:30:52.803124+00:00"
+    },
+    {
+      "date": "2025-01-28",
+      "event": "IRS Kansas City received third package (certified mail)",
+      "category": "delivery_confirmed",
+      "evidence_ids": [],
+      "notes": "",
+      "recorded_at": "2026-07-03T12:30:52.879159+00:00"
+    },
+    {
+      "date": "2025-02-05",
+      "event": "2024 Form 1040 filed - claimed $250,000 estimated payments, $74,280 tax, $175,720 refund",
+      "category": "tax_filing",
+      "evidence_ids": [],
+      "notes": "",
+      "recorded_at": "2026-07-03T12:30:53.093519+00:00"
+    },
+    {
+      "date": "2025-03-31",
+      "event": "IRS processed return (TC 150) - assessed $74,280 tax",
+      "category": "irs_action",
+      "evidence_ids": [],
+      "notes": "",
+      "recorded_at": "2026-07-03T12:30:53.625317+00:00"
+    },
+    {
+      "date": "2026-01-01",
+      "event": "CP23 notice issued - IRS applied payment differently",
+      "category": "irs_notice",
+      "evidence_ids": [],
+      "notes": "",
+      "recorded_at": "2026-07-03T12:30:53.782954+00:00"
+    },
+    {
+      "date": "2026-01-01",
+      "event": "CP504 notice issued - Final balance due, intent to levy",
+      "category": "irs_notice",
+      "evidence_ids": [],
+      "notes": "",
+      "recorded_at": "2026-07-03T12:30:53.858297+00:00"
+    },
+    {
+      "date": "2026-06-03",
+      "event": "Letter 3176C issued - frivolous return warning, 30-day deadline",
+      "category": "irs_notice",
+      "evidence_ids": [],
+      "notes": "",
+      "recorded_at": "2026-07-03T12:30:53.922304+00:00"
+    },
+    {
+      "date": "2026-06-17",
+      "event": "IRS Tax Compliance Report shows $89,458.02 balance for 2024",
+      "category": "irs_notice",
+      "evidence_ids": [],
+      "notes": "",
+      "recorded_at": "2026-07-03T12:30:53.990746+00:00"
+    },
+    {
+      "date": "2026-07-03",
+      "event": "Evidence repository established for IRS case",
+      "category": "system",
+      "evidence_ids": [],
+      "notes": "",
+      "recorded_at": "2026-07-03T12:30:54.061225+00:00"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 """Core middleware stack (DTZ011 compliant)."""
-from datetime import datetime, timezone
-from typing import Callable
+from collections.abc import Callable
+from datetime import UTC, datetime
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -9,7 +9,6 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from portal.config import get_settings
 
-
 settings = get_settings()
 
 
@@ -17,10 +16,10 @@ class TimestampMiddleware(BaseHTTPMiddleware):
     """Adds UTC-aware request/response timestamps (DTZ011)."""
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        request_time_utc = datetime.now(timezone.utc)
+        request_time_utc = datetime.now(UTC)
         request.state.request_time = request_time_utc
         response = await call_next(request)
-        response_time_utc = datetime.now(timezone.utc)
+        response_time_utc = datetime.now(UTC)
         response.headers["X-Request-Time"] = request_time_utc.isoformat()
         response.headers["X-Response-Time"] = response_time_utc.isoformat()
         return response
@@ -36,12 +35,12 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         client_ip = request.client.host if request.client else "unknown"
-        now_utc = datetime.now(timezone.utc)
+        now_utc = datetime.now(UTC)
 
         if client_ip not in self.request_history:
-            self.request_history[client_ip] = [
+            self.request_history[client_ip] = []
 
-        cutoff = datetime.fromtimestamp(now_utc.timestamp() - 60, tz=timezone.utc)
+        cutoff = datetime.fromtimestamp(now_utc.timestamp() - 60, tz=UTC)
         self.request_history[client_ip] = [
             req_time for req_time in self.request_history[client_ip]
             if req_time > cutoff
@@ -51,8 +50,7 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
             return Response(content="Rate limit exceeded", status_code=429)
 
         self.request_history[client_ip].append(now_utc)
-        response = await call_next(request)
-        return response
+        return await call_next(request)
 
 
 def setup_middleware(app):
@@ -60,7 +58,7 @@ def setup_middleware(app):
     app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
     app.add_middleware(
         CORSMiddleware,
-        allow_vigins=settings.CORS_ORIGINS,
+        allow_origins=settings.CORS_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

@@ -9,17 +9,16 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     DateTime,
     ForeignKey,
-    Index,
     Integer,
     String,
     Text,
     UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
@@ -29,7 +28,7 @@ from ..database import Base
 class Tenant(Base):
     __tablename__ = "tenants"
 
-    id: Mapped[uuid.UUID]         = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID]         = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
     name: Mapped[str]             = mapped_column(String(255), nullable=False)
     slug: Mapped[str]             = mapped_column(String(100), unique=True, nullable=False, index=True)
     domain: Mapped[str | None] = mapped_column(String(255), nullable=True)  # custom domain
@@ -52,7 +51,7 @@ class Tenant(Base):
     stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Settings (JSON blob for flexibility)
-    settings: Mapped[dict | None] = mapped_column(JSONB, nullable=True, default=dict)
+    settings: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=dict)
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -63,8 +62,6 @@ class Tenant(Base):
     users: Mapped[list[User]] = relationship("User", back_populates="tenant", lazy="select")
 
     __table_args__ = (
-        Index("ix_tenants_slug", "slug"),
-        Index("ix_tenants_active", "is_active"),
     )
 
 
@@ -73,7 +70,7 @@ class Tenant(Base):
 class Role(Base):
     __tablename__ = "roles"
 
-    id: Mapped[uuid.UUID]          = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID]          = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
     name: Mapped[str]              = mapped_column(String(50), unique=True, nullable=False)
     display_name: Mapped[str]      = mapped_column(String(100), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -93,7 +90,7 @@ class Role(Base):
 class Permission(Base):
     __tablename__ = "permissions"
 
-    id: Mapped[uuid.UUID]        = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID]        = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
     name: Mapped[str]            = mapped_column(String(100), unique=True, nullable=False)
     resource: Mapped[str]        = mapped_column(String(50), nullable=False)
     action: Mapped[str]          = mapped_column(String(50), nullable=False)
@@ -107,8 +104,8 @@ class Permission(Base):
 class RolePermission(Base):
     __tablename__ = "role_permissions"
 
-    role_id: Mapped[uuid.UUID]       = mapped_column(UUID(as_uuid=True), ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True)
-    permission_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True)
+    role_id: Mapped[uuid.UUID]       = mapped_column(String(36), ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True)
+    permission_id: Mapped[uuid.UUID] = mapped_column(String(36), ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True)
 
 
 # ── User ──────────────────────────────────────────────────────────────────────
@@ -116,9 +113,9 @@ class RolePermission(Base):
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[uuid.UUID]            = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID]     = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
-    role_id: Mapped[uuid.UUID]       = mapped_column(UUID(as_uuid=True), ForeignKey("roles.id"), nullable=False)
+    id: Mapped[uuid.UUID]            = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    tenant_id: Mapped[uuid.UUID]     = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    role_id: Mapped[uuid.UUID]       = mapped_column(String(36), ForeignKey("roles.id"), nullable=False)
 
     email: Mapped[str]               = mapped_column(String(255), nullable=False)
     email_verified: Mapped[bool]     = mapped_column(Boolean, default=False)
@@ -137,7 +134,7 @@ class User(Base):
     # MFA
     mfa_enabled: Mapped[bool]        = mapped_column(Boolean, default=False)
     mfa_secret: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    mfa_backup_codes: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # list of hashed codes
+    mfa_backup_codes: Mapped[list | None] = mapped_column(JSON, nullable=True)  # list of hashed codes
 
     # Account state
     is_active: Mapped[bool]          = mapped_column(Boolean, default=True)
@@ -171,9 +168,6 @@ class User(Base):
 
     __table_args__ = (
         UniqueConstraint("tenant_id", "email", name="uq_users_tenant_email"),
-        Index("ix_users_email", "email"),
-        Index("ix_users_tenant_id", "tenant_id"),
-        Index("ix_users_active", "is_active"),
     )
 
     @property
@@ -187,8 +181,8 @@ class UserPermissionAssoc(Base):
     """Extra per-user permission overrides (additions or restrictions)."""
     __tablename__ = "user_permissions"
 
-    user_id: Mapped[uuid.UUID]       = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
-    permission_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[uuid.UUID]       = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    permission_id: Mapped[uuid.UUID] = mapped_column(String(36), ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True)
     granted: Mapped[bool]            = mapped_column(Boolean, default=True)  # False = explicit deny
-    granted_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    granted_by: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime]     = mapped_column(DateTime(timezone=True), server_default=func.now())

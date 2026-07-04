@@ -8,8 +8,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, func
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
@@ -18,19 +17,19 @@ from ..database import Base
 class MessageThread(Base):
     __tablename__ = "message_threads"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
 
     subject: Mapped[str]            = mapped_column(String(500), nullable=False)
     category: Mapped[str]           = mapped_column(String(50), default="general")
     # general | case_discussion | document_review | billing | urgent
 
     # Context
-    client_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=True)
-    case_id: Mapped[uuid.UUID | None]   = mapped_column(UUID(as_uuid=True), ForeignKey("cases.id"), nullable=True)
+    client_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("clients.id"), nullable=True)
+    case_id: Mapped[uuid.UUID | None]   = mapped_column(String(36), ForeignKey("cases.id"), nullable=True)
 
     # Participants: list of user_ids
-    participants: Mapped[list]       = mapped_column(JSONB, nullable=False, default=list)
+    participants: Mapped[list]       = mapped_column(JSON, nullable=False, default=list)
 
     is_archived: Mapped[bool]        = mapped_column(Boolean, default=False)
     is_pinned: Mapped[bool]          = mapped_column(Boolean, default=False)
@@ -43,7 +42,7 @@ class MessageThread(Base):
     last_message_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     message_count: Mapped[int]       = mapped_column(Integer, default=0)
 
-    created_by: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    created_by: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime]     = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime]     = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -52,21 +51,17 @@ class MessageThread(Base):
     creator: Mapped[User]           = relationship("User", foreign_keys=[created_by])
 
     __table_args__ = (
-        Index("ix_threads_tenant_id", "tenant_id"),
-        Index("ix_threads_client_id", "client_id"),
-        Index("ix_threads_case_id", "case_id"),
-        Index("ix_threads_last_message", "last_message_at"),
-        Index("ix_threads_participants", "participants", postgresql_using="gin"),
     )
 
 
 class Message(Base):
     __tablename__ = "messages"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    thread_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("message_threads.id", ondelete="CASCADE"), nullable=False)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    sender_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    thread_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("message_threads.id", ondelete="CASCADE"), nullable=False)
+    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    sender_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    idempotency_key: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
 
     # Content (stored encrypted if thread.is_encrypted)
     content: Mapped[str]            = mapped_column(Text, nullable=False)
@@ -74,22 +69,23 @@ class Message(Base):
     encryption_iv: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     # Mentions: list of user_ids
-    mentions: Mapped[list | None] = mapped_column(JSONB, nullable=True, default=list)
+    mentions: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
 
     # State
     is_edited: Mapped[bool]         = mapped_column(Boolean, default=False)
     edited_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     is_deleted: Mapped[bool]        = mapped_column(Boolean, default=False)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    deleted_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    deleted_by: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
 
     # Reply to
-    reply_to_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("messages.id"), nullable=True)
+    reply_to_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("messages.id"), nullable=True)
 
     # Read receipts: {user_id: iso_timestamp}
-    read_by: Mapped[dict | None] = mapped_column(JSONB, nullable=True, default=dict)
+    read_by: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=dict)
 
     created_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     thread: Mapped[MessageThread] = relationship("MessageThread", back_populates="messages")
     sender: Mapped[User]          = relationship("User", foreign_keys=[sender_id])
@@ -97,9 +93,6 @@ class Message(Base):
     reply_to: Mapped[Message | None] = relationship("Message", remote_side="Message.id", foreign_keys=[reply_to_id])
 
     __table_args__ = (
-        Index("ix_messages_thread_id", "thread_id"),
-        Index("ix_messages_sender_id", "sender_id"),
-        Index("ix_messages_created_at", "created_at"),
     )
 
 
@@ -107,9 +100,9 @@ class MessageAttachment(Base):
     """Document attachments within a message (references vault documents)."""
     __tablename__ = "message_attachments"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    message_id: Mapped[uuid.UUID]   = mapped_column(UUID(as_uuid=True), ForeignKey("messages.id", ondelete="CASCADE"), nullable=False)
-    document_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("documents.id"), nullable=True)
+    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    message_id: Mapped[uuid.UUID]   = mapped_column(String(36), ForeignKey("messages.id", ondelete="CASCADE"), nullable=False)
+    document_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("documents.id"), nullable=True)
 
     # For external attachments not in vault
     file_name: Mapped[str | None] = mapped_column(String(512), nullable=True)
@@ -121,4 +114,3 @@ class MessageAttachment(Base):
 
     message: Mapped[Message]      = relationship("Message", back_populates="attachments")
 
-    __table_args__ = (Index("ix_msg_attachments_message_id", "message_id"),)

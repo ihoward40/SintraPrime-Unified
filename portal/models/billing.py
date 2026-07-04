@@ -13,7 +13,6 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
-    Index,
     Integer,
     Numeric,
     String,
@@ -21,7 +20,6 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
@@ -31,13 +29,13 @@ class TimeEntry(Base):
     """Billable time entries for attorney/staff work on cases."""
     __tablename__ = "time_entries"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    user_id: Mapped[uuid.UUID]      = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    client_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=True)
-    case_id: Mapped[uuid.UUID | None]   = mapped_column(UUID(as_uuid=True), ForeignKey("cases.id"), nullable=True)
-    matter_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("matters.id"), nullable=True)
-    invoice_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("invoices.id"), nullable=True)
+    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[uuid.UUID]      = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    client_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("clients.id"), nullable=True)
+    case_id: Mapped[uuid.UUID | None]   = mapped_column(String(36), ForeignKey("cases.id"), nullable=True)
+    matter_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("matters.id"), nullable=True)
+    invoice_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("invoices.id"), nullable=True)
 
     description: Mapped[str]        = mapped_column(Text, nullable=False)
     activity_code: Mapped[str | None] = mapped_column(String(20), nullable=True)  # UTBMS activity codes
@@ -57,7 +55,7 @@ class TimeEntry(Base):
     is_billable: Mapped[bool]       = mapped_column(Boolean, default=True)
     is_billed: Mapped[bool]         = mapped_column(Boolean, default=False)
     is_approved: Mapped[bool]       = mapped_column(Boolean, default=False)
-    approved_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    approved_by: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
 
     # Timestamps
     created_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -67,11 +65,6 @@ class TimeEntry(Base):
     user: Mapped[User]            = relationship("User", foreign_keys=[user_id])
 
     __table_args__ = (
-        Index("ix_time_entries_tenant_id", "tenant_id"),
-        Index("ix_time_entries_user_id", "user_id"),
-        Index("ix_time_entries_case_id", "case_id"),
-        Index("ix_time_entries_work_date", "work_date"),
-        Index("ix_time_entries_billed", "is_billed"),
     )
 
 
@@ -79,12 +72,12 @@ class Expense(Base):
     """Cost advances and disbursements for cases."""
     __tablename__ = "expenses"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    user_id: Mapped[uuid.UUID]      = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    client_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=True)
-    case_id: Mapped[uuid.UUID | None]   = mapped_column(UUID(as_uuid=True), ForeignKey("cases.id"), nullable=True)
-    invoice_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("invoices.id"), nullable=True)
+    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[uuid.UUID]      = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    client_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("clients.id"), nullable=True)
+    case_id: Mapped[uuid.UUID | None]   = mapped_column(String(36), ForeignKey("cases.id"), nullable=True)
+    invoice_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("invoices.id"), nullable=True)
 
     description: Mapped[str]        = mapped_column(Text, nullable=False)
     expense_date: Mapped[date]      = mapped_column(Date, nullable=False)
@@ -94,27 +87,25 @@ class Expense(Base):
 
     is_billable: Mapped[bool]       = mapped_column(Boolean, default=True)
     is_billed: Mapped[bool]         = mapped_column(Boolean, default=False)
-    receipt_document_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("documents.id"), nullable=True)
+    receipt_document_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("documents.id"), nullable=True)
 
     created_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
-        Index("ix_expenses_tenant_id", "tenant_id"),
-        Index("ix_expenses_case_id", "case_id"),
     )
 
 
 class Invoice(Base):
     __tablename__ = "invoices"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    client_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False)
-    matter_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("matters.id"), nullable=True)
-    case_id: Mapped[uuid.UUID | None]   = mapped_column(UUID(as_uuid=True), ForeignKey("cases.id"), nullable=True)
-    created_by: Mapped[uuid.UUID]   = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    client_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("clients.id"), nullable=False)
+    matter_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("matters.id"), nullable=True)
+    case_id: Mapped[uuid.UUID | None]   = mapped_column(String(36), ForeignKey("cases.id"), nullable=True)
+    created_by: Mapped[uuid.UUID]   = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
 
     invoice_number: Mapped[str]     = mapped_column(String(50), nullable=False)
     invoice_date: Mapped[date]      = mapped_column(Date, nullable=False)
@@ -140,7 +131,7 @@ class Invoice(Base):
     footer: Mapped[str | None]   = mapped_column(Text, nullable=True)
 
     # PDF
-    pdf_document_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("documents.id"), nullable=True)
+    pdf_document_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("documents.id"), nullable=True)
 
     # Payment link
     stripe_payment_intent_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -162,10 +153,6 @@ class Invoice(Base):
     payments: Mapped[list[Payment]]           = relationship("Payment", back_populates="invoice", lazy="select")
 
     __table_args__ = (
-        Index("ix_invoices_tenant_id", "tenant_id"),
-        Index("ix_invoices_client_id", "client_id"),
-        Index("ix_invoices_status", "status"),
-        Index("ix_invoices_due_date", "due_date"),
         UniqueConstraint("tenant_id", "invoice_number", name="uq_invoices_number"),
     )
 
@@ -173,10 +160,10 @@ class Invoice(Base):
 class InvoiceLineItem(Base):
     __tablename__ = "invoice_line_items"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    invoice_id: Mapped[uuid.UUID]   = mapped_column(UUID(as_uuid=True), ForeignKey("invoices.id", ondelete="CASCADE"), nullable=False)
-    time_entry_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("time_entries.id"), nullable=True)
-    expense_id: Mapped[uuid.UUID | None]    = mapped_column(UUID(as_uuid=True), ForeignKey("expenses.id"), nullable=True)
+    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    invoice_id: Mapped[uuid.UUID]   = mapped_column(String(36), ForeignKey("invoices.id", ondelete="CASCADE"), nullable=False)
+    time_entry_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("time_entries.id"), nullable=True)
+    expense_id: Mapped[uuid.UUID | None]    = mapped_column(String(36), ForeignKey("expenses.id"), nullable=True)
 
     description: Mapped[str]        = mapped_column(Text, nullable=False)
     item_type: Mapped[str]          = mapped_column(String(20), nullable=False)  # time | expense | flat_fee | discount
@@ -187,16 +174,15 @@ class InvoiceLineItem(Base):
 
     invoice: Mapped[Invoice]      = relationship("Invoice", back_populates="line_items")
 
-    __table_args__ = (Index("ix_invoice_items_invoice_id", "invoice_id"),)
 
 
 class Payment(Base):
     __tablename__ = "payments"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    invoice_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("invoices.id"), nullable=True)
-    client_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False)
+    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    invoice_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("invoices.id"), nullable=True)
+    client_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("clients.id"), nullable=False)
 
     amount: Mapped[float]           = mapped_column(Numeric(12, 2), nullable=False)
     currency: Mapped[str]           = mapped_column(String(3), default="USD")
@@ -218,16 +204,12 @@ class Payment(Base):
     refund_amount: Mapped[float | None]   = mapped_column(Numeric(12, 2), nullable=True)
     refund_reason: Mapped[str | None]     = mapped_column(Text, nullable=True)
 
-    received_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    received_by: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     invoice: Mapped[Invoice | None] = relationship("Invoice", back_populates="payments")
 
     __table_args__ = (
-        Index("ix_payments_tenant_id", "tenant_id"),
-        Index("ix_payments_invoice_id", "invoice_id"),
-        Index("ix_payments_client_id", "client_id"),
-        Index("ix_payments_status", "status"),
     )
 
 
@@ -235,10 +217,10 @@ class TrustAccount(Base):
     """IOLTA trust account ledger entries."""
     __tablename__ = "trust_accounts"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    client_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False)
-    matter_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("matters.id"), nullable=True)
+    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
+    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    client_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("clients.id"), nullable=False)
+    matter_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("matters.id"), nullable=True)
 
     transaction_type: Mapped[str]   = mapped_column(String(20), nullable=False)
     # deposit | withdrawal | disbursement | transfer | refund
@@ -249,13 +231,10 @@ class TrustAccount(Base):
     reference: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     transaction_date: Mapped[date]  = mapped_column(Date, nullable=False)
-    approved_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    created_by: Mapped[uuid.UUID]   = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    approved_by: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    created_by: Mapped[uuid.UUID]   = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
 
     created_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (
-        Index("ix_trust_tenant_id", "tenant_id"),
-        Index("ix_trust_client_id", "client_id"),
-        Index("ix_trust_date", "transaction_date"),
     )

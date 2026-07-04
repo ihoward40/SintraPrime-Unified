@@ -35,6 +35,39 @@ class SnapshotVersionConflictError(Exception):
     pass
 
 
+class InvalidStateTransitionError(Exception):
+    """Raised when an invalid status transition is attempted."""
+    pass
+
+
+class SnapshotStatus:
+    """Canonical status values for EvidenceSnapshot lifecycle.
+
+    State transitions (forward only):
+      ACTIVE → SUPERSEDED  (new snapshot created for same case)
+      ACTIVE → ARCHIVED    (evidence retired from operations)
+      SUPERSEDED → ARCHIVED (retention/governance)
+
+    No reverse transitions. No deletion.
+    """
+    ACTIVE = "active"
+    SUPERSEDED = "superseded"
+    ARCHIVED = "archived"
+
+    # Valid forward transitions
+    _VALID_TRANSITIONS: dict[str, set[str]] = {
+        "active": {"superseded", "archived"},
+        "superseded": {"archived"},
+        "archived": set(),  # terminal state
+    }
+
+    @classmethod
+    def is_valid_transition(cls, from_status: str, to_status: str) -> bool:
+        """Check if a status transition is allowed."""
+        allowed = cls._VALID_TRANSITIONS.get(from_status, set())
+        return to_status in allowed
+
+
 @dataclass(frozen=True)
 class SnapshotRecord:
     """Immutable value object representing a persisted EvidenceSnapshot.
@@ -80,6 +113,7 @@ class EvidenceSnapshotService:
       3. Monotonic versioning: each case's snapshots get v1, v2, v3, ...
       4. Supersession: creating a new snapshot for a case supersedes the old active one.
       5. Unique IDs: every snapshot gets a unique UUID.
+      6. Valid state transitions: only forward transitions allowed.
     """
 
     def __init__(self) -> None:
@@ -114,7 +148,7 @@ class EvidenceSnapshotService:
         """
         # Supersede any existing active snapshot for this case
         for sid, record in self._store.items():
-            if record.case_id == case_id and record.status == "active":
+            if record.case_id == case_id and record.status == SnapshotStatus.ACTIVE:
                 # Create a new record with superseded status
                 # (we cannot mutate the frozen dataclass)
                 superseded = SnapshotRecord(
@@ -126,7 +160,7 @@ class EvidenceSnapshotService:
                     created_at=record.created_at,
                     created_by=record.created_by,
                     evidence_count=record.evidence_count,
-                    status="superseded",
+                    status=SnapshotStatus.SUPERSEDED,
                 )
                 self._store[sid] = superseded
 
@@ -147,7 +181,7 @@ class EvidenceSnapshotService:
             created_at=now,
             created_by=created_by,
             evidence_count=evidence_count,
-            status="active",
+            status=SnapshotStatus.ACTIVE,
         )
 
         self._store[snapshot_id] = record
@@ -173,7 +207,7 @@ class EvidenceSnapshotService:
     def get_active_for_case(self, case_id: str) -> SnapshotRecord | None:
         """Get the current active snapshot for a case, if any."""
         for record in self._store.values():
-            if record.case_id == case_id and record.status == "active":
+            if record.case_id == case_id and record.status == SnapshotStatus.ACTIVE:
                 return record
         return None
 
@@ -183,6 +217,42 @@ class EvidenceSnapshotService:
             [r for r in self._store.values() if r.case_id == case_id],
             key=lambda r: r.snapshot_version,
         )
+
+    def archive(self, snapshot_id: str) -> SnapshotRecord:
+        """Transition a snapshot to ARCHIVED status.
+
+        Valid from ACTIVE or SUPERSEDED only. ARCHIVED is terminal.
+
+        Args:
+            snapshot_id: The snapshot to archive.
+
+        Returns:
+            New SnapshotRecord with ARCHIVED status.
+
+        Raises:
+            SnapshotNotFoundError: If the snapshot doesn't exist.
+            InvalidStateTransitionError: If transition is not allowed.
+        """
+        record = self.get(snapshot_id)
+        if not SnapshotStatus.is_valid_transition(record.status, SnapshotStatus.ARCHIVED):
+            raise InvalidStateTransitionError(
+                f"Cannot transition from '{record.status}' to 'archived'. "
+                f"Valid transitions from '{record.status}': "
+                f"{SnapshotStatus._VALID_TRANSITIONS.get(record.status, set())}"
+            )
+        archived = SnapshotRecord(
+            snapshot_id=record.snapshot_id,
+            case_id=record.case_id,
+            evidence_hash=record.evidence_hash,
+            manifest_hash=record.manifest_hash,
+            snapshot_version=record.snapshot_version,
+            created_at=record.created_at,
+            created_by=record.created_by,
+            evidence_count=record.evidence_count,
+            status=SnapshotStatus.ARCHIVED,
+        )
+        self._store[snapshot_id] = archived
+        return archived
 
     def update(self, snapshot_id: str, **kwargs) -> None:
         """ALWAYS raises ImmutableSnapshotError.

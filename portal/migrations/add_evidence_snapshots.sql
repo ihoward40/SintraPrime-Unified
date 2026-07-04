@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Migration: Add evidence_snapshots table
--- Phase 1, Step 1: EvidenceSnapshot immutable model
+-- Phase 1, Steps 1-2: EvidenceSnapshot immutable model + Hash Boundary
 -- Engineering Doctrines: ED-003 (immutable evidence), ED-005 (single source of truth)
 -- Governance: Advances GI-B-2026-001
 -- =============================================================================
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS evidence_snapshots (
     created_by      VARCHAR(36)     NOT NULL REFERENCES users(id),
     evidence_count  INTEGER         NOT NULL DEFAULT 0,
     status          VARCHAR(20)     NOT NULL DEFAULT 'active'
-        CHECK (status IN ('active', 'superseded'))
+        CHECK (status IN ('active', 'superseded', 'archived'))
 );
 
 -- Indexes for common query patterns
@@ -40,27 +40,34 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_evidence_snapshots_one_active_per_case
 CREATE OR REPLACE FUNCTION prevent_evidence_snapshot_mutation()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Allow only status transition from 'active' to 'superseded'
+    -- Allow only status transitions: active→superseded, active→archived, superseded→archived
     -- All other modifications are blocked
     IF TG_OP = 'DELETE' THEN
         RAISE EXCEPTION 'evidence_snapshots rows cannot be deleted (ED-003: immutable evidence)';
     END IF;
 
     IF TG_OP = 'UPDATE' THEN
-        -- Only allow status change active → superseded
-        IF NEW.status = 'superseded' AND OLD.status = 'active'
-           AND NEW.snapshot_id = OLD.snapshot_id
-           AND NEW.case_id = OLD.case_id
-           AND NEW.evidence_hash = OLD.evidence_hash
-           AND NEW.manifest_hash = OLD.manifest_hash
-           AND NEW.snapshot_version = OLD.snapshot_version
-           AND NEW.created_at = OLD.created_at
-           AND NEW.created_by = OLD.created_by
-           AND NEW.evidence_count = OLD.evidence_count
+        -- Allow only valid forward status transitions
+        IF (OLD.status = 'active' AND NEW.status IN ('superseded', 'archived'))
+           OR (OLD.status = 'superseded' AND NEW.status = 'archived')
         THEN
-            RETURN NEW;
+            -- Verify no other field changed
+            IF NEW.snapshot_id = OLD.snapshot_id
+               AND NEW.case_id = OLD.case_id
+               AND NEW.evidence_hash = OLD.evidence_hash
+               AND NEW.manifest_hash = OLD.manifest_hash
+               AND NEW.snapshot_version = OLD.snapshot_version
+               AND NEW.created_at = OLD.created_at
+               AND NEW.created_by = OLD.created_by
+               AND NEW.evidence_count = OLD.evidence_count
+            THEN
+                RETURN NEW;
+            ELSE
+                RAISE EXCEPTION 'evidence_snapshots rows are immutable. Only status transitions are allowed (ED-003)';
+            END IF;
         ELSE
-            RAISE EXCEPTION 'evidence_snapshots rows are immutable. Only status active→superseded is allowed (ED-003)';
+            RAISE EXCEPTION 'Invalid status transition: % → %. Allowed: active→superseded, active→archived, superseded→archived (ED-003)',
+                OLD.status, NEW.status;
         END IF;
     END IF;
 
@@ -77,11 +84,11 @@ CREATE TRIGGER trg_evidence_snapshot_immutable
 -- Comment documenting the immutability contract
 COMMENT ON TABLE evidence_snapshots IS
     'Immutable, append-only evidence snapshots. ED-003: immutable evidence ≠ mutable presentation. '
-    'Rows are never modified (except status active→superseded) or deleted. '
+    'Rows are never modified (except forward status transitions) or deleted. '
     'See Engineering Baseline EB-2026-001.';
 
 -- =============================================================================
--- DOWN Migration (for reversibility — required by Step 1 acceptance criteria)
+-- DOWN Migration (for reversibility)
 -- =============================================================================
 -- To reverse this migration:
 --   DROP TRIGGER IF EXISTS trg_evidence_snapshot_immutable ON evidence_snapshots;

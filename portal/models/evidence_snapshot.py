@@ -23,9 +23,18 @@ from ..database import Base
 
 
 class SnapshotStatus(_enum.StrEnum):
-    """Lifecycle status for an EvidenceSnapshot."""
+    """Lifecycle status for an EvidenceSnapshot.
+
+    State transitions:
+      ACTIVE → SUPERSEDED  (when a new snapshot is created for the same case)
+      ACTIVE → ARCHIVED    (when evidence is no longer operationally relevant)
+      SUPERSEDED → ARCHIVED (governance/retention policy)
+
+    No reverse transitions. No deletion.
+    """
     ACTIVE = "active"
     SUPERSEDED = "superseded"
+    ARCHIVED = "archived"
 
 
 class EvidenceSnapshot(Base):
@@ -35,7 +44,7 @@ class EvidenceSnapshot(Base):
     Invariants:
       - No updated_at column: rows are never modified.
       - No soft-delete: rows are never removed.
-      - Status transitions only from ACTIVE → SUPERSEDED (via new snapshot creation).
+      - Status transitions: ACTIVE → SUPERSEDED | ARCHIVED; SUPERSEDED → ARCHIVED.
       - All fields are set at creation time and frozen thereafter.
 
     The EvidenceHash and ManifestHash fields store pre-computed hashes.
@@ -89,7 +98,7 @@ class EvidenceSnapshot(Base):
     # ── Status ────────────────────────────────────────────────────────
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, default=SnapshotStatus.ACTIVE,
-        doc="'active' or 'superseded'. Only transition: active → superseded.",
+        doc="'active', 'superseded', or 'archived'. Forward transitions only.",
     )
 
     # ── NO updated_at, NO deleted_at ──────────────────────────────────

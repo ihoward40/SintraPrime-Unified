@@ -247,6 +247,7 @@ def render_packet(
     snapshot_created: datetime,
     created_by: str,
     evidence: EvidenceCollection,
+    audit_service=None,
 ) -> EvidencePacket:
     """Render an EvidencePacket from a snapshot and its evidence.
 
@@ -262,6 +263,9 @@ def render_packet(
       - Organizes evidence by type (exhibits, facts, authorities, etc.)
       - Includes an audit receipt placeholder
 
+    If audit_service is provided, creates an audit record linking the
+    packet to the snapshot (Step 4: Packet ↔ Audit linkage).
+
     Args:
         snapshot_id: The EvidenceSnapshot's unique ID.
         case_id: The case this evidence belongs to.
@@ -271,6 +275,8 @@ def render_packet(
         snapshot_created: When the snapshot was created.
         created_by: Who created the snapshot.
         evidence: The EvidenceCollection containing all evidence items.
+        audit_service: Optional AuditService to link packet to snapshot.
+            If provided, creates an audit record after packet rendering.
 
     Returns:
         A frozen EvidencePacket.
@@ -351,7 +357,7 @@ def render_packet(
     packet_hash = _compute_packet_hash(packet_content)
 
     # ── Assemble frozen packet ───────────────────────────────────────
-    return EvidencePacket(
+    packet = EvidencePacket(
         snapshot_id=snapshot_id,
         evidence_hash=evidence_hash,
         manifest_hash=manifest_hash,
@@ -370,6 +376,21 @@ def render_packet(
         requests=tuple(categorized["requests"]),
         audit_receipt="PENDING",
     )
+
+    # ── Step 4: Create audit record if service provided ──────────────
+    if audit_service is not None:
+        audit_service.create(
+            snapshot_id=snapshot_id,
+            evidence_hash=evidence_hash,
+            packet_id=packet.packet_hash,  # Use packet hash as packet ID
+            packet_hash=packet.packet_hash,
+            packet_version=int(RENDERER_VERSION.split(".")[0]),  # Major version
+            serialization_version=SERIALIZATION_VERSION,
+            created_by=created_by,
+            verify_packet=True,  # Test 4: verify packet hash matches evidence hash
+        )
+
+    return packet
 
 
 def verify_packet(packet: EvidencePacket, evidence: EvidenceCollection) -> dict:

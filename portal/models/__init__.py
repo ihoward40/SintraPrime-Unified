@@ -1,5 +1,6 @@
 """ORM models package."""
 from .audit import AuditLog
+from .audit_record import AuditRecord
 from .billing import Expense, Invoice, InvoiceLineItem, Payment, TimeEntry, TrustAccount
 from .case import Case, CaseDeadline, CaseEvent, CaseNote, CaseTask
 from .client import Client, Matter
@@ -12,6 +13,7 @@ from .user import User, UserPermissionAssoc
 
 __all__ = [
     "AuditLog",
+    "AuditRecord",
     "Case",
     "CaseDeadline",
     "CaseEvent",

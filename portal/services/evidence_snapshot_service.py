@@ -17,7 +17,8 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
+from typing import ClassVar
 
 
 class ImmutableSnapshotError(Exception):
@@ -55,7 +56,7 @@ class SnapshotStatus:
     ARCHIVED = "archived"
 
     # Valid forward transitions
-    _VALID_TRANSITIONS: dict[str, set[str]] = {
+    _VALID_TRANSITIONS: ClassVar[dict[str, set[str]]] = {
         "active": {"superseded", "archived"},
         "superseded": {"archived"},
         "archived": set(),  # terminal state
@@ -170,7 +171,7 @@ class EvidenceSnapshotService:
         self._case_versions[case_id] = next_version
 
         snapshot_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         record = SnapshotRecord(
             snapshot_id=snapshot_id,
@@ -281,3 +282,5 @@ class EvidenceSnapshotService:
     def count(self) -> int:
         """Total number of snapshots in the store."""
         return len(self._store)
+
+

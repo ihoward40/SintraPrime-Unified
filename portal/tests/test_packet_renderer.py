@@ -21,13 +21,15 @@ Key architectural property:
 """
 
 import json
+import os
+import sys
 import time
 
 import pytest
 
-import sys
-import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+
+from datetime import UTC
 
 from portal.services.evidence_hash_boundary import (
     SERIALIZATION_VERSION,
@@ -36,6 +38,9 @@ from portal.services.evidence_hash_boundary import (
     compute_evidence_hash,
     compute_manifest_hash,
 )
+from portal.services.evidence_snapshot_service import (
+    EvidenceSnapshotService,
+)
 from portal.services.packet_renderer import (
     RENDERER_VERSION,
     EvidencePacket,
@@ -43,10 +48,6 @@ from portal.services.packet_renderer import (
     render_packet,
     verify_packet,
 )
-from portal.services.evidence_snapshot_service import (
-    EvidenceSnapshotService,
-)
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -424,7 +425,7 @@ class TestTamperedEvidencePrevented:
                 evidence_hash="wrong" * 13,  # Wrong hash
                 manifest_hash=compute_manifest_hash(sample_collection),
                 snapshot_version=1,
-                snapshot_created=datetime.now(timezone.utc),
+                snapshot_created=datetime.now(UTC),
                 created_by="user-001",
                 evidence=sample_collection,
             )
@@ -440,7 +441,7 @@ class TestTamperedEvidencePrevented:
                 evidence_hash=compute_evidence_hash(sample_collection),
                 manifest_hash="wrong" * 13,  # Wrong hash
                 snapshot_version=1,
-                snapshot_created=datetime.now(timezone.utc),
+                snapshot_created=datetime.now(UTC),
                 created_by="user-001",
                 evidence=sample_collection,
             )
@@ -548,7 +549,7 @@ class TestPacketEdgeCases:
             evidence_hash=eh,
             manifest_hash=mh,
             snapshot_version=1,
-            snapshot_created=datetime.now(timezone.utc),
+            snapshot_created=datetime.now(UTC),
             created_by="user-001",
             evidence=empty,
         )
@@ -577,7 +578,7 @@ class TestPacketEdgeCases:
             evidence_hash=eh,
             manifest_hash=mh,
             snapshot_version=1,
-            snapshot_created=datetime.now(timezone.utc),
+            snapshot_created=datetime.now(UTC),
             created_by="user-001",
             evidence=single,
         )

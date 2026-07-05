@@ -19,12 +19,12 @@ Step 1 Acceptance criteria verified:
 """
 
 import json
+import os
+import sys
 import uuid
 
 import pytest
 
-import sys
-import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from portal.services.evidence_snapshot_service import (
@@ -34,7 +34,6 @@ from portal.services.evidence_snapshot_service import (
     SnapshotNotFoundError,
     SnapshotStatus,
 )
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -225,8 +224,9 @@ class TestPersistenceLevelImmutability:
 
         # Session 2: Reconstruct from persisted state
         service_b = EvidenceSnapshotService()
-        from portal.services.evidence_snapshot_service import SnapshotRecord
         from datetime import datetime
+
+        from portal.services.evidence_snapshot_service import SnapshotRecord
 
         for sid, data in exported_state.items():
             restored = SnapshotRecord(
@@ -265,8 +265,9 @@ class TestPersistenceLevelImmutability:
         sample_evidence_hash, sample_manifest_hash,
     ):
         """Snapshot created in session 1, superseded in session 2."""
-        from portal.services.evidence_snapshot_service import SnapshotRecord
         from datetime import datetime
+
+        from portal.services.evidence_snapshot_service import SnapshotRecord
 
         # Session 1
         svc1 = EvidenceSnapshotService()

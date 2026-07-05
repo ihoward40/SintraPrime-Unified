@@ -51,7 +51,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 
 from .evidence_hash_boundary import (
     SERIALIZATION_VERSION,
@@ -60,7 +60,6 @@ from .evidence_hash_boundary import (
     compute_evidence_hash,
     compute_manifest_hash,
 )
-
 
 # ── Renderer Version ─────────────────────────────────────────────────────────
 # Incremented when the packet rendering format changes.
@@ -315,7 +314,7 @@ def render_packet(
     categorized = _categorize_items(evidence.items)
 
     # ── Render timestamp (presentation metadata) ─────────────────────
-    rendered_at = datetime.now(timezone.utc).isoformat()
+    rendered_at = datetime.now(UTC).isoformat()
 
     # ── Snapshot created as ISO string ───────────────────────────────
     snapshot_created_str = snapshot_created.isoformat()

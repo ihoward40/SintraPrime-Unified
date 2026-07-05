@@ -20,12 +20,12 @@ Acceptance Criteria (user-confirmed, tightened):
 
 import hashlib
 import json
+import os
+import sys
 import time
 
 import pytest
 
-import sys
-import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from portal.services.evidence_hash_boundary import (
@@ -37,7 +37,6 @@ from portal.services.evidence_hash_boundary import (
     verify_evidence_hash,
     verify_manifest_hash,
 )
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -176,7 +175,7 @@ class TestModifiedEvidenceProducesDifferentHash:
         original = EvidenceCollection(case_id="CASE-001", items=sample_items)
         h_original = compute_evidence_hash(original)
 
-        extended_items = sample_items + (
+        extended_items = (*sample_items,
             EvidenceItem(
                 item_id="EX-002",
                 item_type="exhibit",
@@ -289,7 +288,7 @@ class TestMetadataExcludedFromHash:
         # as if snapshot versions were incrementing (v1, v2, v3...)
         # The hash should be IDENTICAL because version is not in the boundary.
         hashes = []
-        for version in range(1, 6):
+        for _version in range(1, 6):
             # The evidence collection has no version field — that's the fix.
             # Version lives on the snapshot, not in the evidence content.
             h = compute_evidence_hash(sample_collection)

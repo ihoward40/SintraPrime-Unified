@@ -27,8 +27,8 @@ import { format } from 'date-fns';
 import { documentsApi, DocumentResponse } from '../api/documents';
 
 const mockDocuments = [
-  { id: 'd1', name: 'Sintra Family Trust Declaration', type: 'trust', category: 'trust', size: 245760, uploadedAt: '2024-01-15', tags: ['trust', 'family', 'irrevocable'], isConfidential: true, version: 3 },
-  { id: 'd2', name: 'LLC Operating Agreement - Sintra Holdings', type: 'contract', category: 'corporate', size: 184320, uploadedAt: '2024-02-20', tags: ['LLC', 'operating agreement', 'Delaware'], isConfidential: true, version: 2 },
+  { id: 'd1', name: 'Sample Family Trust Declaration', type: 'trust', category: 'trust', size: 245760, uploadedAt: '2024-01-15', tags: ['trust', 'family', 'irrevocable'], isConfidential: true, version: 3 },
+  { id: 'd2', name: 'LLC Operating Agreement - Sample Holdings', type: 'contract', category: 'corporate', size: 184320, uploadedAt: '2024-02-20', tags: ['LLC', 'operating agreement', 'Delaware'], isConfidential: true, version: 2 },
   { id: 'd3', name: 'Motion to Dismiss - Case 2024-CV-1847', type: 'motion', category: 'legal', size: 98304, uploadedAt: '2024-06-10', tags: ['motion', 'dismiss', 'housing'], isConfidential: false, version: 1 },
   { id: 'd4', name: 'Investment Portfolio Statement Q2 2024', type: 'other', category: 'financial', size: 327680, uploadedAt: '2024-07-01', tags: ['portfolio', 'investments', 'quarterly'], isConfidential: true, version: 1 },
   { id: 'd5', name: 'Last Will and Testament', type: 'will', category: 'estate', size: 163840, uploadedAt: '2023-11-05', tags: ['will', 'estate', 'testamentary'], isConfidential: true, version: 4 },

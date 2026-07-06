@@ -167,7 +167,7 @@ Client Portal → API Gateway → SecurityLayer → Trust Engine
 - Custom pricing based on volume
 - Implementation support included
 
-**Contact:** isiahh@ikesolutions.org | +19083654234
+**Contact:** contact@example.com | +1**********
 
 ---
 

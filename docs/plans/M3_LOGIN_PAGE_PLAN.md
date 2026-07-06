@@ -1,6 +1,6 @@
 # M3 Login Page Plan
 
-**Goal:** Add a real `/login` page to the Vite frontend so the Document Vault and future M3 pages can authenticate with the live backend instead of relying on the mock `Marcus A. Sintra` user.
+**Goal:** Add a real `/login` page to the Vite frontend so the Document Vault and future M3 pages can authenticate with the live backend instead of relying on the mock demo user.
 
 **Status:** Investigation complete. Ready to implement.
 

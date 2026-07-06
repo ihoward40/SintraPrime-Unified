@@ -98,7 +98,7 @@ SOUTHERN DISTRICT OF NEW YORK
 
 ────────────────────────────────────
 IN THE MATTER OF:
-MARCUS A. SINTRA,
+DEMO PLAINTIFF,
                     Plaintiff,
         vs.
 METROPOLITAN HOUSING AUTHORITY,
@@ -108,7 +108,7 @@ Case No.: 2024-CV-1847
 
 ${motionType.toUpperCase().replace(/_/g, ' ')}
 
-COMES NOW, Plaintiff Marcus A. Sintra, by and through undersigned counsel, and respectfully moves this Court pursuant to Fed. R. Civ. P. 12(b)(6) for the following relief:
+COMES NOW, Plaintiff Demo Plaintiff, by and through undersigned counsel, and respectfully moves this Court pursuant to Fed. R. Civ. P. 12(b)(6) for the following relief:
 
 I. INTRODUCTION
 
@@ -142,9 +142,9 @@ V. CONCLUSION
 WHEREFORE, Plaintiff respectfully requests that this Court GRANT this Motion and issue an Order granting the relief herein.
 
 Respectfully submitted,
-/s/ Marcus A. Sintra, Esq.
+/s/ J. Doe, Esq.
 Bar No. CA-123456
-SINTRAPRIME LAW GROUP
+SAMPLE LAW GROUP
 Dated: ${new Date().toLocaleDateString()}`);
     setIsGenerating(false);
   };

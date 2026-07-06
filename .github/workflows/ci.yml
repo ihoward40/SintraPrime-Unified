@@ -30,17 +30,6 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - run: pip install ruff==0.15.20
-      - name: Debug file inspection
-        run: |
-          wc -l portal/main.py
-          head -5 portal/main.py | cat -A
-          file portal/main.py
-      - name: Normalize line endings
-        run: python scripts/normalize_lf.py
-      - name: Re-inspect after normalization
-        run: |
-          wc -l portal/main.py
-          head -5 portal/main.py | cat -A
       - run: ruff check . --output-format=github
   security:
     runs-on: ubuntu-latest

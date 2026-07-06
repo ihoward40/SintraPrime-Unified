@@ -1,0 +1,12 @@
+feat(blackstone): complete BRA v2.0 integration, cases, ledger, and CDR
+
+Completes the Blackstone Reference Architecture v2.0 operationalization:
+
+- Ratifies BRA implementation via CDR-2026-0002.
+- Wires BlackstoneOrchestrator into the portal as /api/v1/blackstone endpoints.
+- Adds persistence models: EvidenceLedger and BlackstoneEvaluation.
+- Adds persistence service and tests using async SQLite.
+- Adds four additional live case scripts: LVNV, PayPal, UACC, Self Financial.
+- Updates BRA models with actor/jurisdiction fields required by cases.
+
+Verification: pytest 809 tests pass, lint, type-check, build.

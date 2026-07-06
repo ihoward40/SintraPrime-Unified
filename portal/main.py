@@ -16,7 +16,22 @@ from portal.middleware.cors_middleware import CORSMiddleware
 from portal.middleware.rate_limiter import RateLimiterMiddleware
 from portal.middleware.session_middleware import SessionMiddleware
 from portal.middleware.timestamp_middleware import TimestampMiddleware
-from portal.routers import admin, documents, recovery, sso, system_health, trust_compliance
+from portal.routers import (
+    admin,
+    auth,
+    billing,
+    blackstone,
+    cases,
+    clients,
+    documents,
+    messages,
+    notifications,
+    recovery,
+    sso,
+    system_health,
+    trust_compliance,
+    users,
+)
 from portal.security.security_layer import SecurityLayer
 from portal.sso.jwt_service import JWTTokenService
 from portal.sso.session_manager import SessionConfig, SessionManager
@@ -106,7 +121,15 @@ def create_app() -> FastAPI:
     app.include_router(trust_compliance.router)
     app.include_router(recovery.router)
     app.include_router(system_health.router)
-    
+    app.include_router(blackstone.router)
+    app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
+    app.include_router(cases.router, prefix="/api/v1/cases", tags=["cases"])
+    app.include_router(clients.router, prefix="/api/v1/clients", tags=["clients"])
+    app.include_router(billing.router, prefix="/api/v1/billing", tags=["billing"])
+    app.include_router(messages.router, prefix="/api/v1/messages", tags=["messages"])
+    app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["notifications"])
+    app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
+
     # Health check
     @app.get("/health")
     async def health_check():
@@ -127,4 +150,3 @@ app = create_app()
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-

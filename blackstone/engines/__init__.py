@@ -83,6 +83,8 @@ class BlackstoneOrchestrator:
                 "chain_length": len(self.provenance.chain(claim_id)),
                 "verified": self.provenance.verify(claim_id)["valid"],
             },
-            "risks": [risk.to_dict() for risk in risks],
+            "risks": [
+                {**risk.to_dict(), "score": self.risk.score(risk)} for risk in risks
+            ],
             "recommendation": recommendation.to_dict(),
         }

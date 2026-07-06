@@ -21,7 +21,7 @@
 
 ## 🚀 Proof in 10 Minutes
 
-**Start here.** Clone, run one command, see a working example in < 10 minutes.
+**Start here.** Clone, install the verified dependencies, and run the supported verification commands.
 
 ### Quick Start
 
@@ -33,21 +33,34 @@ cd SintraPrime-Unified
 # Setup (1 min)
 python -m venv venv
 source venv/bin/activate  # or: venv\Scripts\activate on Windows
-pip install -e ".[dev]"
+pip install -r requirements.txt
+```
 
-# Run demo (2 min)
-docker-compose up -d
-# Nginx: http://localhost  |  API: http://localhost:8080  |  Airlock: http://localhost:3001
+### Verified commands
 
-# See it work (5 min)
-# 1. Login with demo credentials (see README_DEMO.md)
-# 2. Intake a sample trust (Jane Smith, $2.3M)
-# 3. Watch AI generate trust memo
-# 4. See payment processing (Stripe test mode)
-# 5. Download audit receipt
+These commands define the currently supported local verification lane:
 
-# Run tests (2 min)
-pytest tests/ -v --cov=src --cov-report=term-missing
+```bash
+# Python supported test lane
+python -m pytest --tb=short -q
+
+# Web verification
+cd web && npm install
+cd web && npm run lint
+cd web && npm run type-check
+cd web && npm run build
+```
+
+### Full-stack Docker boot
+
+The repository contains `docker-compose.yml` and `Dockerfile` files for a complete deployment (PostgreSQL, Redis, Elasticsearch, MinIO, Prometheus, Grafana, Nginx, API, Airlock, Twin display). Running this stack requires configured environment variables and external services. It is **not** part of the supported quick-start until it is independently verified on your environment. See `docs/DEPLOYMENT.md` for setup details.
+
+### Known limitations / deferred work
+
+- Scheduler arming tests (`tests/test_scheduler_core.py::TestArming`) are currently re-scoped as experimental because they expose an APScheduler trigger adapter bug. The real bug is tracked in Issue #164.
+- Optional integrations (Plaid, predictive analytics, advanced LLM providers) are documented in `docs/ci/DEPENDENCY_MATRIX.md` but are not installed or tested in the default supported CI lane.
+
+**See [docs/CLAIMS.md](docs/CLAIMS.md) for detailed claims with test references.
 ```
 
 **Expected output:**

@@ -236,10 +236,18 @@ known-first-party = ["portal", "operator"]
 "tests/**" = ["ARG002", "F401", "F811", "F841", "N802", "N999", "PT009", "PT011", "PT027", "RUF059"]
 
 [tool.pytest.ini_options]
-testpaths = ["portal/tests", "packages/tests"]
+testpaths = ["tests", "portal/tests"]
 python_files = "test_*.py"
 asyncio_mode = "auto"
-
+addopts = "-m 'not experimental'"
+markers = [
+    "experimental: tests that exercise experimental or unfinished integrations and are not part of the default CI lane",
+    "integration: tests that require external services or infrastructure",
+    "slow: tests that take longer than a normal unit test",
+]
+filterwarnings = [
+    "ignore::pytest.PytestCollectionWarning",
+]
 [tool.coverage.run]
 # ── Coverage measurement ──────────────────────────────────────────────
 # `branch = true` removed: was causing DataError when subprocess coverage

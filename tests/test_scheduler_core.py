@@ -395,6 +395,7 @@ class TestPersistence:
 
 
 class TestArming:
+    @pytest.mark.experimental
     def test_arm_threading_run_at(self, scheduler):
         run_at = datetime.now(UTC) + timedelta(hours=1)
         task = _make_task(schedule=Schedule(run_at=run_at), fn=_noop)
@@ -404,6 +405,7 @@ class TestArming:
         assert task.id in scheduler._timer_threads
         scheduler.stop()
 
+    @pytest.mark.experimental
     def test_arm_threading_interval(self, scheduler):
         task = _make_task(
             task_type=TaskType.RECURRING,

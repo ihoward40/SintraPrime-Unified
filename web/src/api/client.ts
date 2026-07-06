@@ -28,6 +28,7 @@ const createAPIClient = (): AxiosInstance => {
   const instance = axios.create({
     baseURL: `${BASE_URL}/api/${API_VERSION}`,
     timeout: 30000,
+    withCredentials: true,
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -49,31 +50,32 @@ const createAPIClient = (): AxiosInstance => {
     (error) => Promise.reject(error)
   );
 
-  // Response interceptor - normalize responses
+  // Response interceptor - normalize responses + token refresh
   instance.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
       const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
-      
+
       if (error.response?.status === 401 && !originalRequest._retry) {
         originalRequest._retry = true;
-        // Attempt token refresh
+        // Attempt token refresh using the httpOnly refresh cookie
         try {
-          const refreshToken = localStorage.getItem('sintraprime_refresh_token');
-          if (refreshToken) {
-            const response = await axios.post(`${BASE_URL}/api/${API_VERSION}/auth/refresh`, {
-              refresh_token: refreshToken,
-            });
-            const { access_token } = response.data;
-            localStorage.setItem('sintraprime_token', access_token);
-            if (originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${access_token}`;
-            }
-            return instance(originalRequest);
+          const refreshResponse = await axios.post(
+            `${BASE_URL}/api/${API_VERSION}/auth/refresh`,
+            {},
+            { withCredentials: true }
+          );
+          const { access_token } = refreshResponse.data;
+          localStorage.setItem('sintraprime_token', access_token);
+          const expiresAt = Date.now() + (refreshResponse.data.expires_in || 900) * 1000;
+          localStorage.setItem('sintraprime_token_expires_at', expiresAt.toString());
+          if (originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${access_token}`;
           }
+          return instance(originalRequest);
         } catch {
           localStorage.removeItem('sintraprime_token');
-          localStorage.removeItem('sintraprime_refresh_token');
+          localStorage.removeItem('sintraprime_token_expires_at');
           window.location.href = '/login';
         }
       }

@@ -26,7 +26,7 @@ import { clsx } from 'clsx';
 import { format } from 'date-fns';
 import { documentsApi, DocumentResponse } from '../api/documents';
 
-const mockDocuments = [
+const mockDocuments: UIDocument[] = [
   { id: 'd1', name: 'Sample Family Trust Declaration', type: 'trust', category: 'trust', size: 245760, uploadedAt: '2024-01-15', tags: ['trust', 'family', 'irrevocable'], isConfidential: true, version: 3 },
   { id: 'd2', name: 'LLC Operating Agreement - Sample Holdings', type: 'contract', category: 'corporate', size: 184320, uploadedAt: '2024-02-20', tags: ['LLC', 'operating agreement', 'Delaware'], isConfidential: true, version: 2 },
   { id: 'd3', name: 'Motion to Dismiss - Case 2024-CV-1847', type: 'motion', category: 'legal', size: 98304, uploadedAt: '2024-06-10', tags: ['motion', 'dismiss', 'housing'], isConfidential: false, version: 1 },
@@ -74,24 +74,30 @@ function Home_({ className }: { className?: string }) { return <FolderOpen class
 function Building_({ className }: { className?: string }) { return <FileCog className={className} />; }
 function User_({ className }: { className?: string }) { return <File className={className} />; }
 
-// Convert API response to UI format
-interface UIDocument extends Omit<DocumentResponse, 'id'> {
+// UI document shape used by the vault
+interface UIDocument {
   id: string;
+  name: string;
   type: string;
   category: string;
+  size: number;
+  uploadedAt: string;
+  tags: string[];
+  isConfidential: boolean;
+  version: number;
 }
 
 function mapDocumentToUI(doc: DocumentResponse): UIDocument {
   // Infer category from mime type or name
   const mime = (doc.mime_type || '').toLowerCase();
-  let category = 'personal';
+  let category: UIDocument['category'] = 'personal';
   if (doc.case_id) category = 'legal';
   else if (mime.includes('pdf') && doc.name.toLowerCase().includes('contract')) category = 'corporate';
   else if (mime.includes('pdf') && doc.name.toLowerCase().includes('will')) category = 'estate';
   else if (doc.tags?.some(t => t.includes('trust'))) category = 'trust';
   else if (doc.tags?.some(t => t.includes('financial'))) category = 'financial';
 
-  let type = 'other';
+  let type: UIDocument['type'] = 'other';
   const name = doc.name.toLowerCase();
   if (name.includes('motion')) type = 'motion';
   else if (name.includes('brief')) type = 'brief';
@@ -101,10 +107,15 @@ function mapDocumentToUI(doc: DocumentResponse): UIDocument {
   else if (name.includes('deed')) type = 'deed';
 
   return {
-    ...doc,
     id: String(doc.id),
+    name: doc.name,
     type,
     category,
+    size: doc.size_bytes,
+    uploadedAt: doc.created_at,
+    tags: doc.tags || [],
+    isConfidential: doc.is_confidential,
+    version: doc.current_version,
   };
 }
 
@@ -132,7 +143,7 @@ export default function DocumentVault() {
         console.error('Failed to fetch documents', err);
         setError('Unable to load documents. Using fallback data.');
         // Fall back to mock data on error
-        setDocuments(mockDocuments.map(mapDocumentToUI));
+        setDocuments(mockDocuments);
       } finally {
         setLoading(false);
       }

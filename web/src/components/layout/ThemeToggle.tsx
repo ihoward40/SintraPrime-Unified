@@ -2,7 +2,10 @@ import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 
 export default function ThemeToggle() {
-  const { isDark, toggle } = useTheme();
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'corporate' || theme === 'emerald';
+  const toggle = () => setTheme(isDark ? 'light' : 'dark');
+
   return (
     <button
       onClick={toggle}

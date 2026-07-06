@@ -39,7 +39,7 @@ export interface SavedSearch {
 
 export const caselawAPI = {
   search: (params: CaseLawSearchParams) =>
-    api.get<CaseLawSearchResult>('/caselaw/search', params as Record<string, unknown>),
+    api.get<CaseLawSearchResult>('/caselaw/search', params as unknown as Record<string, unknown>),
 
   getCase: (id: string) =>
     api.get<CaseLaw>(`/caselaw/${id}`),

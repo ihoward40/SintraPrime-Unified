@@ -48,7 +48,7 @@ export function useAPIMutation<TData, TVariables>(
       });
     },
     onError: (error) => {
-      options?.onError?.(error as APIError);
+      options?.onError?.(error as unknown as APIError);
     },
   });
 }

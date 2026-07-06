@@ -267,7 +267,7 @@ export default function Settings() {
                           <p className="text-[10px] text-slate-600 mt-0.5">Last sync: {integration.lastSync}</p>
                         </div>
                         <Button
-                          variant={integration.status === 'connected' ? 'outline' : 'primary'}
+                          variant={integration.status === 'connected' ? 'outline' : 'gold'}
                           size="sm"
                         >
                           {integration.status === 'connected'

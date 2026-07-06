@@ -395,18 +395,20 @@ class TestPersistence:
 
 
 class TestArming:
-    @pytest.mark.experimental
-    def test_arm_threading_run_at(self, scheduler):
+    def test_arm_run_at(self, scheduler):
         run_at = datetime.now(UTC) + timedelta(hours=1)
         task = _make_task(schedule=Schedule(run_at=run_at), fn=_noop)
         scheduler.start()
         scheduler.schedule(task)
-        # Timer should exist
-        assert task.id in scheduler._timer_threads
+        # Depending on whether APScheduler is installed, either an APScheduler job
+        # or a threading timer should exist.
+        if scheduler._apscheduler is not None:
+            assert scheduler._apscheduler.get_job(task.id) is not None
+        else:
+            assert task.id in scheduler._timer_threads
         scheduler.stop()
 
-    @pytest.mark.experimental
-    def test_arm_threading_interval(self, scheduler):
+    def test_arm_interval(self, scheduler):
         task = _make_task(
             task_type=TaskType.RECURRING,
             schedule=Schedule(interval_minutes=60),
@@ -414,7 +416,10 @@ class TestArming:
         )
         scheduler.start()
         scheduler.schedule(task)
-        assert task.id in scheduler._timer_threads
+        if scheduler._apscheduler is not None:
+            assert scheduler._apscheduler.get_job(task.id) is not None
+        else:
+            assert task.id in scheduler._timer_threads
         scheduler.stop()
 
     def test_arm_skips_cancelled(self, scheduler):

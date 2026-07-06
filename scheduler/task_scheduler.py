@@ -197,6 +197,7 @@ class TaskScheduler:
         """Use APScheduler to arm the task."""
         try:
             from apscheduler.triggers.cron import CronTrigger  # type: ignore
+            from apscheduler.triggers.date import DateTrigger  # type: ignore
             from apscheduler.triggers.interval import IntervalTrigger  # type: ignore
 
             sched = task.schedule
@@ -215,7 +216,7 @@ class TaskScheduler:
             elif sched.interval_minutes:
                 trigger = IntervalTrigger(minutes=sched.interval_minutes)
             elif sched.run_at:
-                trigger = sched.run_at
+                trigger = DateTrigger(run_date=sched.run_at)
                 task.next_run = sched.run_at
             else:
                 return

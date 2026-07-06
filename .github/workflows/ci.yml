@@ -30,6 +30,8 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - run: pip install ruff==0.15.20
+      - name: Normalize line endings to LF
+        run: find . -name '*.py' -exec sed -i 's/\r$//' {} +
       - run: ruff check . --output-format=github
   security:
     runs-on: ubuntu-latest

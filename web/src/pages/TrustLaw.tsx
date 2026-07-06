@@ -228,9 +228,9 @@ export default function TrustLaw() {
               <CardHeader title="UCC Filing Tracker" subtitle="Active secured transactions" />
               <div className="space-y-3">
                 {[
-                  { number: 'UCC-2024-001847', debtor: 'Sintra Holdings LLC', party: 'First National Bank', collateral: 'All assets including accounts receivable and inventory', filed: '2024-01-15', expires: '2029-01-15', status: 'active' },
-                  { number: 'UCC-2023-098432', debtor: 'Marcus A. Sintra', party: 'Business Capital LLC', collateral: 'Computer equipment, furniture, office fixtures', filed: '2023-06-01', expires: '2028-06-01', status: 'active' },
-                  { number: 'UCC-2022-034912', debtor: 'Sintra Consulting LLC', party: 'Tech Vendors Corp', collateral: 'Software licenses and intellectual property rights', filed: '2022-03-20', expires: '2027-03-20', status: 'active' },
+                  { number: 'UCC-2024-001847', debtor: 'Sample Holdings LLC', party: 'First National Bank', collateral: 'All assets including accounts receivable and inventory', filed: '2024-01-15', expires: '2029-01-15', status: 'active' },
+                  { number: 'UCC-2023-098432', debtor: 'Demo Debtor', party: 'Business Capital LLC', collateral: 'Computer equipment, furniture, office fixtures', filed: '2023-06-01', expires: '2028-06-01', status: 'active' },
+                  { number: 'UCC-2022-034912', debtor: 'Sample Consulting LLC', party: 'Tech Vendors Corp', collateral: 'Software licenses and intellectual property rights', filed: '2022-03-20', expires: '2027-03-20', status: 'active' },
                 ].map((filing) => (
                   <div key={filing.number} className="p-4 bg-slate-800/30 rounded-xl border border-slate-700/30">
                     <div className="flex items-start justify-between">
@@ -290,7 +290,7 @@ export default function TrustLaw() {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-400 mb-1.5">Settlor Name</label>
-                    <input type="text" className="input-dark" placeholder="Marcus A. Sintra" />
+                    <input type="text" className="input-dark" placeholder="Demo Settlor" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-400 mb-1.5">Trustee Name</label>

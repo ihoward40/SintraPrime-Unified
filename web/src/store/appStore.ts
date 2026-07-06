@@ -83,10 +83,10 @@ interface AppState {
 
 const defaultUser: User = {
   id: 'user-001',
-  name: 'Marcus A. Sintra',
-  email: 'marcus@sintraprime.com',
+  name: 'Demo Attorney',
+  email: 'demo@example.com',
   role: 'admin',
-  firm: 'SintraPrime Law & Financial Group',
+  firm: 'Sample Law & Financial Group',
   barNumber: 'CA-123456',
   preferences: {
     theme: 'dark',

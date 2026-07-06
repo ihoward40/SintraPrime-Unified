@@ -30,6 +30,8 @@ from ..database import get_db
 from ..models.document import Document, DocumentFolder, DocumentShare, DocumentVersion
 from ..schemas.document import (
     BulkDocumentRequest,
+    DocumentExportRequest,
+    DocumentExportResponse,
     DocumentListResponse,
     DocumentResponse,
     DocumentSearchRequest,
@@ -42,6 +44,7 @@ from ..schemas.document import (
     FolderResponse,
 )
 from ..services.audit_service import audit
+from ..services.document_export_service import export_documents_to_packet
 from ..services.encryption_service import decrypt_file, encrypt_file
 from ..services.notification_service import notify_users
 from ..services.share_service import create_share_link, validate_share_access
@@ -591,6 +594,78 @@ async def bulk_operation(
         return {"task_id": task_id, "message": "ZIP creation started. Poll /tasks/{task_id} for status."}
 
     raise HTTPException(status_code=400, detail="Unknown operation")
+
+
+# ── Export to Evidence Packet ─────────────────────────────────────────────────
+
+@router.post(
+    "/cases/{case_id}/export-packet",
+    response_model=DocumentExportResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def export_documents_packet(
+    case_id: uuid.UUID,
+    body: DocumentExportRequest,
+    current_user: CurrentUser = Depends(require_permissions(Permission.DOC_READ)),
+    db: AsyncSession = Depends(get_db),
+):
+    """Export selected documents as a verified evidence packet.
+
+    Bridges the Document Vault to the Phase 1 evidence platform by converting
+    selected documents into an immutable EvidenceSnapshot, rendering an
+    EvidencePacket, and creating an audit trail. The result is a verifiable
+    provenance chain from uploaded documents to signed packet.
+    """
+    # Fetch documents by ID
+    result = await db.execute(
+        select(Document).where(
+            Document.id.in_([uuid.UUID(doc_id) for doc_id in body.document_ids]),
+            Document.tenant_id == current_user.tenant_id,
+            Document.case_id == case_id,
+            Document.deleted_at.is_(None),
+        )
+    )
+    docs = result.scalars().all()
+
+    if not docs:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No active documents found for case {case_id}",
+        )
+
+    # Export via the service
+    export_result = await export_documents_to_packet(
+        session=db,
+        case_id=str(case_id),
+        tenant_id=str(current_user.tenant_id),
+        user_id=str(current_user.user_id),
+        documents=docs,
+    )
+
+    # Audit
+    await audit(
+        db,
+        action="doc_export_packet",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="case",
+        resource_id=str(case_id),
+        details={
+            "snapshot_id": export_result.snapshot_id,
+            "packet_hash": export_result.packet_hash,
+            "audit_id": export_result.audit_id,
+            "document_count": export_result.document_count,
+        },
+    )
+
+    return DocumentExportResponse(
+        snapshot_id=export_result.snapshot_id,
+        packet_hash=export_result.packet_hash,
+        audit_id=export_result.audit_id,
+        evidence_hash=export_result.evidence_hash,
+        document_count=export_result.document_count,
+        packet_json=export_result.packet_json,
+    )
 
 
 # ── Folders ───────────────────────────────────────────────────────────────────

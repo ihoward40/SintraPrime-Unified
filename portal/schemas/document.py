@@ -150,3 +150,17 @@ class BulkDocumentRequest(BaseModel):
     document_ids: list[uuid.UUID] = Field(..., min_length=1, max_length=100)
     operation: str = Field(..., pattern=r"^(move|delete|archive|download_zip)$")
     target_folder_id: uuid.UUID | None = None  # for move
+
+
+class DocumentExportRequest(BaseModel):
+    document_ids: list[str] = Field(..., min_length=1, max_length=100)
+    packet_title: str | None = None
+
+
+class DocumentExportResponse(BaseModel):
+    snapshot_id: str
+    packet_hash: str
+    audit_id: str
+    evidence_hash: str
+    document_count: int
+    packet_json: str

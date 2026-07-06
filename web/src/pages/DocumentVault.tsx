@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   FileText,
@@ -24,7 +24,7 @@ import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import { clsx } from 'clsx';
 import { format } from 'date-fns';
-import { documentsApi } from '../api/documents';
+import { documentsApi, DocumentResponse } from '../api/documents';
 
 const mockDocuments = [
   { id: 'd1', name: 'Sintra Family Trust Declaration', type: 'trust', category: 'trust', size: 245760, uploadedAt: '2024-01-15', tags: ['trust', 'family', 'irrevocable'], isConfidential: true, version: 3 },
@@ -74,20 +74,80 @@ function Home_({ className }: { className?: string }) { return <FolderOpen class
 function Building_({ className }: { className?: string }) { return <FileCog className={className} />; }
 function User_({ className }: { className?: string }) { return <File className={className} />; }
 
+// Convert API response to UI format
+interface UIDocument extends Omit<DocumentResponse, 'id'> {
+  id: string;
+  type: string;
+  category: string;
+}
+
+function mapDocumentToUI(doc: DocumentResponse): UIDocument {
+  // Infer category from mime type or name
+  const mime = (doc.mime_type || '').toLowerCase();
+  let category = 'personal';
+  if (doc.case_id) category = 'legal';
+  else if (mime.includes('pdf') && doc.name.toLowerCase().includes('contract')) category = 'corporate';
+  else if (mime.includes('pdf') && doc.name.toLowerCase().includes('will')) category = 'estate';
+  else if (doc.tags?.some(t => t.includes('trust'))) category = 'trust';
+  else if (doc.tags?.some(t => t.includes('financial'))) category = 'financial';
+
+  let type = 'other';
+  const name = doc.name.toLowerCase();
+  if (name.includes('motion')) type = 'motion';
+  else if (name.includes('brief')) type = 'brief';
+  else if (name.includes('contract') || name.includes('agreement')) type = 'contract';
+  else if (name.includes('trust')) type = 'trust';
+  else if (name.includes('will')) type = 'will';
+  else if (name.includes('deed')) type = 'deed';
+
+  return {
+    ...doc,
+    id: String(doc.id),
+    type,
+    category,
+  };
+}
+
 export default function DocumentVault() {
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedDoc, setSelectedDoc] = useState<typeof mockDocuments[0] | null>(null);
+  const [documents, setDocuments] = useState<UIDocument[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedDoc, setSelectedDoc] = useState<UIDocument | null>(null);
   const [exportLoading, setExportLoading] = useState(false);
   const [exportResult, setExportResult] = useState<{ snapshot_id: string; packet_hash: string; audit_id: string } | null>(null);
+
+  // Fetch real documents on mount
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await documentsApi.list({ page_size: 100 });
+        const items = res.data?.items || [];
+        setDocuments(items.map(mapDocumentToUI));
+      } catch (err) {
+        console.error('Failed to fetch documents', err);
+        setError('Unable to load documents. Using fallback data.');
+        // Fall back to mock data on error
+        setDocuments(mockDocuments.map(mapDocumentToUI));
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDocuments();
+  }, []);
 
   const handleExportPacket = async () => {
     if (!selectedDoc) return;
     setExportLoading(true);
     setExportResult(null);
     try {
-      const res = await documentsApi.exportPacket('case-mvp-001', {
+      // Use a default case ID for MVP; in production, extract from route/context
+      const caseId = 'case-mvp-001';
+      const res = await documentsApi.exportPacket(caseId, {
         document_ids: [selectedDoc.id],
         packet_title: selectedDoc.name,
       });
@@ -98,19 +158,20 @@ export default function DocumentVault() {
       });
     } catch (err) {
       console.error('Packet export failed', err);
+      alert(`Export failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setExportLoading(false);
     }
   };
 
-  const filtered = mockDocuments.filter((d) => {
-    const matchSearch = !search || d.name.toLowerCase().includes(search.toLowerCase()) || d.tags.some((t) => t.includes(search.toLowerCase()));
+  const filtered = documents.filter((d) => {
+    const matchSearch = !search || d.name.toLowerCase().includes(search.toLowerCase()) || d.tags?.some((t) => t.toLowerCase().includes(search.toLowerCase()));
     const matchCat = selectedCategory === 'all' || d.category === selectedCategory;
     return matchSearch && matchCat;
   });
 
   const categoryCounts = categories.reduce((acc, cat) => {
-    acc[cat] = cat === 'all' ? mockDocuments.length : mockDocuments.filter((d) => d.category === cat).length;
+    acc[cat] = cat === 'all' ? documents.length : documents.filter((d) => d.category === cat).length;
     return acc;
   }, {} as Record<string, number>);
 
@@ -119,7 +180,9 @@ export default function DocumentVault() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-100">Document Vault</h1>
-          <p className="text-slate-500 text-sm mt-1">{mockDocuments.length} documents · Encrypted & Secure</p>
+          <p className="text-slate-500 text-sm mt-1">
+            {loading ? 'Loading...' : `${documents.length} documents`} · Encrypted & Secure
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" icon={Upload}>Upload</Button>
@@ -129,7 +192,14 @@ export default function DocumentVault() {
         </div>
       </div>
 
-      {/* Search + view toggle */}
+      {/* Error state */}
+      {error && (
+        <div className="p-4 rounded-lg border border-amber-500/30 bg-amber-900/20 text-amber-100 text-sm">
+          <p>{error}</p>
+        </div>
+      )}
+
+      {/* Export result */}
       {exportResult && (
         <div className="p-4 rounded-lg border border-emerald-500/30 bg-emerald-900/20 text-emerald-100 text-sm space-y-1">
           <p className="font-semibold">Verified Packet Exported</p>
@@ -197,7 +267,13 @@ export default function DocumentVault() {
 
         {/* Document grid/list */}
         <div className="xl:col-span-4">
-          <p className="text-xs text-slate-500 mb-3">{filtered.length} documents</p>
+          {loading ? (
+            <div className="flex items-center justify-center p-12 text-slate-400">
+              <p>Loading documents...</p>
+            </div>
+          ) : (
+            <>
+              <p className="text-xs text-slate-500 mb-3">{filtered.length} documents</p>
 
           {view === 'grid' ? (
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -285,6 +361,8 @@ export default function DocumentVault() {
                 );
               })}
             </div>
+          )}
+            </>
           )}
         </div>
       </div>

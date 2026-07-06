@@ -30,8 +30,17 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - run: pip install ruff==0.15.20
-      - name: Normalize line endings to LF
-        run: find . -name '*.py' -exec sed -i 's/\r$//' {} +
+      - name: Debug file inspection
+        run: |
+          wc -l portal/main.py
+          head -5 portal/main.py | cat -A
+          file portal/main.py
+      - name: Normalize line endings
+        run: python scripts/normalize_lf.py
+      - name: Re-inspect after normalization
+        run: |
+          wc -l portal/main.py
+          head -5 portal/main.py | cat -A
       - run: ruff check . --output-format=github
   security:
     runs-on: ubuntu-latest
@@ -41,10 +50,7 @@ jobs:
         with: { python-version: '3.11' }
       - name: Install security tools
         run: pip install safety bandit
-      # P0-002: safety check is now fail-closed — no || true
       - name: Dependency vulnerability scan (safety)
         run: safety check -r requirements.txt
-      # P0-002: bandit uses baseline to suppress pre-existing findings;
-      # only NEW issues (not in .bandit-baseline.json) will fail the build.
       - name: Security lint (bandit — baseline mode)
         run: bandit -r . -x tests/,portal/tests/ -ll --baseline .bandit-baseline.json -f json -o /tmp/bandit.json || true && python scripts/check_bandit.py

@@ -24,6 +24,7 @@ import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import { clsx } from 'clsx';
 import { format } from 'date-fns';
+import { documentsApi } from '../api/documents';
 
 const mockDocuments = [
   { id: 'd1', name: 'Sintra Family Trust Declaration', type: 'trust', category: 'trust', size: 245760, uploadedAt: '2024-01-15', tags: ['trust', 'family', 'irrevocable'], isConfidential: true, version: 3 },
@@ -78,6 +79,29 @@ export default function DocumentVault() {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedDoc, setSelectedDoc] = useState<typeof mockDocuments[0] | null>(null);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportResult, setExportResult] = useState<{ snapshot_id: string; packet_hash: string; audit_id: string } | null>(null);
+
+  const handleExportPacket = async () => {
+    if (!selectedDoc) return;
+    setExportLoading(true);
+    setExportResult(null);
+    try {
+      const res = await documentsApi.exportPacket('case-mvp-001', {
+        document_ids: [selectedDoc.id],
+        packet_title: selectedDoc.name,
+      });
+      setExportResult({
+        snapshot_id: res.data.snapshot_id,
+        packet_hash: res.data.packet_hash,
+        audit_id: res.data.audit_id,
+      });
+    } catch (err) {
+      console.error('Packet export failed', err);
+    } finally {
+      setExportLoading(false);
+    }
+  };
 
   const filtered = mockDocuments.filter((d) => {
     const matchSearch = !search || d.name.toLowerCase().includes(search.toLowerCase()) || d.tags.some((t) => t.includes(search.toLowerCase()));
@@ -99,10 +123,22 @@ export default function DocumentVault() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" icon={Upload}>Upload</Button>
+          <Button variant="gold" size="sm" icon={FileCheck} onClick={handleExportPacket} disabled={!selectedDoc || exportLoading}>
+            {exportLoading ? 'Exporting...' : 'Export Packet'}
+          </Button>
         </div>
       </div>
 
       {/* Search + view toggle */}
+      {exportResult && (
+        <div className="p-4 rounded-lg border border-emerald-500/30 bg-emerald-900/20 text-emerald-100 text-sm space-y-1">
+          <p className="font-semibold">Verified Packet Exported</p>
+          <p>Snapshot ID: <span className="font-mono text-xs opacity-80">{exportResult.snapshot_id}</span></p>
+          <p>Packet Hash: <span className="font-mono text-xs opacity-80">{exportResult.packet_hash}</span></p>
+          <p>Audit ID: <span className="font-mono text-xs opacity-80">{exportResult.audit_id}</span></p>
+        </div>
+      )}
+
       <div className="flex gap-3 items-center">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />

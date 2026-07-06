@@ -2,6 +2,8 @@ import { clsx } from 'clsx';
 
 type BadgeVariant = 'gold' | 'green' | 'red' | 'blue' | 'amber' | 'slate' | 'purple';
 
+export type { BadgeVariant };
+
 interface BadgeProps {
   children: React.ReactNode;
   variant?: BadgeVariant;

@@ -24,7 +24,7 @@ jobs:
           pip install bandit safety email-validator
 
       - name: Run unit tests (scoped)
-        run: pytest -q tests/
+        run: python -m pytest --tb=short -q
 
       # P0-002: bandit now uses .bandit-baseline.json to suppress pre-existing
       # findings. Only NEW issues (regressions) will fail the build.

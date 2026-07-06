@@ -60,4 +60,4 @@ CMD ["gunicorn", \
      "--access-logfile", "-", \
      "--error-logfile", "-", \
      "--timeout", "120", \
-     "core.main:app"]
+     "portal.main:app"]

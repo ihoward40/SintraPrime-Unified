@@ -1,10 +1,10 @@
 """Services package."""
-from .audit_service import AuditService, AuditRecordValue
+from .audit_service import AuditRecordValue, AuditService
 from .evidence_snapshot_service import EvidenceSnapshotService, SnapshotRecord
 
 __all__ = [
-    "AuditService",
     "AuditRecordValue",
+    "AuditService",
     "EvidenceSnapshotService",
     "SnapshotRecord",
 ]

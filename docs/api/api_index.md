@@ -53,10 +53,10 @@ All endpoints (except `/auth/token`, `/api/llm/health`) require a Bearer JWT.
 ```json
 POST /api/trust
 {
-  "trust_name": "Smith Family Living Trust",
-  "grantor": {"name": "John Smith", "dob": "1960-05-15"},
-  "trustee": {"name": "Jane Smith"},
-  "beneficiaries": [{"name": "Alice Smith", "share_percent": 100}],
+  "trust_name": "Sample Family Living Trust",
+  "grantor": {"name": "Demo Grantor", "dob": "1960-05-15"},
+  "trustee": {"name": "Demo Trustee"},
+  "beneficiaries": [{"name": "Demo Beneficiary", "share_percent": 100}],
   "state": "CA",
   "trust_type": "revocable"
 }

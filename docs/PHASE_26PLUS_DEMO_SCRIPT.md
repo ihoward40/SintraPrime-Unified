@@ -2,7 +2,7 @@
 
 ## Setup
 - Open browser to `http://localhost:5173/admin/dashboard`
-- Show login screen (demo credentials: admin@sintraprime.dev / demo123)
+- Show login screen (demo credentials: admin@example.dev / DemoPass123!)
 - Take screenshot of dashboard
 
 ## Demo Flow

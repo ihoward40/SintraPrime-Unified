@@ -183,7 +183,7 @@ curl http://localhost:8000/api/audit/logs \
 curl -X POST http://localhost:8000/api/docs/generate \
   -d '{
     "template": "revocable_living_trust",
-    "grantor_name": "Jane Smith",
+    "grantor_name": "Demo Grantor",
     "jurisdiction": "CA",
     "assets": 2300000,
     "format": "pdf"

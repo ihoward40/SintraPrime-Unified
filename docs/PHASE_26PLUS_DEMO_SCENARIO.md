@@ -1,23 +1,23 @@
 # Demo Intake Scenario: Acme Corp Trust Setup
 
 ## Client Profile
-- **Name:** Jane Smith
+- **Name:** Alex Taylor
 - **Age:** 58
 - **Net Worth:** $2.3M (real estate, stocks, cash)
-- **Family:** Spouse (Rick, 60), 2 adult kids (Alex 28, Sam 26)
+- **Family:** Spouse (Jordan, 60), 2 adult kids (Morgan 28, Riley 26)
 - **Goal:** Protect assets, minimize estate taxes, ensure smooth transition
 
 ## Intake Form Data (Copy/Paste into SintraPrime)
 ```json
 {
-  "client_name": "Jane Smith",
-  "client_email": "jane@acmecorp.com",
+  "client_name": "Alex Taylor",
+  "client_email": "client@example.dev",
   "age": 58,
   "net_worth": 2300000,
   "state": "California",
   "trust_type": "Revocable Living Trust",
   "has_spouse": true,
-  "spouse_name": "Rick Smith",
+  "spouse_name": "Jordan Taylor",
   "num_children": 2,
   "assets": {
     "real_estate": 1500000,
@@ -32,21 +32,21 @@
 
 ### Document 1: Trust Summary
 ```
-JANE SMITH REVOCABLE LIVING TRUST
+ALEX TAYLOR REVOCABLE LIVING TRUST
 Effective Date: [Today]
-Trustee: Jane Smith
-Co-Trustee: Rick Smith
-Successor Trustee: Alex Smith
+Trustee: Alex Taylor
+Co-Trustee: Jordan Taylor
+Successor Trustee: Morgan Taylor
 
 PROPERTY SCHEDULE:
-- Primary Residence: 123 Oak St, CA (est. $1.2M)
-- Investment Portfolio: Fidelity account (est. $500K)
-- Cash Reserves: Bank of America checking (est. $300K)
+- Primary Residence: 123 Sample St, CA (est. $1.2M)
+- Investment Portfolio: Sample brokerage account (est. $500K)
+- Cash Reserves: Sample bank checking (est. $300K)
 - [Additional assets listed]
 
 BENEFICIARIES:
-Primary: Jane Smith (during life)
-Remainder: Rick Smith (surviving spouse), then children equally
+Primary: Alex Taylor (during life)
+Remainder: Jordan Taylor (surviving spouse), then children equally
 
 TAX OPTIMIZATION:
 ✅ Federal Estate Tax: Exempt (uses spousal lifetime exemption)
@@ -97,14 +97,14 @@ Total Due: $297
 ↓
 Payment ID: pi_1RtwX5CT25knq5v20V8j0h
 Status: SUCCEEDED
-Receipt: Receipt automatically sent to jane@acmecorp.com
+Receipt: Receipt automatically sent to client@example.dev
 ```
 
 ## Follow-Up (In Admin Dashboard)
 ```
 Receipt Entry:
 - Date: 2026-05-05T10:45:12Z
-- Client: Jane Smith
+- Client: Alex Taylor
 - Action: trust_intake
 - Intake ID: intake_7d92f4b9
 - Documents: 3 (summary, compliance, actions)
@@ -117,6 +117,6 @@ Receipt Entry:
 ## Talking Points for Demo
 1. **Speed:** From intake form to 3 documents in 2:43 min
 2. **Compliance:** Automatic verification against CA law
-3. **Personalization:** Trust customized to Jane's specific situation
+3. **Personalization:** Trust customized to Alex's specific situation
 4. **Revenue:** $297 intake + $47/month × 12 months = $864 lifetime value per client
 5. **Scalability:** Same workflow handles 100+ clients/month

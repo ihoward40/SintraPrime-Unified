@@ -27,6 +27,13 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+from portal.services.evidence_audit_service import AuditService
+from portal.services.evidence_hash_boundary import (
+    EvidenceCollection,
+    EvidenceItem,
+    compute_evidence_hash,
+    compute_manifest_hash,
+)
 from portal.services.evidence_snapshot_service import (
     EvidenceSnapshotService,
     ImmutableSnapshotError,
@@ -34,6 +41,7 @@ from portal.services.evidence_snapshot_service import (
     SnapshotNotFoundError,
     SnapshotStatus,
 )
+from portal.services.packet_renderer import render_packet
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -41,6 +49,12 @@ from portal.services.evidence_snapshot_service import (
 def service():
     """Fresh EvidenceSnapshotService for each test."""
     return EvidenceSnapshotService()
+
+
+@pytest.fixture
+def audit_service():
+    """Fresh AuditService for each test."""
+    return AuditService()
 
 
 @pytest.fixture
@@ -546,3 +560,175 @@ class TestStep1AcceptanceSequence:
         assert new_snapshot.snapshot_id != original.snapshot_id
         assert new_snapshot.snapshot_version == 2
         assert service.get(original.snapshot_id).status == "superseded"
+
+# ── Test: Step 5 Provenance Replay (AT-5) ─────────────────────────────────────
+
+class TestProvenanceReplay:
+    """Verify the complete evidence → snapshot → packet → audit chain.
+
+    Step 5 Acceptance Test (AT-5): the entire provenance chain can be
+    created, persisted in-memory, retrieved, and verified end-to-end.
+
+    Engineering Doctrines:
+      ED-003: Immutable evidence ≠ mutable presentation
+      ED-005: Single source of truth — snapshots are authoritative
+      ED-007: Regression protection through immutable audit trail
+    """
+
+    def test_05_provenance_replay_chain_is_complete_and_verifiable(
+        self,
+        service,
+        audit_service,
+        sample_case_id,
+        sample_user_id,
+    ):
+        # 1. Build immutable evidence collection
+        items = (
+            EvidenceItem(
+                item_id="exhibit-001",
+                item_type="exhibit",
+                title="Bank Statement",
+                content="Account ending 4242, balance $1,234.56 as of 2026-07-01.",
+                sequence=1,
+            ),
+            EvidenceItem(
+                item_id="fact-001",
+                item_type="fact",
+                title="Residence Status",
+                content="Taxpayer is currently homeless and receiving Medicaid.",
+                sequence=2,
+            ),
+            EvidenceItem(
+                item_id="request-001",
+                item_type="request",
+                title="CNC Relief Request",
+                content="Request currently-not-collectible hardship status.",
+                sequence=3,
+            ),
+        )
+        evidence = EvidenceCollection(case_id=sample_case_id, items=items)
+        evidence_hash = compute_evidence_hash(evidence)
+        manifest_hash = compute_manifest_hash(evidence)
+
+        # 2. Create immutable EvidenceSnapshot
+        snapshot = service.create(
+            case_id=sample_case_id,
+            evidence_hash=evidence_hash,
+            manifest_hash=manifest_hash,
+            created_by=sample_user_id,
+            evidence_count=len(items),
+        )
+        assert snapshot.status == "active"
+        assert snapshot.evidence_hash == evidence_hash
+        assert snapshot.manifest_hash == manifest_hash
+
+        # 3. Render packet from snapshot
+        packet = render_packet(
+            snapshot_id=snapshot.snapshot_id,
+            case_id=sample_case_id,
+            evidence_hash=evidence_hash,
+            manifest_hash=manifest_hash,
+            snapshot_version=snapshot.snapshot_version,
+            snapshot_created=snapshot.created_at,
+            created_by=sample_user_id,
+            evidence=evidence,
+        )
+        assert packet.snapshot_id == snapshot.snapshot_id
+        assert packet.evidence_hash == snapshot.evidence_hash
+        assert packet.case_id == sample_case_id
+        assert packet.evidence_count == len(items)
+
+        # 4. Create audit record linking packet to snapshot
+        # Packet hash and evidence hash are intentionally different (ED-003:
+        # immutable evidence vs. mutable presentation), so we link without
+        # requiring them to match.
+        audit = audit_service.create(
+            snapshot_id=snapshot.snapshot_id,
+            evidence_hash=snapshot.evidence_hash,
+            packet_id=packet.packet_hash,
+            packet_hash=packet.packet_hash,
+            packet_version=int(packet.packet_version.split(".")[0]),
+            serialization_version=packet.serialization_version,
+            created_by=sample_user_id,
+            verify_packet=False,
+        )
+
+        # 5. Simulate replay: retrieve all records from the in-memory store
+        retrieved_audit = audit_service.get(audit.audit_id)
+        retrieved_snapshot = service.get(retrieved_audit.snapshot_id)
+        retrieved_packet_by_audit = audit_service.get_by_packet_id(
+            retrieved_audit.packet_id
+        )
+
+        # 6. Verify chain integrity
+        assert retrieved_audit.snapshot_id == snapshot.snapshot_id
+        assert retrieved_audit.packet_id == packet.packet_hash
+        assert retrieved_snapshot.evidence_hash == evidence_hash
+        assert retrieved_snapshot.snapshot_id == snapshot.snapshot_id
+        assert retrieved_packet_by_audit.audit_id == retrieved_audit.audit_id
+
+        # 7. Verify hashes match end-to-end
+        assert retrieved_audit.evidence_hash == retrieved_snapshot.evidence_hash
+        assert retrieved_audit.packet_hash == packet.packet_hash
+        assert retrieved_snapshot.evidence_hash == packet.evidence_hash
+        assert retrieved_snapshot.manifest_hash == manifest_hash
+
+    def test_05_replay_fails_when_snapshot_is_missing(
+        self, audit_service, sample_user_id, sample_case_id,
+    ):
+        fresh_service = EvidenceSnapshotService()
+        with pytest.raises(SnapshotNotFoundError):
+            fresh_service.get("nonexistent-snapshot-id")
+
+    def test_05_audit_traceability_by_snapshot_id(
+        self,
+        service,
+        audit_service,
+        sample_case_id,
+        sample_user_id,
+    ):
+        items = (
+            EvidenceItem(
+                item_id="auth-001",
+                item_type="authority",
+                title="IRC 6702 Penalty",
+                content="Frivolous submission penalty of $5,000 per return.",
+                sequence=1,
+            ),
+        )
+        evidence = EvidenceCollection(case_id=sample_case_id, items=items)
+        evidence_hash = compute_evidence_hash(evidence)
+        manifest_hash = compute_manifest_hash(evidence)
+
+        snapshot = service.create(
+            case_id=sample_case_id,
+            evidence_hash=evidence_hash,
+            manifest_hash=manifest_hash,
+            created_by=sample_user_id,
+            evidence_count=1,
+        )
+        packet = render_packet(
+            snapshot_id=snapshot.snapshot_id,
+            case_id=sample_case_id,
+            evidence_hash=evidence_hash,
+            manifest_hash=manifest_hash,
+            snapshot_version=snapshot.snapshot_version,
+            snapshot_created=snapshot.created_at,
+            created_by=sample_user_id,
+            evidence=evidence,
+        )
+        audit_service.create(
+            snapshot_id=snapshot.snapshot_id,
+            evidence_hash=snapshot.evidence_hash,
+            packet_id=packet.packet_hash,
+            packet_hash=packet.packet_hash,
+            packet_version=int(packet.packet_version.split(".")[0]),
+            serialization_version=packet.serialization_version,
+            created_by=sample_user_id,
+            verify_packet=False,
+        )
+
+        audits = audit_service.get_by_snapshot_id(snapshot.snapshot_id)
+        assert len(audits) == 1
+        assert audits[0].packet_id == packet.packet_hash
+        assert audits[0].evidence_hash == evidence_hash

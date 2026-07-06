@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sintraprime.ike/bra/schemas/cdr.schema.json",
+  "title": "Constitutional Decision Record (CDR)",
+  "description": "Immutable governance record of a major architectural, policy, or operational decision affecting the Blackstone Ecosystem. BKGC v2.0 Art. XXXIII. CDRs are never modified — corrections require a new CDR. Maintained in BKR-11.",
+  "type": "object",
+  "required": [
+    "cdr_number",
+    "title",
+    "status",
+    "filed_at",
+    "filed_by",
+    "trigger",
+    "decision",
+    "scope"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "cdr_number": {
+      "type": "string",
+      "description": "Sequential CDR number. Format: CDR-{NNNNN}. 5-digit zero-padded. Never reused. BKR-02.",
+      "pattern": "^CDR-\\d{5}$"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short descriptive title of the decision.",
+      "minLength": 5,
+      "maxLength": 300
+    },
+    "status": {
+      "type": "string",
+      "description": "Current status of this CDR.",
+      "enum": ["Approved", "Superseded", "Withdrawn"]
+    },
+    "filed_at": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO 8601 date of filing."
+    },
+    "filed_by": {
+      "type": "string",
+      "description": "Governance Board member(s) who filed this CDR. Typically: Isiah Howard, Founder/CEO, IKE Solutions LLC."
+    },
+    "trigger": {
+      "type": "string",
+      "description": "Description of what event, milestone, or requirement triggered this CDR."
+    },
+    "decision": {
+      "type": "string",
+      "description": "The full text of the decision made. Immutable after filing."
+    },
+    "scope": {
+      "type": "string",
+      "description": "Description of which agents, documents, or processes this CDR applies to."
+    },
+    "subordinate_standards_activated": {
+      "type": "string",
+      "description": "If this CDR activates specific standards, list them here."
+    },
+    "implementation_note": {
+      "type": "string",
+      "description": "Implementation guidance, grace periods, or transition instructions."
+    },
+    "supersedes_cdr": {
+      "type": "string",
+      "description": "CDR number this record supersedes, if any.",
+      "pattern": "^CDR-\\d{5}$"
+    },
+    "superseded_by_cdr": {
+      "type": "string",
+      "description": "CDR number that supersedes this record, if any.",
+      "pattern": "^CDR-\\d{5}$"
+    },
+    "effective_date": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO 8601 date this CDR becomes effective. Defaults to filed_at if not specified."
+    },
+    "expiry_date": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO 8601 date this CDR expires (for grace periods and temporary decisions)."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional context. Not part of the formal decision record."
+    }
+  }
+}

@@ -86,9 +86,10 @@ class EvidenceItem:
     context: str = ""
     status: ClaimStatus = ClaimStatus.UNVERIFIED
     confidence: Confidence = Confidence.INSUFFICIENT
-    supports: list[str] = field(default_factory=list)  # claim IDs this item supports
-    challenges: list[str] = field(default_factory=list)  # claim IDs this item challenges
+    supports: list[str] = field(default_factory=list)
+    challenges: list[str] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
+    jurisdiction: Jurisdiction | None = None
     created_at: datetime = field(default_factory=utcnow)
     reviewed_at: datetime | None = None
     reviewer: str = "system"
@@ -106,6 +107,7 @@ class EvidenceItem:
             "supports": self.supports,
             "challenges": self.challenges,
             "tags": self.tags,
+            "jurisdiction": self.jurisdiction.name if self.jurisdiction else None,
             "created_at": self.created_at.isoformat(),
             "reviewed_at": self.reviewed_at.isoformat() if self.reviewed_at else None,
             "reviewer": self.reviewer,
@@ -162,6 +164,8 @@ class Risk:
     impact: Confidence = Confidence.INSUFFICIENT
     controls: list[str] = field(default_factory=list)
     owner: str = ""
+    actor: str = ""
+    tags: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -172,6 +176,32 @@ class Risk:
             "impact": self.impact.value,
             "controls": self.controls,
             "owner": self.owner,
+            "actor": self.actor,
+            "tags": self.tags,
+        }
+
+
+@dataclass
+class ProvenanceEntry:
+    id: str
+    object_id: str
+    object_type: str  # claim, evidence, source, recommendation, risk
+    action: str
+    actor: str
+    timestamp: datetime = field(default_factory=utcnow)
+    parent_id: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "object_id": self.object_id,
+            "object_type": self.object_type,
+            "action": self.action,
+            "actor": self.actor,
+            "timestamp": self.timestamp.isoformat(),
+            "parent_id": self.parent_id,
+            "metadata": self.metadata,
         }
 
 

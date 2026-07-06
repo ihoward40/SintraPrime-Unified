@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sintraprime.ike/bra/schemas/agent_certification.schema.json",
+  "title": "Agent Certification Record",
+  "description": "Certification record for a Blackstone Ecosystem agent. Defined by BKR-12 and BCCM-03.4. Records are immutable — revocations and suspensions are appended, not overwritten.",
+  "type": "object",
+  "required": [
+    "agent_id",
+    "agent_name",
+    "admission_date",
+    "admission_cdr",
+    "subject_domain",
+    "current_tier",
+    "certification_status",
+    "tier_history",
+    "nonconformance_log",
+    "oath_administrations"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "agent_id": {
+      "type": "string",
+      "description": "Unique agent identifier. Assigned at Ecosystem admission."
+    },
+    "agent_name": {
+      "type": "string",
+      "description": "Common name of the agent as it operates in the Ecosystem."
+    },
+    "admission_date": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO 8601 date of admission to the Ecosystem per CDR."
+    },
+    "admission_cdr": {
+      "type": "string",
+      "description": "CDR number authorizing admission.",
+      "pattern": "^CDR-\\d{5}$"
+    },
+    "subject_domain": {
+      "type": "array",
+      "description": "The agent's assigned subject matter domain(s).",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "current_tier": {
+      "type": "string",
+      "description": "Highest active certification tier. BKR-13.",
+      "enum": ["Observer", "Research", "Verification", "Operational", "Compliance Auditor"]
+    },
+    "certification_status": {
+      "type": "object",
+      "required": ["status", "as_of"],
+      "properties": {
+        "status": { "type": "string", "enum": ["Active", "Suspended", "Revoked"] },
+        "as_of": { "type": "string", "format": "date-time" },
+        "basis": { "type": "string", "description": "Reason for current status if Suspended or Revoked." }
+      }
+    },
+    "tier_history": {
+      "type": "array",
+      "description": "Ordered history of all tier certifications. Never expunged.",
+      "items": {
+        "type": "object",
+        "required": ["tier", "examination_date", "administered_by", "result"],
+        "properties": {
+          "tier": { "type": "string", "enum": ["Observer", "Research", "Verification", "Operational", "Compliance Auditor"] },
+          "cert_id": { "type": "string", "description": "CERT-{AGENT}-{TIER}-{YYYYMMDD} format per BKR-02." },
+          "examination_date": { "type": "string", "format": "date" },
+          "administered_by": { "type": "string", "description": "Compliance Auditor or Governance Board member who administered." },
+          "result": { "type": "string", "enum": ["Pass", "Fail", "Pending"] },
+          "score": { "type": "number", "description": "Examination score (0–100) if applicable." },
+          "current": { "type": "boolean", "description": "True if this is the currently active certification at this tier." },
+          "renewal_due": { "type": "string", "format": "date" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "renewal_due": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO 8601 date of next required renewal. Per BCCM-03.1 intervals."
+    },
+    "nonconformance_log": {
+      "type": "array",
+      "description": "All non-conformance findings for this agent. Never expunged. BCCM-14.",
+      "items": {
+        "type": "object",
+        "required": ["cr_id", "class", "detected_at", "description"],
+        "properties": {
+          "cr_id": { "type": "string", "description": "Compliance Record ID. Format: CR-{YYYYMMDD}-{NNNN}." },
+          "class": { "type": "string", "enum": ["A", "B", "C"], "description": "Non-conformance class: A = Constitutional, B = Material, C = Process Gap." },
+          "detected_at": { "type": "string", "format": "date-time" },
+          "description": { "type": "string" },
+          "remediation_status": { "type": "string", "enum": ["Open", "In Progress", "Closed", "Waived"] },
+          "closed_at": { "type": "string", "format": "date-time" },
+          "closure_notes": { "type": "string" }
+        }
+      }
+    },
+    "oath_administrations": {
+      "type": "array",
+      "description": "Record of each Agent Oath administration. BKGC Art. XXI.",
+      "items": {
+        "type": "object",
+        "required": ["administered_at", "administered_by"],
+        "properties": {
+          "administered_at": { "type": "string", "format": "date-time" },
+          "administered_by": { "type": "string" },
+          "is_readministration": { "type": "boolean" },
+          "readministration_reason": { "type": "string" }
+        }
+      }
+    },
+    "revocation_record": {
+      "type": "object",
+      "description": "If certification has been revoked: permanent and immutable record.",
+      "properties": {
+        "revocation_cdr": { "type": "string", "pattern": "^CDR-\\d{5}$" },
+        "revoked_at": { "type": "string", "format": "date-time" },
+        "basis": { "type": "string" },
+        "scope": { "type": "string", "description": "Which tiers or domains were revoked." }
+      }
+    }
+  }
+}

@@ -57,7 +57,7 @@ test = [
     "pytest-asyncio>=0.21",
 ]
 portal = [
-    "PyJWT>=2.0",
+    "PyJWT>=2.13.0",
     "requests>=2.31",
     "email-validator>=2.0",
 ]
@@ -73,7 +73,7 @@ all = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "pytest-asyncio>=0.21",
-    "PyJWT>=2.0",
+    "PyJWT>=2.13.0",
     "requests>=2.31",
     "email-validator>=2.0",
     "pandas>=2.0",

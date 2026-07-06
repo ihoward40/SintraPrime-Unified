@@ -50,22 +50,23 @@ interface AppState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  
+
   // UI State
   theme: Theme;
   sidebarCollapsed: boolean;
   activeModal: string | null;
   globalSearchQuery: string;
-  
+
   // Notifications
   notifications: Notification[];
   unreadCount: number;
-  
+
   // Integrations
   integrations: IntegrationStatus[];
-  
+
   // Actions
   setUser: (user: User | null) => void;
+  login: (accessToken: string, user: User) => void;
   setTheme: (theme: Theme) => void;
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
@@ -152,19 +153,24 @@ export const useAppStore = create<AppState>()(
     persist(
       (set, get) => ({
         // Initial state
-        user: defaultUser,
-        isAuthenticated: true,
+        user: null,
+        isAuthenticated: false,
         isLoading: false,
         theme: 'dark',
         sidebarCollapsed: false,
         activeModal: null,
         globalSearchQuery: '',
-        notifications: defaultNotifications,
-        unreadCount: defaultNotifications.filter((n) => !n.read).length,
-        integrations: defaultIntegrations,
+        notifications: [],
+        unreadCount: 0,
+        integrations: [],
 
         // Actions
         setUser: (user) => set({ user, isAuthenticated: !!user }),
+
+        login: (accessToken, user) => {
+          localStorage.setItem('sintraprime_token', accessToken);
+          set({ user, isAuthenticated: !!user });
+        },
 
         setTheme: (theme) => {
           set({ theme });

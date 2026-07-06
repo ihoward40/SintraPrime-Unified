@@ -13,6 +13,7 @@ import EntityGovernance from './pages/EntityGovernance';
 import AIParliament from './pages/AIParliament';
 import CaseLawSearch from './pages/CaseLawSearch';
 import Settings from './pages/Settings';
+import Login from './pages/Login';
 import { useTheme } from './hooks/useTheme';
 
 function AppContent() {
@@ -20,6 +21,7 @@ function AppContent() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/login" element={<Login />} />
         <Route path="/" element={<Layout />}>
           <Route index element={<LiveDashboard />} />
           <Route path="dashboard" element={<Dashboard />} />

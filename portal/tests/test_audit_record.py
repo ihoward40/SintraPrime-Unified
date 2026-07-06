@@ -14,7 +14,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from portal.services.audit_service import (
+from portal.services.evidence_audit_service import (
     AuditRecordNotFoundError,
     AuditRecordValue,
     AuditService,

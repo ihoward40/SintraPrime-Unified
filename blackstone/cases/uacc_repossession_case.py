@@ -1,5 +1,5 @@
 """
-UACC (Unaffiliated Collections Company) case — apply the Blackstone governance framework.
+Live case script: UACC repossession deficiency.
 
 Evaluates: UACC is collecting an alleged deficiency balance from a vehicle
 repossession; debtor challenges the deficiency calculation and notices.
@@ -18,8 +18,10 @@ from blackstone.models import (
 )
 
 
-def evaluate_uacc_deficiency():
-    orchestrator = BlackstoneOrchestrator(agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"])
+def build_case():
+    orchestrator = BlackstoneOrchestrator(
+        agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"]
+    )
     jurisdiction = Jurisdiction(name="United States", level="federal")
     orchestrator.register_jurisdiction(jurisdiction)
 
@@ -149,12 +151,16 @@ def evaluate_uacc_deficiency():
         )
     )
 
-    result = orchestrator.evaluate(claim.id, question="Can the debtor challenge UACC's deficiency demand under UCC Article 9 and the FDCPA?", actor="AGENT-BLACKSTONE-2-0")
-    return result, orchestrator
+    return orchestrator, claim.id
 
 
 if __name__ == "__main__":
-    result, _orch = evaluate_uacc_deficiency()
+    orchestrator, claim_id = build_case()
+    result = orchestrator.evaluate(
+        claim_id,
+        question="Can the debtor challenge UACC's deficiency demand under UCC Article 9 and the FDCPA?",
+        actor="AGENT-BLACKSTONE-2-0",
+    )
     rec = result["recommendation"]
     print("=" * 70)
     print("Blackstone Case Evaluation: UACC Vehicle Repossession Deficiency")

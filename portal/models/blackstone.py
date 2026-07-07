@@ -11,11 +11,37 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import JSON, DateTime, Index, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import JSON, DateTime, Index, String, Text, TypeDecorator
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from portal.database import Base
+
+
+class PortableUUID(TypeDecorator):
+    """UUID that stores as native UUID on PostgreSQL and String(36) on SQLite."""
+
+    impl = String(36)
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "postgresql":
+            return PGUUID(as_uuid=True)
+        return String(36)
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if dialect.name == "postgresql":
+            return value if isinstance(value, uuid.UUID) else uuid.UUID(value)
+        return str(value)
+
+    def process_result_value(self, value, _dialect):
+        if value is None:
+            return None
+        if isinstance(value, uuid.UUID):
+            return value
+        return uuid.UUID(value)
 
 
 class EvidenceLedger(Base):
@@ -24,10 +50,10 @@ class EvidenceLedger(Base):
     __tablename__ = "evidence_ledger"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        PortableUUID, primary_key=True, default=uuid.uuid4
     )
-    tenant_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), nullable=True, index=True
+    tenant_id: Mapped[str | None] = mapped_column(
+        String(128), nullable=True, index=True
     )
     object_type: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     object_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
@@ -53,10 +79,10 @@ class BlackstoneEvaluation(Base):
     __tablename__ = "blackstone_evaluations"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        PortableUUID, primary_key=True, default=uuid.uuid4
     )
-    tenant_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), nullable=True, index=True
+    tenant_id: Mapped[str | None] = mapped_column(
+        String(128), nullable=True, index=True
     )
     case_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
     claim_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)

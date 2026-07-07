@@ -1,5 +1,5 @@
 """
-Self Financial credit-builder / collection case — apply the Blackstone governance framework.
+Live case script: Self Financial credit-builder / collection case.
 
 Evaluates: Self Financial, Inc. reports a purported default on a credit-builder
 loan. Debtor disputes the tradeline and collection attempts.
@@ -18,8 +18,10 @@ from blackstone.models import (
 )
 
 
-def evaluate_self_financial():
-    orchestrator = BlackstoneOrchestrator(agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"])
+def build_case():
+    orchestrator = BlackstoneOrchestrator(
+        agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"]
+    )
     jurisdiction = Jurisdiction(name="United States", level="federal")
     orchestrator.register_jurisdiction(jurisdiction)
 
@@ -147,12 +149,16 @@ def evaluate_self_financial():
         )
     )
 
-    result = orchestrator.evaluate(claim.id, question="Does the debtor have a colorable FCRA claim against Self Financial for inaccurate reporting?", actor="AGENT-BLACKSTONE-2-0")
-    return result, orchestrator
+    return orchestrator, claim.id
 
 
 if __name__ == "__main__":
-    result, _orch = evaluate_self_financial()
+    orchestrator, claim_id = build_case()
+    result = orchestrator.evaluate(
+        claim_id,
+        question="Does the debtor have a colorable FCRA claim against Self Financial for inaccurate reporting?",
+        actor="AGENT-BLACKSTONE-2-0",
+    )
     rec = result["recommendation"]
     print("=" * 70)
     print("Blackstone Case Evaluation: Self Financial Credit-Builder Dispute")

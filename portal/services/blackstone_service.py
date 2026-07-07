@@ -15,7 +15,7 @@ from portal.models.blackstone import BlackstoneEvaluation, EvidenceLedger
 
 
 class EvidenceLedgerService:
-    """Store and retrieve evidence ledger entries."""
+
 
     @staticmethod
     async def record(
@@ -108,3 +108,18 @@ class BlackstoneEvaluationService:
         stmt = stmt.order_by(BlackstoneEvaluation.evaluated_at.desc()).limit(1)
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
+
+    @staticmethod
+    async def get_by_case(
+        db: AsyncSession,
+        case_id: str,
+        tenant_id: str | None = None,
+    ) -> list[BlackstoneEvaluation]:
+        stmt = select(BlackstoneEvaluation).where(
+            BlackstoneEvaluation.case_id == case_id,
+        )
+        if tenant_id:
+            stmt = stmt.where(BlackstoneEvaluation.tenant_id == tenant_id)
+        stmt = stmt.order_by(BlackstoneEvaluation.evaluated_at.desc())
+        result = await db.execute(stmt)
+        return list(result.scalars().all())

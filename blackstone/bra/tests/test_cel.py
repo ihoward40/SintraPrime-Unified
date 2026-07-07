@@ -4,9 +4,9 @@ Tests for BRA Constitutional Evidence Ledger — BKGC Art. XIII–XIV compliance
 import pytest
 from blackstone.bra.cel import (
     ConstitutionalEvidenceLedger,
-    EvidenceDeletionProhibited,
-    LegalHoldViolation,
-    EvidenceNotFound,
+    EvidenceDeletionProhibitedError,
+    LegalHoldViolationError,
+    EvidenceNotFoundError,
 )
 
 
@@ -79,7 +79,7 @@ class TestAuthentication:
 
 class TestNoDeletion:
     def test_delete_raises(self, cel, ev_id):
-        with pytest.raises(EvidenceDeletionProhibited):
+        with pytest.raises(EvidenceDeletionProhibitedError):
             cel.delete(ev_id)
 
     def test_deprecated_item_still_in_ledger(self, cel, ev_id):
@@ -102,13 +102,13 @@ class TestLegalHold:
     def test_held_item_cannot_be_deprecated(self, cel, ev_id):
         cel.authenticate(ev_id, "viktor")
         cel.place_hold(ev_id, "isiah", "IRS litigation hold")
-        with pytest.raises(LegalHoldViolation):
+        with pytest.raises(LegalHoldViolationError):
             cel.deprecate(ev_id, "viktor", reason="test")
 
     def test_held_item_cannot_be_authenticated(self, cel):
         ev_id = cel.add("Test", source_class="SC-01", collected_by="hermes")
         cel.place_hold(ev_id, "isiah", "hold basis")
-        with pytest.raises(LegalHoldViolation):
+        with pytest.raises(LegalHoldViolationError):
             cel.authenticate(ev_id, "viktor")
 
     def test_release_hold_allows_modification(self, cel, ev_id):

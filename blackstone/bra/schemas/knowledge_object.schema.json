@@ -1,0 +1,274 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sintraprime.ike/bra/schemas/knowledge_object.schema.json",
+  "title": "Knowledge Object",
+  "description": "Primary unit of knowledge in the Blackstone Ecosystem. Defined by BKGC v2.0 Art. VIII–IX. Governed by BGS v1.0.",
+  "type": "object",
+  "required": [
+    "ko_id",
+    "title",
+    "created_at",
+    "created_by",
+    "maturity_stage",
+    "maturity_stage_code",
+    "claim_status",
+    "claim_status_code",
+    "confidence_level",
+    "confidence_level_code",
+    "jurisdiction_code",
+    "jurisdiction_confirmed",
+    "ccs_score",
+    "ccs_dimensions",
+    "claims",
+    "evidence_ids",
+    "counter_evidence_assessed",
+    "temporal_current",
+    "review_date",
+    "last_modified_at",
+    "last_modified_by",
+    "integrity_status"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "ko_id": {
+      "type": "string",
+      "description": "Unique identifier. Format: KO-{YYYYMMDD}-{NNNN}. BKR-02.",
+      "pattern": "^KO-\\d{8}-\\d{4}$"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short descriptive title of the knowledge object.",
+      "minLength": 5,
+      "maxLength": 250
+    },
+    "description": {
+      "type": "string",
+      "description": "Extended description of the knowledge object's subject matter."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime of creation (UTC)."
+    },
+    "created_by": {
+      "type": "string",
+      "description": "Agent ID or human identifier of the creator."
+    },
+    "maturity_stage": {
+      "type": "string",
+      "description": "Human-readable maturity stage name.",
+      "enum": ["Idea", "Hypothesis", "Research", "Corroborated", "Verified", "Operational", "Litigation Ready", "Historical Archive"]
+    },
+    "maturity_stage_code": {
+      "type": "string",
+      "description": "BKR-06 maturity stage code.",
+      "enum": ["STG-0", "STG-1", "STG-2", "STG-3", "STG-4", "STG-5", "STG-6", "STG-7"]
+    },
+    "maturity_stage_history": {
+      "type": "array",
+      "description": "Ordered history of maturity stage transitions.",
+      "items": {
+        "type": "object",
+        "required": ["from_stage", "to_stage", "transitioned_at", "transitioned_by"],
+        "properties": {
+          "from_stage": { "type": "string" },
+          "to_stage": { "type": "string" },
+          "transitioned_at": { "type": "string", "format": "date-time" },
+          "transitioned_by": { "type": "string" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "claim_status": {
+      "type": "string",
+      "description": "Human-readable claim status. BKR-04.",
+      "enum": ["Controlling", "Persuasive", "Historically Documented", "Scholarly", "Educational", "Emerging", "Disputed", "Unverified"]
+    },
+    "claim_status_code": {
+      "type": "string",
+      "description": "BKR-04 claim status code.",
+      "enum": ["CTRL", "PERS", "HIST", "SCHOL", "EDU", "EMRG", "DISP", "UNVR"]
+    },
+    "confidence_level": {
+      "type": "string",
+      "description": "Human-readable confidence level. BKR-05.",
+      "enum": ["High Confidence", "Moderate Confidence", "Limited Confidence", "Preliminary Assessment", "Insufficient Evidence"]
+    },
+    "confidence_level_code": {
+      "type": "string",
+      "description": "BKR-05 confidence level code.",
+      "enum": ["CONF-H", "CONF-M", "CONF-L", "CONF-P", "CONF-I"]
+    },
+    "jurisdiction_code": {
+      "type": "string",
+      "description": "BKR-08/09/10 jurisdiction code. Examples: NJ, US-FED-3, MULTI:{NJ,NY}, UNCONFIRMED, GLOBAL."
+    },
+    "jurisdiction_confirmed": {
+      "type": "boolean",
+      "description": "True if jurisdiction has been confirmed by primary source research. False caps claim_status at PERS per BGS-03.2."
+    },
+    "ccs_score": {
+      "type": "number",
+      "description": "Constitutional Compliance Score (0–100). Weighted composite per BGS-01.",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "ccs_dimensions": {
+      "$ref": "#/$defs/CcsDimensions"
+    },
+    "claims": {
+      "type": "array",
+      "description": "Array of claim records forming the substance of this knowledge object.",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/ClaimRecord" }
+    },
+    "evidence_ids": {
+      "type": "array",
+      "description": "EV-IDs of all evidence items in the CEL supporting this KO.",
+      "items": { "type": "string", "pattern": "^EV-\\d{8}-\\d{4}(-D\\d+)?$" }
+    },
+    "counter_evidence_assessed": {
+      "type": "boolean",
+      "description": "True if a systematic counter-evidence search has been conducted. Required for maturity stage Research and above."
+    },
+    "counter_evidence_ids": {
+      "type": "array",
+      "description": "EV-IDs of counter-evidence items, if any identified.",
+      "items": { "type": "string" }
+    },
+    "counter_evidence_notes": {
+      "type": "string",
+      "description": "Narrative description of counter-evidence review findings."
+    },
+    "temporal_current": {
+      "type": "boolean",
+      "description": "True if all cited authorities have been confirmed current within the last 90 days."
+    },
+    "temporal_confirmed_date": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO 8601 date on which temporal currency was last confirmed."
+    },
+    "review_date": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO 8601 date of next scheduled review. Required at Verified stage and above."
+    },
+    "last_modified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime of last modification (UTC)."
+    },
+    "last_modified_by": {
+      "type": "string",
+      "description": "Agent ID or human identifier of last modifier."
+    },
+    "integrity_status": {
+      "type": "string",
+      "description": "Current integrity status of the knowledge object.",
+      "enum": ["INTACT", "MODIFIED", "UNAVAILABLE", "DEPRECATED", "UNVERIFIED"]
+    },
+    "successor_ko_id": {
+      "type": "string",
+      "description": "KO-ID of the successor knowledge object. Required when integrity_status = DEPRECATED.",
+      "pattern": "^KO-\\d{8}-\\d{4}$"
+    },
+    "legal_hold": {
+      "type": "boolean",
+      "description": "True if this KO is under a legal hold order per BGS-19. Blocks all modification, deletion, and archival."
+    },
+    "legal_hold_basis": {
+      "type": "string",
+      "description": "CDR number or description of the legal hold basis."
+    },
+    "risk_classification": {
+      "type": "string",
+      "description": "BKR-07 risk classification code.",
+      "enum": ["RISK-C", "RISK-H", "RISK-M", "RISK-L"]
+    },
+    "human_review_required": {
+      "type": "boolean",
+      "description": "True if human review is required before any action on this KO (triggered at RISK-H or RISK-C, or financial_amount >= 500)."
+    },
+    "financial_amount_usd": {
+      "type": "number",
+      "description": "Financial amount at stake in USD, if applicable. Triggers human review at >= 500 per BGS-11."
+    },
+    "decision_traceability": {
+      "$ref": "#/$defs/DecisionTraceability"
+    },
+    "applicable_disclaimers": {
+      "type": "array",
+      "description": "BKR-14/15 disclaimer IDs required for any external output of this KO.",
+      "items": { "type": "string", "enum": ["DIS-NLA-01", "DIS-NLA-02", "DIS-NLA-03", "DIS-NLA-04", "DIS-UNC-01", "DIS-UNC-02", "DIS-UNC-03", "DIS-UNC-04"] }
+    },
+    "tags": {
+      "type": "array",
+      "description": "Optional free-form tags for search and categorization.",
+      "items": { "type": "string" }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Free-form internal notes. Not included in external outputs."
+    }
+  },
+  "$defs": {
+    "CcsDimensions": {
+      "type": "object",
+      "description": "CCS dimension scores (0–100 each). Weights defined in BGS-01. Composite = weighted sum.",
+      "required": [
+        "citation_integrity",
+        "provenance_completeness",
+        "jurisdiction_accuracy",
+        "temporal_accuracy",
+        "counter_evidence_review",
+        "confidence_calibration",
+        "transparency",
+        "auditability",
+        "reproducibility",
+        "evidence_preservation"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "citation_integrity":       { "type": "number", "minimum": 0, "maximum": 100, "description": "Weight: 20%. All claims traceable to authenticated sources." },
+        "provenance_completeness":  { "type": "number", "minimum": 0, "maximum": 100, "description": "Weight: 18%. Origin and chain of custody documented for all evidence." },
+        "jurisdiction_accuracy":    { "type": "number", "minimum": 0, "maximum": 100, "description": "Weight: 14%. Jurisdiction confirmed and correctly coded." },
+        "temporal_accuracy":        { "type": "number", "minimum": 0, "maximum": 100, "description": "Weight: 12%. All authorities confirmed current." },
+        "counter_evidence_review":  { "type": "number", "minimum": 0, "maximum": 100, "description": "Weight: 12%. Counter-evidence systematically identified and addressed." },
+        "confidence_calibration":   { "type": "number", "minimum": 0, "maximum": 100, "description": "Weight: 10%. Confidence level accurately reflects evidence strength." },
+        "transparency":             { "type": "number", "minimum": 0, "maximum": 100, "description": "Weight: 6%. Reasoning and methodology explicitly stated." },
+        "auditability":             { "type": "number", "minimum": 0, "maximum": 100, "description": "Weight: 4%. All steps reproducible from the audit trail." },
+        "reproducibility":          { "type": "number", "minimum": 0, "maximum": 100, "description": "Weight: 2%. Independent agent can reach same conclusion from same sources." },
+        "evidence_preservation":    { "type": "number", "minimum": 0, "maximum": 100, "description": "Weight: 2%. All evidence items preserved in CEL, none deleted." }
+      }
+    },
+    "ClaimRecord": {
+      "type": "object",
+      "required": ["claim_id", "statement", "claim_status_code", "evidence_ids"],
+      "properties": {
+        "claim_id": { "type": "string", "description": "Unique claim identifier within this KO. Format: {KO-ID}-C{N}." },
+        "statement": { "type": "string", "description": "The claim statement in clear, precise language." },
+        "claim_status_code": { "type": "string", "enum": ["CTRL", "PERS", "HIST", "SCHOL", "EDU", "EMRG", "DISP", "UNVR"] },
+        "confidence_level_code": { "type": "string", "enum": ["CONF-H", "CONF-M", "CONF-L", "CONF-P", "CONF-I"] },
+        "evidence_ids": { "type": "array", "items": { "type": "string" }, "description": "EV-IDs supporting this specific claim." },
+        "counter_evidence_ids": { "type": "array", "items": { "type": "string" } },
+        "jurisdiction_code": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "DecisionTraceability": {
+      "type": "object",
+      "description": "Seven-element decision traceability record. BKGC Art. XXIII.",
+      "required": ["question_posed", "evidence_considered", "reasoning_applied", "alternatives_rejected", "confidence_assigned", "risk_classified", "output_delivered"],
+      "properties": {
+        "question_posed": { "type": "string", "description": "The specific question this KO addresses." },
+        "evidence_considered": { "type": "string", "description": "Description of evidence reviewed, including what was excluded and why." },
+        "reasoning_applied": { "type": "string", "description": "The analytical methodology used to reach the conclusion." },
+        "alternatives_rejected": { "type": "string", "description": "Alternative conclusions considered and reasons for rejection." },
+        "confidence_assigned": { "type": "string", "description": "The confidence level assigned and its basis." },
+        "risk_classified": { "type": "string", "description": "The risk classification assigned and factors driving it." },
+        "output_delivered": { "type": "string", "description": "Description of the output produced and how it was delivered." }
+      }
+    }
+  }
+}

@@ -21,7 +21,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import ClassVar
 
-
 # ---------------------------------------------------------------------------
 # Dimension weights — BGS-01. Immutable without CDR.
 # ---------------------------------------------------------------------------

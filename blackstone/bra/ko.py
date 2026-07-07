@@ -3,7 +3,7 @@ BRA — Knowledge Object Validator
 =================================
 Validates Knowledge Object metadata against BKGC v2.0 and BGS v1.0 rules.
 
-BKGC v2.0 Art. VIII–IX; BGS v1.0 BGS-01 through BGS-04.
+BKGC v2.0 Art. VIII-IX; BGS v1.0 BGS-01 through BGS-04.
 
 This module does NOT create knowledge objects — it validates metadata dicts
 against the constitutional schema and business rules. Use this before
@@ -24,10 +24,9 @@ Usage:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime
 from typing import Any
 
-from blackstone.bra.ccs import CCSScorer, MATURITY_MIN_CCS
+from blackstone.bra.ccs import MATURITY_MIN_CCS, CCSScorer
 
 # Claim status → minimum maturity stage allowed for assignment
 CLAIM_STATUS_MIN_STAGE: dict[str, str] = {
@@ -92,13 +91,13 @@ class KnowledgeObjectValidator:
     def __init__(self, ccs_scorer: CCSScorer | None = None) -> None:
         self._scorer = ccs_scorer or CCSScorer()
 
-    def validate(self, ko: dict[str, Any], *, stage_advancement: bool = False) -> ValidationResult:
+    def validate(self, ko: dict[str, Any], *, _stage_advancement: bool = False) -> ValidationResult:
         """
         Validate a knowledge object metadata dict.
 
         Args:
             ko: The KO metadata dict (should conform to knowledge_object.schema.json).
-            stage_advancement: If True, apply stricter advancement gate checks.
+            _stage_advancement: If True, apply stricter advancement gate checks.
 
         Returns:
             ValidationResult with errors, warnings, and computed CCS.
@@ -168,13 +167,13 @@ class KnowledgeObjectValidator:
             )
 
         # 6. Confidence alignment with CCS
-        min_ccs_for_conf = CONFIDENCE_MIN_CCS.get(conf_code, 0.0)
+        _ = CONFIDENCE_MIN_CCS.get(conf_code, 0.0)
         if conf_code == "CONF-H" and ccs_score < 78.0:
-            errors.append(f"CONF-H requires CCS ≥ 78. CCS is {ccs_score}. (BKR-05)")
+            errors.append(f"CONF-H requires CCS >= 78. CCS is {ccs_score}. (BKR-05)")
         elif conf_code == "CONF-M" and ccs_score < 68.0:
-            errors.append(f"CONF-M requires CCS ≥ 68. CCS is {ccs_score}. (BKR-05)")
+            errors.append(f"CONF-M requires CCS >= 68. CCS is {ccs_score}. (BKR-05)")
         elif conf_code == "CONF-L" and ccs_score < 55.0:
-            errors.append(f"CONF-L requires CCS ≥ 55. CCS is {ccs_score}. (BKR-05)")
+            errors.append(f"CONF-L requires CCS >= 55. CCS is {ccs_score}. (BKR-05)")
         if conf_code == "CONF-I":
             errors.append(
                 "CONF-I (Insufficient Evidence) is a STOP signal. No conclusion may be communicated. "

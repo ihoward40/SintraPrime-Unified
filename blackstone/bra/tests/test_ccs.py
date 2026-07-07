@@ -2,7 +2,8 @@
 Tests for BRA CCS Scorer — BGS-01 compliance.
 """
 import pytest
-from blackstone.bra.ccs import CCSScorer, CCS_WEIGHTS, MATURITY_MIN_CCS
+
+from blackstone.bra.ccs import CCS_WEIGHTS, CCSScorer
 
 
 @pytest.fixture
@@ -13,7 +14,7 @@ def scorer():
 def _dims(**overrides) -> dict:
     """Build a valid full dimension set with a given base value, with overrides."""
     base = overrides.pop("_base", 80.0)
-    dims = {k: base for k in CCS_WEIGHTS}
+    dims = dict.fromkeys(CCS_WEIGHTS, base)
     dims.update(overrides)
     return dims
 
@@ -54,7 +55,7 @@ class TestScoring:
         assert result.maturity_floor == "STG-5"
 
     def test_missing_dimension_raises(self, scorer):
-        dims = {k: 80.0 for k in list(CCS_WEIGHTS.keys())[:-1]}  # missing last
+        dims = dict.fromkeys(list(CCS_WEIGHTS.keys())[:-1], 80.0)  # missing last
         with pytest.raises(ValueError, match="missing required dimensions"):
             scorer.score(dims)
 
@@ -112,7 +113,7 @@ class TestMaturityFloor:
 
 
 class TestMaturityThresholds:
-    @pytest.mark.parametrize("stage,min_ccs", [
+    @pytest.mark.parametrize(("stage", "min_ccs"), [
         ("STG-1", 40.0), ("STG-2", 55.0), ("STG-3", 68.0),
         ("STG-4", 78.0), ("STG-5", 82.0), ("STG-6", 92.0),
     ])

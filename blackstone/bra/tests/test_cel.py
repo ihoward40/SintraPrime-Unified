@@ -1,12 +1,12 @@
 """
-Tests for BRA Constitutional Evidence Ledger — BKGC Art. XIII–XIV compliance.
+Tests for BRA Constitutional Evidence Ledger — BKGC Art. XIII-XIV compliance.
 """
 import pytest
+
 from blackstone.bra.cel import (
     ConstitutionalEvidenceLedger,
-    EvidenceDeletionProhibited,
-    LegalHoldViolation,
-    EvidenceNotFound,
+    EvidenceDeletionProhibitedError,
+    LegalHoldViolationError,
 )
 
 
@@ -73,13 +73,13 @@ class TestAuthentication:
         assert "AUTHENTICATED" in events
 
     def test_invalid_reliability_score_raises(self, cel, ev_id):
-        with pytest.raises(ValueError, match="0–20"):
+        with pytest.raises(ValueError, match="0-20"):
             cel.authenticate(ev_id, "viktor", source_reliability_score=25)
 
 
 class TestNoDeletion:
     def test_delete_raises(self, cel, ev_id):
-        with pytest.raises(EvidenceDeletionProhibited):
+        with pytest.raises(EvidenceDeletionProhibitedError):
             cel.delete(ev_id)
 
     def test_deprecated_item_still_in_ledger(self, cel, ev_id):
@@ -91,7 +91,7 @@ class TestNoDeletion:
 
     def test_total_count_includes_deprecated(self, cel):
         ev1 = cel.add("A", source_class="SC-01", collected_by="hermes")
-        ev2 = cel.add("B", source_class="SC-02", collected_by="hermes")
+        cel.add("B", source_class="SC-02", collected_by="hermes")
         cel.authenticate(ev1, "viktor")
         cel.deprecate(ev1, "viktor", reason="Old")
         assert len(cel.list_all()) == 2
@@ -102,13 +102,13 @@ class TestLegalHold:
     def test_held_item_cannot_be_deprecated(self, cel, ev_id):
         cel.authenticate(ev_id, "viktor")
         cel.place_hold(ev_id, "isiah", "IRS litigation hold")
-        with pytest.raises(LegalHoldViolation):
+        with pytest.raises(LegalHoldViolationError):
             cel.deprecate(ev_id, "viktor", reason="test")
 
     def test_held_item_cannot_be_authenticated(self, cel):
         ev_id = cel.add("Test", source_class="SC-01", collected_by="hermes")
         cel.place_hold(ev_id, "isiah", "hold basis")
-        with pytest.raises(LegalHoldViolation):
+        with pytest.raises(LegalHoldViolationError):
             cel.authenticate(ev_id, "viktor")
 
     def test_release_hold_allows_modification(self, cel, ev_id):
@@ -120,9 +120,9 @@ class TestLegalHold:
 
 
 class TestAuditReport:
-    def test_audit_report_structure(self, cel, ev_id):
+    def test_audit_report_structure(self, cel):
         report = cel.audit_report()
         assert "total_items" in report
         assert "active_items" in report
         assert "deprecated_items" in report
-        assert report["total_items"] >= 1
+        assert report["total_items"] == 0

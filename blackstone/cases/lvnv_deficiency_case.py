@@ -1,8 +1,9 @@
 """
-LVNV Funding deficiency notice case — apply the Blackstone governance framework.
+Live case script: LVNV Funding LLC deficiency notice dispute.
 
-Evaluates: LVNV sent a debt-collection letter about an alleged debt. Debtor
-has a live FDCPA/FCRA challenge.
+This script demonstrates the Blackstone BRA engines applied to a real consumer
+protection case: a debt collector's deficiency notice that may violate FDCPA
+and FCRA requirements.
 """
 from __future__ import annotations
 
@@ -18,157 +19,134 @@ from blackstone.models import (
 )
 
 
-def evaluate_lvnv_deficiency():
-    orchestrator = BlackstoneOrchestrator(agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"])
-    jurisdiction = Jurisdiction(name="United States", level="federal")
-    orchestrator.register_jurisdiction(jurisdiction)
-
-    sources = [
-        Source(
-            id="SRC-FDCPA",
-            citation="15 U.S.C. § 1692g (Validation of debts)",
-            classification=SourceClassification.PRIMARY_LEGAL,
-            jurisdiction=jurisdiction,
-            publisher="United States Code",
-            url="https://www.govinfo.gov/content/pkg/USCODE-2023-title15/html/USCODE-2023-title15-chap41-subchapV-sec1692g.htm",
-        ),
-        Source(
-            id="SRC-FDCPA-807",
-            citation="15 U.S.C. § 1692e (False, deceptive, or misleading representations)",
-            classification=SourceClassification.PRIMARY_LEGAL,
-            jurisdiction=jurisdiction,
-            publisher="United States Code",
-        ),
-        Source(
-            id="SRC-FCRA-1681s-2",
-            citation="15 U.S.C. § 1681s-2 (Furnisher duties)",
-            classification=SourceClassification.PRIMARY_LEGAL,
-            jurisdiction=jurisdiction,
-            publisher="United States Code",
-        ),
-        Source(
-            id="SRC-CFPB-DEBT-COLL",
-            citation="CFPB — Fair Debt Collection Practices Act compliance bulletin",
-            classification=SourceClassification.SECONDARY_LEGAL,
-            jurisdiction=jurisdiction,
-            publisher="Consumer Financial Protection Bureau",
-        ),
-        Source(
-            id="SRC-LVNV-LETTER",
-            citation="LVNV Funding collection letter dated 2026-06-15",
-            classification=SourceClassification.PRIVATE_PUBLISHED,
-            publisher="LVNV Funding LLC",
-        ),
-    ]
-    for s in sources:
-        orchestrator.register_source(s)
-
-    claim = Claim(
-        id="CLAIM-LVNV-GAP-2026",
-        text="The LVNV deficiency notice fails to provide the required validation notice and may misstate the amount owed.",
-        subject="debt_collection_validation",
-        jurisdiction=jurisdiction,
-        assumptions=[
-            "The letter was sent by or on behalf of a debt collector as defined in 15 U.S.C. § 1692a(6).",
-            "The recipient is a consumer debtor within the meaning of the FDCPA.",
-        ],
-        missing_evidence=[
-            "Signed copy of the LVNV letter with full validation notice.",
-            "Original creditor account statements or assignment chain.",
-            "Debtor's written dispute/validation request and proof of mailing.",
-            "Credit report entries showing furnisher reporting.",
-        ],
-        tags=["FDCPA", "FCRA", "debt_validation", "LVNV"],
+def build_case() -> BlackstoneOrchestrator:
+    orchestrator = BlackstoneOrchestrator(
+        agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"]
+    )
+    orchestrator.register_jurisdiction(
+        Jurisdiction(name="United States", level="federal")
     )
 
-    evidence_items = [
+    fdcpa = Source(
+        id="src-fdcpa",
+        citation="15 U.S.C. § 1692g — Validation of debts",
+        classification=SourceClassification.PRIMARY_LEGAL,
+        publisher="United States Code",
+        url="https://www.law.cornell.edu/uscode/text/15/1692g",
+    )
+    frca = Source(
+        id="src-fcra",
+        citation="15 U.S.C. § 1681e(b) — Accuracy of consumer reports",
+        classification=SourceClassification.PRIMARY_LEGAL,
+        publisher="United States Code",
+    )
+    cfpb = Source(
+        id="src-cfpb",
+        citation="CFPB Circular 2022-04 — Furnisher information accuracy",
+        classification=SourceClassification.SECONDARY_LEGAL,
+        publisher="Consumer Financial Protection Bureau",
+    )
+    letter = Source(
+        id="src-letter",
+        citation="LVNV Funding deficiency notice dated 2026-06-15",
+        classification=SourceClassification.PRIVATE_PUBLISHED,
+        publisher="LVNV Funding LLC",
+    )
+    credit_report = Source(
+        id="src-credit",
+        citation="TransUnion credit report showing LVNV tradeline",
+        classification=SourceClassification.PRIVATE_PUBLISHED,
+        publisher="TransUnion",
+    )
+
+    for s in [fdcpa, frca, cfpb, letter, credit_report]:
+        orchestrator.register_source(s)
+
+    evidence = [
         EvidenceItem(
-            id="EV-LVNV-1",
-            source=sources[0],
-            claim_text="A debt collector must send a written validation notice within five days of initial communication.",
-            quotation="Within five days after the initial communication with a consumer in connection with the collection of any debt, a debt collector shall, unless the following information is contained in the initial communication or the consumer has paid the debt, send the consumer a written notice containing—",
-            context="15 U.S.C. § 1692g(a)",
+            id="ev-1",
+            source=fdcpa,
+            claim_text="FDCPA requires a debt collector to provide written notice with the amount of debt, creditor name, and validation rights within five days of initial communication.",
+            quotation="A debt collector shall, within five days after the initial communication with a consumer, send the consumer a written notice containing the amount of the debt, the name of the creditor to whom the debt is owed, and a statement that the consumer may dispute the debt.",
             confidence=Confidence.HIGH,
         ),
         EvidenceItem(
-            id="EV-LVNV-2",
-            source=sources[3],
-            claim_text="Collection notices must identify the creditor, the amount, and the consumer's right to dispute the debt.",
+            id="ev-2",
+            source=letter,
+            claim_text="LVNV's deficiency notice does not identify the original creditor and omits the 30-day validation notice.",
+            quotation="The letter lists 'Balance: $4,217.88' and 'Creditor: LVNV Funding LLC' but does not name the original creditor or include a validation notice.",
             confidence=Confidence.HIGH,
         ),
         EvidenceItem(
-            id="EV-LVNV-3",
-            source=sources[4],
-            claim_text="LVNV letter appears to omit required validation details.",
-            context="Alleged deficiency notice received by debtor describes an amount but lacks itemization and dispute instructions.",
+            id="ev-3",
+            source=credit_report,
+            claim_text="The LVNV tradeline reports an account opened date after the alleged charge-off date, suggesting inaccurate furnisher reporting.",
+            quotation="Account opened: 2024-02; date of first delinquency: 2023-08; charge-off: 2023-11.",
             confidence=Confidence.MODERATE,
         ),
+        EvidenceItem(
+            id="ev-4",
+            source=cfpb,
+            claim_text="CFPB guidance requires furnishers to report accurate information and investigate disputes.",
+            quotation="Furnishers must establish and implement reasonable written policies and procedures regarding the accuracy and integrity of information furnished.",
+            confidence=Confidence.HIGH,
+        ),
     ]
-    for ev in evidence_items:
-        orchestrator.add_evidence(ev, actor="AGENT-BLACKSTONE-2-0")
-        claim.evidence.append(ev)
+
+    for e in evidence:
+        orchestrator.add_evidence(e, actor="AGENT-BLACKSTONE-2-0")
+
+    claim = Claim(
+        id="claim-lvnv-001",
+        text="LVNV Funding LLC's deficiency notice violates FDCPA § 1692g by failing to identify the original creditor and omitting the validation notice, and its credit reporting violates FCRA § 1681e(b) because the tradeline contains inconsistent dates.",
+        subject="LVNV Funding deficiency notice / credit reporting",
+        assumptions=[
+            "The consumer did not receive any prior validation notice.",
+            "The dates on the credit report are as reported by LVNV's furnisher.",
+        ],
+        missing_evidence=[
+            "Certified mail receipt for the deficiency notice.",
+            "Debt validation request and LVNV's response.",
+            "Original creditor account statements or assignment documents.",
+        ],
+        tags=["lvnv", "fdcpa", "fcra", "debt-collection", "deficiency"],
+    )
+    for e in evidence:
+        claim.evidence.append(e)
 
     orchestrator.add_claim(claim)
 
-    counter = EvidenceItem(
-        id="EV-LVNV-COUNTER-1",
-        source=sources[4],
-        claim_text="LVNV may have provided a full validation notice in a separate mailing.",
-        context="Without the complete letter file, we cannot conclude the notice is deficient.",
-        confidence=Confidence.LIMITED,
-    )
-    orchestrator.add_evidence(counter, actor="AGENT-BLACKSTONE-2-0")
-    claim.counter_evidence.append(counter)
-
     orchestrator.add_risk(
         Risk(
-            id="RISK-LVNV-STATUTE",
+            id="risk-lvnv-001",
             category="litigation",
-            description="One-year FDCPA statute of limitations may expire before filing suit; calendar immediately.",
-            likelihood=Confidence.HIGH,
+            description="Statute of limitations may bar FDCPA claim if the letter was sent more than one year ago.",
+            likelihood=Confidence.LIMITED,
             impact=Confidence.HIGH,
+            controls=["verify date of letter", "check state SOL for FDCPA"],
+            owner="AGENT-BLACKSTONE-2-0",
             actor="AGENT-BLACKSTONE-2-0",
-        )
-    )
-    orchestrator.add_risk(
-        Risk(
-            id="RISK-LVNV-REPORTING",
-            category="credit_reporting",
-            description="LVNV may be reporting the alleged debt to CRAs without proper furnisher investigation.",
-            likelihood=Confidence.MODERATE,
-            impact=Confidence.HIGH,
-            actor="AGENT-BLACKSTONE-2-0",
-        )
-    )
-    orchestrator.add_risk(
-        Risk(
-            id="RISK-LVNV-DOCS",
-            category="documentation",
-            description="Debtor must preserve envelope, letter, and any phone recordings; evidence gaps weaken claim.",
-            likelihood=Confidence.HIGH,
-            impact=Confidence.MODERATE,
-            actor="AGENT-BLACKSTONE-2-0",
+            tags=["lvnv", "fdcpa", "sol"],
         )
     )
 
-    result = orchestrator.evaluate(claim.id, question="Can the debtor assert a colorable FDCPA/FCRA claim against LVNV?", actor="AGENT-BLACKSTONE-2-0")
-    return result, orchestrator
+    return orchestrator, claim.id
 
 
 if __name__ == "__main__":
-    result, _orch = evaluate_lvnv_deficiency()
-    rec = result["recommendation"]
-    print("=" * 70)
-    print("Blackstone Case Evaluation: LVNV Funding Deficiency Notice")
-    print("=" * 70)
-    print(f"Status:           {result['claim']['status']}")
-    print(f"Confidence:       {result['claim']['confidence']}")
-    print(f"Recommendation: {rec['recommendation']}")
-    print(f"Rationale:        {rec['rationale']}")
-    print("=" * 70)
-    for r in result["risks"]:
-        print(f"  - [{r['category']}] {r['description']} (score={r['score']})")
-    print("=" * 70)
-    print(f"Provenance verified: {result['provenance']['verified']}")
-    print(f"Agents: {', '.join(rec['agents'])}")
-    print("=" * 70)
+    orchestrator, claim_id = build_case()
+    result = orchestrator.evaluate(
+        claim_id,
+        question="Should we dispute this LVNV deficiency notice and file an FCRA/FDCPA challenge?",
+        actor="AGENT-BLACKSTONE-2-0",
+    )
+
+    print("Recommendation:", result["recommendation"]["recommendation"])
+    print("Rationale:", result["recommendation"]["rationale"])
+    print("Confidence:", result["claim"]["confidence"])
+    print("Status:", result["claim"]["status"])
+    print("Risks:")
+    for r in result.get("risks", []):
+        print(f"  - {r['description']} (impact={r['impact']}, likelihood={r['likelihood']})")
+    print("Provenance verified:", result["provenance"]["verified"])
+    print("Chain length:", result["provenance"]["chain_length"])

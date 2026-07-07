@@ -1,5 +1,5 @@
 """
-PayPal collections case — apply the Blackstone governance framework.
+Live case script: PayPal collections case.
 
 Evaluates: PayPal Credit / Synchrony alleges a default and may have sold or
 collected the debt. Debtor disputes the balance and reporting.
@@ -18,8 +18,10 @@ from blackstone.models import (
 )
 
 
-def evaluate_paypal_collection():
-    orchestrator = BlackstoneOrchestrator(agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"])
+def build_case():
+    orchestrator = BlackstoneOrchestrator(
+        agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"]
+    )
     jurisdiction = Jurisdiction(name="United States", level="federal")
     orchestrator.register_jurisdiction(jurisdiction)
 
@@ -146,12 +148,16 @@ def evaluate_paypal_collection():
         )
     )
 
-    result = orchestrator.evaluate(claim.id, question="Can the debtor successfully dispute the PayPal/Synchrony debt under FDCPA and TILA?", actor="AGENT-BLACKSTONE-2-0")
-    return result, orchestrator
+    return orchestrator, claim.id
 
 
 if __name__ == "__main__":
-    result, _orch = evaluate_paypal_collection()
+    orchestrator, claim_id = build_case()
+    result = orchestrator.evaluate(
+        claim_id,
+        question="Can the debtor successfully dispute the PayPal/Synchrony debt under FDCPA and TILA?",
+        actor="AGENT-BLACKSTONE-2-0",
+    )
     rec = result["recommendation"]
     print("=" * 70)
     print("Blackstone Case Evaluation: PayPal/Synchrony Collection")

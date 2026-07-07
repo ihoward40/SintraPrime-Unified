@@ -1,5 +1,5 @@
 """
-IRS 3176C CNC case — apply the Blackstone governance framework to a live case.
+Live case script: IRS 3176C CNC case — apply the Blackstone governance framework to a live case.
 
 This script demonstrates how AGENT-HERMES-2-0 and AGENT-BLACKSTONE-2-0 would
 evaluate a real legal/financial question using the BRA engines.
@@ -24,10 +24,12 @@ from blackstone.models import (
 )
 
 
-def main() -> None:
+def build_case():
     federal_us = Jurisdiction(name="United States", level="federal")
 
-    orch = BlackstoneOrchestrator(agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"])
+    orch = BlackstoneOrchestrator(
+        agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"]
+    )
     orch.register_jurisdiction(federal_us)
 
     sources = [
@@ -41,40 +43,36 @@ def main() -> None:
         ),
         Source(
             id="SRC-IRM-5-16-1-2",
-            citation="IRM 5.16.1.2, Currently Not Collectible",
-            classification=SourceClassification.PRIMARY_LEGAL,
+            citation="IRM 5.16.1.2 — Currently Not Collectible",
+            classification=SourceClassification.SECONDARY_LEGAL,
             jurisdiction=federal_us,
             publisher="Internal Revenue Manual",
-            url="https://www.irs.gov/irm/part5/irm_05-016-001",
         ),
         Source(
             id="SRC-TBOR-2",
-            citation="Taxpayer Bill of Rights, Right to Challenge and Be Heard",
+            citation="Taxpayer Bill of Rights, Right #2: Quality Service",
             classification=SourceClassification.SECONDARY_LEGAL,
             jurisdiction=federal_us,
-            publisher="Internal Revenue Service",
-            url="https://www.irs.gov/taxpayer-bill-of-rights",
+            publisher="IRS",
         ),
         Source(
             id="SRC-NCLC",
-            citation="National Consumer Law Center, Surviving Debt",
+            citation="NCLC, Surviving Debt, Ch. 13 — IRS Collection",
             classification=SourceClassification.SCHOLARLY,
-            publisher="NCLC",
-            url="https://www.nclc.org/",
+            publisher="National Consumer Law Center",
         ),
     ]
-    for source in sources:
-        orch.register_source(source)
+    for s in sources:
+        orch.register_source(s)
 
     claim = Claim(
-        id="CLAIM-3176C-CNC",
-        text="Taxpayer is eligible for Currently Not Collectible status based on economic hardship.",
-        subject="irs_cnc_hardship",
+        id="CLAIM-IRS-3176C-CNC-2026",
+        text="Isiah Howard is eligible for IRS Currently Not Collectible (CNC) status due to financial hardship, homelessness, Medicaid eligibility, and credit insufficiency, despite the existence of a federal tax lien under 26 U.S.C. § 6321.",
+        subject="IRS_CNC_hardship",
         jurisdiction=federal_us,
         assumptions=[
-            "Taxpayer has filed all required returns or is in compliance arrangement.",
-            "Collection Information Statement will substantiate income/expense figures.",
-            "Liquid asset equity is below allowable threshold.",
+            "Taxpayer income is below allowable living expenses per IRS standards.",
+            "Taxpayer has no significant assets available to satisfy the liability.",
         ],
         missing_evidence=[
             "Completed Form 433-A or 433-F.",
@@ -82,125 +80,107 @@ def main() -> None:
             "Proof of income and necessary living expenses.",
             "Verification of homelessness and Medicaid status.",
         ],
+        tags=["IRS", "CNC", "3176C", "hardship", "tax_lien", "Medicaid"],
     )
 
     evidence_items = [
         EvidenceItem(
-            id="EV-IRC-6321",
-            source=next(s for s in sources if s.id == "SRC-IRC-6321"),
-            claim_text="IRS has a general lien for assessed taxes, but collection action can be suspended when collection would create hardship.",
-            quotation="If any person liable to pay any tax neglects or refuses to pay the same after demand, the amount ... shall be a lien in favor of the United States upon all property and rights to property.",
-            context="General lien statute; hardship suspension is an administrative practice under IRM and IRC § 6343(a)(1)(D).",
+            id="EV-IRS-1",
+            source=sources[1],
+            claim_text="IRS may classify an account as currently not collectible when the taxpayer cannot pay reasonable living expenses.",
             confidence=Confidence.HIGH,
         ),
         EvidenceItem(
-            id="EV-IRM-5-16-1-2",
-            source=next(s for s in sources if s.id == "SRC-IRM-5-16-1-2"),
-            claim_text="Currently Not Collectible status is available when taxpayer has no ability to pay and collection would cause economic hardship.",
-            quotation="Economic hardship occurs when a taxpayer is unable to pay reasonable basic living expenses.",
-            context="IRS internal guidance; not controlling statute but primary administrative authority for CNC determinations.",
+            id="EV-IRS-2",
+            source=sources[0],
+            claim_text="Federal tax lien arises automatically by operation of law upon assessment and demand, regardless of CNC status.",
+            confidence=Confidence.HIGH,
+        ),
+        EvidenceItem(
+            id="EV-IRS-3",
+            source=sources[3],
+            claim_text="CNC status can protect a low-income taxpayer from levy while the account remains in uncollectible status.",
             confidence=Confidence.MODERATE,
         ),
         EvidenceItem(
-            id="EV-TBOR-2",
-            source=next(s for s in sources if s.id == "SRC-TBOR-2"),
-            claim_text="Taxpayer has the right to challenge IRS position and be heard.",
-            quotation="Taxpayers have the right to raise objections and provide additional documentation in response to formal IRS actions or proposed actions.",
-            context="Supports procedural fairness but does not establish CNC eligibility.",
+            id="EV-IRS-4",
+            source=sources[2],
+            claim_text="Taxpayer has a right to clear explanations and assistance when resolving collection issues.",
             confidence=Confidence.MODERATE,
-        ),
-        EvidenceItem(
-            id="EV-NCLC",
-            source=next(s for s in sources if s.id == "SRC-NCLC"),
-            claim_text="Low-income taxpayers facing hardship should request CNC status and provide documentation of income and expenses.",
-            quotation="Currently Not Collectible status can stop collection for taxpayers whose income is below allowable living expenses.",
-            context="Consumer-advocacy reference; not binding authority.",
-            confidence=Confidence.LIMITED,
         ),
     ]
-
     for ev in evidence_items:
         orch.add_evidence(ev, actor="AGENT-BLACKSTONE-2-0")
         claim.evidence.append(ev)
 
-    # A credible counter-position: CNC is discretionary and requires full financial disclosure.
-    counter_source = Source(
-        id="SRC-IRM-DISC",
-        citation="IRM 5.16.1.2, Discretionary Determination",
-        classification=SourceClassification.PRIMARY_LEGAL,
-        jurisdiction=federal_us,
-        publisher="Internal Revenue Manual",
+    counter = EvidenceItem(
+        id="EV-IRS-COUNTER-1",
+        source=sources[0],
+        claim_text="A federal tax lien may already be on file, and CNC does not automatically release it; the taxpayer remains subject to future collection if assets attach.",
+        confidence=Confidence.HIGH,
     )
-    orch.register_source(counter_source)
-    counter_evidence = EvidenceItem(
-        id="EV-COUNTER-CNC",
-        source=counter_source,
-        claim_text="CNC is not automatic; IRS may deny if future income collection potential exists or financial documentation is incomplete.",
-        confidence=Confidence.MODERATE,
-    )
-    orch.add_evidence(counter_evidence, actor="AGENT-BLACKSTONE-2-0")
-    claim.counter_evidence.append(counter_evidence)
+    orch.add_evidence(counter, actor="AGENT-BLACKSTONE-2-0")
+    claim.counter_evidence.append(counter)
 
     orch.add_claim(claim)
 
-    orch.add_risk(
+    risks = [
         Risk(
-            id="RISK-3176C-DOCS",
+            id="RISK-IRS-DOCS",
             category="documentation",
             description="Bank statements and Collection Information Statement not yet collected; eligibility cannot be confirmed without them.",
             likelihood=Confidence.HIGH,
             impact=Confidence.HIGH,
-            owner="AGENT-HERMES-2-0",
-        )
-    )
-    orch.add_risk(
+            controls=["upload bank statements", "complete Form 433-A/433-F"],
+            actor="AGENT-BLACKSTONE-2-0",
+        ),
         Risk(
-            id="RISK-3176C-LIEN",
+            id="RISK-IRS-LIEN",
             category="collection",
             description="Federal tax lien may already exist or be filed while CNC request is pending.",
             likelihood=Confidence.MODERATE,
             impact=Confidence.HIGH,
-            owner="AGENT-SINTRAPRIME-2-0",
-        )
-    )
-    orch.add_risk(
+            controls=["request account transcript", "file CNC immediately"],
+            actor="AGENT-BLACKSTONE-2-0",
+        ),
         Risk(
-            id="RISK-3176C-SSN",
+            id="RISK-IRS-PRIVACY",
             category="privacy",
             description="Taxpayer identifying information and financial records must be protected under least-privilege and audit-logging rules.",
             likelihood=Confidence.MODERATE,
             impact=Confidence.MODERATE,
-            owner="AGENT-HERMES-2-0",
-        )
-    )
+            controls=["encrypt at rest", "access log", "tenant isolation"],
+            actor="AGENT-BLACKSTONE-2-0",
+        ),
+    ]
+    for r in risks:
+        orch.add_risk(r)
 
-    # Tag the claim with risk-relevant terms so the RiskEngine links them.
-    claim.tags = ["documentation", "collection", "privacy", "irs_cnc_hardship"]
+    return orch, claim.id
 
+
+if __name__ == "__main__":
+    orch, claim_id = build_case()
     result = orch.evaluate(
-        "CLAIM-3176C-CNC",
-        question="Is the taxpayer eligible for IRS Currently Not Collectible status based on hardship?",
+        claim_id,
+        question="Should the taxpayer file an IRS Currently Not Collectible request immediately?",
         actor="AGENT-BLACKSTONE-2-0",
     )
-
-    print("=" * 72)
+    rec = result["recommendation"]
+    print("=" * 70)
     print("Blackstone Case Evaluation: IRS 3176C Currently Not Collectible")
-    print("=" * 72)
+    print("=" * 70)
     print(f"Claim status: {result['claim']['status']}")
     print(f"Confidence:   {result['claim']['confidence']}")
     print(f"Controlling authority: {result['authority']['controlling_authority']}")
     print(f"Conflicts:    {result['authority']['conflicts']}")
     print(f"Risks ({len(result['risks'])}):")
-    for risk in result["risks"]:
-        print(f"  - [{risk['category']}] {risk['description']} (score={risk['likelihood']} x {risk['impact']})")
-    print("-" * 72)
-    print(f"Recommendation: {result['recommendation']['recommendation']}")
-    print(f"Rationale:      {result['recommendation']['rationale']}")
-    print("-" * 72)
-    print("Agents:         ", ", ".join(result["recommendation"]["agents"]))
-    print("Provenance verified:", result["provenance"]["verified"])
-    print("=" * 72)
-
-
-if __name__ == "__main__":
-    main()
+    for r in result["risks"]:
+        print(f"  - [{r['category']}] {r['description']} (score={r['score']})")
+    print("-" * 70)
+    print(f"Recommendation: {rec['recommendation']}")
+    print(f"Rationale:      {rec['rationale']}")
+    print("-" * 70)
+    print(f"Agents:          {', '.join(rec['agents'])}")
+    print(f"Provenance verified: {result['provenance']['verified']}")
+    print("=" * 70)

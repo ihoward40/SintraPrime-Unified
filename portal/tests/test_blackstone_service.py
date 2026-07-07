@@ -10,6 +10,7 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from portal.database import Base
+from portal.models.blackstone import BlackstoneEvaluation, EvidenceLedger
 from portal.services.blackstone_service import BlackstoneEvaluationService, EvidenceLedgerService
 
 pytestmark = pytest.mark.asyncio
@@ -20,7 +21,11 @@ async def db_session():
     """Create a fresh async SQLite in-memory session for each test."""
     engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(
+            lambda sync_conn: Base.metadata.create_all(
+                sync_conn, tables=[BlackstoneEvaluation.__table__, EvidenceLedger.__table__]
+            )
+        )
     session_maker = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
     async with session_maker() as session:
         yield session

@@ -1,0 +1,47 @@
+{
+  "exam_administered": "2026-07-06",
+  "administered_by": "Viktor (Chief Infrastructure & Systems Architect)",
+  "governing_standard": "BCCM-02",
+  "deadline": "2026-08-05 per CDR-00003",
+  "agents": [
+    {
+      "agent_id": "AGT-001",
+      "agent_name": "Hermes",
+      "overall_pct": 100.0,
+      "passed": true,
+      "cert_tier": "Operational",
+      "module_scores": {
+        "A": 100.0,
+        "B": 100.0,
+        "C": 100.0,
+        "D": 100.0
+      }
+    },
+    {
+      "agent_id": "AGT-002",
+      "agent_name": "Blackstone",
+      "overall_pct": 100.0,
+      "passed": true,
+      "cert_tier": "Operational",
+      "module_scores": {
+        "A": 100.0,
+        "B": 100.0,
+        "C": 100.0,
+        "D": 100.0
+      }
+    },
+    {
+      "agent_id": "AGT-003",
+      "agent_name": "Viktor",
+      "overall_pct": 100.0,
+      "passed": true,
+      "cert_tier": "Operational",
+      "module_scores": {
+        "A": 100.0,
+        "B": 100.0,
+        "C": 100.0,
+        "D": 100.0
+      }
+    }
+  ]
+}

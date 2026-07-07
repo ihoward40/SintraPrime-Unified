@@ -24,13 +24,9 @@ Usage:
 
 from __future__ import annotations
 
-import hashlib
-import json
-import re
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, date
-from typing import Any, Iterator
-
+from datetime import UTC, date, datetime
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Re-verification intervals by source class — BGS-09 (in days)
@@ -153,18 +149,18 @@ class CELError(Exception):
     """Base class for CEL errors."""
 
 
-class EvidenceNotFound(CELError):
+class EvidenceNotFoundError(CELError):
     """Raised when an EV-ID is not found in the CEL."""
 
 
-class EvidenceDeletionProhibited(CELError):
+class EvidenceDeletionProhibitedError(CELError):
     """
     Raised on any attempt to delete an evidence item.
     Evidence items are NEVER deleted — BKGC Art. XIII.
     """
 
 
-class LegalHoldViolation(CELError):
+class LegalHoldViolationError(CELError):
     """Raised on any attempt to modify a legally held evidence item."""
 
 
@@ -176,8 +172,8 @@ class ConstitutionalEvidenceLedger:
     Thread-safety is NOT guaranteed — wrap in appropriate locking for concurrent use.
 
     Constitutional constraints enforced:
-      - No deletion (EvidenceDeletionProhibited raised on any delete attempt)
-      - Legal holds block modification (LegalHoldViolation)
+      - No deletion (EvidenceDeletionProhibitedError raised on any delete attempt)
+      - Legal holds block modification (LegalHoldViolationError)
       - All state changes append to chain of custody
       - EV-IDs are assigned sequentially and never reused
     """
@@ -259,10 +255,10 @@ class ConstitutionalEvidenceLedger:
         return ev_id
 
     def get(self, ev_id: str) -> EvidenceItemRecord:
-        """Retrieve an evidence item by EV-ID. Raises EvidenceNotFound if missing."""
+        """Retrieve an evidence item by EV-ID. Raises EvidenceNotFoundError if missing."""
         item = self._items.get(ev_id)
         if item is None:
-            raise EvidenceNotFound(f"No evidence item with ID {ev_id!r} in the CEL.")
+            raise EvidenceNotFoundError(f"No evidence item with ID {ev_id!r} in the CEL.")
         return item
 
     def exists(self, ev_id: str) -> bool:
@@ -395,9 +391,9 @@ class ConstitutionalEvidenceLedger:
     def delete(self, ev_id: str) -> None:  # type: ignore[override]
         """
         Deletion is PROHIBITED by BKGC Art. XIII.
-        This method always raises EvidenceDeletionProhibited.
+        This method always raises EvidenceDeletionProhibitedError.
         """
-        raise EvidenceDeletionProhibited(
+        raise EvidenceDeletionProhibitedError(
             f"Evidence item {ev_id!r} cannot be deleted. "
             "BKGC Art. XIII: Evidence items are never deleted, only deprecated. "
             "Call cel.deprecate() instead."
@@ -491,7 +487,7 @@ class ConstitutionalEvidenceLedger:
     def _require_mutable(self, ev_id: str, operation: str) -> EvidenceItemRecord:
         item = self.get(ev_id)
         if item.legal_hold:
-            raise LegalHoldViolation(
+            raise LegalHoldViolationError(
                 f"Cannot {operation} evidence item {ev_id!r}: it is under a legal hold. "
                 f"Basis: {item.legal_hold_basis}. A CDR is required to release the hold."
             )

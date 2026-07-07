@@ -1,0 +1,40 @@
+{
+  "agent_id": "AGT-003",
+  "agent_name": "Viktor",
+  "admission_date": "2026-07-06",
+  "admission_cdr": "CDR-00006",
+  "subject_domain": [
+    "Infrastructure",
+    "BRA Implementation",
+    "Scoring Systems",
+    "Optimization",
+    "Compliance Engineering"
+  ],
+  "current_tier": "Operational",
+  "certification_status": {
+    "status": "Active",
+    "as_of": "2026-07-06T00:00:00Z"
+  },
+  "tier_history": [
+    {
+      "tier": "Operational",
+      "cert_id": "CERT-AGT003-OPERATIONAL-20260706",
+      "examination_date": "2026-07-06",
+      "administered_by": "Viktor (Chief Infrastructure & Systems Architect, IKE Solutions LLC)",
+      "result": "Pass",
+      "score": 100.0,
+      "current": true,
+      "renewal_due": "2027-07-06",
+      "notes": "BCCM-02 examination administered 2026-07-06. Modules: A=100.0%, B=100.0%, C=100.0%, D=100.0%. Overall: 100.0%. All modules passed."
+    }
+  ],
+  "renewal_due": "2027-07-06",
+  "nonconformance_log": [],
+  "oath_administrations": [
+    {
+      "administered_at": "2026-07-06T00:00:00Z",
+      "administered_by": "Viktor (Chief Infrastructure & Systems Architect, IKE Solutions LLC)",
+      "is_readministration": false
+    }
+  ]
+}

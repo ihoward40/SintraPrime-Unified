@@ -14,10 +14,10 @@ Passing: ≥ 80 on each module, ≥ 85 overall.
 """
 
 from __future__ import annotations
+
 import json
-from datetime import date, datetime, timedelta
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
+from datetime import date, timedelta
 
 # ---------------------------------------------------------------------------
 # Exam question bank
@@ -408,7 +408,7 @@ def run_module(module_id: str, questions: list, agent_answers: dict, prefix: str
     total_earned = 0
     total_possible = 0
 
-    for i, (question, choices, correct, rationale, weight) in enumerate(questions):
+    for i, (question, _choices, correct, rationale, weight) in enumerate(questions):
         key = f"{prefix}{i}"
         agent_answer = agent_answers.get(key, "")
         correct_answer = correct
@@ -452,9 +452,7 @@ def run_exam(agent: AgentProfile) -> ExamResult:
     passed = all_modules_passed and overall_pct >= 85
 
     # Determine certification tier based on score
-    if passed and overall_pct >= 95:
-        cert_tier = "Operational"
-    elif passed and overall_pct >= 85:
+    if (passed and overall_pct >= 95) or (passed and overall_pct >= 85):
         cert_tier = "Operational"
     elif overall_pct >= 70:
         cert_tier = "Verification"
@@ -566,7 +564,7 @@ def main():
 
     # Write admission CDR batch
     cdr_batch = []
-    for agent, cdr_num in zip(AGENTS, ["CDR-00004", "CDR-00005", "CDR-00006"]):
+    for agent, cdr_num in zip(AGENTS, ["CDR-00004", "CDR-00005", "CDR-00006"], strict=False):
         cdr_batch.append({
             "cdr_number": cdr_num,
             "title": f"Admission of {agent.agent_name} to Blackstone Ecosystem",

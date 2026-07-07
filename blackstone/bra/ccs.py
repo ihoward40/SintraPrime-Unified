@@ -21,7 +21,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import ClassVar
 
-
 # ---------------------------------------------------------------------------
 # Dimension weights — BGS-01. Immutable without CDR.
 # ---------------------------------------------------------------------------
@@ -109,10 +108,10 @@ class CCSScorer:
 
     def score(self, dimensions: dict[str, float]) -> CCSResult:
         """
-        Compute the CCS from dimension scores (each 0–100).
+        Compute the CCS from dimension scores (each 0-100).
 
         Args:
-            dimensions: Dict mapping dimension name to score (0–100).
+            dimensions: Dict mapping dimension name to score (0-100).
                         All ten BGS-01 dimensions must be present.
 
         Returns:
@@ -238,9 +237,7 @@ class CCSScorer:
             return False
         if dims.get("citation_integrity", 0) < 100.0:
             return False
-        if any(v < 80.0 for v in dims.values()):
-            return False
-        return True
+        return not any(v < 80.0 for v in dims.values())
 
     @staticmethod
     def minimum_ccs_for_stage(stage_code: str) -> float | None:

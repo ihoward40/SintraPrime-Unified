@@ -1,7 +1,10 @@
 """
 Tests for BRA CDR Filer — BKGC Art. XXXIII, BKR-11 compliance.
 """
+from dataclasses import FrozenInstanceError
+
 import pytest
+
 from blackstone.bra.cdr import CDRFiler, CDRFilingError
 
 
@@ -40,11 +43,11 @@ class TestFoundingCDRs:
 class TestImmutability:
     def test_cdr_record_is_frozen(self, filer):
         cdr = filer.get("CDR-00001")
-        with pytest.raises(Exception):  # FrozenInstanceError
+        with pytest.raises(FrozenInstanceError):
             cdr.title = "Modified"  # type: ignore
 
     def test_filed_cdr_cannot_be_deleted(self, fresh_filer):
-        num = fresh_filer.file(
+        fresh_filer.file(
             title="Test CDR",
             filed_by="Governance Board",
             trigger="Test",

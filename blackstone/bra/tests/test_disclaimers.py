@@ -2,12 +2,12 @@
 Tests for BRA Standard Disclaimer Library — BKR-14 and BKR-15.
 """
 import pytest
+
 from blackstone.bra.disclaimers import (
-    get_disclaimer,
-    get_disclaimer_record,
-    select_disclaimers,
-    list_all,
     ALL_DISCLAIMERS,
+    get_disclaimer,
+    list_all,
+    select_disclaimers,
 )
 
 

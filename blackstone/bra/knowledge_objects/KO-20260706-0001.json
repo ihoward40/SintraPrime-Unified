@@ -1,0 +1,160 @@
+{
+  "ko": {
+    "ko_id": "KO-20260706-0001",
+    "title": "IRS CP23 Notice TY2022 \u2014 $74,280 Discrepancy Assessment",
+    "description": "Analysis of IRS CP23 notice asserting a $74,280 balance due for tax year 2022. Covers applicable statutory authority (26 U.S.C. \u00a7\u00a7 6213, 6501), procedural rights, taxpayer response options, and the evidentiary steps required to verify or dispute the IRS assessment. Counter-evidence systematically assessed per BKGC Art. XIX.",
+    "maturity_stage_code": "STG-2",
+    "claim_status_code": "DISP",
+    "confidence_level_code": "CONF-M",
+    "jurisdiction_code": "US-FED-TAX",
+    "jurisdiction_confirmed": true,
+    "ccs_score": 79.48,
+    "claims": [
+      {
+        "claim_id": "CL-001",
+        "text": "The IRS CP23 notice for TY2022 asserts a balance due of $74,280 based on a discrepancy between IRS records and the taxpayer's reported figures.",
+        "claim_status": "DISP",
+        "evidence_support": [
+          "EV-20260707-0001",
+          "EV-20260707-0004"
+        ]
+      },
+      {
+        "claim_id": "CL-002",
+        "text": "A CP23 is not a statutory Notice of Deficiency under 26 U.S.C. \u00a7 6212; the taxpayer retains the right to respond and dispute within 60 days before any Notice of Deficiency is issued.",
+        "claim_status": "CTRL",
+        "evidence_support": [
+          "EV-20260707-0002",
+          "EV-20260707-0004"
+        ]
+      },
+      {
+        "claim_id": "CL-003",
+        "text": "The IRS three-year assessment limitations period under \u00a7 6501(a) for TY2022 opened approximately April 2023. Absent a \u00a7 6501(e) substantial omission or \u00a7 6501(c) fraud exception, the window closes approximately April 2026.",
+        "claim_status": "PERS",
+        "evidence_support": [
+          "EV-20260707-0003"
+        ]
+      }
+    ],
+    "evidence_ids": [
+      "EV-20260707-0001",
+      "EV-20260707-0002",
+      "EV-20260707-0003",
+      "EV-20260707-0004",
+      "EV-20260707-0005",
+      "EV-20260707-0006"
+    ],
+    "counter_evidence_assessed": true,
+    "temporal_current": true,
+    "financial_amount_usd": 74280.0,
+    "human_review_required": true,
+    "legal_hold": false,
+    "integrity_status": "INTACT",
+    "decision_traceability": null,
+    "created_by": "AGT-003",
+    "created_at": "2026-07-07T08:05:18.675368+00:00",
+    "governing_framework": "BKGC v2.0 / BGS v1.0 / BRA v1.0"
+  },
+  "ccs_dimensions": {
+    "citation_integrity": 72.0,
+    "provenance_completeness": 74.0,
+    "jurisdiction_accuracy": 90.0,
+    "temporal_accuracy": 82.0,
+    "counter_evidence_review": 85.0,
+    "confidence_calibration": 70.0,
+    "transparency": 88.0,
+    "auditability": 86.0,
+    "reproducibility": 70.0,
+    "evidence_preservation": 100.0
+  },
+  "ccs_result": {
+    "total": 79.48,
+    "confidence_code": "CONF-H",
+    "maturity_floor": "STG-4",
+    "litigation_ready": false,
+    "any_dimension_zero": false,
+    "min_dimension": {
+      "name": "confidence_calibration",
+      "score": 70.0
+    },
+    "max_dimension": {
+      "name": "evidence_preservation",
+      "score": 100.0
+    },
+    "dimensions": {
+      "citation_integrity": 72.0,
+      "provenance_completeness": 74.0,
+      "jurisdiction_accuracy": 90.0,
+      "temporal_accuracy": 82.0,
+      "counter_evidence_review": 85.0,
+      "confidence_calibration": 70.0,
+      "transparency": 88.0,
+      "auditability": 86.0,
+      "reproducibility": 70.0,
+      "evidence_preservation": 100.0
+    },
+    "weighted_contributions": {
+      "citation_integrity": 14.4,
+      "provenance_completeness": 13.32,
+      "jurisdiction_accuracy": 12.6,
+      "temporal_accuracy": 9.84,
+      "counter_evidence_review": 10.2,
+      "confidence_calibration": 7.0,
+      "transparency": 5.28,
+      "auditability": 3.44,
+      "reproducibility": 1.4,
+      "evidence_preservation": 2.0
+    },
+    "warnings": []
+  },
+  "cel_items": [
+    {
+      "ev_id": "EV-20260707-0001",
+      "title": "IRS CP23 Notice \u2014 Tax Year 2022 Balance Assessment",
+      "source_class": "SC-02",
+      "status": "INTACT",
+      "citation": "IRS Notice CP23, Tax Year 2022, Balance Due $74,280.00"
+    },
+    {
+      "ev_id": "EV-20260707-0002",
+      "title": "26 U.S.C. \u00a7 6213 \u2014 Restrictions on Assessment",
+      "source_class": "SC-01",
+      "status": "INTACT",
+      "citation": "26 U.S.C. \u00a7 6213(a) \u2014 Restrictions applicable to deficiencies; petition to Tax Court"
+    },
+    {
+      "ev_id": "EV-20260707-0003",
+      "title": "26 U.S.C. \u00a7 6501 \u2014 Limitations on Assessment and Collection",
+      "source_class": "SC-01",
+      "status": "INTACT",
+      "citation": "26 U.S.C. \u00a7 6501(a) \u2014 3-year limitations period on assessment of tax"
+    },
+    {
+      "ev_id": "EV-20260707-0004",
+      "title": "IRS CP23 \u2014 Estimated Tax Discrepancy Notice Explained",
+      "source_class": "SC-02",
+      "status": "INTACT",
+      "citation": "IRS.gov \u2014 Understanding Your CP23 Notice"
+    },
+    {
+      "ev_id": "EV-20260707-0005",
+      "title": "IRS Taxpayer Bill of Rights \u2014 10 Fundamental Rights",
+      "source_class": "SC-02",
+      "status": "INTACT",
+      "citation": "IRS Publication 1 \u2014 Your Rights as a Taxpayer; 26 U.S.C. \u00a7 7803(a)(3)"
+    },
+    {
+      "ev_id": "EV-20260707-0006",
+      "title": "Counter-Evidence: Bases on which IRS CP23 Balance May Be Accurate",
+      "source_class": "SC-06",
+      "status": "INTACT",
+      "citation": "Internal analysis \u2014 counter-evidence assessment per BKGC Art. XIX"
+    }
+  ],
+  "validation": {
+    "passed": true,
+    "errors": [],
+    "warnings": []
+  }
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "cdr_number": "CDR-00004",
+    "title": "Admission of Hermes to Blackstone Ecosystem",
+    "filed_by": "Isiah Howard, Founder/CEO, IKE Solutions LLC \u2014 Governance Board Chair",
+    "filed_at": "2026-07-06T00:00:00Z",
+    "trigger": "BCCM-02 certification exam completed for Hermes",
+    "decision": "Hermes (AGT-001) is hereby admitted to the Blackstone Ecosystem with Operational tier certification, effective 2026-07-06. Hermes shall operate under BKGC v2.0, BGS v1.0, BCCM v1.0, and BKR v1.0. Certification renewal is due 2027-07-06. Subject domains: Evidence Sourcing, Research, Document Retrieval, Claim Discovery.",
+    "scope": "Hermes and all Knowledge Objects processed by or attributed to Hermes",
+    "status": "Approved"
+  },
+  {
+    "cdr_number": "CDR-00005",
+    "title": "Admission of Blackstone to Blackstone Ecosystem",
+    "filed_by": "Isiah Howard, Founder/CEO, IKE Solutions LLC \u2014 Governance Board Chair",
+    "filed_at": "2026-07-06T00:00:00Z",
+    "trigger": "BCCM-02 certification exam completed for Blackstone",
+    "decision": "Blackstone (AGT-002) is hereby admitted to the Blackstone Ecosystem with Operational tier certification, effective 2026-07-06. Blackstone shall operate under BKGC v2.0, BGS v1.0, BCCM v1.0, and BKR v1.0. Certification renewal is due 2027-07-06. Subject domains: Constitutional Governance, Legal Analysis, Knowledge Object Management, CDR Authority.",
+    "scope": "Blackstone and all Knowledge Objects processed by or attributed to Blackstone",
+    "status": "Approved"
+  },
+  {
+    "cdr_number": "CDR-00006",
+    "title": "Admission of Viktor to Blackstone Ecosystem",
+    "filed_by": "Isiah Howard, Founder/CEO, IKE Solutions LLC \u2014 Governance Board Chair",
+    "filed_at": "2026-07-06T00:00:00Z",
+    "trigger": "BCCM-02 certification exam completed for Viktor",
+    "decision": "Viktor (AGT-003) is hereby admitted to the Blackstone Ecosystem with Operational tier certification, effective 2026-07-06. Viktor shall operate under BKGC v2.0, BGS v1.0, BCCM v1.0, and BKR v1.0. Certification renewal is due 2027-07-06. Subject domains: Infrastructure, BRA Implementation, Scoring Systems, Optimization, Compliance Engineering.",
+    "scope": "Viktor and all Knowledge Objects processed by or attributed to Viktor",
+    "status": "Approved"
+  }
+]

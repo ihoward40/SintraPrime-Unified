@@ -3,7 +3,7 @@ BRA — Constitutional Evidence Ledger (CEL)
 ==========================================
 The central, immutable evidence repository for the Blackstone Ecosystem.
 
-BKGC v2.0 Art. XIII–XIV; BGS v1.0 BGS-05 through BGS-09.
+BKGC v2.0 Art. XIII-XIV; BGS v1.0 BGS-05 through BGS-09.
 
 Core rules encoded here:
   1. Evidence items are NEVER deleted — only deprecated (BGS-07).
@@ -301,7 +301,7 @@ class ConstitutionalEvidenceLedger:
             ev_id: The EV-ID to authenticate.
             authenticator: Agent ID or human performing authentication.
             content_hash: SHA-256 hash of the source content.
-            source_reliability_score: Override the default reliability score (0–20).
+            source_reliability_score: Override the default reliability score (0-20).
         """
         item = self._require_mutable(ev_id, "authenticate")
         now = _utcnow()
@@ -313,7 +313,7 @@ class ConstitutionalEvidenceLedger:
 
         if source_reliability_score is not None:
             if not (0 <= source_reliability_score <= 20):
-                raise ValueError("source_reliability_score must be 0–20 per BGS-06.")
+                raise ValueError("source_reliability_score must be 0-20 per BGS-06.")
             item.source_reliability_score = source_reliability_score
 
         # Schedule re-verification

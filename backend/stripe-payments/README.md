@@ -35,6 +35,34 @@ Complete payment processing and subscription management system using Stripe.
 
 ## Quick Start
 
+### Local Launch
+
+Run the Stripe payments module locally:
+
+```bash
+cd backend/stripe-payments
+python main.py
+```
+
+The API will be available at `http://localhost:8000`.
+
+- Health check: `GET /health`
+- API docs: `GET /api/docs`
+- Payments endpoints: `/api/*`
+- Webhooks endpoint: `POST /webhooks/stripe`
+
+### Test Credentials
+
+This module requires Stripe test credentials to run functional tests or create checkout sessions. Do **not** commit real keys. Copy `.env.example` to `.env` and add your test keys from the [Stripe Dashboard](https://dashboard.stripe.com/test/apikeys):
+
+```env
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+Tests that call the Stripe API will be skipped or fail until valid test credentials are provided.
+
 ### 1. Install Dependencies
 
 ```bash

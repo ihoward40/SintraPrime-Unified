@@ -8,8 +8,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 import stripe
-
-from .config import (
+from config import (
     API_BASE_URL,
     DEFAULT_PAYMENT_BEHAVIOR,
     IS_PRODUCTION,
@@ -19,7 +18,7 @@ from .config import (
     TIER_PRICE_IDS,
     TRIAL_DAYS,
 )
-from .models import Customer, Payment, PaymentStatus, Subscription, SubscriptionStatus
+from models import Customer, Payment, PaymentStatus, Subscription, SubscriptionStatus
 
 # Initialize Stripe
 stripe.api_key = STRIPE_SECRET_KEY

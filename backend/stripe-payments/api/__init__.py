@@ -1,5 +1,5 @@
 """API routes for Stripe payment system"""
 
-from .routes import router
+from api.routes import router
 
 __all__ = ["router"]

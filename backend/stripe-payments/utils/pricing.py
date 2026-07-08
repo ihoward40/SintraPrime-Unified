@@ -7,7 +7,7 @@ import logging
 from datetime import datetime
 from typing import Dict, Tuple
 
-from ..config import TIER_AMOUNTS
+from config import TIER_AMOUNTS
 
 logger = logging.getLogger(__name__)
 

@@ -57,7 +57,7 @@ The repository contains `docker-compose.yml` and `Dockerfile` files for a comple
 
 ### Known limitations / deferred work
 
-- Scheduler arming tests (`tests/test_scheduler_core.py::TestArming`) are currently re-scoped as experimental because they expose an APScheduler trigger adapter bug. The real bug is tracked in Issue #164.
+- Scheduler arming tests (`tests/test_scheduler_core.py::TestArming`) are now verified in the default CI lane following the APScheduler trigger adapter fix in PR #164.
 - Optional integrations (Plaid, predictive analytics, advanced LLM providers) are documented in `docs/ci/DEPENDENCY_MATRIX.md` but are not installed or tested in the default supported CI lane.
 
 **See [docs/CLAIMS.md](docs/CLAIMS.md) for detailed claims with test references.

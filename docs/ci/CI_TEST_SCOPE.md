@@ -27,15 +27,13 @@ The default lane skips any test marked with `@pytest.mark.experimental`.
 
 ## Currently re-scoped experimental tests
 
-- `tests/test_scheduler_core.py::TestArming::test_arm_threading_run_at`
-- `tests/test_scheduler_core.py::TestArming::test_arm_threading_interval`
-
-These tests are **not passing**. They are being excluded from the default supported CI lane because they expose a real scheduler arming bug. Excluding them is a **scope decision**, not a bug fix.
+(None — the previously re-scoped scheduler arming tests were fixed and re-enabled by PR #164.)
 
 ## Deferred work
 
-- **Scheduler APScheduler trigger adapter repair** — tracked separately. `scheduler/task_scheduler.py` passes a `datetime` object to APScheduler where APScheduler expects a trigger instance or trigger string. Once fixed, the two arming tests should be moved back into the supported lane by removing `@pytest.mark.experimental`.
-- **Dependency reconciliation** — handled in Issue #88. No new dependencies were added for this scope change.
+- **Dependency reconciliation between `pyproject.toml` and `requirements.txt`** — future packaging cleanup; not in scope for the default CI lane.
+- **Optional integration activation** — each integration needs its own verified issue, env vars, and tests before it can be promoted to the supported lane.
+- **Scheduler APScheduler trigger adapter repair** — Issue #164. Fixed: `scheduler/task_scheduler.py` now uses `DateTrigger(run_date=...)` for one-time datetime tasks instead of passing a raw `datetime` to APScheduler. The scheduler arming tests are verified in the default lane.
 
 ## Running the full suite
 

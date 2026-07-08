@@ -196,9 +196,9 @@ class TaskScheduler:
     def _arm_apscheduler(self, task: ScheduledTask) -> None:
         """Use APScheduler to arm the task."""
         try:
-            from apscheduler.triggers.cron import CronTrigger  # type: ignore
-            from apscheduler.triggers.date import DateTrigger  # type: ignore
-            from apscheduler.triggers.interval import IntervalTrigger  # type: ignore
+            from apscheduler.triggers.cron import CronTrigger  # type: ignore[import-not-found]
+            from apscheduler.triggers.date import DateTrigger  # type: ignore[import-not-found]
+            from apscheduler.triggers.interval import IntervalTrigger  # type: ignore[import-not-found]
 
             sched = task.schedule
             if sched is None:
@@ -216,6 +216,8 @@ class TaskScheduler:
             elif sched.interval_minutes:
                 trigger = IntervalTrigger(minutes=sched.interval_minutes)
             elif sched.run_at:
+                # APScheduler 3.x expects a Trigger instance, not a raw datetime.
+                # Passing run_date as the trigger keyword argument is the supported API.
                 trigger = DateTrigger(run_date=sched.run_at)
                 task.next_run = sched.run_at
             else:

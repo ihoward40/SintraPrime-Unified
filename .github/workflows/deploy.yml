@@ -9,7 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build Docker images
-        run: docker-compose build
+        run: docker compose build
       - name: Tag release
         if: startsWith(github.ref, 'refs/tags/')
         run: echo "Deploying ${{ github.ref_name }}"

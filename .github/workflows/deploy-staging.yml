@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - 'src/**'
-      - 'packages/*)ç
+      - 'packages/**'
       - '.github/workflows/deploy-staging.yml'
 
 jobs:
@@ -45,4 +45,4 @@ jobs:
       - name: Run smoke tests
         run: |
           curl -f https://staging.sintraprime.dev/health || exit 1
-          echo "âœ… Staging deployment successful"
+          echo "Staging deployment successful"

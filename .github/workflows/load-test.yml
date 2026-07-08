@@ -9,7 +9,7 @@ jobs:
   load-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -23,13 +23,13 @@ jobs:
       
       - name: Run load test
         run: |
-          python load_test_runner.py --users 100 -s spawn-rate 10 --duration 300
+          python load_test_runner.py --users 100 --spawn-rate 10 --duration 300
         env:
           BASE_URL: ${{ secrets.STAGING_URL || 'http://localhost:8000' }}
       
       - name: Upload results
-        if: always
-        uses: actions/upload-artifact@v3
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
         with:
           name: load-test-results
           path: load_test_results/

@@ -7,8 +7,8 @@ import logging
 from datetime import datetime, timedelta
 from typing import Optional
 
-from ..config import REFUND_PERCENTAGE, REFUND_WINDOW_DAYS, TIER_AMOUNTS, TRIAL_DAYS
-from ..models import (
+from config import REFUND_PERCENTAGE, REFUND_WINDOW_DAYS, TIER_AMOUNTS, TRIAL_DAYS
+from models import (
     Customer,
     RefundRequest,
     Subscription,
@@ -16,7 +16,8 @@ from ..models import (
     SubscriptionStatus,
     UpgradeRequest,
 )
-from ..stripe_client import stripe_client
+from stripe_client import stripe_client
+
 from .airtable_sync import AirtableSyncService
 
 logger = logging.getLogger(__name__)
@@ -211,7 +212,7 @@ class SubscriptionService:
                 amount = self._calculate_refund_amount(subscription_id, subscription.tier)
 
             # Process refund via Stripe
-            from ..stripe_client import stripe_client as client
+            from stripe_client import stripe_client as client
             refund_result = await client.refund_payment(
                 payment_intent_id=payment_intent_id,
                 amount=amount,

@@ -3,6 +3,13 @@ Main FastAPI application for Stripe payments module
 """
 
 import logging
+import sys
+from pathlib import Path
+
+# Ensure package imports work when running main.py directly
+if __package__ is None:
+    module_dir = Path(__file__).parent
+    sys.path.insert(0, str(module_dir))
 
 from api.routes import router as payment_router
 from fastapi import FastAPI

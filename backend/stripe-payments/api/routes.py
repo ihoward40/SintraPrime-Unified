@@ -5,10 +5,9 @@ FastAPI routes for Stripe payment processing
 import logging
 from typing import Optional
 
+from config import TIER_AMOUNTS
 from fastapi import APIRouter, Depends, HTTPException, status
-
-from ..config import TIER_AMOUNTS
-from ..models import (
+from models import (
     CancelResponse,
     CheckoutRequest,
     CheckoutResponse,
@@ -18,8 +17,8 @@ from ..models import (
     UpgradeRequest,
     UpgradeResponse,
 )
-from ..services.subscription_service import subscription_service
-from ..stripe_client import stripe_client
+from services.subscription_service import subscription_service
+from stripe_client import stripe_client
 
 logger = logging.getLogger(__name__)
 

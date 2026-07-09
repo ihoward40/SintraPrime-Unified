@@ -87,3 +87,4 @@ When the user requests a durable behavior change, record it here or in the relev
 | `agents/AGENTS.md` | Autonomous agent system | Nova, Sigma, Zero, Chat, Howard agents (Howard is approval-gated — evidence-intake only) |
 | `intake_templates/AGENTS.md` | Evidence intake template library | JSON template definitions and usage guide |
 | `tests/AGENTS.md` | Root-level tests | Scheduler tests, agent unit tests, security tests (not portal-level tests)
+| `.mesh/AGENTS.md` | Agent Mesh coordination | Ledger, registry, protocol messages, and transport status |

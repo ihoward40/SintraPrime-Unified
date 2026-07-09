@@ -1,5 +1,5 @@
 import { Building2, TrendingUp, TrendingDown } from 'lucide-react';
-import Badge from '../ui/Badge';
+import Badge, { type BadgeVariant } from '../ui/Badge';
 
 interface Account {
   id: string;
@@ -62,7 +62,7 @@ export default function AccountSummary() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
                 <p className="text-xs font-medium text-slate-200 truncate">{account.name}</p>
-                <Badge variant={typeColors[account.type] as any} size="sm" className="capitalize hidden sm:inline-flex">{account.type}</Badge>
+                <Badge variant={typeColors[account.type] as BadgeVariant} size="sm" className="capitalize hidden sm:inline-flex">{account.type}</Badge>
               </div>
               <p className="text-[10px] text-slate-500">{account.institution} ...{account.last4}</p>
             </div>

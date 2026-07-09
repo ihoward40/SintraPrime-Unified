@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Scale, Calendar, ChevronRight, AlertCircle } from 'lucide-react';
-import Badge from '../ui/Badge';
+import Badge, { type BadgeVariant } from '../ui/Badge';
 import type { Case } from '../../types/legal';
 import { clsx } from 'clsx';
 
@@ -44,7 +44,7 @@ export default function CaseCard({ case_, onClick, compact }: CaseCardProps) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] font-mono text-slate-500">{case_.caseNumber}</span>
-              <Badge variant={statusColors[case_.status] as any} size="sm" className="capitalize">{case_.status}</Badge>
+              <Badge variant={statusColors[case_.status] as BadgeVariant}size="sm" className="capitalize">{case_.status}</Badge>
               {urgencyDays !== null && urgencyDays <= 7 && (
                 <div className="flex items-center gap-1 text-amber-400 text-[10px]">
                   <AlertCircle className="w-3 h-3" />

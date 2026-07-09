@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { DollarSign, ExternalLink, Filter, Star } from 'lucide-react';
-import Badge from '../ui/Badge';
+import Badge, { type BadgeVariant } from '../ui/Badge';
 import Button from '../ui/Button';
 import { clsx } from 'clsx';
 
@@ -104,7 +104,7 @@ export default function FundingOpportunities({ opportunities }: { opportunities:
                 </div>
 
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  <Badge variant={typeColors[opp.type] as any} size="sm" className="capitalize">{opp.type}</Badge>
+                  <Badge variant={typeColors[opp.type] as BadgeVariant}size="sm" className="capitalize">{opp.type}</Badge>
                   <div className="flex items-center gap-1">
                     <div className="h-1 w-16 bg-slate-700 rounded-full overflow-hidden">
                       <div className="h-full bg-gold rounded-full" style={{ width: `${opp.match}%` }} />

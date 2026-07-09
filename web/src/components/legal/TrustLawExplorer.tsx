@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Search, BookOpen, ChevronRight } from 'lucide-react';
 import { clsx } from 'clsx';
-import Badge from '../ui/Badge';
+import Badge, { type BadgeVariant } from '../ui/Badge';
 
 const trustDoctrines = [
   { name: 'Express Trust', category: 'Formation', description: 'Trust created by explicit declaration of intent. Requires settlor, trustee, beneficiary, and corpus.' },
@@ -115,7 +115,7 @@ export default function TrustLawExplorer({ compact }: TrustLawExplorerProps) {
                 <span className="text-xs font-semibold text-slate-200">{doctrine.name}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Badge variant={categoryColors[doctrine.category] as any} size="sm">{doctrine.category}</Badge>
+                <Badge variant={categoryColors[doctrine.category] as BadgeVariant} size="sm">{doctrine.category}</Badge>
                 <ChevronRight className={clsx('w-3.5 h-3.5 text-slate-600 transition-transform', selectedDoctrine === doctrine.name && 'rotate-90')} />
               </div>
             </div>

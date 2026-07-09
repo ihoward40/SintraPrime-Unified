@@ -5,7 +5,7 @@ import { Lock, Mail, Scale } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { login, type LoginResponse } from '../api/auth';
-import { useAppStore } from '../store/appStore';
+import { useAppStore, type User } from '../store/appStore';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -40,7 +40,7 @@ export default function LoginPage() {
         id: response.user_id,
         name: email.split('@')[0],
         email,
-        role: response.role as any,
+        role: response.role as User['role'],
         preferences: {
           theme: 'dark',
           sidebarCollapsed: false,

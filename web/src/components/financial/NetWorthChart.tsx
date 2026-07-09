@@ -6,6 +6,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  type TooltipProps,
 } from 'recharts';
 
 const data = [
@@ -29,12 +30,12 @@ function formatDollars(v: number) {
   return `$${v}`;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-slate-900 border border-slate-700/50 rounded-xl p-3 shadow-xl">
         <p className="text-xs text-slate-400 mb-1">{label}</p>
-        <p className="text-base font-bold text-gold">{formatDollars(payload[0].value)}</p>
+        <p className="text-base font-bold text-gold">{formatDollars(payload[0].value!)}</p>
       </div>
     );
   }

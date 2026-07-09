@@ -1,4 +1,4 @@
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, type TooltipProps } from 'recharts';
 
 const expenses = [
   { name: 'Housing', value: 3200, color: '#3B82F6' },
@@ -14,12 +14,12 @@ const totalExpenses = expenses.reduce((s, e) => s + e.value, 0);
 const savings = totalIncome - totalExpenses;
 const savingsRate = ((savings / totalIncome) * 100).toFixed(1);
 
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-slate-900 border border-slate-700/50 rounded-xl p-3 shadow-xl">
         <p className="text-xs text-slate-400 mb-1">{payload[0].name}</p>
-        <p className="text-sm font-bold text-white">${payload[0].value.toLocaleString()}</p>
+        <p className="text-sm font-bold text-white">${payload[0].value!.toLocaleString()}</p>
       </div>
     );
   }

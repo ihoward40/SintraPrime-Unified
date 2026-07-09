@@ -11,10 +11,26 @@ import {
 } from 'lucide-react';
 import recoveryApi, { RecoveryCase, DashboardStats } from '../api/recovery';
 
+interface EvidenceItem {
+  evidence_id: string;
+  title: string;
+  evidence_type: string;
+}
+
+interface Receipt {
+  receipt_id: string;
+  action: string;
+}
+
+interface CasePacket {
+  evidence?: EvidenceItem[];
+  receipts?: Receipt[];
+}
+
 export default function LiveCaseManagement() {
   const [cases, setCases] = useState<RecoveryCase[]>([]);
   const [selectedCase, setSelectedCase] = useState<RecoveryCase | null>(null);
-  const [casePacket, setCasePacket] = useState<any>(null);
+  const [casePacket, setCasePacket] = useState<CasePacket | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -122,7 +138,7 @@ export default function LiveCaseManagement() {
               <h2 className="text-lg font-semibold text-white mb-4">Case Packet</h2>
               {casePacket.evidence && casePacket.evidence.length > 0 ? (
                 <div className="space-y-2">
-                  {casePacket.evidence.map((ev: any) => (
+                  {casePacket.evidence.map((ev) => (
                     <div key={ev.evidence_id} className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50">
                       <div>
                         <div className="text-sm text-white">{ev.title}</div>
@@ -140,7 +156,7 @@ export default function LiveCaseManagement() {
                 <div className="mt-4">
                   <h3 className="text-sm font-semibold text-slate-300 mb-2">Receipts</h3>
                   <div className="space-y-1">
-                    {casePacket.receipts.map((r: any) => (
+                    {casePacket.receipts.map((r) => (
                       <div key={r.receipt_id} className="text-xs text-slate-400 p-2 rounded bg-slate-800/30">
                         <span className="font-mono">{r.receipt_id}</span>: {r.action}
                       </div>

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "case_id": {
+      "type": "string"
+    },
+    "court": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "creditor": {
+      "type": "string"
+    },
+    "draft_notes": {
+      "type": "string"
+    },
+    "filing_ready": {
+      "type": "boolean"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "jurisdiction": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "missing_required_fields": {
+      "type": "array"
+    },
+    "prayer_for_relief": {
+      "type": "array"
+    },
+    "venue": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "violations": {
+      "type": "array"
+    }
+  },
+  "required": [
+    "case_id",
+    "court",
+    "creditor",
+    "draft_notes",
+    "filing_ready",
+    "generated_at",
+    "jurisdiction",
+    "missing_required_fields",
+    "prayer_for_relief",
+    "venue",
+    "violations"
+  ],
+  "type": "object"
+}

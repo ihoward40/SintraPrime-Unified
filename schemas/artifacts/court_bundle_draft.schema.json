@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "case_id": {
+      "type": "string"
+    },
+    "draft_recommendation": {
+      "type": "array"
+    },
+    "draft_status": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "object"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "missing_evidence": {
+      "type": "array"
+    },
+    "readiness": {
+      "type": "object"
+    },
+    "source": {
+      "type": "object"
+    },
+    "violation_candidates": {
+      "type": "array"
+    }
+  },
+  "required": [
+    "case_id",
+    "draft_recommendation",
+    "draft_status",
+    "evidence",
+    "generated_at",
+    "missing_evidence",
+    "readiness",
+    "source",
+    "violation_candidates"
+  ],
+  "type": "object"
+}

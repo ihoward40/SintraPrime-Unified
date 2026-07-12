@@ -59,3 +59,18 @@ logs/
 
 # IDE directories
 .nova/
+
+# Monetization remediation runtime state
+.case_runs/
+
+# Ledger logs are provenance records; do not exclude them via the global logs/ rule.
+!ledger/logs/
+!ledger/logs/*.json
+
+# Generated confidential/local artifacts. Keep synthetic fixtures tracked intentionally.
+clients/CASE-LOCAL-*
+artifacts/court/CASE-LOCAL-*
+artifacts/notion/run-*
+artifacts/notion/runs/
+clients/CASE-*/
+artifacts/court/CASE-*/

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cases": {
+      "type": "array"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "scenario": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "generated_at",
+    "scenario",
+    "cases"
+  ],
+  "type": "object"
+}

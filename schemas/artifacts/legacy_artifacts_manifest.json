@@ -1,0 +1,445 @@
+{
+  "generated_at": "2026-07-11T00:00:00+00:00",
+  "grandfathered_files": [
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/C-0001-UACC/account.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "3789962c47fcd9f9121b61b08af0f91dfd43a9a9971360329798c623e3c38efc"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/C-0001-UACC/case.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "8a9d1f14004a6e151743db1ae2b22f35f6a8aba653a01f9a5ba08e0dff0ad76e"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/C-0001-UACC/client.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "41810deb43634604294ef7739b5ce9065cd8692c3d35df9eb70dcedf446352ce"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/C-0001-UACC/evidence_manifest.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "5e487aa30e0e3a62ffd9991dd87b99e3aaaeb0c11ccd2c306ac9fd1170deafe2"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/C-0001-UACC/exhibit_manifest.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "f5b85ec1635f52039a6e01d38abf2e04d3c85ce3fe7870103397d61fb61d5321"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/C-0001-UACC/readiness_report.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "3672cb301be245cd65045ea0df5480bb16e76ca422a8e38c51e89ab6daf6b135"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/C-0001-UACC/violation_candidates.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "a7bba2efe0a4932264cc1bbed7d7563a587be53947d66878aba75626d09bb84b"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/C-MON-TEST-CASE-001/case.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "3744235f9a2170e733f6679421f270eb9e1636c21655ae46703483bcc668d404"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/C-MON-TEST-CASE-001/evidence_manifest.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "1bfba7797c377df19cacf0fbb8a2b1c37991d38f01dfa7b322f9ba40f796ed9e"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/C-MON-TEST-CASE-001/readiness_report.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "63f83760ba7d0d176b3afb8ead4e1b2e49979e7a10da88c999057913d6809447"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/C-MON-TEST-CASE-001/violation_candidates.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "43684ee0ff688d5354fb2f9fb5d9c1148d71cabd109391b91d6e29fa73c4eb09"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-FINAL-CHK/case.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "e2573b8e5b390b86aad9b5d97346ac3da955f87f1674cd6fea35169cbd4722e7"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-FINAL-CHK/evidence_manifest.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "0c5af70c49b6f719450746d91574f3cdb219820e727472cee15bb0f68c5a4cb7"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-FINAL-CHK/readiness_report.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "2c1969f9e94aeb8cb22a0ef5eeaad204d2e621f91a69c0d3c97d2f5681942f4d"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-FINAL-CHK/violation_candidates.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "31bd459ca04e5880108508c1731947fe2271a2b8edc2a327779eb502e4010c5e"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-FRESH-001/case.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "ed13427bb649b737f799b03b7329c9cc804e9f52df040bc022d48e0439e93265"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-FRESH-001/evidence_manifest.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "0c5af70c49b6f719450746d91574f3cdb219820e727472cee15bb0f68c5a4cb7"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-FRESH-001/readiness_report.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "2c1969f9e94aeb8cb22a0ef5eeaad204d2e621f91a69c0d3c97d2f5681942f4d"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-FRESH-001/violation_candidates.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "31bd459ca04e5880108508c1731947fe2271a2b8edc2a327779eb502e4010c5e"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-TEST-003/case.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "ec339f894b48517ecd39437a1acdc25abfb15e31127b0d2a6092c7f8842a8aab"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-TEST-003/evidence_manifest.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "0c5af70c49b6f719450746d91574f3cdb219820e727472cee15bb0f68c5a4cb7"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-TEST-003/readiness_report.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "2c1969f9e94aeb8cb22a0ef5eeaad204d2e621f91a69c0d3c97d2f5681942f4d"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-TEST-003/violation_candidates.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "31bd459ca04e5880108508c1731947fe2271a2b8edc2a327779eb502e4010c5e"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-TEST-004/case.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "43100dc16984f26ea0a7071e56d2aab7a20a08833db7c912afc95b92fed8a18a"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-TEST-004/evidence_manifest.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "0c5af70c49b6f719450746d91574f3cdb219820e727472cee15bb0f68c5a4cb7"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-TEST-004/readiness_report.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "2c1969f9e94aeb8cb22a0ef5eeaad204d2e621f91a69c0d3c97d2f5681942f4d"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-TEST-004/violation_candidates.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "31bd459ca04e5880108508c1731947fe2271a2b8edc2a327779eb502e4010c5e"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-TEST-005/case.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "d4ced7577a24f182da2c7bac932f0efde07acc321b7b3ced5eda045cf88177f5"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-TEST-005/evidence_manifest.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "0c5af70c49b6f719450746d91574f3cdb219820e727472cee15bb0f68c5a4cb7"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-TEST-005/readiness_report.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "2c1969f9e94aeb8cb22a0ef5eeaad204d2e621f91a69c0d3c97d2f5681942f4d"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-TEST-005/violation_candidates.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "31bd459ca04e5880108508c1731947fe2271a2b8edc2a327779eb502e4010c5e"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-TEST-006/case.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "facd9999c799d5f771f51d72ba87704dfaba052dcd7958050c0aa9c46906ed5a"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-TEST-006/evidence_manifest.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "0c5af70c49b6f719450746d91574f3cdb219820e727472cee15bb0f68c5a4cb7"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-TEST-006/readiness_report.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "2c1969f9e94aeb8cb22a0ef5eeaad204d2e621f91a69c0d3c97d2f5681942f4d"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-TEST-006/violation_candidates.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "31bd459ca04e5880108508c1731947fe2271a2b8edc2a327779eb502e4010c5e"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-TEST-008/case.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "315c701579ece2925659d03f8d8a8dfa6d4b23739a0f7fd7be4c9ab249d4c987"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-TEST-008/evidence_manifest.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "0c5af70c49b6f719450746d91574f3cdb219820e727472cee15bb0f68c5a4cb7"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-TEST-008/readiness_report.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "2c1969f9e94aeb8cb22a0ef5eeaad204d2e621f91a69c0d3c97d2f5681942f4d"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-TEST-008/violation_candidates.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "31bd459ca04e5880108508c1731947fe2271a2b8edc2a327779eb502e4010c5e"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-VERIFY-001/case.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "446c6127a825e433ec97a918c512e329ab38bee8f550277831f62c6f45283c93"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-VERIFY-001/evidence_manifest.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "0c5af70c49b6f719450746d91574f3cdb219820e727472cee15bb0f68c5a4cb7"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-VERIFY-001/readiness_report.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "2c1969f9e94aeb8cb22a0ef5eeaad204d2e621f91a69c0d3c97d2f5681942f4d"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "clients/CASE-VERIFY-001/violation_candidates.json",
+      "reason": "legacy synthetic fixture retained for regression coverage",
+      "sha256": "31bd459ca04e5880108508c1731947fe2271a2b8edc2a327779eb502e4010c5e"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/C-MON-TEST-CASE-001/complaint_draft.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "5601d9e6b665909bb2373341e6688ff9a167b71a6d5b9a53c283906dabcba18e"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/C-MON-TEST-CASE-001/court_bundle_draft.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "6eb8505e67b77109d8650364b00ead80709c30b44518bf1f630df191ba0eff52"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/C-MON-TEST-CASE-001/response_analysis.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "e594908ae3c72cbca050f58a12d880d71dbd3da01a246fe73c9cc098c4aa6204"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-FINAL-CHK/complaint_draft.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "eccdeb1d7a4d8f51a5abd8cb151b9affb7aeebd39a67946121f49beebeda10cf"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-FINAL-CHK/court_bundle_draft.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "4915a08b60d55c00dac347db7421ac4e113541e15c7e52e2c5caf55f80c50633"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-FINAL-CHK/response_analysis.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "0abcd39c5321ba784e6c255f2eca611826571592bb3e16206bd93d69de7fabe3"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-FRESH-001/complaint_draft.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "99ade95e02d04424d9d61fb31db7efb52d564ac1ae971aa6ddf4c35c85c10a4c"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-FRESH-001/court_bundle_draft.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "1730652415d40ff77fe0ca03dc00aabb1a424c9964503a3c11332ad9c3696388"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-FRESH-001/response_analysis.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "1228d84e03947a917a90fff8a5b0c55bcbf40ec55f1a56ab591617a159c4a424"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-TEST-003/complaint_draft.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "36042b34f5244af02a6c6186a1fb71a4dc39ce8ae498a3ea2354fb7d5b5393a4"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-TEST-003/court_bundle_draft.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "4a5f5777abc1fd9b027a752dd40fbaa8ba934a07bc2baeee80225f3a4ecac4aa"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-TEST-003/response_analysis.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "64dd8699f6a92ec61b73876c48d42b73dcd4850cc370d3ea826b29d75e229eda"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-TEST-004/complaint_draft.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "238b12c57962c69d61ea84ff5e4b45deb0f9a31fc41417a6f5cbb7ee736b9ddb"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-TEST-004/court_bundle_draft.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "a21ff470c2f2b0f6f53541498ea19312879473646f0a519c6f48471549b828ba"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-TEST-004/response_analysis.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "467b457eed25d45d0add326acfa660caf999aead8f4651351c63a759a09b8ccf"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-TEST-005/complaint_draft.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "0554007e83dbff6fd75297002a2f0a434efce2d682ac61e9b3632d0e486ca06d"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-TEST-005/court_bundle_draft.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "e84f63a33a94a76f4e9d691bed4302b5e0c93e3c190aeb66f85b65e40c11937e"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-TEST-005/response_analysis.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "dd556eda5c5315ece82eca6a33470388c2f6175bf808ff313fa6e3e61705320c"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-TEST-006/complaint_draft.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "56069c42c97161d676a18be32abf0e8fca269215bfe63f8b7900256a3c2c1f82"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-TEST-006/court_bundle_draft.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "be4ed52b6d7e8bc9443adba50b7892066effe48754289773130248c84bed58c2"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-TEST-006/response_analysis.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "0c4ce1ddc3aa6b1325dcd70f88bcceeeccff86407e4f618ef3a0dcf973bbe117"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-TEST-008/complaint_draft.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "e7ba06e37914e561595c34e85999e4c94d70f1f97c9bff0a29232980655d018f"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-TEST-008/court_bundle_draft.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "786946b6de374f784dd33c74ebed25346e90cd037af61298f4fd74b009b785c3"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-TEST-008/response_analysis.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "d8355142799e684c7ee51b1ba1523516bb5a177fb15188bfb80a96213cb4576c"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-UACC-2026-001/complaint_draft.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "d26f4c67dabac7c50a9b4338e3b6c208a998fb471841fa283670c4ca8780e2f5"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-UACC-2026-001/court_bundle_draft.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "4a2b1c6a453a68f5b8c5df83d2af1cfbf2dd814b0405d6c953879a7ef205f77b"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-UACC-2026-001/response_analysis.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "a138facade4e3a878db73dcca10f60d90392e2a028a6d6123485f6e6268d691d"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-VERIFY-001/complaint_draft.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "1df0ad732cea19355103aa70ea89cf7ede41c6cb533287f35c5e61e33915000a"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-VERIFY-001/court_bundle_draft.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "4c18cd5f7da4ecfb4ee29438c675f62be1144e41f176f150b9aa7fc819273155"
+    },
+    {
+      "grandfathered_at": "2026-07-11T00:00:00+00:00",
+      "path": "artifacts/court/CASE-VERIFY-001/response_analysis.json",
+      "reason": "legacy generated court artifact retained for regression coverage",
+      "sha256": "428221d83ff5c65b3a0d23364d50504fffba6150578ed46a31ec5cc2e714ac43"
+    }
+  ],
+  "policy": "Only exact paths listed here may omit schema_version. Newly generated or changed generated JSON must include schema_version, and grandfathered entries must match exact bytes.",
+  "schema_version": "legacy_artifacts_manifest.v1"
+}

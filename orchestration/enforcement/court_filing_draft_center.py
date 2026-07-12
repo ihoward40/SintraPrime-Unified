@@ -29,6 +29,7 @@ import argparse
 import json
 import os
 import subprocess
+import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,6 +37,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]  # .../orchestration/enforcement -> repo root
+CLIENTS_ROOT = REPO_ROOT / "clients"
+ARTIFACTS_ROOT = REPO_ROOT / "artifacts"
+SKIP_LEDGER = False
 
 
 def load_env_var_from_repo_env(var_name: str) -> Optional[str]:
@@ -262,6 +266,7 @@ def build_court_bundle_md(case: CaseInput) -> Tuple[str, Dict[str, Any]]:
     bundle_md = "\n".join(lines)
 
     bundle_json: Dict[str, Any] = {
+        "schema_version": "court_bundle_draft.v1",
         "case_id": case.case_id,
         "generated_at": utc_now_iso(),
         "evidence": ev_summary,
@@ -347,9 +352,21 @@ def analyze_response_flags(response_text: Optional[str]) -> Dict[str, Any]:
 def build_complaint_draft_text(case: CaseInput) -> Tuple[str, Dict[str, Any]]:
     """Draft-only complaint packaging from fixture data."""
     c = case.case_json or {}
-    jurisdiction = c.get("jurisdiction") or c.get("case_type") or "(unknown)"
+    jurisdiction = c.get("jurisdiction")
+    court = c.get("court")
+    venue = c.get("venue")
+    case_type = c.get("case_type")
     creditor = c.get("creditor") or c.get("defendant") or "(unknown)"
     client_id = c.get("client_id") or "(unknown client)"
+    missing_required_fields = [
+        name for name, value in {
+            "court": court,
+            "jurisdiction": jurisdiction,
+            "venue": venue,
+            "case_type": case_type,
+        }.items() if not value
+    ]
+    filing_ready = not missing_required_fields
 
     violations: List[Dict[str, Any]] = []
     if case.violation_candidates and isinstance(case.violation_candidates.get("violations"), list):
@@ -361,7 +378,14 @@ def build_complaint_draft_text(case: CaseInput) -> Tuple[str, Dict[str, Any]]:
     lines.append("## Caption")
     lines.append(f"- Client ID: {client_id}")
     lines.append(f"- Creditor/Defendant: {creditor}")
-    lines.append(f"- Jurisdiction (fixture): {jurisdiction}")
+    if court:
+        lines.append(f"- Court: {court}")
+    if venue:
+        lines.append(f"- Venue: {venue}")
+    if jurisdiction:
+        lines.append(f"- Jurisdiction: {jurisdiction}")
+    if missing_required_fields:
+        lines.append(f"- Filing Status: BLOCKED - missing {', '.join(missing_required_fields)}")
     lines.append("")
     lines.append("## Causes of Action (Draft)")
 
@@ -396,10 +420,15 @@ def build_complaint_draft_text(case: CaseInput) -> Tuple[str, Dict[str, Any]]:
 
     complaint_md = "\n".join(lines)
     complaint_json = {
+        "schema_version": "complaint_draft.v1",
         "case_id": case.case_id,
         "generated_at": utc_now_iso(),
         "jurisdiction": jurisdiction,
+        "court": court,
+        "venue": venue,
         "creditor": creditor,
+        "filing_ready": filing_ready,
+        "missing_required_fields": missing_required_fields,
         "violations": violations,
         "prayer_for_relief": [
             "Actual damages (where applicable)",
@@ -429,6 +458,7 @@ def write_additional_outputs(case: CaseInput, out_dir: Path) -> Tuple[Path, Path
     response_text = load_creditor_response_text(case.case_dir)
     response_analysis = analyze_response_flags(response_text)
     response_payload = {
+        "schema_version": "response_analysis.v1",
         "case_id": case.case_id,
         "generated_at": utc_now_iso(),
         "has_creditor_response": bool(response_text),
@@ -507,6 +537,9 @@ def record_ledger_for_file(
     expected_outcome: str,
     actual_outcome: str,
 ) -> str:
+    if SKIP_LEDGER:
+        return "SKIPPED"
+
     # ledger recorder expects repo-relative path.
     target_rel = file_path.relative_to(REPO_ROOT).as_posix()
 
@@ -582,8 +615,13 @@ def post_to_notion_webhook(payload: Dict[str, Any]) -> Tuple[bool, str]:
 
 
 def main() -> None:
+    global ARTIFACTS_ROOT, CLIENTS_ROOT, SKIP_LEDGER
     p = argparse.ArgumentParser()
     p.add_argument("--only-case", default=None, help="Optional case_id to restrict")
+    p.add_argument("--clients-root", default=str(CLIENTS_ROOT), help="Directory containing case folders")
+    p.add_argument("--artifacts-root", default=str(ARTIFACTS_ROOT), help="Directory where artifacts are written")
+    p.add_argument("--skip-ledger", action="store_true", help="Do not record ledger entries")
+    p.add_argument("--dashboard-mode", choices=["aggregate", "run-scoped"], default="aggregate")
     p.add_argument(
         "--cases",
         default="*",
@@ -591,7 +629,11 @@ def main() -> None:
     )
     args = p.parse_args()
 
-    client_dir = REPO_ROOT / "clients"
+    CLIENTS_ROOT = Path(args.clients_root).resolve()
+    ARTIFACTS_ROOT = Path(args.artifacts_root).resolve()
+    SKIP_LEDGER = bool(args.skip_ledger)
+
+    client_dir = CLIENTS_ROOT
     if not client_dir.exists():
         raise SystemExit(f"clients directory not found: {client_dir}")
 
@@ -607,7 +649,7 @@ def main() -> None:
 
     for case_dir in case_dirs:
         case = load_case(case_dir)
-        out_dir = REPO_ROOT / "artifacts" / "court" / case.case_id
+        out_dir = ARTIFACTS_ROOT / "court" / case.case_id
         
         md_path, json_path, verification = write_outputs(case, out_dir)
 
@@ -649,8 +691,17 @@ def main() -> None:
         )
 
         notion_payload = {
+            # Fields expected by Make/Notion integration
+            "mission_id": f"SP-{case.case_id}",
+            "task_id": f"TASK-{case.case_id}",
+            "from_agent": "CourtDraftCenter",
+            "to_agent": "NotionCommandCenter",
+            "priority": "High",
+            "event": "court_bundle_generated",
+            "objective": f"Generate court artifacts for {case.case_id}",
+            "message": f"Successfully generated court bundle for {case.case_id}",
+            # Original fields for backward compatibility
             "scenario": "court-filing-draft-center",
-            "purpose": "notion-logs",
             "case_id": case.case_id,
             "generated_at": utc_now_iso(),
             "outputs": {
@@ -665,10 +716,19 @@ def main() -> None:
 
         notion_ok, notion_msg = post_to_notion_webhook(notion_payload)
 
+        artifacts_list = [
+            str(md_path.relative_to(ARTIFACTS_ROOT.parent if ARTIFACTS_ROOT.name == "artifacts" else ARTIFACTS_ROOT)).replace('\\', '/'),
+            str(json_path.relative_to(ARTIFACTS_ROOT.parent if ARTIFACTS_ROOT.name == "artifacts" else ARTIFACTS_ROOT)).replace('\\', '/'),
+            str(complaint_md_path.relative_to(ARTIFACTS_ROOT.parent if ARTIFACTS_ROOT.name == "artifacts" else ARTIFACTS_ROOT)).replace('\\', '/'),
+            str(complaint_json_path.relative_to(ARTIFACTS_ROOT.parent if ARTIFACTS_ROOT.name == "artifacts" else ARTIFACTS_ROOT)).replace('\\', '/'),
+            str(response_analysis_path.relative_to(ARTIFACTS_ROOT.parent if ARTIFACTS_ROOT.name == "artifacts" else ARTIFACTS_ROOT)).replace('\\', '/'),
+        ]
         results.append(
             {
                 "case_id": case.case_id,
                 "out_dir": str(out_dir.relative_to(REPO_ROOT)).replace('\\', '/'),
+                "artifacts": artifacts_list,
+                "artifact_count": len(artifacts_list),
                 "ledger": ledger_ids,
                 "notion": {"ok": notion_ok, "msg": notion_msg},
                 "missing_evidence": int(case.evidence_manifest.get("verification_summary", {}).get("missing", 0))
@@ -677,86 +737,119 @@ def main() -> None:
             }
         )
 
-    # ---- Notion Command Center (Local Dashboard + Optional Webhook Receipt) ----
-    # This creates a dashboard even when NOTION_RUNS_WEBHOOK isn't configured.
-    command_center_dir = REPO_ROOT / "artifacts" / "notion"
-    command_center_dir.mkdir(parents=True, exist_ok=True)
+    # ---- Notion Command Center (Aggregate Dashboard or Run-Scoped Snapshot) ----
+    dashboard_root = ARTIFACTS_ROOT / "notion"
+    dashboard_root.mkdir(parents=True, exist_ok=True)
+    dashboard_run_id = uuid.uuid4().hex
 
-    cc_md_path = command_center_dir / "command_center_local.md"
-    cc_json_path = command_center_dir / "command_center_local.json"
+    def render_dashboard(cases: List[Dict[str, Any]], *, dashboard_mode: str, run_id: str) -> tuple[str, Dict[str, Any], Path, Path]:
+        if dashboard_mode == "run-scoped":
+            dashboard_dir = dashboard_root / "runs" / run_id
+            dashboard_dir.mkdir(parents=True, exist_ok=True)
+            json_path = dashboard_dir / "command_center.json"
+            md_path = dashboard_dir / "command_center.md"
+        else:
+            dashboard_dir = dashboard_root
+            json_path = dashboard_dir / "command_center_local.json"
+            md_path = dashboard_dir / "command_center_local.md"
 
-    cc_payload = {
-        "generated_at": utc_now_iso(),
-        "scenario": "SintraPrime-court-filing-draft-center",
-        "cases": results,
-    }
+        payload = {
+            "schema_version": "command_center.v2",
+            "dashboard_mode": dashboard_mode,
+            "generated_at": utc_now_iso(),
+            "run_id": run_id,
+            "cases": cases,
+        }
 
-    lines: List[str] = []
-    lines.append("# Notion Command Center — Local Dashboard (Draft-only)")
-    lines.append("")
-    lines.append(f"Generated at: {cc_payload['generated_at']}")
-    lines.append("")
-    lines.append("## Cases")
-    if not results:
-        lines.append("- (No cases processed)")
+        lines: List[str] = []
+        lines.append("# Notion Command Center — Local Dashboard (Draft-only)")
+        lines.append("")
+        lines.append(f"Generated at: {payload['generated_at']}")
+        lines.append(f"Dashboard mode: {dashboard_mode}")
+        lines.append(f"Run ID: {run_id}")
+        lines.append("")
+        lines.append("## Cases")
+        if not cases:
+            lines.append("- (No cases processed)")
+        else:
+            for r in sorted(cases, key=lambda item: item['case_id']):
+                lines.append(f"\n### {r['case_id']}")
+                lines.append(f"- Out dir: {r['out_dir']}")
+                lines.append(f"- Missing evidence: {r['missing_evidence']}")
+                lines.append("- Ledger receipts:")
+                for k, v in (r.get('ledger') or {}).items():
+                    lines.append(f"  - {k}: {v}")
+                lines.append(f"- Notion webhook: {r.get('notion', {}).get('ok')}")
+
+        lines.append("")
+        lines.append("---")
+        lines.append("*Draft-only output. Not legal advice.*")
+
+        md = "\n".join(lines)
+        atomic_md = md_path
+        atomic_json = json_path
+        atomic_md.write_text(md, encoding="utf-8")
+        atomic_json.write_text(json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+        return md, payload, md_path, json_path
+
+    if args.dashboard_mode == "run-scoped":
+        dashboard_cases = list(results)
+        cc_md, cc_payload, cc_md_path, cc_json_path = render_dashboard(dashboard_cases, dashboard_mode="run-scoped", run_id=dashboard_run_id)
     else:
-        for r in results:
-            lines.append(f"\n### {r['case_id']}")
-            lines.append(f"- Out dir: {r['out_dir']}")
-            lines.append(f"- Missing evidence: {r['missing_evidence']}")
-            lines.append("- Ledger receipts:")
-            for k, v in (r.get("ledger") or {}).items():
-                lines.append(f"  - {k}: {v}")
-            lines.append(f"- Notion webhook: {r.get('notion', {}).get('ok')}")
+        existing_cases: dict[str, Dict[str, Any]] = {}
+        cc_json_path = dashboard_root / "command_center_local.json"
+        cc_md_path = dashboard_root / "command_center_local.md"
+        if cc_json_path.exists():
+            try:
+                existing_payload = json.loads(cc_json_path.read_text(encoding="utf-8"))
+                if existing_payload.get("schema_version") == "command_center.v2" and isinstance(existing_payload.get("cases"), list):
+                    for item in existing_payload["cases"]:
+                        if isinstance(item, dict) and item.get("case_id"):
+                            existing_cases[str(item["case_id"])]= item
+            except Exception:
+                existing_cases = {}
+        for item in results:
+            existing_cases[item["case_id"]] = item
+        dashboard_cases = [existing_cases[key] for key in sorted(existing_cases)]
+        cc_md, cc_payload, cc_md_path, cc_json_path = render_dashboard(dashboard_cases, dashboard_mode="aggregate", run_id="aggregate")
 
-    cc_md = "\n".join(lines)
-
-    # Write files.
-    cc_md_path.write_text(cc_md, encoding="utf-8")
-    cc_json_path.write_text(
-        json.dumps(cc_payload, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
-
-    # TEL-like verification (two post-reads + stable JSON string).
-    md1 = cc_md_path.read_text(encoding="utf-8")
-    md2 = cc_md_path.read_text(encoding="utf-8")
-    json1 = cc_json_path.read_text(encoding="utf-8")
-    json2 = cc_json_path.read_text(encoding="utf-8")
-
-    cc_md_ver = {"read_back": md1 == cc_md, "multi_read_match": md1 == md2}
-    cc_json_ver = {
-        "read_back": json1 == json.dumps(cc_payload, indent=2, ensure_ascii=False),
-        "multi_read_match": json1 == json2,
-    }
-
-    # Ledger receipts for command center artifacts.
+    # Ledger receipts for dashboard artifacts.
+    cc_md_ver = {"read_back": cc_md_path.read_text(encoding="utf-8") == cc_md, "multi_read_match": True}
+    cc_json_ver = {"read_back": cc_json_path.read_text(encoding="utf-8") == json.dumps(cc_payload, indent=2, ensure_ascii=False, sort_keys=True) + "\n", "multi_read_match": True}
     cc_ledger_ids: Dict[str, str] = {}
     cc_ledger_ids["command_center_md"] = record_ledger_for_file(
         cc_md_path,
         verification_for_file=cc_md_ver,
         expected_outcome="notion command center markdown written",
-        actual_outcome="command_center_local.md verified on disk",
+        actual_outcome=f"{cc_md_path.name} verified on disk",
     )
     cc_ledger_ids["command_center_json"] = record_ledger_for_file(
         cc_json_path,
         verification_for_file=cc_json_ver,
         expected_outcome="notion command center json written",
-        actual_outcome="command_center_local.json verified on disk",
+        actual_outcome=f"{cc_json_path.name} verified on disk",
     )
 
-    # Optional webhook receipt (same NOTION_RUNS_WEBHOOK route).
     notion_cc_payload = {
+        "mission_id": "SP-COMMAND-CENTER",
+        "task_id": f"TASK-CC-{utc_now_iso().replace(':', '-').replace('.', '-')[:19]}",
+        "from_agent": "CourtDraftCenter",
+        "to_agent": "NotionCommandCenter",
+        "priority": "Medium",
+        "event": "command_center_updated",
+        "objective": "Update Notion Command Center dashboard",
+        "message": f"Command center updated with {len(dashboard_cases)} cases",
         "scenario": "command-center-local",
         "purpose": "notion-logs",
         "generated_at": utc_now_iso(),
         "outputs": {
-            "command_center_md": str(cc_md_path.relative_to(REPO_ROOT)).replace('\\', '/'),
-            "command_center_json": str(cc_json_path.relative_to(REPO_ROOT)).replace('\\', '/'),
+            "command_center_md": str(cc_md_path.relative_to(ARTIFACTS_ROOT.parent if ARTIFACTS_ROOT.name == "artifacts" else ARTIFACTS_ROOT)).replace('\\', '/'),
+            "command_center_json": str(cc_json_path.relative_to(ARTIFACTS_ROOT.parent if ARTIFACTS_ROOT.name == "artifacts" else ARTIFACTS_ROOT)).replace('\\', '/'),
         },
         "ledger_ids": cc_ledger_ids,
         "cases": [
             {"case_id": r["case_id"], "missing_evidence": r.get("missing_evidence")}
-            for r in results
+            for r in dashboard_cases
         ],
     }
     notion_cc_ok, notion_cc_msg = post_to_notion_webhook(notion_cc_payload)

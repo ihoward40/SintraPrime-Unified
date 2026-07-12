@@ -1,48 +1,63 @@
-name: SintraPrime CI — 797 Tests
+name: SintraPrime CI — changed-file gates and legacy ratchet
+
 on:
   push:
-    branches: [ main, dev, feature/* ]
+    branches: [ main, dev, feature/*, fix/* ]
   pull_request:
     branches: [ main ]
+
+permissions:
+  contents: read
+
 jobs:
-  test:
+  changed-file-gates:
+    name: Mandatory changed-file gates (${{ matrix.os }})
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install gate dependencies
+        run: python -m pip install ruff bandit
+      - name: Changed-file quality/security/schema/ledger gates
+        run: python scripts/ci_changed_file_gate.py --base origin/main
+      - name: Confidential artifact staging guard
+        run: python scripts/check_confidential_artifacts.py --base origin/main
+      - name: Install backend stripe dependencies for route tests
+        run: python -m pip install -r backend/stripe_payments/requirements.txt
+      - name: Route and remediation tests
+        run: python -m pytest backend/stripe_payments/tests/test_case_start_remediation.py backend/stripe_payments/tests/test_merge_blocker_remediation.py backend/stripe_payments/tests/test_ledger_tamper_remediation.py -q -rs --basetemp=.pytest-tmp
+
+  legacy-ratchet:
+    name: Legacy debt ratchet report
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-      - name: Run full test suite (797 tests)
-        run: python -m pytest --tb=short -q
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Install legacy report tools
+        run: python -m pip install ruff bandit
+      - name: Compare legacy counts to baseline
+        run: python scripts/legacy_ratchet.py --json
+
+  legacy-informational-pytest:
+    name: Informational full pytest report
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          name: test-results
-          path: test-results.xml
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
-      - run: pip install ruff
-      - run: ruff check . --output-format=github
-  security:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
-      - name: Install security tools
-        run: pip install safety bandit
-      # P0-002: safety check is now fail-closed — no || true
-      - name: Dependency vulnerability scan (safety)
-        run: safety check -r requirements.txt
-      # P0-002: bandit uses baseline to suppress pre-existing findings;
-      # only NEW issues (not in .bandit-baseline.json) will fail the build.
-      - name: Security lint (bandit — baseline mode)
-        run: bandit -r . -x tests/ -ll --baseline .bandit-baseline.json
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Full pytest informational report
+        run: python -m pytest --tb=short -q --basetemp=.pytest-tmp

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "blocked_reasons": {
+      "type": "array"
+    },
+    "overall_readiness_score": {
+      "type": "number"
+    },
+    "status": {
+      "enum": [
+        "INITIATED",
+        "BLOCKED",
+        "READY"
+      ]
+    }
+  },
+  "required": [
+    "status",
+    "overall_readiness_score"
+  ],
+  "type": "object"
+}

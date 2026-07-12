@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "case_id": {
+      "type": "string"
+    },
+    "case_summary": {
+      "type": "string"
+    },
+    "case_type": {
+      "type": "string"
+    },
+    "client_id": {
+      "type": "string"
+    },
+    "court": {
+      "type": "string"
+    },
+    "creditor": {
+      "type": "string"
+    },
+    "jurisdiction": {
+      "type": "string"
+    },
+    "matter_type": {
+      "type": "string"
+    },
+    "opened_date": {
+      "type": "string"
+    },
+    "venue": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "case_id",
+    "case_type",
+    "case_summary",
+    "court",
+    "creditor",
+    "jurisdiction",
+    "matter_type",
+    "opened_date",
+    "venue"
+  ],
+  "type": "object"
+}

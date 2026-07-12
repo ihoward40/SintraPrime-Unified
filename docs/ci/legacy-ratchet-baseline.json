@@ -1,0 +1,7 @@
+{
+  "counts": {
+    "bandit": 45,
+    "ruff": 900
+  },
+  "schema_version": "legacy-ratchet-baseline.v1"
+}

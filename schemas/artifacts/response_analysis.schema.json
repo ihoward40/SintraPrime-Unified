@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "analysis": {
+      "type": "object"
+    },
+    "case_id": {
+      "type": "string"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "has_creditor_response": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "analysis",
+    "case_id",
+    "generated_at",
+    "has_creditor_response"
+  ],
+  "type": "object"
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {},
+  "required": [
+    "entry_id",
+    "schema_version",
+    "operation",
+    "snapshot_path",
+    "snapshot_sha256",
+    "previous_entry_sha256",
+    "generator_version",
+    "created_at",
+    "status"
+  ],
+  "type": "object"
+}

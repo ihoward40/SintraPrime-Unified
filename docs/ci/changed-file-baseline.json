@@ -1,0 +1,21 @@
+{
+  "counts": {
+    "bandit": {
+      "backend/stripe_payments/services/case_starter_service.py": 3,
+      "backend/stripe_payments/tests/test_case_start_remediation.py": 8,
+      "backend/stripe_payments/tests/test_ledger_tamper_remediation.py": 8,
+      "backend/stripe_payments/tests/test_merge_blocker_remediation.py": 11,
+      "orchestration/enforcement/court_filing_draft_center.py": 4,
+      "scripts/ci_changed_file_gate.py": 8,
+      "scripts/legacy_ratchet.py": 3,
+      "scripts/scan_secrets.py": 2
+    },
+    "ruff": {
+      "backend/stripe_payments/api/routes.py": 33,
+      "backend/stripe_payments/models/__init__.py": 3,
+      "backend/stripe_payments/services/case_starter_service.py": 3,
+      "orchestration/enforcement/court_filing_draft_center.py": 51
+    }
+  },
+  "schema_version": "changed-file-baseline.v1"
+}

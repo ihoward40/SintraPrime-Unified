@@ -1,0 +1,19 @@
+{
+  "actor": "Hermes Agent",
+  "amendment": "GATE3-AMENDMENT-001",
+  "amendment_digest": "b58fbfdaa83cc1d8616fb269ae5ac362a2b503b4d39a5cb599436a7ef80f43b0",
+  "authoritative_manifest": "gate-3-evidence-manifest.json",
+  "authoritative_manifest_sha256": "fc841662e1abace80fc9ae5eff720a07584a46f3083af35877da30003322609f",
+  "frozen_at": "2026-07-15T16:15:00+00:00",
+  "gate": "3",
+  "governance_status": "PASS AFTER AMENDMENT",
+  "notes": [
+    "Ordinary invocation of scripts/generate_gate3_manifest.py will now fail.",
+    "Any future change requires an explicit --amendment GATE3-AMENDMENT-NNN --reason '...' invocation."
+  ],
+  "regeneration_prohibited": true,
+  "regeneration_requires_amendment": true,
+  "status": "PASS",
+  "superseded_manifest_available": false,
+  "supersedes_manifest_sha256": "3e0e65c9bf4983690e76ab248c88bc9e96ab23e1e3badcdd329c89334cb8471f"
+}

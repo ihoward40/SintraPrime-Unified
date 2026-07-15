@@ -1,0 +1,9 @@
+{
+  "amendment": "GATE3-AMENDMENT-001",
+  "previous_manifest_hash": "3e0e65c9bf4983690e76ab248c88bc9e96ab23e1e3badcdd329c89334cb8471f",
+  "new_manifest_hash": "fc841662e1abace80fc9ae5eff720a07584a46f3083af35877da30003322609f",
+  "previous_manifest_available": false,
+  "reason": "Include migration backfill test output, correct artifact-count reporting, and refresh captured test evidence",
+  "amended_at": "2026-07-15T16:15:00+00:00",
+  "actor": "Hermes Agent"
+}

@@ -116,6 +116,9 @@ class EventService:
         in any run.
 
         Set skip_lock=True only in test code that runs single-threaded.
+
+        NOTE: This method always creates a new event. For idempotent creation
+        with duplicate suppression, use create_idempotent() instead.
         """
         from portal.services.chain_lock import get_or_create_run_head, advance_run_head
 
@@ -434,11 +437,44 @@ class MissionService:
         return result.scalar_one_or_none()
 
     @staticmethod
-    async def update_status(db: AsyncSession, mission_id: UUID, status: MissionStatus | str) -> Mission | None:
+    async def update_status(
+        db: AsyncSession,
+        mission_id: UUID,
+        status: MissionStatus | str,
+        principal_context: object | None = None,
+        approval_provider: object | None = None,
+    ) -> Mission | None:
         mission = await MissionService.get_by_id(db, mission_id)
         if mission is None:
             return None
         status_str = status.value if isinstance(status, MissionStatus) else status
+
+        # ── Execution guard: enforce before any side effect ──────────────
+        # Map status transitions to guard actions. Only consequential
+        # state transitions are guarded; benign transitions (e.g. to
+        # PLANNING, TESTING, COMPLETED) pass through without a guard call.
+        from portal.services.execution_guard import ExecutionAction, ExecutionGuard
+
+        _TRANSITION_GUARD_MAP: dict[str, ExecutionAction] = {
+            "EXECUTING": ExecutionAction.MISSION_START,   # start or resume
+            "PAUSED": ExecutionAction.MISSION_FREEZE,
+            "FROZEN": ExecutionAction.MISSION_FREEZE,
+            "CANCELED": ExecutionAction.MISSION_CANCEL,
+        }
+
+        guard_action = _TRANSITION_GUARD_MAP.get(status_str)
+        if guard_action is not None:
+            # Distinguish MISSION_START (from QUEUED/PLANNING) vs MISSION_RESUME (from PAUSED)
+            if guard_action is ExecutionAction.MISSION_START and mission.status == "PAUSED":
+                guard_action = ExecutionAction.MISSION_RESUME
+            await ExecutionGuard.require_allowed(
+                session=db,
+                action=guard_action,
+                mission_id=str(mission_id),
+                principal_context=principal_context,
+                approval_provider=approval_provider,
+            )
+
         mission.status = status_str
         await db.flush()
         return mission
@@ -506,7 +542,19 @@ class AgentService:
         agent_type: str,
         capabilities: list[str] | None = None,
         metadata: dict[str, Any] | None = None,
+        principal_context: object | None = None,
+        approval_provider: object | None = None,
     ) -> Agent:
+        # ── Execution guard: agent registration is a spawn ───────────────
+        from portal.services.execution_guard import ExecutionAction, ExecutionGuard
+        await ExecutionGuard.require_allowed(
+            session=db,
+            action=ExecutionAction.SUBAGENT_SPAWN,
+            agent_id=agent_id,
+            principal_context=principal_context,
+            approval_provider=approval_provider,
+        )
+
         agent = Agent(
             agent_id=agent_id,
             name=name,
@@ -535,10 +583,26 @@ class AgentService:
         return agent
 
     @staticmethod
-    async def deregister(db: AsyncSession, agent_id: str) -> bool:
+    async def deregister(
+        db: AsyncSession,
+        agent_id: str,
+        principal_context: object | None = None,
+        approval_provider: object | None = None,
+    ) -> bool:
         agent = await AgentService.get_by_agent_id(db, agent_id)
         if agent is None:
             return False
+
+        # ── Execution guard: deregistration is an identity action ─────────
+        from portal.services.execution_guard import ExecutionAction, ExecutionGuard
+        await ExecutionGuard.require_allowed(
+            session=db,
+            action=ExecutionAction.IDENTITY_ACTION,
+            agent_id=agent_id,
+            principal_context=principal_context,
+            approval_provider=approval_provider,
+        )
+
         agent.status = "DEREGISTERED"
         await db.flush()
         return True
@@ -599,12 +663,25 @@ class ApprovalService:
         decision: ApprovalStatus | str,
         reviewer: str,
         notes: str | None = None,
+        principal_context: object | None = None,
+        approval_provider: object | None = None,
     ) -> Approval | None:
         stmt = select(Approval).where(Approval.id == approval_id)
         result = await db.execute(stmt)
         approval = result.scalar_one_or_none()
         if approval is None:
             return None
+
+        # ── Execution guard: approval decisions are privileged ────────────
+        from portal.services.execution_guard import ExecutionAction, ExecutionGuard
+        await ExecutionGuard.require_allowed(
+            session=db,
+            action=ExecutionAction.APPROVAL_DECISION,
+            mission_id=str(approval.mission_id) if approval.mission_id else None,
+            principal_context=principal_context,
+            approval_provider=approval_provider,
+        )
+
         decision_str = decision.value if isinstance(decision, ApprovalStatus) else decision
         approval.status = decision_str
         approval.reviewer = reviewer
@@ -1124,13 +1201,15 @@ class KillSwitchService:
         db: AsyncSession,
         cleared_by: str,
         reason: str = "",
+        principal_context=None,
+        approval_provider: object | None = None,
     ) -> KillSwitchState | None:
         """Clear (deactivate) the kill switch.
 
         The cleared_by field provides attribution only — it is NOT authentication.
-        True authorization requires the clearing principal to be derived from an
-        authenticated session or token context, not from a request-body string.
-        That enforcement belongs in the router/middleware layer (Gate 4+ hardening).
+        True authorization requires an authenticated PrincipalContext passed via
+        principal_context. G4.8 will inject this from the request's authenticated
+        session. G4.7 requires an injected test principal.
 
         Marks the active kill switch as inactive. Returns the cleared state
         or None if no active switch exists.
@@ -1138,6 +1217,15 @@ class KillSwitchService:
         state = await KillSwitchService.get_active_state(db)
         if state is None:
             return None
+
+        # ── Execution guard: clearing the kill switch is privileged ──────
+        from portal.services.execution_guard import ExecutionAction, ExecutionGuard
+        await ExecutionGuard.require_allowed(
+            session=db,
+            action=ExecutionAction.KILL_SWITCH_CLEAR,
+            principal_context=principal_context,
+            approval_provider=approval_provider,
+        )
 
         state.is_active = False
         state.cleared_by = cleared_by

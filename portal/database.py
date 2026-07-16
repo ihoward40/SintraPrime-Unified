@@ -3,6 +3,7 @@ SQLAlchemy async database engine and session factory.
 Supports per-tenant row-level security via PostgreSQL SET LOCAL.
 """
 
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -121,7 +122,22 @@ async def tenant_session(
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 async def init_db() -> None:
-    """Create all tables (for testing / first run). In prod use Alembic."""
+    """Create all tables (for testing / first run). In prod use Alembic.
+
+    This function is gated by the ALLOW_SCHEMA_CREATE_ALL environment variable.
+    It defaults to False (refuses to run) and must be explicitly set to 'true'
+    to enable schema creation. This prevents accidental use in production where
+    Alembic migrations should be the only path for schema changes.
+
+    Raises:
+        RuntimeError: If ALLOW_SCHEMA_CREATE_ALL is not set to 'true'.
+    """
+    if os.environ.get("ALLOW_SCHEMA_CREATE_ALL", "").lower() != "true":
+        raise RuntimeError(
+            "init_db() is disabled in production. "
+            "Use Alembic migrations (alembic upgrade head) instead. "
+            "Set ALLOW_SCHEMA_CREATE_ALL=true to enable for local development only."
+        )
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("database.initialized")

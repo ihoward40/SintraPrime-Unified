@@ -26,6 +26,7 @@ from portal.routers import (
     documents,
     messages,
     notifications,
+    observatory,
     recovery,
     sso,
     system_health,
@@ -80,6 +81,11 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     app.state.security_layer = SecurityLayer(settings)
 
+    # G4.7: Assert execution guard is production-ready before announcing readiness.
+    # This ensures audit emission cannot be disabled in production.
+    from portal.services.execution_guard import ExecutionGuard
+    ExecutionGuard.assert_production_ready()
+
     logger.info("Portal startup complete")
     yield
     logger.info("Portal shutting down...")
@@ -129,6 +135,7 @@ def create_app() -> FastAPI:
     app.include_router(messages.router, prefix="/api/v1/messages", tags=["messages"])
     app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["notifications"])
     app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
+    app.include_router(observatory.router)
 
     # Health check
     @app.get("/health")

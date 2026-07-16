@@ -52,6 +52,15 @@ from portal.services.observatory_service import (
     MissionService,
     ReplayService,
 )
+from portal.services.execution_guard import PrincipalContext
+
+
+def _admin_principal():
+    """Test-only principal with system_admin role for G4.7 guard calls."""
+    return PrincipalContext.for_testing(
+        subject_id="test-admin",
+        roles=["system_admin", "incident_commander"],
+    )
 
 # ── All observatory tables for create_all ──────────────────────────────────────
 
@@ -353,7 +362,7 @@ async def test_agent_deregister(db_session):
     )
     await db_session.commit()
 
-    success = await AgentService.deregister(db_session, "DEREG-1")
+    success = await AgentService.deregister(db_session, "DEREG-1", principal_context=_admin_principal())
     await db_session.commit()
     assert success is True
 
@@ -795,7 +804,7 @@ async def test_kill_switch_clear(db_session):
 
     # Clear
     cleared = await KillSwitchService.clear(
-        db_session, cleared_by="isiah", reason="Threat resolved"
+        db_session, cleared_by="isiah", reason="Threat resolved", principal_context=_admin_principal()
     )
     await db_session.commit()
 
@@ -820,7 +829,7 @@ async def test_kill_switch_unauthorized_clear(db_session):
     """
     # No active switch — clearing returns None
     result = await KillSwitchService.clear(
-        db_session, cleared_by="anyone", reason="Nothing to clear"
+        db_session, cleared_by="anyone", reason="Nothing to clear", principal_context=_admin_principal()
     )
     assert result is None
 
@@ -837,7 +846,7 @@ async def test_kill_switch_blocks_new_missions(db_session):
     assert await KillSwitchService.is_active(db_session) is True
 
     # After clearing, should be inactive
-    await KillSwitchService.clear(db_session, cleared_by="admin")
+    await KillSwitchService.clear(db_session, cleared_by="admin", principal_context=_admin_principal())
     await db_session.commit()
     assert await KillSwitchService.is_active(db_session) is False
 
@@ -872,7 +881,7 @@ async def test_kill_switch_creates_audit_events(db_session):
     assert len(activate_events) >= 1
 
     # Clear
-    await KillSwitchService.clear(db_session, cleared_by="admin", reason="Done")
+    await KillSwitchService.clear(db_session, cleared_by="admin", reason="Done", principal_context=_admin_principal())
     await db_session.commit()
 
     # Check for KILL_SWITCH_CLEARED event
@@ -949,7 +958,7 @@ async def test_kill_switch_second_clear_deterministic(db_session):
 
     # First clear
     cleared = await KillSwitchService.clear(
-        db_session, cleared_by="admin", reason="Resolved"
+        db_session, cleared_by="admin", reason="Resolved", principal_context=_admin_principal()
     )
     await db_session.commit()
     assert cleared is not None
@@ -957,7 +966,7 @@ async def test_kill_switch_second_clear_deterministic(db_session):
 
     # Second clear should return None (no active switch to clear)
     second_clear = await KillSwitchService.clear(
-        db_session, cleared_by="admin", reason="Double clear attempt"
+        db_session, cleared_by="admin", reason="Double clear attempt", principal_context=_admin_principal()
     )
     assert second_clear is None
 
@@ -1270,7 +1279,7 @@ async def test_mission_service_blocks_on_kill_switch(db_session):
         await MissionService.create(db_session, title="Should be blocked")
 
     # After clearing, mission creation must work again
-    await KillSwitchService.clear(db_session, cleared_by="admin")
+    await KillSwitchService.clear(db_session, cleared_by="admin", principal_context=_admin_principal())
     await db_session.commit()
 
     mission2 = await MissionService.create(db_session, title="Resumed mission")

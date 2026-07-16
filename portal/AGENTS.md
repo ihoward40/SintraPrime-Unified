@@ -31,3 +31,4 @@ Owns the SintraPrime client portal — the FastAPI application that provides sec
 ## Child DOX Index
 
 - `routers/` — API route handlers (FastAPI router modules)
+- `tests/` — Portal-level pytest suites. PostgreSQL test isolation shared via `tests/pg_test_isolation.py` (`OBSERVATORY_TEST_TABLES` explicit scope). Import-order regression coverage in `tests/test_pg_cleanup_isolation.py` (proves cleanup scope is independent of `portal.main`/global `Base.metadata` registration).

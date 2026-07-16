@@ -7,10 +7,40 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, func, select
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, TypeDecorator, func, select
+from sqlalchemy.dialects.postgresql import JSONB as PgJSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.types import JSON as SaJSON
+
+# Portable JSON type: uses JSONB on PostgreSQL, generic JSON on other dialects.
+_JSONB = SaJSON().with_variant(PgJSONB, "postgresql")
+
+# Portable UUID type: uses native UUID on PostgreSQL, String(36) on SQLite.
+class _PortableUUID(TypeDecorator):
+    """UUID that stores as native UUID on PostgreSQL and String(36) on SQLite."""
+    impl = String(36)
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "postgresql":
+            return PGUUID(as_uuid=True)
+        return String(36)
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if dialect.name == "postgresql":
+            return value if isinstance(value, uuid.UUID) else uuid.UUID(value)
+        return str(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        if dialect.name == "postgresql":
+            return value if isinstance(value, uuid.UUID) else uuid.UUID(value)
+        return str(value)
 
 from ..auth.rbac import CurrentUser, get_current_user
 from ..database import Base, get_db
@@ -23,9 +53,9 @@ router = APIRouter()
 class Notification(Base):
     __tablename__ = "notifications"
 
-    id: Mapped[uuid.UUID]           = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    user_id: Mapped[uuid.UUID]      = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[uuid.UUID]           = mapped_column(_PortableUUID(), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID]    = mapped_column(_PortableUUID(), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[uuid.UUID]      = mapped_column(_PortableUUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
     event_type: Mapped[str]         = mapped_column(String(50), nullable=False)
     title: Mapped[str]              = mapped_column(String(500), nullable=False)
@@ -33,7 +63,7 @@ class Notification(Base):
     resource_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
     resource_id: Mapped[str | None]   = mapped_column(String(255), nullable=True)
     actor_id: Mapped[str | None]      = mapped_column(String(255), nullable=True)
-    extra_data: Mapped[dict | None]    = mapped_column(JSONB, nullable=True)
+    extra_data: Mapped[dict | None]    = mapped_column(_JSONB, nullable=True)
 
     is_read: Mapped[bool]           = mapped_column(Boolean, default=False)
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

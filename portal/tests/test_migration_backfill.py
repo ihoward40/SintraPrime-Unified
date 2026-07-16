@@ -28,7 +28,7 @@ import pytest_asyncio
 
 
 # ── Migration test guard ─────────────────────────────────────────────────────
-DISPOSABLE_DB_NAMES = {"gate4_test", "gate4_clean", "sintraprime_test", "test_"}
+from portal.tests.test_db_guard import validate_test_database_url, DatabaseIsolationError
 
 
 def _check_sqlite_is_temporary(db_path: str) -> None:
@@ -48,15 +48,13 @@ def _check_sqlite_is_temporary(db_path: str) -> None:
 
 
 def _check_pg_is_disposable(url: str) -> None:
-    """Refuse to migrate a non-disposable PostgreSQL database."""
+    """Refuse to migrate a non-disposable PostgreSQL database (using centralized guard)."""
     if "postgresql" not in url:
         return
-    for disposable in DISPOSABLE_DB_NAMES:
-        if disposable in url:
-            return
-    raise RuntimeError(
-        f"Migration test guard: refusing to migrate non-disposable PostgreSQL database: {url}"
-    )
+    try:
+        validate_test_database_url(url, skip_marker_check=True, skip_reachability=True)
+    except DatabaseIsolationError as e:
+        raise RuntimeError(str(e))
 
 
 class TestMigrationBackfill:

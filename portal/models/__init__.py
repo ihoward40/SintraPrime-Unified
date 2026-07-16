@@ -7,6 +7,17 @@ from .client import Client, Matter
 from .document import Document, DocumentFolder, DocumentShare, DocumentVersion
 from .evidence_snapshot import EvidenceSnapshot
 from .message import Message, MessageAttachment, MessageThread
+from .observatory import (
+    Agent as ObservatoryAgent,
+    Approval,
+    Artifact,
+    Evidence as ObservatoryEvidence,
+    Incident,
+    KillSwitchState,
+    Mission,
+    MissionAgent,
+    ObservatoryEvent,
+)
 from .user import Permission as UserPermission
 from .user import Role as UserRole
 from .user import User, UserPermissionAssoc
@@ -26,12 +37,21 @@ __all__ = [
     "DocumentVersion",
     "EvidenceSnapshot",
     "Expense",
+    "Incident",
     "Invoice",
     "InvoiceLineItem",
+    "KillSwitchState",
     "Matter",
     "Message",
     "MessageAttachment",
     "MessageThread",
+    "Mission",
+    "MissionAgent",
+    "ObservatoryAgent",
+    "ObservatoryEvent",
+    "Approval",
+    "Artifact",
+    "ObservatoryEvidence",
     "Payment",
     "TimeEntry",
     "TrustAccount",

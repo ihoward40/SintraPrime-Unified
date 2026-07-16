@@ -28,18 +28,47 @@ from portal.models.observatory import (
 from portal.services.chain_lock import get_or_create_run_head, advance_run_head, verify_no_chain_fork
 from portal.services.observatory_service import EventService
 
-# ── PostgreSQL connection ─────────────────────────────────────────────────────
+# ── PostgreSQL connection (fail-closed guard) ─────────────────────────────────
+#
+# BEHAVIOR:
+#   Authorized disposable PG database → tests execute
+#   Unauthorized / production / staging database → BLOCK (session fails)
+#   Missing URL + suite not requested → explicit skip
+#   Missing URL + suite requested → BLOCK (session fails)
 
-PG_URL = os.environ.get("GATE4_TEST_DATABASE_URL")
+from portal.tests.test_db_guard import require_pg_url, DatabaseIsolationError, ENV_TEST_URL
+from portal.tests.db_bootstrap import validate_test_database_url_async
 
-if not PG_URL:
-    PG_URL = None
+PG_URL: str | None = None
+_PG_SUITE_REQUESTED: bool = os.environ.get("GATE4_PG_SUITE_REQUESTED", "").lower() in ("true", "1", "yes")
+
+try:
+    _validated = require_pg_url(skip_marker=True)
+    if _validated:
+        PG_URL = _validated
+    elif _PG_SUITE_REQUESTED:
+        raise DatabaseIsolationError(
+            f"{ENV_TEST_URL} is not set, but GATE4_PG_SUITE_REQUESTED=true "
+            f"indicates the PostgreSQL suite was explicitly requested. "
+            f"Set {ENV_TEST_URL} to a disposable test database URL."
+        )
+    # else: optional PG suite not requested — PG_URL stays None
+except DatabaseIsolationError:
+    # FAIL-CLOSED: propagate the error to make the session fail
+    raise
 
 
 def _pg_available() -> bool:
-    """Check if PostgreSQL is reachable."""
+    """Check if PostgreSQL is reachable AND the URL is configured.
+
+    When the PG suite is explicitly requested, returns True only if
+    the URL is valid and the server is reachable. When not requested,
+    returns False (indicating skip).
+    """
     if not PG_URL:
         return False
+    if _PG_SUITE_REQUESTED:
+        return True
     try:
         parsed = urlparse(PG_URL)
         host = parsed.hostname or "localhost"
@@ -52,33 +81,73 @@ def _pg_available() -> bool:
 
 
 pg_available = pytest.mark.skipif(
-    not _pg_available(),
-    reason="GATE4_TEST_DATABASE_URL not set or PostgreSQL not reachable",
+    not _pg_available() and not _PG_SUITE_REQUESTED,
+    reason="PostgreSQL suite not requested (set GATE4_TEST_DATABASE_URL and GATE4_TEST_MODE=true)",
 )
 
 
 # ── Helper: clean all observatory tables between tests ──────────────────────────
 
 async def clean_pg_tables(engine):
-    """Delete all rows from observatory tables in correct FK order."""
-    tables = [
-        "observatory_events",
-        "observatory_run_heads",
-        "observatory_kill_switch_state",
-        "observatory_incidents",
-        "observatory_approvals",
-        "observatory_evidence",
-        "observatory_artifacts",
-        "observatory_mission_agents",
-        "observatory_missions",
-        "observatory_agents",
-    ]
-    async with engine.begin() as conn:
-        for table in tables:
-            try:
-                await conn.execute(sa_text(f"DELETE FROM {table}"))
-            except Exception:
-                pass  # Table may not exist yet
+    """Delete all rows from observatory tables using the shared isolation helper.
+
+    Delegates to portal.tests.pg_test_isolation.clean_all_observatory_tables
+    so there is one authoritative cleanup list, not multiple partial lists.
+    """
+    from portal.tests.pg_test_isolation import clean_all_observatory_tables
+    await clean_all_observatory_tables(engine)
+
+
+def _make_pg_fixture(pool_size: int, max_overflow: int):
+    """Factory for guarded PG engine fixtures.
+
+    When the PG suite is explicitly requested, missing PG is a hard error.
+    When optional, missing PG produces a skip.
+    """
+    @pytest_asyncio.fixture
+    async def pg_engine(self):
+        if not PG_URL:
+            if _PG_SUITE_REQUESTED:
+                pytest.fail("PostgreSQL suite requested but GATE4_TEST_DATABASE_URL not configured")
+            pytest.skip("PostgreSQL suite not requested (set GATE4_TEST_DATABASE_URL)")
+            return
+        # Full validation (including marker check) at fixture time
+        # Uses the async validator to avoid asyncio.run() inside event loop
+        try:
+            await validate_test_database_url_async(PG_URL, skip_marker_check=False)
+        except DatabaseIsolationError:
+            if _PG_SUITE_REQUESTED:
+                raise  # Hard error when suite is requested
+            pytest.skip("PostgreSQL database guard failed")
+            return
+        engine = create_async_engine(PG_URL, echo=False, pool_size=pool_size, max_overflow=max_overflow)
+        try:
+            async with engine.connect() as conn:
+                await conn.execute(sa_text("SELECT 1"))
+        except Exception:
+            if _PG_SUITE_REQUESTED:
+                raise  # Hard error when suite is requested
+            pytest.skip("PostgreSQL not available")
+            return
+        # NOTE: Do NOT call Base.metadata.create_all() here.
+        # The PG test database is created and migrated via Alembic during
+        # bootstrap. Calling create_all() would attempt to create ALL models
+        # registered in Base.metadata (including Notification with JSONB),
+        # which fails when non-observatory models have PG-only types.
+        # The observatory tables already exist via migration.
+        await clean_pg_tables(engine)
+        yield engine
+        await clean_pg_tables(engine)
+        # No checked-out connections must remain before disposal; a checked-out
+        # connection survives engine.dispose() and leaks its PostgreSQL socket.
+        assert engine.pool.checkedout() == 0, f"{engine.pool.checkedout()} connection(s) still checked out at teardown"
+        await engine.dispose()
+        # Let asyncpg's scheduled socket-close callbacks run in the still-active loop
+        # BEFORE any gc.collect() that could surface an unclosed socket warning.
+        await asyncio.sleep(0.05)
+        import gc
+        gc.collect()
+    return pg_engine
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -104,22 +173,7 @@ class TestSameRunConcurrency:
     - no session remains in failed transaction state
     """
 
-    @pytest_asyncio.fixture
-    async def pg_engine(self):
-        engine = create_async_engine(PG_URL, echo=False, pool_size=20, max_overflow=10)
-        try:
-            async with engine.connect() as conn:
-                await conn.execute(sa_text("SELECT 1"))
-        except Exception:
-            pytest.skip("PostgreSQL not available")
-            return
-        from portal.models.observatory import Base
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        await clean_pg_tables(engine)
-        yield engine
-        await clean_pg_tables(engine)
-        await engine.dispose()
+    pg_engine = _make_pg_fixture(pool_size=20, max_overflow=10)
 
     @pytest.mark.asyncio
     async def test_same_run_100_concurrent_events(self, pg_engine):
@@ -154,7 +208,7 @@ class TestSameRunConcurrency:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Check all succeeded
-        errors = [r for r in results if isinstance(r, tuple) and r[0] == "error"]
+        errors = [r for r in results if isinstance(r, BaseException)]
         assert len(errors) == 0, f"Errors during concurrent submission: {errors[:5]}"
 
         # Verify exact count
@@ -235,22 +289,7 @@ class TestSeparateRunConcurrency:
     - verification passes for every run
     """
 
-    @pytest_asyncio.fixture
-    async def pg_engine(self):
-        engine = create_async_engine(PG_URL, echo=False, pool_size=20, max_overflow=10)
-        try:
-            async with engine.connect() as conn:
-                await conn.execute(sa_text("SELECT 1"))
-        except Exception:
-            pytest.skip("PostgreSQL not available")
-            return
-        from portal.models.observatory import Base
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        await clean_pg_tables(engine)
-        yield engine
-        await clean_pg_tables(engine)
-        await engine.dispose()
+    pg_engine = _make_pg_fixture(pool_size=20, max_overflow=10)
 
     @pytest.mark.asyncio
     async def test_separate_runs_independent_chains(self, pg_engine):
@@ -278,7 +317,7 @@ class TestSeparateRunConcurrency:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Verify all succeeded
-        errors = [r for r in results if isinstance(r, Exception) or (isinstance(r, tuple) and r[0] == "error")]
+        errors = [r for r in results if isinstance(r, BaseException)]
         assert len(errors) == 0, f"Errors during concurrent submission: {errors[:5]}"
 
         async with factory() as session:
@@ -335,22 +374,7 @@ class TestFailureInjection:
     - chain remains valid
     """
 
-    @pytest_asyncio.fixture
-    async def pg_engine(self):
-        engine = create_async_engine(PG_URL, echo=False, pool_size=10, max_overflow=5)
-        try:
-            async with engine.connect() as conn:
-                await conn.execute(sa_text("SELECT 1"))
-        except Exception:
-            pytest.skip("PostgreSQL not available")
-            return
-        from portal.models.observatory import Base
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        await clean_pg_tables(engine)
-        yield engine
-        await clean_pg_tables(engine)
-        await engine.dispose()
+    pg_engine = _make_pg_fixture(pool_size=10, max_overflow=5)
 
     @pytest.mark.asyncio
     async def test_failed_transaction_no_orphan_event(self, pg_engine):
@@ -450,22 +474,7 @@ class TestConcurrentDuplicateEvent:
     when two concurrent requests hit the same run.
     """
 
-    @pytest_asyncio.fixture
-    async def pg_engine(self):
-        engine = create_async_engine(PG_URL, echo=False, pool_size=10, max_overflow=5)
-        try:
-            async with engine.connect() as conn:
-                await conn.execute(sa_text("SELECT 1"))
-        except Exception:
-            pytest.skip("PostgreSQL not available")
-            return
-        from portal.models.observatory import Base
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        await clean_pg_tables(engine)
-        yield engine
-        await clean_pg_tables(engine)
-        await engine.dispose()
+    pg_engine = _make_pg_fixture(pool_size=10, max_overflow=5)
 
     @pytest.mark.asyncio
     async def test_concurrent_submissions_different_payloads_no_gap(self, pg_engine):
@@ -517,22 +526,7 @@ class TestFullConcurrencyMatrix:
     6. Burst-then-verify: rapid sequential verification between concurrent bursts
     """
 
-    @pytest_asyncio.fixture
-    async def pg_engine(self):
-        engine = create_async_engine(PG_URL, echo=False, pool_size=30, max_overflow=15)
-        try:
-            async with engine.connect() as conn:
-                await conn.execute(sa_text("SELECT 1"))
-        except Exception:
-            pytest.skip("PostgreSQL not available")
-            return
-        from portal.models.observatory import Base
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        await clean_pg_tables(engine)
-        yield engine
-        await clean_pg_tables(engine)
-        await engine.dispose()
+    pg_engine = _make_pg_fixture(pool_size=30, max_overflow=15)
 
     @pytest.mark.asyncio
     async def test_run_head_hash_matches_terminal_event(self, pg_engine):
@@ -726,7 +720,7 @@ class TestFullConcurrencyMatrix:
             tasks.append(submit(agent, i))
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        errors = [r for r in results if isinstance(r, Exception)]
+        errors = [r for r in results if isinstance(r, BaseException)]
         assert len(errors) == 0, f"{len(errors)} errors in 200-event stress: {errors[:3]}"
 
         async with factory() as session:
@@ -798,7 +792,7 @@ class TestFullConcurrencyMatrix:
                     tasks.append(submit(run_id, agent_id, idx))
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        errors = [r for r in results if isinstance(r, Exception)]
+        errors = [r for r in results if isinstance(r, BaseException)]
         assert len(errors) == 0, f"Errors in mixed matrix: {errors[:3]}"
 
         expected_per_run = NUM_AGENTS * EVENTS_PER_RUN  # 20

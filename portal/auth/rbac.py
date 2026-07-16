@@ -276,14 +276,24 @@ def require_permissions(*perms: Permission) -> Callable:
     return dependency
 
 
+def assert_role_allowed(user: CurrentUser, required_role: Role) -> None:
+    """Canonical role-decision helper (single source of truth).
+
+    Raises HTTPException(403) when `user` does not meet `required_role`.
+    Shared by `require_role` and `require_audited_role` so the role policy
+    can never drift between the two.
+    """
+    if not user.has_role(required_role):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Requires role: {required_role.value} or higher",
+        )
+
+
 def require_role(min_role: Role) -> Callable:
     """Require user to have at least the given role level."""
     async def dependency(current_user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
-        if not current_user.has_role(min_role):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Requires role: {min_role.value} or higher",
-            )
+        assert_role_allowed(current_user, min_role)
         return current_user
     return dependency
 

@@ -13,9 +13,9 @@ import json
 import logging
 from datetime import UTC, datetime
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, WebSocket, WebSocketDisconnect, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
@@ -77,10 +77,237 @@ from portal.services.observatory_service import (
     MissionService,
     ReplayService,
 )
+from portal.auth.rbac import (
+    assert_role_allowed,
+    CurrentUser,
+    get_current_user,
+    Role,
+)
+from portal.services.execution_guard import (
+    ExecutionAction,
+    ExecutionGuard,
+    ExecutionGuardError,
+    PrincipalContext,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["observatory"])
+
+
+# ── G4.8 C1 boundary-security helpers ──────────────────────────────────────────
+#
+# The portal is the sole authority that authenticates, authorizes, guards,
+# records, and refuses observatory mutations. The MCP bridge (C2) must route
+# through these SAME dependencies — it may never call the service layer
+# directly without them.
+#
+# Audit boundary (precise): Observatory boundary events begin AFTER successful
+# identity authentication but BEFORE role, permission, approval, guard, or
+# execution authorization. Authentication-transport rejections (missing /
+# malformed / expired / invalid JWT) are handled by get_current_user and are
+# out of scope here — no principal is fabricated merely to write an event.
+#
+# Lifecycle emitted by require_audited_role + route body:
+#   insufficient role : BOUNDARY_REQUESTED -> BOUNDARY_REFUSED (no mutation)
+#   guard refusal     : BOUNDARY_REQUESTED -> BOUNDARY_AUTHORIZED -> BOUNDARY_REFUSED
+#   success           : BOUNDARY_REQUESTED -> BOUNDARY_AUTHORIZED -> BOUNDARY_EXECUTED
+#   service failure   : BOUNDARY_REQUESTED -> BOUNDARY_AUTHORIZED -> BOUNDARY_FAILED
+# One correlation_id is used throughout (extracted from the body or generated).
+
+
+def _build_principal(user: CurrentUser) -> PrincipalContext:
+    """G-B1: derive a REAL authenticated PrincipalContext from the verified JWT.
+
+    Identity, roles, and permissions come exclusively from the JWT payload.
+    Caller-supplied actor names in request bodies are NEVER trusted.
+
+    Role vocabulary bridge: the ExecutionGuard policy vocabulary
+    ("system_admin", "incident_commander") is distinct from the portal RBAC
+    vocabulary ("SUPER_ADMIN", "FIRM_ADMIN"). The portal's highest authority
+    (SUPER_ADMIN) is equivalent to both guard roles; FIRM_ADMIN maps to
+    "system_admin". This keeps the guard's role requirements satisfiable by
+    real authenticated principals without forging new authorities.
+    """
+    rbac_role = user.role.value
+    _RBAC_TO_GUARD = {
+        Role.SUPER_ADMIN.value: ["system_admin", "incident_commander"],
+        Role.FIRM_ADMIN.value: ["system_admin"],
+    }
+    combined_roles = [rbac_role, *_RBAC_TO_GUARD.get(rbac_role, [])]
+    return PrincipalContext(
+        subject_id=user.user_id,
+        authentication_method="jwt",
+        roles=combined_roles,
+        permissions=[p.value for p in user.permissions],
+        is_authenticated=True,
+    )
+
+
+# Boundary audit lifecycle event types (G-B4). Distinct from the domain event
+# types emitted by the services themselves.
+_BOUNDARY_EVENT_TYPES = {
+    "requested": "BOUNDARY_REQUESTED",
+    "authorized": "BOUNDARY_AUTHORIZED",
+    "refused": "BOUNDARY_REFUSED",
+    "executed": "BOUNDARY_EXECUTED",
+    "failed": "BOUNDARY_FAILED",
+}
+
+
+async def _write_boundary_event(
+    db: AsyncSession,
+    lifecycle: str,
+    action_value: str,
+    principal: PrincipalContext,
+    *,
+    mission_id: str | None = None,
+    detail: str | None = None,
+    correlation_id: str | None = None,
+    fail_closed: bool = False,
+) -> None:
+    """Persist one boundary audit event and commit it independently.
+
+    Boundary events live on their own transaction so that REFUSED / FAILED
+    records survive even when the protected route is refused or the domain
+    mutation never commits. EventService.create only flushes (never commits),
+    so we commit here.
+
+    fail_closed=True (used for REQUESTED / REFUSED): if the audit write cannot
+    be persisted, raise so the protected operation is refused — audit failure
+    must never grant access. fail_closed=False (EXECUTED / FAILED): log only,
+    so a transient audit problem never masks a real result or rolls back a
+    legitimate mutation.
+    """
+    payload: dict[str, Any] = {
+        "lifecycle": lifecycle,
+        "action": action_value,
+        "subject": principal.subject_id,
+        "authenticated": principal.is_authenticated,
+        "roles": list(principal.roles),
+    }
+    if mission_id is not None:
+        payload["mission_id"] = mission_id
+    if correlation_id is not None:
+        payload["correlation_id"] = correlation_id
+    if detail is not None:
+        payload["detail"] = detail
+    try:
+        await EventService.create(
+            db,
+            event_type=_BOUNDARY_EVENT_TYPES[lifecycle],
+            mission_id=UUID(mission_id) if mission_id else None,
+            agent_id=principal.subject_id,
+            payload=payload,
+            run_id="boundary",
+        )
+        await db.commit()
+    except Exception as exc:
+        logger.error(
+            "boundary_audit_event_failed lifecycle=%s action=%s correlation=%s error=%s",
+            lifecycle, action_value, correlation_id, exc,
+        )
+        if fail_closed:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Authorization audit could not be recorded; request refused.",
+            ) from exc
+
+
+async def _resolve_correlation_id(request: Request, action_value: str) -> str:
+    """Extract the request correlation id from the body, or generate one.
+
+    The body is read via the cached request stream (Starlette caches it, so
+    the route's own Pydantic body parsing is unaffected). A generated id is
+    stored on request.state so the route body reuses the exact same value.
+    """
+    correlation_id = None
+    try:
+        body = await request.json()
+        if isinstance(body, dict):
+            meta = body.get("metadata")
+            if isinstance(meta, dict):
+                correlation_id = meta.get("correlation_id")
+            if not correlation_id:
+                correlation_id = body.get("correlation_id")
+    except Exception:
+        correlation_id = None
+    if not correlation_id:
+        correlation_id = uuid4().hex
+    request.state.boundary_correlation_id = correlation_id
+    return correlation_id
+
+
+def require_audited_role(required_role: Role, action: ExecutionAction):
+    """Composite dependency: role authorization + boundary audit.
+
+    Resolves the real CurrentUser (so authentication-transport rejections are
+    handled by get_current_user before we run), the DB session, and the request
+    correlation id; emits BOUNDARY_REQUESTED; applies the canonical role policy
+    via assert_role_allowed; on denial emits BOUNDARY_REFUSED (reason
+    "insufficient_role") and raises the same structured 403 used by require_role;
+    on success emits BOUNDARY_AUTHORIZED and returns the real PrincipalContext.
+
+    The route body then owns guard evaluation, protected service execution,
+    BOUNDARY_EXECUTED, and BOUNDARY_FAILED — all tagged with the same
+    correlation id.
+
+    This is applied ONLY to privileged Observatory mutation routes in C1; it is
+    not introduced globally.
+    """
+    async def dependency(
+        request: Request,
+        db: AsyncSession = Depends(get_db),
+        user: CurrentUser = Depends(get_current_user),
+    ) -> PrincipalContext:
+        principal = _build_principal(user)
+        correlation_id = await _resolve_correlation_id(request, action.value)
+        # REQUESTED must persist before any authorization decision (fail-closed).
+        await _write_boundary_event(
+            db, "requested", action.value, principal,
+            correlation_id=correlation_id, fail_closed=True,
+        )
+        try:
+            assert_role_allowed(user, required_role)
+        except HTTPException:
+            # Refusal must persist independently (fail-closed) and then deny.
+            await _write_boundary_event(
+                db, "refused", action.value, principal,
+                detail="insufficient_role", correlation_id=correlation_id, fail_closed=True,
+            )
+            raise
+        await _write_boundary_event(
+            db, "authorized", action.value, principal,
+            correlation_id=correlation_id, fail_closed=True,
+        )
+        return principal
+    return dependency
+
+
+async def _record_boundary_event(
+    db: AsyncSession,
+    lifecycle: str,
+    action_value: str,
+    principal: PrincipalContext,
+    *,
+    mission_id: str | None = None,
+    detail: str | None = None,
+    correlation_id: str | None = None,
+) -> None:
+    """Route-body boundary audit for EXECUTED / FAILED (best-effort, non-masking).
+
+    Recursion guard: never emit EXECUTED / FAILED while appending the underlying
+    observatory event — that path handles its own chaining. The payload
+    deliberately omits secrets, bearer tokens, and raw credentials.
+    """
+    if action_value == ExecutionAction.EVENT_APPEND.value and lifecycle in ("executed", "failed"):
+        return
+    await _write_boundary_event(
+        db, lifecycle, action_value, principal,
+        mission_id=mission_id, detail=detail, correlation_id=correlation_id,
+        fail_closed=False,
+    )
+
 
 # ── WebSocket connection manager ──────────────────────────────────────────────
 
@@ -143,39 +370,77 @@ async def observatory_websocket(websocket: WebSocket) -> None:
 @router.post("/events", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def ingest_event(
     request: EventCreateRequest,
+    http_request: Request,
     db: AsyncSession = Depends(get_db),
+    principal: PrincipalContext = Depends(
+        require_audited_role(required_role=Role.FIRM_ADMIN, action=ExecutionAction.EVENT_APPEND)
+    ),
 ):
-    """Ingest a new observatory event (hash-chained)."""
-    mission_uuid = UUID(request.mission_id) if request.mission_id else None
-    event = await EventService.create(
-        db,
-        event_type=request.event_type,
-        mission_id=mission_uuid,
-        agent_id=request.agent_id,
-        payload=DataMaskingService.mask_payload(request.payload),
-        metadata=request.metadata_,
-        timestamp=request.timestamp,
-    )
-    await db.commit()
+    """Ingest a new observatory event (hash-chained).
 
-    # Broadcast to WebSocket clients
-    event_data = {
-        "id": str(event.id),
-        "event_type": event.event_type,
-        "mission_id": _to_str(event.mission_id),
-        "agent_id": event.agent_id,
-        "payload": event.payload,
-        "timestamp": event.timestamp.isoformat() if event.timestamp else None,
-    }
-    await _manager.broadcast(event_data)
+    G-B1/B-B2/B-B3: requires an authenticated FIRM_ADMIN-or-higher principal
+    (enforced + audited by require_audited_role); passes through the
+    ExecutionGuard (EVENT_APPEND is BLOCKED by an active kill switch).
+    """
+    correlation_id = http_request.state.boundary_correlation_id
+    try:
+        await ExecutionGuard.require_allowed(
+            session=db, action=ExecutionAction.EVENT_APPEND,
+            mission_id=request.mission_id, principal_context=principal,
+        )
+        mission_uuid = UUID(request.mission_id) if request.mission_id else None
+        event = await EventService.create(
+            db,
+            event_type=request.event_type,
+            mission_id=mission_uuid,
+            agent_id=request.agent_id,
+            payload=DataMaskingService.mask_payload(request.payload),
+            metadata=request.metadata_,
+            timestamp=request.timestamp,
+        )
+        await db.commit()
 
-    return {
-        "id": str(event.id),
-        "event_type": event.event_type,
-        "event_hash": event.event_hash,
-        "previous_hash": event.previous_hash,
-        "timestamp": event.timestamp.isoformat() if event.timestamp else None,
-    }
+        # Broadcast to WebSocket clients
+        event_data = {
+            "id": str(event.id),
+            "event_type": event.event_type,
+            "mission_id": _to_str(event.mission_id),
+            "agent_id": event.agent_id,
+            "payload": event.payload,
+            "timestamp": event.timestamp.isoformat() if event.timestamp else None,
+        }
+        await _manager.broadcast(event_data)
+        # G-B4: success event only after the side effect commits.
+        await _record_boundary_event(
+            db, "executed", ExecutionAction.EVENT_APPEND.value, principal,
+            mission_id=request.mission_id, correlation_id=correlation_id,
+        )
+
+        return {
+            "id": str(event.id),
+            "event_type": event.event_type,
+            "event_hash": event.event_hash,
+            "previous_hash": event.previous_hash,
+            "timestamp": event.timestamp.isoformat() if event.timestamp else None,
+        }
+    except ExecutionGuardError as exc:
+        await _record_boundary_event(
+            db, "refused", ExecutionAction.EVENT_APPEND.value, principal,
+            mission_id=request.mission_id, detail=exc.decision.reason_code.value,
+            correlation_id=correlation_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Observatory mutation refused: {exc.decision.reason_code.value}",
+        ) from exc
+    except Exception as exc:
+        await db.rollback()
+        await _record_boundary_event(
+            db, "failed", ExecutionAction.EVENT_APPEND.value, principal,
+            mission_id=request.mission_id, detail=type(exc).__name__,
+            correlation_id=correlation_id,
+        )
+        raise
 
 
 @router.get("/events", response_model=dict)
@@ -288,40 +553,75 @@ async def stream_run_events(
 @router.post("/missions", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_mission(
     request: MissionCreateRequest,
+    http_request: Request,
     db: AsyncSession = Depends(get_db),
+    principal: PrincipalContext = Depends(
+        require_audited_role(required_role=Role.FIRM_ADMIN, action=ExecutionAction.MISSION_CREATE)
+    ),
 ):
-    """Create a new observatory mission."""
-    gates_required = [g.value if isinstance(g, GovernanceGate) else g for g in request.governance_gates_required]
-    mission = await MissionService.create(
-        db,
-        title=request.title,
-        description=request.description,
-        objective=request.objective,
-        agent_ids=request.agent_ids,
-        governance_gates_required=gates_required,
-        metadata=request.metadata_,
-    )
-    await db.commit()
+    """Create a new observatory mission.
 
-    # Emit event
-    await EventService.create(
-        db,
-        event_type=EventType.MISSION_CREATED,
-        mission_id=mission.id,
-        payload={"title": mission.title, "status": mission.status},
-    )
-    await db.commit()
+    G-B1/B-B2/B-B3: requires an authenticated FIRM_ADMIN-or-higher principal
+    (enforced + audited by require_audited_role); passes through the
+    ExecutionGuard (MISSION_CREATE is BLOCKED by an active kill switch).
+    """
+    correlation_id = http_request.state.boundary_correlation_id
+    try:
+        await ExecutionGuard.require_allowed(
+            session=db, action=ExecutionAction.MISSION_CREATE,
+            principal_context=principal,
+        )
+        gates_required = [g.value if isinstance(g, GovernanceGate) else g for g in request.governance_gates_required]
+        mission = await MissionService.create(
+            db,
+            title=request.title,
+            description=request.description,
+            objective=request.objective,
+            agent_ids=request.agent_ids,
+            governance_gates_required=gates_required,
+            metadata=request.metadata_,
+        )
+        await db.commit()
 
-    return {
-        "id": str(mission.id),
-        "title": mission.title,
-        "description": mission.description,
-        "objective": mission.objective,
-        "status": mission.status,
-        "governance_gates_required": mission.governance_gates_required,
-        "governance_gates_passed": mission.governance_gates_passed,
-        "created_at": mission.created_at.isoformat() if mission.created_at else None,
-    }
+        # Emit event
+        await EventService.create(
+            db,
+            event_type=EventType.MISSION_CREATED,
+            mission_id=mission.id,
+            payload={"title": mission.title, "status": mission.status},
+        )
+        await db.commit()
+        await _record_boundary_event(
+            db, "executed", ExecutionAction.MISSION_CREATE.value, principal,
+            mission_id=str(mission.id), correlation_id=correlation_id,
+        )
+
+        return {
+            "id": str(mission.id),
+            "title": mission.title,
+            "description": mission.description,
+            "objective": mission.objective,
+            "status": mission.status,
+            "governance_gates_required": mission.governance_gates_required,
+            "governance_gates_passed": mission.governance_gates_passed,
+            "created_at": mission.created_at.isoformat() if mission.created_at else None,
+        }
+    except ExecutionGuardError as exc:
+        await _record_boundary_event(
+            db, "refused", ExecutionAction.MISSION_CREATE.value, principal,
+            detail=exc.decision.reason_code.value, correlation_id=correlation_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Observatory mutation refused: {exc.decision.reason_code.value}",
+        ) from exc
+    except Exception as exc:
+        await db.rollback()
+        await _record_boundary_event(
+            db, "failed", ExecutionAction.MISSION_CREATE.value, principal,
+            detail=type(exc).__name__, correlation_id=correlation_id,
+        )
+        raise
 
 
 @router.get("/missions", response_model=dict)
@@ -592,74 +892,147 @@ async def deregister_agent(
 @router.post("/approvals", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_approval(
     request: ApprovalCreateRequest,
+    http_request: Request,
     db: AsyncSession = Depends(get_db),
+    principal: PrincipalContext = Depends(
+        require_audited_role(required_role=Role.FIRM_ADMIN, action=ExecutionAction.APPROVAL_REQUEST)
+    ),
 ):
-    """Request an approval."""
-    mission_uuid = UUID(request.mission_id)
-    gate_str = request.gate.value if isinstance(request.gate, GovernanceGate) else request.gate
-    approval = await ApprovalService.create(
-        db,
-        mission_id=mission_uuid,
-        requester=request.requester,
-        gate=gate_str,
-        reason=request.reason,
-        metadata=request.metadata_,
-    )
-    await db.commit()
+    """Request an approval.
 
-    await EventService.create(
-        db,
-        event_type=EventType.APPROVAL_REQUESTED,
-        mission_id=mission_uuid,
-        payload={"approval_id": str(approval.id), "gate": gate_str, "requester": request.requester},
-    )
-    await db.commit()
+    G-B1/B-B2/B-B3: requires an authenticated FIRM_ADMIN-or-higher principal
+    (enforced + audited by require_audited_role); passes through the
+    ExecutionGuard (APPROVAL_REQUEST is BLOCKED by an active kill switch).
+    """
+    correlation_id = http_request.state.boundary_correlation_id
+    try:
+        await ExecutionGuard.require_allowed(
+            session=db, action=ExecutionAction.APPROVAL_REQUEST,
+            mission_id=request.mission_id, principal_context=principal,
+        )
+        mission_uuid = UUID(request.mission_id)
+        gate_str = request.gate.value if isinstance(request.gate, GovernanceGate) else request.gate
+        approval = await ApprovalService.create(
+            db,
+            mission_id=mission_uuid,
+            requester=request.requester,
+            gate=gate_str,
+            reason=request.reason,
+            metadata=request.metadata_,
+        )
+        await db.commit()
 
-    return {
-        "id": str(approval.id),
-        "mission_id": str(approval.mission_id),
-        "gate": approval.gate,
-        "requester": approval.requester,
-        "status": approval.status,
-        "created_at": approval.created_at.isoformat() if approval.created_at else None,
-    }
+        await EventService.create(
+            db,
+            event_type=EventType.APPROVAL_REQUESTED,
+            mission_id=mission_uuid,
+            payload={"approval_id": str(approval.id), "gate": gate_str, "requester": request.requester},
+        )
+        await db.commit()
+        await _record_boundary_event(
+            db, "executed", ExecutionAction.APPROVAL_REQUEST.value, principal,
+            mission_id=request.mission_id, correlation_id=correlation_id,
+        )
+
+        return {
+            "id": str(approval.id),
+            "mission_id": str(approval.mission_id),
+            "gate": approval.gate,
+            "requester": approval.requester,
+            "status": approval.status,
+            "created_at": approval.created_at.isoformat() if approval.created_at else None,
+        }
+    except ExecutionGuardError as exc:
+        await _record_boundary_event(
+            db, "refused", ExecutionAction.APPROVAL_REQUEST.value, principal,
+            mission_id=request.mission_id, detail=exc.decision.reason_code.value,
+            correlation_id=correlation_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Observatory mutation refused: {exc.decision.reason_code.value}",
+        ) from exc
+    except Exception as exc:
+        await db.rollback()
+        await _record_boundary_event(
+            db, "failed", ExecutionAction.APPROVAL_REQUEST.value, principal,
+            mission_id=request.mission_id, detail=type(exc).__name__,
+            correlation_id=correlation_id,
+        )
+        raise
 
 
 @router.post("/approvals/{approval_id}/decide", response_model=dict)
 async def decide_approval(
     approval_id: str,
     request: ApprovalDecisionRequest,
+    http_request: Request,
     db: AsyncSession = Depends(get_db),
+    principal: PrincipalContext = Depends(
+        require_audited_role(required_role=Role.FIRM_ADMIN, action=ExecutionAction.APPROVAL_DECISION)
+    ),
 ):
-    """Approve or deny a pending approval."""
-    approval = await ApprovalService.decide(
-        db,
-        approval_id=UUID(approval_id),
-        decision=request.decision,
-        reviewer=request.reviewer,
-        notes=request.notes,
-    )
-    if approval is None:
-        raise HTTPException(status_code=404, detail="Approval not found")
-    await db.commit()
+    """Approve or deny a pending approval.
 
-    event_type = EventType.APPROVAL_GRANTED if approval.status == ApprovalStatus.APPROVED.value else EventType.APPROVAL_DENIED
-    await EventService.create(
-        db,
-        event_type=event_type,
-        mission_id=approval.mission_id,
-        payload={"approval_id": str(approval.id), "gate": approval.gate, "reviewer": request.reviewer},
-    )
-    await db.commit()
+    G-B1/B-B2: requires an authenticated principal with FIRM_ADMIN or higher
+    (enforced + audited by require_audited_role). G-B3: passes through the
+    ExecutionGuard (APPROVAL_DECISION is BLOCKED by an active kill switch).
+    """
+    correlation_id = http_request.state.boundary_correlation_id
+    try:
+        await ExecutionGuard.require_allowed(
+            session=db, action=ExecutionAction.APPROVAL_DECISION,
+            principal_context=principal,
+        )
+        approval = await ApprovalService.decide(
+            db,
+            approval_id=UUID(approval_id),
+            decision=request.decision,
+            reviewer=request.reviewer,
+            notes=request.notes,
+        )
+        if approval is None:
+            raise HTTPException(status_code=404, detail="Approval not found")
+        await db.commit()
 
-    return {
-        "id": str(approval.id),
-        "mission_id": str(approval.mission_id),
-        "gate": approval.gate,
-        "status": approval.status,
-        "reviewer": approval.reviewer,
-        "notes": approval.notes,
-    }
+        event_type = EventType.APPROVAL_GRANTED if approval.status == ApprovalStatus.APPROVED.value else EventType.APPROVAL_DENIED
+        await EventService.create(
+            db,
+            event_type=event_type,
+            mission_id=approval.mission_id,
+            payload={"approval_id": str(approval.id), "gate": approval.gate, "reviewer": request.reviewer},
+        )
+        await db.commit()
+        await _record_boundary_event(
+            db, "executed", ExecutionAction.APPROVAL_DECISION.value, principal,
+            mission_id=str(approval.mission_id), detail=f"approval={approval_id}",
+            correlation_id=correlation_id,
+        )
+
+        return {
+            "id": str(approval.id),
+            "mission_id": str(approval.mission_id),
+            "gate": approval.gate,
+            "status": approval.status,
+            "reviewer": approval.reviewer,
+            "notes": approval.notes,
+        }
+    except ExecutionGuardError as exc:
+        await _record_boundary_event(
+            db, "refused", ExecutionAction.APPROVAL_DECISION.value, principal,
+            detail=exc.decision.reason_code.value, correlation_id=correlation_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Observatory mutation refused: {exc.decision.reason_code.value}",
+        ) from exc
+    except Exception as exc:
+        await db.rollback()
+        await _record_boundary_event(
+            db, "failed", ExecutionAction.APPROVAL_DECISION.value, principal,
+            detail=type(exc).__name__, correlation_id=correlation_id,
+        )
+        raise
 
 
 @router.get("/approvals/pending", response_model=dict)
@@ -732,38 +1105,75 @@ async def check_governance_gate(
 @router.post("/evidence", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_evidence(
     request: EvidenceCreateRequest,
+    http_request: Request,
     db: AsyncSession = Depends(get_db),
+    principal: PrincipalContext = Depends(
+        require_audited_role(required_role=Role.FIRM_ADMIN, action=ExecutionAction.EVIDENCE_SUBMIT)
+    ),
 ):
-    """Submit evidence for a mission."""
-    mission_uuid = UUID(request.mission_id)
-    evidence = await EvidenceService.create(
-        db,
-        mission_id=mission_uuid,
-        source=request.source,
-        content_hash=request.content_hash,
-        content_type=request.content_type,
-        description=request.description,
-        metadata=request.metadata_,
-    )
-    await db.commit()
+    """Submit evidence for a mission.
 
-    await EventService.create(
-        db,
-        event_type=EventType.EVIDENCE_CAPTURED,
-        mission_id=mission_uuid,
-        payload={"evidence_id": str(evidence.id), "source": request.source},
-    )
-    await db.commit()
+    G-B1/B-B2/B-B3: requires an authenticated FIRM_ADMIN-or-higher principal
+    (enforced + audited by require_audited_role); passes through the
+    ExecutionGuard (EVIDENCE_SUBMIT is BLOCKED by an active kill switch).
+    """
+    correlation_id = http_request.state.boundary_correlation_id
+    try:
+        await ExecutionGuard.require_allowed(
+            session=db, action=ExecutionAction.EVIDENCE_SUBMIT,
+            mission_id=request.mission_id, principal_context=principal,
+        )
+        mission_uuid = UUID(request.mission_id)
+        evidence = await EvidenceService.create(
+            db,
+            mission_id=mission_uuid,
+            source=request.source,
+            content_hash=request.content_hash,
+            content_type=request.content_type,
+            description=request.description,
+            metadata=request.metadata_,
+        )
+        await db.commit()
 
-    return {
-        "id": str(evidence.id),
-        "mission_id": str(evidence.mission_id),
-        "source": evidence.source,
-        "content_type": evidence.content_type,
-        "content_hash": evidence.content_hash,
-        "verified": evidence.verified,
-        "created_at": evidence.created_at.isoformat() if evidence.created_at else None,
-    }
+        await EventService.create(
+            db,
+            event_type=EventType.EVIDENCE_CAPTURED,
+            mission_id=mission_uuid,
+            payload={"evidence_id": str(evidence.id), "source": request.source},
+        )
+        await db.commit()
+        await _record_boundary_event(
+            db, "executed", ExecutionAction.EVIDENCE_SUBMIT.value, principal,
+            mission_id=request.mission_id, correlation_id=correlation_id,
+        )
+
+        return {
+            "id": str(evidence.id),
+            "mission_id": str(evidence.mission_id),
+            "source": evidence.source,
+            "content_type": evidence.content_type,
+            "content_hash": evidence.content_hash,
+            "verified": evidence.verified,
+            "created_at": evidence.created_at.isoformat() if evidence.created_at else None,
+        }
+    except ExecutionGuardError as exc:
+        await _record_boundary_event(
+            db, "refused", ExecutionAction.EVIDENCE_SUBMIT.value, principal,
+            mission_id=request.mission_id, detail=exc.decision.reason_code.value,
+            correlation_id=correlation_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Observatory mutation refused: {exc.decision.reason_code.value}",
+        ) from exc
+    except Exception as exc:
+        await db.rollback()
+        await _record_boundary_event(
+            db, "failed", ExecutionAction.EVIDENCE_SUBMIT.value, principal,
+            mission_id=request.mission_id, detail=type(exc).__name__,
+            correlation_id=correlation_id,
+        )
+        raise
 
 
 @router.get("/evidence/{evidence_id}/verify", response_model=dict)
@@ -1052,51 +1462,134 @@ async def get_kill_switch_status(
 @router.post("/emergency/kill-switch", response_model=KillSwitchResponse)
 async def activate_kill_switch(
     request: KillSwitchRequest,
+    http_request: Request,
     db: AsyncSession = Depends(get_db),
+    principal: PrincipalContext = Depends(
+        require_audited_role(required_role=Role.SUPER_ADMIN, action=ExecutionAction.KILL_SWITCH_ACTIVATE)
+    ),
 ):
     """Activate the emergency kill switch. Idempotent — re-activation returns existing state.
-    Persists to database. Cancels all active missions. Fails closed."""
-    count, affected_ids, state = await KillSwitchService.activate(
-        db,
-        reason=request.reason,
-        activated_by=request.activated_by,
-        scope=request.scope,
-    )
-    await db.commit()
+    Persists to database. Cancels all active missions. Fails closed.
 
-    return KillSwitchResponse(
-        activated=True,
-        reason=state.reason,
-        activated_by=state.activated_by,
-        scope=state.scope,
-        timestamp=state.activated_at,
-        events_affected=count,
-    )
+    G-B1/B-B2/B-B3: requires an authenticated principal with SUPER_ADMIN or
+    higher (enforced by `require_role`). The activating identity is derived
+    from the authenticated principal — caller-supplied `activated_by` in the
+    request body is NOT trusted. Passes through the ExecutionGuard
+    (KILL_SWITCH_ACTIVATE requires an authenticated system_admin /
+    incident_commander principal).
+    """
+    correlation_id = http_request.state.boundary_correlation_id
+    try:
+        await ExecutionGuard.require_allowed(
+            session=db, action=ExecutionAction.KILL_SWITCH_ACTIVATE,
+            principal_context=principal,
+        )
+        count, affected_ids, state = await KillSwitchService.activate(
+            db,
+            reason=request.reason,
+            # G-B1: identity comes from the authenticated principal, never the body.
+            activated_by=principal.subject_id,
+            scope=request.scope,
+        )
+        await db.commit()
+        await _record_boundary_event(
+            db, "executed", ExecutionAction.KILL_SWITCH_ACTIVATE.value, principal,
+            correlation_id=correlation_id,
+        )
+
+        return KillSwitchResponse(
+            activated=True,
+            reason=state.reason,
+            activated_by=state.activated_by,
+            scope=state.scope,
+            timestamp=state.activated_at,
+            events_affected=count,
+        )
+    except ExecutionGuardError as exc:
+        await _record_boundary_event(
+            db, "refused", ExecutionAction.KILL_SWITCH_ACTIVATE.value, principal,
+            detail=exc.decision.reason_code.value, correlation_id=correlation_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Kill switch activation refused: {exc.decision.reason_code.value}",
+        ) from exc
+    except Exception as exc:
+        await db.rollback()
+        await _record_boundary_event(
+            db, "failed", ExecutionAction.KILL_SWITCH_ACTIVATE.value, principal,
+            detail=type(exc).__name__, correlation_id=correlation_id,
+        )
+        raise
 
 
 @router.delete("/emergency/kill-switch", response_model=KillSwitchStatusResponse)
 async def clear_kill_switch(
     request: KillSwitchClearRequest,
+    http_request: Request,
     db: AsyncSession = Depends(get_db),
+    principal: PrincipalContext = Depends(
+        require_audited_role(required_role=Role.SUPER_ADMIN, action=ExecutionAction.KILL_SWITCH_CLEAR)
+    ),
 ):
     """Clear (deactivate) the kill switch. Requires authorized principal.
-    Generates a KILL_SWITCH_CLEARED audit event. Returns None if no active switch exists."""
-    state = await KillSwitchService.clear(
-        db,
-        cleared_by=request.cleared_by,
-        reason=request.reason,
-    )
-    await db.commit()
 
-    if state is None:
-        return KillSwitchStatusResponse(is_active=False)
+    G-B1/B-B2/B-B3: requires an authenticated principal with SUPER_ADMIN or
+    higher (enforced by `require_role`). The clearing identity is derived from
+    the authenticated principal — caller-supplied `cleared_by` in the request
+    body is NOT trusted. Passes through the ExecutionGuard (KILL_SWITCH_CLEAR
+    requires an authenticated system_admin / incident_commander principal).
+    Generates a KILL_SWITCH_CLEARED audit event. Returns None if no active
+    switch exists.
+    """
+    correlation_id = http_request.state.boundary_correlation_id
+    try:
+        await ExecutionGuard.require_allowed(
+            session=db, action=ExecutionAction.KILL_SWITCH_CLEAR,
+            principal_context=principal,
+        )
+        state = await KillSwitchService.clear(
+            db,
+            # G-B1: identity comes from the authenticated principal, never the body.
+            cleared_by=principal.subject_id,
+            reason=request.reason,
+            principal_context=principal,
+        )
+        await db.commit()
 
-    return KillSwitchStatusResponse(
-        is_active=False,
-        reason=state.reason,
-        activated_by=state.activated_by,
-        activated_at=state.activated_at,
-        cleared_by=state.cleared_by,
-        cleared_at=state.cleared_at,
-        scope=state.scope,
-    )
+        if state is None:
+            await _record_boundary_event(
+                db, "executed", ExecutionAction.KILL_SWITCH_CLEAR.value, principal,
+                detail="no_active_switch", correlation_id=correlation_id,
+            )
+            return KillSwitchStatusResponse(is_active=False)
+
+        await _record_boundary_event(
+            db, "executed", ExecutionAction.KILL_SWITCH_CLEAR.value, principal,
+            correlation_id=correlation_id,
+        )
+        return KillSwitchStatusResponse(
+            is_active=False,
+            reason=state.reason,
+            activated_by=state.activated_by,
+            activated_at=state.activated_at,
+            cleared_by=state.cleared_by,
+            cleared_at=state.cleared_at,
+            scope=state.scope,
+        )
+    except ExecutionGuardError as exc:
+        await _record_boundary_event(
+            db, "refused", ExecutionAction.KILL_SWITCH_CLEAR.value, principal,
+            detail=exc.decision.reason_code.value, correlation_id=correlation_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Kill switch clear refused: {exc.decision.reason_code.value}",
+        ) from exc
+    except Exception as exc:
+        await db.rollback()
+        await _record_boundary_event(
+            db, "failed", ExecutionAction.KILL_SWITCH_CLEAR.value, principal,
+            detail=type(exc).__name__, correlation_id=correlation_id,
+        )
+        raise

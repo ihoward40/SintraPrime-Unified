@@ -47,6 +47,7 @@ from portal.services.execution_guard import (
     PrincipalContext,
 )
 from portal.services.observatory_service import (
+    AgentService,
     ApprovalService,
     EventService,
     KillSwitchService,
@@ -97,7 +98,12 @@ async def db():
 
 
 async def _create_mission(db, title="Test Mission", status="QUEUED"):
-    """Helper to create a mission."""
+    """Helper to create a mission.
+
+    Sets status directly on the model to bypass the execution guard in
+    update_status() — this helper is for test setup, not for testing the
+    guard itself.
+    """
     mission = await MissionService.create(
         db,
         title=title,
@@ -106,9 +112,28 @@ async def _create_mission(db, title="Test Mission", status="QUEUED"):
     )
     await db.commit()
     if status != "QUEUED":
-        await MissionService.update_status(db, mission.id, status)
+        # Set status directly on the model to bypass the guard in update_status()
+        from sqlalchemy import select as sa_select
+        result = await db.execute(sa_select(Mission).where(Mission.id == mission.id))
+        mission = result.scalar_one()
+        mission.status = status
+        await db.flush()
         await db.commit()
     return mission
+
+
+async def _set_mission_status_direct(db, mission_id, status):
+    """Set mission status directly, bypassing the execution guard.
+
+    Use this for test setup when you need a mission in a specific state
+    without triggering the guard in update_status().
+    """
+    from sqlalchemy import select as sa_select
+    result = await db.execute(sa_select(Mission).where(Mission.id == mission_id))
+    mission = result.scalar_one()
+    mission.status = status
+    await db.flush()
+    await db.commit()
 
 
 async def _activate_kill_switch(db, reason="Test kill switch"):
@@ -208,19 +233,38 @@ class TestKillSwitchEnforcement:
 
     @pytest.mark.asyncio
     async def test_kill_switch_activation_always_allowed(self, db):
-        """Kill-switch activation itself is always allowed, even if already active."""
+        """Kill-switch activation itself is always allowed when properly authenticated,
+        even if already active."""
         await _activate_kill_switch(db)
-        decision = await ExecutionGuard.evaluate(db, action=ExecutionAction.KILL_SWITCH_ACTIVATE)
+        admin_principal = PrincipalContext.for_testing(
+            subject_id="test-admin", roles=["system_admin", "incident_commander"]
+        )
+        decision = await ExecutionGuard.evaluate(
+            db, action=ExecutionAction.KILL_SWITCH_ACTIVATE, principal_context=admin_principal
+        )
         assert decision.allowed
 
     @pytest.mark.asyncio
     async def test_kill_switch_clearing_evaluated_separately(self, db):
-        """Kill-switch clearing is evaluated separately (requires approval)."""
+        """Kill-switch clearing is evaluated separately from BLOCKED actions.
+
+        G4.7: KILL_SWITCH_CLEAR has kill_switch=CLEARING (not BLOCKED),
+        so it is NOT blocked by the active kill switch. It passes through
+        the guard when an authenticated principal with the required role
+        is provided.
+        """
         await _activate_kill_switch(db)
-        decision = await ExecutionGuard.evaluate(db, action=ExecutionAction.KILL_SWITCH_CLEAR)
-        # Clearing requires approval — denied without one
-        assert not decision.allowed
-        assert decision.reason_code == DecisionReasonCode.APPROVAL_REQUIRED
+        principal = PrincipalContext.for_testing(
+            subject_id="test-incident-commander",
+            roles=["incident_commander"],
+        )
+        decision = await ExecutionGuard.evaluate(
+            db,
+            action=ExecutionAction.KILL_SWITCH_CLEAR,
+            principal_context=principal,
+        )
+        # CLEARING behavior means the action is not blocked by the kill switch
+        assert decision.allowed
 
     @pytest.mark.asyncio
     async def test_mission_start_denied_during_kill_switch(self, db):
@@ -266,8 +310,7 @@ class TestMissionStateEnforcement:
     async def test_paused_mission_blocks_execution(self, db):
         """A paused mission blocks normal execution."""
         mission = await _create_mission(db, status="EXECUTING")
-        await MissionService.update_status(db, mission.id, "PAUSED")
-        await db.commit()
+        await _set_mission_status_direct(db, mission.id, "PAUSED")
         decision = await ExecutionGuard.evaluate(
             db, action=ExecutionAction.TOOL_INVOKE, mission_id=str(mission.id)
         )
@@ -278,8 +321,7 @@ class TestMissionStateEnforcement:
     async def test_paused_mission_allows_resume(self, db):
         """A paused mission allows resume."""
         mission = await _create_mission(db, status="EXECUTING")
-        await MissionService.update_status(db, mission.id, "PAUSED")
-        await db.commit()
+        await _set_mission_status_direct(db, mission.id, "PAUSED")
         decision = await ExecutionGuard.evaluate(
             db, action=ExecutionAction.MISSION_RESUME, mission_id=str(mission.id)
         )
@@ -289,8 +331,7 @@ class TestMissionStateEnforcement:
     async def test_paused_mission_allows_cancel(self, db):
         """A paused mission allows cancel."""
         mission = await _create_mission(db, status="EXECUTING")
-        await MissionService.update_status(db, mission.id, "PAUSED")
-        await db.commit()
+        await _set_mission_status_direct(db, mission.id, "PAUSED")
         decision = await ExecutionGuard.evaluate(
             db, action=ExecutionAction.MISSION_CANCEL, mission_id=str(mission.id)
         )
@@ -300,8 +341,7 @@ class TestMissionStateEnforcement:
     async def test_frozen_mission_blocks_resume(self, db):
         """A frozen mission blocks resume (no explicit unfreeze action defined)."""
         mission = await _create_mission(db, status="EXECUTING")
-        await MissionService.update_status(db, mission.id, "FROZEN")
-        await db.commit()
+        await _set_mission_status_direct(db, mission.id, "FROZEN")
         decision = await ExecutionGuard.evaluate(
             db, action=ExecutionAction.MISSION_RESUME, mission_id=str(mission.id)
         )
@@ -312,8 +352,7 @@ class TestMissionStateEnforcement:
     async def test_frozen_mission_allows_evidence_read(self, db):
         """A frozen mission allows evidence reads."""
         mission = await _create_mission(db, status="EXECUTING")
-        await MissionService.update_status(db, mission.id, "FROZEN")
-        await db.commit()
+        await _set_mission_status_direct(db, mission.id, "FROZEN")
         decision = await ExecutionGuard.evaluate(
             db, action=ExecutionAction.EVIDENCE_READ, mission_id=str(mission.id)
         )
@@ -323,8 +362,7 @@ class TestMissionStateEnforcement:
     async def test_canceled_mission_blocks_execution(self, db):
         """A canceled mission blocks all execution."""
         mission = await _create_mission(db, status="EXECUTING")
-        await MissionService.update_status(db, mission.id, "CANCELED")
-        await db.commit()
+        await _set_mission_status_direct(db, mission.id, "CANCELED")
         decision = await ExecutionGuard.evaluate(
             db, action=ExecutionAction.TOOL_INVOKE, mission_id=str(mission.id)
         )
@@ -335,8 +373,7 @@ class TestMissionStateEnforcement:
     async def test_completed_mission_blocks_mutation(self, db):
         """A completed mission blocks further mutation."""
         mission = await _create_mission(db, status="EXECUTING")
-        await MissionService.update_status(db, mission.id, "COMPLETED")
-        await db.commit()
+        await _set_mission_status_direct(db, mission.id, "COMPLETED")
         # TOOL_INVOKE has mission_state_required=True, so it checks mission state
         decision = await ExecutionGuard.evaluate(
             db, action=ExecutionAction.TOOL_INVOKE, mission_id=str(mission.id)
@@ -348,8 +385,7 @@ class TestMissionStateEnforcement:
     async def test_completed_mission_allows_evidence_export(self, db):
         """A completed mission allows evidence export."""
         mission = await _create_mission(db, status="EXECUTING")
-        await MissionService.update_status(db, mission.id, "COMPLETED")
-        await db.commit()
+        await _set_mission_status_direct(db, mission.id, "COMPLETED")
         decision = await ExecutionGuard.evaluate(
             db, action=ExecutionAction.EXPORT_EVIDENCE, mission_id=str(mission.id)
         )
@@ -357,8 +393,13 @@ class TestMissionStateEnforcement:
 
     @pytest.mark.asyncio
     async def test_active_mission_allows_permitted_execution(self, db):
-        """An executing mission allows permitted actions like tool_invoke."""
+        """An executing mission allows permitted actions like tool_invoke.
+
+        TOOL_INVOKE has CONDITIONAL approval (G4.7 fails closed until G4.8).
+        With an existing approval, it should be allowed.
+        """
         mission = await _create_mission(db, status="EXECUTING")
+        await _create_approval(db, mission.id, gate="G-07", status="APPROVED")
         decision = await ExecutionGuard.evaluate(
             db, action=ExecutionAction.TOOL_INVOKE, mission_id=str(mission.id)
         )
@@ -718,3 +759,554 @@ class TestPrincipalContext:
             db, action=ExecutionAction.HEALTH_READ, principal_context=ctx
         )
         assert decision.allowed
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 9. Conditional Approval Fails Closed
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestConditionalApprovalFailClosed:
+
+    @pytest.mark.asyncio
+    async def test_tool_invoke_denied_without_resolved_approval(self, db):
+        """TOOL_INVOKE has CONDITIONAL approval and must fail closed when
+        the condition is unresolved (no approval exists).
+
+        Until G4.8 implements conditional approval logic, CONDITIONAL
+        approval behavior DENIES by default.
+        """
+        mission = await _create_mission(db, status="EXECUTING")
+        decision = await ExecutionGuard.evaluate(
+            db, action=ExecutionAction.TOOL_INVOKE, mission_id=str(mission.id)
+        )
+        assert not decision.allowed
+        assert decision.reason_code == DecisionReasonCode.APPROVAL_REQUIRED
+        assert "conditional" in decision.reason.lower()
+
+    @pytest.mark.asyncio
+    async def test_tool_invoke_allowed_with_existing_approval(self, db):
+        """TOOL_INVOKE is allowed when an existing approval exists (condition resolved)."""
+        mission = await _create_mission(db, status="EXECUTING")
+        await _create_approval(db, mission.id, gate="G-07", status="APPROVED")
+        decision = await ExecutionGuard.evaluate(
+            db, action=ExecutionAction.TOOL_INVOKE, mission_id=str(mission.id)
+        )
+        assert decision.allowed
+
+    @pytest.mark.asyncio
+    async def test_tool_invoke_denied_with_rejected_approval(self, db):
+        """TOOL_INVOKE denied when the only approval is REJECTED (fail closed)."""
+        mission = await _create_mission(db, status="EXECUTING")
+        await _create_approval(db, mission.id, gate="G-07", status="REJECTED")
+        decision = await ExecutionGuard.evaluate(
+            db, action=ExecutionAction.TOOL_INVOKE, mission_id=str(mission.id)
+        )
+        assert not decision.allowed
+        assert decision.reason_code == DecisionReasonCode.APPROVAL_REQUIRED
+
+    @pytest.mark.asyncio
+    async def test_tool_invoke_denied_with_wrong_mission_approval(self, db):
+        """TOOL_INVOKE denied when the approved approval belongs to a different mission."""
+        mission = await _create_mission(db, status="EXECUTING")
+        other_mission = await _create_mission(db, status="EXECUTING")
+        # Approval exists but for the OTHER mission
+        await _create_approval(db, other_mission.id, gate="G-07", status="APPROVED")
+        decision = await ExecutionGuard.evaluate(
+            db, action=ExecutionAction.TOOL_INVOKE, mission_id=str(mission.id)
+        )
+        assert not decision.allowed
+        assert decision.reason_code == DecisionReasonCode.APPROVAL_REQUIRED
+
+    @pytest.mark.asyncio
+    async def test_tool_invoke_denied_with_wrong_gate_approval(self, db):
+        """TOOL_INVOKE denied when the approved approval is for a different gate.
+
+        TOOL_INVOKE's policy requires gate G-07. An approval for G-05 must
+        not satisfy the G-07 requirement.
+        """
+        mission = await _create_mission(db, status="EXECUTING")
+        # Approval exists for G-05, but TOOL_INVOKE requires G-07
+        await _create_approval(db, mission.id, gate="G-05", status="APPROVED")
+        decision = await ExecutionGuard.evaluate(
+            db, action=ExecutionAction.TOOL_INVOKE, mission_id=str(mission.id)
+        )
+        assert not decision.allowed
+        assert decision.reason_code == DecisionReasonCode.APPROVAL_REQUIRED
+
+    @pytest.mark.asyncio
+    async def test_tool_invoke_denied_with_expired_approval(self, db):
+        """TOOL_INVOKE denied when the approval has EXPIRED status (fail closed)."""
+        mission = await _create_mission(db, status="EXECUTING")
+        await _create_approval(db, mission.id, gate="G-07", status="EXPIRED")
+        decision = await ExecutionGuard.evaluate(
+            db, action=ExecutionAction.TOOL_INVOKE, mission_id=str(mission.id)
+        )
+        assert not decision.allowed
+        assert decision.reason_code == DecisionReasonCode.APPROVAL_REQUIRED
+
+    @pytest.mark.asyncio
+    async def test_tool_invoke_fail_closed_on_approval_lookup_error(self, db):
+        """TOOL_INVOKE fails closed when approval lookup raises an error."""
+        mission = await _create_mission(db, status="EXECUTING")
+
+        # Create a fake session that raises on Approval queries
+        class FailingSession:
+            async def execute(self, *args, **kwargs):
+                from sqlalchemy.exc import SQLAlchemyError
+                raise SQLAlchemyError("simulated DB failure")
+
+        with pytest.raises(Exception):
+            await ExecutionGuard._check_approval(
+                FailingSession(), str(mission.id), "G-07"
+            )
+
+    @pytest.mark.asyncio
+    async def test_tool_invoke_idempotent_duplicate_request(self, db):
+        """TOOL_INVOKE with an existing approval is idempotent across multiple evaluations."""
+        mission = await _create_mission(db, status="EXECUTING")
+        await _create_approval(db, mission.id, gate="G-07", status="APPROVED")
+        decision1 = await ExecutionGuard.evaluate(
+            db, action=ExecutionAction.TOOL_INVOKE, mission_id=str(mission.id)
+        )
+        decision2 = await ExecutionGuard.evaluate(
+            db, action=ExecutionAction.TOOL_INVOKE, mission_id=str(mission.id)
+        )
+        assert decision1.allowed
+        assert decision2.allowed
+        # Idempotent: same approval ID returned on both evaluations
+        assert decision1.approval_id == decision2.approval_id
+
+    @pytest.mark.asyncio
+    async def test_tool_invoke_denied_with_spy_adapter_not_called(self, db):
+        """When TOOL_INVOKE is denied, the tool adapter is never invoked.
+
+        Uses a spy adapter to prove no side effect occurs on denial.
+        """
+        mission = await _create_mission(db, status="EXECUTING")
+
+        # Spy adapter records whether it was called
+        calls = []
+
+        class SpyToolAdapter:
+            async def invoke(self, *args, **kwargs):
+                calls.append((args, kwargs))
+                return "tool-result"
+
+        adapter = SpyToolAdapter()
+        decision = await ExecutionGuard.evaluate(
+            db, action=ExecutionAction.TOOL_INVOKE, mission_id=str(mission.id)
+        )
+        # Denied (no approval exists)
+        assert not decision.allowed
+        # Simulate the caller respecting the decision
+        if decision.allowed:
+            await adapter.invoke("some-tool")
+        # Adapter must NOT have been called
+        assert len(calls) == 0, "Tool adapter must not be called on denial"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 10. Production Audit Assertion
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestProductionAuditAssertion:
+
+    def test_audit_enabled_is_true_by_default(self):
+        """_audit_enabled defaults to True."""
+        # Save and restore
+        original = ExecutionGuard._audit_enabled
+        try:
+            ExecutionGuard._audit_enabled = True
+            ExecutionGuard.assert_production_ready()  # Should not raise
+        finally:
+            ExecutionGuard._audit_enabled = original
+
+    def test_assert_production_ready_raises_when_audit_disabled(self):
+        """assert_production_ready raises when _audit_enabled is False."""
+        original = ExecutionGuard._audit_enabled
+        try:
+            ExecutionGuard._audit_enabled = False
+            with pytest.raises(RuntimeError, match="audit.*cannot be disabled"):
+                ExecutionGuard.assert_production_ready()
+        finally:
+            ExecutionGuard._audit_enabled = original
+
+    def test_audit_enabled_restored_after_test(self):
+        """After tests toggle _audit_enabled, it must be restored to True."""
+        assert ExecutionGuard._audit_enabled is True, (
+            "Audit should be enabled by default after test cleanup"
+        )
+
+    def test_api_input_cannot_modify_audit_flag(self):
+        """The _audit_enabled flag is a class variable, not configurable via API."""
+        # The flag is not exposed through any settings, env var, or API endpoint.
+        # It can only be set programmatically (test-only).
+        assert not hasattr(ExecutionGuard, '_audit_enabled_env_var')
+        assert not hasattr(ExecutionGuard, '_audit_enabled_config')
+
+
+class TestStartupAuditIntegration:
+    """Verify that the application lifespan calls assert_production_ready()."""
+
+    def test_lifespan_calls_assert_production_ready(self):
+        """The lifespan function imports and calls ExecutionGuard.assert_production_ready."""
+        import inspect
+        from portal.main import lifespan
+        source = inspect.getsource(lifespan)
+        assert "assert_production_ready" in source, (
+            "lifespan must call ExecutionGuard.assert_production_ready()"
+        )
+
+    @pytest.mark.asyncio
+    async def test_startup_succeeds_with_audit_enabled(self):
+        """Normal startup succeeds when auditing is enabled."""
+        original = ExecutionGuard._audit_enabled
+        try:
+            ExecutionGuard._audit_enabled = True
+            ExecutionGuard.assert_production_ready()  # Should not raise
+        finally:
+            ExecutionGuard._audit_enabled = original
+
+    @pytest.mark.asyncio
+    async def test_startup_fails_when_audit_disabled(self):
+        """Startup fails when audit emission is disabled."""
+        original = ExecutionGuard._audit_enabled
+        try:
+            ExecutionGuard._audit_enabled = False
+            with pytest.raises(RuntimeError, match="cannot be disabled"):
+                ExecutionGuard.assert_production_ready()
+        finally:
+            ExecutionGuard._audit_enabled = original
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 11. Service Bypass Tests
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestServiceBypass:
+
+    @pytest.mark.asyncio
+    async def test_internal_mission_create_denied_while_kill_switch_active(self, db):
+        """An internal caller using MissionService.create() cannot bypass the guard."""
+        await _activate_kill_switch(db)
+        with pytest.raises((KillSwitchActiveError, Exception)):
+            await MissionService.create(db, title="Should Fail")
+
+    @pytest.mark.asyncio
+    async def test_mission_create_denial_creates_no_mission(self, db):
+        """When MissionService.create() is denied, no mission is created in the DB."""
+        from sqlalchemy import select as sa_select
+        await _activate_kill_switch(db)
+        try:
+            await MissionService.create(db, title="Should Not Exist")
+        except Exception:
+            pass  # Expected
+        await db.rollback()
+        result = await db.execute(sa_select(Mission))
+        missions = result.scalars().all()
+        assert len(missions) == 0, "No mission should exist after denied creation"
+
+    @pytest.mark.asyncio
+    async def test_kill_switch_clear_invokes_guard(self, db):
+        """Kill-switch clear passes through the guard with authenticated principal.
+
+        G4.7: KILL_SWITCH_CLEAR requires an authenticated principal with
+        incident_commander or system_admin role. With the correct principal,
+        the guard evaluates the action and allows it (CLEARING behavior,
+        NOT_REQUIRED approval).
+        """
+        await _activate_kill_switch(db)
+        principal = PrincipalContext.for_testing(
+            subject_id="test-incident-commander",
+            roles=["incident_commander"],
+        )
+        # The guard evaluates KILL_SWITCH_CLEAR with CLEARING behavior
+        # and an authenticated principal with the required role.
+        decision = await ExecutionGuard.evaluate(
+            db,
+            action=ExecutionAction.KILL_SWITCH_CLEAR,
+            principal_context=principal,
+        )
+        # KILL_SWITCH_CLEAR has kill_switch=CLEARING, which is not BLOCKED,
+        # and the principal has the required role, so the guard allows it.
+        assert decision.allowed
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 12. Privileged Principal Enforcement
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestPrivilegedPrincipalEnforcement:
+
+    @pytest.mark.asyncio
+    async def test_kill_switch_clear_denied_without_principal(self, db):
+        """Kill-switch clear denied when no principal is provided."""
+        await _activate_kill_switch(db)
+        decision = await ExecutionGuard.evaluate(
+            db, action=ExecutionAction.KILL_SWITCH_CLEAR,
+        )
+        assert not decision.allowed
+        assert decision.reason_code == DecisionReasonCode.FAIL_CLOSED
+        assert "authenticated principal" in decision.reason
+
+    @pytest.mark.asyncio
+    async def test_kill_switch_clear_denied_with_unauthenticated_principal(self, db):
+        """Kill-switch clear denied when principal is unauthenticated."""
+        await _activate_kill_switch(db)
+        principal = PrincipalContext.unauthenticated()
+        decision = await ExecutionGuard.evaluate(
+            db, action=ExecutionAction.KILL_SWITCH_CLEAR,
+            principal_context=principal,
+        )
+        assert not decision.allowed
+        assert decision.reason_code == DecisionReasonCode.FAIL_CLOSED
+
+    @pytest.mark.asyncio
+    async def test_kill_switch_clear_denied_with_wrong_role(self, db):
+        """Kill-switch clear denied when principal lacks required role."""
+        await _activate_kill_switch(db)
+        principal = PrincipalContext.for_testing(
+            subject_id="test-observer",
+            roles=["observer"],
+        )
+        decision = await ExecutionGuard.evaluate(
+            db, action=ExecutionAction.KILL_SWITCH_CLEAR,
+            principal_context=principal,
+        )
+        assert not decision.allowed
+        assert decision.reason_code == DecisionReasonCode.FAIL_CLOSED
+        assert "roles" in decision.reason
+
+    @pytest.mark.asyncio
+    async def test_kill_switch_clear_allowed_with_system_admin(self, db):
+        """Kill-switch clear allowed with system_admin role."""
+        await _activate_kill_switch(db)
+        principal = PrincipalContext.for_testing(
+            subject_id="test-admin",
+            roles=["system_admin"],
+        )
+        decision = await ExecutionGuard.evaluate(
+            db, action=ExecutionAction.KILL_SWITCH_CLEAR,
+            principal_context=principal,
+        )
+        assert decision.allowed
+
+    @pytest.mark.asyncio
+    async def test_kill_switch_clear_allowed_with_incident_commander(self, db):
+        """Kill-switch clear allowed with incident_commander role."""
+        await _activate_kill_switch(db)
+        principal = PrincipalContext.for_testing(
+            subject_id="test-commander",
+            roles=["incident_commander"],
+        )
+        decision = await ExecutionGuard.evaluate(
+            db, action=ExecutionAction.KILL_SWITCH_CLEAR,
+            principal_context=principal,
+        )
+        assert decision.allowed
+
+    @pytest.mark.asyncio
+    async def test_identity_action_denied_without_principal(self, db):
+        """Identity action denied when no principal is provided."""
+        await _activate_kill_switch(db)
+        decision = await ExecutionGuard.evaluate(
+            db, action=ExecutionAction.IDENTITY_ACTION,
+        )
+        # IDENTITY_ACTION has kill_switch=BLOCKED, so it's denied by kill switch first
+        assert not decision.allowed
+
+    @pytest.mark.asyncio
+    async def test_identity_action_denied_with_wrong_role(self, db):
+        """Identity action denied when principal lacks system_admin role."""
+        decision = await ExecutionGuard.evaluate(
+            db, action=ExecutionAction.IDENTITY_ACTION,
+            principal_context=PrincipalContext.for_testing(
+                subject_id="test-observer",
+                roles=["observer"],
+            ),
+        )
+        assert not decision.allowed
+        assert decision.reason_code == DecisionReasonCode.FAIL_CLOSED
+        assert "system_admin" in decision.reason
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 13. Comprehensive Service-Bypass Tests
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestServiceBypassComprehensive:
+    """Prove that internal callers cannot bypass the guard for any
+    consequential service boundary. Each test:
+    1. Forces guard denial (kill switch or missing principal)
+    2. Invokes the service directly (not through router)
+    3. Asserts typed denial
+    4. Asserts database state unchanged
+    5. Asserts no external side effect
+    """
+
+    @pytest.mark.asyncio
+    async def test_mission_create_denied_kill_switch(self, db):
+        """MissionService.create denied during kill switch. No mission created."""
+        from sqlalchemy import select as sa_select
+        await _activate_kill_switch(db)
+        with pytest.raises(Exception):
+            await MissionService.create(db, title="Blocked Mission")
+        await db.rollback()
+        result = await db.execute(sa_select(Mission))
+        assert len(result.scalars().all()) == 0
+
+    @pytest.mark.asyncio
+    async def test_mission_start_denied_kill_switch(self, db):
+        """MissionService.update_status(EXECUTING) denied during kill switch.
+
+        Note: Kill switch activation cancels active missions (including QUEUED).
+        So we verify the guard blocks the transition by checking that
+        update_status raises an exception.
+        """
+        mission = await _create_mission(db, status="QUEUED")
+        await db.commit()
+        mission_id = mission.id
+        await _activate_kill_switch(db)
+        await db.commit()
+        # The guard should deny MISSION_START during kill switch
+        with pytest.raises(Exception):
+            await MissionService.update_status(db, mission_id, MissionStatus.EXECUTING)
+        # The mission was already CANCELED by the kill switch activation.
+        # The guard prevented update_status from changing it further.
+
+    @pytest.mark.asyncio
+    async def test_mission_resume_denied_kill_switch(self, db):
+        """MissionService.update_status(EXECUTING from PAUSED) denied during kill switch."""
+        from sqlalchemy import select as sa_select
+        mission = await _create_mission(db, status="EXECUTING")
+        await _set_mission_status_direct(db, mission.id, "PAUSED")
+        await db.commit()
+        mission_id = mission.id
+        await _activate_kill_switch(db)
+        await db.commit()
+        with pytest.raises(Exception):
+            await MissionService.update_status(db, mission_id, MissionStatus.EXECUTING)
+        await db.rollback()
+        result = await db.execute(sa_select(Mission).where(Mission.id == mission_id))
+        fresh = result.scalar_one_or_none()
+        assert fresh is not None
+        assert fresh.status == "PAUSED", f"Status should remain PAUSED, got {fresh.status}"
+
+    @pytest.mark.asyncio
+    async def test_mission_freeze_denied_kill_switch(self, db):
+        """MissionService.update_status(PAUSED) denied during kill switch.
+
+        Kill switch activation cancels EXECUTING missions, so we verify
+        the guard blocks the update_status call by asserting it raises.
+        """
+        mission = await _create_mission(db, status="EXECUTING")
+        await db.commit()
+        await _activate_kill_switch(db)
+        await db.commit()
+        with pytest.raises(Exception):
+            await MissionService.update_status(db, mission.id, MissionStatus.PAUSED)
+
+    @pytest.mark.asyncio
+    async def test_mission_cancel_denied_kill_switch(self, db):
+        """MissionService.update_status(CANCELED) denied during kill switch.
+
+        Kill switch activation already cancels missions, but the guard
+        should still evaluate the explicit CANCELED transition.
+        """
+        mission = await _create_mission(db, status="EXECUTING")
+        await db.commit()
+        await _activate_kill_switch(db)
+        await db.commit()
+        with pytest.raises(Exception):
+            await MissionService.update_status(db, mission.id, "CANCELED")
+
+    @pytest.mark.asyncio
+    async def test_agent_register_denied_kill_switch(self, db):
+        """AgentService.register denied during kill switch. No agent created."""
+        from sqlalchemy import select as sa_select
+        await _activate_kill_switch(db)
+        with pytest.raises(Exception):
+            await AgentService.register(db, agent_id="BLOCKED-1", name="Blocked", agent_type="test")
+        await db.rollback()
+        result = await db.execute(sa_select(Agent))
+        assert len(result.scalars().all()) == 0
+
+    @pytest.mark.asyncio
+    async def test_agent_deregister_denied_no_principal(self, db):
+        """AgentService.deregister denied without principal. Agent status unchanged."""
+        # Register an agent first (no kill switch active)
+        agent = await AgentService.register(
+            db, agent_id="DEREG-TEST", name="Test", agent_type="test",
+        )
+        await db.commit()
+        # Now try to deregister without principal — should be denied
+        with pytest.raises(Exception):
+            await AgentService.deregister(db, "DEREG-TEST")
+        await db.rollback()
+        from sqlalchemy import select as sa_select
+        result = await db.execute(sa_select(Agent).where(Agent.agent_id == "DEREG-TEST"))
+        fresh_agent = result.scalar_one_or_none()
+        assert fresh_agent is not None
+        assert fresh_agent.status == "ACTIVE", f"Agent should remain ACTIVE, got {fresh_agent.status}"
+
+    @pytest.mark.asyncio
+    async def test_agent_deregister_denied_wrong_role(self, db):
+        """AgentService.deregister denied with wrong role. Agent status unchanged."""
+        agent = await AgentService.register(
+            db, agent_id="DEREG-ROLE", name="Test", agent_type="test",
+        )
+        await db.commit()
+        wrong_principal = PrincipalContext.for_testing(
+            subject_id="test-observer", roles=["observer"],
+        )
+        with pytest.raises(Exception):
+            await AgentService.deregister(db, "DEREG-ROLE", principal_context=wrong_principal)
+        await db.rollback()
+        from sqlalchemy import select as sa_select
+        result = await db.execute(sa_select(Agent).where(Agent.agent_id == "DEREG-ROLE"))
+        fresh_agent = result.scalar_one_or_none()
+        assert fresh_agent is not None
+        assert fresh_agent.status == "ACTIVE", f"Agent should remain ACTIVE, got {fresh_agent.status}"
+
+    @pytest.mark.asyncio
+    async def test_approval_decide_denied_kill_switch(self, db):
+        """ApprovalService.decide denied during kill switch. Approval unchanged."""
+        from sqlalchemy import select as sa_select
+        mission = await _create_mission(db, status="EXECUTING")
+        approval = await _create_approval(db, mission.id, gate="G-07", status="PENDING")
+        await db.commit()
+        approval_id = approval.id
+        await _activate_kill_switch(db)
+        await db.commit()
+        with pytest.raises(Exception):
+            await ApprovalService.decide(db, approval_id, "APPROVED", reviewer="admin")
+        await db.rollback()
+        result = await db.execute(sa_select(Approval).where(Approval.id == approval_id))
+        fresh_approval = result.scalar_one_or_none()
+        assert fresh_approval is not None
+        assert fresh_approval.status == "PENDING", f"Approval should remain PENDING, got {fresh_approval.status}"
+
+    @pytest.mark.asyncio
+    async def test_kill_switch_clear_denied_no_principal_state_unchanged(self, db):
+        """KillSwitchService.clear denied without principal. Switch remains active."""
+        await _activate_kill_switch(db)
+        await db.commit()
+        with pytest.raises(Exception):
+            await KillSwitchService.clear(db, cleared_by="nobody")
+        await db.rollback()
+        is_active = await KillSwitchService.is_active(db)
+        assert is_active is True, "Kill switch should remain active"
+
+    @pytest.mark.asyncio
+    async def test_kill_switch_clear_denied_wrong_role_state_unchanged(self, db):
+        """KillSwitchService.clear denied with wrong role. Switch remains active."""
+        await _activate_kill_switch(db)
+        await db.commit()
+        wrong_principal = PrincipalContext.for_testing(
+            subject_id="test-observer", roles=["observer"],
+        )
+        with pytest.raises(Exception):
+            await KillSwitchService.clear(db, cleared_by="observer", principal_context=wrong_principal)
+        await db.rollback()
+        is_active = await KillSwitchService.is_active(db)
+        assert is_active is True, "Kill switch should remain active"

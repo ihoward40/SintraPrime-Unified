@@ -102,6 +102,13 @@ class ExecutionAction(str, enum.Enum):
     KILL_SWITCH_ACTIVATE = "kill_switch.activate"
     KILL_SWITCH_CLEAR = "kill_switch.clear"
 
+    # Observatory HTTP-boundary mutations (G4.8 C1 hardening)
+    # These map 1:1 to the observatory router mutation routes so the guard
+    # can enforce principal + role + kill-switch at the HTTP boundary.
+    EVENT_APPEND = "observatory.event.append"
+    EVIDENCE_SUBMIT = "observatory.evidence.submit"
+    APPROVAL_REQUEST = "observatory.approval.request"
+
     # Read-only evidence paths (exempt from kill-switch block)
     EVIDENCE_READ = "evidence.read"
     EVENT_READ = "event.read"
@@ -149,6 +156,10 @@ class ActionPolicy:
     approval: ApprovalBehavior
     mission_state_required: bool        # True if action requires a valid mission context
     description: str
+    # G4.7 temporary principal enforcement for privileged non-mission actions.
+    # G4.8 will replace this with full authenticated principal identity.
+    requires_authenticated_principal: bool = False
+    required_roles: frozenset[str] = field(default_factory=frozenset)
 
 
 _ACTION_POLICY: dict[ExecutionAction, ActionPolicy] = {
@@ -339,9 +350,13 @@ _ACTION_POLICY: dict[ExecutionAction, ActionPolicy] = {
         risk_level=ActionRiskLevel.PRIVILEGED,
         governance_gate="G-02",
         kill_switch=KillSwitchBehavior.BLOCKED,
-        approval=ApprovalBehavior.REQUIRED,
+        # G4.7: No mission-scoped approval. Instead require authenticated principal
+        # with system_admin role. G4.8 will replace with real authentication.
+        approval=ApprovalBehavior.NOT_REQUIRED,
         mission_state_required=False,
         description="Modify identity or permissions",
+        requires_authenticated_principal=True,
+        required_roles=frozenset({"system_admin"}),
     ),
     ExecutionAction.APPROVAL_DECISION: ActionPolicy(
         risk_level=ActionRiskLevel.PRIVILEGED,
@@ -357,17 +372,53 @@ _ACTION_POLICY: dict[ExecutionAction, ActionPolicy] = {
         risk_level=ActionRiskLevel.EMERGENCY,
         governance_gate=None,
         kill_switch=KillSwitchBehavior.ACTIVATION,
+        # G4.8 C1: activation is a privileged, consequential action. Require an
+        # authenticated principal with system_admin or incident_commander role.
+        # Caller-supplied actor names from request bodies are NOT trusted.
         approval=ApprovalBehavior.NOT_REQUIRED,
         mission_state_required=False,
         description="Activate the global kill switch",
+        requires_authenticated_principal=True,
+        required_roles=frozenset({"system_admin", "incident_commander"}),
     ),
     ExecutionAction.KILL_SWITCH_CLEAR: ActionPolicy(
         risk_level=ActionRiskLevel.PRIVILEGED,
         governance_gate="G-05",
         kill_switch=KillSwitchBehavior.CLEARING,
-        approval=ApprovalBehavior.REQUIRED,
+        # G4.7: No mission-scoped approval. Instead require authenticated principal
+        # with system_admin or incident_commander role. G4.8 will replace with
+        # real authentication.
+        approval=ApprovalBehavior.NOT_REQUIRED,
         mission_state_required=False,
         description="Clear the global kill switch",
+        requires_authenticated_principal=True,
+        required_roles=frozenset({"system_admin", "incident_commander"}),
+    ),
+
+    # ── Observatory HTTP-boundary mutations (G4.8 C1) ──
+    ExecutionAction.EVENT_APPEND: ActionPolicy(
+        risk_level=ActionRiskLevel.MUTATING,
+        governance_gate=None,
+        kill_switch=KillSwitchBehavior.BLOCKED,
+        approval=ApprovalBehavior.NOT_REQUIRED,
+        mission_state_required=False,
+        description="Append an observatory event (hash-chained)",
+    ),
+    ExecutionAction.EVIDENCE_SUBMIT: ActionPolicy(
+        risk_level=ActionRiskLevel.MUTATING,
+        governance_gate="G-03",
+        kill_switch=KillSwitchBehavior.BLOCKED,
+        approval=ApprovalBehavior.NOT_REQUIRED,
+        mission_state_required=False,
+        description="Submit evidence for a mission",
+    ),
+    ExecutionAction.APPROVAL_REQUEST: ActionPolicy(
+        risk_level=ActionRiskLevel.MUTATING,
+        governance_gate=None,
+        kill_switch=KillSwitchBehavior.BLOCKED,
+        approval=ApprovalBehavior.NOT_REQUIRED,
+        mission_state_required=False,
+        description="Request a governance approval",
     ),
 
     # ── Read-only evidence paths (exempt) ──
@@ -446,7 +497,8 @@ _MISSION_STATE_ALLOWLIST: dict[str, frozenset[ExecutionAction]] = {
         ExecutionAction.INCIDENT_READ,
     }),
     "PLANNING": frozenset({
-        ExecutionAction.MISSION_CANCEL, ExecutionAction.SUBAGENT_SPAWN,
+        ExecutionAction.MISSION_START, ExecutionAction.MISSION_CANCEL,
+        ExecutionAction.SUBAGENT_SPAWN,
         ExecutionAction.EVIDENCE_READ, ExecutionAction.EVENT_READ,
         ExecutionAction.REPLAY_READ, ExecutionAction.HEALTH_READ,
         ExecutionAction.INCIDENT_READ, ExecutionAction.FILE_READ,
@@ -836,16 +888,39 @@ class ExecutionGuard:
     The guard evaluates kill-switch state, mission state, action classification,
     governance gates, and approval requirements.
 
-    Usage:
+    The approval provider is injected (dependency injection):
+      - Production: PersistedApprovalProvider (queries Approval table)
+      - Tests: portal.tests.support.test_approval_provider.TestApprovalProvider
+        (explicit allowlist, deny-by-default)
+
+    The guard contains NO environment-variable checks or test bypasses.
+    All approval resolution is delegated to the injected provider.
+
+    Usage (production):
         await ExecutionGuard.require_allowed(
             session=db,
             action=ExecutionAction.FILE_MODIFY,
             mission_id=mission_id,
         )
+
+    Usage (tests with explicit provider):
+        provider = TestApprovalProvider(allowed={("test-admin", "kill_switch.clear")})
+        # (TestApprovalProvider is in portal.tests.support.test_approval_provider)
+        await ExecutionGuard.require_allowed(
+            session=db,
+            action=ExecutionAction.KILL_SWITCH_CLEAR,
+            approval_provider=provider,
+            principal_context=PrincipalContext.for_testing(subject_id="test-admin"),
+        )
     """
 
     _statistics = GuardStatistics()
     _audit_enabled = True  # Can be disabled in tests to avoid event pollution
+
+    # NOTE: No mutable class-level approval provider. Production always uses
+    # a fresh PersistedApprovalProvider() when approval_provider=None is passed.
+    # Tests MUST pass approval_provider= explicitly. There is no setter, no
+    # global override, and no environment-variable selection.
 
     @classmethod
     def get_statistics(cls) -> GuardStatistics:
@@ -854,6 +929,23 @@ class ExecutionGuard:
     @classmethod
     def reset_statistics(cls) -> None:
         cls._statistics = GuardStatistics()
+
+    @classmethod
+    def assert_production_ready(cls) -> None:
+        """Assert that the guard is configured for production use.
+
+        This must be called during application startup. It raises if any
+        configuration is unsafe for production.
+
+        Specifically:
+        - _audit_enabled must be True (auditing cannot be disabled in production)
+        """
+        if not cls._audit_enabled:
+            raise RuntimeError(
+                "ExecutionGuard._audit_enabled is False — "
+                "audit event emission cannot be disabled in production. "
+                "This flag is test-only and must be True at startup."
+            )
 
     @classmethod
     async def evaluate(
@@ -866,16 +958,33 @@ class ExecutionGuard:
         resource_id: Optional[str] = None,
         principal_context: Optional[PrincipalContext] = None,
         extra_context: Optional[dict[str, Any]] = None,
+        approval_provider: Optional["ApprovalProvider"] = None,
     ) -> ExecutionGuardDecision:
         """Evaluate the guard without raising. Returns a structured decision.
 
         This method does NOT mutate the requested resource.
         It may emit an audit event recording the decision.
+
+        Args:
+            approval_provider: Override the approval resolution provider.
+                Production uses PersistedApprovalProvider by default.
+                Tests inject TestApprovalProvider explicitly.
+                The guard itself never selects a provider based on environment.
         """
         if principal_context is None:
             principal_context = PrincipalContext.unauthenticated()
         if extra_context is None:
             extra_context = {}
+
+        # ── Resolve approval provider (dependency injection) ──
+        # Production: approval_provider=None → PersistedApprovalProvider.
+        # Tests: explicit TestApprovalProvider.
+        # No mutable global state. No environment-variable selection.
+        if approval_provider is None:
+            from portal.services.approval_provider import PersistedApprovalProvider
+            provider = PersistedApprovalProvider()
+        else:
+            provider = approval_provider
 
         request = ExecutionGuardRequest(
             action=action,
@@ -1018,35 +1127,90 @@ class ExecutionGuard:
                 await cls._emit_audit_event(session, decision, policy=policy)
                 return decision
 
-        # ── Step 4: Approval enforcement ──
+        # ── Step 3b: Principal enforcement for privileged actions ──
+        # G4.7 temporary authorization: privileged non-mission actions that
+        # cannot use mission-scoped approval must instead require an
+        # authenticated principal with the appropriate role.
+        # G4.8 will replace this with full principal-based authorization.
+        if policy.requires_authenticated_principal:
+            if not principal_context.is_authenticated:
+                decision = ExecutionGuardDecision(
+                    allowed=False,
+                    action=action,
+                    reason_code=DecisionReasonCode.FAIL_CLOSED,
+                    reason=(
+                        f"Action '{action.value}' requires an authenticated principal "
+                        f"with one of roles: {sorted(policy.required_roles)}. "
+                        f"No authenticated principal provided."
+                    ),
+                    governance_gate=policy.governance_gate,
+                    mission_id=mission_id,
+                    agent_id=agent_id,
+                    risk_level=policy.risk_level.value,
+                    policy_version=POLICY_VERSION,
+                )
+                cls._statistics.record(decision)
+                await cls._emit_audit_event(session, decision, policy=policy)
+                return decision
+
+            principal_roles = set(principal_context.roles)
+            if not policy.required_roles.intersection(principal_roles):
+                decision = ExecutionGuardDecision(
+                    allowed=False,
+                    action=action,
+                    reason_code=DecisionReasonCode.FAIL_CLOSED,
+                    reason=(
+                        f"Action '{action.value}' requires principal with one of roles: "
+                        f"{sorted(policy.required_roles)}. "
+                        f"Principal '{principal_context.subject_id}' has roles: {sorted(principal_roles)}."
+                    ),
+                    governance_gate=policy.governance_gate,
+                    mission_id=mission_id,
+                    agent_id=agent_id,
+                    risk_level=policy.risk_level.value,
+                    policy_version=POLICY_VERSION,
+                )
+                cls._statistics.record(decision)
+                await cls._emit_audit_event(session, decision, policy=policy)
+                return decision
+
+        # ── Step 4: Approval enforcement (via injected provider) ──
         approval_id = None
         if policy.approval == ApprovalBehavior.REQUIRED:
-            if mission_id:
-                try:
-                    approval_id = await cls._check_approval(session, mission_id, policy.governance_gate)
-                except Exception as e:
-                    logger.error("execution_guard.approval_lookup_failed action=%s error=%s", action.value, e)
-                    decision = ExecutionGuardDecision(
-                        allowed=False,
-                        action=action,
-                        reason_code=DecisionReasonCode.FAIL_CLOSED,
-                        reason="Unable to determine approval state; failing closed",
-                        governance_gate=policy.governance_gate,
-                        mission_id=mission_id,
-                        agent_id=agent_id,
-                        risk_level=policy.risk_level.value,
-                        policy_version=POLICY_VERSION,
-                    )
-                    cls._statistics.record(decision)
-                    await cls._emit_audit_event(session, decision, policy=policy)
-                    return decision
+            try:
+                resolution = await provider.resolve(
+                    session=session,
+                    action=action.value,
+                    mission_id=mission_id,
+                    governance_gate=policy.governance_gate,
+                    principal_context=principal_context,
+                )
+            except Exception as e:
+                logger.error("execution_guard.approval_resolution_failed action=%s error=%s", action.value, e)
+                decision = ExecutionGuardDecision(
+                    allowed=False,
+                    action=action,
+                    reason_code=DecisionReasonCode.FAIL_CLOSED,
+                    reason="Unable to determine approval state; failing closed",
+                    governance_gate=policy.governance_gate,
+                    mission_id=mission_id,
+                    agent_id=agent_id,
+                    risk_level=policy.risk_level.value,
+                    policy_version=POLICY_VERSION,
+                )
+                cls._statistics.record(decision)
+                await cls._emit_audit_event(session, decision, policy=policy)
+                return decision
 
-            if approval_id is None:
+            if not resolution.approved:
                 decision = ExecutionGuardDecision(
                     allowed=False,
                     action=action,
                     reason_code=DecisionReasonCode.APPROVAL_REQUIRED,
-                    reason=f"Action '{action.value}' requires approval (gate: {policy.governance_gate or 'N/A'})",
+                    reason=(
+                        f"Action '{action.value}' requires approval "
+                        f"(gate: {policy.governance_gate or 'N/A'}): {resolution.reason}"
+                    ),
                     governance_gate=policy.governance_gate,
                     approval_required=True,
                     mission_id=mission_id,
@@ -1058,6 +1222,61 @@ class ExecutionGuard:
                 cls._statistics.record(decision)
                 await cls._emit_audit_event(session, decision, policy=policy)
                 return decision
+
+            approval_id = resolution.approval_id
+
+        # ── Step 4b: Conditional approval fails closed when unresolved ──
+        # Until G4.8 implements conditional approval logic, CONDITIONAL
+        # approval behavior must DENY by default (fail closed).
+        if policy.approval == ApprovalBehavior.CONDITIONAL:
+            try:
+                resolution = await provider.resolve(
+                    session=session,
+                    action=action.value,
+                    mission_id=mission_id,
+                    governance_gate=policy.governance_gate,
+                    principal_context=principal_context,
+                )
+            except Exception as e:
+                logger.error("execution_guard.conditional_approval_resolution_failed action=%s error=%s", action.value, e)
+                decision = ExecutionGuardDecision(
+                    allowed=False,
+                    action=action,
+                    reason_code=DecisionReasonCode.FAIL_CLOSED,
+                    reason="Unable to determine conditional approval state; failing closed",
+                    governance_gate=policy.governance_gate,
+                    mission_id=mission_id,
+                    agent_id=agent_id,
+                    risk_level=policy.risk_level.value,
+                    policy_version=POLICY_VERSION,
+                )
+                cls._statistics.record(decision)
+                await cls._emit_audit_event(session, decision, policy=policy)
+                return decision
+
+            if not resolution.approved:
+                # CONDITIONAL approval without a resolved condition → DENY (fail closed)
+                decision = ExecutionGuardDecision(
+                    allowed=False,
+                    action=action,
+                    reason_code=DecisionReasonCode.APPROVAL_REQUIRED,
+                    reason=(
+                        f"Action '{action.value}' has conditional approval requirement "
+                        f"that is not yet resolved (pending G4.8). Failing closed."
+                    ),
+                    governance_gate=policy.governance_gate,
+                    approval_required=True,
+                    mission_id=mission_id,
+                    agent_id=agent_id,
+                    resource_type=resource_type,
+                    risk_level=policy.risk_level.value,
+                    policy_version=POLICY_VERSION,
+                )
+                cls._statistics.record(decision)
+                await cls._emit_audit_event(session, decision, policy=policy)
+                return decision
+
+            approval_id = resolution.approval_id
 
         # ── Step 5: Allow ──
         decision = ExecutionGuardDecision(
@@ -1090,11 +1309,17 @@ class ExecutionGuard:
         resource_id: Optional[str] = None,
         principal_context: Optional[PrincipalContext] = None,
         extra_context: Optional[dict[str, Any]] = None,
+        approval_provider: Optional["ApprovalProvider"] = None,
     ) -> ExecutionGuardDecision:
         """Evaluate the guard and raise a typed exception on denial.
 
         Returns the decision on success. Raises on denial.
         Denials occur before any side effect.
+
+        Args:
+            approval_provider: Override the approval resolution provider.
+                Production uses PersistedApprovalProvider by default.
+                Tests inject TestApprovalProvider explicitly.
         """
         decision = await cls.evaluate(
             session=session,
@@ -1105,6 +1330,7 @@ class ExecutionGuard:
             resource_id=resource_id,
             principal_context=principal_context,
             extra_context=extra_context,
+            approval_provider=approval_provider,
         )
 
         if not decision.allowed:

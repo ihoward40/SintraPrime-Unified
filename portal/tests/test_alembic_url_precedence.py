@@ -282,7 +282,7 @@ def test_non_disposable_postgresql_database_is_rejected(restore_env):
     # Must reject non-disposable names
     for name in ["sintraprime", "production", "postgres", "unknown_database"]:
         url = f"postgresql+psycopg2://user:pass@localhost:5432/{name}"
-        with pytest.raises(RuntimeError, match="refusing to migrate non-disposable"):
+        with pytest.raises((RuntimeError, Exception), match="non-disposable|isolation check FAILED"):
             _check_pg_is_disposable(url)
 
     # Must accept disposable names

@@ -88,9 +88,13 @@ async def db_session():
         )
     session_maker = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
     session = session_maker()
+    # Disable guard audit events to avoid polluting event-count assertions
+    from portal.services.execution_guard import ExecutionGuard
+    ExecutionGuard._audit_enabled = False
     try:
         yield session
     finally:
+        ExecutionGuard._audit_enabled = True
         await session.close()
         await engine.dispose()
         if os.path.exists(db_path):

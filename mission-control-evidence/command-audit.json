@@ -1,0 +1,14 @@
+{
+  "mutating_commands_exposed": 0,
+  "locked_ui_commands": [
+    "Create task",
+    "Start governed run",
+    "Assign agent",
+    "Pause all",
+    "Emergency stop"
+  ],
+  "runtime_check": "pass",
+  "disabled_command_button_count": 5,
+  "command_controls_locked": true,
+  "reason": "No permission-checked, audited command API is connected. Phase Two remains unauthorized."
+}

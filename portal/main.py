@@ -25,6 +25,7 @@ from portal.routers import (
     clients,
     documents,
     messages,
+    mission_control,
     notifications,
     recovery,
     sso,
@@ -127,6 +128,7 @@ def create_app() -> FastAPI:
     app.include_router(clients.router, prefix="/api/v1/clients", tags=["clients"])
     app.include_router(billing.router, prefix="/api/v1/billing", tags=["billing"])
     app.include_router(messages.router, prefix="/api/v1/messages", tags=["messages"])
+    app.include_router(mission_control.router)
     app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["notifications"])
     app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 

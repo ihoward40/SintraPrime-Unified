@@ -1,0 +1,16 @@
+export const missionControlSections = [
+  ['operations', 'Operations'],
+  ['agents', 'Agents'],
+  ['tasks', 'Tasks'],
+  ['decisions', 'Decisions'],
+  ['runs', 'Runs'],
+  ['activity', 'Activity'],
+  ['schedules', 'Schedules'],
+  ['evidence', 'Evidence'],
+  ['governance', 'Governance'],
+  ['memory', 'Memory'],
+  ['costs', 'Costs'],
+  ['incidents', 'Incidents'],
+  ['integrations', 'Integrations'],
+  ['settings', 'Settings'],
+] as const;

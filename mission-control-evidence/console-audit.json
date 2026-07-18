@@ -1,0 +1,9 @@
+{
+  "status": "pass",
+  "runtime_audit": "mission-control-evidence/mission-control-preservation-20260718-results.json",
+  "unique_console_errors": 0,
+  "total_console_errors": 0,
+  "total_console_messages": 0,
+  "routes_checked": 28,
+  "screenshots_checked": 112
+}

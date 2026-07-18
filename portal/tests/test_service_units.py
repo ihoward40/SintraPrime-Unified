@@ -475,7 +475,7 @@ class TestAuditService:
         assert result["entries_checked"] == 0
 
     @pytest.mark.asyncio
-    async def test_audit_flush_failure_does_not_raise(self):
+    async def test_audit_flush_failure_rolls_back_and_raises(self):
         from portal.services.audit_service import audit
         mock_db = AsyncMock()
         mock_result = MagicMock()
@@ -484,8 +484,9 @@ class TestAuditService:
         mock_db.add = MagicMock()
         mock_db.flush = AsyncMock(side_effect=Exception("DB error"))
         mock_db.rollback = AsyncMock()
-        # Should not raise — audit failure is swallowed
-        await audit(db=mock_db, action="test.action")
+
+        with pytest.raises(Exception, match="DB error"):
+            await audit(db=mock_db, action="test.action")
         mock_db.rollback.assert_called_once()
 
 

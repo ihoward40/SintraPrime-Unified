@@ -23,9 +23,9 @@ class AuditLog(Base):
     """
     __tablename__ = "audit_logs"
 
-    id: Mapped[uuid.UUID]            = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
-    tenant_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=True)
-    user_id: Mapped[uuid.UUID | None]   = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    id: Mapped[str]                  = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    tenant_id: Mapped[str | None]    = mapped_column(String(36), ForeignKey("tenants.id"), nullable=True)
+    user_id: Mapped[str | None]      = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
 
     # Who
     actor_email: Mapped[str | None]  = mapped_column(String(255), nullable=True)

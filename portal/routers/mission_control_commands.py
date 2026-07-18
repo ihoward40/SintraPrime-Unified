@@ -5,13 +5,15 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth.rbac import CurrentUser, Permission, require_permissions
 from ..database import get_db
 from ..services.mission_control_command_service import (
+    IDEMPOTENCY_KEY_MAX_LENGTH,
+    IDEMPOTENCY_KEY_MIN_LENGTH,
     CommandSubmission,
     CommandTargetType,
     CommandType,
@@ -31,12 +33,28 @@ COMMAND_PERMISSIONS: dict[CommandType, Permission] = {
     CommandType.REASSIGN_AGENT: Permission.MISSION_AGENT_REASSIGN,
 }
 
+COMMAND_TARGET_COMPATIBILITY: dict[CommandType, frozenset[CommandTargetType]] = {
+    CommandType.START_GOVERNED_RUN: frozenset({CommandTargetType.RUN, CommandTargetType.MISSION}),
+    CommandType.PAUSE_RUN: frozenset({CommandTargetType.RUN}),
+    CommandType.RESUME_RUN: frozenset({CommandTargetType.RUN}),
+    CommandType.CANCEL_RUN: frozenset({CommandTargetType.RUN}),
+    CommandType.ASSIGN_AGENT: frozenset(
+        {CommandTargetType.RUN, CommandTargetType.TASK, CommandTargetType.MISSION}
+    ),
+    CommandType.REASSIGN_AGENT: frozenset(
+        {CommandTargetType.RUN, CommandTargetType.TASK, CommandTargetType.MISSION}
+    ),
+}
+
 
 class MissionControlCommandRequest(BaseModel):
     command_type: CommandType
     target_type: CommandTargetType
     target_id: str = Field(min_length=1, max_length=128)
-    idempotency_key: str = Field(min_length=1, max_length=128)
+    idempotency_key: str = Field(
+        min_length=IDEMPOTENCY_KEY_MIN_LENGTH,
+        max_length=IDEMPOTENCY_KEY_MAX_LENGTH,
+    )
     reason: str | None = Field(default=None, max_length=2000)
     payload: dict[str, Any] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -67,9 +85,21 @@ class MissionControlCommandResponse(BaseModel):
 )
 async def submit_command(
     body: MissionControlCommandRequest,
+    response: Response,
     current_user: CurrentUser = Depends(require_permissions(Permission.MISSION_COMMAND_CREATE)),
     db: AsyncSession = Depends(get_db),
 ) -> MissionControlCommandResponse:
+    allowed_targets = COMMAND_TARGET_COMPATIBILITY[body.command_type]
+    if body.target_type not in allowed_targets:
+        allowed = sorted(target.value for target in allowed_targets)
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "reason_code": "INVALID_COMMAND_TARGET",
+                "allowed_target_types": allowed,
+            },
+        )
+
     specific_permission = COMMAND_PERMISSIONS[body.command_type]
     if not current_user.has_permission(specific_permission):
         raise HTTPException(
@@ -97,6 +127,9 @@ async def submit_command(
                 "command_id": exc.command_id,
             },
         ) from exc
+
+    if result.duplicate:
+        response.status_code = status.HTTP_200_OK
 
     command = result.command
     return MissionControlCommandResponse(

@@ -13,7 +13,7 @@ No command in this increment mutates run, task, scheduler, agent, mission, or as
 - Baseline tree: `eeb8886fae074d1c20f9aa18ed65272c40cf0ca8`
 - Working branch: `feat/mission-control-phase-2-command-ledger`
 - Parent for implementation branch: `bedccf2ff92291b9fbc51c72146255dd83d26663`
-- Final commit/tree: recorded in PR metadata and completion response. A commit cannot contain its own hash without changing that hash.
+- Final commit/tree: recorded in PR metadata, PR comments, and completion response. A commit cannot contain its own hash without changing that hash.
 
 ## Changed Files
 
@@ -73,7 +73,7 @@ No direct mutation endpoints were added.
   "command_type": "PAUSE_RUN",
   "target_type": "run",
   "target_id": "run-123",
-  "idempotency_key": "client-generated-key",
+  "idempotency_key": "client-generated-key-0001",
   "reason": "operator requested hold",
   "payload": {},
   "metadata": {
@@ -94,7 +94,7 @@ No direct mutation endpoints were added.
   "reason_code": "COMMAND_EXECUTION_NOT_ENABLED",
   "reason": "operator requested hold",
   "duplicate": false,
-  "idempotency_key": "client-generated-key",
+  "idempotency_key": "client-generated-key-0001",
   "request_hash": "sha256",
   "audit_log_id": "uuid",
   "event_ids": ["uuid", "uuid", "uuid"],
@@ -103,6 +103,16 @@ No direct mutation endpoints were added.
   "completed_at": "timestamp"
 }
 ```
+
+## Idempotency Contract
+
+Idempotency keys are required and must be 16-128 characters.
+
+- New command: HTTP 201 with `duplicate: false`.
+- Identical replay: HTTP 200 with `duplicate: true`.
+- Changed replay: HTTP 409 with `DUPLICATE_CONFLICT`.
+
+The service recovers from the database unique-constraint collision path for concurrent requests. If the initial lookup misses because another transaction won the `(tenant_id, requested_by, idempotency_key)` race, the losing request rolls back its failed insert, reloads the winning command, and returns the deterministic replay/conflict response.
 
 ## Idempotency Replay Example
 
@@ -116,7 +126,7 @@ Same tenant + requester + idempotency key + identical canonical request hash ret
 }
 ```
 
-No second command row or receipt row is created.
+No second command row, event chain, audit row, or receipt row is created.
 
 ## Duplicate Conflict Example
 
@@ -132,7 +142,20 @@ Same tenant + requester + idempotency key + changed canonical request hash retur
 }
 ```
 
-No second command row is created.
+No second command row, event chain, audit row, or receipt row is created.
+
+## Command Target Compatibility
+
+| Command | Allowed target types |
+|---|---|
+| `START_GOVERNED_RUN` | `run`, `mission` |
+| `PAUSE_RUN` | `run` |
+| `RESUME_RUN` | `run` |
+| `CANCEL_RUN` | `run` |
+| `ASSIGN_AGENT` | `run`, `task`, `mission` |
+| `REASSIGN_AGENT` | `run`, `task`, `mission` |
+
+Invalid command-target combinations return HTTP 422 before command, event, audit, or receipt persistence.
 
 ## Audit And Receipt Behavior
 
@@ -195,6 +218,7 @@ Passed:
 - `python -m ruff check` on touched Python files -> all checks passed
 - `git diff --check` -> clean
 - SQLAlchemy model smoke check confirmed `mission_control_commands`, `mission_control_command_events`, and `mission_control_command_receipts` are registered in metadata.
+- Focused collision-recovery tests prove stale initial lookup plus unique-constraint collision reloads the winning command and creates no duplicate command, events, audit entry, or receipt.
 
 Full repository Python test command:
 

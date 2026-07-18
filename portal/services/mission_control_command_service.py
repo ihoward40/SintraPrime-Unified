@@ -12,6 +12,7 @@ from typing import Any
 
 import structlog
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth.rbac import CurrentUser
@@ -49,6 +50,10 @@ class CommandTargetType(StrEnum):
     AGENT = "agent"
     TASK = "task"
     MISSION = "mission"
+
+
+IDEMPOTENCY_KEY_MIN_LENGTH = 16
+IDEMPOTENCY_KEY_MAX_LENGTH = 128
 
 
 @dataclass(frozen=True)
@@ -163,7 +168,22 @@ async def submit_refusal_only_command(
         completed_at=now,
     )
     db.add(command)
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError as exc:
+        if not _is_idempotency_collision(exc):
+            raise
+        await db.rollback()
+        existing_after_collision = await _find_existing(
+            db,
+            current_user,
+            submission.idempotency_key,
+        )
+        if existing_after_collision is None:
+            raise
+        if existing_after_collision.request_hash != request_hash:
+            raise DuplicateCommandConflictError(str(existing_after_collision.id)) from exc
+        return await _duplicate_result(db, existing_after_collision)
 
     events = _build_events(command, reason_code)
     db.add_all(events)
@@ -213,6 +233,16 @@ async def submit_refusal_only_command(
         command=command,
         event_ids=[str(event.id) for event in events],
         receipt_id=str(receipt.id),
+    )
+
+
+def _is_idempotency_collision(exc: IntegrityError) -> bool:
+    message = str(exc.orig).lower() if exc.orig else str(exc).lower()
+    return (
+        "uq_mission_control_command_idempotency" in message
+        or ("mission_control_commands.tenant_id" in message
+        and "mission_control_commands.requested_by" in message
+        and "mission_control_commands.idempotency_key" in message)
     )
 
 

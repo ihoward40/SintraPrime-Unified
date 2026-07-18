@@ -21,7 +21,12 @@ from portal.models.mission_control_command import (
 from portal.models.user import Permission as PermissionModel
 from portal.models.user import Role, RolePermission, Tenant, User, UserPermissionAssoc
 from portal.routers import mission_control, mission_control_commands
-from portal.services.mission_control_command_service import compute_event_hash
+from portal.services import mission_control_command_service
+from portal.services.mission_control_command_service import (
+    IDEMPOTENCY_KEY_MAX_LENGTH,
+    IDEMPOTENCY_KEY_MIN_LENGTH,
+    compute_event_hash,
+)
 
 TENANT_ID = "00000000-0000-0000-0000-000000000002"
 USER_ID = "00000000-0000-0000-0000-000000000001"
@@ -56,7 +61,7 @@ def _user(*permissions: Permission, tenant_id: str = TENANT_ID) -> CurrentUser:
     )
 
 
-def _body(command_type: str = "PAUSE_RUN", key: str = "idem-1") -> dict:
+def _body(command_type: str = "PAUSE_RUN", key: str = "idem-12345678901") -> dict:
     return {
         "command_type": command_type,
         "target_type": "run",
@@ -164,6 +169,89 @@ def test_unsupported_command_type_is_rejected(client: TestClient) -> None:
     assert response.status_code == 422
 
 
+@pytest.mark.parametrize(
+    ("command_type", "target_type"),
+    [
+        ("START_GOVERNED_RUN", "run"),
+        ("START_GOVERNED_RUN", "mission"),
+        ("PAUSE_RUN", "run"),
+        ("RESUME_RUN", "run"),
+        ("CANCEL_RUN", "run"),
+        ("ASSIGN_AGENT", "run"),
+        ("ASSIGN_AGENT", "task"),
+        ("ASSIGN_AGENT", "mission"),
+        ("REASSIGN_AGENT", "run"),
+        ("REASSIGN_AGENT", "task"),
+        ("REASSIGN_AGENT", "mission"),
+    ],
+)
+def test_valid_command_target_combinations_are_accepted(
+    client: TestClient,
+    command_type: str,
+    target_type: str,
+) -> None:
+    body = _body(command_type, key=f"compat-{command_type}-{target_type}-1234567890")
+    body["target_type"] = target_type
+    response = client.post("/api/v1/mission-control/commands", json=body)
+    assert response.status_code == 201
+    assert response.json()["state"] == "REFUSED"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("command_type", "target_type"),
+    [
+        ("START_GOVERNED_RUN", "task"),
+        ("START_GOVERNED_RUN", "agent"),
+        ("PAUSE_RUN", "agent"),
+        ("PAUSE_RUN", "mission"),
+        ("RESUME_RUN", "task"),
+        ("CANCEL_RUN", "mission"),
+        ("ASSIGN_AGENT", "agent"),
+        ("REASSIGN_AGENT", "agent"),
+    ],
+)
+async def test_invalid_command_target_combinations_return_422_without_persistence(
+    client: TestClient,
+    db: AsyncSession,
+    command_type: str,
+    target_type: str,
+) -> None:
+    body = _body(command_type, key=f"invalid-{command_type}-{target_type}-1234567890")
+    body["target_type"] = target_type
+    response = client.post("/api/v1/mission-control/commands", json=body)
+    assert response.status_code == 422
+    assert response.json()["detail"]["reason_code"] == "INVALID_COMMAND_TARGET"
+    assert await _count(db, MissionControlCommand) == 0
+    assert await _count(db, MissionControlCommandEvent) == 0
+    assert await _count(db, AuditLog) == 0
+    assert await _count(db, MissionControlCommandReceipt) == 0
+
+
+def test_idempotency_key_below_minimum_returns_422(client: TestClient) -> None:
+    body = _body(key="x" * (IDEMPOTENCY_KEY_MIN_LENGTH - 1))
+    response = client.post("/api/v1/mission-control/commands", json=body)
+    assert response.status_code == 422
+
+
+def test_idempotency_key_exact_minimum_is_accepted(client: TestClient) -> None:
+    body = _body(key="x" * IDEMPOTENCY_KEY_MIN_LENGTH)
+    response = client.post("/api/v1/mission-control/commands", json=body)
+    assert response.status_code == 201
+
+
+def test_idempotency_key_exact_maximum_is_accepted(client: TestClient) -> None:
+    body = _body(key="x" * IDEMPOTENCY_KEY_MAX_LENGTH)
+    response = client.post("/api/v1/mission-control/commands", json=body)
+    assert response.status_code == 201
+
+
+def test_idempotency_key_above_maximum_returns_422(client: TestClient) -> None:
+    body = _body(key="x" * (IDEMPOTENCY_KEY_MAX_LENGTH + 1))
+    response = client.post("/api/v1/mission-control/commands", json=body)
+    assert response.status_code == 422
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("command_type", SUPPORTED_COMMANDS)
 async def test_supported_commands_persist_and_refuse(
@@ -173,7 +261,7 @@ async def test_supported_commands_persist_and_refuse(
 ) -> None:
     response = client.post(
         "/api/v1/mission-control/commands",
-        json=_body(command_type, key=f"key-{command_type}"),
+        json=_body(command_type, key=f"key-{command_type}-1234567890"),
     )
 
     assert response.status_code == 201
@@ -211,14 +299,90 @@ async def test_no_operational_mutation_routes_are_added(client: TestClient, db: 
 
 @pytest.mark.asyncio
 async def test_same_idempotency_key_and_request_replays(client: TestClient, db: AsyncSession) -> None:
-    first = client.post("/api/v1/mission-control/commands", json=_body("PAUSE_RUN", "same-key"))
-    second = client.post("/api/v1/mission-control/commands", json=_body("PAUSE_RUN", "same-key"))
+    first = client.post("/api/v1/mission-control/commands", json=_body("PAUSE_RUN", "same-key-1234567890"))
+    second = client.post("/api/v1/mission-control/commands", json=_body("PAUSE_RUN", "same-key-1234567890"))
 
     assert first.status_code == 201
-    assert second.status_code == 201
+    assert second.status_code == 200
     assert second.json()["duplicate"] is True
     assert second.json()["command_id"] == first.json()["command_id"]
     assert await _count(db, MissionControlCommand) == 1
+    assert await _count(db, MissionControlCommandReceipt) == 1
+    assert await _count(db, AuditLog) == 1
+    assert await _count(db, MissionControlCommandEvent) == 3
+
+
+@pytest.mark.asyncio
+async def test_idempotency_collision_reloads_winning_command(
+    client: TestClient,
+    db: AsyncSession,
+    monkeypatch,
+) -> None:
+    key = "race-key-1234567890"
+    first = client.post("/api/v1/mission-control/commands", json=_body("PAUSE_RUN", key))
+    assert first.status_code == 201
+
+    original_find = mission_control_command_service._find_existing
+    calls = 0
+
+    async def _stale_initial_lookup(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return None
+        return await original_find(*args, **kwargs)
+
+    monkeypatch.setattr(
+        mission_control_command_service,
+        "_find_existing",
+        _stale_initial_lookup,
+    )
+    replay = client.post("/api/v1/mission-control/commands", json=_body("PAUSE_RUN", key))
+
+    assert replay.status_code == 200
+    assert replay.json()["duplicate"] is True
+    assert replay.json()["command_id"] == first.json()["command_id"]
+    assert await _count(db, MissionControlCommand) == 1
+    assert await _count(db, MissionControlCommandEvent) == 3
+    assert await _count(db, AuditLog) == 1
+    assert await _count(db, MissionControlCommandReceipt) == 1
+
+
+@pytest.mark.asyncio
+async def test_idempotency_collision_with_changed_request_returns_conflict(
+    client: TestClient,
+    db: AsyncSession,
+    monkeypatch,
+) -> None:
+    key = "race-conflict-1234567890"
+    first = client.post("/api/v1/mission-control/commands", json=_body("PAUSE_RUN", key))
+    assert first.status_code == 201
+
+    original_find = mission_control_command_service._find_existing
+    calls = 0
+
+    async def _stale_initial_lookup(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return None
+        return await original_find(*args, **kwargs)
+
+    monkeypatch.setattr(
+        mission_control_command_service,
+        "_find_existing",
+        _stale_initial_lookup,
+    )
+    changed = _body("PAUSE_RUN", key)
+    changed["target_id"] = "run-456"
+    replay = client.post("/api/v1/mission-control/commands", json=changed)
+
+    assert replay.status_code == 409
+    assert replay.json()["detail"]["state"] == "DUPLICATE_CONFLICT"
+    assert replay.json()["detail"]["reason_code"] == "IDEMPOTENCY_KEY_CONFLICT"
+    assert await _count(db, MissionControlCommand) == 1
+    assert await _count(db, MissionControlCommandEvent) == 3
+    assert await _count(db, AuditLog) == 1
     assert await _count(db, MissionControlCommandReceipt) == 1
 
 
@@ -227,8 +391,8 @@ async def test_same_idempotency_key_and_changed_request_conflicts(
     client: TestClient,
     db: AsyncSession,
 ) -> None:
-    first = client.post("/api/v1/mission-control/commands", json=_body("PAUSE_RUN", "conflict-key"))
-    changed = _body("PAUSE_RUN", "conflict-key")
+    first = client.post("/api/v1/mission-control/commands", json=_body("PAUSE_RUN", "conflict-key-1234567890"))
+    changed = _body("PAUSE_RUN", "conflict-key-1234567890")
     changed["target_id"] = "run-456"
     second = client.post("/api/v1/mission-control/commands", json=changed)
 

@@ -117,6 +117,17 @@ class Permission(StrEnum):
     AUDIT_READ           = "audit:read"
     AUDIT_EXPORT         = "audit:export"
 
+    # Mission Control governed commands
+    MISSION_COMMAND_READ   = "mission_control:command_read"
+    MISSION_COMMAND_CREATE = "mission_control:command_create"
+    MISSION_RUN_START      = "mission_control:run_start"
+    MISSION_RUN_PAUSE      = "mission_control:run_pause"
+    MISSION_RUN_RESUME     = "mission_control:run_resume"
+    MISSION_RUN_CANCEL     = "mission_control:run_cancel"
+    MISSION_AGENT_ASSIGN   = "mission_control:agent_assign"
+    MISSION_AGENT_REASSIGN = "mission_control:agent_reassign"
+    MISSION_COMMAND_ADMIN  = "mission_control:command_admin"
+
 
 # ── Role → Permission mapping ─────────────────────────────────────────────────
 
@@ -150,6 +161,11 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.ADMIN_AUDIT_LOG, Permission.ADMIN_BRANDING, Permission.ADMIN_QUOTA,
         # Audit
         Permission.AUDIT_READ, Permission.AUDIT_EXPORT,
+        # Mission Control governed commands
+        Permission.MISSION_COMMAND_READ, Permission.MISSION_COMMAND_CREATE,
+        Permission.MISSION_RUN_START, Permission.MISSION_RUN_PAUSE, Permission.MISSION_RUN_RESUME,
+        Permission.MISSION_RUN_CANCEL, Permission.MISSION_AGENT_ASSIGN,
+        Permission.MISSION_AGENT_REASSIGN,
     ]),
 
     Role.ATTORNEY: frozenset([
@@ -165,6 +181,9 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.BILLING_TIME_TRACK, Permission.BILLING_REPORT,
         Permission.NOTIF_READ,
         Permission.AUDIT_READ,
+        Permission.MISSION_COMMAND_READ, Permission.MISSION_COMMAND_CREATE,
+        Permission.MISSION_RUN_START, Permission.MISSION_RUN_PAUSE, Permission.MISSION_RUN_RESUME,
+        Permission.MISSION_AGENT_ASSIGN,
     ]),
 
     Role.PARALEGAL: frozenset([

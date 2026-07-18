@@ -7,6 +7,11 @@ from .client import Client, Matter
 from .document import Document, DocumentFolder, DocumentShare, DocumentVersion
 from .evidence_snapshot import EvidenceSnapshot
 from .message import Message, MessageAttachment, MessageThread
+from .mission_control_command import (
+    MissionControlCommand,
+    MissionControlCommandEvent,
+    MissionControlCommandReceipt,
+)
 from .user import Permission as UserPermission
 from .user import Role as UserRole
 from .user import User, UserPermissionAssoc
@@ -32,6 +37,9 @@ __all__ = [
     "Message",
     "MessageAttachment",
     "MessageThread",
+    "MissionControlCommand",
+    "MissionControlCommandEvent",
+    "MissionControlCommandReceipt",
     "Payment",
     "TimeEntry",
     "TrustAccount",

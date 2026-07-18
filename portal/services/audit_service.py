@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import uuid
 from datetime import UTC, datetime
 from typing import Any
 
@@ -24,8 +23,8 @@ log = structlog.get_logger()
 async def audit(
     db: AsyncSession,
     action: str,
-    user_id: str | uuid.UUID | None = None,
-    tenant_id: str | uuid.UUID | None = None,
+    user_id: str | None = None,
+    tenant_id: str | None = None,
     resource_type: str | None = None,
     resource_id: str | None = None,
     resource_name: str | None = None,
@@ -61,8 +60,8 @@ async def audit(
     entry_hash = _compute_hash(entry_data)
 
     entry = AuditLog(
-        tenant_id=uuid.UUID(str(tenant_id)) if tenant_id else None,
-        user_id=uuid.UUID(str(user_id)) if user_id else None,
+        tenant_id=str(tenant_id) if tenant_id else None,
+        user_id=str(user_id) if user_id else None,
         actor_email=actor_email,
         actor_role=actor_role,
         actor_ip=actor_ip,
@@ -86,8 +85,8 @@ async def audit(
         await db.flush()
     except Exception as exc:
         log.error("audit.write_failed", action=action, error=str(exc))
-        # Audit failure should not break the main flow
         await db.rollback()
+        raise
 
     log.info(
         "audit",
@@ -102,12 +101,12 @@ async def audit(
 
 async def _get_last_hash(
     db: AsyncSession,
-    tenant_id: str | uuid.UUID | None,
+    tenant_id: str | None,
 ) -> str | None:
     """Get the entry_hash of the most recent audit log entry for this tenant."""
     stmt = (
         select(AuditLog.entry_hash)
-        .where(AuditLog.tenant_id == uuid.UUID(str(tenant_id)) if tenant_id else True)
+        .where(AuditLog.tenant_id == str(tenant_id) if tenant_id else True)
         .order_by(AuditLog.created_at.desc())
         .limit(1)
     )
@@ -122,7 +121,7 @@ def _compute_hash(data: dict) -> str:
 
 async def verify_audit_chain(
     db: AsyncSession,
-    tenant_id: str | uuid.UUID | None = None,
+    tenant_id: str | None = None,
     limit: int = 1000,
 ) -> dict:
     """
@@ -131,7 +130,7 @@ async def verify_audit_chain(
     """
     stmt = (
         select(AuditLog)
-        .where(AuditLog.tenant_id == uuid.UUID(str(tenant_id)) if tenant_id else True)
+        .where(AuditLog.tenant_id == str(tenant_id) if tenant_id else True)
         .order_by(AuditLog.created_at.asc())
         .limit(limit)
     )

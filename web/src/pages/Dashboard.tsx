@@ -158,7 +158,7 @@ export default function Dashboard() {
                 </Button>
               }
             />
-            <div className="h-48">
+            <div className="min-h-[260px] h-[260px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                   <defs>

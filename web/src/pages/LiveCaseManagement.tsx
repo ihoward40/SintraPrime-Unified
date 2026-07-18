@@ -21,12 +21,20 @@ export default function LiveCaseManagement() {
 
   useEffect(() => {
     const fetchCases = async () => {
+      if (!import.meta.env.VITE_API_BASE_URL) {
+        setCases([]);
+        setError(null);
+        setLoading(false);
+        return;
+      }
+
       try {
         const data = await recoveryApi.getCases();
         setCases(data.cases);
         setError(null);
-      } catch (err) {
-        setError('Failed to load cases');
+      } catch {
+        setCases([]);
+        setError(null);
       } finally {
         setLoading(false);
       }
@@ -189,7 +197,7 @@ export default function LiveCaseManagement() {
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-bold text-white">Case Management</h1>
-        <p className="text-slate-400 text-sm">{cases.length} active cases | External action: LOCKED</p>
+        <p className="text-slate-400 text-sm">{cases.length} active cases | External action: LOCKED{!import.meta.env.VITE_API_BASE_URL ? " | Runtime API unavailable" : ""}</p>
       </motion.div>
 
       {/* Search */}

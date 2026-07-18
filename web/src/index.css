@@ -29,7 +29,16 @@
     --radius: 0.75rem;
   }
 
-  * {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    margin: 0;
+  }
+
+  *,
+  *::before,
+  *::after {
     @apply border-slate-800;
     box-sizing: border-box;
   }
@@ -40,6 +49,7 @@
 
   body {
     @apply bg-slate-950 text-slate-100 font-sans;
+    overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

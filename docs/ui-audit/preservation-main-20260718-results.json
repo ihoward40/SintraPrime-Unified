@@ -1,0 +1,1284 @@
+{
+  "runId": "preservation-main-20260718",
+  "targetUrl": "http://127.0.0.1:4174",
+  "screenshotRoot": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718",
+  "routes": [
+    {
+      "name": "root",
+      "path": "/"
+    },
+    {
+      "name": "dashboard",
+      "path": "/dashboard"
+    },
+    {
+      "name": "legal",
+      "path": "/legal"
+    },
+    {
+      "name": "financial",
+      "path": "/financial"
+    },
+    {
+      "name": "trust-law",
+      "path": "/trust-law"
+    },
+    {
+      "name": "cases",
+      "path": "/cases"
+    },
+    {
+      "name": "documents",
+      "path": "/documents"
+    },
+    {
+      "name": "entities",
+      "path": "/entities"
+    },
+    {
+      "name": "ai-parliament",
+      "path": "/ai-parliament"
+    },
+    {
+      "name": "caselaw",
+      "path": "/caselaw"
+    },
+    {
+      "name": "operations-floor",
+      "path": "/operations-floor"
+    },
+    {
+      "name": "settings",
+      "path": "/settings"
+    },
+    {
+      "name": "fallback",
+      "path": "/__visual-audit-fallback"
+    }
+  ],
+  "viewports": [
+    {
+      "name": "1440x900",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "name": "1024x768",
+      "width": 1024,
+      "height": 768
+    },
+    {
+      "name": "768x1024",
+      "width": 768,
+      "height": 1024
+    },
+    {
+      "name": "390x844",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "summary": {
+    "routesRerun": 13,
+    "screenshotsCaptured": 52,
+    "bodyMarginValues": [
+      "0px"
+    ],
+    "bodyMarginPass": true,
+    "horizontalOverflowFailures": 0,
+    "rootDashboardPass": true,
+    "dashboardPass": true,
+    "dashboardChartPass": true,
+    "operationsFloorPass": true,
+    "uniqueConsoleErrors": 0,
+    "totalConsoleErrors": 0,
+    "totalConsoleMessages": 0
+  },
+  "checks": [
+    {
+      "route": "/",
+      "routeName": "root",
+      "viewport": "1440x900",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\root-1440x900.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/",
+      "routeName": "root",
+      "viewport": "1024x768",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\root-1024x768.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1024,
+        "innerWidth": 1024,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/",
+      "routeName": "root",
+      "viewport": "768x1024",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\root-768x1024.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 768,
+        "innerWidth": 768,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/",
+      "routeName": "root",
+      "viewport": "390x844",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\root-390x844.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 390,
+        "innerWidth": 390,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/dashboard",
+      "routeName": "dashboard",
+      "viewport": "1440x900",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\dashboard-1440x900.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/dashboard",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": true,
+        "operationsFloorTextPresent": true,
+        "chartDetails": [
+          {
+            "width": 697,
+            "height": 260,
+            "svgCount": 1,
+            "canvasCount": 0,
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/dashboard",
+      "routeName": "dashboard",
+      "viewport": "1024x768",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\dashboard-1024x768.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/dashboard",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1024,
+        "innerWidth": 1024,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": true,
+        "operationsFloorTextPresent": true,
+        "chartDetails": [
+          {
+            "width": 666,
+            "height": 260,
+            "svgCount": 1,
+            "canvasCount": 0,
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/dashboard",
+      "routeName": "dashboard",
+      "viewport": "768x1024",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\dashboard-768x1024.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/dashboard",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 768,
+        "innerWidth": 768,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": true,
+        "operationsFloorTextPresent": true,
+        "chartDetails": [
+          {
+            "width": 410,
+            "height": 260,
+            "svgCount": 1,
+            "canvasCount": 0,
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/dashboard",
+      "routeName": "dashboard",
+      "viewport": "390x844",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\dashboard-390x844.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/dashboard",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 390,
+        "innerWidth": 390,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": true,
+        "operationsFloorTextPresent": true,
+        "chartDetails": [
+          {
+            "width": 32,
+            "height": 260,
+            "svgCount": 1,
+            "canvasCount": 0,
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/legal",
+      "routeName": "legal",
+      "viewport": "1440x900",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\legal-1440x900.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/legal",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/legal",
+      "routeName": "legal",
+      "viewport": "1024x768",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\legal-1024x768.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/legal",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1024,
+        "innerWidth": 1024,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/legal",
+      "routeName": "legal",
+      "viewport": "768x1024",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\legal-768x1024.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/legal",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 768,
+        "innerWidth": 768,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/legal",
+      "routeName": "legal",
+      "viewport": "390x844",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\legal-390x844.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/legal",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 390,
+        "innerWidth": 390,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/financial",
+      "routeName": "financial",
+      "viewport": "1440x900",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\financial-1440x900.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/financial",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": true,
+        "operationsFloorTextPresent": true,
+        "chartDetails": [
+          {
+            "width": 697,
+            "height": 224,
+            "svgCount": 1,
+            "canvasCount": 0,
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          },
+          {
+            "width": 96,
+            "height": 96,
+            "svgCount": 1,
+            "canvasCount": 0,
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/financial",
+      "routeName": "financial",
+      "viewport": "1024x768",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\financial-1024x768.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/financial",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1024,
+        "innerWidth": 1024,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": true,
+        "operationsFloorTextPresent": true,
+        "chartDetails": [
+          {
+            "width": 666,
+            "height": 224,
+            "svgCount": 1,
+            "canvasCount": 0,
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          },
+          {
+            "width": 96,
+            "height": 96,
+            "svgCount": 1,
+            "canvasCount": 0,
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/financial",
+      "routeName": "financial",
+      "viewport": "768x1024",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\financial-768x1024.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/financial",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 768,
+        "innerWidth": 768,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": true,
+        "operationsFloorTextPresent": true,
+        "chartDetails": [
+          {
+            "width": 410,
+            "height": 224,
+            "svgCount": 1,
+            "canvasCount": 0,
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          },
+          {
+            "width": 96,
+            "height": 96,
+            "svgCount": 1,
+            "canvasCount": 0,
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/financial",
+      "routeName": "financial",
+      "viewport": "390x844",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\financial-390x844.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/financial",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 390,
+        "innerWidth": 390,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": true,
+        "operationsFloorTextPresent": true,
+        "chartDetails": [
+          {
+            "width": 32,
+            "height": 224,
+            "svgCount": 1,
+            "canvasCount": 0,
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          },
+          {
+            "width": 0,
+            "height": 96,
+            "svgCount": 0,
+            "canvasCount": 0,
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/trust-law",
+      "routeName": "trust-law",
+      "viewport": "1440x900",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\trust-law-1440x900.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/trust-law",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/trust-law",
+      "routeName": "trust-law",
+      "viewport": "1024x768",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\trust-law-1024x768.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/trust-law",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1024,
+        "innerWidth": 1024,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/trust-law",
+      "routeName": "trust-law",
+      "viewport": "768x1024",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\trust-law-768x1024.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/trust-law",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 768,
+        "innerWidth": 768,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/trust-law",
+      "routeName": "trust-law",
+      "viewport": "390x844",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\trust-law-390x844.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/trust-law",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 390,
+        "innerWidth": 390,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/cases",
+      "routeName": "cases",
+      "viewport": "1440x900",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\cases-1440x900.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/cases",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/cases",
+      "routeName": "cases",
+      "viewport": "1024x768",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\cases-1024x768.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/cases",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1024,
+        "innerWidth": 1024,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/cases",
+      "routeName": "cases",
+      "viewport": "768x1024",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\cases-768x1024.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/cases",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 768,
+        "innerWidth": 768,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/cases",
+      "routeName": "cases",
+      "viewport": "390x844",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\cases-390x844.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/cases",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 390,
+        "innerWidth": 390,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/documents",
+      "routeName": "documents",
+      "viewport": "1440x900",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\documents-1440x900.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/documents",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/documents",
+      "routeName": "documents",
+      "viewport": "1024x768",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\documents-1024x768.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/documents",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1024,
+        "innerWidth": 1024,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/documents",
+      "routeName": "documents",
+      "viewport": "768x1024",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\documents-768x1024.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/documents",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 768,
+        "innerWidth": 768,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/documents",
+      "routeName": "documents",
+      "viewport": "390x844",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\documents-390x844.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/documents",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 390,
+        "innerWidth": 390,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/entities",
+      "routeName": "entities",
+      "viewport": "1440x900",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\entities-1440x900.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/entities",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/entities",
+      "routeName": "entities",
+      "viewport": "1024x768",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\entities-1024x768.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/entities",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1024,
+        "innerWidth": 1024,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/entities",
+      "routeName": "entities",
+      "viewport": "768x1024",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\entities-768x1024.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/entities",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 768,
+        "innerWidth": 768,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/entities",
+      "routeName": "entities",
+      "viewport": "390x844",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\entities-390x844.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/entities",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 390,
+        "innerWidth": 390,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/ai-parliament",
+      "routeName": "ai-parliament",
+      "viewport": "1440x900",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\ai-parliament-1440x900.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/ai-parliament",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": [
+          {
+            "width": 319,
+            "height": 128,
+            "svgCount": 1,
+            "canvasCount": 0,
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/ai-parliament",
+      "routeName": "ai-parliament",
+      "viewport": "1024x768",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\ai-parliament-1024x768.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/ai-parliament",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1024,
+        "innerWidth": 1024,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": [
+          {
+            "width": 674,
+            "height": 128,
+            "svgCount": 1,
+            "canvasCount": 0,
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/ai-parliament",
+      "routeName": "ai-parliament",
+      "viewport": "768x1024",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\ai-parliament-768x1024.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/ai-parliament",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 768,
+        "innerWidth": 768,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": [
+          {
+            "width": 418,
+            "height": 128,
+            "svgCount": 1,
+            "canvasCount": 0,
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/ai-parliament",
+      "routeName": "ai-parliament",
+      "viewport": "390x844",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\ai-parliament-390x844.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/ai-parliament",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 390,
+        "innerWidth": 390,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": [
+          {
+            "width": 40,
+            "height": 128,
+            "svgCount": 1,
+            "canvasCount": 0,
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/caselaw",
+      "routeName": "caselaw",
+      "viewport": "1440x900",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\caselaw-1440x900.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/caselaw",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/caselaw",
+      "routeName": "caselaw",
+      "viewport": "1024x768",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\caselaw-1024x768.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/caselaw",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1024,
+        "innerWidth": 1024,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/caselaw",
+      "routeName": "caselaw",
+      "viewport": "768x1024",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\caselaw-768x1024.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/caselaw",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 768,
+        "innerWidth": 768,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/caselaw",
+      "routeName": "caselaw",
+      "viewport": "390x844",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\caselaw-390x844.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/caselaw",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 390,
+        "innerWidth": 390,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/operations-floor",
+      "routeName": "operations-floor",
+      "viewport": "1440x900",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\operations-floor-1440x900.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/operations-floor",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/operations-floor",
+      "routeName": "operations-floor",
+      "viewport": "1024x768",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\operations-floor-1024x768.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/operations-floor",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1024,
+        "innerWidth": 1024,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/operations-floor",
+      "routeName": "operations-floor",
+      "viewport": "768x1024",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\operations-floor-768x1024.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/operations-floor",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 768,
+        "innerWidth": 768,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/operations-floor",
+      "routeName": "operations-floor",
+      "viewport": "390x844",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\operations-floor-390x844.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/operations-floor",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 390,
+        "innerWidth": 390,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/settings",
+      "routeName": "settings",
+      "viewport": "1440x900",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\settings-1440x900.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/settings",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/settings",
+      "routeName": "settings",
+      "viewport": "1024x768",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\settings-1024x768.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/settings",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1024,
+        "innerWidth": 1024,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/settings",
+      "routeName": "settings",
+      "viewport": "768x1024",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\settings-768x1024.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/settings",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 768,
+        "innerWidth": 768,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/settings",
+      "routeName": "settings",
+      "viewport": "390x844",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\settings-390x844.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/settings",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 390,
+        "innerWidth": 390,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": false,
+        "operationsFloorTextPresent": true,
+        "chartDetails": []
+      }
+    },
+    {
+      "route": "/__visual-audit-fallback",
+      "routeName": "fallback",
+      "viewport": "1440x900",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\fallback-1440x900.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/dashboard",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1440,
+        "innerWidth": 1440,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": true,
+        "operationsFloorTextPresent": true,
+        "chartDetails": [
+          {
+            "width": 697,
+            "height": 260,
+            "svgCount": 1,
+            "canvasCount": 0,
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/__visual-audit-fallback",
+      "routeName": "fallback",
+      "viewport": "1024x768",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\fallback-1024x768.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/dashboard",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 1024,
+        "innerWidth": 1024,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": true,
+        "operationsFloorTextPresent": true,
+        "chartDetails": [
+          {
+            "width": 666,
+            "height": 260,
+            "svgCount": 1,
+            "canvasCount": 0,
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/__visual-audit-fallback",
+      "routeName": "fallback",
+      "viewport": "768x1024",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\fallback-768x1024.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/dashboard",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 768,
+        "innerWidth": 768,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": true,
+        "operationsFloorTextPresent": true,
+        "chartDetails": [
+          {
+            "width": 410,
+            "height": 260,
+            "svgCount": 1,
+            "canvasCount": 0,
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/__visual-audit-fallback",
+      "routeName": "fallback",
+      "viewport": "390x844",
+      "screenshotPath": "C:\\tmp\\sintraprime-ops-restore\\docs\\ui-audit\\screenshots\\preservation-main-20260718\\fallback-390x844.png",
+      "metrics": {
+        "title": "SintraPrime-Unified | AI Law Firm & Financial Empire",
+        "finalPath": "/dashboard",
+        "bodyMargin": "0px",
+        "bodyOverflowX": "hidden",
+        "documentScrollWidth": 390,
+        "innerWidth": 390,
+        "horizontalOverflow": false,
+        "dashboardTextPresent": true,
+        "netWorthTextPresent": true,
+        "operationsFloorTextPresent": true,
+        "chartDetails": [
+          {
+            "width": 32,
+            "height": 260,
+            "svgCount": 1,
+            "canvasCount": 0,
+            "display": "block",
+            "opacity": "1",
+            "visibility": "visible"
+          }
+        ]
+      }
+    }
+  ],
+  "consoleMessages": []
+}

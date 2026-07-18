@@ -1,0 +1,14 @@
+{
+  "summary_endpoint": "ADMIN_DASHBOARD permission required",
+  "api_contract_test": "pass",
+  "authenticated_super_admin_dependency": "pass",
+  "mutating_command_controls": "locked",
+  "mutating_command_apis_connected": false,
+  "runtime_command_lock_audit": "pass",
+  "phase_two_authorized": false,
+  "evidence": [
+    "portal/tests/test_mission_control.py",
+    "mission-control-evidence/command-audit.json",
+    "mission-control-evidence/mission-control-preservation-20260718-results.json"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "frontend_lint": "pass",
+  "frontend_typecheck": "pass",
+  "frontend_build": "pass",
+  "api_contract": "pass",
+  "runtime_preservation_audit": "pass",
+  "routes_rerun": 28,
+  "preexisting_routes_passed": 13,
+  "mission_control_routes_passed": 15,
+  "screenshots_captured": 112,
+  "console_errors": 0,
+  "horizontal_overflow_failures": 0,
+  "body_margin": "0px",
+  "dashboard_chart": "pass",
+  "operations_floor": "pass",
+  "command_controls_locked": "pass",
+  "unavailable_metrics_labeled": "pass",
+  "npm_audit_vulnerabilities": "not_run_in_final_pass",
+  "evidence": "mission-control-evidence/mission-control-preservation-20260718-results.json"
+}

@@ -1,0 +1,54 @@
+{
+  "status": "pass",
+  "runtime_audit": "mission-control-evidence/mission-control-preservation-20260718-results.json",
+  "restored_base_commit": "4f0a78bef1af794a6cb99006a2bc82ee58d9ea4d",
+  "restored_base_tree": "a059cd15876edec3cf80a017a130872912ff1a71",
+  "preexisting_routes": {
+    "count": 13,
+    "result": "pass",
+    "routes": [
+      "/",
+      "/dashboard",
+      "/legal",
+      "/financial",
+      "/trust-law",
+      "/cases",
+      "/documents",
+      "/entities",
+      "/ai-parliament",
+      "/caselaw",
+      "/operations-floor",
+      "/settings",
+      "/__visual-audit-fallback"
+    ]
+  },
+  "mission_control_routes": {
+    "count": 15,
+    "result": "pass",
+    "routes": [
+      "/mission-control",
+      "/mission-control/operations",
+      "/mission-control/agents",
+      "/mission-control/tasks",
+      "/mission-control/decisions",
+      "/mission-control/runs",
+      "/mission-control/activity",
+      "/mission-control/schedules",
+      "/mission-control/evidence",
+      "/mission-control/governance",
+      "/mission-control/memory",
+      "/mission-control/costs",
+      "/mission-control/incidents",
+      "/mission-control/integrations",
+      "/mission-control/settings"
+    ]
+  },
+  "viewport_widths": [1440, 1024, 768, 390],
+  "screenshots_captured": 112,
+  "console_errors": 0,
+  "horizontal_overflow_failures": 0,
+  "incorrect_redirects_or_route_load_failures": 0,
+  "operations_floor_preserved": true,
+  "dashboard_chart_pass": true,
+  "root_dashboard_pass": true
+}

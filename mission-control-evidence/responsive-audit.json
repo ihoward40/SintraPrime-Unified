@@ -1,0 +1,10 @@
+{
+  "status": "pass",
+  "breakpoints": [1440, 1024, 768, 390],
+  "routes_checked": 28,
+  "screenshots_captured": 112,
+  "horizontal_overflow_failures": 0,
+  "body_margin_values": ["0px"],
+  "runtime_browser_audit": "mission-control-evidence/mission-control-preservation-20260718-results.json",
+  "screenshot_directory": "mission-control-evidence/screenshots/mission-control-preservation-20260718"
+}

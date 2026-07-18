@@ -16,6 +16,7 @@ import {
   Gavel,
   Shield,
   Star,
+  Monitor,
 } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import { clsx } from 'clsx';
@@ -38,6 +39,7 @@ const navItems: NavItem[] = [
   { path: '/entities', label: 'Entity Governance', icon: Building2 },
   { path: '/ai-parliament', label: 'AI Parliament', icon: Brain, badge: 'LIVE', badgeColor: 'green' },
   { path: '/caselaw', label: 'Case Law Search', icon: Search },
+  { path: '/operations-floor', label: 'Operations Floor', icon: Monitor, badge: 'OPS', badgeColor: 'blue' },
   { path: '/settings', label: 'Settings', icon: Settings },
 ];
 

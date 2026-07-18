@@ -12,6 +12,30 @@ import {
 import recoveryApi, { DashboardStats } from '../api/recovery';
 import systemApi, { SystemHealth } from '../api/system';
 
+const unavailableStats: DashboardStats = {
+  status: 'unavailable',
+  tenant: 'SintraPrime Dashboard',
+  cases: { total: 0, high_priority: 0, medium_priority: 0, evidence_intake: 0 },
+  evidence: { total_items: 0, total_receipts: 0 },
+  case_readiness: [],
+  high_priority_cases: [],
+  external_action: 'locked',
+  platform_version: 'Runtime metrics unavailable',
+  evidence_kernel: 'No API endpoint configured',
+  timestamp: new Date(0).toISOString(),
+};
+
+const unavailableHealth: SystemHealth = {
+  overall: 'unavailable',
+  timestamp: new Date(0).toISOString(),
+  subsystems: {
+    api: { status: 'not_configured' },
+    evidence: { status: 'not_configured' },
+    permissions: { status: 'locked' },
+    commands: { status: 'locked' },
+  },
+};
+
 export default function LiveDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [health, setHealth] = useState<SystemHealth | null>(null);
@@ -20,6 +44,14 @@ export default function LiveDashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!import.meta.env.VITE_API_BASE_URL) {
+        setStats(unavailableStats);
+        setHealth(unavailableHealth);
+        setError(null);
+        setLoading(false);
+        return;
+      }
+
       try {
         const [dashData, healthData] = await Promise.all([
           recoveryApi.getDashboard(),
@@ -28,15 +60,19 @@ export default function LiveDashboard() {
         setStats(dashData);
         setHealth(healthData);
         setError(null);
-      } catch (err) {
-        setError('Failed to load dashboard data');
+      } catch {
+        setStats(unavailableStats);
+        setHealth(unavailableHealth);
+        setError(null);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-    const interval = setInterval(fetchData, 30000); // Refresh every 30s
-    return () => clearInterval(interval);
+    const interval = import.meta.env.VITE_API_BASE_URL ? setInterval(fetchData, 30000) : null;
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, []);
 
   if (loading) {

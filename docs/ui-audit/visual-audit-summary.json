@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-07-18T12:05:00-04:00",
+  "visualRepair": "PASS",
+  "authorizedBase": "3d79d919749e444c0de3afc18bddaafc54bc8d3e",
+  "operationsFloor": "PASS",
+  "tailwindPipeline": "PASS",
+  "sharedShell": "PASS",
+  "bodyMargin": "0px",
+  "dashboardChart": "PASS",
+  "rootDashboard": "PASS",
+  "dashboardRoute": "PASS",
+  "routesRerun": 13,
+  "expectedRoutes": 13,
+  "screenshotsCaptured": 52,
+  "uniqueConsoleErrors": 0,
+  "totalConsoleErrors": 0,
+  "totalConsoleMessages": 0,
+  "horizontalOverflowFailures": 0,
+  "typeCheck": "PASS",
+  "build": "PASS",
+  "updatedVisualGrade": "A",
+  "revisedPCounts": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 0,
+    "P3": 0
+  },
+  "screenshotRoot": "docs/ui-audit/screenshots/preservation-main-20260718",
+  "resultJson": "docs/ui-audit/preservation-main-20260718-results.json",
+  "knownLimitations": [
+    "Runtime API metrics are labeled unavailable when VITE_API_BASE_URL is not configured; command controls remain display-only/locked."
+  ]
+}

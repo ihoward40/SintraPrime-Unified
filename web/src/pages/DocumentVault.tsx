@@ -130,19 +130,24 @@ export default function DocumentVault() {
   const [exportLoading, setExportLoading] = useState(false);
   const [exportResult, setExportResult] = useState<{ snapshot_id: string; packet_hash: string; audit_id: string } | null>(null);
 
-  // Fetch real documents on mount
+  // Fetch real documents only when an authenticated API session exists.
   useEffect(() => {
     const fetchDocuments = async () => {
+      const token = localStorage.getItem('sintraprime_token');
+      if (!token) {
+        setDocuments(mockDocuments);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
         const res = await documentsApi.list({ page_size: 100 });
         const items = res.data?.items || [];
         setDocuments(items.map(mapDocumentToUI));
-      } catch (err) {
-        console.error('Failed to fetch documents', err);
+      } catch {
         setError('Unable to load documents. Using fallback data.');
-        // Fall back to mock data on error
         setDocuments(mockDocuments);
       } finally {
         setLoading(false);

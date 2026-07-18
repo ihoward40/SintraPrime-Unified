@@ -13,6 +13,7 @@ import EntityGovernance from './pages/EntityGovernance';
 import AIParliament from './pages/AIParliament';
 import CaseLawSearch from './pages/CaseLawSearch';
 import Settings from './pages/Settings';
+import OperationsFloor from './pages/OperationsFloor';
 import Login from './pages/Login';
 import { useTheme } from './hooks/useTheme';
 
@@ -34,6 +35,7 @@ function AppContent() {
           <Route path="ai-parliament" element={<AIParliament />} />
           <Route path="caselaw" element={<CaseLawSearch />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="operations-floor" element={<OperationsFloor />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>

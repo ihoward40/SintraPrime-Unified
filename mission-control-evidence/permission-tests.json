@@ -1,0 +1,5 @@
+{
+  "summary_endpoint": "ADMIN_DASHBOARD permission required",
+  "test": "authenticated super-admin dependency passes",
+  "result": "pass"
+}

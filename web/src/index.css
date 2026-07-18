@@ -190,3 +190,65 @@
     background-size: 24px 24px;
   }
 }
+
+@layer components {
+  .mc-shell { @apply space-y-5 min-w-0; font-variant-numeric: tabular-nums; }
+  .mc-masthead { @apply flex flex-col lg:flex-row lg:items-end justify-between gap-5 border-b border-gold/20 pb-5; }
+  .mc-masthead h1 { @apply text-3xl md:text-4xl font-black tracking-tight text-white; }
+  .mc-masthead p:not(.mc-eyebrow) { @apply text-slate-400 mt-1; }
+  .mc-eyebrow { @apply text-[10px] font-bold tracking-[0.22em] text-gold uppercase mb-1; }
+  .mc-doctrine { @apply flex flex-wrap gap-2; }
+  .mc-doctrine span { @apply text-[10px] tracking-widest border border-gold/30 text-gold px-2 py-1 bg-gold/5; }
+  .mc-subnav { @apply flex gap-1 overflow-x-auto pb-2; scrollbar-width: thin; }
+  .mc-subnav a { @apply shrink-0 px-3 py-2 text-xs text-slate-400 border-b-2 border-transparent hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold; }
+  .mc-subnav a.active { @apply text-gold border-gold bg-gold/5; }
+  .mc-home { @apply space-y-6; }
+  .mc-statusbar { @apply grid grid-cols-2 lg:flex lg:items-center gap-3 lg:gap-6 bg-slate-950/80 border border-slate-800 px-4 py-3 text-xs text-slate-500; }
+  .mc-statusbar > div { @apply flex items-center gap-2; }
+  .mc-statusbar strong { @apply text-slate-200 uppercase; }
+  .mc-statusbar svg { @apply w-3.5 h-3.5; }
+  .mc-statusbar svg.live { @apply text-teal-400; }
+  .mc-statusbar svg.degraded { @apply text-amber-400; }
+  .mc-statusbar svg.offline { @apply text-rose-400; }
+  .mc-statusbar button { @apply lg:ml-auto flex items-center gap-2 text-slate-300 hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold; }
+  .mc-warning { @apply flex items-center gap-3 border border-amber-500/30 bg-amber-500/5 text-amber-300 px-4 py-3 text-sm; }
+  .mc-warning svg { @apply w-4 h-4 shrink-0; }
+  .mc-command-strip { @apply grid lg:grid-cols-[1fr_1.4fr] gap-6 p-5 md:p-6 border border-gold/25 bg-gradient-to-br from-slate-900 to-slate-950; }
+  .mc-command-strip h2, .mc-section-title h2, .mc-surface h2 { @apply text-xl font-bold text-white; }
+  .mc-command-strip p:not(.mc-eyebrow) { @apply text-sm text-slate-400 mt-2 max-w-xl; }
+  .mc-command-actions { @apply grid grid-cols-2 md:grid-cols-3 gap-2; }
+  .mc-command-actions button, .mc-command-actions a { @apply min-h-11 flex items-center justify-center gap-2 border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold; }
+  .mc-command-actions button:disabled { @apply opacity-45 cursor-not-allowed; }
+  .mc-command-actions a { @apply border-gold/40 text-gold hover:bg-gold/10; }
+  .mc-command-actions svg { @apply w-3.5 h-3.5; }
+  .mc-section-title { @apply flex items-end justify-between gap-4 mb-3; }
+  .mc-section-title > span { @apply text-[10px] text-slate-600 font-mono break-all text-right; }
+  .mc-metrics { @apply grid grid-cols-2 lg:grid-cols-4 gap-px bg-slate-800 border border-slate-800; }
+  .mc-metric { @apply bg-slate-950 p-4 min-w-0; }
+  .mc-metric-label { @apply text-[10px] tracking-wider uppercase text-slate-500; }
+  .mc-metric-value { @apply text-2xl md:text-3xl text-white font-black my-2 truncate; }
+  .mc-source { @apply flex items-center gap-1 text-[10px] uppercase tracking-wider; }
+  .mc-source svg { @apply w-3 h-3; }
+  .mc-source.verified { @apply text-teal-400; }
+  .mc-source.unknown, .mc-source.unavailable { @apply text-slate-600; }
+  .mc-systems { @apply border border-slate-800 p-4; }
+  .mc-system-row { @apply grid grid-cols-[auto_1fr_auto] items-center gap-3 py-3 border-t border-slate-800 text-sm; }
+  .mc-system-row strong { @apply capitalize text-slate-200; }
+  .mc-system-row > span:last-child { @apply uppercase text-[10px] text-slate-500; }
+  .mc-health-dot { @apply w-2 h-2 rounded-full bg-slate-600; }
+  .mc-health-dot.healthy { @apply bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,.7)]; }
+  .mc-health-dot.degraded { @apply bg-amber-400; }
+  .mc-empty { @apply text-sm text-slate-500 py-8 text-center; }
+  .mc-surface { @apply space-y-8 py-2; }
+  .mc-surface > div:first-child > p:not(.mc-eyebrow) { @apply text-slate-400 mt-2; }
+  .mc-empty-state { @apply min-h-[320px] border border-dashed border-slate-700 flex flex-col items-center justify-center text-center p-8; }
+  .mc-empty-state > svg { @apply w-8 h-8 text-slate-600 mb-4; }
+  .mc-empty-state h3 { @apply text-lg text-white font-semibold; }
+  .mc-empty-state p { @apply text-sm text-slate-500 max-w-lg mt-2; }
+  .mc-empty-state span { @apply flex items-center gap-2 text-xs text-amber-400/80 mt-5; }
+  .mc-empty-state span svg { @apply w-3.5 h-3.5; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

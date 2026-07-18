@@ -1,0 +1,8 @@
+{
+  "frontend_lint": "pass",
+  "frontend_typecheck": "pass",
+  "frontend_build": "pass",
+  "api_contract": "pass",
+  "python_ruff": "pass",
+  "npm_audit_vulnerabilities": 0
+}

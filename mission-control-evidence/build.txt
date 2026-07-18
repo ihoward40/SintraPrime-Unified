@@ -1,0 +1,2 @@
+PASS — npm run build
+Vite 6.4.3 transformed 2,929 modules and completed the production build.

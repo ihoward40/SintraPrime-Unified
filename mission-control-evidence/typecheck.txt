@@ -1,0 +1,2 @@
+PASS — npm run type-check
+TypeScript completed with zero errors.

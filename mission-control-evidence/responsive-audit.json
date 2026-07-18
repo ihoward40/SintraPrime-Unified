@@ -1,0 +1,6 @@
+{
+  "status": "static_pass_runtime_pending",
+  "breakpoints": [1440, 1024, 768, 390],
+  "controls": ["min-width containment", "responsive grids", "horizontal subnav scroll"],
+  "runtime_browser_audit": "pending authenticated Portal runtime"
+}

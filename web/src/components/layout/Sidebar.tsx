@@ -16,6 +16,7 @@ import {
   Gavel,
   Shield,
   Star,
+  RadioTower,
 } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import { clsx } from 'clsx';
@@ -29,6 +30,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
+  { path: '/mission-control', label: 'Mission Control', icon: RadioTower, badge: 'LIVE', badgeColor: 'green' },
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/legal', label: 'Legal Hub', icon: Scale, badge: '5', badgeColor: 'gold' },
   { path: '/financial', label: 'Financial Empire', icon: TrendingUp },

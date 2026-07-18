@@ -1,0 +1,17 @@
+{
+  "/mission-control": "telemetry-backed executive view",
+  "/mission-control/operations": "preserved route; adapter pending",
+  "/mission-control/agents": "preserved route; adapter pending",
+  "/mission-control/tasks": "preserved route; adapter pending",
+  "/mission-control/decisions": "preserved route; adapter pending",
+  "/mission-control/runs": "preserved route; adapter pending",
+  "/mission-control/activity": "preserved route; adapter pending",
+  "/mission-control/schedules": "preserved route; adapter pending",
+  "/mission-control/evidence": "preserved route; adapter pending",
+  "/mission-control/governance": "preserved route; adapter pending",
+  "/mission-control/memory": "preserved route; adapter pending",
+  "/mission-control/costs": "preserved route; adapter pending",
+  "/mission-control/incidents": "preserved route; adapter pending",
+  "/mission-control/integrations": "preserved route; adapter pending",
+  "/mission-control/settings": "preserved route; adapter pending"
+}

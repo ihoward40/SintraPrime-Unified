@@ -1,0 +1,11 @@
+{
+  "mutating_commands_exposed": 0,
+  "locked_ui_commands": [
+    "Create task",
+    "Start governed run",
+    "Assign agent",
+    "Pause all",
+    "Emergency stop"
+  ],
+  "reason": "No permission-checked, audited command API is connected."
+}

@@ -14,6 +14,9 @@ import AIParliament from './pages/AIParliament';
 import CaseLawSearch from './pages/CaseLawSearch';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
+import MissionControlLayout from './pages/mission-control/MissionControlLayout';
+import MissionControlHome from './pages/mission-control/MissionControlHome';
+import MissionControlSurface from './pages/mission-control/MissionControlSurface';
 import { useTheme } from './hooks/useTheme';
 
 function AppContent() {
@@ -34,6 +37,10 @@ function AppContent() {
           <Route path="ai-parliament" element={<AIParliament />} />
           <Route path="caselaw" element={<CaseLawSearch />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="mission-control" element={<MissionControlLayout />}>
+            <Route index element={<MissionControlHome />} />
+            <Route path=":surface" element={<MissionControlSurface />} />
+          </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>

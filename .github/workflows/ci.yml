@@ -140,6 +140,25 @@ jobs:
         run: python scripts/ci/validate_repository_claims.py
       - name: Run validator tests
         run: python -m pytest scripts/ci/tests/ -q
+  auth-tenant-rbac-certification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run auth/tenant/RBAC certification suite
+        run: set -o pipefail && python -m pytest portal/tests/test_auth_tenant_rbac_certification.py -q | tee /tmp/auth-tenant-rbac-certification.log
+      - name: Upload certification log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-tenant-rbac-certification-log
+          path: /tmp/auth-tenant-rbac-certification.log
+          if-no-files-found: ignore
   security:
     runs-on: ubuntu-latest
     steps:

@@ -9,7 +9,7 @@ Permissions are checked via FastAPI dependencies.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Mapping
 from enum import StrEnum
 from functools import lru_cache
 
@@ -232,12 +232,38 @@ class CurrentUser:
     """Represents the authenticated user extracted from the JWT."""
 
     def __init__(self, payload: dict):
-        self.user_id: str    = payload["sub"]
-        self.tenant_id: str  = payload["tenant_id"]
-        self.role: Role      = Role(payload["role"])
-        self.permissions: frozenset[Permission] = frozenset(
-            Permission(p) for p in payload.get("permissions", []) if p in Permission._value2member_map_
-        )
+        self.user_id = self._require_string_claim(payload, "sub")
+        self.tenant_id = self._require_string_claim(payload, "tenant_id")
+
+        role_value = self._require_string_claim(payload, "role")
+        try:
+            self.role: Role = Role(role_value)
+        except ValueError as exc:
+            raise TokenError(f"Invalid token role: {role_value!r}") from exc
+
+        raw_permissions = payload.get("permissions", [])
+        if not isinstance(raw_permissions, Iterable) or isinstance(raw_permissions, (str, bytes, Mapping)):
+            raise TokenError("Malformed permissions container")
+
+        raw_permissions_list = list(raw_permissions)
+        invalid_permissions = [
+            permission
+            for permission in raw_permissions_list
+            if not isinstance(permission, str) or permission not in Permission._value2member_map_
+        ]
+        if invalid_permissions:
+            raise TokenError(
+                f"Unsupported permissions: {', '.join(sorted(str(p) for p in invalid_permissions))}"
+            )
+
+        self.permissions: frozenset[Permission] = frozenset(Permission(p) for p in raw_permissions_list)
+
+    @staticmethod
+    def _require_string_claim(payload: dict, key: str) -> str:
+        value = payload.get(key)
+        if not isinstance(value, str) or not value.strip():
+            raise TokenError(f"Missing required token claim: {key}")
+        return value
 
     def has_permission(self, *perms: Permission) -> bool:
         return all(p in self.permissions for p in perms)

@@ -21,6 +21,7 @@ from blackstone.models import (
     Source,
     SourceClassification,
 )
+from portal.auth.rbac import CurrentUser, get_current_user
 from portal.database import get_db
 from portal.services.blackstone_service import BlackstoneEvaluationService, EvidenceLedgerService
 
@@ -128,6 +129,7 @@ class CaseStatusResponse(BaseModel):
 @router.post("/cases", response_model=CaseIntakeResponse, status_code=status.HTTP_201_CREATED)
 async def intake_case(
     request: CaseIntakeRequest,
+    _: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -256,6 +258,7 @@ async def intake_case(
 @router.get("/cases/{case_id}", response_model=CaseStatusResponse)
 async def get_case_status(
     case_id: str,
+    _: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     tenant_id: str | None = None,
 ):
@@ -295,6 +298,7 @@ async def get_case_status(
 @router.post("/evaluate", response_model=EvaluateResponse, status_code=status.HTTP_200_OK)
 async def evaluate_claim(
     request: EvaluateRequest,
+    _: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """

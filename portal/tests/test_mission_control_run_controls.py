@@ -9,7 +9,7 @@ from collections.abc import AsyncGenerator
 
 import pytest
 import pytest_asyncio
-from sqlalchemy import select
+from sqlalchemy import event, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from portal.database import Base
@@ -291,6 +291,51 @@ async def test_run_control_transition_requires_tenant_scope_and_blocks_cross_ten
 
 
 @pytest.mark.asyncio
+async def test_run_control_transition_update_includes_tenant_predicate(db: AsyncSession):
+    tenant_id, user_id, command_id = await _seed_refs(db, tenant_id="tenant-sql")
+    control = await create_run_control(
+        db,
+        tenant_id=tenant_id,
+        workflow_id="workflow-sql-predicate",
+        command_id=command_id,
+        requested_by=user_id,
+        workflow_status_snapshot="running",
+        state=RunControlState.RUNNING,
+    )
+
+    update_statements: list[str] = []
+    sync_engine = db.get_bind()
+
+    def _capture_update(_conn, _cursor, statement, _parameters, _context, _executemany):
+        if statement.lstrip().upper().startswith("UPDATE"):
+            update_statements.append(statement)
+
+    event.listen(sync_engine, "before_cursor_execute", _capture_update)
+    try:
+        updated = await transition_run_control(
+            db,
+            tenant_id=tenant_id,
+            run_control_id=control.id,
+            expected_version=1,
+            new_state=RunControlState.PAUSE_REQUESTED,
+            requested_by=user_id,
+            reason="predicate check",
+            command_id=command_id,
+            workflow_status_snapshot="running",
+        )
+    finally:
+        event.remove(sync_engine, "before_cursor_execute", _capture_update)
+
+    assert updated.state == RunControlState.PAUSE_REQUESTED.value
+    assert updated.state_version == 2
+    assert update_statements, "expected to capture at least one UPDATE statement"
+    update_sql = "\n".join(update_statements)
+    assert "tenant_id" in update_sql
+    assert "state_version" in update_sql
+    assert "mission_control_run_controls" in update_sql
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("starting_state", "terminal_state"),
     [
@@ -396,8 +441,12 @@ async def test_terminal_states_reject_follow_up_transitions(db: AsyncSession, te
 @pytest.mark.asyncio
 async def test_parallel_pg_transition_race_appends_exactly_one_event():
     database_url = os.getenv("DATABASE_URL", "")
+    required_in_ci = os.getenv("MISSION_CONTROL_PG_RACE_REQUIRED") == "1"
     if not database_url.startswith("postgresql"):
-        pytest.skip("PostgreSQL DATABASE_URL not configured")
+        message = "PostgreSQL DATABASE_URL not configured"
+        if required_in_ci:
+            pytest.fail(message)
+        pytest.skip(message)
 
     engine = create_async_engine(database_url, echo=False, pool_pre_ping=True)
     try:
@@ -471,6 +520,8 @@ async def test_parallel_pg_transition_race_appends_exactly_one_event():
             assert events[1].previous_event_hash == events[0].event_hash
             assert events[1].event_hash
     except Exception as exc:
+        if required_in_ci:
+            raise
         if "connect" in str(exc).lower() or "database" in str(exc).lower():
             pytest.skip(f"PostgreSQL integration unavailable: {exc}")
         raise

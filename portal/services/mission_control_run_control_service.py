@@ -301,6 +301,7 @@ async def transition_run_control(
         .where(
             and_(
                 MissionControlRunControl.id == run_control_id,
+                MissionControlRunControl.tenant_id == tenant_id,
                 MissionControlRunControl.state_version == expected_version,
                 MissionControlRunControl.state == current_state.value,
             )

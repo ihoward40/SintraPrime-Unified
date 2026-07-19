@@ -23,6 +23,100 @@ jobs:
         with:
           name: test-results
           path: test-results.xml
+  postgresql-race:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sintraprime
+          POSTGRES_PASSWORD: sintraprime
+          POSTGRES_DB: sintraprime_unified
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U sintraprime -d sintraprime_unified"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Wait for PostgreSQL readiness
+        env:
+          DATABASE_URL: postgresql+asyncpg://sintraprime:sintraprime@127.0.0.1:5432/sintraprime_unified
+        run: |
+          python - <<'PY'
+          import asyncio
+          import os
+
+          import asyncpg
+
+          async def main() -> None:
+              url = os.environ["DATABASE_URL"].replace("+asyncpg", "")
+              for attempt in range(60):
+                  try:
+                      conn = await asyncpg.connect(url)
+                      await conn.execute("SELECT 1")
+                      await conn.close()
+                      return
+                  except Exception:
+                      if attempt == 59:
+                          raise
+                      await asyncio.sleep(1)
+
+          asyncio.run(main())
+          PY
+      - name: Prepare PostgreSQL schema
+        env:
+          DATABASE_URL: postgresql+asyncpg://sintraprime:sintraprime@127.0.0.1:5432/sintraprime_unified
+        run: |
+          python - <<'PY'
+          import asyncio
+          import os
+
+          from portal.database import Base
+          from portal.models.mission_control_command import MissionControlCommand
+          from portal.models.mission_control_run_control import (
+              MissionControlRunControl,
+              MissionControlRunControlEvent,
+          )
+          from portal.models.user import Tenant, User
+          from sqlalchemy.ext.asyncio import create_async_engine
+
+          async def main() -> None:
+              engine = create_async_engine(os.environ["DATABASE_URL"], echo=False)
+              async with engine.begin() as conn:
+                  await conn.run_sync(
+                      lambda sync_conn: Base.metadata.create_all(
+                          sync_conn,
+                          tables=[
+                              Tenant.__table__,
+                              User.__table__,
+                              MissionControlCommand.__table__,
+                              MissionControlRunControl.__table__,
+                              MissionControlRunControlEvent.__table__,
+                          ],
+                      )
+                  )
+              await engine.dispose()
+
+          asyncio.run(main())
+          PY
+      - name: Run PostgreSQL concurrency test
+        env:
+          DATABASE_URL: postgresql+asyncpg://sintraprime:sintraprime@127.0.0.1:5432/sintraprime_unified
+          MISSION_CONTROL_PG_RACE_REQUIRED: '1'
+        run: |
+          set -euo pipefail
+          python -m pytest -q -rs portal/tests/test_mission_control_run_controls.py::test_parallel_pg_transition_race_appends_exactly_one_event | tee /tmp/pg_race.log
+          grep -q '1 passed' /tmp/pg_race.log
+          ! grep -q 'SKIPPED' /tmp/pg_race.log
   lint:
     runs-on: ubuntu-latest
     steps:

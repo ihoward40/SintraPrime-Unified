@@ -98,7 +98,7 @@ jobs:
           MISSION_CONTROL_PG_RACE_REQUIRED: '1'
         run: |
           set -euo pipefail
-          python -m pytest -q -rs portal/tests/test_mission_control_run_controls.py::test_parallel_pg_transition_race_appends_exactly_one_event | tee /tmp/pg_race.log
+          python -m pytest -q -rs -s portal/tests/test_mission_control_run_controls.py::test_parallel_pg_transition_race_appends_exactly_one_event | tee /tmp/pg_race.log
           grep -q '1 passed' /tmp/pg_race.log
           ! grep -q 'SKIPPED' /tmp/pg_race.log
   lint:

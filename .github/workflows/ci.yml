@@ -98,9 +98,19 @@ jobs:
           MISSION_CONTROL_PG_RACE_REQUIRED: '1'
         run: |
           set -euo pipefail
-          python -m pytest -q -rs -s portal/tests/test_mission_control_run_controls.py::test_parallel_pg_transition_race_appends_exactly_one_event | tee /tmp/pg_race.log
-          grep -q '1 passed' /tmp/pg_race.log
+          python -m pytest -vv -rs -s --tb=long --maxfail=1 \
+            portal/tests/test_mission_control_run_controls.py::test_parallel_pg_transition_race_appends_exactly_one_event \
+            portal/tests/test_mission_control_run_controls.py::test_pg_flushed_transition_rollback_does_not_persist \
+            | tee /tmp/pg_race.log
+          grep -q '2 passed' /tmp/pg_race.log
           ! grep -q 'SKIPPED' /tmp/pg_race.log
+      - name: Upload PostgreSQL race log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pg-race-log
+          path: /tmp/pg_race.log
+          if-no-files-found: ignore
   lint:
     runs-on: ubuntu-latest
     steps:

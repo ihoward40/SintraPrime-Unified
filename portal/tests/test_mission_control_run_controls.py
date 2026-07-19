@@ -560,6 +560,20 @@ async def test_parallel_pg_transition_race_appends_exactly_one_event():
             await session.commit()
         run_control_id = control.id
 
+        # Pre-race event baseline (fresh session, after create_run_control committed).
+        async with session_maker() as session:
+            before_events = (
+                await session.execute(
+                    select(MissionControlRunControlEvent)
+                    .where(MissionControlRunControlEvent.run_control_id == run_control_id)
+                    .order_by(MissionControlRunControlEvent.sequence.asc())
+                )
+            ).scalars().all()
+            before_event_count = len(before_events)
+            print(
+                f"RACE EVENTS before={before_event_count} types={[e.event_type for e in before_events]}"
+            )
+
         barrier = asyncio.Event()
 
         async def contender(expected_state: RunControlState) -> str:
@@ -613,29 +627,66 @@ async def test_parallel_pg_transition_race_appends_exactly_one_event():
             assert final.state == RunControlState.PAUSE_REQUESTED.value
             print(f"RACE FINAL: state_version={final.state_version} state={final.state}")
 
-            events = (
+            # Pre-race baseline was captured above (before_event_count). Compare
+            # by delta so the assertion does not depend on a hard-coded total.
+            after_events = (
                 await session.execute(
                     select(MissionControlRunControlEvent)
                     .where(MissionControlRunControlEvent.run_control_id == run_control_id)
                     .order_by(MissionControlRunControlEvent.sequence.asc())
                 )
             ).scalars().all()
-            # 1 CREATED event + exactly 1 transition event from the winner.
-            assert len(events) == 2
-            # Exactly one non-CREATED (transition) event was appended.
-            transition_events = [e for e in events if e.event_type != RunControlEventType.CREATED.value]
-            assert len(transition_events) == 1
-            # Hash chain verifies across both events.
-            assert events[0].event_hash
-            assert events[1].previous_event_hash == events[0].event_hash
-            assert events[1].event_hash
-            # Tenant remains part of the atomic predicate (no cross-tenant leak).
-            assert all(e.run_control_id == run_control_id for e in events)
+            after_event_count = len(after_events)
+            delta_count = after_event_count - before_event_count
+            print(
+                f"RACE EVENTS after={after_event_count} before={before_event_count} delta={delta_count}"
+            )
+            for e in after_events:
+                print(
+                    f"RACE EVENT seq={e.sequence} type={e.event_type} src={getattr(e, 'previous_state', None)} "
+                    f"tgt={getattr(e, 'new_state', None)} ver={getattr(e, 'new_version', None)} "
+                    f"prev={e.previous_event_hash} hash={e.event_hash}"
+                )
+            # Exactly one new durable transition event is added by the winner;
+            # the conflicting transaction adds none.
+            assert delta_count == 1, (
+                f"expected exactly one new event (delta=1), got after={after_event_count} "
+                f"before={before_event_count} delta={delta_count}"
+            )
+            # The delta event must be a transition (not a duplicate CREATED/init).
+            transition_events = [
+                e for e in after_events if e.event_type != RunControlEventType.CREATED.value
+            ]
+            assert len(transition_events) == 1, (
+                f"expected exactly one transition event, got types="
+                f"{[e.event_type for e in after_events]}"
+            )
+            delta_event = transition_events[0]
+            assert delta_event.previous_state == RunControlState.RUNNING.value, (
+                f"delta event source state={delta_event.previous_state}"
+            )
+            assert delta_event.new_state == RunControlState.PAUSE_REQUESTED.value, (
+                f"delta event target state={delta_event.new_state}"
+            )
+            assert delta_event.new_version == 2, f"delta event version={delta_event.new_version}"
+            assert delta_event.tenant_id == tenant_id
+            assert delta_event.run_control_id == run_control_id
+
+            # Hash chain verifies across all persisted events (by sequence).
+            assert after_events[0].event_hash
+            for i in range(1, len(after_events)):
+                assert after_events[i].previous_event_hash == after_events[i - 1].event_hash, (
+                    f"hash chain broken at seq {after_events[i].sequence}: "
+                    f"prev={after_events[i].previous_event_hash} "
+                    f"expected={after_events[i - 1].event_hash}"
+                )
+                assert after_events[i].event_hash
 
             # No durable workflow record changed / no operational command executed.
             command = await session.get(MissionControlCommand, command_id)
             assert command is not None
-            assert command.state == "REFUSED"
+            assert command.state == "REFUSED", f"command state changed to {command.state}"
+            print(f"RACE COMMAND: state={command.state}")
     except Exception as exc:
         if required_in_ci:
             raise

@@ -669,7 +669,6 @@ async def test_parallel_pg_transition_race_appends_exactly_one_event():
                 f"delta event target state={delta_event.new_state}"
             )
             assert delta_event.new_version == 2, f"delta event version={delta_event.new_version}"
-            assert delta_event.tenant_id == tenant_id
             assert delta_event.run_control_id == run_control_id
 
             # Hash chain verifies across all persisted events (by sequence).

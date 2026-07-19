@@ -1,4 +1,4 @@
-name: SintraPrime CI — 797 Tests
+name: SintraPrime CI
 on:
   push:
     branches: [ main, dev, feature/* ]
@@ -15,14 +15,23 @@ jobs:
           cache: 'pip'
       - name: Install dependencies
         run: pip install -r requirements.txt
-      - name: Run full test suite (797 tests)
+      - name: Run full test suite
         run: python -m pytest --tb=short -q
+      - name: Report test inventory (dynamic count)
+        run: python scripts/ci/report_test_inventory.py
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: test-results.xml
+      - name: Upload test inventory
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-inventory
+          path: artifacts/ci/test-inventory.json
+          if-no-files-found: ignore
   postgresql-race:
     runs-on: ubuntu-latest
     services:
@@ -119,6 +128,18 @@ jobs:
         with: { python-version: '3.11' }
       - run: pip install ruff==0.15.20
       - run: ruff check . --output-format=github
+  claims-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Validate documentation and claims integrity
+        run: python scripts/ci/validate_repository_claims.py
+      - name: Run validator tests
+        run: python -m pytest scripts/ci/tests/ -q
   security:
     runs-on: ubuntu-latest
     steps:

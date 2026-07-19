@@ -1,0 +1,13 @@
+{
+  "tool": "scripts/ci/validate_repository_claims.py",
+  "result": "PASS",
+  "checks": [
+    "README local links resolve",
+    "no retired src/ path tokens",
+    "no hardcoded test totals",
+    "no unqualified compliance claims",
+    "no public payment identifiers",
+    "required authority docs present"
+  ],
+  "unit_tests": "8 passed"
+}

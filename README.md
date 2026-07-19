@@ -51,26 +51,22 @@ cd web && npm run type-check
 cd web && npm run build
 ```
 
+> **Test counts are reported dynamically by CI** (see `scripts/ci/report_test_inventory.py`
+> and `docs/ARCHITECTURE.md`). The repository does **not** assert a hardcoded total in
+> this README; historically cited figures (e.g. "333", "4,681") were inconsistent and
+> have been removed. The current authoritative count is emitted by the CI inventory
+> step and recorded as a generated artifact.
+
 ### Full-stack Docker boot
 
 The repository contains `docker-compose.yml` and `Dockerfile` files for a complete deployment (PostgreSQL, Redis, Elasticsearch, MinIO, Prometheus, Grafana, Nginx, API, Airlock, Twin display). Running this stack requires configured environment variables and external services. It is **not** part of the supported quick-start until it is independently verified on your environment. See `docs/DEPLOYMENT.md` for setup details.
 
 ### Known limitations / deferred work
 
-- Scheduler arming tests (`tests/test_scheduler_core.py::TestArming`) are now verified in the default CI lane following the APScheduler trigger adapter fix in PR #164.
+- Scheduler arming tests (`tests/test_scheduler_core.py::TestArming`) are verified in the default CI lane following the APScheduler trigger adapter fix in PR #164.
 - Optional integrations (Plaid, predictive analytics, advanced LLM providers) are documented in `docs/ci/DEPENDENCY_MATRIX.md` but are not installed or tested in the default supported CI lane.
 
-**See [docs/CLAIMS.md](docs/CLAIMS.md) for detailed claims with test references.
-```
-
-**Expected output:**
-- ✅ Nginx reverse proxy on http://localhost (→ API, Airlock, Grafana)
-- ✅ API health: http://localhost:8080/health
-- ✅ New intake triggers document generation
-- ✅ Payment flow processes without errors
-- ✅ ~333 tests pass, >85% coverage
-
-**Next:** See [What SintraPrime Can Do](#-what-sintraprime-can-do) for full feature list.
+**See [docs/CLAIMS.md](docs/CLAIMS.md) for detailed claims with test references.**
 
 ---
 
@@ -80,8 +76,8 @@ SintraPrime combines capabilities not commonly found together in a single platfo
 
 - 📋 **Generate legal document templates** — trust memos, motions, entity formation docs (requires attorney review)
 - 💰 **Build financial statements** — P&L, balance sheets, cash flow analysis (requires CPA review)
-- 🏛️ **Navigate legal jurisdictions** — analyze law across all 50 US states + federal court system
-- 💳 **Automate payment workflows** — Stripe integration for document fees + service charges
+- 🏛️ **Navigate legal jurisdictions** — analyze law across **19 US jurisdictions** currently supported (federal court system also covered; expansion to all 50 states is planned, not complete)
+- 💳 **Automate payment workflows** — Stripe integration for document fees + service charges (test-mode verified; production enablement requires configuration)
 - 🔐 **Audit-ready compliance** — receipt generation, role-based access, immutable logging
 - 👥 **Multi-tenant administration** — dashboard for case management, team collaboration, client intake
 - 🤖 **Multi-agent reasoning** — specialized agents for trust law, financial analysis, compliance
@@ -97,7 +93,7 @@ SintraPrime combines capabilities not commonly found together in a single platfo
 - ❌ **NOT a substitute for professional consultation**
 - ❌ **NOT legal/financial/tax advice** (outputs are templates for professional review)
 - ❌ **NOT suitable for autonomous government/court filing** (humans-in-loop required)
-- ❌ **NOT production-ready without customization** (integration-ready foundation for enterprises)
+- ❌ **NOT production-certified** — this is an **integration-ready foundation** for enterprises. Production deployment requires independent hardening, compliance certification, and customization.
 
 ---
 
@@ -105,74 +101,85 @@ SintraPrime combines capabilities not commonly found together in a single platfo
 
 **For integrators and developers:**
 
-- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** — System design, agent patterns, security boundaries
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Canonical system design, authority matrix, security boundaries
 - **[QUICK_START.md](docs/QUICK_START.md)** — Developer setup, running tests, local deployment
+- **[CAPABILITY_INDEX.md](docs/CAPABILITY_INDEX.md)** — Honest capability index (not a marketing matrix)
+- **[REPOSITORY_STATUS.md](docs/REPOSITORY_STATUS.md)** — Subsystem status taxonomy
 - **[docs/CLAIMS.md](docs/CLAIMS.md)** — Every feature claim → test file → proof
+- **[SECURITY.md](docs/SECURITY.md)** — Security architecture and current controls
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — Code style, domain knowledge requirements, testing standards
 
-**For users:**
+**For governance:**
 
-- **[README_DEMO.md](docs/README_DEMO.md)** — 5-minute dashboard walkthrough
-- **[CAPABILITY_MATRIX.md](docs/CAPABILITY_MATRIX.md)** — 73 features × 4,681+ documented tests
-- **[FAQ.md](docs/FAQ.md)** — Common questions on accuracy, compliance, customization
+- **[docs/governance/MISSION_CONTROL_OBSERVATORY_AUTHORITY.md](docs/governance/MISSION_CONTROL_OBSERVATORY_AUTHORITY.md)** — Execution-authority boundary
+- **[docs/governance/OPEN_PR_DISPOSITION.md](docs/governance/OPEN_PR_DISPOSITION.md)** — Open PR classification
+- **[docs/DATABASE_AUTHORITY.md](docs/DATABASE_AUTHORITY.md)** — Schema/migration authority
 
 ---
 
-## 🔧 Core Capabilities (Verified)
+## 🔧 Core Capabilities
 
-| Capability | Status | Test Count | Docs |
-|-----------|--------|-----------|------|
-| Trust law analysis (19 jurisdictions) | ✅ | 247 | [trust_law/](src/trust_law/) |
-| Legal document templates (40+) | ✅ | 189 | [document_gen/](src/document_gen/) |
-| Financial statement generation | ✅ | 156 | [financial_mastery/](src/financial_mastery/) |
-| Payment intake (Stripe) | ✅ | 89 | [payment/](src/payment/) |
-| Multi-tenant dashboard | ✅ | 134 | [portal/](src/portal/) |
-| Audit logging & compliance | ✅ | 118 | [audit/](src/audit/) |
-| Agent orchestration | ✅ | 99 | [agents/](src/agents/) |
+> Status reflects the current `main` tree and CI, not marketing. See
+> [CAPABILITY_INDEX.md](docs/CAPABILITY_INDEX.md) for the full, honest index with
+> limitations and next-certification requirements.
 
-**Test coverage:** 333+ tests, ~85% code coverage. See [tests/](tests/) for full suite.
+| Capability | Status | Path |
+|-----------|--------|------|
+| Trust law analysis (19 jurisdictions) | FUNCTIONAL | [trust_law/](trust_law/) |
+| Legal document templates | PARTIAL (module path being restored) | [legal_integrations/](legal_integrations/) |
+| Financial statement generation | FUNCTIONAL (simplified GAAP) | [financial_mastery/](financial_mastery/) |
+| Payment intake (Stripe) | DUPLICATED (unify required) | [backend/stripe-payments/](backend/stripe-payments/) |
+| Multi-tenant dashboard | SUPPORTED | [portal/](portal/) |
+| Audit logging & compliance | SUPPORTED | [portal/models](portal/models) + [Mission Control](portal/services) |
+| Agent orchestration | EXPERIMENTAL | [agents/](agents/) |
+
+**Test coverage:** reported dynamically by CI (see above). Do not trust hardcoded totals in old receipts.
 
 ---
 
 ## 🚀 Deployment
 
 **Development:**
+
 ```bash
 docker-compose -f docker-compose.dev.yml up
 ```
 
 **Staging/Production:**
+
 - **AWS:** [infrastructure/aws/](infrastructure/aws/) — Terraform (ECS Fargate + RDS)
 - **Azure:** [infrastructure/azure/](infrastructure/azure/) — Bicep (App Service + SQL)
 - **GCP:** [infrastructure/gcp/](infrastructure/gcp/) — Terraform (Cloud Run + Cloud SQL)
 
-See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for setup instructions.
+> Deployment definitions are **DOCUMENTED ONLY** — they are not verified by CI. Independent
+> deployment testing is required before any production claim. See [DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ---
 
 ## 🛡️ Security & Compliance
 
-- **Audit logging:** Immutable records of all actions (user, timestamp, action, result)
-- **RBAC:** Role-based access control with tenant isolation
-- **Encryption:** TLS in transit, AES-256 at rest (configurable KMS)
-- **Compliance:** HIPAA, SOC 2, PCI-DSS ready (audit reports in [artifacts/compliance/](artifacts/compliance/))
-- **Third-party:** No secrets in code; all keys via GitHub Secrets or environment variables
+- **Audit logging:** Immutable records of actions (user, timestamp, action, result) via Mission Control event chain.
+- **RBAC:** Role-based access control with tenant isolation (`portal/auth/rbac.py`).
+- **Encryption:** TLS in transit; AES-256 at rest is **configurable** via KMS — confirm your deployment enables it.
+- **Compliance posture:** HIPAA / SOC 2 / PCI-DSS readiness is **NOT established**. The repository contains audit logging and RBAC scaffolding that *support* future certification, but no completed compliance certification exists. Do not represent the platform as meeting HIPAA, SOC 2, or PCI-DSS requirements.
+- **Third-party:** No secrets in code; all keys via environment variables / secret stores.
 
-See [SECURITY.md](docs/SECURITY.md) for full security architecture.
+See [SECURITY.md](docs/SECURITY.md) for the full security architecture and current controls.
 
 ---
 
 ## 📋 Limitations
 
 **Current version (v1.0):**
-- ✅ Works on Python 3.11+ (Linux, macOS, Windows)
-- ✅ Tested on Stripe test + production keys
-- ⚠️ Trust law limited to 19 US jurisdictions (not all 50 yet)
-- ⚠️ Document templates are starting points (require customization per jurisdiction)
-- ⚠️ Financial analysis uses simplified GAAP rules (not full audit-grade)
-- ⚠️ Multi-agent parliament is POC (not production-scale voting on 1000+ documents)
 
-**See [ROADMAP.md](docs/ROADMAP.md) for planned improvements.**
+- ✅ Works on Python 3.11+ (Linux, macOS, Windows)
+- ✅ Stripe **test-mode** verified; production payment enablement requires your own configured keys and compliance review (no live production payment-intent identifiers are published here)
+- ⚠️ Trust law limited to **19 US jurisdictions** (not all 50 yet)
+- ⚠️ Document templates are starting points (require customization per jurisdiction)
+- ⚠️ Financial analysis uses **simplified GAAP rules** (not full audit-grade; requires CPA review)
+- ⚠️ Multi-agent parliament is **POC** (not production-scale voting on 1000+ documents)
+
+**See [CAPABILITY_INDEX.md](docs/CAPABILITY_INDEX.md) for the full capability index and next-certification requirements.**
 
 ---
 
@@ -187,12 +194,13 @@ Built by the SintraPrime-Unified community. **Govern everything. Fear nothing.**
 ## 🤝 Contributing
 
 We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
+
 - Code style & testing requirements
 - Domain knowledge guidelines (trust law, finance, compliance)
 - Agent integration patterns
 - PR process & review gates
 
-**Before submitting a PR:** All claims must have corresponding tests. See [docs/CLAIMS.md](docs/CLAIMS.md) for the pattern.
+**Before submitting a PR:** All claims must have corresponding tests. See [docs/CLAIMS.md](docs/CLAIMS.md) for the pattern. Documentation and claim changes must pass `scripts/ci/validate_repository_claims.py`.
 
 ---
 
@@ -204,3 +212,4 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
 **For questions:** Open an issue or email sintraprime@ikesolutions.org
 
 </div>
+

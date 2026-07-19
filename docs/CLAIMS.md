@@ -1,250 +1,147 @@
 # SintraPrime-Unified Claims → Evidence Map
 
-**Purpose:** Every marketing claim is paired with:
-1. What "done" means (definition)
-2. Test file(s) proving it works
-3. Demo command or sample output
-4. Confidence level (✅ verified, ⚠️ partial, ❌ aspirational)
+**Purpose:** Every capability claim is paired with implementation authority, test path,
+verification command, CI coverage, known limitations, and last-verified commit.
+
+**Authoritative as of commit:** `10cad07f046b5675ed10a1fba1aa4a955636f739`
+**Tree:** `66f59a5bf832e9f3ce3c484c64891fd543359abf`
+
+> **Reconciliation note (Convergence Increment One):** This file was rewritten to remove
+> stale source paths from a former package layout, remove a published live Stripe
+> payment-intent identifier, drop unverified hardcoded test totals, and qualify
+> overclaimed statuses. Test counts cited below are taken from the original claims and
+> are **not independently re-collected**; the authoritative count is now emitted
+> dynamically by CI (`scripts/ci/report_test_inventory.py`). Where a test path could not
+> be confirmed on current main, it is marked UNKNOWN and the claim status is downgraded.
+> The former top-level `src/` package layout and the old top-level `tests/` tree no
+> longer exist on main; current packages live at the repository root.
+
+---
+
+## Required fields per claim
+- **Implementation authority** — package that owns the capability
+- **Verification command** — how to exercise it
+- **CI coverage** — whether a CI lane exercises it
+- **Known limitations** — honest constraints
+- **Last verified commit** — `10cad07f…` unless noted
+- **Status** — ✅ SUPPORTED / ⚠️ PARTIAL / ❌ ASPIRATIONAL
 
 ---
 
 ## Trust Law Capabilities
 
-### Claim: "Master Trust Law across 19 U.S. jurisdictions"
-
-**What "done" means:**
-- Parse revocable, irrevocable, special needs, charitable remainder trusts
-- Apply jurisdiction-specific statutes (CA, NY, TX, FL, IL, PA, OH, MI, NC, VA, AZ, CO, WA, OR, MA, MD, NJ, CT, DE)
-- Generate jurisdiction-specific trust documentation
-
-**Test files:**
-- `tests/trust_law/test_trust_types.py` — 247 tests
-
-**Demo:**
-```bash
-python -m sintraprime.trust_law.demo --jurisdiction CA --trust-type revocable
-# Output: Sample CA revocable trust memo with statute citations
-```
-
-**Status:** ✅ Verified (19 jurisdictions live, tested)
+### Claim: "Trust law analysis across 19 U.S. jurisdictions"
+- **Implementation authority:** `trust_law/`
+- **Test files:** `trust_law/tests/` (original claim cited 247 in the original claims (retired layout))
+- **Verification command:** `python -m pytest trust_law/tests/ -q` (old demo module import is stale)
+- **CI coverage:** not in default `pytest` lane unless collected; UNKNOWN
+- **Known limitations:** 19 jurisdictions only (CA, NY, TX, FL, IL, PA, OH, MI, NC, VA, AZ, CO, WA, OR, MA, MD, NJ, CT, DE); not all 50 states
+- **Status:** ⚠️ PARTIAL (implementation present; exact test count unverified on current tree)
 
 ---
 
 ### Claim: "Generate legal motions using IRAC structure"
-
-**What "done" means:**
-- Issue identification
-- Rule application (statute + case law)
-- Analysis with fact patterns
-- Conclusion with citations
-
-**Test files:**
-- `tests/legal_docs/test_motion_generator.py` — 189 tests
-
-**Demo:**
-```bash
-curl -X POST http://localhost:8000/api/legal/generate-motion \
-  -H "Content-Type: application/json" \
-  -d '{
-    "motion_type": "summary_judgment",
-    "facts": "Plaintiff failed to provide evidence of causation",
-    "jurisdiction": "CA"
-  }'
-# Output: IRAC-structured motion with case citations
-```
-
-**Status:** ✅ Verified (40+ motion templates)
+- **Implementation authority:** `legal_integrations/` (original referenced a retired legal-docs test location)
+- **Test files:** UNKNOWN (cited 189 in the original claims)
+- **Verification command:** UNKNOWN (API path unverified)
+- **CI coverage:** UNKNOWN
+- **Known limitations:** templates require attorney review
+- **Status:** ⚠️ PARTIAL
 
 ---
 
 ## Financial Capabilities
 
-### Claim: "Generate GAAP-compliant financial statements"
+### Claim: "Financial statements (simplified GAAP)"
+- **Implementation authority:** `financial_mastery/`
+- **Test files:** UNKNOWN (cited 156 in the original claims (retired layout))
+- **Verification command:** `python -m pytest financial_mastery/ -q` (demo module path stale)
+- **CI coverage:** UNKNOWN
+- **Known limitations:** simplified GAAP rules, NOT full audit-grade; CPA review required
+- **Status:** ⚠️ PARTIAL (self-qualified; not audit-grade)
 
-**What "done" means:**
-- P&L statements with proper revenue/expense classification
-- Balance sheets that balance (Assets = Liabilities + Equity)
-- Cash flow statements reconciled to balance sheet
-- Footnotes with GAAP disclosures
-
-**Test files:**
-- `tests/financial_mastery/test_gaap_compliance.py` — 156 tests
-
-**Demo:**
-```bash
-python -m sintraprime.financial_mastery.demo --company-type LLC --assets 500000
-# Output: Sample P&L, balance sheet, cash flow all balanced
-```
-
-**Status:** ✅ Verified (tested on 100+ sample companies)
-**Note:** Templates are starting points; CPA review required for final audit-grade statements
-
----
-
-### Claim: "Credit building roadmap from 0–700+ score"
-
-**What "done" means:**
-- Dispute strategy for derogatory accounts
-- Goodwill deletion request templates
-- Tradeline utilization optimization
-- Timeline to target score with proof points
-
-**Test files:**
-- `tests/financial_mastery/test_credit_roadmap.py` — 134 tests
-
-**Demo:**
-```bash
-python -m sintraprime.financial_mastery.credit_roadmap \
-  --starting_score 580 \
-  --target_score 700 \
-  --timeline_months 24
-# Output: Month-by-month roadmap with action items
-```
-
-**Status:** ✅ Verified (tested on 50+ credit profiles)
+### Claim: "Credit building roadmap"
+- **Implementation authority:** `financial_mastery/`
+- **Test files:** UNKNOWN (cited 134 in the original claims)
+- **CI coverage:** UNKNOWN
+- **Known limitations:** educational roadmap, not credit advice
+- **Status:** ⚠️ PARTIAL
 
 ---
 
 ## Payment & Integration
 
-### Claim: "Stripe payment integration (test + production)"
-
-**What "done" means:**
-- Accept payment intents (both one-time and subscriptions)
-- Generate payment receipts with audit trail
-- Handle refunds, disputes, failed charges
-- Support webhooks for async processing
-
-**Test files:**
-- `tests/payment/test_stripe_integration.py` — 89 tests
-
-**Demo (using test keys):**
-```bash
-curl -X POST http://localhost:8000/api/payment/charge \
-  -H "Authorization: Bearer ${STRIPE_SECRET_KEY}" \
-  -d '{
-    "amount": 9700,
-    "currency": "usd",
-    "description": "Trust intake document package"
-  }'
-# Output: {"payment_intent_id": "pi_...", "status": "succeeded"}
-```
-
-**Live test (Phase 19F):**
-- Payment Intent: `pi_3TRW78CT25knq5v20vTV8j03`
-- Amount: $97.00 USD
-- Status: Succeeded
-
-**Status:** ✅ Verified (test keys pass 100/100 tests; live charge completed)
+### Claim: "Stripe payment integration (test mode)"
+- **Implementation authority:** `backend/stripe-payments/` (NOTE: the former payment package under the legacy layout is MISSING; `legal_integrations/` also touches billing)
+- **Test files:** UNKNOWN (cited 89 in the original claims (retired layout))
+- **Verification command:** run against Stripe **test** keys only
+- **CI coverage:** NOT in default lane (no payment CI verified)
+- **Known limitations:** production enablement requires your own configured keys + compliance review
+- **Public identifiers:** REMOVED in this reconciliation. No live payment-intent identifiers are published.
+- **Status:** ⚠️ PARTIAL (test-mode integration present; production unverified; authority duplicated)
 
 ---
 
 ## Compliance & Audit
 
-### Claim: "Immutable audit logs with role-based access control"
-
-**What "done" means:**
-- Every action logged with user, timestamp, action, result
-- Logs cannot be deleted (write-once)
-- Only users with role:admin:audit can read full logs
-- Webhook events for all sensitive operations
-
-**Test files:**
-- `tests/audit/test_immutable_logs.py` — 118 tests
-
-**Demo:**
-```bash
-# Query audit log
-curl http://localhost:8000/api/audit/logs \
-  -H "Authorization: Bearer ${TOKEN}" \
-  -H "X-User-Role: admin:audit"
-# Output: Log entry with full context
-```
-
-**Status:** ✅ Verified (118 tests pass; logs verified immutable)
+### Claim: "Immutable audit logs with RBAC"
+- **Implementation authority:** `portal/models` + Mission Control event chain (`portal/services/mission_control_run_control_service.py`)
+- **Test files:** UNKNOWN (cited 118 in the original claims; the legacy audit package is MISSING on main)
+- **Verification command:** `python -m pytest portal/tests/test_mission_control_run_controls.py -q` (immutable hash-chained events proven in PG race lane)
+- **CI coverage:** YES (postgresql-race lane proves immutability + hash chain)
+- **Known limitations:** multiple event logs exist; unified audit authority pending convergence
+- **Status:** ✅ SUPPORTED (Mission Control event chain); PARTIAL (legacy audit module path unverified)
 
 ---
 
 ## Document Generation
 
-### Claim: "Generate 40+ professional legal document templates"
-
-**What "done" means:**
-- Each template maps to a document type
-- Accepts parameters (names, amounts, dates, jurisdiction)
-- Outputs formatted PDF/DOCX/HTML
-- Citations match jurisdiction
-
-**Test files:**
-- `tests/document_gen/test_templates.py` — 189 tests
-
-**Demo:**
-```bash
-curl -X POST http://localhost:8000/api/docs/generate \
-  -d '{
-    "template": "revocable_living_trust",
-    "grantor_name": "Demo Grantor",
-    "jurisdiction": "CA",
-    "assets": 2300000,
-    "format": "pdf"
-  }'
-# Output: PDF ready for attorney review
-```
-
-**Status:** ✅ Verified (40 templates, all tested)
+### Claim: "40+ professional legal document templates"
+- **Implementation authority:** `legal_integrations/` (the former document-generation package and its retired test location are MISSING)
+- **Test files:** UNKNOWN (cited 189 in the original claims)
+- **Verification command:** UNKNOWN
+- **CI coverage:** UNKNOWN
+- **Known limitations:** templates require customization per jurisdiction
+- **Status:** ⚠️ PARTIAL (module path being restored; not verified on current tree)
 
 ---
 
 ## Dashboard & Administration
 
 ### Claim: "Multi-tenant dashboard with case management"
-
-**What "done" means:**
-- Login with role-based access
-- View cases (intake forms, documents, payments, audit trail)
-- Filter/search by client, date, status
-- Real-time updates on document generation
-
-**Test files:**
-- `tests/portal/test_dashboard.py` — 134 tests
-
-**Demo:**
-```bash
-# Start app
-docker-compose up
-
-# Open http://localhost:8000/dashboard
-# Login: demo@example.com / password123
-# See: 5 sample cases with documents, payments, audit trail
-```
-
-**Status:** ✅ Verified (tested on localhost)
+- **Implementation authority:** `portal/` + `web/`
+- **Test files:** UNKNOWN (cited 134 in the original claims in a retired layout)
+- **Verification command:** `cd web && npm run build`
+- **CI coverage:** web lint/type/build only (no behavior tests)
+- **Known limitations:** demo credentials in old receipts must not be reused
+- **Status:** ✅ SUPPORTED (frontend + backend present; no exec mutation)
 
 ---
 
-## Summary of Evidence
+## Summary (reconciled)
 
-| Claim | Tests | Status | Demo Available |
-|-------|-------|--------|-----------------|
-| Trust law (19 jurisdictions) | 247 | ✅ | `python -m trust_law.demo` |
-| Legal motion generation | 189 | ✅ | `/api/legal/generate-motion` |
-| Financial statements | 156 | ✅ | `python -m financial_mastery.demo` |
-| Payment integration | 89 | ✅ | Phase 19F proof (live charge) |
-| Audit logs | 118 | ✅ | `/api/audit/logs` |
-| Dashboard | 134 | ✅ | http://localhost:8000 |
-| Document templates (40+) | 189 | ✅ | `/api/docs/generate` |
+| Claim | Original cited tests | Status (reconciled) | Path verified on main |
+|-------|---------------------|---------------------|-----------------------|
+| Trust law (19 jurisdictions) | 247 | ⚠️ PARTIAL | `trust_law/` exists |
+| Legal motion generation | 189 | ⚠️ PARTIAL | `legal_integrations/` exists |
+| Financial statements | 156 | ⚠️ PARTIAL | `financial_mastery/` exists |
+| Payment integration | 89 | ⚠️ PARTIAL | `backend/stripe-payments/` exists |
+| Audit logs | 118 | ✅ SUPPORTED (MC) | Mission Control proven |
+| Dashboard | 134 | ✅ SUPPORTED | `portal/` + `web/` |
+| Document templates | 189 | ⚠️ PARTIAL | `legal_integrations/` |
 
-**Total:** 1,122 tests documenting verified capabilities.
+**Total:** the prior hardcoded total (about 1.1 thousand) is RETIRED. The authoritative
+count is emitted dynamically by CI and must not be hardcoded. See
+`scripts/ci/report_test_inventory.py`.
 
 ---
 
 ## How to Add a New Claim
+1. Define "done" (specific, measurable).
+2. Write tests (in the owning package's `tests/`).
+3. Add verification command (run without secrets).
+4. Link here with all required fields.
+5. Set status: ✅ SUPPORTED / ⚠️ PARTIAL / ❌ ASPIRATIONAL.
+6. Update README only after tests pass and `scripts/ci/validate_repository_claims.py` is green.
 
-1. **Define what "done" means** (specific, measurable outcome)
-2. **Write tests first** (in `tests/{domain}/`)
-3. **Add demo command** (run without secrets)
-4. **Link here** (this file)
-5. **Set status:** ✅ verified, ⚠️ partial, ❌ aspirational
-6. **Update README.md** only after tests pass
-
-**Rule:** No claim in README.md without corresponding test file and entry in this document.
+**Rule:** No claim in README without corresponding test file and entry in this document.

@@ -1,0 +1,109 @@
+{
+  "method": "gh pr list + live GitHub inspect for PR #213, augmented by repo evidence",
+  "prs": [
+    {
+      "number": 213,
+      "title": "docs: establish repository architecture and claims authority",
+      "state": "OPEN",
+      "draft": true,
+      "base": "main",
+      "head_at_review": "2d376f224a0379f5d8e57b155a0bd160909bfdfa",
+      "final_evidence_head": "recorded in PR metadata after evidence amendment",
+      "mergeable": "MERGEABLE",
+      "merge_state_status": "CLEAN",
+      "overlap_with_current_main": "docs/repository-convergence only; no runtime overlap with portal/web/src/migrations",
+      "dependency_chain": "none; exact-head CI and evidence review completed",
+      "scope_risk": "LOW — documentation, CI truth, and governance only",
+      "disposition": "INDEPENDENT REVIEW CANDIDATE",
+      "merge_now": false
+    },
+    {
+      "number": 206,
+      "title": "Observatory G4.7 execution guard",
+      "base": "main",
+      "mergeable": "CONFLICTING",
+      "files": "+46,704",
+      "risk": "HIGH — 3rd parallel execution authority",
+      "disposition": "HOLD FOR DEPENDENCY",
+      "merge_now": false
+    },
+    {
+      "number": 205,
+      "title": "observability",
+      "base": "main",
+      "mergeable": "0 ahead main",
+      "files": "?",
+      "risk": "LOW",
+      "disposition": "REBASE AND RE-REVIEW",
+      "merge_now": false
+    },
+    {
+      "number": 204,
+      "title": "Gate 3 evidence freeze",
+      "base": "main",
+      "mergeable": "unknown",
+      "risk": "LOW",
+      "disposition": "MERGE CANDIDATE",
+      "merge_now": true
+    },
+    {
+      "number": 192,
+      "title": "child of #134",
+      "base": "audit/ecc-mvp-and-pr0006-verification (NOT main)",
+      "mergeable": "NEEDS INVESTIGATION",
+      "risk": "MEDIUM",
+      "disposition": "NEEDS INVESTIGATION",
+      "merge_now": false
+    },
+    {
+      "number": 189,
+      "title": "tabulate dependency bump",
+      "base": "main",
+      "risk": "LOW",
+      "disposition": "MERGE CANDIDATE",
+      "merge_now": true
+    },
+    {
+      "number": 181,
+      "title": "agent-bot remote",
+      "base": "main",
+      "risk": "LOW",
+      "disposition": "MERGE CANDIDATE",
+      "merge_now": true
+    },
+    {
+      "number": 166,
+      "title": "mercury mcp",
+      "base": "main",
+      "mergeable": "CONFLICTING",
+      "risk": "MEDIUM",
+      "disposition": "REBASE AND RE-REVIEW",
+      "merge_now": false
+    },
+    {
+      "number": 142,
+      "title": "229 files, DO-NOT-MERGE",
+      "base": "main",
+      "risk": "HIGH",
+      "disposition": "SPLIT REQUIRED",
+      "merge_now": false
+    },
+    {
+      "number": 134,
+      "title": "security + compliance",
+      "base": "main (base of #192)",
+      "risk": "MEDIUM",
+      "disposition": "SUPERSEDED",
+      "merge_now": false
+    },
+    {
+      "number": 133,
+      "title": "agent mesh",
+      "base": "main",
+      "mergeable": "CONFLICTING",
+      "risk": "MEDIUM",
+      "disposition": "REBASE AND RE-REVIEW",
+      "merge_now": false
+    }
+  ]
+}

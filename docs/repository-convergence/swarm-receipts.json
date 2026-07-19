@@ -1,0 +1,62 @@
+{
+  "swarm_status": "SWARM PARTIAL — specialist dispatch unsuccessful; integration completed serially with honest disclosure",
+  "specialists": {
+    "RC-A": {
+      "status": "TIMED_OUT",
+      "worktree": "sp-rc-a (empty)",
+      "receipt": null
+    },
+    "RC-B": {
+      "status": "TIMED_OUT",
+      "worktree": "sp-rc-b (empty)",
+      "receipt": null
+    },
+    "RC-C": {
+      "status": "TIMED_OUT",
+      "worktree": "not created",
+      "receipt": null
+    },
+    "RC-D": {
+      "status": "NOT_DISPATCHED",
+      "receipt": null
+    },
+    "RC-E": {
+      "status": "NOT_DISPATCHED",
+      "receipt": null
+    },
+    "RC-F": {
+      "status": "INTEGRATION_AGENT_PERFORMED",
+      "note": "hardened parser + tests; exact-head CI artifact confirms collected=432"
+    },
+    "RC-G": {
+      "status": "INTEGRATION_AGENT_PERFORMED",
+      "note": "validator + tests"
+    },
+    "RC-H": {
+      "status": "INTEGRATION_AGENT_PERFORMED",
+      "note": "integration-agent verification completed; genuinely independent RC-H not executed"
+    }
+  },
+  "integration_agent": {
+    "role": "Lead Orchestrator + Integration Agent (Hermes)",
+    "subject_commit": "e1e94581e1d0840e1ad6d4c9ddb775bcf2a34db1",
+    "evidence_commit": "recorded in final PR metadata after evidence amendment",
+    "stash_state": "No stash entry named rc-increment-1-prior-turn-backup is present in this workspace's current refs/stash; unrelated stash entries remain untouched",
+    "stash_dropped": false
+  },
+  "file_shas": {
+    "docs/ARCHITECTURE.md": "b3a2b9987a5ecba2",
+    "docs/REPOSITORY_STATUS.md": "25b73f5f04b52e37",
+    "README.md": "eb2bd9376a3b79df",
+    "docs/CLAIMS.md": "de4a15c8767e10b8",
+    "docs/CAPABILITY_INDEX.md": "a9a4329f3ed08023",
+    "docs/QUICK_START.md": "573bf06f2b5fc2b8",
+    "docs/SECURITY.md": "b0dafbb6d882b2f3",
+    "docs/governance/MISSION_CONTROL_OBSERVATORY_AUTHORITY.md": "375792ba531919f5",
+    "docs/DATABASE_AUTHORITY.md": "7c4e2e79783d8108",
+    "docs/governance/OPEN_PR_DISPOSITION.md": "c954a94c0e05d5fc",
+    "scripts/ci/report_test_inventory.py": "258fb4c795f9e922",
+    "scripts/ci/validate_repository_claims.py": "0333e3eb74412f38",
+    ".github/workflows/ci.yml": "6f1f9e76353e1293"
+  }
+}

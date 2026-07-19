@@ -1,0 +1,44 @@
+{
+  "tool": "scripts/ci/report_test_inventory.py",
+  "method": "pytest --collect-only -q; parse per-file ': N' lines and the summary line; capture return code and errors",
+  "fields": [
+    "collection_status",
+    "collection_command",
+    "collection_return_code",
+    "collected_count",
+    "parse_method",
+    "collection_errors",
+    "incomplete",
+    "authoritative",
+    "commit",
+    "tree",
+    "python_version",
+    "platform",
+    "timestamp"
+  ],
+  "safeguards": "non-zero rc or detected collection errors => incomplete=true, authoritative=false; never silently 0",
+  "exact_head_ci_artifact": {
+    "collection_status": "ok",
+    "collection_command": "/opt/hostedtoolcache/Python/3.11.15/x64/bin/python -m pytest --collect-only -q -p no:cacheprovider",
+    "collection_return_code": 0,
+    "collected_count": 432,
+    "parse_method": "per-file-sum",
+    "collection_errors": [],
+    "incomplete": false,
+    "authoritative": true,
+    "commit": "f50b8b6132053909ea295f6f38616b3985417ef7",
+    "tree": "e94e71672a9fc754bb6875e8fb1dcb3640e7f442",
+    "python_version": "3.11.15",
+    "platform": "Linux-6.17.0-1020-azure-x86_64-with-glibc2.39",
+    "timestamp": "2026-07-19T18:42:58.357747+00:00"
+  },
+  "local_result_from_head": {
+    "collected": 432,
+    "rc": 0,
+    "authoritative": false,
+    "incomplete": false,
+    "note": "provisional until exact-head CI artifact confirmation"
+  },
+  "unit_tests": "10 passed",
+  "ci_artifact": "uploaded as artifacts/ci/test-inventory.json (NOT committed; gitignored)"
+}

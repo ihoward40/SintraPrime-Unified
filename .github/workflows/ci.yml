@@ -86,7 +86,7 @@ jobs:
               MissionControlRunControl,
               MissionControlRunControlEvent,
           )
-          from portal.models.user import Tenant, User
+          from portal.models.user import Tenant, User, Role
           from sqlalchemy.ext.asyncio import create_async_engine
 
           async def main() -> None:
@@ -97,6 +97,7 @@ jobs:
                           sync_conn,
                           tables=[
                               Tenant.__table__,
+                              Role.__table__,
                               User.__table__,
                               MissionControlCommand.__table__,
                               MissionControlRunControl.__table__,

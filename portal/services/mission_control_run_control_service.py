@@ -216,6 +216,7 @@ async def create_run_control(
 async def transition_run_control(
     db: AsyncSession,
     *,
+    tenant_id: str,
     run_control_id: str,
     expected_version: int,
     new_state: RunControlState,
@@ -240,7 +241,7 @@ async def transition_run_control(
     projection_schema_version: int = PROJECTION_SCHEMA_VERSION,
     event_type: RunControlEventType = RunControlEventType.STATE_TRANSITIONED,
 ) -> MissionControlRunControl:
-    control = await _load_run_control(db, run_control_id)
+    control = await _load_run_control(db, tenant_id=tenant_id, run_control_id=run_control_id)
     if control is None:
         raise RunControlInvalidTransitionError(f"run control not found: {run_control_id}")
 
@@ -310,7 +311,7 @@ async def transition_run_control(
         raise RunControlConflictError(f"run control {run_control_id} changed concurrently")
 
     await db.flush()
-    updated = await _load_run_control(db, run_control_id)
+    updated = await _load_run_control(db, tenant_id=tenant_id, run_control_id=run_control_id)
     if updated is None:
         raise RunControlInvalidTransitionError(f"run control missing after update: {run_control_id}")
 
@@ -371,9 +372,17 @@ async def transition_run_control(
     return updated
 
 
-async def _load_run_control(db: AsyncSession, run_control_id: str) -> MissionControlRunControl | None:
+async def _load_run_control(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    run_control_id: str,
+) -> MissionControlRunControl | None:
     result = await db.execute(
-        select(MissionControlRunControl).where(MissionControlRunControl.id == run_control_id)
+        select(MissionControlRunControl).where(
+            MissionControlRunControl.id == run_control_id,
+            MissionControlRunControl.tenant_id == tenant_id,
+        )
     )
     return result.scalar_one_or_none()
 

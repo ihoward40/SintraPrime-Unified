@@ -114,7 +114,7 @@ class MissionControlRunControlEvent(Base):
     new_state: Mapped[str] = mapped_column(String(40), nullable=False)
     previous_version: Mapped[int] = mapped_column(Integer, nullable=False)
     new_version: Mapped[int] = mapped_column(Integer, nullable=False)
-    principal_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    principal_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     command_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("mission_control_commands.id", ondelete="SET NULL"), nullable=True)
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     payload: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)

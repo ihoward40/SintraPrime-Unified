@@ -27,12 +27,16 @@ from portal.services.permission_provisioning import (
 async def _run(mode: str) -> None:
     async with AsyncSessionLocal() as session:
         if mode == "apply":
-            report = await sync_permission_manifest(session)
+            try:
+                report = await sync_permission_manifest(session)
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
         elif mode == "dry-run":
             report = await plan_permission_manifest(session)
         else:
             report = await inspect_permission_manifest(session)
-        await session.commit()
         print(json.dumps(asdict(report), default=str, indent=2, sort_keys=True))
 
 

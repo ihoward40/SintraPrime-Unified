@@ -598,6 +598,7 @@ async def test_parallel_pg_transition_race_appends_exactly_one_event():
         committed = [r for r in results if r == RACE_COMMITTED_SUCCESS]
         conflicts = [r for r in results if r == RACE_VERSION_CONFLICT]
         errors = [r for r in results if r == RACE_UNEXPECTED_ERROR]
+        print(f"RACE RESULT: results={results} committed={len(committed)} conflicts={len(conflicts)} errors={len(errors)}")
 
         assert len(committed) == 1, f"expected exactly one committed winner, got {results}"
         assert len(conflicts) == 1, f"expected exactly one version conflict, got {results}"
@@ -610,6 +611,7 @@ async def test_parallel_pg_transition_race_appends_exactly_one_event():
             assert final.tenant_id == tenant_id
             assert final.state_version == 2
             assert final.state == RunControlState.PAUSE_REQUESTED.value
+            print(f"RACE FINAL: state_version={final.state_version} state={final.state}")
 
             events = (
                 await session.execute(

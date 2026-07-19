@@ -1,0 +1,105 @@
+{
+  "allowed_transitions": {
+    "CANCELLED": [],
+    "COMPENSATED": [],
+    "COMPENSATING": [
+      "COMPENSATED"
+    ],
+    "COMPLETED": [],
+    "FAILED": [],
+    "PAUSED": [],
+    "PAUSE_FAILED": [],
+    "PAUSE_REQUESTED": [
+      "PAUSING",
+      "PAUSE_FAILED",
+      "PAUSE_TIMED_OUT",
+      "SUPERSEDED",
+      "COMPLETED",
+      "FAILED",
+      "CANCELLED",
+      "COMPENSATING"
+    ],
+    "PAUSE_TIMED_OUT": [],
+    "PAUSING": [
+      "PAUSED",
+      "PAUSE_FAILED",
+      "PAUSE_TIMED_OUT",
+      "SUPERSEDED",
+      "COMPLETED",
+      "FAILED",
+      "CANCELLED",
+      "COMPENSATING"
+    ],
+    "RUNNING": [
+      "PAUSE_REQUESTED",
+      "COMPLETED",
+      "FAILED",
+      "CANCELLED",
+      "COMPENSATING"
+    ],
+    "SUPERSEDED": []
+  },
+  "concurrency": {
+    "cross_tenant_lookup": "not found or unauthorized by repository convention",
+    "losing_transition_appends_event": false,
+    "optimistic_versioning": true,
+    "postgres_race_test": "gated by DATABASE_URL; skipped when no PostgreSQL test database is configured",
+    "state_version_required": true,
+    "tenant_id_required": true
+  },
+  "precedence": {
+    "cancellation_over_pause": true,
+    "completion_or_failure_over_pause_before_acknowledgement": true,
+    "no_terminal_revival": true,
+    "paused_has_no_resume_path": true,
+    "terminal_over_pause": true
+  },
+  "principal_linkage": {
+    "acknowledged_by": "users.id",
+    "event_principal_id": "users.id",
+    "requested_by": "users.id"
+  },
+  "projection_authority": "Durable workflow record remains execution authority; run-control projection is governance-only.",
+  "provenance": {
+    "baseline_commit": "88bc4da5f44820a9466c5497e1aab84b811ce17f",
+    "baseline_tag": "mission-control-phase-2-increment-1",
+    "baseline_tree": "320084225fa78244e4373272c5e9a82b7651c240",
+    "current_commit_time_utc": "2026-07-19T06:17:49-04:00",
+    "evidence_container_head_note": "Committed in a follow-up evidence-only commit; exact hash recorded in final PR metadata / final review response.",
+    "original_implementation_commit": "ad4898110f8f394cba45d77163bb544948585a99",
+    "reviewed_head": "efe4b0f7f1eeb38a73176360800c8c1e57c32596",
+    "subject_branch": "feat/mission-control-phase-2-permissions-run-control",
+    "subject_code_head": "4510d8ab7013880b8ccfe8bfbaf82da15c832cb7",
+    "subject_code_parent": "efe4b0f7f1eeb38a73176360800c8c1e57c32596",
+    "subject_code_tree": "ff286746315aed93cc9431511338eae054039b7e",
+    "subject_short_head": "4510d8ab"
+  },
+  "public_boundary": {
+    "command_execution_not_enabled": true,
+    "commands_endpoint": "POST /api/v1/mission-control/commands",
+    "live_pause_behavior": false,
+    "public_pause_endpoint": false
+  },
+  "schema_version": 1,
+  "states": [
+    "RUNNING",
+    "PAUSE_REQUESTED",
+    "PAUSING",
+    "PAUSED",
+    "PAUSE_FAILED",
+    "PAUSE_TIMED_OUT",
+    "SUPERSEDED",
+    "COMPLETED",
+    "FAILED",
+    "CANCELLED",
+    "COMPENSATING",
+    "COMPENSATED"
+  ],
+  "tenant_scope_required": true,
+  "terminal_states": [
+    "COMPLETED",
+    "FAILED",
+    "CANCELLED",
+    "COMPENSATED"
+  ]
+}

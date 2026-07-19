@@ -1,0 +1,137 @@
+{
+  "authoritative_decisions": [
+    {
+      "decision": "The durable workflow record remains execution authority.",
+      "rationale": "prevents governance projection from claiming live pause state without runner proof."
+    },
+    {
+      "decision": "Pause-related state is projection-only in Increment Two A.",
+      "rationale": "keeps the increment additive and backward compatible."
+    },
+    {
+      "decision": "Existing workers remain unaware of and unaffected by the projection.",
+      "rationale": "avoids changing execution behavior before a runner protocol exists."
+    },
+    {
+      "decision": "Startup performs verification only.",
+      "rationale": "prevents silent destructive synchronization at boot."
+    },
+    {
+      "decision": "Reconciliation requires explicit authority.",
+      "rationale": "keeps permission mutations auditable and bounded."
+    },
+    {
+      "decision": "No public mutation route is introduced.",
+      "rationale": "all operational commands must remain refusal-only."
+    },
+    {
+      "decision": "All operational commands remain refusal-only.",
+      "rationale": "preserves Increment One command ledger contract."
+    },
+    {
+      "decision": "Tenant scope is required at the run-control transition boundary.",
+      "rationale": "prevents cross-tenant mutation and hides record existence across tenants."
+    },
+    {
+      "decision": "mission_control_run_control_events.principal_id aligns with users.id.",
+      "rationale": "keeps ORM and migration linkage consistent for principal provenance."
+    },
+    {
+      "decision": "Rollback is forward-disable plus code revert unless a separate approved database procedure exists.",
+      "rationale": "avoids overstating reversibility when immutable history is preserved."
+    }
+  ],
+  "non_goals": [
+    {
+      "authorization_required": "separate explicit approval for live pause behavior.",
+      "future_prerequisite": "Increment Two B/C and a future authenticated runner acknowledgement protocol.",
+      "non_goal": "enable PAUSE_RUN",
+      "risk_if_included_now": "operators could trigger a real pause path with no end-to-end proof.",
+      "why_not_wider_scope": "would expose live pause behavior before the runner protocol and authoritative state model are complete."
+    },
+    {
+      "authorization_required": "separate approval for runner-side changes.",
+      "future_prerequisite": "runner acknowledgement protocol and integration tests.",
+      "non_goal": "add runner pause behavior",
+      "risk_if_included_now": "could mutate execution without governing audit boundaries.",
+      "why_not_wider_scope": "runner changes belong to the next increment once the projection is stable."
+    },
+    {
+      "authorization_required": "separate operational authorization.",
+      "future_prerequisite": "approved runner protocol plus durable workflow coordination.",
+      "non_goal": "add pause checkpoints or acknowledgements",
+      "risk_if_included_now": "false-positive paused states or stalled workflows.",
+      "why_not_wider_scope": "checkpoint semantics require the runner and workflow engine to agree on pause authority."
+    },
+    {
+      "authorization_required": "new scope approval on the workflow engine.",
+      "future_prerequisite": "validated projection and explicit follow-on workflow increment.",
+      "non_goal": "modify durable workflow execution",
+      "risk_if_included_now": "could break current starts, status, resume, history, cancel, compensation, or recovery behavior.",
+      "why_not_wider_scope": "the durable engine must remain unchanged while governance is added alongside it."
+    },
+    {
+      "authorization_required": "separate approval for resume.",
+      "future_prerequisite": "live pause implementation and runner acknowledgement.",
+      "non_goal": "add resume behavior",
+      "risk_if_included_now": "would create an incomplete pause/resume control plane.",
+      "why_not_wider_scope": "resume semantics are not part of the prerequisite governance layer."
+    },
+    {
+      "authorization_required": "separate frontend authorization.",
+      "future_prerequisite": "approved live pause increment and visual baseline review.",
+      "non_goal": "enable frontend command controls",
+      "risk_if_included_now": "could mislead operators into believing pause is ready.",
+      "why_not_wider_scope": "the UI must remain disabled until live operational behavior is authorized."
+    },
+    {
+      "authorization_required": "separate API approval.",
+      "future_prerequisite": "explicit API design and security review for live pause.",
+      "non_goal": "add new public operational mutation endpoints",
+      "risk_if_included_now": "unauthorized live actions could become reachable.",
+      "why_not_wider_scope": "new mutation surfaces would bypass the refusal-only guard."
+    },
+    {
+      "authorization_required": "separate UI change approval.",
+      "future_prerequisite": "new approved visual baseline and audit cycle.",
+      "non_goal": "alter Phase One visuals or Operations Floor",
+      "risk_if_included_now": "would invalidate prior visual proof.",
+      "why_not_wider_scope": "visual baseline must remain frozen while closure evidence is assembled."
+    },
+    {
+      "authorization_required": "no authorization in this increment.",
+      "future_prerequisite": "none; hashes remain frozen.",
+      "non_goal": "modify Increment One command hash formulas",
+      "risk_if_included_now": "would invalidate command-event evidence and refusals.",
+      "why_not_wider_scope": "command ledger integrity depends on stable hashing."
+    },
+    {
+      "authorization_required": "separate worktree approval.",
+      "future_prerequisite": "separate recovery branch or explicit user direction.",
+      "non_goal": "restore unrelated Pixel Office or stashed work",
+      "risk_if_included_now": "would broaden the diff and obscure evidence provenance.",
+      "why_not_wider_scope": "must not contaminate the Mission Control closure branch."
+    },
+    {
+      "authorization_required": "new prompt authorizing the next increment.",
+      "future_prerequisite": "Increment Two A closure and new authorization.",
+      "non_goal": "begin Increment Two B or C",
+      "risk_if_included_now": "could drift into live pause delivery before prerequisites pass.",
+      "why_not_wider_scope": "only the prerequisite increment is authorized."
+    },
+    {
+      "authorization_required": "explicit merge approval.",
+      "future_prerequisite": "draft PR review and explicit merge approval.",
+      "non_goal": "merge the PR",
+      "risk_if_included_now": "would hide unresolved evidence or regressions.",
+      "why_not_wider_scope": "branch must remain draft until review and CI are complete."
+    },
+    {
+      "authorization_required": "separate future live-pause authorization",
+      "future_prerequisite": "runner acknowledgement protocol and a later increment",
+      "non_goal": "add a public operational mutation route for run control transitions",
+      "risk_if_included_now": "would expose pause control before governance proof is complete.",
+      "why_not_wider_scope": "Increment Two A remains projection-only and refusal-only."
+    }
+  ]
+}

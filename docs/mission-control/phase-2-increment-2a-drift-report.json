@@ -1,0 +1,67 @@
+{
+  "mission_control_grants": {
+    "mission_control:command_create": [
+      "SUPER_ADMIN",
+      "FIRM_ADMIN",
+      "ATTORNEY"
+    ],
+    "mission_control:command_read": [
+      "SUPER_ADMIN",
+      "FIRM_ADMIN",
+      "ATTORNEY"
+    ],
+    "mission_control:run_pause": [
+      "SUPER_ADMIN",
+      "FIRM_ADMIN",
+      "ATTORNEY"
+    ]
+  },
+  "notes": [
+    "Legacy roles.permissions TEXT[] remains a non-authoritative legacy source.",
+    "Reconcile is explicit and auditable; startup does not silently remove grants.",
+    "JWT claims are unchanged until refresh or reauthentication."
+  ],
+  "provenance": {
+    "baseline_commit": "88bc4da5f44820a9466c5497e1aab84b811ce17f",
+    "baseline_tag": "mission-control-phase-2-increment-1",
+    "baseline_tree": "320084225fa78244e4373272c5e9a82b7651c240",
+    "current_commit_time_utc": "2026-07-19T06:17:49-04:00",
+    "evidence_container_head_note": "Committed in a follow-up evidence-only commit; exact hash recorded in final PR metadata / final review response.",
+    "original_implementation_commit": "ad4898110f8f394cba45d77163bb544948585a99",
+    "reviewed_head": "efe4b0f7f1eeb38a73176360800c8c1e57c32596",
+    "subject_branch": "feat/mission-control-phase-2-permissions-run-control",
+    "subject_code_head": "4510d8ab7013880b8ccfe8bfbaf82da15c832cb7",
+    "subject_code_parent": "efe4b0f7f1eeb38a73176360800c8c1e57c32596",
+    "subject_code_tree": "ff286746315aed93cc9431511338eae054039b7e",
+    "subject_short_head": "4510d8ab"
+  },
+  "role_identity": "System roles are matched by durable system-role identity rather than display name alone.",
+  "severity_examples": [
+    {
+      "example": "Already-synchronized canonical permission manifest",
+      "severity": "INFO"
+    },
+    {
+      "example": "Missing noncritical permission row",
+      "severity": "WARNING"
+    },
+    {
+      "example": "Missing canonical Mission Control grant",
+      "severity": "HIGH"
+    },
+    {
+      "example": "Unauthorized role holds a mutation-related permission",
+      "severity": "CRITICAL"
+    },
+    {
+      "example": "Normalized and legacy authorization sources disagree on authorization",
+      "severity": "BLOCKING"
+    }
+  ],
+  "verification_contract": {
+    "dry_run_mode": "read-only preview of reconcile plan; no writes",
+    "reconcile_mode": "explicit trusted write path only",
+    "startup_mode": "verify-only",
+    "verify_mode": "read-only; no writes; startup-safe"
+  }
+}

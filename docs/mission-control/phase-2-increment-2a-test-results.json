@@ -1,0 +1,87 @@
+{
+  "baseline_commit": "88bc4da5f44820a9466c5497e1aab84b811ce17f",
+  "baseline_tag": "mission-control-phase-2-increment-1",
+  "changed_files_from_baseline_to_subject_head": [
+    "docs/mission-control/phase-2-increment-2a-decision-log.json",
+    "docs/mission-control/phase-2-increment-2a-deployment-checklist.md",
+    "docs/mission-control/phase-2-increment-2a-drift-report.json",
+    "docs/mission-control/phase-2-increment-2a-evidence.md",
+    "docs/mission-control/phase-2-increment-2a-permission-manifest.json",
+    "docs/mission-control/phase-2-increment-2a-rollback.md",
+    "docs/mission-control/phase-2-increment-2a-test-results.json",
+    "docs/mission-control/phase-2-increment-2a-transition-matrix.json",
+    "portal/migrations/add_mission_control_run_control_projection.sql",
+    "portal/models/__init__.py",
+    "portal/models/mission_control_run_control.py",
+    "portal/scripts/sync_mission_control_permissions.py",
+    "portal/services/__init__.py",
+    "portal/services/mission_control_run_control_service.py",
+    "portal/services/permission_provisioning.py",
+    "portal/tests/test_mission_control_run_controls.py",
+    "portal/tests/test_permission_provisioning.py",
+    "portal/tests/test_permission_sync_cli.py"
+  ],
+  "correction_commit": "4510d8ab7013880b8ccfe8bfbaf82da15c832cb7",
+  "evidence_files_generated_in_followup_commit": [
+    "docs/mission-control/phase-2-increment-2a-evidence.md",
+    "docs/mission-control/phase-2-increment-2a-permission-manifest.json",
+    "docs/mission-control/phase-2-increment-2a-drift-report.json",
+    "docs/mission-control/phase-2-increment-2a-transition-matrix.json",
+    "docs/mission-control/phase-2-increment-2a-decision-log.json",
+    "docs/mission-control/phase-2-increment-2a-test-results.json",
+    "docs/mission-control/phase-2-increment-2a-deployment-checklist.md",
+    "docs/mission-control/phase-2-increment-2a-rollback.md"
+  ],
+  "notes": [
+    "PG race test was gated and skipped because no PostgreSQL DATABASE_URL was configured in the local environment.",
+    "The PR head remained unchanged before correction and moved only after the correction commit was created."
+  ],
+  "original_implementation_commit": "ad4898110f8f394cba45d77163bb544948585a99",
+  "provenance": {
+    "baseline_commit": "88bc4da5f44820a9466c5497e1aab84b811ce17f",
+    "baseline_tag": "mission-control-phase-2-increment-1",
+    "baseline_tree": "320084225fa78244e4373272c5e9a82b7651c240",
+    "current_commit_time_utc": "2026-07-19T06:17:49-04:00",
+    "evidence_container_head_note": "Committed in a follow-up evidence-only commit; exact hash recorded in final PR metadata / final review response.",
+    "original_implementation_commit": "ad4898110f8f394cba45d77163bb544948585a99",
+    "reviewed_head": "efe4b0f7f1eeb38a73176360800c8c1e57c32596",
+    "subject_branch": "feat/mission-control-phase-2-permissions-run-control",
+    "subject_code_head": "4510d8ab7013880b8ccfe8bfbaf82da15c832cb7",
+    "subject_code_parent": "efe4b0f7f1eeb38a73176360800c8c1e57c32596",
+    "subject_code_tree": "ff286746315aed93cc9431511338eae054039b7e",
+    "subject_short_head": "4510d8ab"
+  },
+  "reviewed_head": "efe4b0f7f1eeb38a73176360800c8c1e57c32596",
+  "verification_runs": [
+    {
+      "command": "env -u NOTION_TOKEN -u NOTION_PARENT_PAGE python -m pytest -q portal/tests/test_permission_provisioning.py portal/tests/test_permission_sync_cli.py portal/tests/test_mission_control_run_controls.py portal/tests/test_mission_control_commands.py portal/tests/test_mission_control.py",
+      "returncode": 0,
+      "status": "passed_with_one_skip",
+      "stdout_summary": ".........................s.............................................. [100%]"
+    },
+    {
+      "command": "env -u NOTION_TOKEN -u NOTION_PARENT_PAGE python -m pytest -q portal/tests/test_permission_provisioning.py portal/tests/test_permission_sync_cli.py portal/tests/test_mission_control_run_controls.py portal/tests/test_mission_control_commands.py portal/tests/test_mission_control.py portal/tests/test_rbac.py portal/tests/test_auth.py portal/tests/test_auth_units.py portal/tests/test_service_units.py orchestration/tests/test_orchestration.py",
+      "returncode": 0,
+      "status": "passed_with_warnings",
+      "stdout_summary": "........................................................................ [100%] with InsecureKeyLengthWarning and asyncio.iscoroutinefunction DeprecationWarnings"
+    },
+    {
+      "command": "env -u NOTION_TOKEN -u NOTION_PARENT_PAGE python -m pytest -q -rs portal/tests/test_mission_control_run_controls.py -k parallel_pg_transition_race",
+      "returncode": 0,
+      "status": "skipped",
+      "stdout_summary": "SKIPPED [1] portal/tests/test_mission_control_run_controls.py:400: PostgreSQL DATABASE_URL not configured"
+    },
+    {
+      "command": "env -u NOTION_TOKEN -u NOTION_PARENT_PAGE ruff check portal/models/mission_control_run_control.py portal/services/mission_control_run_control_service.py portal/scripts/sync_mission_control_permissions.py portal/tests/test_mission_control_run_controls.py portal/tests/test_permission_provisioning.py portal/tests/test_permission_sync_cli.py",
+      "returncode": 0,
+      "status": "passed",
+      "stdout_summary": "All checks passed!"
+    },
+    {
+      "command": "env -u NOTION_TOKEN -u NOTION_PARENT_PAGE git diff --check",
+      "returncode": 0,
+      "status": "passed",
+      "stdout_summary": ""
+    }
+  ]
+}

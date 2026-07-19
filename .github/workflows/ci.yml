@@ -80,31 +80,14 @@ jobs:
           import asyncio
           import os
 
+          from portal import models as _models  # noqa: F401
           from portal.database import Base
-          from portal.models.mission_control_command import MissionControlCommand
-          from portal.models.mission_control_run_control import (
-              MissionControlRunControl,
-              MissionControlRunControlEvent,
-          )
-          from portal.models.user import Tenant, User, Role
           from sqlalchemy.ext.asyncio import create_async_engine
 
           async def main() -> None:
               engine = create_async_engine(os.environ["DATABASE_URL"], echo=False)
               async with engine.begin() as conn:
-                  await conn.run_sync(
-                      lambda sync_conn: Base.metadata.create_all(
-                          sync_conn,
-                          tables=[
-                              Tenant.__table__,
-                              Role.__table__,
-                              User.__table__,
-                              MissionControlCommand.__table__,
-                              MissionControlRunControl.__table__,
-                              MissionControlRunControlEvent.__table__,
-                          ],
-                      )
-                  )
+                  await conn.run_sync(Base.metadata.create_all)
               await engine.dispose()
 
           asyncio.run(main())

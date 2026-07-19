@@ -1,0 +1,44 @@
+{
+  "decisions": [
+    {
+      "id": "D1",
+      "decision": "Use prior consolidated work as the integration candidate",
+      "rationale": "No genuine specialist receipts were produced; the preserved candidate was integrated serially"
+    },
+    {
+      "id": "D2",
+      "decision": "Harden RC-F parser with return code + error handling + incomplete flag",
+      "rationale": "The exact-head CI artifact confirms collected=432 with rc=0; the earlier silent-zero failure is no longer acceptable"
+    },
+    {
+      "id": "D3",
+      "decision": "Do not commit artifacts/ci/test-inventory.json",
+      "rationale": "Directive prefers CI artifact upload over frozen snapshot"
+    },
+    {
+      "id": "D4",
+      "decision": "Normalize README/.gitignore to CRLF",
+      "rationale": "Match repo convention; minimize diff noise"
+    },
+    {
+      "id": "D5",
+      "decision": "PR #206 = HOLD",
+      "rationale": "Would create a 3rd parallel execution authority; needs shared protocol reconciliation"
+    },
+    {
+      "id": "D6",
+      "decision": "Two commits (subject-code, evidence)",
+      "rationale": "Directive commit discipline"
+    },
+    {
+      "id": "D7",
+      "decision": "Exact-head CI inventory count is artifact-confirmed at 432",
+      "rationale": "Artifact-confirmed collected=432, rc=0, authoritative=true, incomplete=false"
+    },
+    {
+      "id": "D8",
+      "decision": "Workspace stash state is not the named rc-increment-1-prior-turn-backup stash",
+      "rationale": "Current refs/stash shows unrelated entries only; no destructive stash operation was performed"
+    }
+  ]
+}

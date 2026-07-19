@@ -1,0 +1,76 @@
+{
+  "baseline_commit": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+  "subject_commit": "e1e94581e1d0840e1ad6d4c9ddb775bcf2a34db1",
+  "authority_matrix": [
+    {
+      "concern": "API entrypoint",
+      "authority": "portal/",
+      "non_authoritative": "apps/*, backend/* (separate apps and legacy shells)"
+    },
+    {
+      "concern": "Frontend",
+      "authority": "web/",
+      "non_authoritative": "legacy app shells and stale docs anchors"
+    },
+    {
+      "concern": "Authentication",
+      "authority": "portal/auth/",
+      "non_authoritative": "UNRESOLVED"
+    },
+    {
+      "concern": "Tenant identity",
+      "authority": "portal/auth/",
+      "non_authoritative": "UNRESOLVED"
+    },
+    {
+      "concern": "RBAC",
+      "authority": "portal/auth/rbac.py",
+      "non_authoritative": "UNRESOLVED"
+    },
+    {
+      "concern": "Workflow execution",
+      "authority": "workflow_builder/ + scheduler/ (durable workflow engine execution truth)",
+      "non_authoritative": "portal/services/mission_control_* projection, observability/ telemetry, evidence docs, old branches"
+    },
+    {
+      "concern": "Execution governance",
+      "authority": "portal/services/mission_control_* (command intent, permissions, refusal-only handling, governance projection)",
+      "non_authoritative": "workflow_builder/ + scheduler/ live runner mutation, observability/"
+    },
+    {
+      "concern": "Monitoring",
+      "authority": "observability/",
+      "non_authoritative": "none"
+    },
+    {
+      "concern": "Database models",
+      "authority": "portal/models/",
+      "non_authoritative": "none"
+    },
+    {
+      "concern": "Migration execution",
+      "authority": "portal/migrations/*.sql (raw SQL)",
+      "non_authoritative": "model create_all (test path) — divergent"
+    },
+    {
+      "concern": "Audit events",
+      "authority": "Mission Control event chain",
+      "non_authoritative": "legacy audit module (missing on main)"
+    },
+    {
+      "concern": "Evidence manifests",
+      "authority": "docs/ (governance, repository-convergence)",
+      "non_authoritative": "old branches, stashed candidates, and historical receipts are not execution authorities"
+    },
+    {
+      "concern": "Payments",
+      "authority": "backend/stripe-payments/",
+      "non_authoritative": "legal_integrations/ (duplicated)"
+    },
+    {
+      "concern": "Agent runtime",
+      "authority": "UNRESOLVED — convergence required",
+      "non_authoritative": "agents/, agent_protocol/, core/universe/"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "removed_public_identifiers": [
+    "pi_3TRW78CT25knq5v20vTV8j03 (Stripe payment-intent, from docs/CLAIMS.md)"
+  ],
+  "removed_hardcoded_test_totals": [
+    "333",
+    "333+",
+    "4,681+",
+    "1,122"
+  ],
+  "reconciled_jurisdictions": {
+    "readme_before": "all 50 states",
+    "truth": "19 US jurisdictions (trust_law/)"
+  },
+  "qualified_compliance": "HIPAA/SOC2/PCI-DSS readiness NOT certified; no 'compliant'/'certified' adjacency in docs",
+  "qualified_payment": "Stripe test-mode only; production enablement requires user-owned keys",
+  "stale_paths_removed": [
+    "src/trust_law/",
+    "src/document_gen/",
+    "src/financial_mastery/",
+    "src/payment/",
+    "src/portal/",
+    "src/audit/",
+    "src/agents/"
+  ],
+  "actual_paths_used": [
+    "trust_law/",
+    "legal_integrations/",
+    "financial_mastery/",
+    "backend/stripe-payments/",
+    "portal/",
+    "agents/"
+  ],
+  "missing_docs_created_or_relinked": {
+    "ARCHITECTURE.md": "created (RC-A)",
+    "QUICK_START.md": "created (RC-B)",
+    "SECURITY.md": "created (RC-B)",
+    "CAPABILITY_MATRIX.md": "link removed; replaced by CAPABILITY_INDEX.md"
+  },
+  "validator_status": "PASS"
+}

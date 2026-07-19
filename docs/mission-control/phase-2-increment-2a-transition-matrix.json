@@ -10,50 +10,42 @@
     "PAUSED": [],
     "PAUSE_FAILED": [],
     "PAUSE_REQUESTED": [
-      "CANCELLED",
-      "COMPENSATING",
-      "COMPLETED",
-      "FAILED",
+      "PAUSING",
       "PAUSE_FAILED",
       "PAUSE_TIMED_OUT",
-      "PAUSING",
-      "SUPERSEDED"
+      "SUPERSEDED",
+      "COMPLETED",
+      "FAILED",
+      "CANCELLED",
+      "COMPENSATING"
     ],
     "PAUSE_TIMED_OUT": [],
     "PAUSING": [
-      "CANCELLED",
-      "COMPENSATING",
-      "COMPLETED",
-      "FAILED",
       "PAUSED",
       "PAUSE_FAILED",
       "PAUSE_TIMED_OUT",
-      "SUPERSEDED"
-    ],
-    "RUNNING": [
-      "CANCELLED",
-      "COMPENSATING",
+      "SUPERSEDED",
       "COMPLETED",
       "FAILED",
-      "PAUSE_REQUESTED"
+      "CANCELLED",
+      "COMPENSATING"
+    ],
+    "RUNNING": [
+      "PAUSE_REQUESTED",
+      "COMPLETED",
+      "FAILED",
+      "CANCELLED",
+      "COMPENSATING"
     ],
     "SUPERSEDED": []
   },
   "concurrency": {
-    "append_only_event_history": true,
-    "atomic_update": "SQL UPDATE with WHERE id + expected state + expected state_version",
-    "expected_state_required": true,
-    "expected_version_required": true,
+    "cross_tenant_lookup": "not found or unauthorized by repository convention",
     "losing_transition_appends_event": false,
-    "row_lock_strategy": "compare-and-swap",
-    "version_increment": 1
-  },
-  "event_schema_version": 1,
-  "linkage": {
-    "command_id_linkage_required": true,
-    "governance_projection_authority": "mission_control_run_controls",
-    "workflow_execution_authority": "durable workflow record remains authoritative",
-    "workflow_id_linkage_required": true
+    "optimistic_versioning": true,
+    "postgres_race_test": "gated by DATABASE_URL; skipped when no PostgreSQL test database is configured",
+    "state_version_required": true,
+    "tenant_id_required": true
   },
   "precedence": {
     "cancellation_over_pause": true,
@@ -62,13 +54,31 @@
     "paused_has_no_resume_path": true,
     "terminal_over_pause": true
   },
-  "projection_schema_version": 1,
+  "principal_linkage": {
+    "acknowledged_by": "users.id",
+    "event_principal_id": "users.id",
+    "requested_by": "users.id"
+  },
+  "projection_authority": "Durable workflow record remains execution authority; run-control projection is governance-only.",
+  "provenance": {
+    "baseline_commit": "88bc4da5f44820a9466c5497e1aab84b811ce17f",
+    "baseline_tag": "mission-control-phase-2-increment-1",
+    "baseline_tree": "320084225fa78244e4373272c5e9a82b7651c240",
+    "current_commit_time_utc": "2026-07-19T06:17:49-04:00",
+    "evidence_container_head_note": "Committed in a follow-up evidence-only commit; exact hash recorded in final PR metadata / final review response.",
+    "original_implementation_commit": "ad4898110f8f394cba45d77163bb544948585a99",
+    "reviewed_head": "efe4b0f7f1eeb38a73176360800c8c1e57c32596",
+    "subject_branch": "feat/mission-control-phase-2-permissions-run-control",
+    "subject_code_head": "4510d8ab7013880b8ccfe8bfbaf82da15c832cb7",
+    "subject_code_parent": "efe4b0f7f1eeb38a73176360800c8c1e57c32596",
+    "subject_code_tree": "ff286746315aed93cc9431511338eae054039b7e",
+    "subject_short_head": "4510d8ab"
+  },
   "public_boundary": {
-    "no_public_pause_endpoint": true,
-    "public_route": "POST /api/v1/mission-control/commands",
-    "public_route_activates_run_control_transitions": false,
-    "public_route_reason_code": "COMMAND_EXECUTION_NOT_ENABLED",
-    "public_route_state": "refusal-only"
+    "command_execution_not_enabled": true,
+    "commands_endpoint": "POST /api/v1/mission-control/commands",
+    "live_pause_behavior": false,
+    "public_pause_endpoint": false
   },
   "schema_version": 1,
   "states": [
@@ -85,6 +95,7 @@
     "COMPENSATING",
     "COMPENSATED"
   ],
+  "tenant_scope_required": true,
   "terminal_states": [
     "COMPLETED",
     "FAILED",

@@ -27,6 +27,18 @@
     {
       "decision": "All operational commands remain refusal-only.",
       "rationale": "preserves Increment One command ledger contract."
+    },
+    {
+      "decision": "Tenant scope is required at the run-control transition boundary.",
+      "rationale": "prevents cross-tenant mutation and hides record existence across tenants."
+    },
+    {
+      "decision": "mission_control_run_control_events.principal_id aligns with users.id.",
+      "rationale": "keeps ORM and migration linkage consistent for principal provenance."
+    },
+    {
+      "decision": "Rollback is forward-disable plus code revert unless a separate approved database procedure exists.",
+      "rationale": "avoids overstating reversibility when immutable history is preserved."
     }
   ],
   "non_goals": [
@@ -113,6 +125,13 @@
       "non_goal": "merge the PR",
       "risk_if_included_now": "would hide unresolved evidence or regressions.",
       "why_not_wider_scope": "branch must remain draft until review and CI are complete."
+    },
+    {
+      "authorization_required": "separate future live-pause authorization",
+      "future_prerequisite": "runner acknowledgement protocol and a later increment",
+      "non_goal": "add a public operational mutation route for run control transitions",
+      "risk_if_included_now": "would expose pause control before governance proof is complete.",
+      "why_not_wider_scope": "Increment Two A remains projection-only and refusal-only."
     }
   ]
 }

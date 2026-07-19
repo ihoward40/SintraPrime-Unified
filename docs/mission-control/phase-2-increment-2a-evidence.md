@@ -12,10 +12,10 @@ All operational commands remain refusal-only with `COMMAND_EXECUTION_NOT_ENABLED
 - Baseline commit: `88bc4da5f44820a9466c5497e1aab84b811ce17f`
 - Baseline tree: `320084225fa78244e4373272c5e9a82b7651c240`
 - Implementation commit: `ad4898110f8f394cba45d77163bb544948585a99`
-- Final commit: `__FINAL_COMMIT__`
-- Final tree: `__FINAL_TREE__`
-- Parent commit: `__FINAL_PARENT__`
-- Branch: `__FINAL_BRANCH__`
+- Final commit: `df7fe8dd4c09cd74386bf03d3d83485458d7f458`
+- Final tree: `051cdb68c40e5617b37e084a483593c3d4cf4c70`
+- Parent commit: `ad4898110f8f394cba45d77163bb544948585a99`
+- Branch: `feat/mission-control-phase-2-permissions-run-control`
 
 ## Environment issue and resolution
 
@@ -75,8 +75,8 @@ Migration checksum:
 
 ## Final receipt
 
-- Final commit: `__FINAL_COMMIT__`
-- Final tree: `__FINAL_TREE__`
-- Parent commit: `__FINAL_PARENT__`
-- Branch: `__FINAL_BRANCH__`
-- CI head: `__FINAL_HEAD_FOR_CI__`
+- Final commit: `df7fe8dd4c09cd74386bf03d3d83485458d7f458`
+- Final tree: `051cdb68c40e5617b37e084a483593c3d4cf4c70`
+- Parent commit: `ad4898110f8f394cba45d77163bb544948585a99`
+- Branch: `feat/mission-control-phase-2-permissions-run-control`
+- CI head: `df7fe8dd4c09cd74386bf03d3d83485458d7f458`

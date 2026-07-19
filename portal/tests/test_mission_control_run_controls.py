@@ -22,10 +22,18 @@ from portal.models.mission_control_run_control import (
 from portal.models.user import Permission, Role, RolePermission, Tenant, User, UserPermissionAssoc
 from portal.services.mission_control_run_control_service import (
     RunControlConflictError,
+    RunControlEventType,
     RunControlInvalidTransitionError,
     create_run_control,
     transition_run_control,
 )
+
+# Test-only contender transaction outcomes. A flushed-but-uncommitted transition
+# is NOT a success; only a completed commit counts. This distinguishes a durable
+# winner from a transition whose update may later roll back on session close.
+RACE_COMMITTED_SUCCESS = "COMMITTED_SUCCESS"
+RACE_VERSION_CONFLICT = "VERSION_CONFLICT"
+RACE_UNEXPECTED_ERROR = "UNEXPECTED_ERROR"
 
 
 @pytest_asyncio.fixture
@@ -494,6 +502,18 @@ async def test_terminal_states_reject_follow_up_transitions(db: AsyncSession, te
 
 @pytest.mark.asyncio
 async def test_parallel_pg_transition_race_appends_exactly_one_event():
+    """Two independent transactions contend to apply the same transition.
+
+    Each contender must complete its own transaction explicitly: commit on a
+    successful conditional update, roll back on a version conflict or other
+    failure. A flushed-but-uncommitted return value is NOT counted as success;
+    only a committed transition is durable. The first transaction to acquire
+    and commit the conditional UPDATE wins; the second must re-evaluate the
+    predicate after lock release and receive a zero-row conflict.
+
+    Final state is read through a fresh third session (never either contender's
+    ORM identity map).
+    """
     database_url = os.getenv("DATABASE_URL", "")
     required_in_ci = os.getenv("MISSION_CONTROL_PG_RACE_REQUIRED") == "1"
     if not database_url.startswith("postgresql"):
@@ -523,6 +543,9 @@ async def test_parallel_pg_transition_race_appends_exactly_one_event():
             )
 
         session_maker = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+
+        # Seed (parent-before-child) and create the run-control record + initial
+        # CREATED event in a committed transaction.
         async with session_maker() as session:
             tenant_id, user_id, command_id = await _seed_refs(session, tenant_id="tenant-pg")
             control = await create_run_control(
@@ -535,48 +558,187 @@ async def test_parallel_pg_transition_race_appends_exactly_one_event():
                 state=RunControlState.RUNNING,
             )
             await session.commit()
+        run_control_id = control.id
 
         barrier = asyncio.Event()
 
-        async def contender(expected_state: RunControlState):
+        async def contender(expected_state: RunControlState) -> str:
+            # Independent session + independent transaction. The contender owns
+            # its commit/rollback boundary; it does NOT rely on context exit.
             async with session_maker() as session:
-                await barrier.wait()
-                return await transition_run_control(
-                    session,
-                    tenant_id=tenant_id,
-                    run_control_id=control.id,
-                    expected_version=1,
-                    new_state=expected_state,
-                    requested_by=user_id,
-                    reason="simultaneous race",
-                    command_id=command_id,
-                    workflow_status_snapshot="running",
-                )
+                try:
+                    await barrier.wait()
+                    await transition_run_control(
+                        session,
+                        tenant_id=tenant_id,
+                        run_control_id=run_control_id,
+                        expected_version=1,
+                        new_state=expected_state,
+                        requested_by=user_id,
+                        reason="simultaneous race",
+                        command_id=command_id,
+                        workflow_status_snapshot="running",
+                    )
+                    # Only a completed commit makes the transition durable.
+                    await session.commit()
+                    return RACE_COMMITTED_SUCCESS
+                except RunControlConflictError:
+                    await session.rollback()
+                    return RACE_VERSION_CONFLICT
+                except Exception:
+                    await session.rollback()
+                    return RACE_UNEXPECTED_ERROR
 
         task_a = asyncio.create_task(contender(RunControlState.PAUSE_REQUESTED))
         task_b = asyncio.create_task(contender(RunControlState.PAUSE_REQUESTED))
+        # Release both contenders simultaneously so they genuinely contend.
         barrier.set()
-        results = await asyncio.gather(task_a, task_b, return_exceptions=True)
+        results = await asyncio.gather(task_a, task_b)
 
-        successes = [result for result in results if not isinstance(result, Exception)]
-        conflicts = [result for result in results if isinstance(result, RunControlConflictError)]
-        exceptions = [result for result in results if isinstance(result, Exception) and not isinstance(result, RunControlConflictError)]
+        committed = [r for r in results if r == RACE_COMMITTED_SUCCESS]
+        conflicts = [r for r in results if r == RACE_VERSION_CONFLICT]
+        errors = [r for r in results if r == RACE_UNEXPECTED_ERROR]
 
-        assert len(successes) == 1
-        assert len(conflicts) == 1
-        assert not exceptions
+        assert len(committed) == 1, f"expected exactly one committed winner, got {results}"
+        assert len(conflicts) == 1, f"expected exactly one version conflict, got {results}"
+        assert not errors, f"unexpected errors: {results}"
 
+        # Final state via a fresh third session (no contender identity map).
         async with session_maker() as session:
-            event_result = await session.execute(
-                select(MissionControlRunControlEvent)
-                .where(MissionControlRunControlEvent.run_control_id == control.id)
-                .order_by(MissionControlRunControlEvent.sequence.asc())
-            )
-            events = event_result.scalars().all()
+            final = await session.get(MissionControlRunControl, run_control_id)
+            assert final is not None
+            assert final.tenant_id == tenant_id
+            assert final.state_version == 2
+            assert final.state == RunControlState.PAUSE_REQUESTED.value
+
+            events = (
+                await session.execute(
+                    select(MissionControlRunControlEvent)
+                    .where(MissionControlRunControlEvent.run_control_id == run_control_id)
+                    .order_by(MissionControlRunControlEvent.sequence.asc())
+                )
+            ).scalars().all()
+            # 1 CREATED event + exactly 1 transition event from the winner.
             assert len(events) == 2
+            # Exactly one non-CREATED (transition) event was appended.
+            transition_events = [e for e in events if e.event_type != RunControlEventType.CREATED.value]
+            assert len(transition_events) == 1
+            # Hash chain verifies across both events.
             assert events[0].event_hash
             assert events[1].previous_event_hash == events[0].event_hash
             assert events[1].event_hash
+            # Tenant remains part of the atomic predicate (no cross-tenant leak).
+            assert all(e.run_control_id == run_control_id for e in events)
+
+            # No durable workflow record changed / no operational command executed.
+            command = await session.get(MissionControlCommand, command_id)
+            assert command is not None
+            assert command.state == "REFUSED"
+    except Exception as exc:
+        if required_in_ci:
+            raise
+        if "connect" in str(exc).lower() or "database" in str(exc).lower():
+            pytest.skip(f"PostgreSQL integration unavailable: {exc}")
+        raise
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_pg_flushed_transition_rollback_does_not_persist():
+    """A transition that flushes but is rolled back must not persist, and a
+    later transaction may legitimately match the original state/version.
+
+    This documents why the previous race harness produced two apparent winners:
+    contenders returned from transition_run_control() (which only flushes) without
+    committing, so their updates could roll back on session close and the second
+    transaction could still observe the original version.
+    """
+    database_url = os.getenv("DATABASE_URL", "")
+    required_in_ci = os.getenv("MISSION_CONTROL_PG_RACE_REQUIRED") == "1"
+    if not database_url.startswith("postgresql"):
+        message = "PostgreSQL DATABASE_URL not configured"
+        if required_in_ci:
+            pytest.fail(message)
+        pytest.skip(message)
+
+    engine = create_async_engine(database_url, echo=False, pool_pre_ping=True)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(
+                lambda sync_conn: Base.metadata.create_all(
+                    sync_conn,
+                    tables=[
+                        Tenant.__table__,
+                        Role.__table__,
+                        Permission.__table__,
+                        RolePermission.__table__,
+                        UserPermissionAssoc.__table__,
+                        User.__table__,
+                        MissionControlCommand.__table__,
+                        MissionControlRunControl.__table__,
+                        MissionControlRunControlEvent.__table__,
+                    ],
+                )
+            )
+        session_maker = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+
+        async with session_maker() as session:
+            tenant_id, user_id, command_id = await _seed_refs(session, tenant_id="tenant-pg-rb")
+            control = await create_run_control(
+                session,
+                tenant_id=tenant_id,
+                workflow_id="workflow-pg-rollback",
+                command_id=command_id,
+                requested_by=user_id,
+                workflow_status_snapshot="running",
+                state=RunControlState.RUNNING,
+            )
+            await session.commit()
+        run_control_id = control.id
+
+        # Flush a transition but roll it back instead of committing.
+        async with session_maker() as session:
+            await transition_run_control(
+                session,
+                tenant_id=tenant_id,
+                run_control_id=run_control_id,
+                expected_version=1,
+                new_state=RunControlState.PAUSE_REQUESTED,
+                requested_by=user_id,
+                reason="rolled back",
+                command_id=command_id,
+                workflow_status_snapshot="running",
+            )
+            await session.rollback()
+
+        # A later transaction may still match the original version (rollback
+        # left the row at version 1) and legitimately commit the transition.
+        async with session_maker() as session:
+            await transition_run_control(
+                session,
+                tenant_id=tenant_id,
+                run_control_id=run_control_id,
+                expected_version=1,
+                new_state=RunControlState.PAUSE_REQUESTED,
+                requested_by=user_id,
+                reason="after rollback",
+                command_id=command_id,
+                workflow_status_snapshot="running",
+            )
+            await session.commit()
+
+        async with session_maker() as session:
+            final = await session.get(MissionControlRunControl, run_control_id)
+            assert final.state_version == 2
+            assert final.state == RunControlState.PAUSE_REQUESTED.value
+            events = (
+                await session.execute(
+                    select(MissionControlRunControlEvent)
+                    .where(MissionControlRunControlEvent.run_control_id == run_control_id)
+                )
+            ).scalars().all()
+            assert len(events) == 2
     except Exception as exc:
         if required_in_ci:
             raise

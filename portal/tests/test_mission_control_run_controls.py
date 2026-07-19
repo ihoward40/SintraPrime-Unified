@@ -72,7 +72,9 @@ async def _seed_refs(session: AsyncSession, *, tenant_id: str = "tenant-1") -> t
         request_hash="a" * 64,
         state="REFUSED",
     )
-    session.add_all([tenant, user, command])
+    session.add_all([tenant, user])
+    await session.flush()
+    session.add(command)
     await session.commit()
     return tenant.id, user.id, command.id
 

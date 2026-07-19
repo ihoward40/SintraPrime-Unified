@@ -19,7 +19,7 @@ from portal.models.mission_control_run_control import (
     MissionControlRunControlEvent,
     RunControlState,
 )
-from portal.models.user import Tenant, User
+from portal.models.user import Permission, Role, RolePermission, Tenant, User, UserPermissionAssoc
 from portal.services.mission_control_run_control_service import (
     RunControlConflictError,
     RunControlInvalidTransitionError,
@@ -37,6 +37,10 @@ async def db() -> AsyncGenerator[AsyncSession, None]:
                 sync_conn,
                 tables=[
                     Tenant.__table__,
+                    Role.__table__,
+                    Permission.__table__,
+                    RolePermission.__table__,
+                    UserPermissionAssoc.__table__,
                     User.__table__,
                     MissionControlCommand.__table__,
                     MissionControlRunControl.__table__,
@@ -50,17 +54,62 @@ async def db() -> AsyncGenerator[AsyncSession, None]:
     await engine.dispose()
 
 
+# Canonical shared role identity (roles are global in the production schema:
+# portal.models.user.Role has no tenant_id and enforces a unique name). The
+# test uses a deterministic id so the same canonical role is reused across
+# tenants and across repeated fixture invocation.
+CANONICAL_ROLE_ID = "role-1"
+CANONICAL_ROLE_NAME = "role-1"
+
+
+async def _get_or_create_canonical_role(session: AsyncSession) -> Role:
+    """Return the shared canonical role, creating it only when absent.
+
+    Roles are global (no tenant scope). We key the lookup on the deterministic
+    canonical id used by this test module so the same role row is reused across
+    tenants and across repeated calls. We never delete or overwrite an existing
+    role on a collision, and we do not swallow unrelated IntegrityErrors.
+    """
+    existing = await session.get(Role, CANONICAL_ROLE_ID)
+    if existing is not None:
+        return existing
+    role = Role(
+        id=CANONICAL_ROLE_ID,
+        name=CANONICAL_ROLE_NAME,
+        display_name="Role 1",
+        description="seed role",
+        is_system=True,
+    )
+    session.add(role)
+    # Flush so the canonical role identifier exists before dependent user rows
+    # are inserted (explicit parent-before-child boundary).
+    await session.flush()
+    return role
+
+
 async def _seed_refs(session: AsyncSession, *, tenant_id: str = "tenant-1") -> tuple[str, str, str]:
+    # 1. Tenant (parent)
     tenant = Tenant(id=tenant_id, name=f"Tenant {tenant_id}", slug=tenant_id.replace("-", ""))
+    session.add(tenant)
+    await session.flush()
+
+    # 2. Canonical role (global; get-or-create, shared across tenants)
+    role = await _get_or_create_canonical_role(session)
+
+    # 3. User/principal (child of tenant and role)
     user = User(
         id=f"user-{tenant_id}",
         tenant_id=tenant_id,
-        role_id="role-1",
+        role_id=role.id,
         email=f"user-{tenant_id}@example.com",
         hashed_password="x",
         first_name="Test",
         last_name="User",
     )
+    session.add(user)
+    await session.flush()
+
+    # 4. Mission Control command (child of tenant and user)
     command = MissionControlCommand(
         id=f"command-{tenant_id}",
         tenant_id=tenant_id,
@@ -72,9 +121,12 @@ async def _seed_refs(session: AsyncSession, *, tenant_id: str = "tenant-1") -> t
         request_hash="a" * 64,
         state="REFUSED",
     )
-    session.add_all([tenant, user])
-    await session.flush()
     session.add(command)
+    await session.flush()
+
+    # 5-7. Run-control record and initial run-control event are created by the
+    # service layer (create_run_control / transition_run_control) in each test,
+    # not here, preserving the parent-before-child order at every boundary.
     await session.commit()
     return tenant.id, user.id, command.id
 
@@ -458,6 +510,10 @@ async def test_parallel_pg_transition_race_appends_exactly_one_event():
                     sync_conn,
                     tables=[
                         Tenant.__table__,
+                        Role.__table__,
+                        Permission.__table__,
+                        RolePermission.__table__,
+                        UserPermissionAssoc.__table__,
                         User.__table__,
                         MissionControlCommand.__table__,
                         MissionControlRunControl.__table__,
@@ -529,3 +585,84 @@ async def test_parallel_pg_transition_race_appends_exactly_one_event():
         raise
     finally:
         await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_seed_refs_is_idempotent_and_reuses_canonical_role(db: AsyncSession):
+    """The run-control fixture must be idempotent with respect to the shared
+    canonical role and must preserve tenant-scoped data across repeated calls.
+
+    Covers:
+      1. invoking the seeding helper twice raises no uniqueness error;
+      2. exactly one canonical role row exists afterward;
+      3. dependent users reference the intended (shared) role;
+      4. no duplicate grant rows are created;
+      5. a second-tenant call preserves the correct data model;
+      6. cleanup does not remove a role still referenced elsewhere.
+    """
+    from sqlalchemy import func
+
+    # 1. Two invocations in one session must not raise a uniqueness error.
+    await _seed_refs(db, tenant_id="tenant-1")
+    await _seed_refs(db, tenant_id="tenant-2")
+
+    # 2. Exactly one canonical role row exists (global role, reused).
+    role_count = (await db.execute(select(func.count()).select_from(Role))).scalar_one()
+    assert role_count == 1
+
+    canonical = await db.get(Role, CANONICAL_ROLE_ID)
+    assert canonical is not None
+
+    # 3. Both dependent users reference the intended shared role.
+    users = (await db.execute(select(User).order_by(User.id))).scalars().all()
+    assert len(users) == 2
+    for user in users:
+        assert user.role_id == canonical.id
+
+    # 4. No grant rows were created (and therefore no duplicates).
+    assert (await db.execute(select(func.count()).select_from(RolePermission))).scalar_one() == 0
+    assert (await db.execute(select(func.count()).select_from(UserPermissionAssoc))).scalar_one() == 0
+
+    # 5. Second tenant preserved the correct data model: tenant-2 user exists
+    #    and points at the same global role; tenant-1 remains intact.
+    t2_user = await db.get(User, "user-tenant-2")
+    assert t2_user is not None
+    assert t2_user.tenant_id == "tenant-2"
+    assert t2_user.role_id == canonical.id
+    t1_user = await db.get(User, "user-tenant-1")
+    assert t1_user is not None
+    assert t1_user.role_id == canonical.id
+
+    # 6. A role still referenced by users is not removed by any fixture cleanup.
+    extra_user = User(
+        id="user-extra",
+        tenant_id="tenant-1",
+        role_id=canonical.id,
+        email="user-extra@example.com",
+        hashed_password="x",
+        first_name="Extra",
+        last_name="User",
+    )
+    db.add(extra_user)
+    await db.flush()
+    assert await db.get(Role, CANONICAL_ROLE_ID) is not None
+
+
+@pytest.mark.asyncio
+async def test_seed_refs_idempotent_under_ordering(db: AsyncSession):
+    """Idempotency must hold regardless of invocation order (no reliance on
+    incidental flush ordering). Seed several distinct tenants in sequence; the
+    shared canonical role must remain a single row while each tenant gets its
+    own user referencing it."""
+    from sqlalchemy import func
+
+    await _seed_refs(db, tenant_id="tenant-1")
+    await _seed_refs(db, tenant_id="tenant-2")
+    await _seed_refs(db, tenant_id="tenant-3")
+    role_count = (await db.execute(select(func.count()).select_from(Role))).scalar_one()
+    assert role_count == 1
+    user_count = (await db.execute(select(func.count()).select_from(User))).scalar_one()
+    assert user_count == 3
+    assert (await db.get(User, "user-tenant-1")) is not None
+    assert (await db.get(User, "user-tenant-2")) is not None
+    assert (await db.get(User, "user-tenant-3")) is not None

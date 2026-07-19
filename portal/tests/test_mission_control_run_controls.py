@@ -138,6 +138,11 @@ async def test_run_control_rejects_stale_version(db: AsyncSession):
             workflow_status_snapshot="running",
         )
 
+    event_result = await db.execute(
+        select(MissionControlRunControlEvent).where(MissionControlRunControlEvent.run_control_id == control.id)
+    )
+    assert len(event_result.scalars().all()) == 2
+
 
 @pytest.mark.asyncio
 async def test_run_control_rejects_invalid_transition(db: AsyncSession):

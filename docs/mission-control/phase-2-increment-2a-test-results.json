@@ -1,0 +1,107 @@
+{
+  "baseline_commit": "88bc4da5f44820a9466c5497e1aab84b811ce17f",
+  "baseline_tag": "mission-control-phase-2-increment-1",
+  "baseline_tree": "320084225fa78244e4373272c5e9a82b7651c240",
+  "current_branch": "feat/mission-control-phase-2-permissions-run-control",
+  "current_parent": "88bc4da5f44820a9466c5497e1aab84b811ce17f",
+  "environment_isolation": {
+    "conflicting_env_values_redacted": true,
+    "conflicting_env_vars": [
+      "NOTION_TOKEN",
+      "NOTION_PARENT_PAGE",
+      "notion_token",
+      "notion_cases_db_id",
+      "notion_trigger_codes_db_id"
+    ],
+    "isolation_method": "cwd switched away from the repository .env plus env -u NOTION_TOKEN -u NOTION_PARENT_PAGE and lower-case variants for evidence and verification subprocesses",
+    "production_code_changed": false,
+    "safety": "removes only unrelated local environment variables and avoids the repository .env file; production code and settings validation remain unchanged",
+    "separate_issue_recommended": false
+  },
+  "final_head_commit_used_for_ci": "ad4898110f8f394cba45d77163bb544948585a99",
+  "implementation_commit": "ad4898110f8f394cba45d77163bb544948585a99",
+  "implementation_tree": "3baa44facda0544af49d0b2bbc8b4a96a2de6a03",
+  "known_platform_specific_failures": [
+    {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "portal/tests/test_auth.py"
+      ],
+      "status": "passed_with_warning",
+      "warning": "InsecureKeyLengthWarning from jwt for a 12-byte test key; assertions passed."
+    },
+    {
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "orchestration/tests/test_orchestration.py"
+      ],
+      "status": "passed_with_warning",
+      "warning": "DeprecationWarning about asyncio.iscoroutinefunction; assertions passed."
+    }
+  ],
+  "metadata_smoke_checks": [
+    {
+      "name": "sqlalchemy_metadata_contains_new_run_control_tables",
+      "result": [
+        "mission_control_commands",
+        "mission_control_run_control_events",
+        "mission_control_run_controls"
+      ],
+      "status": "passed"
+    },
+    {
+      "name": "migration_checksum",
+      "result": "5a78067c30cf66b816f37c5b4f94585c23e4238db1d0617e9ebbb881b183343e *portal/migrations/add_mission_control_run_control_projection.sql",
+      "status": "passed"
+    }
+  ],
+  "pre_change_receipt": {
+    "available": true,
+    "commands": [
+      [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "portal/tests/test_permission_provisioning.py",
+        "portal/tests/test_mission_control_run_controls.py",
+        "portal/tests/test_mission_control_commands.py",
+        "portal/tests/test_mission_control.py"
+      ]
+    ],
+    "note": "pre-change targeted regression suite passed before evidence-doc closure work began",
+    "status": "passed"
+  },
+  "verification_runs": [
+    {
+      "cmd": "pytest -q portal/tests/test_permission_provisioning.py portal/tests/test_mission_control_run_controls.py portal/tests/test_mission_control_commands.py portal/tests/test_mission_control.py portal/tests/test_rbac.py portal/tests/test_auth.py portal/tests/test_auth_units.py portal/tests/test_service_units.py orchestration/tests/test_orchestration.py",
+      "returncode": 0,
+      "stderr": "warnings: InsecureKeyLengthWarning in portal/tests/test_auth.py; DeprecationWarning on asyncio.iscoroutinefunction in orchestration tests\n",
+      "stdout": "........................................................................ [ 20%]\n........................................................................ [ 41%]\n........................................................................ [ 62%]\n........................................................................ [ 83%]\n........................................................                 [100%]\n"
+    },
+    {
+      "cmd": "ruff check touched mission-control python files",
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "All checks passed!\n"
+    },
+    {
+      "cmd": "git diff --check",
+      "returncode": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "cmd": "sha256sum portal/migrations/add_mission_control_run_control_projection.sql",
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "5a78067c30cf66b816f37c5b4f94585c23e4238db1d0617e9ebbb881b183343e *portal/migrations/add_mission_control_run_control_projection.sql\n"
+    }
+  ]
+}

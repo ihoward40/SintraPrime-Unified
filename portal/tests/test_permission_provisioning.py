@@ -6,11 +6,10 @@ from collections.abc import AsyncGenerator
 
 import pytest
 import pytest_asyncio
+from fastapi import Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import selectinload
-
-from fastapi import Response
 
 from portal.auth.jwt_handler import decode_access_token
 from portal.database import Base

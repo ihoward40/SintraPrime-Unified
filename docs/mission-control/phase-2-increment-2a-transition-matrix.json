@@ -1,0 +1,94 @@
+{
+  "allowed_transitions": {
+    "CANCELLED": [],
+    "COMPENSATED": [],
+    "COMPENSATING": [
+      "COMPENSATED"
+    ],
+    "COMPLETED": [],
+    "FAILED": [],
+    "PAUSED": [],
+    "PAUSE_FAILED": [],
+    "PAUSE_REQUESTED": [
+      "CANCELLED",
+      "COMPENSATING",
+      "COMPLETED",
+      "FAILED",
+      "PAUSE_FAILED",
+      "PAUSE_TIMED_OUT",
+      "PAUSING",
+      "SUPERSEDED"
+    ],
+    "PAUSE_TIMED_OUT": [],
+    "PAUSING": [
+      "CANCELLED",
+      "COMPENSATING",
+      "COMPLETED",
+      "FAILED",
+      "PAUSED",
+      "PAUSE_FAILED",
+      "PAUSE_TIMED_OUT",
+      "SUPERSEDED"
+    ],
+    "RUNNING": [
+      "CANCELLED",
+      "COMPENSATING",
+      "COMPLETED",
+      "FAILED",
+      "PAUSE_REQUESTED"
+    ],
+    "SUPERSEDED": []
+  },
+  "concurrency": {
+    "append_only_event_history": true,
+    "atomic_update": "SQL UPDATE with WHERE id + expected state + expected state_version",
+    "expected_state_required": true,
+    "expected_version_required": true,
+    "losing_transition_appends_event": false,
+    "row_lock_strategy": "compare-and-swap",
+    "version_increment": 1
+  },
+  "event_schema_version": 1,
+  "linkage": {
+    "command_id_linkage_required": true,
+    "governance_projection_authority": "mission_control_run_controls",
+    "workflow_execution_authority": "durable workflow record remains authoritative",
+    "workflow_id_linkage_required": true
+  },
+  "precedence": {
+    "cancellation_over_pause": true,
+    "completion_or_failure_over_pause_before_acknowledgement": true,
+    "no_terminal_revival": true,
+    "paused_has_no_resume_path": true,
+    "terminal_over_pause": true
+  },
+  "projection_schema_version": 1,
+  "public_boundary": {
+    "no_public_pause_endpoint": true,
+    "public_route": "POST /api/v1/mission-control/commands",
+    "public_route_activates_run_control_transitions": false,
+    "public_route_reason_code": "COMMAND_EXECUTION_NOT_ENABLED",
+    "public_route_state": "refusal-only"
+  },
+  "schema_version": 1,
+  "states": [
+    "RUNNING",
+    "PAUSE_REQUESTED",
+    "PAUSING",
+    "PAUSED",
+    "PAUSE_FAILED",
+    "PAUSE_TIMED_OUT",
+    "SUPERSEDED",
+    "COMPLETED",
+    "FAILED",
+    "CANCELLED",
+    "COMPENSATING",
+    "COMPENSATED"
+  ],
+  "terminal_states": [
+    "COMPLETED",
+    "FAILED",
+    "CANCELLED",
+    "COMPENSATED"
+  ]
+}

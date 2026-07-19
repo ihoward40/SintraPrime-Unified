@@ -26,15 +26,15 @@ from .permission_provisioning import (
 )
 
 __all__ = [
+    "EVENT_SCHEMA_VERSION",
+    "PROJECTION_SCHEMA_VERSION",
     "AuditRecordValue",
     "AuditService",
     "DriftSeverity",
     "EvidenceSnapshotService",
-    "EVENT_SCHEMA_VERSION",
     "PermissionManifest",
     "PermissionSyncError",
     "PermissionSyncReport",
-    "PROJECTION_SCHEMA_VERSION",
     "RunControlConflictError",
     "RunControlEventType",
     "RunControlInvalidTransitionError",

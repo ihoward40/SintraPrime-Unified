@@ -13,7 +13,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from ..auth.rbac import Permission, ROLE_PERMISSIONS, Role
+from ..auth.rbac import ROLE_PERMISSIONS, Permission, Role
 from ..models.user import Permission as PermissionModel
 from ..models.user import Role as RoleModel
 from ..models.user import RolePermission
@@ -97,8 +97,6 @@ class PermissionManifest:
     roles: dict[str, tuple[str, ...]]
 
 
-verify_permission_manifest = inspect_permission_manifest = None  # type: ignore[assignment]
-plan_permission_manifest = None  # type: ignore[assignment]
 
 
 async def inspect_permission_manifest(db: AsyncSession) -> PermissionSyncReport:

@@ -197,6 +197,9 @@ async def change_user_role(
     current_user: CurrentUser = Depends(require_permissions(Permission.USER_MANAGE_ROLES)),
     db: AsyncSession = Depends(get_db),
 ):
+    if str(user_id) == current_user.user_id:
+        raise HTTPException(status_code=400, detail="Cannot change your own role")
+
     result = await db.execute(
         select(User).where(User.id == user_id, User.tenant_id == current_user.tenant_id)
     )

@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, date, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -382,21 +382,28 @@ async def record_payment(
         processed_at=datetime.now(UTC),
         **body.model_dump(),
     )
-    db.add(payment)
 
-    # Update invoice if linked
+    # Update invoice if linked before creating a persisted payment row.
     if body.invoice_id:
-        inv_result = await db.execute(select(Invoice).where(Invoice.id == body.invoice_id))
+        inv_result = await db.execute(
+            select(Invoice).where(
+                Invoice.id == body.invoice_id,
+                Invoice.tenant_id == current_user.tenant_id,
+            )
+        )
         inv = inv_result.scalar_one_or_none()
-        if inv:
-            inv.amount_paid += body.amount
-            inv.amount_due = max(0, inv.total - inv.amount_paid)
-            if inv.amount_due <= 0:
-                inv.status = "paid"
-                inv.paid_at = datetime.now(UTC)
-            elif inv.amount_paid > 0:
-                inv.status = "partial"
+        if not inv:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice not found")
 
+        inv.amount_paid += body.amount
+        inv.amount_due = max(0, inv.total - inv.amount_paid)
+        if inv.amount_due <= 0:
+            inv.status = "paid"
+            inv.paid_at = datetime.now(UTC)
+        elif inv.amount_paid > 0:
+            inv.status = "partial"
+
+    db.add(payment)
     await db.commit()
     await db.refresh(payment)
     await audit(db, action="payment_received", user_id=current_user.user_id,

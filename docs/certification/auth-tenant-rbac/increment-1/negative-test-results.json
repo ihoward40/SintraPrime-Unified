@@ -1,0 +1,75 @@
+{
+  "command_results": [
+    {
+      "command": "python -m pytest portal/tests/test_auth_tenant_rbac_certification.py -q",
+      "notes": "18 tests passed",
+      "result": "passed"
+    },
+    {
+      "command": "python -m pytest portal/tests/test_auth_units.py portal/tests/test_rbac.py portal/tests/test_service_units.py portal/tests/test_auth_tenant_rbac_certification.py -q",
+      "result": "passed"
+    },
+    {
+      "command": "python -m pytest --tb=short -q",
+      "result": "passed"
+    }
+  ],
+  "negative_cases": [
+    {
+      "cases": [
+        "missing and empty subject",
+        "missing and empty tenant",
+        "missing and invalid role",
+        "malformed permission container",
+        "unsupported permission",
+        "malformed JWT",
+        "invalid signature",
+        "expired access token",
+        "refresh token rejected as access token",
+        "missing or malformed authorization header"
+      ],
+      "group": "authentication",
+      "result": "passed"
+    },
+    {
+      "cases": [
+        "same-tenant payment succeeds",
+        "cross-tenant invoice returns 404",
+        "no payment row before tenant validation",
+        "denied request leaves invoice unchanged"
+      ],
+      "group": "billing",
+      "result": "passed"
+    },
+    {
+      "cases": [
+        "ordinary user denied administrator route",
+        "insufficient permission denied",
+        "self-role assignment denied (400)",
+        "unauthorized role change of another user denied",
+        "cross-tenant user-role mutation denied (404)"
+      ],
+      "group": "rbac",
+      "result": "passed"
+    }
+  ],
+  "result": "PASS",
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "0e31c20938a2abf32ee50c1f54622611642aa16b",
+  "evidence_commit": "pending-post-remediation",
+  "generation_method": "Executed the recorded validation commands and negative-case groups; captured command results and per-group outcomes.",
+  "source_files": [
+    "portal/auth/rbac.py",
+    "portal/routers/billing.py",
+    "portal/routers/users.py",
+    "portal/routers/blackstone.py"
+  ],
+  "source_tests": [
+    "portal/tests/test_auth_tenant_rbac_certification.py"
+  ],
+  "limitations": [
+    "The certification test fixture uses a short HS256 key, which raises a PyJWT InsecureKeyLengthWarning but does not fail the gate."
+  ],
+  "generated_from_commit": "7f50bdc02b3750210a5424c70491a34d4079b9a1"
+}

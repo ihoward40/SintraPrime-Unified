@@ -1,0 +1,1823 @@
+{
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "0e31c20938a2abf32ee50c1f54622611642aa16b",
+  "evidence_commit": "pending",
+  "generation_method": "Dynamic enumeration of /api/v1 routes from the mounted FastAPI application and source-module discovery; each route classified by auth_dependency, authorization_dependency, tenant_control_mechanism.",
+  "source_files": [
+    "portal/routers/",
+    "portal/app.py",
+    "portal/auth/rbac.py"
+  ],
+  "source_tests": [
+    "portal/tests/test_auth_tenant_rbac_certification.py"
+  ],
+  "result": "PASS",
+  "limitations": [
+    "Public exception routes remain public by design; each public route carries an exception_justification.",
+    "WebSocket routes are classified separately in non-http-entrypoints.json."
+  ],
+  "routes": [
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "create_api_key",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/admin/api-keys",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.admin",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "get_audit_log",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/admin/audit-log",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.admin",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "update_branding",
+      "methods": [
+        "PUT"
+      ],
+      "path": "/api/v1/admin/branding",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.admin",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "get_firm_stats",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/admin/stats",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.admin",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "storage_usage",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/admin/storage-usage",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.admin",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_role",
+      "authorization_dependency": "require_role",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_role",
+      "handler": "system_health",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/admin/system-health",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.admin",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "none",
+      "authorization_dependency": "none",
+      "dependency_calls": [
+        "portal.database:get_db"
+      ],
+      "exception_justification": "Credential exchange must be public so anonymous users can obtain a session.",
+      "handler": "login",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/auth/login",
+      "public_protected_classification": "PUBLIC",
+      "source_module": "portal.routers.auth",
+      "tenant_control_mechanism": "public",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "get_current_user",
+      "authorization_dependency": "get_current_user",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by get_current_user",
+      "handler": "logout",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/auth/logout",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.auth",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "get_current_user",
+      "authorization_dependency": "get_current_user",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by get_current_user",
+      "handler": "logout_all_sessions",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/auth/logout-all",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.auth",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "get_current_user",
+      "authorization_dependency": "get_current_user",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by get_current_user",
+      "handler": "get_me",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/auth/me",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.auth",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "get_current_user",
+      "authorization_dependency": "get_current_user",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by get_current_user",
+      "handler": "disable_mfa",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/auth/mfa/disable",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.auth",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "get_current_user",
+      "authorization_dependency": "get_current_user",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by get_current_user",
+      "handler": "setup_mfa",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/auth/mfa/setup",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.auth",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "get_current_user",
+      "authorization_dependency": "get_current_user",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by get_current_user",
+      "handler": "verify_mfa_setup",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/auth/mfa/verify",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.auth",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "none",
+      "authorization_dependency": "none",
+      "dependency_calls": [
+        "portal.database:get_db"
+      ],
+      "exception_justification": "Password reset completion must be public because the one-time reset token is the authorization artifact.",
+      "handler": "confirm_password_reset",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/auth/password/reset-confirm",
+      "public_protected_classification": "PUBLIC",
+      "source_module": "portal.routers.auth",
+      "tenant_control_mechanism": "public",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "none",
+      "authorization_dependency": "none",
+      "dependency_calls": [
+        "portal.database:get_db"
+      ],
+      "exception_justification": "Password reset initiation must be public to prevent account enumeration and support lost-password recovery.",
+      "handler": "request_password_reset",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/auth/password/reset-request",
+      "public_protected_classification": "PUBLIC",
+      "source_module": "portal.routers.auth",
+      "tenant_control_mechanism": "public",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "none",
+      "authorization_dependency": "none",
+      "dependency_calls": [
+        "portal.database:get_db"
+      ],
+      "exception_justification": "Refresh-token rotation is cookie-based and intentionally callable before access-token auth.",
+      "handler": "refresh_token",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/auth/refresh",
+      "public_protected_classification": "PUBLIC",
+      "source_module": "portal.routers.auth",
+      "tenant_control_mechanism": "public",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "create_expense",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/billing/expenses",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.billing",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "list_invoices",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/billing/invoices",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.billing",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "create_invoice",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/billing/invoices",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.billing",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "get_invoice",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/billing/invoices/{invoice_id}",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.billing",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "download_invoice_pdf",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/billing/invoices/{invoice_id}/pdf",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.billing",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "send_invoice",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/billing/invoices/{invoice_id}/send",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.billing",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "record_payment",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/billing/payments",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.billing",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "list_time_entries",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/billing/time-entries",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.billing",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "create_time_entry",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/billing/time-entries",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.billing",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "start_timer",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/billing/time-entries/start-timer",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.billing",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "stop_timer",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/billing/time-entries/{entry_id}/stop-timer",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.billing",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "record_trust_transaction",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/billing/trust-transactions",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.billing",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "get_trust_ledger",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/billing/trust-transactions/{client_id}",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.billing",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "get_current_user",
+      "authorization_dependency": "get_current_user",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by get_current_user",
+      "handler": "intake_case",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/blackstone/cases",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.blackstone",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "get_current_user",
+      "authorization_dependency": "get_current_user",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by get_current_user",
+      "handler": "get_case_status",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/blackstone/cases/{case_id}",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.blackstone",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "get_current_user",
+      "authorization_dependency": "get_current_user",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by get_current_user",
+      "handler": "evaluate_claim",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/blackstone/evaluate",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.blackstone",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "none",
+      "authorization_dependency": "none",
+      "dependency_calls": [],
+      "exception_justification": "Read-only health probe for the governance evaluation surface.",
+      "handler": "blackstone_health",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/blackstone/health",
+      "public_protected_classification": "PUBLIC",
+      "source_module": "portal.routers.blackstone",
+      "tenant_control_mechanism": "public",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "list_cases",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/cases",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.cases",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "create_case",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/cases",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.cases",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "conflict_check",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/cases/conflict-check",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.cases",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "delete_case",
+      "methods": [
+        "DELETE"
+      ],
+      "path": "/api/v1/cases/{case_id}",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.cases",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "get_case",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/cases/{case_id}",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.cases",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "update_case",
+      "methods": [
+        "PUT"
+      ],
+      "path": "/api/v1/cases/{case_id}",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.cases",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "list_deadlines",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/cases/{case_id}/deadlines",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.cases",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "add_deadline",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/cases/{case_id}/deadlines",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.cases",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "list_case_events",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/cases/{case_id}/events",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.cases",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "add_case_event",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/cases/{case_id}/events",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.cases",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "list_notes",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/cases/{case_id}/notes",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.cases",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "add_note",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/cases/{case_id}/notes",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.cases",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "list_tasks",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/cases/{case_id}/tasks",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.cases",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "create_task",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/cases/{case_id}/tasks",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.cases",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "list_clients",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/clients",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.clients",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "create_client",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/clients",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.clients",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "delete_client",
+      "methods": [
+        "DELETE"
+      ],
+      "path": "/api/v1/clients/{client_id}",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.clients",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "get_client",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/clients/{client_id}",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.clients",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "update_client",
+      "methods": [
+        "PUT"
+      ],
+      "path": "/api/v1/clients/{client_id}",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.clients",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "list_matters",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/clients/{client_id}/matters",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.clients",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "create_matter",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/clients/{client_id}/matters",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.clients",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "list_documents",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/documents",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.documents",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "bulk_operation",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/documents/bulk",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.documents",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "export_documents_packet",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/documents/cases/{case_id}/export-packet",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.documents",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "list_folders",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/documents/folders",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.documents",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "create_folder",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/documents/folders",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.documents",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "search_documents",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/documents/search",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.documents",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "none",
+      "authorization_dependency": "none",
+      "dependency_calls": [
+        "portal.database:get_db"
+      ],
+      "exception_justification": "Shared-document access is token-gated and intentionally public for external recipients.",
+      "handler": "access_shared_document",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/documents/share/{share_token}",
+      "public_protected_classification": "PUBLIC",
+      "source_module": "portal.routers.documents",
+      "tenant_control_mechanism": "public",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "upload_document",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/documents/upload",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.documents",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "delete_document",
+      "methods": [
+        "DELETE"
+      ],
+      "path": "/api/v1/documents/{document_id}",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.documents",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "get_document",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/documents/{document_id}",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.documents",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "update_document",
+      "methods": [
+        "PUT"
+      ],
+      "path": "/api/v1/documents/{document_id}",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.documents",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "download_document",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/documents/{document_id}/download",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.documents",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "share_document",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/documents/{document_id}/share",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.documents",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "list_versions",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/documents/{document_id}/versions",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.documents",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "upload_new_version",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/documents/{document_id}/versions",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.documents",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "list_threads",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/messages/threads",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.messages",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "create_thread",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/messages/threads",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.messages",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "get_thread",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/messages/threads/{thread_id}",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.messages",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "list_messages",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/messages/threads/{thread_id}/messages",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.messages",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "mark_as_read",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/messages/threads/{thread_id}/read-receipts",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.messages",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "send_message",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/messages/threads/{thread_id}/send",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.messages",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "submit_command",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/mission-control/commands",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.mission_control_commands",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "get_summary",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/mission-control/summary",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.mission_control",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "get_current_user",
+      "authorization_dependency": "get_current_user",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by get_current_user",
+      "handler": "list_notifications",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/notifications",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.notifications",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "get_current_user",
+      "authorization_dependency": "get_current_user",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by get_current_user",
+      "handler": "mark_all_read",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/notifications/read-all",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.notifications",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "get_current_user",
+      "authorization_dependency": "get_current_user",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by get_current_user",
+      "handler": "get_unread_count",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/notifications/unread-count",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.notifications",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "get_current_user",
+      "authorization_dependency": "get_current_user",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by get_current_user",
+      "handler": "mark_notification_read",
+      "methods": [
+        "PUT"
+      ],
+      "path": "/api/v1/notifications/{notification_id}/read",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.notifications",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "none",
+      "authorization_dependency": "none",
+      "dependency_calls": [],
+      "exception_justification": "OIDC authorization redirect entry point.",
+      "handler": "azure_authorize",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/sso/azure/authorize",
+      "public_protected_classification": "PUBLIC",
+      "source_module": "portal.routers.sso",
+      "tenant_control_mechanism": "public",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "none",
+      "authorization_dependency": "none",
+      "dependency_calls": [],
+      "exception_justification": "SSO callback must receive the external provider response before local session issuance.",
+      "handler": "sso_callback",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/sso/callback",
+      "public_protected_classification": "PUBLIC",
+      "source_module": "portal.routers.sso",
+      "tenant_control_mechanism": "public",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "none",
+      "authorization_dependency": "none",
+      "dependency_calls": [],
+      "exception_justification": "OIDC authorization redirect entry point.",
+      "handler": "google_authorize",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/sso/google/authorize",
+      "public_protected_classification": "PUBLIC",
+      "source_module": "portal.routers.sso",
+      "tenant_control_mechanism": "public",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "none",
+      "authorization_dependency": "none",
+      "dependency_calls": [],
+      "exception_justification": "Router health probe for bootstrap verification.",
+      "handler": "sso_health",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/sso/health",
+      "public_protected_classification": "PUBLIC",
+      "source_module": "portal.routers.sso",
+      "tenant_control_mechanism": "public",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "none",
+      "authorization_dependency": "none",
+      "dependency_calls": [],
+      "exception_justification": "OIDC authorization redirect entry point.",
+      "handler": "okta_authorize",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/sso/okta/authorize",
+      "public_protected_classification": "PUBLIC",
+      "source_module": "portal.routers.sso",
+      "tenant_control_mechanism": "public",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "list_users",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/users",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.users",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "invite_user",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/users/invite",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.users",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "get_user",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/users/{user_id}",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.users",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "update_user",
+      "methods": [
+        "PUT"
+      ],
+      "path": "/api/v1/users/{user_id}",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.users",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "change_user_role",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/users/{user_id}/change-role",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.users",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "deactivate_user",
+      "methods": [
+        "POST"
+      ],
+      "path": "/api/v1/users/{user_id}/deactivate",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.users",
+      "tenant_control_mechanism": "tenant-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    },
+    {
+      "auth_dependency": "require_permissions",
+      "authorization_dependency": "require_permissions",
+      "dependency_calls": [
+        "portal.database:get_db",
+        "portal.auth.rbac:dependency",
+        "portal.auth.rbac:get_current_user",
+        "fastapi.security.http:<fastapi.security.http.HTTPBearer object at 0x0000021D7ED25550>"
+      ],
+      "exception_justification": "Protected by require_permissions",
+      "handler": "get_user_sessions",
+      "methods": [
+        "GET"
+      ],
+      "path": "/api/v1/users/{user_id}/sessions",
+      "public_protected_classification": "PROTECTED",
+      "source_module": "portal.routers.users",
+      "tenant_control_mechanism": "role-bound",
+      "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
+    }
+  ]
+}

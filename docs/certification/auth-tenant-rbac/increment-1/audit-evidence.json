@@ -1,0 +1,30 @@
+{
+  "audit_correlation": {
+    "correlated_fields": [
+      "user_id",
+      "tenant_id",
+      "resource_type",
+      "resource_id",
+      "resource_name"
+    ],
+    "evidence": "audit() awaited after invoice commit in billing.create_invoice path",
+    "observed_event": "invoice_create",
+    "result": "PASS",
+    "tenant_scope": "current_user.tenant_id"
+  },
+  "result": "PASS",
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "0e31c20938a2abf32ee50c1f54622611642aa16b",
+  "evidence_commit": "pending",
+  "generation_method": "Observed one real protected flow (invoice_create in billing.create_invoice) and recorded the audit fields written by the audit() call.",
+  "source_files": [
+    "portal/routers/billing.py"
+  ],
+  "source_tests": [
+    "portal/tests/test_auth_tenant_rbac_certification.py"
+  ],
+  "limitations": [
+    "request_id is not consistently populated by current router audit call sites; complete request traceability is not claimed."
+  ]
+}

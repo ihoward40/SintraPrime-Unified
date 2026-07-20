@@ -1,0 +1,53 @@
+{
+  "background_tasks": [],
+  "cli_admin_scripts": [],
+  "scheduler_jobs": [],
+  "service_to_service_invocations": [],
+  "websocket_routes": [
+    {
+      "module": "portal.portal.admin.dashboard",
+      "name": "dashboard",
+      "path": "/admin/ws"
+    },
+    {
+      "module": "portal.docket.docket_api",
+      "name": "docket_api",
+      "path": "/api/v1/docket/live/{case_id}"
+    },
+    {
+      "module": "portal.performance.performance_api",
+      "name": "performance_api",
+      "path": "/performance/stream"
+    },
+    {
+      "module": "portal.workflow_builder.workflow_api",
+      "name": "workflow_api",
+      "path": "/workflows/tui"
+    },
+    {
+      "module": "portal.core.universe.hive_mind_api",
+      "name": "hive_mind_api",
+      "path": "/ws/hive-mind"
+    },
+    {
+      "module": "portal.core.universe.hive_mind_api",
+      "name": "hive_mind_api",
+      "path": "/ws/messages/{agent_id}"
+    }
+  ],
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "0e31c20938a2abf32ee50c1f54622611642aa16b",
+  "evidence_commit": "pending",
+  "generation_method": "Dynamic source discovery of websocket routes, scheduler jobs, background tasks, CLI/admin scripts, and service-to-service invocations.",
+  "source_files": [
+    "portal/"
+  ],
+  "source_tests": [
+    "portal/tests/test_auth_tenant_rbac_certification.py"
+  ],
+  "result": "PASS",
+  "limitations": [
+    "WebSocket routes are classified as ISOLATED NON-PRODUCTION / OUT OF SUPPORTED SCOPE; they are outside the HTTP RBAC lane of this increment."
+  ]
+}

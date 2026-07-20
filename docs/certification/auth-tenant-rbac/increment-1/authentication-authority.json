@@ -1,0 +1,90 @@
+{
+  "authentication_cases": [
+    {
+      "case": "missing subject",
+      "expected": "401",
+      "result": "passed"
+    },
+    {
+      "case": "empty subject",
+      "expected": "401",
+      "result": "passed"
+    },
+    {
+      "case": "missing tenant",
+      "expected": "401",
+      "result": "passed"
+    },
+    {
+      "case": "empty tenant",
+      "expected": "401",
+      "result": "passed"
+    },
+    {
+      "case": "missing role",
+      "expected": "401",
+      "result": "passed"
+    },
+    {
+      "case": "invalid role",
+      "expected": "401",
+      "result": "passed"
+    },
+    {
+      "case": "malformed permission container",
+      "expected": "401",
+      "result": "passed"
+    },
+    {
+      "case": "unsupported permission",
+      "expected": "401",
+      "result": "passed"
+    },
+    {
+      "case": "malformed JWT",
+      "expected": "401",
+      "result": "passed"
+    },
+    {
+      "case": "invalid signature",
+      "expected": "401",
+      "result": "passed"
+    },
+    {
+      "case": "expired access token",
+      "expected": "401",
+      "result": "passed"
+    },
+    {
+      "case": "refresh token rejected as access token",
+      "expected": "401",
+      "result": "passed"
+    },
+    {
+      "case": "missing authorization header",
+      "expected": "401",
+      "result": "passed"
+    },
+    {
+      "case": "malformed authorization header",
+      "expected": "401",
+      "result": "passed"
+    }
+  ],
+  "baseline_commit": "0e31c20938a2abf32ee50c1f54622611642aa16b",
+  "result": "PASS",
+  "schema_version": "1.0",
+  "security_subject_commit": "635435780d194945ed3fcb4815f2034470aa4331",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "evidence_commit": "pending",
+  "generation_method": "Executed pytest authentication fail-closed cases from portal/tests/test_auth_tenant_rbac_certification.py; recorded observed HTTP 401 outcomes.",
+  "source_files": [
+    "portal/auth/rbac.py"
+  ],
+  "source_tests": [
+    "portal/tests/test_auth_tenant_rbac_certification.py"
+  ],
+  "limitations": [
+    "The certification test fixture uses a short HS256 key, which raises a PyJWT InsecureKeyLengthWarning but does not fail the gate."
+  ]
+}

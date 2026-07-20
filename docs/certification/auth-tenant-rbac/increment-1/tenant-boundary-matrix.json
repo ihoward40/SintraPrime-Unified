@@ -1,0 +1,66 @@
+{
+  "billing": [
+    {
+      "case": "same-tenant payment succeeds",
+      "expected": "201/200 and audit entry",
+      "result": "passed"
+    },
+    {
+      "case": "cross-tenant invoice matches nonexistent behavior",
+      "expected": "404",
+      "result": "passed"
+    },
+    {
+      "case": "no payment row before tenant validation",
+      "expected": "0 payment rows added",
+      "result": "passed"
+    },
+    {
+      "case": "denied request does not change invoice state",
+      "expected": "no invoice status/balance mutation",
+      "result": "passed"
+    }
+  ],
+  "rbac": [
+    {
+      "case": "ordinary user denied administrator route",
+      "expected": "403",
+      "result": "passed"
+    },
+    {
+      "case": "insufficient permission denied",
+      "expected": "403",
+      "result": "passed"
+    },
+    {
+      "case": "self-role assignment denied",
+      "expected": "403",
+      "result": "passed"
+    },
+    {
+      "case": "unauthorized role change of another user denied",
+      "expected": "403",
+      "result": "passed"
+    },
+    {
+      "case": "cross-tenant user-role mutation denied",
+      "expected": "403",
+      "result": "passed"
+    }
+  ],
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "0e31c20938a2abf32ee50c1f54622611642aa16b",
+  "evidence_commit": "pending",
+  "generation_method": "Executed tenant-isolation and RBAC escalation regression tests; recorded observed outcomes per case.",
+  "source_files": [
+    "portal/routers/billing.py",
+    "portal/routers/users.py",
+    "portal/auth/rbac.py"
+  ],
+  "source_tests": [
+    "portal/tests/test_auth_tenant_rbac_certification.py"
+  ],
+  "result": "PASS",
+  "limitations": []
+}

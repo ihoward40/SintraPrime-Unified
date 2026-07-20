@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "a93d2513e73e3a89faf11e3e5b36abfb4e090613",
+  "generated_from_commit": "f4613e9e4b4ec715d9447d4efa34da44a10c1f07",
+  "generation_method": "Dynamic source discovery from Path(__file__).resolve().parents[2]; classified each entry point by transport and production status.",
+  "source_files": [
+    "portal/"
+  ],
+  "source_tests": [
+    "portal/tests/test_audit_correlation_non_http_certification.py"
+  ],
+  "result": "PASS",
+  "limitations": [
+    "Discovery is deterministic but classification of SSO provider HTTP calls as OUT OF SUPPORTED SCOPE may change if they become production-authorized.",
+    "5 of 6 WebSocket routes found in source are NOT mounted in the production application. They are classified OUT OF SUPPORTED SCOPE. The prior PR #214 increment recorded 6 routes via repository-wide source discovery; this increment distinguishes mounted (1 CERTIFIED) from unmounted (5 OUT OF SUPPORTED SCOPE)."
+  ],
+  "entry_points": {
+    "websocket_routes": [
+      {
+        "path": "/api/v1/admin/ws",
+        "module": "portal.admin.dashboard",
+        "classification": "CERTIFIED",
+        "mount_status": "mounted in production"
+      },
+      {
+        "path": "/api/v1/docket/live/{case_id}",
+        "module": "portal.docket.docket_api",
+        "classification": "OUT OF SUPPORTED SCOPE",
+        "mount_status": "not mounted in portal/main.py"
+      },
+      {
+        "path": "/performance/stream",
+        "module": "portal.performance.performance_api",
+        "classification": "OUT OF SUPPORTED SCOPE",
+        "mount_status": "not mounted in portal/main.py"
+      },
+      {
+        "path": "/workflows/tui",
+        "module": "portal.workflow_builder.workflow_api",
+        "classification": "OUT OF SUPPORTED SCOPE",
+        "mount_status": "not mounted in portal/main.py"
+      },
+      {
+        "path": "/ws/hive-mind",
+        "module": "portal.core.universe.hive_mind_api",
+        "classification": "OUT OF SUPPORTED SCOPE",
+        "mount_status": "not mounted in portal/main.py"
+      },
+      {
+        "path": "/ws/messages/{agent_id}",
+        "module": "portal.core.universe.hive_mind_api",
+        "classification": "OUT OF SUPPORTED SCOPE",
+        "mount_status": "not mounted in portal/main.py"
+      }
+    ],
+    "background_tasks": [],
+    "scheduler_jobs": [],
+    "cli_admin_scripts": [
+      {
+        "path": "scripts/",
+        "classification": "OUT OF SUPPORTED SCOPE"
+      }
+    ],
+    "service_to_service_invocations": [
+      {
+        "path": "portal/sso/providers/azure.py",
+        "classification": "OUT OF SUPPORTED SCOPE"
+      },
+      {
+        "path": "portal/sso/providers/google.py",
+        "classification": "OUT OF SUPPORTED SCOPE"
+      }
+    ],
+    "webhooks": []
+  }
+}

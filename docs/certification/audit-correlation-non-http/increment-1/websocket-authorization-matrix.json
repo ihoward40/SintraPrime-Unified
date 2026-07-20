@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "a93d2513e73e3a89faf11e3e5b36abfb4e090613",
+  "generated_from_commit": "f4613e9e4b4ec715d9447d4efa34da44a10c1f07",
+  "generation_method": "Dynamic source discovery of WebSocket routes and verification of authentication, authorization, tenant isolation, and audit controls via pytest.",
+  "source_files": [
+    "portal/admin/dashboard.py",
+    "portal/auth/websocket_auth.py",
+    "portal/websocket/connection_manager.py"
+  ],
+  "source_tests": [
+    "portal/tests/test_audit_correlation_non_http_certification.py"
+  ],
+  "result": "PASS",
+  "limitations": [
+    "WebSocket rate/size/abuse controls are not implemented (existing architecture does not support them yet).",
+    "5 additional WebSocket routes exist in source but are NOT mounted in the production application (docket, performance, workflow_builder, hive_mind). They are classified OUT OF SUPPORTED SCOPE — unmounted, non-production modules."
+  ],
+  "routes": [
+    {
+      "path": "/api/v1/admin/ws",
+      "module": "portal.admin.dashboard",
+      "authentication": "JWT via query param or subprotocol (authenticate_websocket)",
+      "authorization": "require ADMIN_DASHBOARD permission (authorize_websocket_connection)",
+      "tenant_binding": "tenant_id from JWT claims, client-supplied tenant_id ignored",
+      "audit_events": [
+        "websocket_connect",
+        "websocket_disconnect"
+      ],
+      "close_codes": {
+        "4401": "authentication required",
+        "4403": "forbidden"
+      },
+      "classification": "CERTIFIED"
+    },
+    {
+      "path": "/api/v1/docket/live/{case_id}",
+      "module": "portal.docket.docket_api",
+      "classification": "OUT OF SUPPORTED SCOPE",
+      "reason": "Not mounted in portal/main.py"
+    },
+    {
+      "path": "/performance/stream",
+      "module": "portal.performance.performance_api",
+      "classification": "OUT OF SUPPORTED SCOPE",
+      "reason": "Not mounted in portal/main.py"
+    },
+    {
+      "path": "/workflows/tui",
+      "module": "portal.workflow_builder.workflow_api",
+      "classification": "OUT OF SUPPORTED SCOPE",
+      "reason": "Not mounted in portal/main.py"
+    },
+    {
+      "path": "/ws/hive-mind",
+      "module": "portal.core.universe.hive_mind_api",
+      "classification": "OUT OF SUPPORTED SCOPE",
+      "reason": "Not mounted in portal/main.py"
+    },
+    {
+      "path": "/ws/messages/{agent_id}",
+      "module": "portal.core.universe.hive_mind_api",
+      "classification": "OUT OF SUPPORTED SCOPE",
+      "reason": "Not mounted in portal/main.py"
+    }
+  ],
+  "scope_reconciliation": {
+    "mounted_production_routes": 1,
+    "unmounted_source_routes": 5,
+    "total_source_discovery": 6,
+    "distinction": "Repository-wide source discovery finds 6 @router.websocket declarations. Only 1 is mounted in the production FastAPI application via portal/main.py include_router calls. The 5 unmounted modules (docket/docket_api.py, performance/performance_api.py, workflow_builder/workflow_api.py, core/universe/hive_mind_api.py) are not wired into the production app and their routers cannot be imported.",
+    "prior_increment_context": "PR #214 recorded 6 WebSocket routes via repository-wide source discovery. This increment distinguishes mounted production routes (1, CERTIFIED) from unmounted source routes (5, OUT OF SUPPORTED SCOPE). No routes were lost."
+  }
+}

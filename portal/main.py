@@ -11,6 +11,7 @@ from fastapi import FastAPI
 load_dotenv()
 
 # Import settings and services using get_settings() instead of module-level constants
+from portal.admin.dashboard import router as admin_dashboard_router
 from portal.config import get_settings
 from portal.middleware.cors_middleware import CORSMiddleware
 from portal.middleware.rate_limiter import RateLimiterMiddleware
@@ -133,6 +134,7 @@ def create_app() -> FastAPI:
     app.include_router(mission_control_commands.router)
     app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["notifications"])
     app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
+    app.include_router(admin_dashboard_router, prefix="/api/v1", tags=["admin-dashboard"])
 
     # Health check
     @app.get("/health")

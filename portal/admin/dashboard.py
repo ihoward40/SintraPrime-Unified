@@ -5,8 +5,17 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 
+from portal.auth.correlation import bind_context
+from portal.auth.rbac import CurrentUser, Permission, require_permissions
+from portal.auth.websocket_auth import (
+    audit_websocket_event,
+    authenticate_websocket,
+    authorize_websocket_connection,
+    bind_websocket_context,
+    safe_close,
+)
 from portal.config import get_settings
-from portal.middleware.auth import verify_token
+from portal.websocket.connection_manager import ws_manager
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 settings = get_settings()
@@ -23,8 +32,8 @@ metrics_store = {
 }
 
 @router.get("/dashboard")
-async def get_dashboard(token: str = Depends(verify_token)):
-    """Serve dashboard HTML."""
+async def get_dashboard(_: CurrentUser = Depends(require_permissions(Permission.ADMIN_DASHBOARD))):
+    """Serve dashboard HTML (requires ADMIN_DASHBOARD permission)."""
     return HTMLResponse("""
     <!DOCTYPE html>
     <html>
@@ -74,24 +83,70 @@ async def get_dashboard(token: str = Depends(verify_token)):
     """)
 
 @router.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket, token: str = Depends(verify_token)):
-    """WebSocket endpoint for real-time metric streaming."""
-    await websocket.accept()
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time metric streaming.
+
+    Authenticates before accepting, requires ADMIN_DASHBOARD permission,
+    binds a correlation context, and audits connect/disconnect events.
+    """
+    # Authenticate before accepting the connection.
     try:
-        while True:
-            await websocket.send_json(metrics_store)
-            await asyncio.sleep(1)
+        user = await authenticate_websocket(websocket)
+    except WebSocketDisconnect:
+        return  # already rejected with 4401
+
+    # Authorize: require ADMIN_DASHBOARD permission.
+    try:
+        await authorize_websocket_connection(user, Permission.ADMIN_DASHBOARD)
+    except WebSocketDisconnect:
+        await safe_close(websocket, 4403)
+        return
+
+    # Bind correlation context for the WebSocket lifecycle.
+    ctx = bind_websocket_context(user, websocket)
+
+    # Register with the connection manager (accepts the connection).
+    await ws_manager.connect(websocket, user.user_id, user.tenant_id)
+
+    # Audit the connection acceptance.
+    with bind_context(ctx):
+        await audit_websocket_event(
+            db=None,
+            action="websocket_connect",
+            user=user,
+            websocket=websocket,
+        )
+
+    try:
+        with bind_context(ctx):
+            while True:
+                await websocket.send_json(metrics_store)
+                await asyncio.sleep(1)
     except WebSocketDisconnect:
         pass
+    except Exception:
+        pass
+    finally:
+        await ws_manager.disconnect(websocket, user.user_id, user.tenant_id)
+        with bind_context(ctx):
+            await audit_websocket_event(
+                db=None,
+                action="websocket_disconnect",
+                user=user,
+                websocket=websocket,
+            )
 
 @router.get("/metrics")
-async def get_metrics(token: str = Depends(verify_token)):
-    """REST endpoint for metrics."""
+async def get_metrics(_: CurrentUser = Depends(require_permissions(Permission.ADMIN_DASHBOARD))):
+    """REST endpoint for metrics (requires ADMIN_DASHBOARD permission)."""
     return metrics_store
 
 @router.post("/metrics/update")
-async def update_metrics(data: dict, token: str = Depends(verify_token)):
-    """Update metrics store."""
+async def update_metrics(
+    data: dict,
+    _: CurrentUser = Depends(require_permissions(Permission.ADMIN_DASHBOARD)),
+):
+    """Update metrics store (requires ADMIN_DASHBOARD permission)."""
     metrics_store.update(data)
     metrics_store["last_updated"] = datetime.now(UTC).isoformat()
     return {"status": "updated"}

@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "a93d2513e73e3a89faf11e3e5b36abfb4e090613",
+  "generated_from_commit": "f4613e9e4b4ec715d9447d4efa34da44a10c1f07",
+  "generation_method": "Defined AuditEvent dataclass and verified required fields, integrity hash determinism, and secret redaction via pytest.",
+  "source_files": [
+    "portal/auth/audit_envelope.py"
+  ],
+  "source_tests": [
+    "portal/tests/test_audit_correlation_non_http_certification.py"
+  ],
+  "result": "PASS",
+  "limitations": [],
+  "required_fields": [
+    "schema_version",
+    "event_id",
+    "request_id",
+    "correlation_id",
+    "causation_id",
+    "occurred_at",
+    "actor_id",
+    "actor_type",
+    "tenant_id",
+    "action",
+    "resource_type",
+    "resource_id",
+    "source_transport",
+    "source_entrypoint",
+    "outcome",
+    "denial_reason",
+    "metadata",
+    "integrity_hash"
+  ],
+  "redacted_fields": [
+    "password",
+    "token",
+    "bearer",
+    "secret",
+    "private_key",
+    "privatekey",
+    "cookie",
+    "authorization",
+    "api_key",
+    "apikey",
+    "access_token",
+    "refresh_token",
+    "session_id",
+    "csrf_token"
+  ],
+  "integrity_hash_algorithm": "SHA-256 over canonical JSON (excluding hash field)"
+}

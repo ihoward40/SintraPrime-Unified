@@ -1,0 +1,107 @@
+{
+  "increment": "repository-convergence-increment-2",
+  "baseline_commit": "48e2caa759661cc75617cc752bcc26eaad666647",
+  "baseline_tree": "9ee6d193dd7f607cd59487df9ef26d46b9593803",
+  "generated": "2026-07-20T22:00:00Z",
+  "decisions": [
+    {
+      "decision_id": "RC2-001",
+      "subject": "Stale baseline anchor replacement",
+      "decision": "Replace all authority anchors from 10cad07f to 48e2caa7 across 9 documents",
+      "rationale": "15 commits and 5 merged PRs (#213-217) separate the former anchor from current main. Authority documents must reflect current code and CI truth.",
+      "evidence": "git log --oneline 10cad07f..48e2caa7 shows 15 commits; git rev-parse origin/main = 48e2caa7",
+      "alternatives_rejected": ["Keep 10cad07f and add addendum (rejected: stale anchor creates contradictory instructions)", "Rebase to PR #216 merge ee240ddc (rejected: PR #217 is the latest)"],
+      "limitations": "Historical references to 10cad07f are preserved where labeled as historical context",
+      "date": "2026-07-20",
+      "baseline_commit": "48e2caa759661cc75617cc752bcc26eaad666647"
+    },
+    {
+      "decision_id": "RC2-002",
+      "subject": "Authentication and RBAC capability elevation",
+      "decision": "Elevate Authentication and Tenancy/RBAC from SUPPORTED to CERTIFIED FOR RECORDED SCOPE",
+      "rationale": "PR #214 introduced identity-claim validation, tenant-scoped route authorization, and a dedicated certification CI lane that passes in CI.",
+      "evidence": "PR #214 merge a93d2513; portal/tests/test_auth_tenant_rbac_certification.py exists; ci.yml defines auth-tenant-rbac-certification lane",
+      "alternatives_rejected": ["Keep as SUPPORTED (rejected: certification evidence exists)", "Elevate to production-certified (rejected: no production certification exists)"],
+      "limitations": "Refresh edge cases untested; session revocation not implemented; no token rotation; no logout invalidation; no concurrent session policy",
+      "date": "2026-07-20",
+      "baseline_commit": "48e2caa759661cc75617cc752bcc26eaad666647"
+    },
+    {
+      "decision_id": "RC2-003",
+      "subject": "Audit and correlation capability elevation",
+      "decision": "Elevate Audit/evidence from SUPPORTED to CERTIFIED FOR RECORDED SCOPE; add Correlation row as CERTIFIED FOR RECORDED SCOPE",
+      "rationale": "PR #215 introduced immutable audit envelopes with correlation context and a dedicated certification CI lane.",
+      "evidence": "PR #215 merge a0d9900b; portal/auth/audit_envelope.py and portal/auth/correlation.py exist; ci.yml defines audit-correlation-non-http-certification lane",
+      "alternatives_rejected": ["Keep audit as SUPPORTED only (rejected: certification evidence exists)", "Add as compliance-certified (rejected: no compliance certification exists)"],
+      "limitations": "Multiple event logs still exist; unified audit schema pending; incomplete server-level exception correlation",
+      "date": "2026-07-20",
+      "baseline_commit": "48e2caa759661cc75617cc752bcc26eaad666647"
+    },
+    {
+      "decision_id": "RC2-004",
+      "subject": "WebSocket transport hardening addition",
+      "decision": "Add WebSocket transport row as CERTIFIED FOR RECORDED SCOPE",
+      "rationale": "PR #217 introduced WebSocket capacity, rate, timeout, lifetime, and payload controls with a dedicated certification CI lane.",
+      "evidence": "PR #217 merge 48e2caa7; portal/auth/ws_hardening.py exists; ci.yml defines http-correlation-ws-hardening-certification lane",
+      "alternatives_rejected": ["Add as EXPERIMENTAL (rejected: certification evidence exists)", "Claim distributed enforcement (rejected: enforcement is process-local only)"],
+      "limitations": "Process-local enforcement; deprecated query-token support; no distributed enforcement",
+      "date": "2026-07-20",
+      "baseline_commit": "48e2caa759661cc75617cc752bcc26eaad666647"
+    },
+    {
+      "decision_id": "RC2-005",
+      "subject": "Operations Floor status correction",
+      "decision": "Change Operations Floor from FROZEN LOCALLY to SUPPORTED",
+      "rationale": "Operations Floor was restored on main through PR #208 (commit aa0c9a74). The file web/src/pages/OperationsFloor.tsx exists on origin/main. The referenced commit 0aaffdc is not resolvable in the current repository object database or authoritative refs.",
+            "evidence": "git log --oneline origin/main -- web/src/pages/OperationsFloor.tsx shows aa0c9a74; git cat-file -e origin/main:web/src/pages/OperationsFloor.tsx succeeds; commit 0aaffdc not found in git log --all or git cat-file -e",
+      "alternatives_rejected": ["Keep as FROZEN LOCALLY (rejected: file is on main)", "Claim all visual checkpoints recovered (rejected: only the restored baseline is on main; unrelated lost visual commits remain non-authoritative)"],
+      "limitations": "No behavior tests; the restored baseline is the only authoritative version; any unrelated lost local visual commit remains non-authoritative",
+      "date": "2026-07-20",
+      "baseline_commit": "48e2caa759661cc75617cc752bcc26eaad666647"
+    },
+    {
+      "decision_id": "RC2-006",
+      "subject": "Mission Control boundary preservation",
+      "decision": "Preserve all Mission Control boundary constraints unchanged; add security certification note",
+      "rationale": "PR #214-217 security certifications enforce identity, tenant, audit, and transport controls at code level but do NOT alter the Mission Control execution boundary.",
+      "evidence": "portal/services/mission_control_command_guard.py still returns COMMAND_EXECUTION_NOT_ENABLED; no runner execution code added in PR #214-217",
+      "alternatives_rejected": ["Grant Mission Control execution authority (rejected: shared execution protocol not yet defined)", "Remove convergence rule (rejected: still required for Increment Two B and G4.8)"],
+      "limitations": "Shared execution protocol still required before live execution; refusal-only boundary unchanged",
+      "date": "2026-07-20",
+      "baseline_commit": "48e2caa759661cc75617cc752bcc26eaad666647"
+    },
+    {
+      "decision_id": "RC2-007",
+      "subject": "Open PR disposition update",
+      "decision": "Update all 10 open PR dispositions with current behind/ahead counts and governed recommendations; no PR state changes",
+      "rationale": "All PRs are 39-132 commits behind current main. Previous dispositions were based on old main. Several PRs are now superseded by merged security certifications.",
+      "evidence": "git rev-list --count <head>..origin/main for each PR; gh pr list --state open confirms 10 open PRs",
+      "alternatives_rejected": ["Recommend merging MERGEABLE PRs (rejected: MERGEABLE does not imply merge readiness)", "Post PR comments (rejected: no PR state changes authorized)"],
+      "limitations": "Recommendations are governance proposals only; no PR state changes authorized",
+      "date": "2026-07-20",
+      "baseline_commit": "48e2caa759661cc75617cc752bcc26eaad666647"
+    },
+    {
+      "decision_id": "RC2-008",
+      "subject": "Certification terminology boundary",
+      "decision": "Use CERTIFIED FOR RECORDED SCOPE consistently; never use production-certified or compliance-certified",
+      "rationale": "Security certifications cover specific increment test suites passing in CI. They do not constitute production, HIPAA, SOC 2, or PCI-DSS certification.",
+      "evidence": "README states NOT production-certified; no compliance certification exists in repository",
+      "alternatives_rejected": ["Use CERTIFIED without qualifier (rejected: implies broader certification)", "Use COMPLIANCE-CERTIFIED (rejected: no compliance audit exists)"],
+      "limitations": "Recorded limitations preserved: process-local WebSocket, deprecated query-token, incomplete server-level exception correlation, no distributed enforcement",
+      "date": "2026-07-20",
+      "baseline_commit": "48e2caa759661cc75617cc752bcc26eaad666647"
+    },
+    {
+      "decision_id": "RC2-009",
+      "subject": "Scope freeze at 14 files",
+      "decision": "Freeze changed-file scope at exactly 14 files: 9 updates + 5 creates",
+      "rationale": "Scope was reviewed and conditionally approved. No fifteenth file is authorized. The scope document itself (file 10) is included in the count.",
+      "evidence": "Approved scope in increment-2-scope-and-discrepancy-matrix.md; git status --porcelain=v1 confirms only docs/ files",
+      "alternatives_rejected": ["Add separate convergence evidence report (rejected: would expand scope to 15 files)", "Exclude scope document from count (rejected: it is a changed file)"],
+      "limitations": "No additional files may be added without re-approval",
+      "date": "2026-07-20",
+      "baseline_commit": "48e2caa759661cc75617cc752bcc26eaad666647"
+    }
+  ]
+}

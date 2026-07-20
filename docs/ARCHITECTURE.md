@@ -1,6 +1,6 @@
 # SintraPrime-Unified — Canonical Architecture Authority
 
-> Authoritative as of commit 10cad07f046b5675ed10a1fba1aa4a955636f739 (tree 66f59a5bf832e9f3ce3c484c64891fd543359abf).
+> Authoritative as of commit `48e2caa759661cc75617cc752bcc26eaad666647` (tree `9ee6d193dd7f607cd59487df9ef26d46b9593803`).
 > This document is the single source of architectural truth. Where no single
 > authority exists, the status is `UNRESOLVED — convergence required`.
 
@@ -26,12 +26,17 @@
 | Authentication       | `portal/auth/` (JWT)                               | `portal/sso/` (delegated) |
 | Tenant identity      | request context / `portal/middleware`              | per-package tenant fields (unverified) |
 | RBAC                 | `portal/auth/rbac.py` + `portal/models/user.py`    | feature-package role assumptions |
+| Identity claims      | `portal/auth/rbac.py` (identity-claim validation)  | per-package identity assumptions |
+| Correlation context  | `portal/auth/correlation.py` + `portal/middleware/correlation_middleware.py` | ad-hoc request tagging |
+| Audit envelopes      | `portal/auth/audit_envelope.py`                    | per-package event logs |
+| WebSocket auth        | `portal/auth/websocket_auth.py`                    | query-token (deprecated) |
+| WebSocket hardening  | `portal/auth/ws_hardening.py`                      | none (new in PR #217) |
 | Workflow execution   | `workflow_builder/` + `scheduler/`                 | `agent_protocol/` (agent orchestration, not durable WF) |
 | Execution governance | `portal/services/mission_control_command_guard.py` | `secure_execution/` (separate TEE, not wired to RBAC) |
 | Monitoring           | `observability/`                                   | ad-hoc logging in packages |
 | Database models      | `portal/models/`                                   | models declared inside feature packages |
 | Migration execution  | `portal/migrations/*.sql` (raw)                    | test `create_all` (runtime only, NOT deployed schema) |
-| Audit events         | `MissionControlRunControlEvent` (Mission Control) + `audit_records` | per-package event logs |
+| Audit events         | `MissionControlRunControlEvent` (Mission Control) + `audit_records` + `portal/auth/audit_envelope.py` | per-package event logs |
 | Evidence manifests   | `docs/governance/` + `mission-control-evidence/`   | root-level `PHASE_*.md` receipts (historical) |
 | Payments             | `backend/stripe-payments/`                         | `legal_integrations` (billing context), `src/payment/` (MISSING) |
 | Agent runtime        | `UNRESOLVED — convergence required`                | `agents/`, `agent_protocol/`, `core/universe`, `superintelligence/` |
@@ -42,12 +47,15 @@
 User
   → web/ (React, operator projection)
   → portal/main.py (API)
+  → portal/middleware/correlation_middleware.py (HTTP request-ID assignment)
   → portal/auth/ (JWT authentication)
+  → portal/auth/rbac.py (identity-claim validation + permission check)
   → tenant context (portal/middleware)
-  → portal/auth/rbac.py (permission check)
+  → portal/auth/correlation.py (correlation context propagation)
   → portal/services/* (service boundary)
   → workflow_builder/ + scheduler/ OR agents/ (workflow / agent execution)
   → portal/models/ (database persistence)
+  → portal/auth/audit_envelope.py (immutable audit event envelope)
   → audit / MissionControlRunControlEvent (audit)
   → Result → web/ projection
 ```
@@ -57,10 +65,25 @@ runners, agent runtimes, CLI (`portal/scripts/`, `scripts/`), webhooks (`channel
 and admin scripts. There is **no centralized execution authority** across all origins
 (see `UNRESOLVED` agent runtime above).
 
+## Certification CI lanes
+
+The following certification-specific CI lanes are defined in `.github/workflows/ci.yml`:
+
+| CI lane | Scope | Certifying PR | Test file |
+|---------|-------|----------------|-----------|
+| `auth-tenant-rbac-certification` | Authentication, tenant isolation, RBAC | PR #214 | `portal/tests/test_auth_tenant_rbac_certification.py` |
+| `audit-correlation-non-http-certification` | Audit correlation, non-HTTP authorization | PR #215 | `portal/tests/test_audit_correlation_non_http_certification.py` |
+| `http-correlation-ws-hardening-certification` | HTTP request-ID correlation, WebSocket hardening | PR #217 | `portal/tests/test_http_correlation_ws_hardening_certification.py` |
+
+These lanes are CERTIFIED FOR THE RECORDED SCOPE of their respective increments.
+They do NOT constitute production certification, compliance certification,
+or distributed enforcement.
+
 ## Explicit non-authorities (do NOT own live execution authority)
 
 - Mission Control run-control projection — state machine only, no runner control.
 - Observatory / `observability/` monitoring — telemetry only.
+- `secure_execution/` — TEE/zero-trust primitives; not wired to portal RBAC authority.
 - Old nested apps (`apps/*`) — legacy shells.
 - Stale PR branches — not deployed.
 - Test harnesses — verification only.
@@ -70,6 +93,10 @@ and admin scripts. There is **no centralized execution authority** across all or
 
 The repository currently has **no single agent runtime authority** and **no single
 execution-control authority** spanning API, workflow, and agent origins. Convergence
-Increment One documents this; it does NOT resolve it. Resolving requires a future
+Increment One documented this; it does NOT resolve it. Resolving requires a future
 shared execution protocol (see `docs/governance/MISSION_CONTROL_OBSERVATORY_AUTHORITY.md`).
 
+Security certifications from PRs #214–#217 enforce identity, tenant, correlation, audit,
+and transport controls at the code level, but they do NOT establish a centralized
+execution authority. The shared execution-control protocol remains the prerequisite
+for Mission Control Increment Two B and Observatory G4.8.

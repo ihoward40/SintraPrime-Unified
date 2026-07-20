@@ -159,6 +159,25 @@ jobs:
           name: auth-tenant-rbac-certification-log
           path: /tmp/auth-tenant-rbac-certification.log
           if-no-files-found: ignore
+  audit-correlation-non-http-certification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run audit correlation and non-HTTP certification suite
+        run: set -o pipefail && python -m pytest portal/tests/test_audit_correlation_non_http_certification.py -q | tee /tmp/audit-correlation-non-http-certification.log
+      - name: Upload certification log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-correlation-non-http-certification-log
+          path: /tmp/audit-correlation-non-http-certification.log
+          if-no-files-found: ignore
   security:
     runs-on: ubuntu-latest
     steps:

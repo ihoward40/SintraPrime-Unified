@@ -228,7 +228,7 @@ known-first-party = ["portal", "operator"]
 # governance
 "governance/**" = ["ARG002", "B007", "F401", "F841", "N999", "RET504", "RET505", "RUF001", "RUF022", "RUF100", "SIM300", "UP006", "UP017", "UP035", "UP037", "UP042", "UP045"]
 # portal
-"portal/admin/**" = ["ARG001"]
+"portal/admin/**" = ["ARG001", "B008"]
 "portal/auth/**" = ["ARG001", "B008", "B904", "N999"]
 "portal/main.py" = ["E402", "W293"]
 "portal/middleware/**" = ["N999", "RET504", "UP017", "UP035"]

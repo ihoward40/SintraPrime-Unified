@@ -108,6 +108,66 @@ def get_current_context() -> CorrelationContext | None:
     return _correlation_context.get()
 
 
+def set_current_context(
+    context: CorrelationContext,
+) -> contextvars.Token[CorrelationContext | None]:
+    """Replace the active context and return its reset token."""
+    return _correlation_context.set(context)
+
+
+def reset_current_context(
+    token: contextvars.Token[CorrelationContext | None],
+) -> None:
+    """Restore the context that existed before set_current_context."""
+    _correlation_context.reset(token)
+
+
+# ── Request-scoped token registry ──────────────────────────────────────────────
+# Attribute name on ``request.state`` used to accumulate ContextVar reset
+# tokens created during a request.  The CorrelationMiddleware reads and
+# resets these tokens in reverse (LIFO) order before restoring the
+# pre-request context, ensuring no cross-request leakage.
+_REQUEST_CONTEXT_TOKENS_ATTR = "_correlation_auth_tokens"
+
+
+def register_request_context_token(
+    request: object,
+    token: contextvars.Token[CorrelationContext | None],
+) -> None:
+    """Register a ContextVar reset token on the request state.
+
+    Called by authentication enrichment (e.g. ``get_current_user``) after
+    replacing the active context.  The CorrelationMiddleware resets these
+    tokens in LIFO order during request cleanup.
+    """
+    tokens: list[contextvars.Token[CorrelationContext | None]] | None = getattr(
+        request.state, _REQUEST_CONTEXT_TOKENS_ATTR, None
+    )
+    if tokens is None:
+        tokens = []
+        setattr(request.state, _REQUEST_CONTEXT_TOKENS_ATTR, tokens)
+    tokens.append(token)
+
+
+def reset_request_context_tokens(request: object) -> None:
+    """Reset all registered context tokens in reverse (LIFO) order.
+
+    Idempotent: after resetting, the token list is cleared so a second
+    call (e.g. exception path then finally) is a no-op.
+    """
+    tokens: list[contextvars.Token[CorrelationContext | None]] | None = getattr(
+        request.state, _REQUEST_CONTEXT_TOKENS_ATTR, None
+    )
+    if not tokens:
+        return
+    import contextlib
+
+    for token in reversed(tokens):
+        with contextlib.suppress(ValueError):
+            reset_current_context(token)
+    tokens.clear()
+
+
 def bind_context(ctx: CorrelationContext) -> _ContextBinder:
     """Return a context manager that sets and cleans up the contextvar."""
     return _ContextBinder(ctx)

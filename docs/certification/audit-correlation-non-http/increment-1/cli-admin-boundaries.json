@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "a93d2513e73e3a89faf11e3e5b36abfb4e090613",
+  "generated_from_commit": "f4613e9e4b4ec715d9447d4efa34da44a10c1f07",
+  "generation_method": "Inspected the scripts/ directory for CLI and admin entry points.",
+  "source_files": [
+    "scripts/"
+  ],
+  "source_tests": [
+    "portal/tests/test_audit_correlation_non_http_certification.py"
+  ],
+  "result": "PASS",
+  "limitations": [
+    "CLI/admin scripts are classified OUT OF SUPPORTED SCOPE for this increment. They are development and CI utilities, not production-authorized administrative entry points."
+  ],
+  "cli_scripts": [
+    {
+      "path": "scripts/ci/validate_repository_claims.py",
+      "classification": "OUT OF SUPPORTED SCOPE"
+    },
+    {
+      "path": "scripts/ci/report_test_inventory.py",
+      "classification": "OUT OF SUPPORTED SCOPE"
+    },
+    {
+      "path": "scripts/smoke/repo_truth_check.py",
+      "classification": "OUT OF SUPPORTED SCOPE"
+    }
+  ]
+}

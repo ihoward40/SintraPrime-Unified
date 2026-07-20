@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "a93d2513e73e3a89faf11e3e5b36abfb4e090613",
+  "generated_from_commit": "f4613e9e4b4ec715d9447d4efa34da44a10c1f07",
+  "generation_method": "Executed pytest correlation context tests from portal/tests/test_audit_correlation_non_http_certification.py; verified identifier generation, inbound validation, concurrent isolation, immutability, and nested propagation.",
+  "source_files": [
+    "portal/auth/correlation.py"
+  ],
+  "source_tests": [
+    "portal/tests/test_audit_correlation_non_http_certification.py"
+  ],
+  "result": "PASS",
+  "limitations": [
+    "request_id is not yet propagated in HTTP response headers (deferred to HTTP middleware increment)."
+  ],
+  "correlation_fields": [
+    "request_id",
+    "correlation_id",
+    "causation_id",
+    "actor_id",
+    "tenant_id",
+    "invocation_type",
+    "source_transport",
+    "timestamp"
+  ],
+  "storage_mechanism": "contextvars.ContextVar (no global mutable state, concurrent-safe)",
+  "immutability": "CorrelationContext is a frozen dataclass"
+}

@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "a93d2513e73e3a89faf11e3e5b36abfb4e090613",
+  "generated_from_commit": "f4613e9e4b4ec715d9447d4efa34da44a10c1f07",
+  "generation_method": "Compiled from accepted limitations recorded during the certification increment.",
+  "source_files": [
+    "docs/certification/audit-correlation-non-http/increment-1/"
+  ],
+  "source_tests": [
+    "portal/tests/test_audit_correlation_non_http_certification.py"
+  ],
+  "result": "PASS",
+  "limitations": [
+    {
+      "item": "request_id is not yet propagated in HTTP response headers",
+      "status": "deferred"
+    },
+    {
+      "item": "WebSocket rate/size/abuse controls are not implemented",
+      "status": "deferred"
+    },
+    {
+      "item": "No production background tasks exist to bind identity envelopes to",
+      "status": "accepted"
+    },
+    {
+      "item": "No production webhooks exist; webhook security controls not implemented",
+      "status": "accepted"
+    },
+    {
+      "item": "CLI/admin scripts classified OUT OF SUPPORTED SCOPE",
+      "status": "accepted"
+    }
+  ]
+}

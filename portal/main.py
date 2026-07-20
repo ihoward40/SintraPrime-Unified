@@ -11,6 +11,7 @@ from fastapi import FastAPI
 load_dotenv()
 
 # Import settings and services using get_settings() instead of module-level constants
+from portal.admin.dashboard import router as admin_dashboard_router
 from portal.config import get_settings
 from portal.middleware.cors_middleware import CORSMiddleware
 from portal.middleware.rate_limiter import RateLimiterMiddleware
@@ -34,7 +35,6 @@ from portal.routers import (
     trust_compliance,
     users,
 )
-from portal.admin.dashboard import router as admin_dashboard_router
 from portal.security.security_layer import SecurityLayer
 from portal.sso.jwt_service import JWTTokenService
 from portal.sso.session_manager import SessionConfig, SessionManager

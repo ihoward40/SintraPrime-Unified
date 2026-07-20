@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "a93d2513e73e3a89faf11e3e5b36abfb4e090613",
+  "generated_from_commit": "f4613e9e4b4ec715d9447d4efa34da44a10c1f07",
+  "generation_method": "Inspected the codebase for production background tasks and service invocations. No production background tasks exist.",
+  "source_files": [
+    "portal/auth/correlation.py"
+  ],
+  "source_tests": [
+    "portal/tests/test_audit_correlation_non_http_certification.py"
+  ],
+  "result": "PASS",
+  "limitations": [
+    "No production background tasks exist to bind identity envelopes to. The correlation module supports propagate_to_child for future use."
+  ],
+  "background_tasks": [],
+  "service_accounts": []
+}

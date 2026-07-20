@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "a93d2513e73e3a89faf11e3e5b36abfb4e090613",
+  "generated_from_commit": "f4613e9e4b4ec715d9447d4efa34da44a10c1f07",
+  "generation_method": "Mapped each implemented control to its affected path, security risk, correction, and regression test.",
+  "source_files": [
+    "portal/auth/correlation.py",
+    "portal/auth/audit_envelope.py",
+    "portal/auth/websocket_auth.py",
+    "portal/admin/dashboard.py",
+    "portal/main.py"
+  ],
+  "source_tests": [
+    "portal/tests/test_audit_correlation_non_http_certification.py"
+  ],
+  "result": "PASS",
+  "limitations": [],
+  "decisions": [
+    {
+      "affected_path": "portal/auth/correlation.py",
+      "defect": "No correlation context authority existed; request/audit traceability was not possible.",
+      "risk": "Inability to trace actions across service boundaries; no concurrent request isolation.",
+      "correction": "Created CorrelationContext (immutable, frozen dataclass) with contextvar-based storage, identifier generation/validation, tenant/actor immutability, and nested propagation.",
+      "regression_test": "TestCorrelationGeneration, TestIdentityImmutability, TestConcurrentIsolation, TestNestedPropagation",
+      "result": "passed"
+    },
+    {
+      "affected_path": "portal/auth/audit_envelope.py",
+      "defect": "No standardized audit event envelope existed; audit fields were inconsistent.",
+      "risk": "Audit records could not be reliably correlated or integrity-verified.",
+      "correction": "Created AuditEvent (immutable, frozen) with 18 required fields, SHA-256 integrity hash, and recursive secret redaction.",
+      "regression_test": "TestAuditEnvelope, TestSecretRedaction",
+      "result": "passed"
+    },
+    {
+      "affected_path": "portal/admin/dashboard.py",
+      "defect": "WebSocket endpoint imported a non-existent verify_token function; no real authentication, authorization, tenant isolation, or audit controls.",
+      "risk": "Unauthenticated WebSocket access to admin metrics; no tenant isolation; no audit trail.",
+      "correction": "Replaced with authenticate_websocket, authorize_websocket_connection(ADMIN_DASHBOARD), bind_websocket_context, ConnectionManager registration, and audit event emission for connect/disconnect.",
+      "regression_test": "TestWebSocketAuth, TestWebSocketTenantIsolation, TestAppIntegration",
+      "result": "passed"
+    },
+    {
+      "affected_path": "portal/main.py",
+      "defect": "The admin dashboard router was not mounted in the application.",
+      "risk": "The dashboard endpoints were unreachable; the WebSocket endpoint was ungoverned.",
+      "correction": "Added admin_dashboard_router import and include_router at /api/v1 prefix.",
+      "regression_test": "TestAppIntegration",
+      "result": "passed"
+    }
+  ]
+}

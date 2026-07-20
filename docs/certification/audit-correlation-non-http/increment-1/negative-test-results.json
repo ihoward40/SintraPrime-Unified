@@ -1,0 +1,64 @@
+{
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "a93d2513e73e3a89faf11e3e5b36abfb4e090613",
+  "generated_from_commit": "f4613e9e4b4ec715d9447d4efa34da44a10c1f07",
+  "generation_method": "Executed the certification test suite and recorded negative-case outcomes.",
+  "source_files": [
+    "portal/auth/correlation.py",
+    "portal/auth/audit_envelope.py",
+    "portal/auth/websocket_auth.py",
+    "portal/admin/dashboard.py"
+  ],
+  "source_tests": [
+    "portal/tests/test_audit_correlation_non_http_certification.py"
+  ],
+  "result": "PASS",
+  "limitations": [],
+  "negative_cases": [
+    {
+      "group": "correlation",
+      "cases": [
+        "malformed identifier replaced",
+        "non-string identifier replaced",
+        "empty identifier replaced",
+        "oversized identifier replaced"
+      ],
+      "result": "passed"
+    },
+    {
+      "group": "identity_immutability",
+      "cases": [
+        "tenant override prevented",
+        "actor override prevented",
+        "empty trusted tenant rejected"
+      ],
+      "result": "passed"
+    },
+    {
+      "group": "websocket_auth",
+      "cases": [
+        "anonymous connection rejected",
+        "invalid token rejected",
+        "expired token rejected",
+        "insufficient permission rejected"
+      ],
+      "result": "passed"
+    },
+    {
+      "group": "websocket_tenant",
+      "cases": [
+        "client-supplied tenant_id ignored"
+      ],
+      "result": "passed"
+    },
+    {
+      "group": "fail_closed",
+      "cases": [
+        "CorrelationContext immutable",
+        "AuditEvent immutable"
+      ],
+      "result": "passed"
+    }
+  ]
+}

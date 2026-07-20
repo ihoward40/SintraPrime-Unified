@@ -28,10 +28,10 @@ from fastapi import FastAPI, WebSocket
 from fastapi.testclient import TestClient
 
 from portal.auth.audit_envelope import (
+    REDACTED_FIELDS,
     ActorType,
     AuditEvent,
     Outcome,
-    REDACTED_FIELDS,
     Transport,
     build_audit_event,
     compute_integrity_hash,
@@ -71,14 +71,16 @@ class TestCorrelationGeneration:
     def test_generate_request_id_is_unique_and_nonempty(self):
         id1 = generate_request_id()
         id2 = generate_request_id()
-        assert isinstance(id1, str) and len(id1) > 10
+        assert isinstance(id1, str)
+        assert len(id1) > 10
         assert id1 != id2
         assert id1.startswith("req-")
 
     def test_generate_correlation_id_is_unique_and_nonempty(self):
         id1 = generate_correlation_id()
         id2 = generate_correlation_id()
-        assert isinstance(id1, str) and len(id1) > 10
+        assert isinstance(id1, str)
+        assert len(id1) > 10
         assert id1 != id2
         assert id1.startswith("corr-")
 
@@ -89,7 +91,8 @@ class TestCorrelationGeneration:
 
     def test_accept_inbound_none_generates_new(self):
         result = accept_inbound_identifier(None)
-        assert isinstance(result, str) and len(result) > 10
+        assert isinstance(result, str)
+        assert len(result) > 10
         assert result.startswith("req-")
 
     def test_accept_inbound_malformed_generates_new(self):

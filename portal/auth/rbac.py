@@ -13,12 +13,69 @@ from collections.abc import Callable, Iterable, Mapping
 from enum import StrEnum
 from functools import lru_cache
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from ..auth.jwt_handler import TokenError, decode_access_token
+from .correlation import (
+    CorrelationContext,
+    create_context,
+    get_current_context,
+    register_request_context_token,
+    set_current_context,
+)
 
 bearer_scheme = HTTPBearer(auto_error=False)
+
+
+def _enrich_correlation_with_trusted_claims(
+    user: CurrentUser,
+    request: Request | None,
+) -> None:
+    """Bind trusted actor_id and tenant_id from verified JWT claims into the active correlation context.
+
+    Called after successful JWT validation.  Preserves request_id,
+    correlation_id, causation_id, source_transport, and invocation_type;
+    replaces actor_id and tenant_id with verified JWT-derived values; and
+    re-binds the immutable replacement to the active ContextVar so that
+    downstream dependencies, handlers, service calls, and audit construction
+    see the trusted values.
+
+    Client-supplied identity headers (X-Actor-ID, X-Tenant-ID, etc.) are
+    never trusted — only JWT claims are used.
+
+    The reset token returned by ``set_current_context`` is registered on
+    ``request.state`` (when a request is available) so that the
+    CorrelationMiddleware can deterministically restore the pre-request
+    context in reverse order.  This ensures no unmanaged token and no
+    cross-request leakage.
+
+    When ``request`` is ``None`` (authentication invoked outside HTTP
+    middleware, e.g. WebSocket), the token is returned to the caller for
+    manual lifecycle management.  WebSocket authentication does NOT use
+    the HTTP cleanup contract.
+    """
+    current = get_current_context()
+    if current is not None:
+        enriched = CorrelationContext(
+            request_id=current.request_id,
+            correlation_id=current.correlation_id,
+            causation_id=current.causation_id,
+            actor_id=user.user_id,
+            tenant_id=user.tenant_id,
+            invocation_type=current.invocation_type,
+            source_transport=current.source_transport,
+        )
+    else:
+        enriched = create_context(
+            actor_id=user.user_id,
+            tenant_id=user.tenant_id,
+        )
+
+    token = set_current_context(enriched)
+    if request is not None:
+        register_request_context_token(request, token)
+    # When request is None the caller owns the token lifecycle.
 
 
 # ── Roles ─────────────────────────────────────────────────────────────────────
@@ -288,9 +345,20 @@ class CurrentUser:
 # ── FastAPI dependencies ──────────────────────────────────────────────────────
 
 async def get_current_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
 ) -> CurrentUser:
-    """Extract and validate JWT, return CurrentUser. Raises 401 if invalid."""
+    """Extract and validate JWT, return CurrentUser. Raises 401 if invalid.
+
+    After successful JWT validation, enriches the active correlation context
+    with trusted actor_id and tenant_id derived from verified JWT claims.
+    Client-supplied identity headers (X-Actor-ID, X-Tenant-ID, etc.) are
+    never trusted.
+
+    The reset token from context enrichment is registered on
+    ``request.state`` so the CorrelationMiddleware can deterministically
+    restore the pre-request context.  See ``_enrich_correlation_with_trusted_claims``.
+    """
     if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -299,13 +367,19 @@ async def get_current_user(
         )
     try:
         payload = decode_access_token(credentials.credentials)
-        return CurrentUser(payload)
+        user = CurrentUser(payload)
     except TokenError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(exc),
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from exc
+
+    # Bind trusted JWT claims into the correlation context so downstream
+    # dependencies, handlers, service calls, and audit construction see
+    # verified actor_id and tenant_id — never client-supplied headers.
+    _enrich_correlation_with_trusted_claims(user, request)
+    return user
 
 
 def require_permissions(*perms: Permission) -> Callable:

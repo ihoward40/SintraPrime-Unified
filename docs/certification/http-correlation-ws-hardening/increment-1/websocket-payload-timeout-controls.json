@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "ee240ddcac201ab8d1a1613311008c49b4448fb6",
+  "generated_from_commit": "9bc2e0c04f77d7a961e3e4b7b68a5e28a36339aa",
+  "source_tests": [
+    "portal/tests/test_http_correlation_ws_hardening_certification.py"
+  ],
+  "generation_method": "Implemented payload-size enforcement, idle timeout, max connection lifetime, and heartbeat protocol in the WebSocket streaming loop. Receiver/sender/closer ownership is exclusive.",
+  "source_files": [
+    "portal/auth/ws_hardening.py",
+    "portal/admin/dashboard.py"
+  ],
+  "result": "PASS",
+  "limitations": [
+    "Timeout controls are process-local."
+  ],
+  "controls": {
+    "payload_max_bytes": 65536,
+    "idle_timeout_seconds": 300,
+    "max_connection_lifetime_seconds": 3600,
+    "close_code_timeout": 4408,
+    "close_code_oversized_inbound": 4413,
+    "heartbeat_protocol": "ping accepted, pong sent",
+    "idle_timeout_tracks": "client_activity",
+    "max_lifetime_independent": true,
+    "receiver_exclusive_receive": true,
+    "sender_exclusive_send_text": true,
+    "closer_exclusive_close": true
+  }
+}

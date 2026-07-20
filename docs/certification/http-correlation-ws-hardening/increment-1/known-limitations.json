@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "ee240ddcac201ab8d1a1613311008c49b4448fb6",
+  "generated_from_commit": "9bc2e0c04f77d7a961e3e4b7b68a5e28a36339aa",
+  "source_tests": [
+    "portal/tests/test_http_correlation_ws_hardening_certification.py"
+  ],
+  "generation_method": "Compiled from accepted limitations recorded during the certification increment.",
+  "source_files": [
+    "docs/certification/http-correlation-ws-hardening/increment-1/"
+  ],
+  "result": "PASS",
+  "limitations": [
+    {
+      "item": "All WebSocket capacity, rate, timeout controls are process-local, not cluster-wide",
+      "status": "accepted"
+    },
+    {
+      "item": "Query-parameter token transport remains for browser compatibility, marked deprecated",
+      "status": "accepted"
+    },
+    {
+      "item": "TLS does not prevent server-side URL logging for query-parameter tokens",
+      "status": "accepted"
+    },
+    {
+      "item": "Unhandled server-level exceptions that bypass the middleware are not covered for X-Request-ID",
+      "status": "accepted"
+    },
+    {
+      "item": "CORS expose_headers does not currently include X-Request-ID",
+      "status": "deferred"
+    }
+  ]
+}

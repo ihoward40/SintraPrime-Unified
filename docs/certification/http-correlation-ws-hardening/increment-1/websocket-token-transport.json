@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "ee240ddcac201ab8d1a1613311008c49b4448fb6",
+  "generated_from_commit": "9bc2e0c04f77d7a961e3e4b7b68a5e28a36339aa",
+  "source_tests": [
+    "portal/tests/test_http_correlation_ws_hardening_certification.py"
+  ],
+  "generation_method": "Executed pytest WebSocket token transport tests for valid, missing, invalid, expired, refresh token, and insufficient permission cases.",
+  "source_files": [
+    "portal/auth/websocket_auth.py",
+    "portal/admin/dashboard.py"
+  ],
+  "result": "PASS",
+  "limitations": [
+    "Query-parameter token transport remains for browser compatibility (browsers cannot set Authorization headers on WS connections). Marked as deprecated/secondary. TLS does not prevent server-side URL logging."
+  ],
+  "transport_methods": [
+    "query parameter (deprecated, secondary)",
+    "Sec-WebSocket-Protocol bearer (preferred)"
+  ],
+  "rejected": [
+    "missing token",
+    "invalid token",
+    "expired token",
+    "refresh token",
+    "insufficient permission"
+  ]
+}

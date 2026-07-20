@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "ee240ddcac201ab8d1a1613311008c49b4448fb6",
+  "generated_from_commit": "9bc2e0c04f77d7a961e3e4b7b68a5e28a36339aa",
+  "source_tests": [
+    "portal/tests/test_http_correlation_ws_hardening_certification.py"
+  ],
+  "generation_method": "Executed pytest WebSocket capacity control tests for global, per-actor, per-tenant, per-address limits, cleanup, and idempotency. Capacity cleanup verified on accept-failure, send-failure, cancellation, timeout, and disconnect paths.",
+  "source_files": [
+    "portal/auth/ws_hardening.py",
+    "portal/admin/dashboard.py"
+  ],
+  "result": "PASS",
+  "limitations": [
+    "All limits are process-local (single-process architecture). Not cluster-wide. Multi-process deployments require a shared backend."
+  ],
+  "controls": {
+    "global_limit": 100,
+    "per_actor_limit": 10,
+    "per_tenant_limit": 50,
+    "per_address_limit": 20,
+    "process_local": true,
+    "cluster_wide": false
+  },
+  "cleanup_paths": [
+    "accept_failure",
+    "send_failure",
+    "cancellation",
+    "idle_timeout",
+    "max_lifetime",
+    "normal_disconnect"
+  ],
+  "outcome_enum_exercised": true,
+  "disconnect_only_after_connect": true
+}

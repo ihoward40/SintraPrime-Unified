@@ -26,6 +26,8 @@ WS_CLOSE_CODES: dict[int, str] = {
     4401: "authentication required",
     4403: "forbidden",
     4404: "not found",
+    4408: "connection lifetime exceeded",
+    4413: "payload too large",
     4429: "too many connections",
     4400: "bad request",
 }

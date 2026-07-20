@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "ee240ddcac201ab8d1a1613311008c49b4448fb6",
+  "generated_from_commit": "9bc2e0c04f77d7a961e3e4b7b68a5e28a36339aa",
+  "source_tests": [
+    "portal/tests/test_http_correlation_ws_hardening_certification.py"
+  ],
+  "generation_method": "Inspected portal/main.py create_app() and verified middleware registration order via pytest.",
+  "source_files": [
+    "portal/main.py"
+  ],
+  "result": "PASS",
+  "limitations": [],
+  "order": [
+    "CorrelationMiddleware (outermost, first to execute)",
+    "TimestampMiddleware",
+    "RateLimiterMiddleware",
+    "SessionMiddleware",
+    "CORSMiddleware (innermost)"
+  ],
+  "registered_once": true
+}

@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "ee240ddcac201ab8d1a1613311008c49b4448fb6",
+  "generated_from_commit": "9bc2e0c04f77d7a961e3e4b7b68a5e28a36339aa",
+  "source_tests": [
+    "portal/tests/test_http_correlation_ws_hardening_certification.py"
+  ],
+  "generation_method": "Executed pytest response header tests for 2xx, 401, 403, 404, 422 paths.",
+  "source_files": [
+    "portal/middleware/correlation_middleware.py",
+    "portal/main.py"
+  ],
+  "result": "PASS",
+  "limitations": [
+    "Unhandled 500 responses where the server retains control are covered; server-level crashes that bypass the middleware are not covered."
+  ],
+  "header_name": "X-Request-ID",
+  "coverage": [
+    {
+      "status": "2xx",
+      "covered": true
+    },
+    {
+      "status": "401",
+      "covered": true
+    },
+    {
+      "status": "403",
+      "covered": true
+    },
+    {
+      "status": "404",
+      "covered": true
+    },
+    {
+      "status": "422",
+      "covered": true
+    },
+    {
+      "status": "handled 500",
+      "covered": true
+    }
+  ]
+}

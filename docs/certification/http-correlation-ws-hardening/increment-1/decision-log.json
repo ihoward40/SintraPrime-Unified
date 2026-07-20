@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0",
+  "repository": "ihoward40/SintraPrime-Unified",
+  "baseline_commit": "ee240ddcac201ab8d1a1613311008c49b4448fb6",
+  "generated_from_commit": "9bc2e0c04f77d7a961e3e4b7b68a5e28a36339aa",
+  "source_tests": [
+    "portal/tests/test_http_correlation_ws_hardening_certification.py"
+  ],
+  "generation_method": "Mapped each implemented control to its affected path, risk, correction, and regression test. Includes remediation decisions for review-defect corrections.",
+  "source_files": [
+    "portal/middleware/correlation_middleware.py",
+    "portal/auth/ws_hardening.py",
+    "portal/admin/dashboard.py",
+    "portal/main.py",
+    "portal/auth/correlation.py",
+    "portal/auth/rbac.py",
+    "portal/auth/websocket_auth.py"
+  ],
+  "result": "PASS",
+  "limitations": [],
+  "decisions": [
+    {
+      "affected_path": "portal/middleware/correlation_middleware.py",
+      "defect": "No HTTP correlation middleware existed; request IDs were not propagated.",
+      "risk": "No request traceability across HTTP boundary.",
+      "correction": "Created CorrelationMiddleware with X-Request-ID validation, generation, context binding, response header propagation, and LIFO ContextVar token reset.",
+      "regression_test": "TestRequestIDValidation, TestResponseHeaderCoverage, TestMiddlewareRegistration, TestRealMiddlewareTokenOrder",
+      "result": "passed"
+    },
+    {
+      "affected_path": "portal/auth/ws_hardening.py",
+      "defect": "No WebSocket capacity, rate, timeout, or abuse controls existed.",
+      "risk": "WebSocket endpoint vulnerable to resource exhaustion and authentication abuse.",
+      "correction": "Created WSCapacityController, AuthFailureThrottle, WSHardeningSettings, and get_effective_client_address.",
+      "regression_test": "TestWSCapacityControls, TestAuthFailureThrottle, TestTrustedProxyBoundary",
+      "result": "passed"
+    },
+    {
+      "affected_path": "portal/admin/dashboard.py",
+      "defect": "WebSocket endpoint lacked capacity registration, rate limiting, payload checks, and timeout controls.",
+      "risk": "Unbounded connections, memory leaks, abuse.",
+      "correction": "Integrated ws_capacity.try_register/unregister, fixed-interval rate control (burst_limit removed), payload-size checks, idle/max-lifetime timeouts, auth-failure throttling, receiver/sender/closer exclusive ownership, typed InboundEvent queue, ContextVar LIFO token reset, Outcome enums on all audit paths.",
+      "regression_test": "TestRealEndpointTimeoutPaths, TestRealEndpointOversizedOutbound, TestRealEndpointConnectFailure, TestRealEndpointSendFailure, TestTrueConcurrentRequestIsolation, TestRealEndpointAuditPaths, TestRealEndpointCleanupPaths",
+      "result": "passed"
+    },
+    {
+      "affected_path": "portal/main.py",
+      "defect": "No correlation middleware was registered.",
+      "risk": "No request-ID propagation.",
+      "correction": "Added CorrelationMiddleware as outermost middleware.",
+      "regression_test": "TestMiddlewareRegistration",
+      "result": "passed"
+    },
+    {
+      "affected_path": "portal/auth/correlation.py",
+      "defect": "Public context API was incomplete; request-state token management was not exposed for middleware reset.",
+      "risk": "ContextVar tokens could leak across requests if not reset in LIFO order.",
+      "correction": "Added public context API: set/reset/register/reset_request_context tokens. LIFO token reset enforced.",
+      "regression_test": "TestTrueConcurrentRequestIsolation::test_concurrent_request_state_token_stacks_independent, TestRealMiddlewareTokenOrder",
+      "result": "passed"
+    },
+    {
+      "affected_path": "portal/auth/rbac.py",
+      "defect": "get_current_user dependency did not receive Request for trusted-claim enrichment.",
+      "risk": "Authenticated actor/tenant claims could not be reliably bound through the real HTTP dependency.",
+      "correction": "Updated get_current_user to accept Request injection, enabling trusted actor/tenant binding through the real dependency chain.",
+      "regression_test": "TestRequestDependencyUnderFastAPI139::test_dependency_injection_supplies_request, TestRequestDependencyUnderFastAPI139::test_valid_jwt_binds_trusted_actor_and_tenant",
+      "result": "passed"
+    },
+    {
+      "affected_path": "portal/auth/websocket_auth.py",
+      "defect": "WebSocket auth helper needed alignment with the real endpoint authentication flow.",
+      "risk": "Misalignment between authenticate_websocket and the endpoint's auth expectations.",
+      "correction": "Aligned authenticate_websocket with the real endpoint's authentication boundary.",
+      "regression_test": "TestRealEndpointAuditPaths, TestRealEndpointTimeoutPaths",
+      "result": "passed"
+    }
+  ]
+}

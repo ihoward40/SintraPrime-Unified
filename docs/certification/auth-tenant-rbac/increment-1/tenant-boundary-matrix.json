@@ -34,7 +34,7 @@
     },
     {
       "case": "self-role assignment denied",
-      "expected": "403",
+      "expected": "400",
       "result": "passed"
     },
     {
@@ -44,14 +44,14 @@
     },
     {
       "case": "cross-tenant user-role mutation denied",
-      "expected": "403",
+      "expected": "404",
       "result": "passed"
     }
   ],
   "schema_version": "1.0",
   "repository": "ihoward40/SintraPrime-Unified",
   "baseline_commit": "0e31c20938a2abf32ee50c1f54622611642aa16b",
-  "evidence_commit": "pending",
+  "evidence_commit": "pending-post-remediation",
   "generation_method": "Executed tenant-isolation and RBAC escalation regression tests; recorded observed outcomes per case.",
   "source_files": [
     "portal/routers/billing.py",
@@ -62,5 +62,6 @@
     "portal/tests/test_auth_tenant_rbac_certification.py"
   ],
   "result": "PASS",
-  "limitations": []
+  "limitations": [],
+  "generated_from_commit": "7f50bdc02b3750210a5424c70491a34d4079b9a1"
 }

@@ -23,12 +23,20 @@
       "regression_test": "portal/tests/test_auth_tenant_rbac_certification.py::test_rbac_escalation_controls",
       "result": "passed",
       "risk": "Privilege escalation by granting a higher role to the actor’s own account."
+    },
+    {
+      "affected_path": "portal/routers/blackstone.py",
+      "defect": "Protected Blackstone routes (/cases POST, /cases/{case_id} GET, /evaluate POST) lacked an explicit authentication guard.",
+      "risk": "Unauthenticated access to case intake, case status, and claim evaluation endpoints.",
+      "correction": "Added CurrentUser Depends(get_current_user) to each protected Blackstone route.",
+      "regression_test": "portal/tests/test_auth_tenant_rbac_certification.py::test_dynamic_live_app_route_discovery (route-guard assertions cover Blackstone protected routes)",
+      "result": "passed"
     }
   ],
   "schema_version": "1.0",
   "repository": "ihoward40/SintraPrime-Unified",
   "baseline_commit": "0e31c20938a2abf32ee50c1f54622611642aa16b",
-  "evidence_commit": "pending",
+  "evidence_commit": "pending-post-remediation",
   "generation_method": "Mapped each corrected defect to its affected path, security risk, exact correction, regression test, and validation result.",
   "source_files": [
     "portal/auth/rbac.py",
@@ -40,5 +48,6 @@
     "portal/tests/test_auth_tenant_rbac_certification.py"
   ],
   "result": "PASS",
-  "limitations": []
+  "limitations": [],
+  "generated_from_commit": "7f50bdc02b3750210a5424c70491a34d4079b9a1"
 }

@@ -12,7 +12,7 @@
   "schema_version": "1.0",
   "repository": "ihoward40/SintraPrime-Unified",
   "baseline_commit": "0e31c20938a2abf32ee50c1f54622611642aa16b",
-  "evidence_commit": "pending",
+  "evidence_commit": "pending-post-remediation",
   "generation_method": "Compiled from accepted limitations recorded during the certification increment.",
   "source_files": [
     "docs/certification/auth-tenant-rbac/increment-1/"
@@ -20,5 +20,6 @@
   "source_tests": [
     "portal/tests/test_auth_tenant_rbac_certification.py"
   ],
-  "result": "PASS"
+  "result": "PASS",
+  "generated_from_commit": "7f50bdc02b3750210a5424c70491a34d4079b9a1"
 }

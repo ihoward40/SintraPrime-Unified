@@ -323,7 +323,11 @@ def route_dependency_names(route: APIRoute) -> list[str]:
         dependant = stack.pop()
         call = getattr(dependant, "call", None)
         if call is not None:
-            names.append(f"{getattr(call, '__module__', '')}:{getattr(call, '__name__', repr(call))}")
+            name = getattr(call, "__name__", None)
+            if not name:
+                cls = type(call)
+                name = f"{cls.__module__}.{cls.__qualname__}"
+            names.append(f"{getattr(call, '__module__', '')}:{name}")
         stack.extend(getattr(dependant, "dependencies", []))
     return names
 
@@ -424,7 +428,7 @@ def collect_websocket_routes(app: FastAPI | None = None) -> list[dict[str, str]]
 
 
 def collect_non_http_entrypoints(app: FastAPI | None = None, root: Path | None = None) -> dict[str, list[dict[str, str]]]:
-    root = root or Path.cwd()
+    root = root or Path(__file__).resolve().parents[2]
     results = {
         "websocket_routes": collect_websocket_routes(app),
         "background_tasks": [],
@@ -778,3 +782,42 @@ def test_live_route_inventory_helper_outputs_json_serializable(app_graph):
     }
     json.dumps(payload)
     assert payload["route_count"] >= len(APPROVED_PUBLIC_V1_ROUTES)
+
+
+def test_route_dependency_names_are_stable_across_runs(app_graph):
+    """Dependency names must not include memory addresses and must be identical across repeated enumerations."""
+    routes = [r for r in app_graph.routes if isinstance(r, APIRoute)]
+    assert routes, "expected at least one APIRoute in the live app graph"
+
+    snapshots = [route_dependency_names(r) for r in routes]
+    # Re-enumerate and assert byte-identical output (no memory-address drift).
+    snapshots_again = [route_dependency_names(r) for r in routes]
+    assert snapshots == snapshots_again
+
+    for names in snapshots:
+        for name in names:
+            # Memory addresses present in repr() appear as hex runs like 0x0000021D...
+            assert "0x" not in name, f"dependency name contains a memory address: {name!r}"
+            assert "<" not in name, f"dependency name contains repr() angle brackets: {name!r}"
+
+
+def test_non_http_entrypoint_inventory_works_outside_repo_root(app_graph, monkeypatch, tmp_path):
+    """collect_non_http_entrypoints must return the same inventory regardless of the process cwd."""
+    import tempfile
+
+    repo_root = Path(__file__).resolve().parents[2]
+    # Use a portable directory guaranteed to exist outside the repo root on both Windows and Linux.
+    outside_dir = Path(tempfile.gettempdir())
+    if outside_dir.resolve() == repo_root.resolve():
+        outside_dir = tmp_path
+    monkeypatch.chdir(outside_dir)
+
+    assert Path.cwd() != repo_root, "test precondition: cwd must be outside the repo root"
+
+    default_inventory = collect_non_http_entrypoints(app_graph)
+    explicit_inventory = collect_non_http_entrypoints(app_graph, root=repo_root)
+
+    assert default_inventory == explicit_inventory, (
+        "collect_non_http_entrypoints default root must be derived from the test file location, not Path.cwd()"
+    )
+    assert default_inventory["websocket_routes"], "expected at least one websocket route discovered"

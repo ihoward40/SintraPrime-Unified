@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "repository": "ihoward40/SintraPrime-Unified",
   "baseline_commit": "0e31c20938a2abf32ee50c1f54622611642aa16b",
-  "evidence_commit": "pending",
+  "evidence_commit": "pending-post-remediation",
   "generation_method": "Dynamic enumeration of /api/v1 routes from the mounted FastAPI application and source-module discovery; each route classified by auth_dependency, authorization_dependency, tenant_control_mechanism.",
   "source_files": [
     "portal/routers/",
@@ -1819,5 +1819,6 @@
       "tenant_control_mechanism": "role-bound",
       "test_reference": "portal/tests/test_auth_tenant_rbac_certification.py"
     }
-  ]
+  ],
+  "generated_from_commit": "7f50bdc02b3750210a5424c70491a34d4079b9a1"
 }

@@ -20,6 +20,8 @@ from .mission_control_run_control import (
 from .user import Permission as UserPermission
 from .user import Role as UserRole
 from .user import User, UserPermissionAssoc
+from .payment_event import PaymentEvent
+from .provider_tenant_mapping import ProviderTenantMapping
 
 __all__ = [
     "AuditLog",
@@ -48,6 +50,8 @@ __all__ = [
     "MissionControlRunControl",
     "MissionControlRunControlEvent",
     "Payment",
+    "PaymentEvent",
+    "ProviderTenantMapping",
     "RunControlState",
     "TimeEntry",
     "TrustAccount",

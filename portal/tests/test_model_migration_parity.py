@@ -11,7 +11,6 @@ import pytest
 from ..models.payment_event import PaymentEvent
 from ..models.provider_tenant_mapping import ProviderTenantMapping
 
-
 EXPECTED_PAYMENT_EVENT_COLUMNS = {
     "id",
     "tenant_id",

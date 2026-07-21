@@ -197,6 +197,60 @@ jobs:
           name: http-correlation-ws-hardening-certification-log
           path: /tmp/http-correlation-ws-hardening-certification.log
           if-no-files-found: ignore
+  payment-webhook-certification:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:test@localhost:5432/test
+      STRIPE_WEBHOOK_SECRET: whsec_test_dummy_for_ci_only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Apply base schema
+        run: PGPASSWORD=test psql -h localhost -U postgres -d test -f portal/migrations/portal_schema.sql
+      - name: Apply additive migrations
+        run: |
+          PGPASSWORD=test psql -h localhost -U postgres -d test -f portal/migrations/add_audit_records.sql
+          PGPASSWORD=test psql -h localhost -U postgres -d test -f portal/migrations/add_evidence_snapshots.sql
+          PGPASSWORD=test psql -h localhost -U postgres -d test -f portal/migrations/add_mission_control_command_ledger.sql
+          PGPASSWORD=test psql -h localhost -U postgres -d test -f portal/migrations/add_mission_control_run_control_projection.sql
+          PGPASSWORD=test psql -h localhost -U postgres -d test -f portal/migrations/add_provider_tenant_mappings.sql
+          PGPASSWORD=test psql -h localhost -U postgres -d test -f portal/migrations/add_payment_events.sql
+      - name: Run payment webhook certification suite
+        run: |
+          set -o pipefail && \
+          python -m pytest \
+            portal/tests/test_payment_webhook_validation.py \
+            portal/tests/test_payment_event_idempotency.py \
+            portal/tests/test_provider_tenant_mapping.py \
+            portal/tests/test_payment_event_concurrency.py \
+            portal/tests/test_model_migration_parity.py \
+            -q | tee /tmp/payment-webhook-certification.log
+      - name: Upload certification log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: payment-webhook-certification-log
+          path: /tmp/payment-webhook-certification.log
+          if-no-files-found: ignore
   security:
     runs-on: ubuntu-latest
     steps:

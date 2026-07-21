@@ -36,6 +36,7 @@ from portal.routers import (
     trust_compliance,
     users,
 )
+from portal.routers.webhooks import stripe as stripe_webhook
 from portal.security.security_layer import SecurityLayer
 from portal.sso.jwt_service import JWTTokenService
 from portal.sso.session_manager import SessionConfig, SessionManager
@@ -139,6 +140,7 @@ def create_app() -> FastAPI:
     app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["notifications"])
     app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
     app.include_router(admin_dashboard_router, prefix="/api/v1", tags=["admin-dashboard"])
+    app.include_router(stripe_webhook.router, prefix="/api/v1", tags=["webhooks"])
 
     # Health check
     @app.get("/health")

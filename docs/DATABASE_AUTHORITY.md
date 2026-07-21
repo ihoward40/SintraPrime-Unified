@@ -19,16 +19,20 @@ Authoritative as of commit `48e2caa759661cc75617cc752bcc26eaad666647` (tree `9ee
    builds from models via the lifecycle API; does not apply `portal/migrations/*.sql`.
 5. **SQLite test path** — model `create_all` against in-memory SQLite.
 
-## PostgreSQL-backed certification lanes
+## Certification lanes and database coverage boundary
 
-PRs #214–#217 introduced three certification-specific CI lanes that exercise
-authentication, audit correlation, and WebSocket hardening against the portal
-database models. These lanes use the test `create_all` path (models, not raw SQL
-migrations) and do NOT apply `portal/migrations/*.sql`. Certification lane evidence
-is recorded under `docs/certification/`.
+PRs #214–#217 introduced three certification-specific CI lanes:
+`auth-tenant-rbac-certification`, `audit-correlation-non-http-certification`,
+and `http-correlation-ws-hardening-certification`. These lanes install
+dependencies and run focused pytest suites. They do NOT provision a
+PostgreSQL service, do NOT apply `portal/migrations/*.sql`, and do NOT
+establish PostgreSQL schema or migration compatibility. Certification lane
+evidence is recorded under `docs/certification/`.
 
-The PostgreSQL race lane (`postgresql-race` in `ci.yml`) proves Mission Control
-immutability and hash-chain integrity using the lifecycle API.
+PostgreSQL-specific evidence comes from the separate `postgresql-race` lane,
+which proves Mission Control immutability and hash-chain integrity using the
+lifecycle API. Database compatibility remains a separate certification
+requirement.
 
 ## Schema on `main` vs open-PR proposals
 

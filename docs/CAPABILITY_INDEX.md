@@ -26,6 +26,6 @@
 | Operations Floor | Ops view | `web/src/pages/OperationsFloor.tsx` | browser | web build/lint (restored via PR #208, commit `aa0c9a74`) | SUPPORTED | No behavior tests; visual checkpoint `0aaffdc` not resolvable in current repository object database or authoritative refs | Add e2e |
 | Deployment | Hosting | `deployment/`, `infrastructure/`, `docker-compose.yml` | ops | none in CI | DOCUMENTED ONLY | Not CI-verified; secrets missing (issue #186) | Deploy CI |
 
-> "Next cert req" = the next evidence step before a subsystem may be called CERTIFIED.
+> "Next cert req" = the next evidence step before a subsystem may be called CERTIFIED FOR RECORDED SCOPE.
 > CERTIFIED FOR RECORDED SCOPE means the specific increment's test suite passes in CI.
 > It does NOT mean production-certified, compliance-certified, or distributed enforcement.

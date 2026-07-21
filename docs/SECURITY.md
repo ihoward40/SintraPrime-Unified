@@ -28,10 +28,15 @@
 ## Correlation and audit
 - Immutable correlation context: `portal/auth/correlation.py` (PR #215). Provides
   request-scoped correlation IDs propagated through the service boundary.
-- Audit-event envelopes: `portal/auth/audit_envelope.py` (PR #215). Immutable audit
-  envelopes with actor, tenant, correlation, and action binding.
+- Audit-event envelopes: `portal/auth/audit_envelope.py` (PR #215). The `AuditEvent`
+  dataclass is frozen at the top level. The `metadata` field remains a mutable
+  dictionary unless defensively copied or deeply frozen; `integrity_hash` can
+  become stale if `metadata` is mutated after construction. The recorded
+  certification proves deterministic construction, required fields, redaction,
+  and integrity-hash generation; it does NOT prove deep immutability.
 - HTTP request-ID middleware: `portal/middleware/correlation_middleware.py` (PR #217).
-  Assigns and propagates `X-Request-ID` for every HTTP request.
+  Assigns and propagates `X-Request-ID` for supported response paths. Unhandled
+  exceptions escaping application control may not receive the response header.
 
 ## WebSocket security
 - WebSocket authentication and authorization: `portal/auth/websocket_auth.py`
@@ -100,6 +105,7 @@ complete server-level exception correlation
 - No session revocation, token rotation, or logout invalidation.
 - No key rotation lifecycle.
 - No concurrent session policy.
+- Audit envelope metadata is not deeply immutable; `integrity_hash` can become stale if `metadata` is mutated after construction.
 - Deployment stack not verified by CI.
 - Multiple feature packages declare their own models; unified schema authority pending.
 

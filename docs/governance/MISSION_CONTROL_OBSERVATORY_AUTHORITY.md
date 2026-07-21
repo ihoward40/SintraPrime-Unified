@@ -1,6 +1,6 @@
 # Mission Control / Observatory Authority Boundary
 
-Authoritative as of commit 10cad07f046b5675ed10a1fba1aa4a955636f739.
+Authoritative as of commit `48e2caa759661cc75617cc752bcc26eaad666647` (tree `9ee6d193dd7f607cd59487df9ef26d46b9593803`).
 
 ## Mission Control
 Owns:
@@ -33,6 +33,23 @@ Does NOT currently own:
 `workflow_builder/` + `scheduler/` own **actual workflow execution truth**. Mission
 Control records intent and projection; it does not drive the runner.
 
+## Security certification boundary (PRs #214–#217)
+
+Security certifications from PRs #214–#217 enforce identity claims, tenant scoping,
+audit correlation, and transport hardening at the code level. These certifications
+do NOT alter the Mission Control boundary. Mission Control remains refusal-only with
+no live execution authority. The certifications ensure that when the shared execution
+protocol is eventually introduced, the identity, tenant, audit, and transport
+controls are already in place.
+
+Specifically certified:
+- Identity-claim validation and tenant-scoped authorization (PR #214);
+- Audit envelope correlation and non-HTTP authorization (PR #215);
+- HTTP request-ID correlation and WebSocket transport hardening (PR #217).
+
+These are CERTIFIED FOR THE RECORDED SCOPE. They do NOT constitute production
+certification, compliance certification, or distributed enforcement.
+
 ## Future convergence rule
 No G4.8 (Observatory) or Increment Two B (Mission Control live pause) work may add
 execution authority until ONE shared protocol defines:
@@ -47,11 +64,12 @@ execution authority until ONE shared protocol defines:
 - operator projection.
 
 ## PR #206 classification
-`HOLD — architectural reconciliation required`
+`CLOSE AS SUPERSEDED`
 
 PR #206 (Observatory G4.7 centralized execution guard) is CONFLICTING against current
 `main`, carries +46,704 lines and temporary authorization placeholders, and would
 introduce a third execution-control surface alongside Mission Control and
-`secure_execution/`. It must be rebased and reconciled into the single shared
-protocol above before merge. This document does NOT modify PR #206.
-
+`secure_execution/`. It is 39 commits behind current main and predates the security
+certifications from PRs #214–#217. It should be closed as superseded; useful concepts
+should be extracted into the shared execution protocol described above. This
+document does NOT modify PR #206.

@@ -1,0 +1,227 @@
+{
+  "increment": "repository-convergence-increment-2",
+  "baseline_commit": "48e2caa759661cc75617cc752bcc26eaad666647",
+  "baseline_tree": "9ee6d193dd7f607cd59487df9ef26d46b9593803",
+  "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+  "former_anchor_tree": "66f59a5bf832e9f3ce3c484c64891fd543359abf",
+  "former_anchor_pr": 212,
+  "generated": "2026-07-20T22:00:00Z",
+  "records": [
+    {
+      "document": "docs/ARCHITECTURE.md",
+      "former_claim": "Authoritative as of commit 10cad07f (tree 66f59a5b)",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "Current main is 48e2caa7 (tree 9ee6d193); 15 commits and 5 merged PRs (#213-217) ahead of former anchor",
+      "correction": "Updated baseline to 48e2caa7 / 9ee6d193; added 4 new auth/middleware files to authority matrix; added correlation to runtime flow; added certification CI lanes section",
+      "evidence_type": "git-log",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/ARCHITECTURE.md",
+      "former_claim": "Authority matrix has no row for portal/auth/audit_envelope.py",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "portal/auth/audit_envelope.py exists on main, created in PR #215 commit f4613e9e",
+      "correction": "Added Audit envelopes row to authority matrix",
+      "evidence_type": "merged-pr",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/ARCHITECTURE.md",
+      "former_claim": "Authority matrix has no row for portal/auth/correlation.py or portal/middleware/correlation_middleware.py",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "portal/auth/correlation.py created in PR #215 commit f4613e9e, enhanced in PR #217 commit 9bc2e0c0; portal/middleware/correlation_middleware.py created in PR #217 commit 9bc2e0c0",
+      "correction": "Added Correlation context row and WebSocket hardening row to authority matrix",
+      "evidence_type": "merged-pr",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/ARCHITECTURE.md",
+      "former_claim": "Runtime flow diagram has no correlation step",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "portal/middleware/correlation_middleware.py registered in portal/main.py per PR #217",
+      "correction": "Added correlation middleware and audit envelope steps to runtime flow diagram",
+      "evidence_type": "source-file",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/CAPABILITY_INDEX.md",
+      "former_claim": "Authoritative as of commit 10cad07f",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "Current main is 48e2caa7",
+      "correction": "Updated baseline to 48e2caa7",
+      "evidence_type": "git-log",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/CAPABILITY_INDEX.md",
+      "former_claim": "Authentication: SUPPORTED, Refresh edge cases untested, next cert = Session revocation test",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "PR #214 certified identity claims and tenant-scoped authorization; CI lane auth-tenant-rbac-certification exists and passes; test file portal/tests/test_auth_tenant_rbac_certification.py exists",
+      "correction": "Elevated to CERTIFIED FOR RECORDED SCOPE; updated next cert req to session/token lifecycle",
+      "evidence_type": "merged-pr",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/CAPABILITY_INDEX.md",
+      "former_claim": "Operations Floor: FROZEN LOCALLY, Commit 0aaffdc not on main",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "web/src/pages/OperationsFloor.tsx exists on origin/main, restored through PR #208 commit aa0c9a74; commit 0aaffdc is not resolvable in the current repository object database or authoritative refs",
+      "correction": "Changed to SUPPORTED; removed FROZEN LOCALLY and 0aaffdc reference; noted restoration via PR #208",
+      "evidence_type": "git-log",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/CAPABILITY_INDEX.md",
+      "former_claim": "No row for HTTP correlation or WebSocket hardening",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "PR #217 added portal/middleware/correlation_middleware.py and portal/auth/ws_hardening.py; certification test portal/tests/test_http_correlation_ws_hardening_certification.py exists",
+      "correction": "Added new rows: Correlation (CERTIFIED FOR RECORDED SCOPE) and WebSocket transport (CERTIFIED FOR RECORDED SCOPE)",
+      "evidence_type": "merged-pr",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/CLAIMS.md",
+      "former_claim": "Authoritative as of commit 10cad07f, Tree 66f59a5b",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "Current main is 48e2caa7 / tree 9ee6d193",
+      "correction": "Updated baseline SHA and tree",
+      "evidence_type": "git-log",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/CLAIMS.md",
+      "former_claim": "No certification claim for authentication + RBAC",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "PR #214 merged; certification test exists; CI lane auth-tenant-rbac-certification passes",
+      "correction": "Added certification claim: Authenticated actor and tenant binding with RBAC - CERTIFIED FOR RECORDED SCOPE",
+      "evidence_type": "merged-pr",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/CLAIMS.md",
+      "former_claim": "No certification claim for audit correlation + non-HTTP auth",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "PR #215 merged; certification test exists; CI lane audit-correlation-non-http-certification passes",
+      "correction": "Added certification claim: Audit correlation and non-HTTP authorization - CERTIFIED FOR RECORDED SCOPE",
+      "evidence_type": "merged-pr",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/CLAIMS.md",
+      "former_claim": "No certification claim for HTTP correlation + WS hardening",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "PR #217 merged; certification test exists; CI lane http-correlation-ws-hardening-certification passes",
+      "correction": "Added certification claim: HTTP request correlation and WebSocket transport hardening - CERTIFIED FOR RECORDED SCOPE",
+      "evidence_type": "merged-pr",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/CLAIMS.md",
+      "former_claim": "Audit logs claim: SUPPORTED, legacy audit module path unverified",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "PR #215 added portal/auth/audit_envelope.py with immutable correlation; certification test passes",
+      "correction": "Elevated to CERTIFIED FOR RECORDED SCOPE; updated implementation authority to include audit_envelope.py",
+      "evidence_type": "merged-pr",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/DATABASE_AUTHORITY.md",
+      "former_claim": "Authoritative as of commit 10cad07f",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "Current main is 48e2caa7; no new migrations added in PR #214-217",
+      "correction": "Updated baseline commit; added PostgreSQL-backed certification lanes section; added main vs open-PR schema distinction",
+      "evidence_type": "git-log",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/SECURITY.md",
+      "former_claim": "Authoritative as of commit 10cad07f",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "Current main is 48e2caa7",
+      "correction": "Updated baseline",
+      "evidence_type": "git-log",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/SECURITY.md",
+      "former_claim": "No mention of identity claims enforcement",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "PR #214 enforced identity claims in portal/auth/rbac.py",
+      "correction": "Added Identity-claim validation control",
+      "evidence_type": "merged-pr",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/SECURITY.md",
+      "former_claim": "No mention of tenant-scoped route authorization",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "PR #214 enforced tenant-scoped auth on billing.py, blackstone.py, users.py",
+      "correction": "Added Tenant-scoped route authorization control",
+      "evidence_type": "merged-pr",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/SECURITY.md",
+      "former_claim": "No mention of audit envelopes or correlation context",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "PR #215 added portal/auth/audit_envelope.py and portal/auth/correlation.py",
+      "correction": "Added Immutable correlation context, Audit-event envelopes, and HTTP request-ID middleware controls",
+      "evidence_type": "merged-pr",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/SECURITY.md",
+      "former_claim": "No mention of WebSocket hardening",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "PR #217 added portal/auth/ws_hardening.py with capacity, rate, timeout, payload controls",
+      "correction": "Added WebSocket authentication/authorization and WebSocket hardening controls",
+      "evidence_type": "merged-pr",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/SECURITY.md",
+      "former_claim": "No mention of certification CI lanes",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "ci.yml defines 3 certification lanes",
+      "correction": "Added Certification CI lanes table and CERTIFIED FOR THE RECORDED SCOPE boundary statement",
+      "evidence_type": "ci-workflow",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/QUICK_START.md",
+      "former_claim": "Authoritative as of commit 10cad07f",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "Current main is 48e2caa7",
+      "correction": "Updated baseline; added 3 certification test commands to supported verification lane",
+      "evidence_type": "git-log",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/REPOSITORY_STATUS.md",
+      "former_claim": "No mention of portal/auth/audit_envelope.py, correlation.py, ws_hardening.py, or certification CI lanes",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "All files exist on main; 3 certification CI lanes defined in ci.yml",
+      "correction": "Added rows for each new subsystem and certification CI lanes table",
+      "evidence_type": "source-file",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/governance/OPEN_PR_DISPOSITION.md",
+      "former_claim": "Authoritative as of commit 10cad07f; all 10 PR dispositions based on old main",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "All PRs now 39-132 commits behind current main 48e2caa7",
+      "correction": "Updated baseline; refreshed all 10 PR dispositions with current behind/ahead counts, mergeability, overlap, and governed recommendations",
+      "evidence_type": "git-log",
+      "status": "corrected"
+    },
+    {
+      "document": "docs/governance/MISSION_CONTROL_OBSERVATORY_AUTHORITY.md",
+      "former_claim": "Authoritative as of commit 10cad07f",
+      "former_anchor": "10cad07f046b5675ed10a1fba1aa4a955636f739",
+      "current_evidence": "Current main is 48e2caa7; boundary description still accurate; security certifications enforce boundary at code level",
+      "correction": "Updated baseline; added security certification boundary section; updated PR #206 classification to CLOSE AS SUPERSEDED; preserved all boundary constraints",
+      "evidence_type": "git-log",
+      "status": "corrected"
+    }
+  ]
+}

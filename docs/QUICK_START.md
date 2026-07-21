@@ -1,6 +1,6 @@
 # Quick Start
 
-> Companion to [ARCHITECTURE.md](ARCHITECTURE.md). Authoritative as of commit `10cad07f046b5675ed10a1fba1aa4a955636f739`.
+> Companion to [ARCHITECTURE.md](ARCHITECTURE.md). Authoritative as of commit `48e2caa759661cc75617cc752bcc26eaad666647` (tree `9ee6d193dd7f607cd59487df9ef26d46b9593803`).
 
 ## 1. Prerequisites
 - Python 3.11+
@@ -21,6 +21,11 @@ pip install -r requirements.txt
 ```bash
 # Python (default CI-equivalent)
 python -m pytest --tb=short -q
+
+# Security certification suites (PRs #214–#217)
+python -m pytest portal/tests/test_auth_tenant_rbac_certification.py -q
+python -m pytest portal/tests/test_audit_correlation_non_http_certification.py -q
+python -m pytest portal/tests/test_http_correlation_ws_hardening_certification.py -q
 
 # Web frontend
 cd web && npm install
@@ -55,4 +60,3 @@ verified by CI.
 - Capability index: [CAPABILITY_INDEX.md](CAPABILITY_INDEX.md)
 - Claims/evidence: [CLAIMS.md](CLAIMS.md)
 - Execution authority boundary: [docs/governance/MISSION_CONTROL_OBSERVATORY_AUTHORITY.md](docs/governance/MISSION_CONTROL_OBSERVATORY_AUTHORITY.md)
-

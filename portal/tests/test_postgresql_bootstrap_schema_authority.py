@@ -1,14 +1,19 @@
 """PostgreSQL raw-SQL bootstrap and affected ORM authority certification."""
 from __future__ import annotations
 
+import asyncio
 import os
 import uuid
 
 import psycopg2
 import pytest
 from sqlalchemy import create_engine, select, text
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import Session
 
+from portal import models as _models
+from portal.database import Base
 from portal.models.audit_record import AuditRecord
 from portal.models.evidence_snapshot import EvidenceSnapshot
 from portal.scripts.postgresql_bootstrap import (
@@ -27,6 +32,15 @@ def _database_url() -> str:
     )
     if not url:
         pytest.skip("PostgreSQL bootstrap certification database URL not configured")
+    return url
+
+
+def _async_sqlalchemy_url(url: str) -> str:
+    """Return an async SQLAlchemy URL for the ORM create_all CI path."""
+    if url.startswith("postgresql+asyncpg://"):
+        return url
+    if url.startswith("postgresql://"):
+        return "postgresql+asyncpg://" + url.removeprefix("postgresql://")
     return url
 
 
@@ -90,6 +104,44 @@ def test_authoritative_migration_sequence_is_ordered() -> None:
         "portal/migrations/add_mission_control_command_ledger.sql",
         "portal/migrations/add_mission_control_run_control_projection.sql",
     ]
+
+
+def test_postgresql_orm_foreign_key_column_types_are_internally_consistent() -> None:
+    """Guard the CI create_all path against UUID/VARCHAR FK drift."""
+    dialect = postgresql.dialect()
+    mismatches = []
+    for table in Base.metadata.tables.values():
+        for column in table.columns:
+            for fk in column.foreign_keys:
+                referred = fk.column
+                local_type = column.type.compile(dialect=dialect)
+                referred_type = referred.type.compile(dialect=dialect)
+                if local_type != referred_type:
+                    mismatches.append(
+                        f"{table.name}.{column.name} {local_type} -> "
+                        f"{referred.table.name}.{referred.name} {referred_type}"
+                    )
+    assert mismatches == []
+
+
+def test_postgresql_race_prepare_schema_create_all_path_executes() -> None:
+    """Execute the same ORM Base.metadata.create_all path used by postgresql-race CI."""
+    url = _database_url()
+    with psycopg2.connect(psycopg2_url(url)) as conn:
+        conn.autocommit = True
+        with conn.cursor() as cur:
+            cur.execute("DROP SCHEMA IF EXISTS public CASCADE")
+            cur.execute("CREATE SCHEMA public")
+
+    async def create_schema() -> None:
+        engine = create_async_engine(_async_sqlalchemy_url(url), echo=False)
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+        finally:
+            await engine.dispose()
+
+    asyncio.run(create_schema())
 
 
 def test_clean_raw_sql_bootstrap_repeats_three_times() -> None:
@@ -252,7 +304,7 @@ def test_real_orm_crud_uuid_binding_and_audit_immutability(migrated_database_url
             found = session.get(EvidenceSnapshot, snapshot_id)
             assert found is not None
             assert found.snapshot_id == snapshot_id
-            assert found.case_id == case_id
+            assert str(found.case_id) == str(case_id)
             assert isinstance(found.snapshot_id, uuid.UUID)
             assert session.scalars(
                 select(EvidenceSnapshot).where(EvidenceSnapshot.case_id == str(case_id))

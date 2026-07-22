@@ -58,8 +58,8 @@ class EvidenceSnapshot(Base):
     snapshot_id: Mapped[uuid.UUID] = mapped_column(
         PortableUUID, primary_key=True, default=uuid.uuid4,
     )
-    case_id: Mapped[uuid.UUID] = mapped_column(
-        PortableUUID, ForeignKey("cases.id"), nullable=False, index=True,
+    case_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("cases.id"), nullable=False, index=True,
     )
 
     # ── Evidence integrity ────────────────────────────────────────────
@@ -85,8 +85,8 @@ class EvidenceSnapshot(Base):
         nullable=False,
         doc="Server-set creation timestamp. Never modified.",
     )
-    created_by: Mapped[uuid.UUID] = mapped_column(
-        PortableUUID, ForeignKey("users.id"), nullable=False,
+    created_by: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id"), nullable=False,
         doc="User who created this snapshot.",
     )
 

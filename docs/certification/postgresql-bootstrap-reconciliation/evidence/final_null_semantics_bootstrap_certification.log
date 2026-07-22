@@ -1,1 +1,27 @@
-.............                                                            [100%]
+============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\admin\Desktop\Projects\sp-pr217-ci311\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\admin\Desktop\Projects\SintraPrime-Unified-postgresql-bootstrap-fix
+configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
+plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 15 items
+
+portal/tests/test_postgresql_bootstrap_schema_authority.py::test_authoritative_migration_sequence_is_ordered PASSED [  6%]
+portal/tests/test_postgresql_bootstrap_schema_authority.py::test_postgresql_orm_foreign_key_column_types_are_internally_consistent PASSED [ 13%]
+portal/tests/test_postgresql_bootstrap_schema_authority.py::test_postgresql_race_prepare_schema_create_all_path_executes PASSED [ 20%]
+portal/tests/test_postgresql_bootstrap_schema_authority.py::test_clean_raw_sql_bootstrap_repeats_three_times PASSED [ 26%]
+portal/tests/test_postgresql_bootstrap_schema_authority.py::test_client_display_name_generated_expression_matches_concat_null_semantics[company-name-present] PASSED [ 33%]
+portal/tests/test_postgresql_bootstrap_schema_authority.py::test_client_display_name_generated_expression_matches_concat_null_semantics[empty-company-personal-names] PASSED [ 40%]
+portal/tests/test_postgresql_bootstrap_schema_authority.py::test_client_display_name_generated_expression_matches_concat_null_semantics[null-company-personal-names] PASSED [ 46%]
+portal/tests/test_postgresql_bootstrap_schema_authority.py::test_client_display_name_generated_expression_matches_concat_null_semantics[last-null] PASSED [ 53%]
+portal/tests/test_postgresql_bootstrap_schema_authority.py::test_client_display_name_generated_expression_matches_concat_null_semantics[first-null] PASSED [ 60%]
+portal/tests/test_postgresql_bootstrap_schema_authority.py::test_client_display_name_generated_expression_matches_concat_null_semantics[both-names-null] PASSED [ 66%]
+portal/tests/test_postgresql_bootstrap_schema_authority.py::test_client_display_name_generated_expression_matches_concat_null_semantics[empty-first-name] PASSED [ 73%]
+portal/tests/test_postgresql_bootstrap_schema_authority.py::test_client_display_name_generated_expression_matches_concat_null_semantics[empty-last-name] PASSED [ 80%]
+portal/tests/test_postgresql_bootstrap_schema_authority.py::test_client_display_name_generated_expression_matches_concat_null_semantics[company-precedence] PASSED [ 86%]
+portal/tests/test_postgresql_bootstrap_schema_authority.py::test_live_catalog_constraints_and_uuid_authority PASSED [ 93%]
+portal/tests/test_postgresql_bootstrap_schema_authority.py::test_real_orm_crud_uuid_binding_and_audit_immutability PASSED [100%]
+
+============================= 15 passed in 15.69s =============================
+focused_postgresql_bootstrap_authority=PASS

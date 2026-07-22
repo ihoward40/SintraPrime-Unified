@@ -74,12 +74,12 @@ This PR does not assume any production migration has been applied. Existing inst
 | table | column | referenced table/column | previous SQL type | previous ORM type | Python representation | SQLite representation | PostgreSQL representation | selected authority | compatibility implications |
 |---|---|---|---|---|---|---|---|---|---|
 | evidence_snapshots | snapshot_id | audit_records.snapshot_id | VARCHAR(36) | String(36) | uuid.UUID | VARCHAR(36) | UUID | native UUID via PortableUUID | `to_dict()` remains string; bind accepts UUID or string |
-| evidence_snapshots | case_id | cases.id | VARCHAR(36) | String(36) | uuid.UUID | VARCHAR(36) | UUID | referenced base UUID PK | FK now implementable on PostgreSQL |
-| evidence_snapshots | created_by | users.id | VARCHAR(36) | String(36) | uuid.UUID | VARCHAR(36) | UUID | referenced base UUID PK | FK now implementable on PostgreSQL |
+| evidence_snapshots | case_id | cases.id | VARCHAR(36) | String(36) | str in ORM metadata; live raw-SQL rows may return UUID from psycopg2 | VARCHAR(36) | UUID in raw-SQL bootstrap | raw-SQL FK uses native UUID; ORM column remains String(36) to match legacy `cases.id` metadata and keep `create_all()` internally consistent | No repository-wide case/user UUID ORM conversion certified |
+| evidence_snapshots | created_by | users.id | VARCHAR(36) | String(36) | str in ORM metadata; live raw-SQL rows may return UUID from psycopg2 | VARCHAR(36) | UUID in raw-SQL bootstrap | raw-SQL FK uses native UUID; ORM column remains String(36) to match legacy `users.id` metadata and keep `create_all()` internally consistent | No repository-wide user UUID ORM conversion certified |
 | audit_records | audit_id | primary key | VARCHAR(36) | String(36) | uuid.UUID | VARCHAR(36) | UUID | native UUID via PortableUUID | duplicate PK removed; default UUID available in SQL |
 | audit_records | snapshot_id | evidence_snapshots.snapshot_id | VARCHAR(36) | String(36) | uuid.UUID | VARCHAR(36) | UUID | evidence snapshot UUID authority | FK enforced on PostgreSQL |
 | audit_records | packet_id | none | VARCHAR(36) | String(36) | uuid.UUID | VARCHAR(36) | UUID | UUID identifier | callers may bind UUID or string |
-| audit_records | created_by | users.id | VARCHAR(36) | String(36) | uuid.UUID | VARCHAR(36) | UUID | referenced base UUID PK | FK enforced on PostgreSQL |
+| audit_records | created_by | users.id | VARCHAR(36) | String(36) | str in ORM metadata; live raw-SQL rows may return UUID from psycopg2 | VARCHAR(36) | UUID in raw-SQL bootstrap | raw-SQL FK uses native UUID; ORM column remains String(36) to match legacy `users.id` metadata and keep `create_all()` internally consistent | No repository-wide user UUID ORM conversion certified |
 
 ## Nonclaims
 

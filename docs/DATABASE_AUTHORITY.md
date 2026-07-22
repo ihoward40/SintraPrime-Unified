@@ -15,7 +15,7 @@ Authoritative as of commit `2d6ff2e10b639ec2601a46ba1592aaa62e597349` (tree `584
 3. **Test `create_all` path** — test suites build schema from models (SQLite in-memory
    or PostgreSQL via the lifecycle API). This is runtime-only and NOT the deployed
    schema.
-4. **PostgreSQL fresh-bootstrap certification path** — `portal/scripts/postgresql_bootstrap.py` applies the raw-SQL sequence to a disposable PostgreSQL database and `portal/tests/test_postgresql_bootstrap_schema_authority.py` verifies live catalog constraints plus affected ORM CRUD parity. This certifies fresh bootstrap only, not production upgrade orchestration.
+4. **PostgreSQL fresh-bootstrap certification path** — `portal/scripts/postgresql_bootstrap.py` applies the raw-SQL sequence to a disposable PostgreSQL database and `portal/tests/test_postgresql_bootstrap_schema_authority.py` verifies live catalog constraints, affected ORM CRUD against the live raw-SQL catalog, and the CI `Base.metadata.create_all()` path. This certifies fresh bootstrap only, not production upgrade orchestration.
 5. **PostgreSQL race CI path** — `portal/tests/test_mission_control_run_controls.py` builds from models via the lifecycle API for Mission Control concurrency proof; it does not replace raw-SQL bootstrap certification.
 6. **SQLite test path** — model `create_all` against in-memory SQLite.
 
@@ -32,8 +32,9 @@ evidence is recorded under `docs/certification/`.
 PostgreSQL-specific evidence comes from two separate lanes: `postgresql-race`,
 which proves Mission Control immutability and hash-chain integrity using the
 lifecycle API, and `postgresql-bootstrap-certification`, which applies the
-raw-SQL fresh-bootstrap sequence and verifies affected evidence/audit live schema
-plus ORM CRUD parity. Database compatibility remains scoped to the exact lane
+raw-SQL fresh-bootstrap sequence and verifies affected evidence/audit live schema,
+ORM CRUD against the live raw-SQL catalog, and the PostgreSQL ORM `create_all()`
+CI path. Database compatibility remains scoped to the exact lane
 that produced the evidence.
 
 ## Schema on `main` vs open-PR proposals
@@ -47,7 +48,7 @@ visual checkpoints) is not authoritative. Deployment database configuration
 not CI-verified.
 
 ## Schema-drift risks
-- Models vs `portal/migrations/*.sql` can diverge; `postgresql-bootstrap-certification` covers the fresh raw-SQL bootstrap sequence and affected evidence/audit ORM parity only.
+- Models vs `portal/migrations/*.sql` can diverge; `postgresql-bootstrap-certification` covers the fresh raw-SQL bootstrap sequence, affected evidence/audit ORM CRUD against that live catalog, and the PostgreSQL ORM `create_all()` CI path only.
 - The certification does not prove production upgrade safety from unknown existing schemas.
 - Feature packages (`trust_law`, `backend/stripe-payments`, etc.) declare their own
   models; it is unclear whether they share one database or one migration path.

@@ -74,7 +74,7 @@ The following certification-specific CI lanes are defined in `.github/workflows/
 | `auth-tenant-rbac-certification` | Authentication, tenant isolation, RBAC | PR #214 | `portal/tests/test_auth_tenant_rbac_certification.py` |
 | `audit-correlation-non-http-certification` | Audit correlation, non-HTTP authorization | PR #215 | `portal/tests/test_audit_correlation_non_http_certification.py` |
 | `http-correlation-ws-hardening-certification` | HTTP request-ID correlation, WebSocket hardening | PR #217 | `portal/tests/test_http_correlation_ws_hardening_certification.py` |
-| `postgresql-bootstrap-certification` | Raw-SQL fresh bootstrap and affected evidence/audit ORM parity | PR-B | `portal/tests/test_postgresql_bootstrap_schema_authority.py` |
+| `postgresql-bootstrap-certification` | Raw-SQL fresh bootstrap, affected evidence/audit live-catalog ORM CRUD, and PostgreSQL ORM create_all guard | PR-B | `portal/tests/test_postgresql_bootstrap_schema_authority.py` |
 
 These lanes are CERTIFIED FOR THE RECORDED SCOPE of their respective increments.
 They do NOT constitute production certification, compliance certification,

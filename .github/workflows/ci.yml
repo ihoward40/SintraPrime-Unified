@@ -58,7 +58,11 @@ jobs:
         run: pip install -r requirements.txt
       - name: Wait for PostgreSQL readiness
         env:
-          DATABASE_URL: postgresql+asyncpg://sintraprime:sintraprime@127.0.0.1:5432/sintraprime_unified
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGDATABASE: sintraprime_unified
+          PGUSER: sintraprime
+          PGPASSWORD: sintraprime
         run: |
           python - <<'PY'
           import asyncio
@@ -67,10 +71,15 @@ jobs:
           import asyncpg
 
           async def main() -> None:
-              url = os.environ["DATABASE_URL"].replace("+asyncpg", "")
               for attempt in range(60):
                   try:
-                      conn = await asyncpg.connect(url)
+                      conn = await asyncpg.connect(
+                          user=os.environ["PGUSER"],
+                          password=os.environ["PGPASSWORD"],
+                          host=os.environ["PGHOST"],
+                          port=int(os.environ["PGPORT"]),
+                          database=os.environ["PGDATABASE"],
+                      )
                       await conn.execute("SELECT 1")
                       await conn.close()
                       return
@@ -83,7 +92,11 @@ jobs:
           PY
       - name: Prepare PostgreSQL schema
         env:
-          DATABASE_URL: postgresql+asyncpg://sintraprime:sintraprime@127.0.0.1:5432/sintraprime_unified
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGDATABASE: sintraprime_unified
+          PGUSER: sintraprime
+          PGPASSWORD: sintraprime
         run: |
           python - <<'PY'
           import asyncio
@@ -94,7 +107,19 @@ jobs:
           from sqlalchemy.ext.asyncio import create_async_engine
 
           async def main() -> None:
-              engine = create_async_engine(os.environ["DATABASE_URL"], echo=False)
+              database_url = (
+                  "postgresql+asyncpg://"
+                  + os.environ["PGUSER"]
+                  + ":"
+                  + os.environ["PGPASSWORD"]
+                  + "@"
+                  + os.environ["PGHOST"]
+                  + ":"
+                  + os.environ["PGPORT"]
+                  + "/"
+                  + os.environ["PGDATABASE"]
+              )
+              engine = create_async_engine(database_url, echo=False)
               async with engine.begin() as conn:
                   await conn.run_sync(Base.metadata.create_all)
               await engine.dispose()
@@ -103,16 +128,52 @@ jobs:
           PY
       - name: Run PostgreSQL concurrency test
         env:
-          DATABASE_URL: postgresql+asyncpg://sintraprime:sintraprime@127.0.0.1:5432/sintraprime_unified
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGDATABASE: sintraprime_unified
+          PGUSER: sintraprime
+          PGPASSWORD: sintraprime
           MISSION_CONTROL_PG_RACE_REQUIRED: '1'
         run: |
-          set -euo pipefail
-          python -m pytest -vv -rs -s --tb=long --maxfail=1 \
-            portal/tests/test_mission_control_run_controls.py::test_parallel_pg_transition_race_appends_exactly_one_event \
-            portal/tests/test_mission_control_run_controls.py::test_pg_flushed_transition_rollback_does_not_persist \
-            | tee /tmp/pg_race.log
-          grep -q '2 passed' /tmp/pg_race.log
-          ! grep -q 'SKIPPED' /tmp/pg_race.log
+          python - <<'PY'
+          import os
+          import subprocess
+          import sys
+
+          env = os.environ.copy()
+          env["DATABASE_URL"] = (
+              "postgresql+asyncpg://"
+              + env["PGUSER"]
+              + ":"
+              + env["PGPASSWORD"]
+              + "@"
+              + env["PGHOST"]
+              + ":"
+              + env["PGPORT"]
+              + "/"
+              + env["PGDATABASE"]
+          )
+          cmd = [
+              sys.executable,
+              "-m",
+              "pytest",
+              "-vv",
+              "-rs",
+              "-s",
+              "--tb=long",
+              "--maxfail=1",
+              "portal/tests/test_mission_control_run_controls.py::test_parallel_pg_transition_race_appends_exactly_one_event",
+              "portal/tests/test_mission_control_run_controls.py::test_pg_flushed_transition_rollback_does_not_persist",
+          ]
+          with open("/tmp/pg_race.log", "w", encoding="utf-8") as log:
+              result = subprocess.run(cmd, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+              print(result.stdout, end="")
+              log.write(result.stdout)
+          if result.returncode != 0:
+              raise SystemExit(result.returncode)
+          if "2 passed" not in result.stdout or "SKIPPED" in result.stdout:
+              raise SystemExit("PostgreSQL race result did not prove 2 executed passes")
+          PY
       - name: Upload PostgreSQL race log
         if: always()
         uses: actions/upload-artifact@v4

@@ -2,7 +2,7 @@
 
 ## Scope
 
-PR-B certifies the repository raw-SQL fresh-bootstrap path and the directly affected evidence/audit ORM UUID authority. It certifies fresh bootstrap only. It does not certify production migration execution, upgrades from unknown existing schemas, populated VARCHAR-to-UUID conversion, Alembic adoption, workshop activation, payment authority, PR-C work, or repository-wide model/migration convergence.
+PR-B certifies the repository raw-SQL fresh-bootstrap path and the directly affected evidence/audit ORM compatibility boundary. It certifies fresh bootstrap only. It does not certify production migration execution, upgrades from unknown existing schemas, populated VARCHAR-to-UUID conversion, Alembic adoption, workshop activation, payment authority, PR-C work, or repository-wide model/migration convergence.
 
 ## Base
 
@@ -58,8 +58,10 @@ Focused PostgreSQL cases: 9 passed.
 
 ## UUID authority decision
 
-- Affected evidence/audit SQL identifiers now use PostgreSQL UUID where they reference UUID primary keys or represent UUID identifiers.
-- `EvidenceSnapshot` and `AuditRecord` use shared `PortableUUID` for ORM portability while preserving string serialization output where existing callers expect serialized IDs.
+- Raw SQL remains PostgreSQL fresh-bootstrap authority and uses native UUID for the affected evidence/audit identifiers and UUID foreign keys.
+- `EvidenceSnapshot.snapshot_id`, `AuditRecord.audit_id`, `AuditRecord.snapshot_id`, `AuditRecord.packet_id`, and Blackstone primary UUID identifiers use shared `PortableUUID` for ORM portability while preserving string serialization output where existing callers expect serialized IDs.
+- `EvidenceSnapshot.case_id`, `EvidenceSnapshot.created_by`, and `AuditRecord.created_by` intentionally remain `String(36)` in ORM metadata because their referenced ORM tables (`cases.id`, `users.id`) remain legacy `String(36)`. This is the narrow correction that makes the PostgreSQL `Base.metadata.create_all()` race setup internally consistent without starting a repository-wide case/user UUID conversion.
+- The live raw-SQL PostgreSQL bootstrap still proves those columns as native UUID in the database catalog and proves ORM CRUD against that live catalog.
 - `PortableUUID` is an ORM portability mechanism only. It is not a migration framework and does not certify existing database conversion.
 - `portal.models.blackstone` now imports the shared `PortableUUID`; affected Blackstone runtime tests passed in the PortableUUID path.
 
@@ -71,9 +73,10 @@ Focused PostgreSQL cases: 9 passed.
 - Removed duplicate audit primary-key declaration.
 - Corrected audit immutability trigger function binding.
 - Added shared `PortableUUID` type and reused it instead of keeping a second implementation in `blackstone.py`.
-- Reconciled `EvidenceSnapshot` and `AuditRecord` ORM identifiers with live PostgreSQL UUID columns while preserving string serialization output.
+- Reconciled `EvidenceSnapshot` and `AuditRecord` ORM identifier columns with live PostgreSQL UUID columns where the ORM can do so coherently (`snapshot_id`, `audit_id`, `snapshot_id`, `packet_id`) while preserving string serialization output.
+- Kept evidence/audit ORM foreign-key fields to legacy `cases.id` and `users.id` as `String(36)` so PostgreSQL `Base.metadata.create_all()` remains internally consistent; raw-SQL fresh bootstrap remains the native-UUID catalog authority for those live columns.
 - Added a raw-SQL bootstrap verifier/runner for CI and local certification.
-- Added live PostgreSQL catalog, CRUD, FK, rollback, generated-column, and immutability tests.
+- Added live PostgreSQL catalog, CRUD, FK, rollback, generated-column, ORM `create_all`, and immutability tests.
 - Fixed the PostgreSQL race test setup to create relationship-required tables (`audit_logs`, command events, command receipts) before running the existing race suite.
 
 ## Verification results
@@ -81,19 +84,21 @@ Focused PostgreSQL cases: 9 passed.
 | Command / evidence | Result |
 |---|---|
 | Three independent fresh PostgreSQL bootstrap containers, `postgres:16-alpine`, tmpfs-only | 3/3 passed; 0 volumes; 0 bind mounts; exact containers removed |
-| `python -m pytest -q portal/tests/test_postgresql_bootstrap_schema_authority.py` | 13 passed, 0 failed, 0 skipped |
+| `python -m pytest -q portal/tests/test_postgresql_bootstrap_schema_authority.py` | 15 passed, 0 failed, 0 skipped; includes PostgreSQL ORM `Base.metadata.create_all()` CI-path regression |
 | Focused generated-column semantic cases | 9 passed, 0 failed, 0 skipped |
 | `python -m pytest -q portal/tests/test_evidence_snapshot.py portal/tests/test_audit_record.py` | 66 passed, 0 failed, 0 skipped |
 | Mission Control PostgreSQL race selected nodes | 2 passed, 0 failed, 0 skipped |
 | `python -m pytest -q portal/tests/test_mission_control_run_controls.py` | 19 passed, 0 failed, 2 skipped |
 | Affected Blackstone PortableUUID tests: `portal/tests/test_blackstone_service.py blackstone/tests/test_blackstone_engines.py` | 12 passed, 0 failed, 0 skipped |
 | Auth/correlation certification suite group | 189 passed, 0 failed, 0 skipped; PyJWT short-key warnings only |
-| Full authoritative Python suite under Python 3.11.9 with JUnit XML | 374 tests, 0 failures, 0 errors, 0 skipped; 2 collection warnings; time 92.833s |
+| Full authoritative Python suite under Python 3.11.9 with JUnit XML | 374 tests, 0 failures, 0 errors, 0 skipped; 2 collection warnings; time 119.031s; timestamp 2026-07-22T19:26:37.858964-04:00 |
 | `ruff check .` | passed |
 | `python scripts/ci/validate_repository_claims.py` | passed |
 | `.github/workflows/*.yml` YAML parse | passed |
-| changed-diff secret scan | passed; 0 credential-pattern hits |
+| PostgreSQL race workflow credential inspection | passed: separate test-only PG components, no literal credential-bearing URL in YAML, no shell tracing, URL constructed in Python and passed only through subprocess environment |
+| changed-diff secret scan | passed; changed added lines contain 0 credential-pattern hits |
 | `git diff --check` | passed |
+| Exact disposable repro container cleanup | `sp_prb_orm_repro_1784760815` resolved to full ID `ad563ccece61c593e7f54d7e2a822f6fa80d9085f385d7eb2fd98fe811c0b480`, verified `postgres:16-alpine`, no mounts, stopped/removed, absent afterward |
 
 ## Evidence index
 
@@ -108,11 +113,11 @@ Focused PostgreSQL cases: 9 passed.
 - `evidence/final_auth_correlation_certification.log`
 - `evidence/final_full_pytest_py311_after_null.xml`
 - `evidence/final_full_pytest_py311_after_null_junit.log`
-- `evidence/final_ruff_after_null.log`
-- `evidence/final_validate_repository_claims_after_null.log`
+- `evidence/final_ruff_post_reconcile.log`
+- `evidence/final_validate_repository_claims_post_reconcile.log`
 - `evidence/final_ci_yaml_parse_after_null.log`
-- `evidence/final_changed_diff_secret_scan_after_null.log`
-- `evidence/final_git_diff_check_after_null.log`
+- `evidence/final_changed_diff_secret_scan_post_reconcile.log`
+- `evidence/final_git_diff_check_post_reconcile.log`
 
 ## Blackstone failure classification
 

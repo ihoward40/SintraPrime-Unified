@@ -1,1 +1,22 @@
-..                                                                       [100%]
+prepare_create_all=PASS
+============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\admin\Desktop\Projects\sp-pr217-ci311\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\admin\Desktop\Projects\SintraPrime-Unified-postgresql-bootstrap-fix
+configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
+plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 2 items
+
+portal/tests/test_mission_control_run_controls.py::test_parallel_pg_transition_race_appends_exactly_one_event RACE EVENTS before=1 types=['CREATED']
+RACE RESULT: results=['COMMITTED_SUCCESS', 'VERSION_CONFLICT'] committed=1 conflicts=1 errors=0
+RACE FINAL: state_version=2 state=PAUSE_REQUESTED
+RACE EVENTS after=2 before=1 delta=1
+RACE EVENT seq=1 type=CREATED src=RUNNING tgt=RUNNING ver=1 prev=None hash=af90dc7b824c4b716188fec74c981439dc0ea2ca4975d95f0321e7f962c6fd03
+RACE EVENT seq=2 type=STATE_TRANSITIONED src=RUNNING tgt=PAUSE_REQUESTED ver=2 prev=af90dc7b824c4b716188fec74c981439dc0ea2ca4975d95f0321e7f962c6fd03 hash=82674e6b24d77d9970c0e3728dd33009e2207e393c9f3b92aa335a3918de66db
+RACE COMMAND: state=REFUSED
+PASSED
+portal/tests/test_mission_control_run_controls.py::test_pg_flushed_transition_rollback_does_not_persist PASSED
+
+============================== 2 passed in 2.49s ==============================
+postgresql_race_local_reproduction=PASS

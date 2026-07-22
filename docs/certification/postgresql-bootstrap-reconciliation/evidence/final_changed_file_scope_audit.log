@@ -1,0 +1,85 @@
+## git status porcelain before evidence commit
+A  docs/certification/postgresql-bootstrap-reconciliation/baseline-and-authority.md
+A  docs/certification/postgresql-bootstrap-reconciliation/certification-report.md
+A  docs/certification/postgresql-bootstrap-reconciliation/evidence/baseline_20260722T213820Z_rerun.log.sanitized
+A  docs/certification/postgresql-bootstrap-reconciliation/evidence/blackstone_origin_main_repro.log
+A  docs/certification/postgresql-bootstrap-reconciliation/evidence/final_affected_sqlite_evidence_audit.log
+A  docs/certification/postgresql-bootstrap-reconciliation/evidence/final_artifact_parse_post_reconcile.log
+A  docs/certification/postgresql-bootstrap-reconciliation/evidence/final_auth_correlation_certification.log
+A  docs/certification/postgresql-bootstrap-reconciliation/evidence/final_blackstone_portable_uuid.log
+A  docs/certification/postgresql-bootstrap-reconciliation/evidence/final_changed_diff_secret_scan_post_reconcile.log
+AM docs/certification/postgresql-bootstrap-reconciliation/evidence/final_changed_file_scope_audit.log
+A  docs/certification/postgresql-bootstrap-reconciliation/evidence/final_full_pytest_py311_after_null.xml
+A  docs/certification/postgresql-bootstrap-reconciliation/evidence/final_full_pytest_py311_after_null_junit.log
+A  docs/certification/postgresql-bootstrap-reconciliation/evidence/final_git_diff_check_post_reconcile.log
+A  docs/certification/postgresql-bootstrap-reconciliation/evidence/final_mission_control_pg_race.log
+A  docs/certification/postgresql-bootstrap-reconciliation/evidence/final_mission_control_run_controls_sqlite.log
+A  docs/certification/postgresql-bootstrap-reconciliation/evidence/final_null_semantics_bootstrap_certification.log
+A  docs/certification/postgresql-bootstrap-reconciliation/evidence/final_ruff_post_reconcile.log
+A  docs/certification/postgresql-bootstrap-reconciliation/evidence/final_validate_repository_claims_post_reconcile.log
+A  docs/certification/postgresql-bootstrap-reconciliation/evidence/three_independent_fresh_bootstraps_final.json
+A  docs/certification/postgresql-bootstrap-reconciliation/evidence/three_independent_fresh_bootstraps_final.log
+A  docs/certification/postgresql-bootstrap-reconciliation/existing-installation-safety.md
+?? docs/certification/postgresql-bootstrap-reconciliation/evidence/baseline_20260722T213743Z.log.sanitized
+?? docs/certification/postgresql-bootstrap-reconciliation/evidence/full_pytest_py311.xml
+?? docs/certification/postgresql-bootstrap-reconciliation/evidence/full_pytest_py311_final.xml
+
+## staged evidence inventory
+docs/certification/postgresql-bootstrap-reconciliation/baseline-and-authority.md
+docs/certification/postgresql-bootstrap-reconciliation/certification-report.md
+docs/certification/postgresql-bootstrap-reconciliation/evidence/baseline_20260722T213820Z_rerun.log.sanitized
+docs/certification/postgresql-bootstrap-reconciliation/evidence/blackstone_origin_main_repro.log
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_affected_sqlite_evidence_audit.log
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_artifact_parse_post_reconcile.log
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_auth_correlation_certification.log
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_blackstone_portable_uuid.log
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_changed_diff_secret_scan_post_reconcile.log
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_changed_file_scope_audit.log
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_full_pytest_py311_after_null.xml
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_full_pytest_py311_after_null_junit.log
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_git_diff_check_post_reconcile.log
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_mission_control_pg_race.log
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_mission_control_run_controls_sqlite.log
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_null_semantics_bootstrap_certification.log
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_ruff_post_reconcile.log
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_validate_repository_claims_post_reconcile.log
+docs/certification/postgresql-bootstrap-reconciliation/evidence/three_independent_fresh_bootstraps_final.json
+docs/certification/postgresql-bootstrap-reconciliation/evidence/three_independent_fresh_bootstraps_final.log
+docs/certification/postgresql-bootstrap-reconciliation/existing-installation-safety.md
+
+## staged evidence sizes
+docs/certification/postgresql-bootstrap-reconciliation/baseline-and-authority.md	5407
+docs/certification/postgresql-bootstrap-reconciliation/certification-report.md	8382
+docs/certification/postgresql-bootstrap-reconciliation/evidence/baseline_20260722T213820Z_rerun.log.sanitized	2193
+docs/certification/postgresql-bootstrap-reconciliation/evidence/blackstone_origin_main_repro.log	1502
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_affected_sqlite_evidence_audit.log	81
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_artifact_parse_post_reconcile.log	1059
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_auth_correlation_certification.log	1775
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_blackstone_portable_uuid.log	81
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_changed_diff_secret_scan_post_reconcile.log	69
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_changed_file_scope_audit.log	4749
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_full_pytest_py311_after_null.xml	43753
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_full_pytest_py311_after_null_junit.log	1232
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_git_diff_check_post_reconcile.log	0
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_mission_control_pg_race.log	81
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_mission_control_run_controls_sqlite.log	81
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_null_semantics_bootstrap_certification.log	81
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_ruff_post_reconcile.log	19
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_validate_repository_claims_post_reconcile.log	59
+docs/certification/postgresql-bootstrap-reconciliation/evidence/three_independent_fresh_bootstraps_final.json	4104
+docs/certification/postgresql-bootstrap-reconciliation/evidence/three_independent_fresh_bootstraps_final.log	3851
+docs/certification/postgresql-bootstrap-reconciliation/existing-installation-safety.md	3506
+
+## remaining unstaged/untracked
+docs/certification/postgresql-bootstrap-reconciliation/evidence/final_changed_file_scope_audit.log
+docs/certification/postgresql-bootstrap-reconciliation/evidence/baseline_20260722T213743Z.log.sanitized
+docs/certification/postgresql-bootstrap-reconciliation/evidence/full_pytest_py311.xml
+docs/certification/postgresql-bootstrap-reconciliation/evidence/full_pytest_py311_final.xml
+
+## local whitespace config
+cr-at-eol
+
+## docker authorized names absent
+ABSENT sp_prb_final_bootstrap_1
+ABSENT sp_prb_final_bootstrap_2
+ABSENT sp_prb_final_bootstrap_3

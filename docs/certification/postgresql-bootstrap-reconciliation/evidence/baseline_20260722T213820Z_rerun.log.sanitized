@@ -1,0 +1,57 @@
+timestamp_utc=2026-07-22T21:38:20Z
+repo=/c/Users/admin/Desktop/Projects/SintraPrime-Unified-postgresql-bootstrap-fix
+head=2d6ff2e10b639ec2601a46ba1592aaa62e597349
+tree=584d44a1bf8f267ea3f00e84018f10026d8c4297
+container=sp_prb_baseline_1784756300
+port=127.0.0.1:55542
+command=MSYS_NO_PATHCONV=1 docker exec psql -v ON_ERROR_STOP=1 -f /tmp/current.sql
+6a1d2e128830ff983abfb25340a3f12748533a46eaca3bc8c33626a833473c22
+256771acb39afeea08de8451c2a27ea015d2494cb8d694def7c180a540ca6183
+postgres_version=16.14
+--- real repository sequence attempt (documented docs/DATABASE_AUTHORITY.md order) ---
+APPLY portal/migrations/portal_schema.sql
+CREATE EXTENSION
+CREATE EXTENSION
+CREATE EXTENSION
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE TABLE
+INSERT 0 7
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+psql:/tmp/current.sql:165: ERROR:  generation expression is not immutable
+FAILED_FILE=portal/migrations/portal_schema.sql
+--- isolated evidence failure with UUID prereq tables ---
+NOTICE:  drop cascades to 6 other objects
+DETAIL:  drop cascades to extension uuid-ossp
+drop cascades to extension pgcrypto
+drop cascades to extension pg_trgm
+drop cascades to table tenants
+drop cascades to table roles
+drop cascades to table users
+DROP SCHEMA
+CREATE SCHEMA
+CREATE EXTENSION
+CREATE TABLE
+CREATE TABLE
+psql:/tmp/evidence.sql:20: ERROR:  foreign key constraint "evidence_snapshots_case_id_fkey" cannot be implemented
+DETAIL:  Key columns "case_id" and "id" are of incompatible types: character varying and uuid.
+ISOLATED_FAILED_FILE=portal/migrations/add_evidence_snapshots.sql
+--- isolated audit failure with varchar evidence snapshot prereq to expose duplicate PK ---
+NOTICE:  drop cascades to 3 other objects
+DETAIL:  drop cascades to extension uuid-ossp
+drop cascades to table cases
+drop cascades to table users
+DROP SCHEMA
+CREATE SCHEMA
+CREATE TABLE
+CREATE TABLE
+psql:/tmp/audit.sql:23: ERROR:  multiple primary keys for table "audit_records" are not allowed
+LINE 14:     CONSTRAINT pk_audit_records PRIMARY KEY (audit_id)
+             ^
+ISOLATED_FAILED_FILE=portal/migrations/add_audit_records.sql
+sp_prb_baseline_1784756300

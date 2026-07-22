@@ -1,0 +1,19 @@
+...FF................                                                    [100%]
+================================== FAILURES ===================================
+________________ test_case_intake_endpoint_creates_evaluation _________________
+portal\tests\test_blackstone_case_workflow.py:77: in test_case_intake_endpoint_creates_evaluation
+    assert response.status_code == 201
+E   assert 401 == 201
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+---------------------------- Captured stdout call -----------------------------
+2026-07-22 18:37:37 [info     ] correlation.request_id_replaced reason=missing request_id=req-e1a36fb1-f34a505b-b60d-4f2d-8c8b-ea55e5878ba6
+________________ test_case_status_endpoint_returns_evaluations ________________
+portal\tests\test_blackstone_case_workflow.py:107: in test_case_status_endpoint_returns_evaluations
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+---------------------------- Captured stdout call -----------------------------
+2026-07-22 18:37:37 [info     ] correlation.request_id_replaced reason=missing request_id=req-0269ef0b-0f0b6ad0-d395-432c-a8fc-b4a0525257cc
+=========================== short test summary info ===========================
+FAILED portal/tests/test_blackstone_case_workflow.py::test_case_intake_endpoint_creates_evaluation
+FAILED portal/tests/test_blackstone_case_workflow.py::test_case_status_endpoint_returns_evaluations

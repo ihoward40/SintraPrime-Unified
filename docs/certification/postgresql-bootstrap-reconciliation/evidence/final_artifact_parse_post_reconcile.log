@@ -1,0 +1,15 @@
+YAML OK .github/workflows/badge-update.yml
+YAML OK .github/workflows/ci.yml
+YAML OK .github/workflows/deploy-production.yml
+YAML OK .github/workflows/deploy-staging.yml
+YAML OK .github/workflows/docker-build.yml
+YAML OK .github/workflows/issue-verifier-ci.yml
+YAML OK .github/workflows/load-test.yml
+YAML OK .github/workflows/sigma-gate.yml
+JSON OK docs/certification/postgresql-bootstrap-reconciliation/evidence/three_independent_fresh_bootstraps_final.json
+XML OK docs/certification/postgresql-bootstrap-reconciliation/evidence/final_full_pytest_py311_after_null.xml
+XML OK docs/certification/postgresql-bootstrap-reconciliation/evidence/full_pytest_py311.xml
+XML OK docs/certification/postgresql-bootstrap-reconciliation/evidence/full_pytest_py311_final.xml
+MD NONEMPTY docs/certification/postgresql-bootstrap-reconciliation/baseline-and-authority.md
+MD NONEMPTY docs/certification/postgresql-bootstrap-reconciliation/certification-report.md
+MD NONEMPTY docs/certification/postgresql-bootstrap-reconciliation/existing-installation-safety.md

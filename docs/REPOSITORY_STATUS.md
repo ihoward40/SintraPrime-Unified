@@ -41,6 +41,9 @@
 | `app_builder/` | EXPERIMENTAL | Scaffolding tool. |
 | `deployment/` (linux/windows) | DOCUMENTED ONLY | Scripts; no CI deploy verification; secrets missing (issue #186). |
 | `infrastructure/` (aws/azure/gcp) | DOCUMENTED ONLY | Terraform/Bicep present; not applied in CI. |
+| Root `Dockerfile` image build | SUPPORTED (image construction only) | `Docker Image Build Verification` builds the canonical portal image without runtime secrets. Does not verify Compose startup, deployment, registry push, or production readiness. |
+| `docker-compose.yml` full-stack runtime | DOCUMENTED ONLY | Runtime Compose remains fail-closed for required secrets; not used by image-build verification and not production-certified. |
+| `core/Dockerfile` and `apps/sintraprime/Dockerfile` | LEGACY / EXPERIMENTAL | Present for legacy Compose services; not certified as supported deployment images by PR-E. |
 | Evidence/receipts (`docs/`, `artifacts/`, `mission-control-evidence/`, `docs/certification/`) | SUPPORTED (governance) | Current Mission Control evidence fresh; certification evidence from PR #214–217; historical PHASE_* stale. |
 
 ## Certification CI lanes
@@ -54,6 +57,7 @@
 | `test` (default) | Full Python suite | SUPPORTED |
 | `lint` | Ruff lint | SUPPORTED |
 | `claims-validation` | Repository claims validation | SUPPORTED |
+| `Docker Image Build Verification` | Canonical portal image construction only | SUPPORTED for build verification; no runtime secrets, service startup, registry push, deployment, or production-certification claim. |
 
 > Status is assigned from current `main` tree and CI, not from marketing claims.
 > Tests alone do NOT certify a subsystem.

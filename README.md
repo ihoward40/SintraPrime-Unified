@@ -57,9 +57,13 @@ cd web && npm run build
 > have been removed. The current authoritative count is emitted by the CI inventory
 > step and recorded as a generated artifact.
 
+### Docker image build verification
+
+The `Docker Image Build Verification` workflow builds the canonical portal image from the root `Dockerfile` without runtime secrets, registry login, image push, service startup, or deployment. This verifies image construction only.
+
 ### Full-stack Docker boot
 
-The repository contains `docker-compose.yml` and `Dockerfile` files for a complete deployment (PostgreSQL, Redis, Elasticsearch, MinIO, Prometheus, Grafana, Nginx, API, Airlock, Twin display). Running this stack requires configured environment variables and external services. It is **not** part of the supported quick-start until it is independently verified on your environment. See `docs/DEPLOYMENT.md` for setup details.
+The repository contains `docker-compose.yml` for a local full-stack runtime (PostgreSQL, Redis, Elasticsearch, MinIO, Prometheus, Grafana, Nginx, API, Airlock, Twin display). Running this stack requires configured environment variables and external services. Runtime secrets such as `POSTGRES_PASSWORD`, `SECRET_KEY`, `JWT_SECRET`, MinIO credentials, and `TWIN_AUTH_TOKEN` intentionally remain fail-closed. Full-stack Compose startup is **not** part of the supported quick-start until it is independently verified on your environment. See `docs/DEPLOYMENT.md` for setup details.
 
 ### Known limitations / deferred work
 
@@ -151,7 +155,8 @@ docker-compose -f docker-compose.dev.yml up
 - **Azure:** [infrastructure/azure/](infrastructure/azure/) — Bicep (App Service + SQL)
 - **GCP:** [infrastructure/gcp/](infrastructure/gcp/) — Terraform (Cloud Run + Cloud SQL)
 
-> Deployment definitions are **DOCUMENTED ONLY** — they are not verified by CI. Independent
+> Image construction is verified separately from deployment. Deployment definitions are
+> **DOCUMENTED ONLY** — they are not verified by the image-build workflow. Independent
 > deployment testing is required before any production claim. See [DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ---

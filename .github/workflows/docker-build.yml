@@ -1,0 +1,49 @@
+name: Docker Image Build Verification
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - requirements.txt
+      - portal/**
+      - alembic.ini
+      - .dockerignore
+      - .github/workflows/docker-build.yml
+  push:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - requirements.txt
+      - portal/**
+      - alembic.ini
+      - .dockerignore
+      - .github/workflows/docker-build.yml
+
+permissions:
+  contents: read
+
+jobs:
+  portal-image-build:
+    name: Build canonical portal image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build canonical portal image without runtime secrets
+        run: >-
+          docker build
+          --file Dockerfile
+          --tag sintraprime-unified:build-verification
+          .
+
+      - name: Inspect image history for secret-bearing build instructions
+        run: |
+          docker history --no-trunc sintraprime-unified:build-verification > /tmp/sintraprime-image-history.txt
+          if grep -Ei 'TWIN_AUTH_TOKEN|POSTGRES_PASSWORD|SECRET_KEY|JWT_SECRET|MINIO_ROOT_USER|MINIO_PASSWORD|AWS_SECRET_ACCESS_KEY|STRIPE_SECRET_KEY' /tmp/sintraprime-image-history.txt; then
+            echo "Secret-bearing instruction found in image history" >&2
+            exit 1
+          fi
+          echo "Image history contains no configured runtime-secret names."

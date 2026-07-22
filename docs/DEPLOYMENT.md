@@ -262,6 +262,14 @@ docker stats
 
 ## Docker Deployment
 
+### Build verification versus runtime startup
+
+The CI workflow `Docker Image Build Verification` verifies image construction only. It runs a direct build of the canonical portal image from the root `Dockerfile` and does not inject runtime secrets, start services, push images, create deployments, or certify production readiness.
+
+The root `docker-compose.yml` remains the local full-stack runtime definition. Compose startup requires real runtime configuration and must fail closed when protected service secrets are missing, including `POSTGRES_PASSWORD`, `SECRET_KEY`, `JWT_SECRET`, MinIO credentials, and `TWIN_AUTH_TOKEN`. Do not use the runtime Compose file as a generic image-build check unless the deployment environment is intentionally configured for full-stack startup.
+
+Staging and production deployment definitions remain documented only unless a separate run proves the target environment, protected secrets, approval gates, deployment record, and smoke tests.
+
 ### Direct Docker Compose
 
 ```bash

@@ -1,6 +1,6 @@
 # SintraPrime-Unified — Canonical Architecture Authority
 
-> Authoritative as of commit `48e2caa759661cc75617cc752bcc26eaad666647` (tree `9ee6d193dd7f607cd59487df9ef26d46b9593803`).
+> Authoritative as of commit `2d6ff2e10b639ec2601a46ba1592aaa62e597349` (tree `584d44a1bf8f267ea3f00e84018f10026d8c4297`) plus PR-B branch changes for PostgreSQL fresh-bootstrap reconciliation.
 > This document is the single source of architectural truth. Where no single
 > authority exists, the status is `UNRESOLVED — convergence required`.
 
@@ -14,7 +14,7 @@
 | Mission Control | `portal/services/mission_control_*.py` + `portal/models/mission_control_*.py` | Command-ledger + run-control projection (read-only state machine). Refusal-only commands. |
 | Monitoring / telemetry | `observability/` | `metrics.py`, `tracer.py`, `thought_debugger.py`, `time_travel.py`. Telemetry only. |
 | Database models | `portal/models/` | SQLAlchemy declarative models; Base in `portal/database.py`. |
-| Migrations | `portal/migrations/*.sql` | Raw SQL applied by bootstrap/entrypoint. **No Alembic.** See `docs/DATABASE_AUTHORITY.md`. |
+| Migrations | `portal/migrations/*.sql` + `portal/scripts/postgresql_bootstrap.py` | Raw SQL fresh-bootstrap sequence with CI verifier. **No Alembic.** Fresh bootstrap only; not unknown-schema upgrade certification. See `docs/DATABASE_AUTHORITY.md`. |
 | Evidence / governance | `docs/`, `artifacts/`, `mission-control-evidence/`, `docs/governance/` | Frozen receipts, gate evidence, decision logs, tags. |
 
 ## Authority matrix (exactly one authority per concern)
@@ -74,6 +74,7 @@ The following certification-specific CI lanes are defined in `.github/workflows/
 | `auth-tenant-rbac-certification` | Authentication, tenant isolation, RBAC | PR #214 | `portal/tests/test_auth_tenant_rbac_certification.py` |
 | `audit-correlation-non-http-certification` | Audit correlation, non-HTTP authorization | PR #215 | `portal/tests/test_audit_correlation_non_http_certification.py` |
 | `http-correlation-ws-hardening-certification` | HTTP request-ID correlation, WebSocket hardening | PR #217 | `portal/tests/test_http_correlation_ws_hardening_certification.py` |
+| `postgresql-bootstrap-certification` | Raw-SQL fresh bootstrap and affected evidence/audit ORM parity | PR-B | `portal/tests/test_postgresql_bootstrap_schema_authority.py` |
 
 These lanes are CERTIFIED FOR THE RECORDED SCOPE of their respective increments.
 They do NOT constitute production certification, compliance certification,

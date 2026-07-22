@@ -13,7 +13,12 @@ from sqlalchemy import event, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from portal.database import Base
-from portal.models.mission_control_command import MissionControlCommand
+from portal.models.audit import AuditLog
+from portal.models.mission_control_command import (
+    MissionControlCommand,
+    MissionControlCommandEvent,
+    MissionControlCommandReceipt,
+)
 from portal.models.mission_control_run_control import (
     MissionControlRunControl,
     MissionControlRunControlEvent,
@@ -50,7 +55,10 @@ async def db() -> AsyncGenerator[AsyncSession, None]:
                     RolePermission.__table__,
                     UserPermissionAssoc.__table__,
                     User.__table__,
+                    AuditLog.__table__,
                     MissionControlCommand.__table__,
+                    MissionControlCommandEvent.__table__,
+                    MissionControlCommandReceipt.__table__,
                     MissionControlRunControl.__table__,
                     MissionControlRunControlEvent.__table__,
                 ],
@@ -535,7 +543,10 @@ async def test_parallel_pg_transition_race_appends_exactly_one_event():
                         RolePermission.__table__,
                         UserPermissionAssoc.__table__,
                         User.__table__,
+                        AuditLog.__table__,
                         MissionControlCommand.__table__,
+                        MissionControlCommandEvent.__table__,
+                        MissionControlCommandReceipt.__table__,
                         MissionControlRunControl.__table__,
                         MissionControlRunControlEvent.__table__,
                     ],
@@ -727,7 +738,10 @@ async def test_pg_flushed_transition_rollback_does_not_persist():
                         RolePermission.__table__,
                         UserPermissionAssoc.__table__,
                         User.__table__,
+                        AuditLog.__table__,
                         MissionControlCommand.__table__,
+                        MissionControlCommandEvent.__table__,
+                        MissionControlCommandReceipt.__table__,
                         MissionControlRunControl.__table__,
                         MissionControlRunControlEvent.__table__,
                     ],

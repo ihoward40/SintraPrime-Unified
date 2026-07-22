@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS clients (
     last_name           VARCHAR(100),
     company_name        VARCHAR(255),
     display_name        VARCHAR(255) GENERATED ALWAYS AS (
-        COALESCE(NULLIF(company_name, ''), CONCAT(first_name, ' ', last_name))
+        COALESCE(NULLIF(company_name, ''), COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))
     ) STORED,
     
     -- Contact

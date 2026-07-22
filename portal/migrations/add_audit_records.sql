@@ -7,19 +7,18 @@
 
 -- UP Migration
 CREATE TABLE IF NOT EXISTS audit_records (
-    audit_id              VARCHAR(36)     PRIMARY KEY,
-    snapshot_id           VARCHAR(36)     NOT NULL REFERENCES evidence_snapshots(snapshot_id),
+    audit_id              UUID            PRIMARY KEY DEFAULT uuid_generate_v4(),
+    snapshot_id           UUID            NOT NULL REFERENCES evidence_snapshots(snapshot_id) ON DELETE RESTRICT,
     evidence_hash         VARCHAR(64)     NOT NULL,
-    packet_id             VARCHAR(36)     NOT NULL,
+    packet_id             UUID            NOT NULL,
     packet_hash           VARCHAR(64)     NOT NULL,
     packet_version        INTEGER         NOT NULL,
     serialization_version INTEGER         NOT NULL DEFAULT 1,
     created_at            TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
-    created_by            VARCHAR(36)     NOT NULL REFERENCES users(id),
+    created_by            UUID            NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     verification_status   VARCHAR(20)     NOT NULL DEFAULT 'verified'
         CHECK (verification_status IN ('verified', 'failed')),
-    verification_details  VARCHAR(512),
-    CONSTRAINT pk_audit_records PRIMARY KEY (audit_id)
+    verification_details  VARCHAR(512)
 );
 
 -- Indexes for common query patterns
@@ -62,7 +61,7 @@ DROP TRIGGER IF EXISTS trg_audit_record_immutable ON audit_records;
 CREATE TRIGGER trg_audit_record_immutable
     BEFORE UPDATE OR DELETE ON audit_records
     FOR EACH ROW
-    EXECUTE FUNCTION prevent_audit_record_immutable();
+    EXECUTE FUNCTION prevent_audit_record_mutation();
 
 -- Comment documenting the immutability contract
 COMMENT ON TABLE audit_records IS

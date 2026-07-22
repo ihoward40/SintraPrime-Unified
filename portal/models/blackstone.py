@@ -11,37 +11,11 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import JSON, DateTime, Index, String, Text, TypeDecorator
-from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy import JSON, DateTime, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from portal.database import Base
-
-
-class PortableUUID(TypeDecorator):
-    """UUID that stores as native UUID on PostgreSQL and String(36) on SQLite."""
-
-    impl = String(36)
-    cache_ok = True
-
-    def load_dialect_impl(self, dialect):
-        if dialect.name == "postgresql":
-            return PGUUID(as_uuid=True)
-        return String(36)
-
-    def process_bind_param(self, value, dialect):
-        if value is None:
-            return None
-        if dialect.name == "postgresql":
-            return value if isinstance(value, uuid.UUID) else uuid.UUID(value)
-        return str(value)
-
-    def process_result_value(self, value, _dialect):
-        if value is None:
-            return None
-        if isinstance(value, uuid.UUID):
-            return value
-        return uuid.UUID(value)
+from portal.models.types import PortableUUID
 
 
 class EvidenceLedger(Base):

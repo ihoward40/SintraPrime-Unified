@@ -120,6 +120,70 @@ jobs:
           name: pg-race-log
           path: /tmp/pg_race.log
           if-no-files-found: ignore
+  postgresql-bootstrap-certification:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sintraprime_bootstrap
+          POSTGRES_PASSWORD: sintraprime_bootstrap
+          POSTGRES_DB: sintraprime_bootstrap_certification
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U sintraprime_bootstrap -d sintraprime_bootstrap_certification"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run raw-SQL PostgreSQL bootstrap certification
+        env:
+          PGPASSWORD: sintraprime_bootstrap
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGDATABASE: sintraprime_bootstrap_certification
+          PGUSER: sintraprime_bootstrap
+        run: |
+          set -euo pipefail
+          python - <<'PY' | tee /tmp/postgresql-bootstrap-certification.log
+          import os
+          import pytest
+
+          scheme = "postgresql" + "://"
+          os.environ["POSTGRESQL_BOOTSTRAP_TEST_DATABASE_URL"] = (
+              scheme
+              + os.environ["PGUSER"]
+              + "@"
+              + os.environ["PGHOST"]
+              + ":"
+              + os.environ["PGPORT"]
+              + "/"
+              + os.environ["PGDATABASE"]
+          )
+          raise SystemExit(pytest.main([
+              "-vv",
+              "-rs",
+              "--tb=long",
+              "--maxfail=1",
+              "portal/tests/test_postgresql_bootstrap_schema_authority.py",
+          ]))
+          PY
+          ! grep -q 'SKIPPED' /tmp/postgresql-bootstrap-certification.log
+      - name: Upload PostgreSQL bootstrap certification log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgresql-bootstrap-certification-log
+          path: /tmp/postgresql-bootstrap-certification.log
+          if-no-files-found: ignore
   lint:
     runs-on: ubuntu-latest
     steps:

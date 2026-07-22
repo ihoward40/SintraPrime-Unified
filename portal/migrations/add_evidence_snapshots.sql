@@ -7,13 +7,13 @@
 
 -- UP Migration
 CREATE TABLE IF NOT EXISTS evidence_snapshots (
-    snapshot_id     VARCHAR(36)     PRIMARY KEY,
-    case_id         VARCHAR(36)     NOT NULL REFERENCES cases(id),
+    snapshot_id     UUID            PRIMARY KEY DEFAULT uuid_generate_v4(),
+    case_id         UUID            NOT NULL REFERENCES cases(id) ON DELETE RESTRICT,
     evidence_hash   VARCHAR(64)     NOT NULL,
     manifest_hash   VARCHAR(64)     NOT NULL,
     snapshot_version INTEGER        NOT NULL DEFAULT 1,
     created_at      TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
-    created_by      VARCHAR(36)     NOT NULL REFERENCES users(id),
+    created_by      UUID            NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     evidence_count  INTEGER         NOT NULL DEFAULT 0,
     status          VARCHAR(20)     NOT NULL DEFAULT 'active'
         CHECK (status IN ('active', 'superseded', 'archived'))

@@ -41,9 +41,10 @@ jobs:
 
       - name: Inspect image history for secret-bearing build instructions
         run: |
+          set -euo pipefail
           docker history --no-trunc sintraprime-unified:build-verification > /tmp/sintraprime-image-history.txt
-          if grep -Ei 'TWIN_AUTH_TOKEN|POSTGRES_PASSWORD|SECRET_KEY|JWT_SECRET|MINIO_ROOT_USER|MINIO_PASSWORD|AWS_SECRET_ACCESS_KEY|STRIPE_SECRET_KEY' /tmp/sintraprime-image-history.txt; then
-            echo "Secret-bearing instruction found in image history" >&2
+          if grep -qEi 'TWIN_AUTH_TOKEN|POSTGRES_PASSWORD|SECRET_KEY|JWT_SECRET|MINIO_ROOT_USER|MINIO_PASSWORD|AWS_SECRET_ACCESS_KEY|STRIPE_SECRET_KEY' /tmp/sintraprime-image-history.txt; then
+            echo "Secret-bearing instruction detected in image history; details withheld from logs." >&2
             exit 1
           fi
-          echo "Image history contains no configured runtime-secret names."
+          echo "Image history scan passed; no configured runtime-secret names detected."

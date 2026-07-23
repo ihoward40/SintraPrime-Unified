@@ -1,0 +1,113 @@
+## sp_prb_final_bootstrap_1
+{
+  "instance": 1,
+  "container_name": "sp_prb_final_bootstrap_1",
+  "sanitized_container_id": "619c0846dfa1",
+  "postgresql_version": "16.14",
+  "start_timestamp_utc": "2026-07-22T22:36:24.361390+00:00",
+  "migration_sequence": [
+    "portal/migrations/portal_schema.sql",
+    "portal/migrations/add_evidence_snapshots.sql",
+    "portal/migrations/add_audit_records.sql",
+    "portal/migrations/add_mission_control_command_ledger.sql",
+    "portal/migrations/add_mission_control_run_control_projection.sql"
+  ],
+  "bootstrap_exit_status": 0,
+  "pytest_summary_tail": ".............                                                            [100%]",
+  "expected_table_check": "passed",
+  "generated_column_null_empty_semantic_checks": "see pytest summary",
+  "live_catalog_checks": "passed",
+  "orm_crud_result": "passed",
+  "audit_immutability_result": "passed",
+  "pre_cleanup_checks": {
+    "exact_name": true,
+    "expected_image": true,
+    "prb_label": true,
+    "tmpfs_only_storage": true,
+    "no_volumes": true,
+    "no_bind_mounts": true
+  },
+  "cleanup_confirmation": {
+    "stopped_removed_exact_container": true,
+    "container_absent": true
+  }
+}
+
+PYTEST TAIL
+.............                                                            [100%]
+
+## sp_prb_final_bootstrap_2
+{
+  "instance": 2,
+  "container_name": "sp_prb_final_bootstrap_2",
+  "sanitized_container_id": "72700bae525e",
+  "postgresql_version": "16.14",
+  "start_timestamp_utc": "2026-07-22T22:36:44.454206+00:00",
+  "migration_sequence": [
+    "portal/migrations/portal_schema.sql",
+    "portal/migrations/add_evidence_snapshots.sql",
+    "portal/migrations/add_audit_records.sql",
+    "portal/migrations/add_mission_control_command_ledger.sql",
+    "portal/migrations/add_mission_control_run_control_projection.sql"
+  ],
+  "bootstrap_exit_status": 0,
+  "pytest_summary_tail": ".............                                                            [100%]",
+  "expected_table_check": "passed",
+  "generated_column_null_empty_semantic_checks": "see pytest summary",
+  "live_catalog_checks": "passed",
+  "orm_crud_result": "passed",
+  "audit_immutability_result": "passed",
+  "pre_cleanup_checks": {
+    "exact_name": true,
+    "expected_image": true,
+    "prb_label": true,
+    "tmpfs_only_storage": true,
+    "no_volumes": true,
+    "no_bind_mounts": true
+  },
+  "cleanup_confirmation": {
+    "stopped_removed_exact_container": true,
+    "container_absent": true
+  }
+}
+
+PYTEST TAIL
+.............                                                            [100%]
+
+## sp_prb_final_bootstrap_3
+{
+  "instance": 3,
+  "container_name": "sp_prb_final_bootstrap_3",
+  "sanitized_container_id": "e9496b946781",
+  "postgresql_version": "16.14",
+  "start_timestamp_utc": "2026-07-22T22:37:04.577288+00:00",
+  "migration_sequence": [
+    "portal/migrations/portal_schema.sql",
+    "portal/migrations/add_evidence_snapshots.sql",
+    "portal/migrations/add_audit_records.sql",
+    "portal/migrations/add_mission_control_command_ledger.sql",
+    "portal/migrations/add_mission_control_run_control_projection.sql"
+  ],
+  "bootstrap_exit_status": 0,
+  "pytest_summary_tail": ".............                                                            [100%]",
+  "expected_table_check": "passed",
+  "generated_column_null_empty_semantic_checks": "see pytest summary",
+  "live_catalog_checks": "passed",
+  "orm_crud_result": "passed",
+  "audit_immutability_result": "passed",
+  "pre_cleanup_checks": {
+    "exact_name": true,
+    "expected_image": true,
+    "prb_label": true,
+    "tmpfs_only_storage": true,
+    "no_volumes": true,
+    "no_bind_mounts": true
+  },
+  "cleanup_confirmation": {
+    "stopped_removed_exact_container": true,
+    "container_absent": true
+  }
+}
+
+PYTEST TAIL
+.............                                                            [100%]

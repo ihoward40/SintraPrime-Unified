@@ -1,0 +1,16 @@
+........................................................................ [ 19%]
+........................................................................ [ 38%]
+........................................................................ [ 57%]
+........................................................................ [ 77%]
+........................................................................ [ 96%]
+..............                                                           [100%]
+============================== warnings summary ===============================
+agents\sigma\sigma_agent.py:23
+  C:\Users\admin\Desktop\Projects\SintraPrime-Unified-postgresql-bootstrap-fix\agents\sigma\sigma_agent.py:23: PytestCollectionWarning: cannot collect test class 'TestResult' because it has a __init__ constructor (from: tests/test_sigma_agent.py)
+    @dataclass
+
+agents\zero\zero_agent.py:35
+  C:\Users\admin\Desktop\Projects\SintraPrime-Unified-postgresql-bootstrap-fix\agents\zero\zero_agent.py:35: PytestCollectionWarning: cannot collect test class 'TestFailure' because it has a __init__ constructor (from: tests/test_zero_agent.py)
+    @dataclass
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html

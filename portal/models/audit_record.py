@@ -19,6 +19,7 @@ from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..database import Base
+from .types import PortableUUID
 
 
 class AuditRecord(Base):
@@ -40,14 +41,14 @@ class AuditRecord(Base):
     __tablename__ = "audit_records"
 
     # ── Identity ──────────────────────────────────────────────────────
-    audit_id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4()),
+    audit_id: Mapped[uuid.UUID] = mapped_column(
+        PortableUUID, primary_key=True, default=uuid.uuid4,
         doc="Unique audit record identifier.",
     )
 
     # ── Evidence chain ────────────────────────────────────────────────
-    snapshot_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("evidence_snapshots.snapshot_id"),
+    snapshot_id: Mapped[uuid.UUID] = mapped_column(
+        PortableUUID, ForeignKey("evidence_snapshots.snapshot_id"),
         nullable=False, index=True,
         doc="Source EvidenceSnapshot this audit record references.",
     )
@@ -57,8 +58,8 @@ class AuditRecord(Base):
     )
 
     # ── Packet identity ───────────────────────────────────────────────
-    packet_id: Mapped[str] = mapped_column(
-        String(36), nullable=False, index=True,
+    packet_id: Mapped[uuid.UUID] = mapped_column(
+        PortableUUID, nullable=False, index=True,
         doc="Identifier of the rendered EvidencePacket.",
     )
     packet_hash: Mapped[str] = mapped_column(
@@ -112,17 +113,17 @@ class AuditRecord(Base):
         This representation is reproducible for audit verification.
         """
         return {
-            "audit_id": self.audit_id,
+            "audit_id": str(self.audit_id),
             "created_at": (
                 self.created_at.isoformat() if self.created_at else None
             ),
-            "created_by": self.created_by,
+            "created_by": str(self.created_by),
             "evidence_hash": self.evidence_hash,
             "packet_hash": self.packet_hash,
-            "packet_id": self.packet_id,
+            "packet_id": str(self.packet_id),
             "packet_version": self.packet_version,
             "serialization_version": self.serialization_version,
-            "snapshot_id": self.snapshot_id,
+            "snapshot_id": str(self.snapshot_id),
             "verification_details": self.verification_details,
             "verification_status": self.verification_status,
         }

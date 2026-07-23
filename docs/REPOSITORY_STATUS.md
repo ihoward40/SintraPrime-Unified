@@ -54,6 +54,7 @@
 | `audit-correlation-non-http-certification` | Audit correlation, non-HTTP authorization | CERTIFIED FOR RECORDED SCOPE (PR #215) |
 | `http-correlation-ws-hardening-certification` | HTTP request-ID correlation, WebSocket hardening | CERTIFIED FOR RECORDED SCOPE (PR #217) |
 | `postgresql-race` | Mission Control immutability + hash chain | SUPPORTED (PG race proof) |
+| `postgresql-bootstrap-certification` | Raw-SQL fresh bootstrap + affected evidence/audit live-catalog ORM CRUD + PostgreSQL ORM create_all guard | SUPPORTED for fresh-bootstrap certification only; no unknown-schema upgrade certification |
 | `test` (default) | Full Python suite | SUPPORTED |
 | `lint` | Ruff lint | SUPPORTED |
 | `claims-validation` | Repository claims validation | SUPPORTED |

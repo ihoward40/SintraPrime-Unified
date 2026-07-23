@@ -20,6 +20,7 @@ from sqlalchemy import DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..database import Base
+from .types import PortableUUID
 
 
 class SnapshotStatus(_enum.StrEnum):
@@ -54,8 +55,8 @@ class EvidenceSnapshot(Base):
     __tablename__ = "evidence_snapshots"
 
     # ── Identity ──────────────────────────────────────────────────────
-    snapshot_id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4()),
+    snapshot_id: Mapped[uuid.UUID] = mapped_column(
+        PortableUUID, primary_key=True, default=uuid.uuid4,
     )
     case_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("cases.id"), nullable=False, index=True,
@@ -116,15 +117,15 @@ class EvidenceSnapshot(Base):
         produces the same dict output.
         """
         return {
-            "case_id": self.case_id,
+            "case_id": str(self.case_id),
             "created_at": (
                 self.created_at.isoformat() if self.created_at else None
             ),
-            "created_by": self.created_by,
+            "created_by": str(self.created_by),
             "evidence_count": self.evidence_count,
             "evidence_hash": self.evidence_hash,
             "manifest_hash": self.manifest_hash,
-            "snapshot_id": self.snapshot_id,
+            "snapshot_id": str(self.snapshot_id),
             "snapshot_version": self.snapshot_version,
             "status": self.status,
         }

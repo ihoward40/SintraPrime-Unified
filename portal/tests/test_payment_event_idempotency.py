@@ -65,7 +65,6 @@ class TestReplayDetection:
             result_reference="rcpt_old",
             payload_digest=digest,
         )
-        existing.tenant_id = "tenant_a"
 
         db = AsyncMock()
         db.flush = AsyncMock()
@@ -227,15 +226,18 @@ class TestLeaseManagement:
 
     @pytest.mark.asyncio
     async def test_processing_owner_must_match_for_completion(self):
-        record = _make_event_record(
-            status="processing",
-            processing_owner="worker_1",
-            attempt_count=1,
-        )
-        db = AsyncMock()
-        db.flush = AsyncMock()
-        with pytest.raises(EventConflictError, match="no_owner"):
-            record.processing_owner = None
+    """Test processing lease acquisition and completion."""
+    # Create a simple object to act as the record
+    class MockRecord:
+        def __init__(self):
+            self.processing_owner = "worker_1"
+    
+    record = MockRecord()
+    db = AsyncMock()
+    db.flush = AsyncMock()
+    # Set the processing_owner to None to trigger the error
+    record.processing_owner = None
+    with pytest.raises(EventConflictError, match="no_owner"):
         await complete_event(db, record, result_reference="rcpt_new")
 
     @pytest.mark.asyncio

@@ -185,6 +185,10 @@ class Permission(StrEnum):
     MISSION_AGENT_REASSIGN = "mission_control:agent_reassign"
     MISSION_COMMAND_ADMIN  = "mission_control:command_admin"
 
+    # Provider tenant mapping (SUPER_ADMIN only)
+    PROVIDER_TENANT_MAPPING_CREATE     = "provider_tenant_mapping:create"
+    PROVIDER_TENANT_MAPPING_DEACTIVATE = "provider_tenant_mapping:deactivate"
+
 
 # ── Role → Permission mapping ─────────────────────────────────────────────────
 

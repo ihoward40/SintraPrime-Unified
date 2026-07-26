@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sintraprime.local/schemas/hermes.memory.note.v1.schema.json",
+  "title": "Hermes Governed Memory Note v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "note_type",
+    "status",
+    "created_at",
+    "updated_at",
+    "source_ids",
+    "related_notes",
+    "claims",
+    "sensitivity",
+    "owner_profile"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^note_[0-9a-fA-F-]{36}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 240
+    },
+    "note_type": {
+      "enum": [
+        "client",
+        "matter",
+        "project",
+        "decision",
+        "person",
+        "organization",
+        "law",
+        "procedure",
+        "content"
+      ]
+    },
+    "status": {
+      "enum": ["active", "superseded", "archived", "quarantined"]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^src_[a-f0-9]{64}$"
+      }
+    },
+    "related_notes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^note_[0-9a-fA-F-]{36}$"
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/claim"
+      }
+    },
+    "sensitivity": {
+      "enum": ["public", "internal", "confidential", "restricted"]
+    },
+    "owner_profile": {
+      "enum": [
+        "hermes-librarian",
+        "hermes-research",
+        "hermes-content",
+        "hermes-client-ops"
+      ]
+    }
+  },
+  "$defs": {
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "classification",
+        "source_ids",
+        "confidence",
+        "text"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^claim_[0-9a-fA-F-]{36}$"
+        },
+        "classification": {
+          "enum": [
+            "verified_fact",
+            "user_assertion",
+            "legal_proposition",
+            "inference",
+            "unresolved"
+          ]
+        },
+        "source_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^src_[a-f0-9]{64}$"
+          }
+        },
+        "confidence": {
+          "enum": ["high", "medium", "low"]
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "classification": {
+                "const": "verified_fact"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "source_ids": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -79,9 +79,32 @@
 
 ---
 
-## Phase Two — Database Stability (Pending)
+## Phase Two — Database Stability (In Progress)
 
 **Entry condition:** Phase 1.5 CLOSED.
+
+**P2.1 — Database Discovery: COMPLETE**
+
+- Database Baseline Report: `artifacts/phase_2_1_database_baseline_report.md`
+- Key findings:
+  - Supported engine: **PostgreSQL only**.
+  - Migration tooling: **raw SQL** (`portal/migrations/*.sql`) with bootstrap runner (`portal/scripts/postgresql_bootstrap.py`); Alembic is a dependency but has no operational config.
+  - **Major schema drift discovered:** the live PostgreSQL container (`sintraprime-postgres`, PostgreSQL 15.17) contains an 8-table agent/skill runtime schema, while `portal/migrations/portal_schema.sql` declares a 25-table multi-tenant client-portal schema.
+  - No Alembic `.py` migration sources; only stale `.pyc` files remain in `portal/alembic/versions/__pycache__`.
+  - No dedicated migration regression tests.
+  - Downgrade scripts are inline comments at best.
+
+**P2.2 — Schema Integrity: BLOCKED pending scope decision**
+
+Before any schema modification, the repository owner must select one of the following options (detailed in the baseline report):
+
+| Option | Scope | Risk Level |
+|---|---|---|
+| A | Make the declared 25-table portal schema operational on a fresh database and add Alembic scaffolding. | High — touches aspirational schema, may require significant reconciliation. |
+| B | Reconcile live agent schema with portal schema into a unified model. | High — architectural redesign. |
+| C | **Recommended** — Bound Phase Two to strengthening the live 8-table runtime schema only; defer portal reconciliation. | Low/Medium — changes are localized and immediately verifiable. |
+
+**Decision required:** Authorize Option A, B, or C before P2.2 proceeds.
 
 **Objectives**
 
@@ -99,6 +122,8 @@
 - Rollback verification report.
 - Database integrity tests.
 - Updated certification artifact.
+
+---
 
 ---
 
@@ -125,21 +150,14 @@
 | 1 | Phase One certified CLOSED | Evidence satisfies acceptance criteria; clean working tree. | 2026-07-27 |
 | 2 | Insert Phase 1.5 before Phase Two | Verify CI runner behavior before changing core state. | 2026-07-27 |
 | 3 | Sequence: Phase 1.5 → Phase Two → Phase Three | Separates verification infrastructure, data integrity, and runtime reliability. | 2026-07-27 |
-| 4 | Phase 1.5 certified CONDITIONAL PASS | CI runner passes; artifacts upload; badge limitation documented. | 2026-07-27T03:11:38.771968+00:00 |
-
-
-
-| # | Decision | Rationale | Date |
-|---|---|---|---|
-| 1 | Phase One certified CLOSED | Evidence satisfies acceptance criteria; clean working tree. | 2026-07-27 |
-| 2 | Insert Phase 1.5 before Phase Two | Verify CI runner behavior before changing core state. | 2026-07-27 |
-| 3 | Sequence: Phase 1.5 → Phase Two → Phase Three | Separates verification infrastructure, data integrity, and runtime reliability for cleaner debugging and certification. | 2026-07-27 |
+| 4 | Phase 1.5 certified CONDITIONAL PASS | CI runner passes; artifacts upload; badge limitation documented. | 2026-07-27 |
+| 5 | P2.1 Database Discovery complete | Baseline report produced; major schema drift discovered. | 2026-07-27 |
 
 ---
 
 ## Next Action
 
-Phase 1.5 is CLOSED. Await authorization to begin **Phase Two — Database Stability**.
+Phase Two is **in progress** with P2.1 complete and P2.2 **blocked pending scope decision** (Options A/B/C in baseline report).
 
-Reference report: `artifacts/phase_1_5_ci_certification_report.md`
+Await authorization to proceed with selected Phase Two scope.
 

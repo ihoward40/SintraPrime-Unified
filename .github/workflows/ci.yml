@@ -17,6 +17,8 @@ jobs:
         run: pip install -r requirements.txt
       - name: Run full test suite
         run: python -m pytest --tb=short -q
+      - name: Run repo truth smoke check
+        run: python scripts/smoke/repo_truth_check.py
       - name: Report test inventory (dynamic count)
         run: python scripts/ci/report_test_inventory.py
       - name: Upload test results

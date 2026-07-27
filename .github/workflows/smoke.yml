@@ -1,0 +1,42 @@
+name: Smoke
+
+on:
+  push:
+    branches: [main, dev, feature/*]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run smoke lane
+        id: smoke
+        run: python scripts/smoke/e2e_skills_smoke.py
+
+      - name: Refresh smoke badge
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: python scripts/smoke/write_smoke_badge.py
+
+      - name: Upload smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-results
+          path: |
+            artifacts/last_smoke_summary.json
+            artifacts/last_smoke_receipt_ref.txt
+            artifacts/last_smoke_timestamp.txt
+          retention-days: 30
+          if-no-files-found: ignore

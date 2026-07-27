@@ -213,6 +213,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
 
 [![Star this repo](https://img.shields.io/github/stars/ihoward40/SintraPrime-Unified?style=social)](https://github.com/ihoward40/SintraPrime-Unified)
 [![Follow](https://img.shields.io/github/followers/ihoward40?style=social)](https://github.com/ihoward40)
+[![Smoke: passing](https://img.shields.io/badge/smoke-passing-brightgreen?style=for-the-badge)](https://github.com/ihoward40/SintraPrime-Unified/actions/workflows/smoke.yml)
 
 **For questions:** Open an issue or email sintraprime@ikesolutions.org
 

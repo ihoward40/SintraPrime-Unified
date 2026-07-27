@@ -152,12 +152,17 @@ Before any schema modification, the repository owner must select one of the foll
 | 3 | Sequence: Phase 1.5 → Phase Two → Phase Three | Separates verification infrastructure, data integrity, and runtime reliability. | 2026-07-27 |
 | 4 | Phase 1.5 certified CONDITIONAL PASS | CI runner passes; artifacts upload; badge limitation documented. | 2026-07-27 |
 | 5 | P2.1 Database Discovery complete | Baseline report produced; major schema drift discovered. | 2026-07-27 |
+| 6 | Phase Two scope: Option C | Stabilize live runtime schema only; defer portal reconciliation. | 2026-07-27 |
+| 7 | P2.2 Runtime Schema Integrity complete | CHECK/NOT NULL/index constraints added; live DB migrated; tests pass. | 2026-07-27T05:21:10.210714+00:00 |
 
 ---
 
 ## Next Action
 
-Phase Two is **in progress** with P2.1 complete and P2.2 **blocked pending scope decision** (Options A/B/C in baseline report).
+P2.2 is CLOSED. Proceed to **P2.3 — Migration Reliability** (validate rollback execution and repeatability) to continue Phase Two.
 
-Await authorization to proceed with selected Phase Two scope.
+Reference reports:
+- `artifacts/phase_2_2_runtime_schema_integrity_report.md`
+- `artifacts/schema_drift_register.md`
+- `docs/architecture/deferred/runtime-portal-schema-reconciliation.md`
 

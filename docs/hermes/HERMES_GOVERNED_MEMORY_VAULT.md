@@ -312,6 +312,18 @@ Every note and receipt stores `schema_version` inline. New schema versions are a
 9. Schema migration preserves historical versions.
 10. The subsystem remains additive and does not alter PostgreSQL authority.
 
+## Merge gate — Increment 1
+
+This architecture increment may merge only after repository-local certification proves:
+
+- both JSON schemas parse and validate known-good and known-bad fixtures,
+- the initializer passes fresh-root, existing-root, tenant-root, `-WhatIf`, and non-directory-root tests,
+- no initializer test observes overwritten content,
+- documentation and schemas agree on status, sensitivity, profile, lifecycle, and identifier enums,
+- secret scanning and repository policy checks pass.
+
+Runtime claims such as actual write-once enforcement, chained-receipt verification, tenant-safe query execution, or contradiction resolution are **not certified by Increment 1** and must not be represented as operational until Increment 2 tests pass.
+
 ## Increment 2 sequencing
 
 ### Phase 1 — Core runtime and isolation

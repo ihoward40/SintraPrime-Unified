@@ -43,4 +43,4 @@ BRA § 1.
 
 ## Note
 
-This is an ASCII placeholder. A Mermaid source will be added in a future revision.
+This is an ASCII ecosystem layers diagram. A machine-renderable equivalent (Mermaid or SVG) may be added in a future revision without changing the architectural meaning.

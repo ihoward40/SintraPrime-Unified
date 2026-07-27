@@ -88,3 +88,4 @@ When the user requests a durable behavior change, record it here or in the relev
 | `intake_templates/AGENTS.md` | Evidence intake template library | JSON template definitions and usage guide |
 | `tests/AGENTS.md` | Root-level tests | Scheduler tests, agent unit tests, security tests (not portal-level tests)
 | `.mesh/AGENTS.md` | Agent Mesh coordination | Ledger, registry, protocol messages, and transport status |
+| `governance/blackstone/AGENTS.md` | Blackstone Governance Library | Constitutional charter, standards, knowledge core, architecture, certification, registry, casebook |

@@ -10,7 +10,7 @@ Governance Baseline Candidate 1 (GBC-1)
 
 ## Status
 
-**READY FOR RATIFICATION**
+**RATIFIED AS GOVERNANCE BASELINE 1 (GB-1)**
 
 ## Scope Achieved
 
@@ -45,3 +45,15 @@ From this point until ratification, only editorial corrections are permitted in 
 ## Remaining Step
 
 Gate 9 — produce the ratification package and, upon your approval, open the first governance pull request.
+
+## Lifecycle State
+
+```text
+Draft → GBC-1 → GB-1 → RS-1 (future)
+```
+
+GB-1 is ratified. RS-1 will be considered only after the library has been exercised in real development and at least one independent review cycle confirms it functions as intended.
+
+## Post-Ratification Constraint
+
+No new constitutional material is added to GB-1. The next workstream is GBC-2, focused on governance tooling: linter, traceability graph, dashboard, and automated compliance tests.

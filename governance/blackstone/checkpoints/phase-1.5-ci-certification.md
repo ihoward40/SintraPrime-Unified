@@ -58,6 +58,27 @@
 
 ---
 
+## Phase 1.5 — Evidence Summary
+
+**Status:** CLOSED — CONDITIONAL PASS
+
+| Criterion | Result |
+|---|---|
+| GitHub Actions passes on hosted runner | PASS |
+| Smoke workflow push run | https://github.com/ihoward40/SintraPrime-Unified/actions/runs/30233866224 |
+| Smoke workflow manual run | https://github.com/ihoward40/SintraPrime-Unified/actions/runs/30233878978 |
+| Main CI workflow push run | https://github.com/ihoward40/SintraPrime-Unified/actions/runs/30233866200 |
+| Artifacts uploaded | PASS — `smoke-results` (990 bytes, expires 2026-08-26T03:09:20Z) |
+| Retention policy | PASS — 30 days |
+| Cross-platform execution | PASS — `ubuntu-latest`, no Windows/.venv assumptions |
+| Badge renders in README | PASS |
+| Badge auto-commit in CI | **LIMITATION** — not persisted; documented |
+| Full report | `artifacts/phase_1_5_ci_certification_report.md` |
+
+**Full certification report:** `artifacts/phase_1_5_ci_certification_report.md`
+
+---
+
 ## Phase Two — Database Stability (Pending)
 
 **Entry condition:** Phase 1.5 CLOSED.
@@ -103,10 +124,22 @@
 |---|---|---|---|
 | 1 | Phase One certified CLOSED | Evidence satisfies acceptance criteria; clean working tree. | 2026-07-27 |
 | 2 | Insert Phase 1.5 before Phase Two | Verify CI runner behavior before changing core state. | 2026-07-27 |
+| 3 | Sequence: Phase 1.5 → Phase Two → Phase Three | Separates verification infrastructure, data integrity, and runtime reliability. | 2026-07-27 |
+| 4 | Phase 1.5 certified CONDITIONAL PASS | CI runner passes; artifacts upload; badge limitation documented. | 2026-07-27T03:11:38.771968+00:00 |
+
+
+
+| # | Decision | Rationale | Date |
+|---|---|---|---|
+| 1 | Phase One certified CLOSED | Evidence satisfies acceptance criteria; clean working tree. | 2026-07-27 |
+| 2 | Insert Phase 1.5 before Phase Two | Verify CI runner behavior before changing core state. | 2026-07-27 |
 | 3 | Sequence: Phase 1.5 → Phase Two → Phase Three | Separates verification infrastructure, data integrity, and runtime reliability for cleaner debugging and certification. | 2026-07-27 |
 
 ---
 
 ## Next Action
 
-Await authorization to begin Phase 1.5 — CI Production Certification.
+Phase 1.5 is CLOSED. Await authorization to begin **Phase Two — Database Stability**.
+
+Reference report: `artifacts/phase_1_5_ci_certification_report.md`
+

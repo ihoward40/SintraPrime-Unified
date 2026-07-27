@@ -364,5 +364,5 @@ Runtime claims such as actual write-once enforcement, chained-receipt verificati
 - `AT-CONTRA-01..03`: conflict detection, lint-run linkage, authorized resolution receipt.
 - `AT-QUERY-01..04`: research visibility, content filtering/redaction, client isolation, denied-access receipt.
 - `AT-SEC-01..03`: secret quarantine, chained receipts, authorization before data access.
-- `AT-INIT-01..02`: idempotent existing vault and complete new scaffold.
+- `AT-INIT-01..04`: idempotent existing vault, complete new scaffold, `-WhatIf` no-op, and non-directory-root failure.
 - `AT-RES-01`: malformed notes quarantine without crashing lint.

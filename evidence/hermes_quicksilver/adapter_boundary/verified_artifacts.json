@@ -1,0 +1,41 @@
+{
+  "timestamp_utc": "2026-07-24T07:39:53.423420+00:00",
+  "files": [
+    {
+      "path": "C:\\Users\\admin\\Desktop\\Projects\\SintraPrime-Unified-hermes-quicksilver\\docs\\architecture\\HERMES_QUICKSILVER_GAP_ANALYSIS.md",
+      "exists": true,
+      "bytes": 12274,
+      "sha256": "21176adf1262298b92d61ce1f56d2cbef4dd0c215fe001188baa3467d45ed059"
+    },
+    {
+      "path": "C:\\Users\\admin\\Desktop\\Projects\\SintraPrime-Unified-hermes-quicksilver\\docs\\implementation\\HERMES_QUICKSILVER_PREPARATION_REPORT.md",
+      "exists": true,
+      "bytes": 1060704,
+      "sha256": "99c476390447aad89a42cdace6e0346efb86f31cc1a2aec2f5e10457d8f6be64"
+    },
+    {
+      "path": "C:\\Users\\admin\\Desktop\\Projects\\SintraPrime-Unified-hermes-quicksilver\\docs\\architecture\\HERMES_SINTRAPRIME_OWNERSHIP_MATRIX.md",
+      "exists": true,
+      "bytes": 4044,
+      "sha256": "912e720c71a8bd91f30c5f1797649ffe27cdfa68dea38446f50c24248c5e6b49"
+    },
+    {
+      "path": "C:\\Users\\admin\\Desktop\\Projects\\SintraPrime-Unified-hermes-quicksilver\\docs\\architecture\\HERMES_SPECIALIST_PROFILE_CONTRACT.md",
+      "exists": true,
+      "bytes": 3356,
+      "sha256": "8104be45245dbf4b2e13a97ea9bc615a74fb196918f5f6f23e114682d8affd3e"
+    },
+    {
+      "path": "C:\\Users\\admin\\Desktop\\Projects\\SintraPrime-Unified-hermes-quicksilver\\docs\\architecture\\HERMES_QUICKSILVER_AUDIT_EVENT_CONTRACT.md",
+      "exists": true,
+      "bytes": 3472,
+      "sha256": "e0b368f3dca2ee5bc616e8482309d5e65c6e3ec3bb372f4a27986605403fe29d"
+    },
+    {
+      "path": "C:\\Users\\admin\\Desktop\\Projects\\SintraPrime-Unified-hermes-quicksilver\\docs\\implementation\\HERMES_QUICKSILVER_INCREMENT_1_FILE_PLAN.md",
+      "exists": true,
+      "bytes": 5742,
+      "sha256": "7cde7a4c007b652e133e9594406534f5bf287db981dd68c8217506b51fbd9003"
+    }
+  ]
+}

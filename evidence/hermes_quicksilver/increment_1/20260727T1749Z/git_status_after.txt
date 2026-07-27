@@ -1,0 +1,103 @@
+=== git status --short --branch ===
+## feat/hermes-quicksilver-governed-fleet-increment-1...origin/main [behind 20]
+ M portal/config.py
+?? docs/architecture/
+?? docs/implementation/
+?? evidence/hermes_quicksilver/
+?? evidence/repository_forensics/
+?? portal/models/hermes_quicksilver.py
+?? portal/routers/hermes_quicksilver.py
+?? portal/services/hermes_quicksilver/
+?? tests/test_hermes_quicksilver_increment_1.py
+
+=== git diff --name-status ===
+M	portal/config.py
+
+=== git diff --cached --name-status ===
+
+=== git ls-files --others --exclude-standard ===
+docs/architecture/HERMES_QUICKSILVER_AUDIT_EVENT_CONTRACT.md
+docs/architecture/HERMES_QUICKSILVER_GAP_ANALYSIS.md
+docs/architecture/HERMES_SINTRAPRIME_OWNERSHIP_MATRIX.md
+docs/architecture/HERMES_SPECIALIST_PROFILE_CONTRACT.md
+docs/implementation/HERMES_QUICKSILVER_INCREMENT_1_FILE_PLAN.md
+docs/implementation/HERMES_QUICKSILVER_PREPARATION_REPORT.md
+evidence/hermes_quicksilver/adapter_boundary/20260724T073132Z/dependency_failure_analysis.json
+evidence/hermes_quicksilver/adapter_boundary/20260724T073132Z/instruction_scope.json
+evidence/hermes_quicksilver/adapter_boundary/20260724T073132Z/integration_surface_analysis.md
+evidence/hermes_quicksilver/adapter_boundary/20260724T073132Z/source_locations.json
+evidence/hermes_quicksilver/adapter_boundary/20260724T073132Z/symbol_inventory.json
+evidence/hermes_quicksilver/adapter_boundary/verified_artifacts.json
+evidence/hermes_quicksilver/correction/20260724T071121Z/environment.json
+evidence/hermes_quicksilver/correction/20260724T071121Z/narrow_test_suite_report.json
+evidence/hermes_quicksilver/correction/20260724T071121Z/source_symbol_evidence.json
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_acp_test_approval_isolation.py.stderr.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_acp_test_approval_isolation.py.stdout.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_agent_test_secret_scope.py.stderr.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_agent_test_secret_scope.py.stdout.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_gateway_test_approval_prompt_redaction.py.stderr.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_gateway_test_approval_prompt_redaction.py.stdout.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_gateway_test_async_session_store.py.stderr.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_gateway_test_async_session_store.py.stdout.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_gateway_test_profile_routing.py.stderr.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_gateway_test_profile_routing.py.stdout.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_gateway_test_session_store_runtime_stale_guard.py.stderr.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_gateway_test_session_store_runtime_stale_guard.py.stdout.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_gateway_test_tui_approval_redaction.py.stderr.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_gateway_test_tui_approval_redaction.py.stdout.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_hermes_cli_test_gateway_restart_loop.py.stderr.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_hermes_cli_test_gateway_restart_loop.py.stdout.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_hermes_cli_test_session_export.py.stderr.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_hermes_cli_test_session_export.py.stdout.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_hermes_cli_test_session_export_html.py.stderr.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_hermes_cli_test_session_export_html.py.stdout.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_hermes_cli_test_session_export_md.py.stderr.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_hermes_cli_test_session_export_md.py.stdout.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_integration_test_checkpoint_resumption.py.stderr.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_integration_test_checkpoint_resumption.py.stdout.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_run_agent_test_provider_fallback.py.stderr.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_run_agent_test_provider_fallback.py.stdout.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_tools_test_approval_deny_rules.py.stderr.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/test-output/tests_tools_test_approval_deny_rules.py.stdout.txt
+evidence/hermes_quicksilver/correction/20260724T071121Z/verified_artifacts.json
+evidence/hermes_quicksilver/increment_1/20260724T075849Z/baseline.json
+evidence/hermes_quicksilver/increment_1/20260724T075849Z/instruction_scope.json
+evidence/hermes_quicksilver/increment_1/20260724T075849Z/test-output/increment_1_tests.exit.txt
+evidence/hermes_quicksilver/increment_1/20260724T075849Z/test-output/increment_1_tests.stderr.txt
+evidence/hermes_quicksilver/increment_1/20260724T075849Z/test-output/increment_1_tests.stdout.txt
+evidence/hermes_quicksilver/increment_1/20260724T075849Z/test-output/increment_1_tests_after_use_cache.exit.txt
+evidence/hermes_quicksilver/increment_1/20260724T075849Z/test-output/increment_1_tests_after_use_cache.stderr.txt
+evidence/hermes_quicksilver/increment_1/20260724T075849Z/test-output/increment_1_tests_after_use_cache.stdout.txt
+evidence/hermes_quicksilver/increment_1/20260724T075849Z/test-output/increment_1_tests_final.exit.txt
+evidence/hermes_quicksilver/increment_1/20260724T075849Z/test-output/increment_1_tests_final.stderr.txt
+evidence/hermes_quicksilver/increment_1/20260724T075849Z/test-output/increment_1_tests_final.stdout.txt
+evidence/hermes_quicksilver/increment_1/20260724T075849Z/test-output/increment_1_tests_final2.exit.txt
+evidence/hermes_quicksilver/increment_1/20260724T075849Z/test-output/increment_1_tests_final2.stderr.txt
+evidence/hermes_quicksilver/increment_1/20260724T075849Z/test-output/increment_1_tests_final2.stdout.txt
+evidence/hermes_quicksilver/increment_1/20260724T075849Z/test-output/increment_1_tests_regression.exit.txt
+evidence/hermes_quicksilver/increment_1/20260724T075849Z/test-output/increment_1_tests_regression.stderr.txt
+evidence/hermes_quicksilver/increment_1/20260724T075849Z/test-output/increment_1_tests_regression.stdout.txt
+evidence/hermes_quicksilver/increment_1/20260724T075849Z/test_commands.json
+evidence/hermes_quicksilver/increment_1/20260727T1749Z/baseline.json
+evidence/hermes_quicksilver/increment_1/20260727T1749Z/git_status_after.txt
+evidence/hermes_quicksilver/increment_1/20260727T1749Z/instruction_scope.json
+evidence/hermes_quicksilver/increment_1/20260727T1749Z/lint-output/ruff_check.exit.txt
+evidence/hermes_quicksilver/increment_1/20260727T1749Z/lint-output/ruff_check.stdout.txt
+evidence/hermes_quicksilver/increment_1/20260727T1749Z/test-output/increment_1_tests.exit.txt
+evidence/hermes_quicksilver/increment_1/20260727T1749Z/test-output/increment_1_tests.stderr.txt
+evidence/hermes_quicksilver/increment_1/20260727T1749Z/test-output/increment_1_tests.stdout.txt
+evidence/hermes_quicksilver/increment_1/20260727T1749Z/typecheck-output/mypy.exit.txt
+evidence/hermes_quicksilver/increment_1/20260727T1749Z/typecheck-output/mypy.stderr.txt
+evidence/hermes_quicksilver/increment_1/20260727T1749Z/typecheck-output/mypy.stdout.txt
+evidence/hermes_quicksilver/rejected/INVALID_PREPARATION_GATE_REPORT.md
+evidence/hermes_quicksilver/rejected/INVALID_PREPARATION_GATE_REPORT_FINDINGS.md
+evidence/hermes_quicksilver/sha256_manifest.json
+evidence/repository_forensics/GOVERNED_INFERENCE_PRESERVATION_DISCREPANCY.md
+portal/models/hermes_quicksilver.py
+portal/routers/hermes_quicksilver.py
+portal/services/hermes_quicksilver/__init__.py
+portal/services/hermes_quicksilver/delegation_audit.py
+portal/services/hermes_quicksilver/hard_deny_policy.py
+portal/services/hermes_quicksilver/mapping_service.py
+portal/services/hermes_quicksilver/profile_registry.py
+tests/test_hermes_quicksilver_increment_1.py

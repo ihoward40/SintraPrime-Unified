@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import logging
 import time
 from dataclasses import replace
+from typing import Any
 
 from governed_inference.cache import ExactInferenceCache
 from governed_inference.classification import classify_request_data, redact_for_policy
@@ -26,6 +28,8 @@ from governed_inference.policy import route_denial_reason
 
 TRANSIENT_ERRORS = {ProviderErrorKind.TRANSIENT}
 
+logger = logging.getLogger("governed_inference.router")
+
 
 class GovernedInferenceRouter:
     def __init__(
@@ -36,12 +40,14 @@ class GovernedInferenceRouter:
         ledger: InferenceLedger | None = None,
         cache: ExactInferenceCache | None = None,
         escalation_queue: EscalationQueue | None = None,
+        tracer: Any = None,
     ) -> None:
         self.providers = providers
         self.policy = InferencePolicy.from_environment(policy)
         self.ledger = ledger or InferenceLedger()
         self.cache = cache or ExactInferenceCache()
         self.escalation_queue = escalation_queue or EscalationQueue()
+        self.tracer = tracer
 
     def invoke(
         self,
@@ -58,7 +64,27 @@ class GovernedInferenceRouter:
             max_input_tokens=min(request.max_input_tokens, self.policy.per_request.max_input_tokens),
             max_output_tokens=min(request.max_output_tokens, self.policy.per_request.max_output_tokens),
         )
+
+        # Trace: create root span for this inference request
+        trace = None
+        root_span = None
+        if self.tracer is not None:
+            trace = self.tracer.new_trace(name=f"inference.{request.task_type}")
+            root_span = self.tracer.create_span(
+                trace,
+                "inference.invoke",
+                tags={
+                    "request_id": request.request_id,
+                    "task_type": request.task_type,
+                    "capability": request.capability,
+                },
+            )
+            root_span.set_tag("classification", classification.value)
         self.ledger.emit("inference.requested", request_id=request.request_id)
+        logger.info(
+            "inference.requested",
+            extra={"request_id": request.request_id, "task_type": request.task_type, "capability": request.capability},
+        )
         redaction_receipt = redact_for_policy(request)
         self.ledger.emit(
             "inference.classified",
@@ -70,11 +96,27 @@ class GovernedInferenceRouter:
             request_id=request.request_id,
             redaction_receipt_hash=redaction_receipt.redaction_receipt_hash,
         )
+        logger.info(
+            "inference.classified",
+            extra={
+                "request_id": request.request_id,
+                "classification": classification.value,
+                "redaction_decision": redaction_receipt.policy_decision,
+            },
+        )
 
         if self.policy.cache.enabled and request.cache_policy != "bypass":
             cached = self.cache.get(request)
             if cached is not None:
                 self.ledger.emit("inference.cache_hit", request_id=request.request_id)
+                logger.info(
+                    "inference.cache_hit",
+                    extra={"request_id": request.request_id, "provider": cached.provider},
+                )
+                if root_span is not None:
+                    root_span.set_tag("outcome", "cache_hit")
+                    root_span.set_tag("provider", cached.provider)
+                    root_span.finish()
                 return cached
 
         eligible, rejected = self._build_candidates(request, classification, authorization)
@@ -86,6 +128,14 @@ class GovernedInferenceRouter:
         )
         if not eligible:
             self.ledger.emit("inference.denied", request_id=request.request_id)
+            logger.warning(
+                "inference.denied",
+                extra={
+                    "request_id": request.request_id,
+                    "rejected_count": len(rejected),
+                    "reasons": [r.reason for r in rejected],
+                },
+            )
             self.ledger.create_receipt(
                 request=request,
                 classification=classification,
@@ -104,6 +154,9 @@ class GovernedInferenceRouter:
                 denied_routes=rejected,
                 estimated_cost_usd=None,
             )
+            if root_span is not None:
+                root_span.set_tag("outcome", "denied")
+                root_span.finish_with_error("no eligible inference route")
             raise InferenceError("no eligible inference route", ProviderErrorKind.POLICY_DENIED)
 
         attempts: list[AttemptRecord] = []
@@ -153,6 +206,28 @@ class GovernedInferenceRouter:
                     self.ledger.finalize_receipt(receipt.receipt_id, result)
                     self.ledger.emit("inference.completed", request_id=request.request_id, provider=result.provider)
                     self.ledger.emit("inference.cost_recorded", request_id=request.request_id)
+                    logger.info(
+                        "inference.completed",
+                        extra={
+                            "request_id": request.request_id,
+                            "provider": result.provider,
+                            "model": result.model,
+                            "route_tier": result.route_tier.value,
+                            "latency_ms": result.latency_ms,
+                            "attempts": attempt,
+                            "input_tokens": result.usage.get("input_tokens", 0),
+                            "output_tokens": result.usage.get("output_tokens", 0),
+                            "cache_status": result.cache_status.value,
+                            "estimated_cost_usd": result.estimated_cost_usd,
+                            "provider_request_id": result.provider_request_id,
+                        },
+                    )
+                    if root_span is not None:
+                        root_span.set_tag("provider", result.provider)
+                        root_span.set_tag("model", result.model)
+                        root_span.set_tag("latency_ms", result.latency_ms)
+                        root_span.set_tag("attempts", attempt)
+                        root_span.finish()
                     return result
                 except InferenceError as exc:
                     last_error = exc
@@ -174,6 +249,16 @@ class GovernedInferenceRouter:
                         provider=candidate.provider,
                         error_kind=exc.kind.value,
                     )
+                    logger.warning(
+                        "inference.attempt_failed",
+                        extra={
+                            "request_id": request.request_id,
+                            "provider": candidate.provider,
+                            "model": candidate.model,
+                            "attempt": attempt,
+                            "error_kind": exc.kind.value,
+                        },
+                    )
                     if exc.kind not in TRANSIENT_ERRORS:
                         break
                     time.sleep(min(0.01 * attempt, 0.05))
@@ -183,6 +268,13 @@ class GovernedInferenceRouter:
                 request_id=request.request_id,
                 failed_provider=candidate.provider,
             )
+            logger.info(
+                "inference.fallback_selected",
+                extra={
+                    "request_id": request.request_id,
+                    "failed_provider": candidate.provider,
+                },
+            )
         self.escalation_queue.enqueue(
             request=request,
             classification=classification,
@@ -190,6 +282,9 @@ class GovernedInferenceRouter:
             denied_routes=rejected,
             estimated_cost_usd=eligible[-1].estimated_cost_usd,
         )
+        if root_span is not None:
+            root_span.set_tag("outcome", "all_routes_failed")
+            root_span.finish_with_error("all inference routes failed")
         raise last_error or InferenceError("all inference routes failed", ProviderErrorKind.UNKNOWN)
 
     def _build_candidates(
@@ -257,21 +352,58 @@ class GovernedInferenceRouter:
         *,
         stream: bool,
     ) -> InferenceResult:
-        if not stream:
-            return provider.invoke(request)
+        timeout_seconds = self.policy.per_request.timeout_seconds
+        deadline = time.monotonic() + timeout_seconds
+
+        def _invoke() -> InferenceResult:
+            if not stream:
+                return provider.invoke(request)
+            try:
+                return provider.invoke_stream(request)
+            except InferenceError as exc:
+                if exc.kind != ProviderErrorKind.TRANSIENT:
+                    raise
+                self.ledger.emit(
+                    "inference.attempt_failed",
+                    request_id=request.request_id,
+                    provider=provider.capabilities().provider,
+                    error_kind=exc.kind.value,
+                    stream_partial_preserved=True,
+                )
+                logger.warning(
+                    "inference.stream_fallback",
+                    extra={
+                        "request_id": request.request_id,
+                        "provider": provider.capabilities().provider,
+                        "error_kind": exc.kind.value,
+                        "stream_partial_preserved": True,
+                    },
+                )
+                return provider.invoke(request)
+
         try:
-            return provider.invoke_stream(request)
-        except InferenceError as exc:
-            if exc.kind != ProviderErrorKind.TRANSIENT:
-                raise
-            self.ledger.emit(
-                "inference.attempt_failed",
-                request_id=request.request_id,
-                provider=provider.capabilities().provider,
-                error_kind=exc.kind.value,
-                stream_partial_preserved=True,
-            )
-            return provider.invoke(request)
+            result = _invoke()
+            remaining = deadline - time.monotonic()
+            if remaining < 0:
+                logger.warning(
+                    "inference.timeout_exceeded",
+                    extra={
+                        "request_id": request.request_id,
+                        "provider": provider.capabilities().provider,
+                        "timeout_seconds": timeout_seconds,
+                        "latency_ms": result.latency_ms,
+                    },
+                )
+                raise InferenceError(
+                    f"provider exceeded timeout of {timeout_seconds}s",
+                    ProviderErrorKind.TRANSIENT,
+                )
+            return result
+        except InferenceError:
+            raise
+        except Exception as exc:
+            # Wrap unexpected exceptions as unknown errors.
+            raise InferenceError(str(exc), ProviderErrorKind.UNKNOWN) from exc
 
     def _provider_by_name(self, name: str) -> InferenceProvider:
         for provider in self.providers:

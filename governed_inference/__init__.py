@@ -1,5 +1,9 @@
 """Governed local-first inference control plane for SintraPrime."""
 
+from governed_inference.adapters import (
+    AnthropicProvider,
+    OpenAIProvider,
+)
 from governed_inference.classification import classify_request_data
 from governed_inference.contracts import (
     CacheStatus,
@@ -36,6 +40,7 @@ from governed_inference.providers import (
 from governed_inference.router import GovernedInferenceRouter
 
 __all__ = [
+    "AnthropicProvider",
     "CacheStatus",
     "CostEstimate",
     "DataClassification",
@@ -54,6 +59,7 @@ __all__ = [
     "MistralProvider",
     "MockProvider",
     "OmniRouteProvider",
+    "OpenAIProvider",
     "OpenRouterProvider",
     "PaidAuthorization",
     "PremiumApprovedProvider",

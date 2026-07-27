@@ -2,8 +2,8 @@
 
 | Field | Value |
 |-------|-------|
-| Commit SHA | `d3f851e521221ed3fff8e0a12fc77685b2217237` |
-| Short SHA | `d3f851e5` |
+| Commit SHA | `7bdddfd5ae8a4e46eb7e8e486675fadb3107f4f6` |
+| Short SHA | `7bdddfd5` |
 | Branch | `main` |
 | Timestamp | `2026-07-27T03:00:50.723979+00:00` |
 | Python version | `Python 3.11.9` |
@@ -12,7 +12,7 @@
 | Smoke pytest totals | **3 passed, 0 failed, 0 skipped** |
 | Repository Truth Check totals | **31 passed, 0 failed, 0 warnings** |
 | Smoke lane overall | **PASS** |
-| Receipt ID | `smoke_20260727030050_d3f851e5` |
+| Receipt ID | `smoke_20260727025733_7bdddfd5` |
 | Badge status | `[![Smoke: passing](https://img.shields.io/badge/smoke-passing-brightgreen?style=for-the-badge)](https://github.com/ihoward40/SintraPrime-Unified/actions/workflows/smoke.yml)` |
 
 ## CI Workflow Names
@@ -29,11 +29,13 @@
 
 ## Smoke Artifact Locations
 
-| Artifact | Path | SHA-256 |
-|----------|------|---------|
-| `last_smoke_receipt_ref.txt` | `artifacts/last_smoke_receipt_ref.txt` | `78bca5d81ac684d608ca20bdf4c55cfa93eefa50b90132c3fcdb3edb4e6286d7` |
-| `last_smoke_summary.json` | `artifacts/last_smoke_summary.json` | `fb751558d23002340dc53dd3c3ffcebbf49dd4ba33b6bbe800fd8579c4c733ef` |
-| `last_smoke_timestamp.txt` | `artifacts/last_smoke_timestamp.txt` | `2ea2abb7fc366559b5fbb75005efe6eab22d0dbb07f1db5661b7d62228fd51ee` |
+| Artifact | Path |
+|----------|------|
+| `last_smoke_receipt_ref.txt` | `artifacts/last_smoke_receipt_ref.txt` |
+| `last_smoke_summary.json` | `artifacts/last_smoke_summary.json` |
+| `last_smoke_timestamp.txt` | `artifacts/last_smoke_timestamp.txt` |
+
+Artifact hashes are recorded in `artifacts/phase_one_baseline_snapshot.md` at the time of the baseline snapshot.
 
 ## Verification Commands Executed
 

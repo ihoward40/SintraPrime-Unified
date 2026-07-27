@@ -2,8 +2,8 @@
 
 | Field | Value |
 |-------|-------|
-| Generated at | `2026-07-27T03:00:50.723979+00:00` |
-| Git SHA | `d3f851e521221ed3fff8e0a12fc77685b2217237` |
+| Generated at | `2026-07-27T03:02:53.785835+00:00` |
+| Git SHA | `7bdddfd5ae8a4e46eb7e8e486675fadb3107f4f6` |
 | Git branch | `main` |
 | Python version | `Python 3.11.9` |
 
@@ -33,9 +33,9 @@
 
 | Artifact | SHA-256 |
 |----------|---------|
-| `last_smoke_receipt_ref.txt` | `78bca5d81ac684d608ca20bdf4c55cfa93eefa50b90132c3fcdb3edb4e6286d7` |
-| `last_smoke_summary.json` | `fb751558d23002340dc53dd3c3ffcebbf49dd4ba33b6bbe800fd8579c4c733ef` |
-| `last_smoke_timestamp.txt` | `2ea2abb7fc366559b5fbb75005efe6eab22d0dbb07f1db5661b7d62228fd51ee` |
+| `last_smoke_receipt_ref.txt` | `e65f8c1859ce35be1d7d4cb302cd7dfa35a4e6f0128486a39bfb225d3b5286fd` |
+| `last_smoke_summary.json` | `730eab4a00316ecc4bda13d89a95ed0093fedd6c18ad4e6bf297f0d67b974213` |
+| `last_smoke_timestamp.txt` | `53efa1f740aa3f57efa31a5ec719fedca7d27fc2c2ccc43f13f165c8b1e661a8` |
 
 ## README Badge State
 

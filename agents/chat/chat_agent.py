@@ -27,8 +27,27 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from governed_inference import (
+    DataClassification,
+    GovernedInferenceRouter,
+    InferencePolicy,
+    InferenceRequest,
+    OpenAIProvider,
+    QualityFloor,
+)
+from governed_inference.contracts import InferenceError, PerRequestPolicy
+
 logger = logging.getLogger("chat_agent")
 logger.setLevel(logging.INFO)
+
+
+# ---------------------------------------------------------------------------
+# Capability mapping for governed inference
+# ---------------------------------------------------------------------------
+
+
+_CHAT_CAPABILITY = "drafting"
+_CHAT_TASK_TYPE = "chat"
 
 # ---------------------------------------------------------------------------
 # Data models
@@ -202,6 +221,7 @@ class ChatAgent:
         self._tool_handlers: Dict[str, Callable] = {}
         self._openai_key = os.environ.get("OPENAI_API_KEY")
         self._session_store_path = session_store_path
+        self._governed_router: Optional[GovernedInferenceRouter] = None
 
         # Register built-in tools
         self._register_default_tools()
@@ -421,6 +441,60 @@ class ChatAgent:
     # Private helpers
     # ------------------------------------------------------------------
 
+    def _build_governed_router(self) -> Optional[GovernedInferenceRouter]:
+        """Build a governed inference router for the chat agent."""
+        if not self._openai_key:
+            return None
+
+        providers: List[Any] = []
+        openai_provider = OpenAIProvider(
+            api_key=self._openai_key,
+            model=self.model,
+            estimated_cost_usd=0.0,
+            pricing_known=True,
+        )
+        providers.append(openai_provider)
+
+        per_request = PerRequestPolicy(
+            max_input_tokens=12000,
+            max_output_tokens=4096,
+            timeout_seconds=60,
+            max_attempts=3,
+        )
+        policy = InferencePolicy(
+            per_request=per_request,
+            paid_models_allowed=True,
+            paid_escalation_requires_explicit_approval=False,
+        )
+        return GovernedInferenceRouter(providers, policy=policy)
+
+    def _ensure_governed_router(self) -> Optional[GovernedInferenceRouter]:
+        if self._governed_router is None:
+            self._governed_router = self._build_governed_router()
+        return self._governed_router
+
+    def _build_inference_request(
+        self,
+        messages: List[Dict[str, str]],
+        max_tokens: int,
+        temperature: float,
+    ) -> InferenceRequest:
+        metadata: Dict[str, Any] = {}
+        if self.model and self.model != "auto":
+            metadata["model_override"] = self.model
+        return InferenceRequest(
+            request_id=f"chat_{uuid.uuid4().hex[:12]}",
+            task_type=_CHAT_TASK_TYPE,
+            capability=_CHAT_CAPABILITY,
+            messages=messages,
+            data_classification=DataClassification.PUBLIC,
+            quality_floor=QualityFloor.STANDARD,
+            max_input_tokens=12000,
+            max_output_tokens=max_tokens,
+            temperature=temperature,
+            metadata=metadata,
+        )
+
     def _build_messages(self, session: ChatSession) -> List[Dict[str, str]]:
         """Build the full message list for the LLM."""
         system_content = SINTRA_SYSTEM_PROMPT
@@ -444,10 +518,29 @@ class ChatAgent:
         messages: List[Dict[str, str]],
         session: ChatSession,
     ) -> str:
-        """Get a response from the LLM."""
+        """Get a response from the LLM via the governed inference control plane."""
         if not self._openai_key:
             return self._fallback_response(messages[-1]["content"] if messages else "")
 
+        router = self._ensure_governed_router()
+        if router is not None:
+            try:
+                request = self._build_inference_request(
+                    messages=messages,
+                    max_tokens=2000,
+                    temperature=0.7,
+                )
+                result = router.invoke(request)
+                content = str(result.content) if result.content is not None else ""
+                session.token_count += result.usage.get("total_tokens", 0)
+                return content
+            except InferenceError as exc:
+                logger.error("Governed inference router failed: %s", exc)
+                return f"I encountered an error processing your request: {exc}. Please try again."
+            except Exception as exc:
+                logger.error("Governed inference router raised unexpected error: %s", exc)
+
+        # Legacy fallback: direct OpenAI SDK call preserved during migration.
         try:
             import openai
             client = openai.OpenAI(api_key=self._openai_key)

@@ -366,3 +366,7 @@ Runtime claims such as actual write-once enforcement, chained-receipt verificati
 - `AT-SEC-01..03`: secret quarantine, chained receipts, authorization before data access.
 - `AT-INIT-01..04`: idempotent existing vault, complete new scaffold, `-WhatIf` no-op, and non-directory-root failure.
 - `AT-RES-01`: malformed notes quarantine without crashing lint.
+
+## Review closure — 2026-07-26
+
+The following review gaps are closed at the specification/schema/scaffold layer: note versioning and downgrade rules, write-once source semantics, first-class contradictions, quarantine exit authority, concrete profile ACLs, explicit profile switching, fail-closed receipt behavior, parser-cache recovery, physical tenant segregation, read-only/dry-run behavior, sensitivity-filtered queries, append-only chained receipts, inline schema versions, and additive migrations. Runtime enforcement remains gated to Increment 2 certification.

@@ -40,5 +40,6 @@ Howard recovery/intake/template agents must remain evidence-intake-only unless e
 | Path | Scope | Controls |
 |---|---|---|
 | `agents/chat/AGENTS.md` | Chat Agent public API and governed inference routing | `chat_agent.py`, `__init__.py`, `tests/` |
+| `agents/zero/AGENTS.md` | Zero Agent self-healing behavior and governed inference routing | `zero_agent.py`, `health_monitor.py`, `__init__.py`, `tests/` |
 
 *(Other sub-agent packages are leaf modules without child DOX for now.)*

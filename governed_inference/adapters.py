@@ -14,6 +14,7 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Iterable
+from dataclasses import replace
 from typing import Any
 
 from governed_inference.contracts import (
@@ -31,6 +32,20 @@ from governed_inference.contracts import (
 )
 
 logger = logging.getLogger("governed_inference.adapters")
+
+# ---------------------------------------------------------------------------
+# Ollama error translation
+# ---------------------------------------------------------------------------
+
+
+def _translate_ollama_error(exc: Exception) -> InferenceError:
+    """Translate an Ollama/local client exception into an InferenceError."""
+    exc_name = type(exc).__name__
+    if exc_name in {"OllamaConnectionError", "ConnectionError"}:
+        return InferenceError(str(exc), ProviderErrorKind.TRANSIENT)
+    if exc_name in {"OllamaModelError", "ValueError"}:
+        return InferenceError(str(exc), ProviderErrorKind.INVALID_REQUEST)
+    return InferenceError(str(exc), ProviderErrorKind.UNKNOWN)
 
 # ---------------------------------------------------------------------------
 # Error translation helpers
@@ -529,6 +544,329 @@ class AnthropicProvider(_BaseRealProvider):
     def invoke_stream(self, request: InferenceRequest) -> InferenceResult:
         # Anthropic streaming uses a different API shape; fall back to non-stream.
         return self.invoke(request)
+
+
+# ---------------------------------------------------------------------------
+# Ollama adapter
+# ---------------------------------------------------------------------------
+
+
+class OllamaProvider(_BaseRealProvider):
+    """
+    Production Ollama provider adapter.
+
+    Wraps ``local_models.ollama_client.OllamaClient`` into the InferenceProvider
+    protocol. Always considered configured because the local daemon is the only
+    runtime dependency; reachability is reported by ``health()``.
+    """
+
+    def __init__(
+        self,
+        *,
+        base_url: str = "http://localhost:11434",
+        model: str = "llama3",
+        timeout_seconds: float | None = 120.0,
+        route_tier: RouteTier = RouteTier.LOCAL_PRIVATE,
+        capabilities: Iterable[str] = (
+            "classification",
+            "extraction",
+            "summarization",
+            "drafting",
+            "coding",
+            "reasoning",
+        ),
+        context_window: int = 128000,
+        quality: QualityFloor = QualityFloor.STANDARD,
+        source_url: str | None = "https://github.com/ollama/ollama/blob/main/docs/api.md",
+    ) -> None:
+        super().__init__(
+            name="ollama",
+            model=model,
+            route_tier=route_tier,
+            capabilities=capabilities,
+            cloud=False,
+            paid=False,
+            api_key="local",  # always configured for local-first routing
+            api_base=base_url,
+            timeout_seconds=timeout_seconds,
+            pricing_known=True,
+            estimated_cost_usd=0.0,
+            context_window=context_window,
+            quality=quality,
+            source_url=source_url,
+            account_entitlement_known=True,
+            free_allowance_known=True,
+        )
+        self._ollama_client_cls: Any = None
+
+    def _create_client(self, **kwargs: Any) -> Any:
+        from local_models.ollama_client import OllamaClient
+
+        self._ollama_client_cls = OllamaClient
+        base_url = kwargs.get("base_url", "http://localhost:11434")
+        timeout = kwargs.get("timeout", 120)
+        return OllamaClient(base_url=base_url, timeout=int(timeout))
+
+    def health(self) -> ProviderHealth:
+        try:
+            client = self._ensure_client()
+            available = client.is_available()
+            return ProviderHealth(
+                reachable=available,
+                healthy=available,
+                reason=None if available else "ollama_unreachable",
+            )
+        except Exception as exc:
+            return ProviderHealth(reachable=False, healthy=False, reason=str(exc))
+
+    def current_limits(self) -> ProviderLimits:
+        return ProviderLimits(rate_limits_known=True)
+
+    def invoke(self, request: InferenceRequest) -> InferenceResult:
+        client = self._ensure_client()
+        started = time.perf_counter()
+        try:
+            model = request.metadata.get("model_override", self.model)
+            # Backward-compatible path: legacy ModelRouter used OllamaClient.generate,
+            # and existing tests mock that method. Build a prompt from messages.
+            messages = list(request.messages)
+            system_text: str | None = None
+            prompt_parts = []
+            for msg in messages:
+                role = msg.get("role")
+                if role == "system":
+                    system_text = msg.get("content", "")
+                elif role == "user":
+                    prompt_parts.append(msg.get("content", ""))
+                else:
+                    prompt_parts.append(f"[{role}]: {msg.get('content', '')}")
+            prompt = "\n\n".join(prompt_parts) or " "
+
+            if not client.model_exists(model):
+                model = getattr(client, "default_model", self.model)
+
+            resp = client.generate(
+                prompt=prompt,
+                model=model,
+                system=system_text,
+                temperature=request.temperature,
+                max_tokens=request.max_output_tokens,
+                stream=False,
+            )
+            latency_ms = int((time.perf_counter() - started) * 1000)
+
+            content = resp.get("response", "") or ""
+            usage = {
+                "input_tokens": resp.get("prompt_eval_count", 0) or 0,
+                "output_tokens": resp.get("eval_count", 0) or 0,
+                "total_tokens": (resp.get("prompt_eval_count", 0) or 0) + (resp.get("eval_count", 0) or 0),
+                "cached_tokens": 0,
+            }
+
+            logger.info(
+                "ollama.invoke.success",
+                extra={
+                    "provider": self.name,
+                    "model": model,
+                    "request_id": request.request_id,
+                    "latency_ms": latency_ms,
+                    "input_tokens": usage["input_tokens"],
+                    "output_tokens": usage["output_tokens"],
+                },
+            )
+            return self._result(request, content, usage, None, latency_ms)
+        except Exception as exc:
+            latency_ms = int((time.perf_counter() - started) * 1000)
+            inf_error = _translate_ollama_error(exc)
+            logger.warning(
+                "ollama.invoke.error",
+                extra={
+                    "provider": self.name,
+                    "model": self.model,
+                    "request_id": request.request_id,
+                    "latency_ms": latency_ms,
+                    "error_kind": inf_error.kind.value,
+                    "error_type": type(exc).__name__,
+                },
+            )
+            raise inf_error from exc
+
+    def invoke_stream(self, request: InferenceRequest) -> InferenceResult:
+        # Ollama streaming uses a different response shape; fall back to non-stream.
+        return self.invoke(request)
+
+
+# ---------------------------------------------------------------------------
+# DeepSeek adapter
+# ---------------------------------------------------------------------------
+
+
+class DeepSeekProvider(_BaseRealProvider):
+    """
+    Production DeepSeek provider adapter.
+
+    Wraps ``local_models.deepseek_client.DeepSeekClient`` into the
+    InferenceProvider protocol. Requires an API key to invoke.
+    """
+
+    def __init__(
+        self,
+        *,
+        api_key: str | None = None,
+        model: str = "deepseek-chat",
+        timeout_seconds: float | None = 120.0,
+        route_tier: RouteTier = RouteTier.CLOUD_LOW_COST_FAST,
+        capabilities: Iterable[str] = (
+            "classification",
+            "extraction",
+            "summarization",
+            "drafting",
+            "coding",
+            "reasoning",
+        ),
+        context_window: int = 64000,
+        quality: QualityFloor = QualityFloor.STANDARD,
+        pricing_known: bool = True,
+        source_url: str | None = "https://platform.deepseek.com/api-docs",
+    ) -> None:
+        super().__init__(
+            name="deepseek",
+            model=model,
+            route_tier=route_tier,
+            capabilities=capabilities,
+            cloud=True,
+            paid=True,
+            api_key=api_key,
+            timeout_seconds=timeout_seconds,
+            pricing_known=pricing_known,
+            estimated_cost_usd=0.0,  # conservative pre-call estimate; actual cost reported post-call
+            context_window=context_window,
+            quality=quality,
+            source_url=source_url,
+            account_entitlement_known=bool(api_key),
+            free_allowance_known=False,
+        )
+        self._deepseek_client_cls: Any = None
+
+    def _create_client(self, **kwargs: Any) -> Any:
+        from local_models.deepseek_client import DeepSeekClient
+
+        self._deepseek_client_cls = DeepSeekClient
+        api_key = kwargs.get("api_key")
+        timeout = kwargs.get("timeout", 120)
+        return DeepSeekClient(api_key=api_key, timeout=int(timeout))
+
+    def _is_reasoning_task(self, request: InferenceRequest) -> bool:
+        override = request.metadata.get("model_override")
+        if override == "deepseek-reasoner":
+            return True
+        return request.task_type in {"legal_research", "case_analysis", "argument_construction"}
+
+    def invoke(self, request: InferenceRequest) -> InferenceResult:
+        client = self._ensure_client()
+        started = time.perf_counter()
+        try:
+            model = request.metadata.get("model_override", self.model)
+            if self._is_reasoning_task(request) and model in {"deepseek-chat", "deepseek-r1"}:
+                model = "deepseek-reasoner"
+
+            messages = list(request.messages)
+            system_text: str | None = None
+            chat_messages = []
+            for msg in messages:
+                if msg.get("role") == "system":
+                    system_text = msg.get("content", "")
+                else:
+                    chat_messages.append(msg)
+            if not chat_messages:
+                chat_messages.append({"role": "user", "content": ""})
+
+            resp = client.chat(
+                messages=chat_messages,
+                model=model,
+                system=system_text,
+                temperature=request.temperature,
+                max_tokens=request.max_output_tokens,
+                task_type=request.task_type,
+            )
+            latency_ms = int((time.perf_counter() - started) * 1000)
+
+            choice = resp.get("choices", [{}])[0]
+            message = choice.get("message", {}) or {}
+            content = message.get("content", "") or ""
+            usage_obj = resp.get("usage", {}) or {}
+            usage = {
+                "input_tokens": usage_obj.get("prompt_tokens", 0) or 0,
+                "output_tokens": usage_obj.get("completion_tokens", 0) or 0,
+                "total_tokens": usage_obj.get("total_tokens", 0) or 0,
+                "cached_tokens": 0,
+            }
+            actual_cost = resp.get("cost_usd", 0.0)
+            reasoning_content = message.get("reasoning_content", "") or ""
+            if reasoning_content:
+                # Preserve thinking without changing the public content string shape.
+                # Callers that need chain-of-thought can inspect result.metadata.
+                request.metadata.setdefault("reasoning_content", reasoning_content)
+
+            logger.info(
+                "deepseek.invoke.success",
+                extra={
+                    "provider": self.name,
+                    "model": model,
+                    "request_id": request.request_id,
+                    "latency_ms": latency_ms,
+                    "input_tokens": usage["input_tokens"],
+                    "output_tokens": usage["output_tokens"],
+                    "cost_usd": actual_cost,
+                },
+            )
+            result = self._result(request, content, usage, None, latency_ms)
+            return replace(result, actual_cost_usd=actual_cost)
+        except Exception as exc:
+            latency_ms = int((time.perf_counter() - started) * 1000)
+            inf_error = _translate_deepseek_error(exc)
+            logger.warning(
+                "deepseek.invoke.error",
+                extra={
+                    "provider": self.name,
+                    "model": self.model,
+                    "request_id": request.request_id,
+                    "latency_ms": latency_ms,
+                    "error_kind": inf_error.kind.value,
+                    "error_type": type(exc).__name__,
+                },
+            )
+            raise inf_error from exc
+
+    def invoke_stream(self, request: InferenceRequest) -> InferenceResult:
+        # DeepSeek streaming is not yet implemented in the adapter; fall back to non-stream.
+        return self.invoke(request)
+
+
+# ---------------------------------------------------------------------------
+# DeepSeek error translation
+# ---------------------------------------------------------------------------
+
+
+def _translate_deepseek_error(exc: Exception) -> InferenceError:
+    """Translate a DeepSeek client exception into an InferenceError."""
+    exc_name = type(exc).__name__
+    if exc_name == "DeepSeekAuthError":
+        return InferenceError(str(exc), ProviderErrorKind.AUTHENTICATION)
+    if exc_name == "DeepSeekRateLimitError":
+        return InferenceError(str(exc), ProviderErrorKind.TRANSIENT)
+    if exc_name == "DeepSeekAPIError":
+        text = str(exc).lower()
+        if "rate limit" in text or "429" in text:
+            return InferenceError(str(exc), ProviderErrorKind.TRANSIENT)
+        if "timeout" in text or "connection" in text:
+            return InferenceError(str(exc), ProviderErrorKind.TRANSIENT)
+        if "invalid" in text or "bad request" in text:
+            return InferenceError(str(exc), ProviderErrorKind.INVALID_REQUEST)
+        return InferenceError(str(exc), ProviderErrorKind.UNKNOWN)
+    if exc_name == "ConnectionError":
+        return InferenceError(str(exc), ProviderErrorKind.TRANSIENT)
+    return InferenceError(str(exc), ProviderErrorKind.UNKNOWN)
 
 
 # ---------------------------------------------------------------------------

@@ -2,6 +2,8 @@
 
 from governed_inference.adapters import (
     AnthropicProvider,
+    DeepSeekProvider,
+    OllamaProvider,
     OpenAIProvider,
 )
 from governed_inference.classification import classify_request_data
@@ -45,6 +47,7 @@ __all__ = [
     "CostEstimate",
     "DataClassification",
     "DecomposedTask",
+    "DeepSeekProvider",
     "DeterministicReplayProvider",
     "EscalationQueue",
     "EscalationRequest",
@@ -58,6 +61,7 @@ __all__ = [
     "LMStudioProvider",
     "MistralProvider",
     "MockProvider",
+    "OllamaProvider",
     "OmniRouteProvider",
     "OpenAIProvider",
     "OpenRouterProvider",

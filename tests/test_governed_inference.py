@@ -163,6 +163,48 @@ def test_stream_failure_retries_same_adapter_non_stream_without_partial_concat()
     )
 
 
+def test_streaming_router_yields_partials_for_stream_supported_provider():
+    provider = MockProvider(name="streamy")
+    router = GovernedInferenceRouter([provider])
+
+    results = list(router.invoke_stream(
+        request(task_type="test", capability="drafting", data_classification=DataClassification.PUBLIC)
+    ))
+
+    assert len(results) == 2
+    assert results[0].provider == "streamy"
+    assert results[0].content == {
+        "provider": "streamy",
+        "task_type": "test",
+        "capability": "drafting",
+        "message_count": 1,
+    }
+    assert getattr(results[0], "is_partial", False) is True
+    assert results[-1].provider == "streamy"
+    assert not getattr(results[-1], "is_partial", False)
+    assert results[-1].policy_receipt_id != "pending"
+
+
+def test_streaming_router_falls_back_to_invoke_when_provider_does_not_support_streaming():
+    class NonStreamingProvider(MockProvider):
+        def capabilities(self):
+            caps = super().capabilities()
+            from dataclasses import replace
+            return replace(caps, supports_streaming=False)
+
+    provider = NonStreamingProvider(name="no-stream")
+    router = GovernedInferenceRouter([provider])
+
+    results = list(router.invoke_stream(
+        request(task_type="test", capability="drafting", data_classification=DataClassification.PUBLIC)
+    ))
+
+    assert len(results) == 1
+    assert results[0].provider == "no-stream"
+    assert results[-1].policy_receipt_id != "pending"
+    assert any(event["event"] == "inference.route_selected" for event in router.ledger.events)
+
+
 def test_transient_retry_is_bounded_and_recorded():
     provider = MockProvider(name="flaky", fail_times=2)
     base = InferencePolicy()

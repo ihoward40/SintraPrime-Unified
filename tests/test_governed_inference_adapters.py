@@ -168,8 +168,11 @@ class TestOpenAIProvider:
         mock_client.chat.completions.create.return_value = iter(chunks)
         provider._client = mock_client
 
-        result = provider.invoke_stream(_req())
-        assert "Hello world!" in result.content
+        results = list(provider.invoke_stream(_req()))
+        assert len(results) == 4  # 3 partials + 1 final
+        assert "Hello world!" in results[-1].content
+        assert all(getattr(r, "is_partial", False) for r in results[:-1])
+        assert not getattr(results[-1], "is_partial", False)
 
     def test_structured_logging_on_success(self, caplog):
         provider = OpenAIProvider(api_key="test-key")

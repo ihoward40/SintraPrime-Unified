@@ -72,6 +72,10 @@ def route_denial_reason(
 ) -> str | None:
     if request.capability not in capabilities.capabilities:
         return "unsupported_capability"
+    if getattr(request, "requires_streaming", False) and not capabilities.supports_streaming:
+        return "streaming_not_supported"
+    if getattr(request, "requires_vision", False) and not capabilities.supports_vision:
+        return "vision_not_supported"
     if QUALITY_ORDER[capabilities.quality] < QUALITY_ORDER[request.quality_floor]:
         return "quality_floor_not_met"
     if request.max_input_tokens > policy.per_request.max_input_tokens:

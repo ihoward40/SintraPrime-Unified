@@ -333,9 +333,39 @@ class ChatAgent:
         messages = self._build_messages(session)
 
         if not self._openai_key:
-            yield self._fallback_response(user_message)
+            fallback = self._fallback_response(user_message)
+            session.add_message(MessageRole.ASSISTANT.value, fallback)
+            yield fallback
             return
 
+        # Governed inference path (primary)
+        router = self._ensure_governed_router()
+        if router is not None:
+            try:
+                request = self._build_inference_request(
+                    messages=messages,
+                    max_tokens=2000,
+                    temperature=0.7,
+                    stream=True,
+                )
+                full_response = ""
+                for result in router.invoke_stream(request):
+                    delta = str(result.content) if result.content is not None else ""
+                    if getattr(result, "is_partial", False):
+                        full_response += delta
+                        yield delta
+                    else:
+                        # Final aggregated result: prefer its full content over accumulated delta.
+                        full_response = delta or full_response
+                        session.token_count += result.usage.get("total_tokens", 0)
+                session.add_message(MessageRole.ASSISTANT.value, full_response)
+                return
+            except InferenceError as exc:
+                logger.error("Governed streaming router failed: %s", exc)
+            except Exception as exc:
+                logger.error("Governed streaming router raised unexpected error: %s", exc)
+
+        # Legacy fallback: direct OpenAI SDK streaming call preserved during migration.
         try:
             import openai
             client = openai.OpenAI(api_key=self._openai_key)
@@ -478,6 +508,8 @@ class ChatAgent:
         messages: List[Dict[str, str]],
         max_tokens: int,
         temperature: float,
+        *,
+        stream: bool = False,
     ) -> InferenceRequest:
         metadata: Dict[str, Any] = {}
         if self.model and self.model != "auto":
@@ -493,6 +525,7 @@ class ChatAgent:
             max_output_tokens=max_tokens,
             temperature=temperature,
             metadata=metadata,
+            requires_streaming=stream,
         )
 
     def _build_messages(self, session: ChatSession) -> List[Dict[str, str]]:

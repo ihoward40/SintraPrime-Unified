@@ -89,3 +89,4 @@ When the user requests a durable behavior change, record it here or in the relev
 | `tests/AGENTS.md` | Root-level tests | Scheduler tests, agent unit tests, security tests (not portal-level tests)
 | `.mesh/AGENTS.md` | Agent Mesh coordination | Ledger, registry, protocol messages, and transport status |
 | `governance/blackstone/AGENTS.md` | Blackstone Governance Library | Constitutional charter, standards, knowledge core, architecture, certification, registry, casebook |
+| `mission-control-evidence/SP-TKM-001/AGENTS.md` | TikTok monetization mission | Strategy, governance standards, scripts, offers, analytics, affiliate/sponsorship material, mission evidence |

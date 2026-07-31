@@ -6,7 +6,7 @@ Includes folder naming conventions, scorecard rating, and receipt creation.
 from __future__ import annotations
 
 import re
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 
 from .models import ActionReceipt, Scorecard, ScorecardRating
 
@@ -62,6 +62,27 @@ def rate_scorecard(scorecard: Scorecard) -> ScorecardRating:
     Delegates to Scorecard.rating for consistency.
     """
     return scorecard.rating
+
+
+REINVESTIGATION_WINDOW_DAYS = 30  # FCRA 15 USC 1681i reinvestigation timeframe
+
+
+def _parse_date(value: str) -> date:
+    """Parse a YYYY-MM-DD date string."""
+    return datetime.strptime(value, "%Y-%m-%d").replace(tzinfo=UTC).date()
+
+
+def reinvestigation_deadline(opened: str) -> str:
+    """Return the 1681i deadline (opened + 30 days) as YYYY-MM-DD."""
+    opened_d = _parse_date(opened)
+    return (opened_d + timedelta(days=REINVESTIGATION_WINDOW_DAYS)).isoformat()
+
+
+def is_reinvestigation_overdue(opened: str, today: str | None = None) -> bool:
+    """True if the 1681i deadline has passed relative to `today` (default: now)."""
+    opened_d = _parse_date(opened)
+    ref = _parse_date(today) if today else datetime.now(UTC).date()
+    return ref > (opened_d + timedelta(days=REINVESTIGATION_WINDOW_DAYS))
 
 
 def create_receipt(

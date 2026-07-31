@@ -81,6 +81,15 @@ class ScorecardRating(StrEnum):
     HIGH_RISK = "high_risk"
 
 
+class ReinvestigationStatus(StrEnum):
+    """FCRA 15 USC 1681i reinvestigation lifecycle."""
+
+    NOT_STARTED = "not_started"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
 # ── Models ───────────────────────────────────────────────────────────────────
 
 
@@ -157,7 +166,9 @@ class ActionReceipt(BaseModel):
     case_id: str
     timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     actor: str = Field(..., description="Who performed the action (Hermes / Isiah / System)")
-    action: str = Field(..., description="e.g. intake_received, document_cataloged, finding_created")
+    action: str = Field(
+        ..., description="e.g. intake_received, document_cataloged, finding_created"
+    )
     details: dict = Field(default_factory=dict)
     file_path: str | None = None
 
@@ -207,3 +218,14 @@ class Scorecard(BaseModel):
             "evidence": self.evidence,
             "follow_up": self.follow_up,
         }
+
+
+class Reinvestigation(BaseModel):
+    """FCRA 15 USC 1681i reinvestigation record for a disputed account."""
+
+    case_id: str = Field(..., description="Owning case, format C-0001")
+    account_ref: str = Field(..., description="Disputed account reference")
+    status: ReinvestigationStatus = ReinvestigationStatus.NOT_STARTED
+    opened_date: str = Field(..., description="Date dispute initiated (YYYY-MM-DD)")
+    completed_date: str | None = None
+    result_summary: str | None = None

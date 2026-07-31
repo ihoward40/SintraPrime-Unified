@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, List, Optional
+from typing import Any
 
 
 PROTOCOL_VERSION = "1.0.0"
@@ -89,11 +89,11 @@ class Provenance:
     timestamp_utc: str
     governance_basis: str
     repository_commit: str
-    provider: Optional[str] = None
-    model: Optional[str] = None
-    provider_api_version: Optional[str] = None
-    completion_id: Optional[str] = None
-    advisory_session_id: Optional[str] = None
+    provider: str | None = None
+    model: str | None = None
+    provider_api_version: str | None = None
+    completion_id: str | None = None
+    advisory_session_id: str | None = None
     protocol_version: str = PROTOCOL_VERSION
     advisory_service_version: str = SERVICE_VERSION
 
@@ -103,11 +103,11 @@ class ContextManifest:
     """Explicit context manifest bounding prompt size (PROTOCOL.md §6)."""
 
     mission_id: str
-    evidence_ids: List[str]
-    relevant_bkgc_requirements: List[str]
+    evidence_ids: list[str]
+    relevant_bkgc_requirements: list[str]
     requested_question: str
     expected_deliverable: ResponseClassification
-    relevant_cdrs: List[str] = field(default_factory=list)
+    relevant_cdrs: list[str] = field(default_factory=list)
     repository_commit: str = ""
 
 
@@ -128,12 +128,12 @@ class AdvisoryPacket:
     protocol_version: str
     mission_id: str
     context_manifest: ContextManifest
-    advisory_scope: List[AdvisoryScope]
+    advisory_scope: list[AdvisoryScope]
     requested_advice: RequestedAdvice
     governance_basis: str
     provenance: Provenance
-    deadline: Optional[str] = None
-    extensions: Optional[dict[str, Any]] = None  # Reserved for future optional fields
+    deadline: str | None = None
+    extensions: dict[str, Any] | None = None  # Reserved for future optional fields
 
 
 @dataclass
@@ -151,9 +151,9 @@ class AdvisoryResponse:
     """Response schema returned by the Advisory Service (PROTOCOL.md §9)."""
 
     assessment: str
-    missing_evidence: List[str]
-    risks: List[str]
-    alternatives: List[str]
+    missing_evidence: list[str]
+    risks: list[str]
+    alternatives: list[str]
     recommendation: str
     confidence: Confidence
     coverage: float  # 0.0..1.0 — fraction of relevant evidence available
@@ -161,12 +161,12 @@ class AdvisoryResponse:
     evidence_snapshot: EvidenceSnapshot
     not_a_decision: bool = True
     human_override: bool = True
-    questions: List[str] = field(default_factory=list)
+    questions: list[str] = field(default_factory=list)
     advisory_classification: AdvisoryClassification = field(
         default_factory=AdvisoryClassification
     )
-    provenance: Optional[Provenance] = None
-    extensions: Optional[dict[str, Any]] = None  # Reserved for future optional fields
+    provenance: Provenance | None = None
+    extensions: dict[str, Any] | None = None  # Reserved for future optional fields
 
 
 @dataclass
@@ -176,8 +176,8 @@ class ErrorResponse:
     error_code: str
     error_message: str
     advisory_session_id: str
-    provenance: Optional[Provenance] = None
-    error_detail: Optional[str] = None  # Stack trace or provider details
+    provenance: Provenance | None = None
+    error_detail: str | None = None  # Stack trace or provider details
 
 
 @dataclass

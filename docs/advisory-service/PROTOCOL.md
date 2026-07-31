@@ -19,7 +19,7 @@ This document is **Increment One (Protocol Design)**. It specifies the protocol
 and architectural scaffold only. Runtime implementation (Hermes command handler,
 context packaging, provider client, Slack formatter) is **Increment Two** and is
 NOT authorized here. Persistent advisory memory, autonomous Slack participation,
-and automatic agent dispatch are explicitly out of scope (see §13).
+and automatic agent dispatch are explicitly out of scope (see §15).
 
 ## 2. Naming
 
@@ -92,7 +92,26 @@ Manifest**. This bounds prompt size and makes each session reproducible.
 | requested_question | string | yes | The specific question/decision. |
 | expected_deliverable | enum | yes | One of the response classifications (§8). |
 
-## 6. Advisory Packet Schema (request)
+## 6. Advisory Scope (request)
+
+Every advisory request explicitly declares what kind of authority/depth is being
+requested. This prevents scope creep and calibrates the advisor's response.
+
+Check one or more:
+
+- **Informational** — summarize or explain.
+- **Analytical** — examine tradeoffs / strengths / weaknesses.
+- **Strategic** — prioritization / long-term direction.
+- **Governance** — conformance with GB-1 / BKGC / CDRs.
+- **Architectural** — structure / layers / subsystems.
+- **Engineering** — code / implementation / technical fit.
+- **Legal Research** — applicable law / precedent / compliance.
+
+Example: "Does this PR violate BKGC?" = Governance + Analytical. "Should we
+refactor this subsystem?" = Architectural + Strategic. The scope helps both
+Hermes and the responder calibrate effort and completeness.
+
+## 7. Advisory Packet Schema (request)
 
 Hermes constructs an Advisory Packet and sends it to the Advisory Service.
 
@@ -102,19 +121,20 @@ Hermes constructs an Advisory Packet and sends it to the Advisory Service.
 | protocol_version | string | yes | Per §4 (`1.0.0`). |
 | mission_id | string | yes | From Context Manifest. |
 | context_manifest | object | yes | Per §5. |
+| advisory_scope | string[] | yes | Per §6; one or more scope flags. |
 | requested_advice | enum | yes | review \| architecture \| governance \| strategy. |
 | governance_basis | string | yes | Governing document the advice must respect (e.g., "GB-1"). |
-| provenance | object | yes | Per §10. |
+| provenance | object | yes | Per §11. |
 | deadline | ISO-8601 | no | Advisory; not enforced as SLA. |
 
-## 7. Response Schema & Service Contract (response)
+## 8. Response Schema & Service Contract (response)
 
 The Advisory Service returns a structured response. The **Service Contract**
 defines the boundary:
 
-- **Inputs:** Mission, Context (Context Manifest), Question.
+- **Inputs:** Mission, Context (Context Manifest), Question, Advisory Scope.
 - **Outputs:** Assessment, Missing Evidence, Risks, Alternatives,
-  Recommendation, Confidence, Coverage, Classification.
+  Recommendation, Confidence, Coverage, Classification, Evidence Snapshot.
 
 Everything else is implementation detail and is NOT part of the contract.
 
@@ -127,13 +147,14 @@ Everything else is implementation detail and is NOT part of the contract.
 | recommendation | string | yes | The advisory recommendation. |
 | confidence | enum | yes | low \| medium \| high — how strongly supported. |
 | coverage | number[0..1] | yes | Fraction of relevant evidence that was available. |
-| response_classification | enum | yes | Per §8. |
+| response_classification | enum | yes | Per §9. |
+| evidence_snapshot | object | yes | Per §10 — reproducibility record. |
 | not_a_decision | const | yes | Always true. The response is advice, not authorization. |
-| human_override | const | yes | Always true (see §12). |
-| advisory_classification | object | yes | Safeguard block (§12). |
+| human_override | const | yes | Always true (see §13). |
+| advisory_classification | object | yes | Safeguard block (§13). |
 | provenance | object | yes | Echo + extend of request provenance. |
 
-## 8. Response Classification
+## 9. Response Classification
 
 Every response is classified into exactly one category to ease downstream
 automation:
@@ -148,7 +169,23 @@ automation:
 `expected_deliverable` in the request SHOULD hint the classification; the
 responder confirms it.
 
-## 9. Confidence & Coverage
+## 10. Evidence Snapshot (immutable record)
+
+Every advisory response includes an Evidence Snapshot so later readers know
+exactly what evidence existed when the advice was given. This makes every
+advisory reproducible and defensible.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| generated_at | ISO-8601 timestamp | When the advice was generated. |
+| evidence_revision | string | Hash or version ID of the evidence set (e.g., git commit, database snapshot version). |
+| repository_commit | string | Git SHA of the codebase the advice refers to. |
+
+Example: if someone later asks "Why did the Advisor recommend this?", you can
+look up the exact evidence set, the repository state, and the timestamp and
+reproduce the context.
+
+## 11. Confidence & Coverage
 
 Two independent axes:
 
@@ -161,7 +198,7 @@ A high-confidence recommendation on partial coverage (e.g., 0.4) is materially
 different from one on comprehensive coverage (0.95) and MUST be read as such. Low
 coverage lowers the weight Hermes / the Principal should give the advice.
 
-## 10. Provenance Metadata
+## 12. Provenance Metadata
 
 Request provenance: requester, mission_id, source_channel, timestamp (UTC),
 governance_basis, repository_commit.
@@ -174,7 +211,7 @@ Every packet and response carries provenance so advice is auditable (consistent
 with Principle Zero / the Engineering Rule — objects without provenance are not
 trustworthy).
 
-## 11. Provider Abstraction (future-proofing)
+## 13. Provider Abstraction (future-proofing)
 
 The protocol does not care which engine fulfills the request. Define an
 **Advisor Provider Interface** with at least:
@@ -190,7 +227,7 @@ Selection is a configuration concern, not a protocol concern. The Response
 records the provider actually used. The architecture is never bound to a single
 model name.
 
-## 12. Safeguards
+## 14. Safeguards
 
 Two blocks are appended to every response.
 
@@ -215,19 +252,57 @@ It cannot approve, reject, dispatch, or mutate system state. Any
 governance-affecting recommendation routes through the CDR / BKGC amendment
 process; the Advisory Service never bypasses GB-1.
 
-## 13. Out of Scope (explicitly NOT authorized)
+## 15. Advisory Lifecycle
 
-- Autonomous Slack participation (the Advisor is invoked by Hermes, not present).
-- Persistent advisory memory (stateless per request in Increment One).
-- Runtime orchestration (no agent dispatch, no job scheduling).
-- Automatic agent dispatch.
-- Production deployment.
-- Provider *implementation* (the interface is specified; engines are Increment Two+).
+Even though Increment One does not implement transitions, the lifecycle is
+defined now for operational clarity:
 
-These are deferred to Increment Three and require separate authorization after
-protocol review.
+```text
+Requested
+   ↓
+Prepared
+   ↓
+Submitted
+   ↓
+Analyzed
+   ↓
+Returned
+   ↓
+Acknowledged
+   ↓
+Archived
+```
 
-## 14. Capability Registration (BKR)
+States:
+
+- **Requested** — Advisory packet created; session ID allocated.
+- **Prepared** — Context manifest and evidence gathered.
+- **Submitted** — Packet sent to the Advisory Service.
+- **Analyzed** — Advice being generated.
+- **Returned** — Response received; formatted for Slack delivery.
+- **Acknowledged** — Principal has reviewed and acknowledged the advice.
+- **Archived** — Session stored for audit and reproducibility.
+
+All transitions are immutable (append-only audit trail). No advisory can be
+modified once returned.
+
+## 16. Out of Scope (explicitly NOT authorized in Increment One)
+
+This proposal does **not** implement:
+
+- Slack integration / Slack message posting.
+- OpenAI API integration / provider client libraries.
+- Persistent advisory memory / cross-session state.
+- Autonomous execution / unattended mode.
+- Mission routing / automatic session allocation.
+- Agent dispatch / background orchestration.
+- Runtime lifecycle state transitions.
+
+Those capabilities belong to **Increment Two (Hermes Integration)** and
+**Increment Three (Advisory Services)** and are intentionally excluded from this
+design review. This proposal is **protocol and service contract only**.
+
+## 17. Capability Registration (BKR)
 
 Registered as a Capability under the Blackstone Knowledge Registry (canonical
 registry) and the Product Capability Index (`docs/CAPABILITY_INDEX.md`). Record:
@@ -246,29 +321,35 @@ registry) and the Product Capability Index (`docs/CAPABILITY_INDEX.md`). Record:
 This is a capability record, not a new governance volume. It does not change the
 seven-volume architecture (frozen by ARCHITECTURAL_FREEZE_NOTICE.md).
 
-## 15. Increment Roadmap
+## 18. Increment Roadmap
 
 - **Increment One (this document):** Protocol design, schemas, session ID,
-  versioning, context manifest, service contract, classification, confidence +
-  coverage, provenance, provider abstraction, capability registration. No runtime.
+  versioning, context manifest, advisory scope, service contract, classification,
+  confidence + coverage, evidence snapshot, provenance, provider abstraction,
+  lifecycle definition, capability registration. No runtime.
 - **Increment Two (Hermes Integration):** Hermes command handler (`/advisor …`),
   context packaging (incl. Context Manifest), provider call via the interface,
-  session-ID allocation, response formatting. Still no autonomous behavior.
+  session-ID allocation, lifecycle state transitions, response formatting. Still
+  no autonomous behavior.
 - **Increment Three (Advisory Services):** context cache, conversation continuity,
   evidence references, advisory history, mission replay, governance compliance
-  tagging — only after the protocol proves itself.
+  tagging — only after the protocol proves itself in Increment Two.
 
-## 16. Acceptance for Increment One
+## 19. Acceptance for Increment One
 
 - [ ] Advisory Session ID scheme defined (§3)
 - [ ] Protocol versioning defined (§4)
 - [ ] Context Manifest defined (§5)
-- [ ] Advisory Packet Schema defined (§6)
-- [ ] Response Schema + Service Contract defined (§7)
-- [ ] Response Classification defined (§8)
-- [ ] Confidence + Coverage defined (§9)
-- [ ] Provenance defined (§10)
-- [ ] Provider Abstraction defined (§11)
-- [ ] Safeguards (classification + human override) defined (§12)
-- [ ] Capability registered (§14)
+- [ ] Advisory Scope defined (§6)
+- [ ] Advisory Packet Schema defined (§7)
+- [ ] Response Schema + Service Contract defined (§8)
+- [ ] Response Classification defined (§9)
+- [ ] Evidence Snapshot defined (§10)
+- [ ] Confidence + Coverage defined (§11)
+- [ ] Provenance defined (§12)
+- [ ] Provider Abstraction defined (§13)
+- [ ] Safeguards (classification + human override) defined (§14)
+- [ ] Advisory Lifecycle defined (§15)
+- [ ] Out-of-scope (explicitly NOT implemented) listed (§16)
+- [ ] Capability registered (§17)
 - [ ] No runtime code implementing execution paths

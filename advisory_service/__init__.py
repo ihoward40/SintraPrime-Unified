@@ -31,6 +31,18 @@ class RequestedAdvice(str, Enum):
     STRATEGY = "strategy"
 
 
+class AdvisoryScope(str, Enum):
+    """Types of authority/depth requested (PROTOCOL.md §6)."""
+
+    INFORMATIONAL = "Informational"
+    ANALYTICAL = "Analytical"
+    STRATEGIC = "Strategic"
+    GOVERNANCE = "Governance"
+    ARCHITECTURAL = "Architectural"
+    ENGINEERING = "Engineering"
+    LEGAL_RESEARCH = "Legal Research"
+
+
 class ResponseClassification(str, Enum):
     INFORMATION = "Information"
     ANALYSIS = "Analysis"
@@ -46,8 +58,20 @@ class Confidence(str, Enum):
     HIGH = "high"
 
 
+class AdvisoryLifecycleState(str, Enum):
+    """Advisory session lifecycle (PROTOCOL.md §15)."""
+
+    REQUESTED = "Requested"
+    PREPARED = "Prepared"
+    SUBMITTED = "Submitted"
+    ANALYZED = "Analyzed"
+    RETURNED = "Returned"
+    ACKNOWLEDGED = "Acknowledged"
+    ARCHIVED = "Archived"
+
+
 class ProviderInterface(str, Enum):
-    """Provider-agnostic fulfillment engines (PROTOCOL.md §11)."""
+    """Provider-agnostic fulfillment engines (PROTOCOL.md §13)."""
 
     OPENAI = "OpenAI"
     ANTHROPIC = "Anthropic"
@@ -57,7 +81,7 @@ class ProviderInterface(str, Enum):
 
 @dataclass
 class Provenance:
-    """Provenance metadata for a packet or response (PROTOCOL.md §10)."""
+    """Provenance metadata for a packet or response (PROTOCOL.md §12)."""
 
     requester: str
     mission_id: str
@@ -88,13 +112,23 @@ class ContextManifest:
 
 
 @dataclass
+class EvidenceSnapshot:
+    """Immutable record for reproducibility (PROTOCOL.md §10)."""
+
+    generated_at: str  # ISO-8601 timestamp
+    evidence_revision: str  # Hash or version ID of the evidence set
+    repository_commit: str  # Git SHA of the codebase
+
+
+@dataclass
 class AdvisoryPacket:
-    """Request schema sent by Hermes to the Advisory Service (PROTOCOL.md §6)."""
+    """Request schema sent by Hermes to the Advisory Service (PROTOCOL.md §7)."""
 
     advisory_session_id: str
     protocol_version: str
     mission_id: str
     context_manifest: ContextManifest
+    advisory_scope: List[AdvisoryScope]
     requested_advice: RequestedAdvice
     governance_basis: str
     provenance: Provenance
@@ -103,7 +137,7 @@ class AdvisoryPacket:
 
 @dataclass
 class AdvisoryClassification:
-    """Safeguard block appended to every response (PROTOCOL.md §12)."""
+    """Safeguard block appended to every response (PROTOCOL.md §14)."""
 
     advisor_classification: str = "Advisory"
     decision_authority: str = "Principal"
@@ -113,7 +147,7 @@ class AdvisoryClassification:
 
 @dataclass
 class AdvisoryResponse:
-    """Response schema returned by the Advisory Service (PROTOCOL.md §7)."""
+    """Response schema returned by the Advisory Service (PROTOCOL.md §8)."""
 
     assessment: str
     missing_evidence: List[str]
@@ -123,6 +157,7 @@ class AdvisoryResponse:
     confidence: Confidence
     coverage: float  # 0.0..1.0 — fraction of relevant evidence available
     response_classification: ResponseClassification
+    evidence_snapshot: EvidenceSnapshot
     not_a_decision: bool = True
     human_override: bool = True
     questions: List[str] = field(default_factory=list)
@@ -134,9 +169,14 @@ class AdvisoryResponse:
 
 @dataclass
 class ServiceContract:
-    """The protocol boundary (PROTOCOL.md §7). Inputs -> Outputs only."""
+    """The protocol boundary (PROTOCOL.md §8). Inputs -> Outputs only."""
 
-    inputs: tuple = ("Mission", "Context (Context Manifest)", "Question")
+    inputs: tuple = (
+        "Mission",
+        "Context (Context Manifest)",
+        "Question",
+        "Advisory Scope",
+    )
     outputs: tuple = (
         "Assessment",
         "Missing Evidence",
@@ -146,6 +186,7 @@ class ServiceContract:
         "Confidence",
         "Coverage",
         "Classification",
+        "Evidence Snapshot",
     )
 
 
@@ -158,7 +199,7 @@ def format_advisory_session_id(year: int, sequence: int) -> str:
     return f"ADV-{year}-{sequence:06d}"
 
 
-# Safeguard blocks — appended verbatim to every advisor response (PROTOCOL.md §12).
+# Safeguard blocks — appended verbatim to every advisor response (PROTOCOL.md §14).
 CLASSIFICATION_BLOCK = (
     "Advisor Classification: Advisory\n"
     "Decision Authority: Principal\n"
@@ -171,7 +212,7 @@ HUMAN_OVERRIDE_BLOCK = (
     "This advisory is non-binding and requires Principal judgment before implementation."
 )
 
-# Capability registration record (PROTOCOL.md §14) — informational. The
+# Capability registration record (PROTOCOL.md §17) — informational. The
 # authoritative registration lives in docs/CAPABILITY_INDEX.md and BKR.
 CAPABILITY_RECORD = {
     "capability": "Advisor",
@@ -185,7 +226,7 @@ CAPABILITY_RECORD = {
 }
 
 # Provider configuration — provider-agnostic; model is configurable, never
-# hardcoded (PROTOCOL.md §11).
+# hardcoded (PROTOCOL.md §13).
 DEFAULT_PROVIDER: ProviderInterface = ProviderInterface.OPENAI
 PROVIDER_INTERFACE = "Advisor Provider Interface"
 MODEL = "Configurable"

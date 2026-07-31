@@ -15,6 +15,7 @@
 | Financial analysis | Statements | `financial_mastery/` | API | UNKNOWN | FUNCTIONAL | Simplified GAAP, not audit-grade | CPA review workflow |
 | Payments | Fees | `backend/stripe-payments/` | API | backend tests? | DUPLICATED | Competes with `legal_integrations`; no CI verify; annual savings mismatch (issue #185) | Unify + CI |
 | Agents | Reasoning | `agents/` + `agent_protocol/` | API/runtime | package tests | EXPERIMENTAL | No unified runtime authority | Convergence |
+| Advisory Service | Strategic advisory | `advisory_service/` (design only) | `/advisor` (planned, Hermes-handled) | TBD | ENGINEERING (DESIGN) | No runtime; protocol review pending; no autonomous behavior | Increment Two (Hermes integration) |
 | Durable workflows | Orchestration | `workflow_builder/` + `scheduler/` | API | `workflow_builder/tests/` | FUNCTIONAL | No dedicated CI WF test | WF CI gate |
 | Mission Control | Governance ledger | `portal/services/mission_control_*` | API (ledger) | `portal/tests/test_mission_control_*` | SUPPORTED | Refusal-only; no live exec | Shared execution protocol |
 | Observability | Telemetry | `observability/` | internal | `observability/tests/` | FUNCTIONAL | Not a control plane | — |

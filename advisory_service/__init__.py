@@ -16,7 +16,7 @@ Governance:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 
@@ -24,14 +24,14 @@ PROTOCOL_VERSION = "1.0.0"
 SERVICE_VERSION = "0.1"
 
 
-class RequestedAdvice(str, Enum):
+class RequestedAdvice(StrEnum):
     REVIEW = "review"
     ARCHITECTURE = "architecture"
     GOVERNANCE = "governance"
     STRATEGY = "strategy"
 
 
-class AdvisoryScope(str, Enum):
+class AdvisoryScope(StrEnum):
     """Types of authority/depth requested (PROTOCOL.md §7)."""
 
     INFORMATIONAL = "Informational"
@@ -43,7 +43,7 @@ class AdvisoryScope(str, Enum):
     LEGAL_RESEARCH = "Legal Research"
 
 
-class ResponseClassification(str, Enum):
+class ResponseClassification(StrEnum):
     INFORMATION = "Information"
     ANALYSIS = "Analysis"
     RECOMMENDATION = "Recommendation"
@@ -52,13 +52,13 @@ class ResponseClassification(str, Enum):
     RISK_REVIEW = "Risk Review"
 
 
-class Confidence(str, Enum):
+class Confidence(StrEnum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
 
 
-class AdvisoryLifecycleState(str, Enum):
+class AdvisoryLifecycleState(StrEnum):
     """Advisory session lifecycle (PROTOCOL.md §17)."""
 
     REQUESTED = "Requested"
@@ -70,7 +70,7 @@ class AdvisoryLifecycleState(str, Enum):
     ARCHIVED = "Archived"
 
 
-class ProviderInterface(str, Enum):
+class ProviderInterface(StrEnum):
     """Provider-agnostic fulfillment engines (PROTOCOL.md §14)."""
 
     OPENAI = "OpenAI"

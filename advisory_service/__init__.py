@@ -19,7 +19,6 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
-
 PROTOCOL_VERSION = "1.0.0"
 SERVICE_VERSION = "0.1"
 

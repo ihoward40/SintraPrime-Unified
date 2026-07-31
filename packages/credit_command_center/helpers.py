@@ -64,25 +64,57 @@ def rate_scorecard(scorecard: Scorecard) -> ScorecardRating:
     return scorecard.rating
 
 
-REINVESTIGATION_WINDOW_DAYS = 30  # FCRA 15 USC 1681i reinvestigation timeframe
+REINVESTIGATION_WINDOW_DAYS = 30  # FCRA 15 USC 1681i standard reinvestigation period
+REINVESTIGATION_EXTENSION_DAYS = 15  # Additional days allowed under 1681i(a)(1)(B)
 
 
 def _parse_date(value: str) -> date:
-    """Parse a YYYY-MM-DD date string."""
-    return datetime.strptime(value, "%Y-%m-%d").replace(tzinfo=UTC).date()
+    """Parse a YYYY-MM-DD date string. Raises ValueError on invalid input."""
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").replace(tzinfo=UTC).date()
+    except ValueError as exc:
+        raise ValueError(f"Invalid date format: '{value}'. Expected YYYY-MM-DD.") from exc
 
 
-def reinvestigation_deadline(opened: str) -> str:
-    """Return the 1681i deadline (opened + 30 days) as YYYY-MM-DD."""
+def reinvestigation_deadline(
+    opened: str,
+    *,
+    extension_applies: bool = False,
+) -> str:
+    """Return the FCRA 15 USC 1681i reinvestigation deadline as YYYY-MM-DD.
+
+    The standard period is 30 calendar days from the dispute's opened date.
+    When extension_applies=True (per 1681i(a)(1)(B) — an additional up-to-15
+    days because the CRA received qualifying relevant consumer information
+    during the initial period), the deadline is 45 calendar days from opened.
+
+    The caller is responsible for determining whether the statutory extension
+    legally applies. This helper does not automatically infer eligibility.
+    """
     opened_d = _parse_date(opened)
-    return (opened_d + timedelta(days=REINVESTIGATION_WINDOW_DAYS)).isoformat()
+    days = REINVESTIGATION_WINDOW_DAYS + (
+        REINVESTIGATION_EXTENSION_DAYS if extension_applies else 0
+    )
+    return (opened_d + timedelta(days=days)).isoformat()
 
 
-def is_reinvestigation_overdue(opened: str, today: str | None = None) -> bool:
-    """True if the 1681i deadline has passed relative to `today` (default: now)."""
+def is_reinvestigation_overdue(
+    opened: str,
+    today: str | None = None,
+    *,
+    extension_applies: bool = False,
+) -> bool:
+    """True if the FCRA 1681i deadline has passed relative to *today* (default: now).
+
+    Uses the same period logic as reinvestigation_deadline: 30 days standard,
+    45 days when extension_applies=True.
+    """
     opened_d = _parse_date(opened)
     ref = _parse_date(today) if today else datetime.now(UTC).date()
-    return ref > (opened_d + timedelta(days=REINVESTIGATION_WINDOW_DAYS))
+    days = REINVESTIGATION_WINDOW_DAYS + (
+        REINVESTIGATION_EXTENSION_DAYS if extension_applies else 0
+    )
+    return ref > (opened_d + timedelta(days=days))
 
 
 def create_receipt(

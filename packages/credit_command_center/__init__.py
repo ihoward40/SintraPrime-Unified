@@ -9,6 +9,7 @@ Core message: "Most disputes fail because the evidence was never organized."
 """
 
 from .helpers import (
+    REINVESTIGATION_EXTENSION_DAYS,
     REINVESTIGATION_WINDOW_DAYS,
     build_case_folder_path,
     build_evidence_folder_path,
@@ -37,6 +38,7 @@ from .models import (
 )
 
 __all__ = [
+    "REINVESTIGATION_EXTENSION_DAYS",
     "REINVESTIGATION_WINDOW_DAYS",
     "AccountStatus",
     "ActionReceipt",

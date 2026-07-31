@@ -37,3 +37,18 @@
 - Agent and implementation certification.
 - Portal / product code integration.
 - Casebook expansion beyond 10 cases.
+## [Post-Ratification] — 2026-07-31 — Architectural Freeze & Workstream Closure
+
+Recorded post-ratification. These additions are meta-governance records and do **not** alter GB-1 baseline content (which remains frozen).
+
+### Added
+
+- `ARCHITECTURAL_FREEZE_NOTICE.md` — freezes the seven-volume library architecture (volume count, dependency hierarchy, top-level concept set) to prevent architecture drift. Distinct from the GB-1 content freeze.
+- `GB-1-CLOSURE.md` — records the four-phase project history, the GB-1 milestone statement, the Decision Rework Rate metric, and the workstream closure directive.
+
+### Status
+
+- Governance construction workstream: CLOSED.
+- Engineering and Operations workstreams: ACTIVE.
+- Next governance activity gated on the GB-1 review trigger or formal amendment.
+- GBC-2 remains deferred; entry criteria unchanged.

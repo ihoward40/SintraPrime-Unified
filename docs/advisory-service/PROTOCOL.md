@@ -19,7 +19,7 @@ This document is **Increment One (Protocol Design)**. It specifies the protocol
 and architectural scaffold only. Runtime implementation (Hermes command handler,
 context packaging, provider client, Slack formatter) is **Increment Two** and is
 NOT authorized here. Persistent advisory memory, autonomous Slack participation,
-and automatic agent dispatch are explicitly out of scope (see §15).
+and automatic agent dispatch are explicitly out of scope (see §16).
 
 ## 2. Naming
 
@@ -51,7 +51,21 @@ Slack
 Hermes remains the trusted runtime and audit layer. The Advisory Service is a
 capability Hermes invokes; it does not replace or parallel Hermes.
 
-## 3. Advisory Session ID
+## 3. Normative vs. Informative Language
+
+This protocol distinguishes between:
+
+- **Normative (MUST / SHALL / MUST NOT / SHALL NOT)** — requirements that are
+  binding and must be implemented as specified.
+- **Informative (MAY / SHOULD / Example / Note)** — guidance, recommendations,
+  or examples that are not binding but are encouraged for clarity or
+  interoperability.
+
+All requirement keywords follow RFC 2119 conventions. Future implementations
+(Increment Two and beyond) are bound by all MUST / SHALL statements; MAY
+statements are optional but recommended.
+
+## 4. Advisory Session ID
 
 Every advisory interaction is assigned its own **Advisory Session ID**, distinct
 from the Mission ID. A single mission may spawn multiple advisory sessions
@@ -66,7 +80,7 @@ Hermes at session creation. The Session ID is the audit key for the interaction;
 the Mission ID links it to the broader work. A mission may have many sessions;
 a session belongs to exactly one mission.
 
-## 4. Protocol Versioning
+## 5. Protocol Versioning
 
 The protocol is versioned independently of software releases so Hermes and future
 services can negotiate compatibility without coupling to deploy versions.
@@ -77,7 +91,18 @@ services can negotiate compatibility without coupling to deploy versions.
   version; MINOR/PATCH differences are advisory. A MAJOR mismatch is a hard
   refusal (responder returns no advisory content).
 
-## 5. Context Manifest (request)
+## 5.1 Compatibility Policy
+
+**Protocol 1.x:**
+
+- Forward compatible: 1.0 → 1.1 → 1.2 (new optional fields; backward compatible)
+- Breaking: 1.x → 2.0 (schema changes, incompatible)
+
+An implementation compliant with 1.0.0 MUST continue to accept 1.1, 1.2, etc.,
+if those versions only add optional fields or informative sections. A 2.0
+version would require all consumers and providers to upgrade.
+
+## 6. Context Manifest (request)
 
 Instead of passing arbitrary context, Hermes MUST supply an explicit **Context
 Manifest**. This bounds prompt size and makes each session reproducible.
@@ -90,9 +115,9 @@ Manifest**. This bounds prompt size and makes each session reproducible.
 | relevant_cdrs | string[] | no | Related Constitutional Decision Records. |
 | repository_commit | string | yes | Commit the advice is based on (reproducibility). |
 | requested_question | string | yes | The specific question/decision. |
-| expected_deliverable | enum | yes | One of the response classifications (§8). |
+| expected_deliverable | enum | yes | One of the response classifications (§9). |
 
-## 6. Advisory Scope (request)
+## 7. Advisory Scope (request)
 
 Every advisory request explicitly declares what kind of authority/depth is being
 requested. This prevents scope creep and calibrates the advisor's response.
@@ -111,23 +136,24 @@ Example: "Does this PR violate BKGC?" = Governance + Analytical. "Should we
 refactor this subsystem?" = Architectural + Strategic. The scope helps both
 Hermes and the responder calibrate effort and completeness.
 
-## 7. Advisory Packet Schema (request)
+## 8. Advisory Packet Schema (request)
 
 Hermes constructs an Advisory Packet and sends it to the Advisory Service.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| advisory_session_id | string | yes | Per §3 (`ADV-YYYY-NNNNNN`). |
-| protocol_version | string | yes | Per §4 (`1.0.0`). |
+| advisory_session_id | string | yes | Per §4 (`ADV-YYYY-NNNNNN`). |
+| protocol_version | string | yes | Per §5 (`1.0.0`). |
 | mission_id | string | yes | From Context Manifest. |
-| context_manifest | object | yes | Per §5. |
-| advisory_scope | string[] | yes | Per §6; one or more scope flags. |
+| context_manifest | object | yes | Per §6. |
+| advisory_scope | string[] | yes | Per §7; one or more scope flags. |
 | requested_advice | enum | yes | review \| architecture \| governance \| strategy. |
 | governance_basis | string | yes | Governing document the advice must respect (e.g., "GB-1"). |
-| provenance | object | yes | Per §11. |
+| provenance | object | yes | Per §13. |
 | deadline | ISO-8601 | no | Advisory; not enforced as SLA. |
+| extensions | object | no | Reserved for future optional fields (see §17). |
 
-## 8. Response Schema & Service Contract (response)
+## 9. Response Schema & Service Contract (response)
 
 The Advisory Service returns a structured response. The **Service Contract**
 defines the boundary:
@@ -147,14 +173,15 @@ Everything else is implementation detail and is NOT part of the contract.
 | recommendation | string | yes | The advisory recommendation. |
 | confidence | enum | yes | low \| medium \| high — how strongly supported. |
 | coverage | number[0..1] | yes | Fraction of relevant evidence that was available. |
-| response_classification | enum | yes | Per §9. |
-| evidence_snapshot | object | yes | Per §10 — reproducibility record. |
+| response_classification | enum | yes | Per §10. |
+| evidence_snapshot | object | yes | Per §11 — reproducibility record. |
 | not_a_decision | const | yes | Always true. The response is advice, not authorization. |
-| human_override | const | yes | Always true (see §13). |
-| advisory_classification | object | yes | Safeguard block (§13). |
+| human_override | const | yes | Always true (see §14). |
+| advisory_classification | object | yes | Safeguard block (§14). |
 | provenance | object | yes | Echo + extend of request provenance. |
+| extensions | object | no | Reserved for future optional fields (see §17). |
 
-## 9. Response Classification
+## 10. Response Classification
 
 Every response is classified into exactly one category to ease downstream
 automation:
@@ -169,7 +196,7 @@ automation:
 `expected_deliverable` in the request SHOULD hint the classification; the
 responder confirms it.
 
-## 10. Evidence Snapshot (immutable record)
+## 11. Evidence Snapshot (immutable record)
 
 Every advisory response includes an Evidence Snapshot so later readers know
 exactly what evidence existed when the advice was given. This makes every
@@ -185,7 +212,7 @@ Example: if someone later asks "Why did the Advisor recommend this?", you can
 look up the exact evidence set, the repository state, and the timestamp and
 reproduce the context.
 
-## 11. Confidence & Coverage
+## 12. Confidence & Coverage
 
 Two independent axes:
 
@@ -198,7 +225,7 @@ A high-confidence recommendation on partial coverage (e.g., 0.4) is materially
 different from one on comprehensive coverage (0.95) and MUST be read as such. Low
 coverage lowers the weight Hermes / the Principal should give the advice.
 
-## 12. Provenance Metadata
+## 13. Provenance Metadata
 
 Request provenance: requester, mission_id, source_channel, timestamp (UTC),
 governance_basis, repository_commit.
@@ -211,7 +238,7 @@ Every packet and response carries provenance so advice is auditable (consistent
 with Principle Zero / the Engineering Rule — objects without provenance are not
 trustworthy).
 
-## 13. Provider Abstraction (future-proofing)
+## 14. Provider Abstraction (future-proofing)
 
 The protocol does not care which engine fulfills the request. Define an
 **Advisor Provider Interface** with at least:
@@ -227,7 +254,7 @@ Selection is a configuration concern, not a protocol concern. The Response
 records the provider actually used. The architecture is never bound to a single
 model name.
 
-## 14. Safeguards
+## 15. Safeguards
 
 Two blocks are appended to every response.
 
@@ -252,7 +279,15 @@ It cannot approve, reject, dispatch, or mutate system state. Any
 governance-affecting recommendation routes through the CDR / BKGC amendment
 process; the Advisory Service never bypasses GB-1.
 
-## 15. Advisory Lifecycle
+## 16. Determinism & Evidence Sensitivity
+
+Advisory responses are advisory analyses generated from the supplied context.
+Responses MAY legitimately differ as evidence changes or the advisory provider
+evolves. This design does not require identical inputs to always produce
+identical wording; it does require that responses be evidence-based and
+reproducible via the Evidence Snapshot (§11).
+
+## 17. Advisory Lifecycle
 
 Even though Increment One does not implement transitions, the lifecycle is
 defined now for operational clarity:
@@ -286,7 +321,44 @@ States:
 All transitions are immutable (append-only audit trail). No advisory can be
 modified once returned.
 
-## 16. Out of Scope (explicitly NOT authorized in Increment One)
+## 18. Error Contract
+
+Although Increment One has no runtime, the error response envelope is defined
+now for future implementations.
+
+Future implementations MUST return a structured error response for:
+
+- **Unsupported protocol version** — MAJOR version mismatch.
+- **Missing context** — Required fields in Context Manifest absent.
+- **Invalid evidence reference** — Evidence ID(s) not found or inaccessible.
+- **Authorization failure** — Requester lacks permission for the scope.
+- **Provider unavailable** — Advisory provider (OpenAI / etc.) unreachable.
+
+Error response schema (reserved for Increment Two):
+
+```
+error_code: string
+error_message: string
+error_detail: string (optional; may include stack trace or provider details)
+advisory_session_id: string (for audit)
+provenance: object (echoed from request)
+```
+
+No error implementation is required in Increment One.
+
+## 19. Extension Points
+
+Future implementations MAY add optional capabilities without modifying
+Protocol 1.0. Reserved namespaces:
+
+- `advisor.extensions.*` — Advisory Service optional features.
+- `provider.extensions.*` — Provider-specific optional capabilities.
+
+An implementation compliant with 1.0.0 MUST ignore unknown extension fields;
+it MUST NOT error if a response contains unrecognized fields in the `extensions`
+namespace.
+
+## 20. Out of Scope (explicitly NOT authorized in Increment One)
 
 This proposal does **not** implement:
 
@@ -297,12 +369,13 @@ This proposal does **not** implement:
 - Mission routing / automatic session allocation.
 - Agent dispatch / background orchestration.
 - Runtime lifecycle state transitions.
+- Error handling (contract defined; implementation deferred).
 
 Those capabilities belong to **Increment Two (Hermes Integration)** and
 **Increment Three (Advisory Services)** and are intentionally excluded from this
 design review. This proposal is **protocol and service contract only**.
 
-## 17. Capability Registration (BKR)
+## 21. Capability Registration (BKR)
 
 Registered as a Capability under the Blackstone Knowledge Registry (canonical
 registry) and the Product Capability Index (`docs/CAPABILITY_INDEX.md`). Record:
@@ -321,35 +394,41 @@ registry) and the Product Capability Index (`docs/CAPABILITY_INDEX.md`). Record:
 This is a capability record, not a new governance volume. It does not change the
 seven-volume architecture (frozen by ARCHITECTURAL_FREEZE_NOTICE.md).
 
-## 18. Increment Roadmap
+## 22. Increment Roadmap
 
 - **Increment One (this document):** Protocol design, schemas, session ID,
   versioning, context manifest, advisory scope, service contract, classification,
   confidence + coverage, evidence snapshot, provenance, provider abstraction,
-  lifecycle definition, capability registration. No runtime.
+  lifecycle definition, error contract, extension points, capability registration.
+  No runtime.
 - **Increment Two (Hermes Integration):** Hermes command handler (`/advisor …`),
   context packaging (incl. Context Manifest), provider call via the interface,
-  session-ID allocation, lifecycle state transitions, response formatting. Still
-  no autonomous behavior.
+  session-ID allocation, lifecycle state transitions, response formatting, error
+  handling. Still no autonomous behavior.
 - **Increment Three (Advisory Services):** context cache, conversation continuity,
   evidence references, advisory history, mission replay, governance compliance
   tagging — only after the protocol proves itself in Increment Two.
 
-## 19. Acceptance for Increment One
+## 23. Acceptance for Increment One
 
-- [ ] Advisory Session ID scheme defined (§3)
-- [ ] Protocol versioning defined (§4)
-- [ ] Context Manifest defined (§5)
-- [ ] Advisory Scope defined (§6)
-- [ ] Advisory Packet Schema defined (§7)
-- [ ] Response Schema + Service Contract defined (§8)
-- [ ] Response Classification defined (§9)
-- [ ] Evidence Snapshot defined (§10)
-- [ ] Confidence + Coverage defined (§11)
-- [ ] Provenance defined (§12)
-- [ ] Provider Abstraction defined (§13)
-- [ ] Safeguards (classification + human override) defined (§14)
-- [ ] Advisory Lifecycle defined (§15)
-- [ ] Out-of-scope (explicitly NOT implemented) listed (§16)
-- [ ] Capability registered (§17)
+- [ ] Purpose and Scope defined (§1–2)
+- [ ] Normative vs. Informative language defined (§3)
+- [ ] Advisory Session ID scheme defined (§4)
+- [ ] Protocol versioning and compatibility defined (§5–5.1)
+- [ ] Context Manifest defined (§6)
+- [ ] Advisory Scope defined (§7)
+- [ ] Advisory Packet Schema defined (§8)
+- [ ] Response Schema + Service Contract defined (§9)
+- [ ] Response Classification defined (§10)
+- [ ] Evidence Snapshot defined (§11)
+- [ ] Confidence + Coverage defined (§12)
+- [ ] Provenance defined (§13)
+- [ ] Provider Abstraction defined (§14)
+- [ ] Safeguards (classification + human override) defined (§15)
+- [ ] Determinism statement defined (§16)
+- [ ] Advisory Lifecycle defined (§17)
+- [ ] Error Contract defined (§18)
+- [ ] Extension Points defined (§19)
+- [ ] Out-of-scope (explicitly NOT implemented) listed (§20)
+- [ ] Capability registered (§21)
 - [ ] No runtime code implementing execution paths

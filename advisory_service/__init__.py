@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional
+from typing import Any, List, Optional
 
 
 PROTOCOL_VERSION = "1.0.0"
@@ -32,7 +32,7 @@ class RequestedAdvice(str, Enum):
 
 
 class AdvisoryScope(str, Enum):
-    """Types of authority/depth requested (PROTOCOL.md §6)."""
+    """Types of authority/depth requested (PROTOCOL.md §7)."""
 
     INFORMATIONAL = "Informational"
     ANALYTICAL = "Analytical"
@@ -59,7 +59,7 @@ class Confidence(str, Enum):
 
 
 class AdvisoryLifecycleState(str, Enum):
-    """Advisory session lifecycle (PROTOCOL.md §15)."""
+    """Advisory session lifecycle (PROTOCOL.md §17)."""
 
     REQUESTED = "Requested"
     PREPARED = "Prepared"
@@ -71,7 +71,7 @@ class AdvisoryLifecycleState(str, Enum):
 
 
 class ProviderInterface(str, Enum):
-    """Provider-agnostic fulfillment engines (PROTOCOL.md §13)."""
+    """Provider-agnostic fulfillment engines (PROTOCOL.md §14)."""
 
     OPENAI = "OpenAI"
     ANTHROPIC = "Anthropic"
@@ -81,7 +81,7 @@ class ProviderInterface(str, Enum):
 
 @dataclass
 class Provenance:
-    """Provenance metadata for a packet or response (PROTOCOL.md §12)."""
+    """Provenance metadata for a packet or response (PROTOCOL.md §13)."""
 
     requester: str
     mission_id: str
@@ -100,7 +100,7 @@ class Provenance:
 
 @dataclass
 class ContextManifest:
-    """Explicit context manifest bounding prompt size (PROTOCOL.md §5)."""
+    """Explicit context manifest bounding prompt size (PROTOCOL.md §6)."""
 
     mission_id: str
     evidence_ids: List[str]
@@ -113,7 +113,7 @@ class ContextManifest:
 
 @dataclass
 class EvidenceSnapshot:
-    """Immutable record for reproducibility (PROTOCOL.md §10)."""
+    """Immutable record for reproducibility (PROTOCOL.md §11)."""
 
     generated_at: str  # ISO-8601 timestamp
     evidence_revision: str  # Hash or version ID of the evidence set
@@ -122,7 +122,7 @@ class EvidenceSnapshot:
 
 @dataclass
 class AdvisoryPacket:
-    """Request schema sent by Hermes to the Advisory Service (PROTOCOL.md §7)."""
+    """Request schema sent by Hermes to the Advisory Service (PROTOCOL.md §8)."""
 
     advisory_session_id: str
     protocol_version: str
@@ -133,11 +133,12 @@ class AdvisoryPacket:
     governance_basis: str
     provenance: Provenance
     deadline: Optional[str] = None
+    extensions: Optional[dict[str, Any]] = None  # Reserved for future optional fields
 
 
 @dataclass
 class AdvisoryClassification:
-    """Safeguard block appended to every response (PROTOCOL.md §14)."""
+    """Safeguard block appended to every response (PROTOCOL.md §15)."""
 
     advisor_classification: str = "Advisory"
     decision_authority: str = "Principal"
@@ -147,7 +148,7 @@ class AdvisoryClassification:
 
 @dataclass
 class AdvisoryResponse:
-    """Response schema returned by the Advisory Service (PROTOCOL.md §8)."""
+    """Response schema returned by the Advisory Service (PROTOCOL.md §9)."""
 
     assessment: str
     missing_evidence: List[str]
@@ -165,11 +166,23 @@ class AdvisoryResponse:
         default_factory=AdvisoryClassification
     )
     provenance: Optional[Provenance] = None
+    extensions: Optional[dict[str, Any]] = None  # Reserved for future optional fields
+
+
+@dataclass
+class ErrorResponse:
+    """Error response envelope (PROTOCOL.md §18). For future implementation."""
+
+    error_code: str
+    error_message: str
+    advisory_session_id: str
+    provenance: Optional[Provenance] = None
+    error_detail: Optional[str] = None  # Stack trace or provider details
 
 
 @dataclass
 class ServiceContract:
-    """The protocol boundary (PROTOCOL.md §8). Inputs -> Outputs only."""
+    """The protocol boundary (PROTOCOL.md §9). Inputs -> Outputs only."""
 
     inputs: tuple = (
         "Mission",
@@ -191,7 +204,7 @@ class ServiceContract:
 
 
 def format_advisory_session_id(year: int, sequence: int) -> str:
-    """Pure formatter for an Advisory Session ID (PROTOCOL.md §3).
+    """Pure formatter for an Advisory Session ID (PROTOCOL.md §4).
 
     Allocation of the sequence number is an Increment Two concern; this helper
     only formats it. No state, no I/O.
@@ -199,7 +212,7 @@ def format_advisory_session_id(year: int, sequence: int) -> str:
     return f"ADV-{year}-{sequence:06d}"
 
 
-# Safeguard blocks — appended verbatim to every advisor response (PROTOCOL.md §14).
+# Safeguard blocks — appended verbatim to every advisor response (PROTOCOL.md §15).
 CLASSIFICATION_BLOCK = (
     "Advisor Classification: Advisory\n"
     "Decision Authority: Principal\n"
@@ -212,7 +225,7 @@ HUMAN_OVERRIDE_BLOCK = (
     "This advisory is non-binding and requires Principal judgment before implementation."
 )
 
-# Capability registration record (PROTOCOL.md §17) — informational. The
+# Capability registration record (PROTOCOL.md §21) — informational. The
 # authoritative registration lives in docs/CAPABILITY_INDEX.md and BKR.
 CAPABILITY_RECORD = {
     "capability": "Advisor",
@@ -226,7 +239,13 @@ CAPABILITY_RECORD = {
 }
 
 # Provider configuration — provider-agnostic; model is configurable, never
-# hardcoded (PROTOCOL.md §13).
+# hardcoded (PROTOCOL.md §14).
 DEFAULT_PROVIDER: ProviderInterface = ProviderInterface.OPENAI
 PROVIDER_INTERFACE = "Advisor Provider Interface"
 MODEL = "Configurable"
+
+# Extension point namespaces (PROTOCOL.md §19) — reserved for future capabilities.
+EXTENSION_NAMESPACES = [
+    "advisor.extensions.*",
+    "provider.extensions.*",
+]

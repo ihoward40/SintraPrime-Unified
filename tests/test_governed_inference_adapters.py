@@ -488,3 +488,208 @@ class TestTraceIntegration:
         span = tracer.all_traces()[0].all_spans()[0]
         assert "latency_ms" in span.tags
         assert span.tags["latency_ms"] >= 0
+
+
+# ---------------------------------------------------------------------------
+# Ollama adapter tests
+# ---------------------------------------------------------------------------
+
+class TestOllamaProvider:
+    def test_provider_is_configured_and_local(self):
+        from governed_inference.adapters import OllamaProvider
+
+        provider = OllamaProvider()
+        assert provider.configured is True
+        assert provider.cloud is False
+        assert provider.paid is False
+        caps = provider.capabilities()
+        assert caps.route_tier == RouteTier.LOCAL_PRIVATE
+        assert caps.provider == "ollama"
+
+    def test_health_reflects_client_availability(self):
+        from governed_inference.adapters import OllamaProvider
+
+        provider = OllamaProvider()
+        mock_client = MagicMock()
+        mock_client.is_available.return_value = True
+        provider._client = mock_client
+
+        health = provider.health()
+        assert health.healthy is True
+        assert health.reachable is True
+
+    def test_successful_invocation_returns_correct_result(self):
+        from governed_inference.adapters import OllamaProvider
+
+        provider = OllamaProvider()
+        mock_client = MagicMock()
+        mock_client.generate.return_value = {
+            "response": "Local legal answer.",
+            "prompt_eval_count": 12,
+            "eval_count": 7,
+        }
+        mock_client.model_exists.return_value = True
+        provider._client = mock_client
+
+        result = provider.invoke(_req())
+
+        assert result.provider == "ollama"
+        assert result.model == "llama3"
+        assert result.content == "Local legal answer."
+        assert result.usage["input_tokens"] == 12
+        assert result.usage["output_tokens"] == 7
+        assert result.usage["total_tokens"] == 19
+
+    def test_model_override_is_used(self):
+        from governed_inference.adapters import OllamaProvider
+
+        provider = OllamaProvider()
+        mock_client = MagicMock()
+        mock_client.generate.return_value = {
+            "response": "Reasoning output.",
+            "prompt_eval_count": 5,
+            "eval_count": 5,
+        }
+        mock_client.model_exists.return_value = True
+        provider._client = mock_client
+
+        provider.invoke(_req(metadata={"model_override": "deepseek-r1"}))
+
+        call_kwargs = mock_client.generate.call_args[1]
+        assert call_kwargs["model"] == "deepseek-r1"
+
+    def test_error_translation_for_connection_error(self):
+        from governed_inference.adapters import OllamaProvider
+
+        provider = OllamaProvider()
+        mock_client = MagicMock()
+        from local_models.ollama_client import OllamaConnectionError
+
+        mock_client.generate.side_effect = OllamaConnectionError("Ollama offline")
+        mock_client.model_exists.return_value = True
+        provider._client = mock_client
+
+        with pytest.raises(InferenceError) as exc:
+            provider.invoke(_req())
+        assert exc.value.kind == ProviderErrorKind.TRANSIENT
+
+    def test_structured_logging_on_success(self, caplog):
+        from governed_inference.adapters import OllamaProvider
+
+        provider = OllamaProvider()
+        mock_client = MagicMock()
+        mock_client.generate.return_value = {
+            "response": "Answer.",
+            "prompt_eval_count": 3,
+            "eval_count": 2,
+        }
+        mock_client.model_exists.return_value = True
+        provider._client = mock_client
+
+        with caplog.at_level(logging.INFO, logger="governed_inference.adapters"):
+            provider.invoke(_req())
+
+        assert any("ollama.invoke.success" in r.message for r in caplog.records)
+
+
+# ---------------------------------------------------------------------------
+# DeepSeek adapter tests
+# ---------------------------------------------------------------------------
+
+class TestDeepSeekProvider:
+    def test_unconfigured_provider_raises_on_invoke(self):
+        from governed_inference.adapters import DeepSeekProvider
+
+        provider = DeepSeekProvider()  # no api_key
+        assert provider.configured is False
+        with pytest.raises(InferenceError) as exc:
+            provider.invoke(_req())
+        assert exc.value.kind == ProviderErrorKind.AUTHENTICATION
+
+    def test_successful_invocation_returns_correct_result(self):
+        from governed_inference.adapters import DeepSeekProvider
+
+        provider = DeepSeekProvider(api_key="test-key")
+        mock_client = MagicMock()
+        mock_client.chat.return_value = {
+            "model": "deepseek-chat",
+            "choices": [{"message": {"content": "DeepSeek answer."}}],
+            "usage": {"prompt_tokens": 20, "completion_tokens": 10, "total_tokens": 30},
+            "cost_usd": 0.0001,
+        }
+        provider._client = mock_client
+
+        result = provider.invoke(_req())
+
+        assert result.provider == "deepseek"
+        assert result.model == "deepseek-chat"
+        assert result.content == "DeepSeek answer."
+        assert result.usage["input_tokens"] == 20
+        assert result.usage["output_tokens"] == 10
+        assert result.actual_cost_usd == 0.0001
+
+    def test_reasoning_task_selects_reasoner_model(self):
+        from governed_inference.adapters import DeepSeekProvider
+
+        provider = DeepSeekProvider(api_key="test-key")
+        mock_client = MagicMock()
+        mock_client.chat.return_value = {
+            "choices": [{"message": {"content": "Reasoning answer."}}],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 5},
+            "cost_usd": 0.0002,
+        }
+        provider._client = mock_client
+
+        provider.invoke(_req(task_type="legal_research"))
+
+        call_kwargs = mock_client.chat.call_args[1]
+        assert call_kwargs["model"] == "deepseek-reasoner"
+
+    def test_reasoning_content_preserved_in_metadata(self):
+        from governed_inference.adapters import DeepSeekProvider
+
+        provider = DeepSeekProvider(api_key="test-key")
+        mock_client = MagicMock()
+        mock_client.chat.return_value = {
+            "choices": [{"message": {"content": "Answer.", "reasoning_content": "Think step 1."}}],
+            "usage": {"prompt_tokens": 5, "completion_tokens": 5},
+            "cost_usd": 0.0,
+        }
+        provider._client = mock_client
+
+        request = _req(task_type="legal_research")
+        result = provider.invoke(request)
+
+        assert result.content == "Answer."
+        assert request.metadata.get("reasoning_content") == "Think step 1."
+
+    def test_error_translation_rate_limit(self):
+        from governed_inference.adapters import DeepSeekProvider
+
+        provider = DeepSeekProvider(api_key="test-key")
+        mock_client = MagicMock()
+        from local_models.deepseek_client import DeepSeekRateLimitError
+
+        mock_client.chat.side_effect = DeepSeekRateLimitError("Rate limited")
+        provider._client = mock_client
+
+        with pytest.raises(InferenceError) as exc:
+            provider.invoke(_req())
+        assert exc.value.kind == ProviderErrorKind.TRANSIENT
+
+    def test_structured_logging_on_success(self, caplog):
+        from governed_inference.adapters import DeepSeekProvider
+
+        provider = DeepSeekProvider(api_key="test-key")
+        mock_client = MagicMock()
+        mock_client.chat.return_value = {
+            "choices": [{"message": {"content": "Logged."}}],
+            "usage": {"prompt_tokens": 2, "completion_tokens": 1},
+            "cost_usd": 0.0,
+        }
+        provider._client = mock_client
+
+        with caplog.at_level(logging.INFO, logger="governed_inference.adapters"):
+            provider.invoke(_req())
+
+        assert any("deepseek.invoke.success" in r.message for r in caplog.records)

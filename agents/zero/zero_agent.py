@@ -18,8 +18,27 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from governed_inference import (
+    DataClassification,
+    GovernedInferenceRouter,
+    InferencePolicy,
+    InferenceRequest,
+    OpenAIProvider,
+    QualityFloor,
+)
+from governed_inference.contracts import InferenceError, PerRequestPolicy
+
 logger = logging.getLogger("zero_agent")
 logger.setLevel(logging.INFO)
+
+
+# ---------------------------------------------------------------------------
+# Capability mapping for governed inference
+# ---------------------------------------------------------------------------
+
+
+_FIX_TASK_TYPE = "code_repair"
+_FIX_CAPABILITY = "coding"
 
 
 @dataclass
@@ -104,6 +123,7 @@ class ZeroAgent:
         self._test_failures: List[TestFailure] = []
         self._maintenance_history: List[Dict[str, Any]] = []
         self._scheduler = None
+        self._governed_router: Optional[GovernedInferenceRouter] = None
         logger.info("ZeroAgent initialized for repo: %s", self.repo_root)
 
     # ------------------------------------------------------------------
@@ -271,23 +291,42 @@ class ZeroAgent:
     # Patch generation / application
     # ------------------------------------------------------------------
 
-    def generate_fix_patch(self, failure: TestFailure) -> Optional[Patch]:
-        """Generate a candidate fix patch for a test failure using LLM."""
-        fpath = Path(failure.file_path)
-        if not fpath.exists():
+    def _build_governed_router(self) -> Optional[GovernedInferenceRouter]:
+        """Build a governed inference router for patch generation."""
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
             return None
 
-        original = fpath.read_text(encoding="utf-8", errors="replace")
-        patched = original
-        description = f"Auto-fix for test failure: {failure.test_id}"
+        providers: List[Any] = []
+        openai_provider = OpenAIProvider(
+            api_key=api_key,
+            model="gpt-4o-mini",
+            estimated_cost_usd=0.0,
+            pricing_known=True,
+        )
+        providers.append(openai_provider)
 
-        # Try LLM-based fix first if API key is available
-        api_key = os.environ.get("OPENAI_API_KEY")
-        if api_key:
-            try:
-                import openai
-                client = openai.OpenAI(api_key=api_key)
-                prompt = f"""
+        per_request = PerRequestPolicy(
+            max_input_tokens=12000,
+            max_output_tokens=4096,
+            timeout_seconds=60,
+            max_attempts=3,
+        )
+        policy = InferencePolicy(
+            per_request=per_request,
+            paid_models_allowed=True,
+            paid_escalation_requires_explicit_approval=False,
+        )
+        return GovernedInferenceRouter(providers, policy=policy)
+
+    def _ensure_governed_router(self) -> Optional[GovernedInferenceRouter]:
+        if self._governed_router is None:
+            self._governed_router = self._build_governed_router()
+        return self._governed_router
+
+    @staticmethod
+    def _build_fix_patch_prompt(failure: TestFailure, original: str) -> str:
+        return f"""
 You are an expert Python developer. Fix the following failing test.
 File: {failure.file_path}
 Test ID: {failure.test_id}
@@ -302,29 +341,110 @@ Original File Content:
 
 Return ONLY the complete fixed Python code. Do not include markdown formatting like ```python or explanations.
 """
-                response = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[
-                        {"role": "system", "content": "You are an autonomous self-healing agent. Output only raw code."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.1,
-                    max_tokens=4000
-                )
-                
-                result = response.choices[0].message.content.strip()
-                if result.startswith("```python"):
-                    result = result[9:]
-                if result.startswith("```"):
-                    result = result[3:]
-                if result.endswith("```"):
-                    result = result[:-3]
-                
-                patched = result.strip() + "\n"
-                description = f"LLM-generated fix for {failure.test_id}"
-                logger.info("Successfully generated LLM patch for %s", failure.test_id)
-            except Exception as e:
-                logger.error("LLM patch generation failed: %s. Falling back to rule-based.", e)
+
+    def _build_fix_patch_request(
+        self,
+        failure: TestFailure,
+        original: str,
+    ) -> InferenceRequest:
+        prompt = self._build_fix_patch_prompt(failure, original)
+        return InferenceRequest(
+            request_id=f"zero_{uuid.uuid4().hex[:12]}",
+            task_type=_FIX_TASK_TYPE,
+            capability=_FIX_CAPABILITY,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an autonomous self-healing agent. Output only raw code.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            data_classification=DataClassification.PUBLIC,
+            quality_floor=QualityFloor.STANDARD,
+            max_input_tokens=12000,
+            max_output_tokens=4000,
+            temperature=0.1,
+        )
+
+    def _llm_fix_code(
+        self,
+        failure: TestFailure,
+        original: str,
+    ) -> Optional[str]:
+        """Request an LLM-generated code fix via the governed inference router."""
+        router = self._ensure_governed_router()
+        if router is None:
+            return None
+
+        try:
+            request = self._build_fix_patch_request(failure, original)
+            result = router.invoke(request)
+            code = str(result.content) if result.content is not None else ""
+            code = code.strip()
+            if code.startswith("```python"):
+                code = code[9:]
+            if code.startswith("```"):
+                code = code[3:]
+            if code.endswith("```"):
+                code = code[:-3]
+            return code.strip() + "\n"
+        except InferenceError as exc:
+            logger.error("Governed inference router failed for patch generation: %s", exc)
+            return None
+        except Exception as exc:
+            logger.error("Patch generation via governed router failed: %s. Falling back to legacy.", exc)
+            return self._legacy_llm_fix_code(failure, original)
+
+    def _legacy_llm_fix_code(
+        self,
+        failure: TestFailure,
+        original: str,
+    ) -> Optional[str]:
+        """Legacy direct OpenAI SDK fix path preserved during migration."""
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            return None
+        try:
+            import openai
+            client = openai.OpenAI(api_key=api_key)
+            prompt = self._build_fix_patch_prompt(failure, original)
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are an autonomous self-healing agent. Output only raw code."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.1,
+                max_tokens=4000,
+            )
+            result = response.choices[0].message.content.strip()
+            if result.startswith("```python"):
+                result = result[9:]
+            if result.startswith("```"):
+                result = result[3:]
+            if result.endswith("```"):
+                result = result[:-3]
+            return result.strip() + "\n"
+        except Exception as e:
+            logger.error("Legacy LLM patch generation failed: %s", e)
+            return None
+
+    def generate_fix_patch(self, failure: TestFailure) -> Optional[Patch]:
+        """Generate a candidate fix patch for a test failure using LLM."""
+        fpath = Path(failure.file_path)
+        if not fpath.exists():
+            return None
+
+        original = fpath.read_text(encoding="utf-8", errors="replace")
+        patched = original
+        description = f"Auto-fix for test failure: {failure.test_id}"
+
+        # Try LLM-based fix first via the governed inference router
+        llm_code = self._llm_fix_code(failure, original)
+        if llm_code is not None:
+            patched = llm_code
+            description = f"LLM-generated fix for {failure.test_id}"
+            logger.info("Successfully generated LLM patch for %s", failure.test_id)
 
         # Fallback to rule-based if LLM failed or didn't change anything
         if patched == original:

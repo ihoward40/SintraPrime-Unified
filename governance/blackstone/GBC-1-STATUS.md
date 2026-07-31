@@ -57,3 +57,10 @@ GB-1 is ratified. RS-1 will be considered only after the library has been exerci
 ## Post-Ratification Constraint
 
 No new constitutional material is added to GB-1. The next workstream is GBC-2, focused on governance tooling: linter, traceability graph, dashboard, and automated compliance tests.
+## Workstream Status
+
+- **Governance Workstream:** CLOSED (2026-07-31).
+- **Engineering and Operations Workstreams:** ACTIVE.
+- **Next governance activity** occurs only upon the GB-1 review trigger (90-day retrospective / RS-1 elevation per `GOVERNANCE_LIFECYCLE.md`) or through the formal BKGC amendment process.
+- Architectural freeze of the seven-volume library recorded in `ARCHITECTURAL_FREEZE_NOTICE.md`.
+- Project closure and milestone statement recorded in `GB-1-CLOSURE.md`.

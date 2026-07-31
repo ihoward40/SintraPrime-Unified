@@ -16,8 +16,27 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from governed_inference import (
+    DataClassification,
+    GovernedInferenceRouter,
+    InferencePolicy,
+    InferenceRequest,
+    OpenAIProvider,
+    QualityFloor,
+)
+from governed_inference.contracts import InferenceError, PerRequestPolicy
+
 logger = logging.getLogger("sigma_agent")
 logger.setLevel(logging.INFO)
+
+
+# ---------------------------------------------------------------------------
+# Capability mapping for governed inference
+# ---------------------------------------------------------------------------
+
+
+_REVIEW_TASK_TYPE = "pr_review"
+_REVIEW_CAPABILITY = "reasoning"
 
 
 @dataclass
@@ -79,6 +98,7 @@ class SigmaAgent:
         self.coverage_minimum = coverage_minimum
         self.block_on_security_critical = block_on_security_critical
         self._gate_history: List[GateReport] = []
+        self._governed_router: Optional[GovernedInferenceRouter] = None
         logger.info("SigmaAgent initialized — coverage min=%.0f%%", coverage_minimum * 100)
 
     def run_test_suite(self, module: Optional[str] = None) -> TestResult:
@@ -215,6 +235,107 @@ class SigmaAgent:
         logger.info("Type check: %d errors — %s", len(errors), "PASS" if passed else "FAIL")
         return passed, errors
 
+    def _build_governed_router(self) -> Optional[GovernedInferenceRouter]:
+        """Build a governed inference router for AI PR review."""
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            return None
+
+        providers: List[Any] = []
+        openai_provider = OpenAIProvider(
+            api_key=api_key,
+            model="gpt-4o-mini",
+            estimated_cost_usd=0.0,
+            pricing_known=True,
+        )
+        providers.append(openai_provider)
+
+        per_request = PerRequestPolicy(
+            max_input_tokens=12000,
+            max_output_tokens=4096,
+            timeout_seconds=60,
+            max_attempts=3,
+        )
+        policy = InferencePolicy(
+            per_request=per_request,
+            paid_models_allowed=True,
+            paid_escalation_requires_explicit_approval=False,
+        )
+        return GovernedInferenceRouter(providers, policy=policy)
+
+    def _ensure_governed_router(self) -> Optional[GovernedInferenceRouter]:
+        if self._governed_router is None:
+            self._governed_router = self._build_governed_router()
+        return self._governed_router
+
+    @staticmethod
+    def _build_pr_review_prompt(pr_diff: str) -> str:
+        return (
+            "Review the following PR diff and provide a concise code review summary, "
+            "highlighting potential bugs, performance issues, or architectural concerns:\n\n"
+            f"{pr_diff[:10000]}"
+        )
+
+    def _build_pr_review_request(self, pr_diff: str) -> InferenceRequest:
+        prompt = self._build_pr_review_prompt(pr_diff)
+        return InferenceRequest(
+            request_id=f"sigma_{uuid.uuid4().hex[:12]}",
+            task_type=_REVIEW_TASK_TYPE,
+            capability=_REVIEW_CAPABILITY,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are Sigma, an expert CI/CD code reviewer. Provide a concise, actionable review.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            data_classification=DataClassification.PUBLIC,
+            quality_floor=QualityFloor.STANDARD,
+            max_input_tokens=12000,
+            max_output_tokens=1000,
+            temperature=0.2,
+        )
+
+    def _generate_ai_review(self, pr_diff: str) -> Optional[str]:
+        """Generate an AI code review via the governed inference router."""
+        router = self._ensure_governed_router()
+        if router is None:
+            return None
+
+        try:
+            request = self._build_pr_review_request(pr_diff)
+            result = router.invoke(request)
+            return str(result.content).strip() if result.content is not None else None
+        except InferenceError as exc:
+            logger.error("Governed inference router failed for PR review: %s", exc)
+            return None
+        except Exception as exc:
+            logger.error("PR review via governed router failed: %s. Falling back to legacy.", exc)
+            return self._legacy_ai_review(pr_diff)
+
+    def _legacy_ai_review(self, pr_diff: str) -> Optional[str]:
+        """Legacy direct OpenAI SDK PR review path preserved during migration."""
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            return None
+        try:
+            import openai
+            client = openai.OpenAI(api_key=api_key)
+            prompt = self._build_pr_review_prompt(pr_diff)
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are Sigma, an expert CI/CD code reviewer. Provide a concise, actionable review."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.2,
+                max_tokens=1000,
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            logger.error("Legacy LLM PR review failed: %s", e)
+            return None
+
     def generate_gate_report(self, results: Dict[str, Any]) -> str:
         """Generate a markdown gate report."""
         lines = [
@@ -253,27 +374,13 @@ class SigmaAgent:
             lines.append("")
 
         # Add LLM PR Review if API key is available
-        api_key = os.environ.get("OPENAI_API_KEY")
-        if api_key and results.get("pr_diff"):
-            try:
-                import openai
-                client = openai.OpenAI(api_key=api_key)
-                prompt = f"Review the following PR diff and provide a concise code review summary, highlighting potential bugs, performance issues, or architectural concerns:\n\n{results.get('pr_diff')[:10000]}"
-                response = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[
-                        {"role": "system", "content": "You are Sigma, an expert CI/CD code reviewer. Provide a concise, actionable review."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.2,
-                    max_tokens=1000
-                )
-                review = response.choices[0].message.content.strip()
+        pr_diff = results.get("pr_diff")
+        if pr_diff:
+            review = self._generate_ai_review(pr_diff)
+            if review:
                 lines.append("## AI Code Review")
                 lines.append(review)
                 lines.append("")
-            except Exception as e:
-                logger.error("LLM PR review failed: %s", e)
 
         return "\n".join(lines)
 

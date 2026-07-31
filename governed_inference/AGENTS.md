@@ -32,7 +32,8 @@ Owns the local-first inference control plane: normalized request/result contract
 
 ## Verification
 
-- Run `python -m pytest tests/test_governed_inference.py -q` after changing this package.
+- Run `python -m pytest tests/test_governed_inference.py -q` after changing core router/policy/cache/ledger behavior.
+- Run `python -m pytest tests/test_governed_inference_adapters.py -q` after changing or adding provider adapters.
 
 ## Child DOX Index
 

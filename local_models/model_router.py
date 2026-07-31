@@ -9,9 +9,23 @@ from __future__ import annotations
 import logging
 import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Union
+
+from governed_inference import (
+    AnthropicProvider,
+    DataClassification,
+    DeepSeekProvider,
+    GovernedInferenceRouter,
+    InferencePolicy,
+    InferenceRequest,
+    InferenceResult,
+    OllamaProvider,
+    OpenAIProvider,
+    QualityFloor,
+)
+from governed_inference.contracts import InferenceError, ProviderErrorKind
 
 logger = logging.getLogger(__name__)
 
@@ -164,10 +178,59 @@ class ModelRouter:
 
         self._ollama: Optional[Any] = None
         self._deepseek: Optional[Any] = None
+        self._governed_router: Optional[GovernedInferenceRouter] = None
 
         self._availability_cache: Dict[Provider, bool] = {}
         self._cache_expiry: float = 0.0
         self._cache_ttl: float = 30.0   # re-check every 30 s
+
+    # ------------------------------------------------------------------
+    # Governed inference router (lazy)
+    # ------------------------------------------------------------------
+
+    def _build_governed_router(self) -> GovernedInferenceRouter:
+        """Build a GovernedInferenceRouter using this router's clients."""
+        providers: List[Any] = []
+
+        ollama_provider = OllamaProvider(base_url=self._ollama_url)
+        ollama_provider._client = self._get_ollama()
+        providers.append(ollama_provider)
+
+        if self._deepseek_key and not self.air_gap_mode:
+            deepseek_provider = DeepSeekProvider(api_key=self._deepseek_key)
+            deepseek_provider._client = self._get_deepseek()
+            providers.append(deepseek_provider)
+
+        if self._openai_key and not self.air_gap_mode:
+            openai_provider = OpenAIProvider(api_key=self._openai_key)
+            providers.append(openai_provider)
+
+        if self._anthropic_key and not self.air_gap_mode:
+            anthropic_provider = AnthropicProvider(api_key=self._anthropic_key)
+            providers.append(anthropic_provider)
+
+        from governed_inference.contracts import PerRequestPolicy
+        per_request = PerRequestPolicy(
+            max_input_tokens=12000,
+            max_output_tokens=4096,
+            timeout_seconds=60,
+            max_attempts=3,
+        )
+        # Legacy ModelRouter allowed any configured cloud provider without a
+        # separate per-request approval, so enable paid models when keys are
+        # present while keeping local-first routing via provider scoring.
+        has_paid_provider = bool(self._deepseek_key or self._openai_key or self._anthropic_key)
+        policy = InferencePolicy(
+            per_request=per_request,
+            paid_models_allowed=has_paid_provider,
+            paid_escalation_requires_explicit_approval=False,
+        )
+        return GovernedInferenceRouter(providers, policy=policy)
+
+    def _ensure_governed_router(self) -> GovernedInferenceRouter:
+        if self._governed_router is None:
+            self._governed_router = self._build_governed_router()
+        return self._governed_router
 
     # ------------------------------------------------------------------
     # Availability
@@ -230,6 +293,23 @@ class ModelRouter:
     # Routing logic
     # ------------------------------------------------------------------
 
+    def _task_to_capability(self, task_type: TaskType) -> str:
+        mapping = {
+            TaskType.LEGAL_RESEARCH: "reasoning",
+            TaskType.CASE_ANALYSIS: "reasoning",
+            TaskType.ARGUMENT_CONSTRUCTION: "reasoning",
+            TaskType.CONTRACT_REVIEW: "extraction",
+            TaskType.DOCUMENT_REVIEW: "summarization",
+            TaskType.CLAUSE_EXTRACTION: "extraction",
+            TaskType.SUMMARISATION: "summarization",
+            TaskType.TEMPLATE_FILLING: "drafting",
+            TaskType.QUICK_RESEARCH: "summarization",
+            TaskType.CHAT: "drafting",
+            TaskType.EMBEDDINGS: "extraction",
+            TaskType.GENERAL: "drafting",
+        }
+        return mapping.get(task_type, "drafting")
+
     def _select_provider(self, task_type: TaskType) -> Optional[Provider]:
         """Return the best available provider for the task."""
         preference = TASK_PROVIDER_PREFERENCE.get(task_type, list(Provider))
@@ -248,8 +328,71 @@ class ModelRouter:
             return TaskType.GENERAL
 
     # ------------------------------------------------------------------
-    # Completions
+    # Request/result mapping for governed inference
     # ------------------------------------------------------------------
+
+    def _build_inference_request(
+        self,
+        prompt: str,
+        task_type: TaskType,
+        model: str,
+        system: Optional[str],
+        temperature: float,
+        max_tokens: int,
+    ) -> InferenceRequest:
+        messages: List[Dict[str, str]] = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+
+        metadata: Dict[str, Any] = {}
+        if model != "auto":
+            metadata["model_override"] = model
+        else:
+            # Map task to legacy local model default so Ollama provider picks it.
+            local_model = TASK_LOCAL_MODEL.get(task_type, "llama3")
+            metadata["model_override"] = local_model
+
+        return InferenceRequest(
+            request_id=f"mr_{time.time():.6f}",
+            task_type=task_type.value,
+            capability=self._task_to_capability(task_type),
+            messages=messages,
+            data_classification=DataClassification.PUBLIC,
+            quality_floor=QualityFloor.STANDARD,
+            max_input_tokens=12000,
+            max_output_tokens=max_tokens,
+            temperature=temperature,
+            metadata=metadata,
+        )
+
+    def _result_from_inference(
+        self,
+        inference_result: InferenceResult,
+        task_type: TaskType,
+        latency_s: float,
+    ) -> RouterResult:
+        provider_value = inference_result.provider
+        try:
+            provider = Provider(provider_value)
+        except ValueError:
+            provider = Provider.OLLAMA
+
+        cost_usd = inference_result.actual_cost_usd or inference_result.estimated_cost_usd or 0.0
+        # Reasoning content from DeepSeek is not carried on InferenceResult directly;
+        # it would need an explicit extension. Return None for now.
+        thinking = None
+
+        return RouterResult(
+            content=str(inference_result.content),
+            provider=provider,
+            model=inference_result.model,
+            task_type=task_type,
+            latency_s=latency_s,
+            usage=inference_result.usage,
+            cost_usd=cost_usd,
+            thinking=thinking,
+        )
 
     def complete(
         self,
@@ -294,34 +437,38 @@ class ModelRouter:
                 error="No provider available. Is Ollama running or an API key set?",
             )
 
-        # Try providers in preference order with fallback
-        errors: List[str] = []
-        for p in TASK_PROVIDER_PREFERENCE.get(task_type, list(Provider)):
-            if not self._is_available(p):
-                continue
-            try:
-                return self._call_provider(
-                    provider=p,
-                    prompt=prompt,
-                    model=model,
-                    task_type=task_type,
-                    system=system,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                )
-            except Exception as exc:
-                logger.warning("Provider %s failed: %s — trying next", p.value, exc)
-                errors.append(f"{p.value}: {exc}")
-                continue
-
-        return RouterResult(
-            content="",
-            provider=provider,
-            model="none",
+        start = time.time()
+        request = self._build_inference_request(
+            prompt=prompt,
             task_type=task_type,
-            latency_s=0.0,
-            error="; ".join(errors) or "All providers failed",
+            model=model,
+            system=system,
+            temperature=temperature,
+            max_tokens=max_tokens,
         )
+        router = self._ensure_governed_router()
+        try:
+            inference_result = router.invoke(request, stream=stream)
+            latency_s = time.time() - start
+            return self._result_from_inference(inference_result, task_type, latency_s)
+        except Exception as exc:
+            latency_s = time.time() - start
+            error_message = str(exc)
+            if isinstance(exc, InferenceError):
+                error_message = f"{exc.kind.value}: {exc}"
+            logger.warning("Governed inference router failed: %s", error_message)
+            return RouterResult(
+                content="",
+                provider=provider,
+                model="none",
+                task_type=task_type,
+                latency_s=latency_s,
+                error=error_message,
+            )
+
+    # Legacy provider call paths are preserved as a safety net but are no longer
+    # exercised by ``complete()``. They remain available for direct callers and
+    # for a future phase that removes the governed-router delegation.
 
     def _call_provider(
         self,

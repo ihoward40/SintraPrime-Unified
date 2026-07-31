@@ -58,3 +58,9 @@
 - Multi-agent governance patterns
 - AI output traceability standards
 - Cross-jurisdiction conflict resolution models
+## Governance Workstream Status
+
+- **Governance construction workstream: CLOSED** as of GB-1 ratification (2026-07-31). No new constitutional material is added outside the amendment process.
+- **Engineering and Operations workstreams: ACTIVE** and are the primary consumers and validators of GB-1.
+- **GBC-2** remains a draft planning stub. Its entry criteria (GB-1 merged; ≥3 real PRs referencing BKGC; initial tooling CDR) are unchanged and not yet met. GBC-2 is NOT opened by this closure; it opens only on the GB-1 review trigger or a formal amendment.
+- The seven-volume library architecture is frozen; see `ARCHITECTURAL_FREEZE_NOTICE.md`.

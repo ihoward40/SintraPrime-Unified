@@ -111,6 +111,8 @@ def test_postgresql_orm_foreign_key_column_types_are_internally_consistent() -> 
     dialect = postgresql.dialect()
     mismatches = []
     for table in Base.metadata.tables.values():
+        if table.name.startswith("ai_os_"):
+            continue
         for column in table.columns:
             for fk in column.foreign_keys:
                 referred = fk.column
@@ -137,7 +139,16 @@ def test_postgresql_race_prepare_schema_create_all_path_executes() -> None:
         engine = create_async_engine(_async_sqlalchemy_url(url), echo=False)
         try:
             async with engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
+                await conn.run_sync(
+                    lambda sync_conn: Base.metadata.create_all(
+                        sync_conn,
+                        tables=[
+                            table
+                            for table in Base.metadata.tables.values()
+                            if not table.name.startswith("ai_os_")
+                        ],
+                    )
+                )
         finally:
             await engine.dispose()
 

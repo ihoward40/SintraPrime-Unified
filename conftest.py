@@ -114,7 +114,15 @@ collect_ignore_glob = [
     "superintelligence/*",
     "trust_law/*",
     "twin_layer/*",
-    "voice/*",
+    "voice/__init__.py",
+    "voice/legal_nlp.py",
+    "voice/persona.py",
+    "voice/response_formatter.py",
+    "voice/speech_processor.py",
+    "voice/voice_api.py",
+    "voice/voice_engine.py",
+    "voice/wake_word.py",
+    "voice/tests/*",
     "workflow_builder/*",
 ]
 

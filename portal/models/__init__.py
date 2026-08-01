@@ -1,5 +1,5 @@
 """ORM models package."""
-from .ai_os_agent import AIOSAgent, AIOSAgentVersion
+
 from .audit import AuditLog
 from .audit_record import AuditRecord
 from .billing import Expense, Invoice, InvoiceLineItem, Payment, TimeEntry, TrustAccount
@@ -23,8 +23,6 @@ from .user import Role as UserRole
 from .user import User, UserPermissionAssoc
 
 __all__ = [
-    "AIOSAgent",
-    "AIOSAgentVersion",
     "AuditLog",
     "AuditRecord",
     "Case",

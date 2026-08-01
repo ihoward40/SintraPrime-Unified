@@ -109,6 +109,20 @@ def _describe(engine, table: str) -> dict:
     }
 
 
+def _catalog_column(engine, table: str, column: str) -> dict:
+    info = next(col for col in inspect(engine).get_columns(table) if col["name"] == column)
+    return {
+        "type": _norm(info["type"]),
+        "nullable": bool(info["nullable"]),
+        "default": _norm(info["default"]) if info["default"] is not None else None,
+        "length": getattr(info["type"], "length", None),
+    }
+
+
+def _compiled_type(column, dialect) -> str:
+    return _norm(column.type.compile(dialect=dialect))
+
+
 def _seed_parent_rows(engine) -> tuple[uuid.UUID, uuid.UUID]:
     """Insert a minimal tenant + user so FK-enforcing engines accept inserts."""
     tenant_id = uuid.uuid4()
@@ -116,9 +130,7 @@ def _seed_parent_rows(engine) -> tuple[uuid.UUID, uuid.UUID]:
     with engine.begin() as conn:
         if engine.dialect.name != "postgresql":
             return tenant_id, user_id
-        role_id = conn.execute(
-            text("SELECT id FROM roles ORDER BY name LIMIT 1")
-        ).scalar_one()
+        role_id = conn.execute(text("SELECT id FROM roles ORDER BY name LIMIT 1")).scalar_one()
         conn.execute(
             text("INSERT INTO tenants (id, name, slug) VALUES (:i, 'T', :s)"),
             {"i": tenant_id, "s": f"t-{tenant_id.hex[:8]}"},
@@ -269,9 +281,7 @@ def test_sqlite_inactive_by_default_database_value(tmp_path: Path) -> None:
     tenant_id, user_id = _seed_parent_rows(engine)
     _insert_agent(engine, tenant_id, user_id, "probe")
     with engine.connect() as conn:
-        status, active = conn.execute(
-            text("SELECT status, active FROM ai_os_agents")
-        ).one()
+        status, active = conn.execute(text("SELECT status, active FROM ai_os_agents")).one()
     assert status == "seed"
     assert bool(active) is False
 
@@ -325,7 +335,9 @@ def test_models_expose_no_hard_delete_or_mutation_helpers() -> None:
         for forbidden in ("delete", "soft_delete", "purge", "hard_delete"):
             assert not hasattr(model, forbidden)
     status_check = next(
-        c for c in AIOSAgent.__table__.constraints if getattr(c, "name", "") == "ck_ai_os_agents_status"
+        c
+        for c in AIOSAgent.__table__.constraints
+        if getattr(c, "name", "") == "ck_ai_os_agents_status"
     )
     assert "retired" in str(status_check.sqltext)
 
@@ -382,14 +394,35 @@ def test_postgresql_upgrade_downgrade_upgrade_cycle() -> None:
 
 
 @pytest.mark.postgresql
-def test_postgresql_orm_and_raw_sql_schema_parity() -> None:
-    """The mandatory K-2 ORM/SQL parity gate."""
-    engine = _fresh_postgres_engine()
+def test_postgresql_legacy_fk_compatibility_and_schema_parity() -> None:
+    """The mandatory K-2 ORM/SQL parity gate plus legacy FK compatibility."""
+    legacy_engine = _fresh_postgres_engine()
     try:
-        upgrade(engine, AI_OS_ROOT)
-        from_sql = {t: _describe(engine, t) for t in AI_OS_TABLES}
+        # Authoritative live catalog types for the legacy bootstrap corpus.
+        legacy_tenants_id = _catalog_column(legacy_engine, "tenants", "id")
+        legacy_users_id = _catalog_column(legacy_engine, "users", "id")
+
+        # AI-OS references to legacy tables must match the bootstrapped catalog exactly.
+        assert (
+            _compiled_type(AIOSAgent.__table__.c.tenant_id, legacy_engine.dialect)
+            == legacy_tenants_id["type"]
+        )
+        assert (
+            _compiled_type(AIOSAgent.__table__.c.created_by, legacy_engine.dialect)
+            == legacy_users_id["type"]
+        )
+        assert (
+            _compiled_type(AIOSAgentVersion.__table__.c.tenant_id, legacy_engine.dialect)
+            == legacy_tenants_id["type"]
+        )
+        assert (
+            _compiled_type(AIOSAgentVersion.__table__.c.created_by, legacy_engine.dialect)
+            == legacy_users_id["type"]
+        )
+        assert legacy_tenants_id["length"] is None
+        assert legacy_users_id["length"] is None
     finally:
-        engine.dispose()
+        legacy_engine.dispose()
 
     engine = _fresh_postgres_engine()
     try:
@@ -398,8 +431,35 @@ def test_postgresql_orm_and_raw_sql_schema_parity() -> None:
             tables=[AIOSAgent.__table__, AIOSAgentVersion.__table__],
         )
         from_orm = {t: _describe(engine, t) for t in AI_OS_TABLES}
+        orm_refs = {
+            "ai_os_agents.tenant_id": _catalog_column(engine, "ai_os_agents", "tenant_id"),
+            "ai_os_agents.created_by": _catalog_column(engine, "ai_os_agents", "created_by"),
+            "ai_os_agent_versions.tenant_id": _catalog_column(
+                engine, "ai_os_agent_versions", "tenant_id"
+            ),
+            "ai_os_agent_versions.created_by": _catalog_column(
+                engine, "ai_os_agent_versions", "created_by"
+            ),
+        }
     finally:
         engine.dispose()
+
+    sql_engine = _fresh_postgres_engine()
+    try:
+        upgrade(sql_engine, AI_OS_ROOT)
+        from_sql = {t: _describe(sql_engine, t) for t in AI_OS_TABLES}
+        runtime_refs = {
+            "ai_os_agents.tenant_id": _catalog_column(sql_engine, "ai_os_agents", "tenant_id"),
+            "ai_os_agents.created_by": _catalog_column(sql_engine, "ai_os_agents", "created_by"),
+            "ai_os_agent_versions.tenant_id": _catalog_column(
+                sql_engine, "ai_os_agent_versions", "tenant_id"
+            ),
+            "ai_os_agent_versions.created_by": _catalog_column(
+                sql_engine, "ai_os_agent_versions", "created_by"
+            ),
+        }
+    finally:
+        sql_engine.dispose()
 
     for table in AI_OS_TABLES:
         for facet in (
@@ -410,9 +470,14 @@ def test_postgresql_orm_and_raw_sql_schema_parity() -> None:
             "check_constraints",
             "indexes",
         ):
-            assert from_orm[table][facet] == from_sql[table][facet], (
-                f"parity mismatch on {table}.{facet}"
-            )
+            assert (
+                from_orm[table][facet] == from_sql[table][facet]
+            ), f"parity mismatch on {table}.{facet}"
+
+    assert orm_refs == runtime_refs
+    assert orm_refs["ai_os_agents.tenant_id"]["type"] == "uuid"
+    assert orm_refs["ai_os_agents.created_by"]["type"] == "uuid"
+    assert runtime_refs["ai_os_agent_versions.created_by"]["type"] == "uuid"
 
 
 @pytest.mark.postgresql

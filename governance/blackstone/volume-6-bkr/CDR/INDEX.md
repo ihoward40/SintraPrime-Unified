@@ -23,8 +23,9 @@ CDR-0008.
 | CDR-0004 | Designate Knowledge Core as Canonical Semantic Authority | Ratified | Major | BKGC, BKC, BKR | — | CDR-0001, CDR-0003 |
 | CDR-0005 | Adopt Requirement Traceability System | Ratified | Major | BKGC, BGS, BKC, BRA, BCCM, BKR, BGC | — | CDR-0001, CDR-0002 |
 | CDR-0006 | Govern Advisory Service as a Non-Execution Capability | Ratified | Major | BKGC (v2.0), BKR | — | CDR-0001 |
-| CDR-0007 | Extend BKR Instead of Creating a Parallel Registry | Ratified | Editorial | BKGC (v1.0 archive), BKR | — | CDR-0001, CDR-0002, CDR-0005 |
+| CDR-0007 | Extend BKR Instead of Creating a Parallel Registry | Ratified | Minor | BKGC (v1.0 archive), BKR | — | CDR-0001, CDR-0002, CDR-0005 |
 | CDR-0008 | Add Lightweight Registry Tooling Under BKR | Ratified | Editorial | BKR | — | CDR-0005, CDR-0007 |
+| CDR-0009 | Relocate Registry Validator Out of governance/blackstone (AGENTS.md Compliance Correction) | Ratified | Minor | BKR | — | CDR-0006, CDR-0007, CDR-0008 |
 
 ## Rules
 

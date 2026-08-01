@@ -82,10 +82,12 @@ Two categories of rows:
   hierarchy and ecosystem-constitution doctrine edges.
 - `CDR/INDEX.md` — master index of all CDRs, including CDR-0007 and
   CDR-0008 governing this registry and its tooling.
-- `validate_registry.py` — standalone script checking internal consistency
-  of this registry and its JSON mirror (unique IDs, resolvable/reciprocal
-  supersession, resolvable CDR references, on-disk repository paths). Not
-  wired into CI; see CDR-0008.
+- `validate_registry.py` has been relocated: see `scripts/governance/validate_constitution_registry.py`
+  at the repository root (outside `governance/`), per CDR-0009. It is a
+  standalone script checking internal consistency of this registry and its
+  JSON mirror (unique IDs, resolvable/reciprocal supersession in both
+  directions, resolvable CDR references, on-disk repository paths, and
+  Markdown/JSON drift). Not wired into CI; see CDR-0008.
 
 ## Initial State
 

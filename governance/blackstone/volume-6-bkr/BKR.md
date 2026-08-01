@@ -28,7 +28,7 @@ BKR derives from all upstream volumes. It does not create new substantive govern
 - `REGISTRIES/constitution_registry.md` — Constitutional document lineage: version, status, supersession, integrity hash, governing CDR (see CDR-0007).
 - `REGISTRIES/constitution_registry.json` — Machine-readable mirror of the above (derived, non-authoritative; see CDR-0008).
 - `REGISTRIES/governance_dependency_graph.md` — Structured view of the frozen volume hierarchy and ecosystem-constitution doctrine edges (see CDR-0008).
-- `REGISTRIES/validate_registry.py` — Standalone (non-CI) consistency validator for the registries above (see CDR-0008).
+- `scripts/governance/validate_constitution_registry.py` (repository root, outside `governance/`) — Standalone (non-CI) consistency validator for the registries above; relocated out of this subtree per CDR-0009 to comply with this volume's own AGENTS.md ("no code in this subtree"). See CDR-0008 for the tooling decision and CDR-0009 for the relocation.
 
 ### 1.2 Constitutional Decision Records
 

@@ -35,6 +35,28 @@ status: draft
   without prematurely wiring it into CI ahead of `GBC-2-PLAN.md` entry
   criteria.
 
+## Unreleased — 2026-08-02
+
+### Fixed
+
+- Relocated the registry validator from
+  `REGISTRIES/validate_registry.py` to
+  `scripts/governance/validate_constitution_registry.py` (repository root,
+  outside `governance/`). Its prior location violated this volume's own
+  `governance/blackstone/AGENTS.md` Local Contract prohibiting code in the
+  subtree — a P1 finding from automated review of PR #242. See CDR-0009.
+- Extended the relocated validator to parse `constitution_registry.md`
+  directly and cross-check it field-by-field against
+  `constitution_registry.json`, closing a gap where JSON/Markdown drift went
+  undetected. See CDR-0009.
+- Made supersession-reciprocity validation bidirectional (previously checked
+  only `superseded_by` → `supersedes`; now also checks `supersedes` →
+  `superseded_by`). See CDR-0009.
+- Corrected `CDR/INDEX.md`: CDR-0007's `Amendment Class` was recorded as
+  `Editorial`; `CDR-0007.md`'s own front matter states `Minor`. Index updated
+  to match.
+- `CDR/CDR-0009.md` — records the relocation and logic corrections above.
+
 ## 1.0.0 — 2026-07-27
 
 ### Added

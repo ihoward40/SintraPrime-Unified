@@ -1,0 +1,394 @@
+[
+  {
+    "task_id": "TASK-001",
+    "owner": "Hermes + Observatory",
+    "title": "Complete TikTok account and monetization audit",
+    "description": "Open the relevant TikTok account, inspect all monetization features, record account standing, and preserve screenshots. Do not assume eligibility based solely on public thresholds.",
+    "output_artifact": "reports/tiktok/SP-TKM-001_ACCOUNT_ELIGIBILITY_AUDIT.md",
+    "workstream": "WS-0",
+    "gate": "G-0",
+    "status": "awaiting_owner",
+    "due": "Day 1",
+    "blockers": [
+      "Owner must provide redacted screenshots of TikTok profile, Studio, account status, monetization features, analytics, and link-in-bio settings."
+    ],
+    "completion_state": "partial",
+    "reason": "Audit framework is complete, but live TikTok account facts and screenshots remain unverified.",
+    "gate_dependency": "G-0"
+  },
+  {
+    "task_id": "TASK-002",
+    "owner": "Sentinel",
+    "title": "Create TikTok content-safety standard",
+    "description": "Write the prohibited-positioning list, standard educational disclaimer, and publication stop conditions for TikTok content.",
+    "output_artifact": "governance/tiktok/TIKTOK_CONTENT_SAFETY_STANDARD.md",
+    "workstream": "WS-1",
+    "gate": "G-1",
+    "status": "completed",
+    "due": "Day 2",
+    "dependencies": [],
+    "completed_date": "2026-07-27"
+  },
+  {
+    "task_id": "TASK-003",
+    "owner": "Sentinel + Athena",
+    "title": "Create claim-classification matrix",
+    "description": "Define V1\u2013V5 claim classifications and LOW/MODERATE/HIGH/PROHIBITED risk ratings with examples relevant to consumer-law education.",
+    "output_artifact": "governance/tiktok/TIKTOK_CLAIM_CLASSIFICATION_MATRIX.md",
+    "workstream": "WS-1",
+    "gate": "G-1",
+    "status": "completed",
+    "due": "Day 2",
+    "dependencies": [],
+    "completed_date": "2026-07-27"
+  },
+  {
+    "task_id": "TASK-004",
+    "owner": "Justice Scribe",
+    "title": "Audit current TikTok profile and bio",
+    "description": "Review existing profile photo, bio, link-in-bio, pinned videos, and content history against the brand positioning and safety framework.",
+    "output_artifact": "reports/tiktok/PROFILE_AUDIT.md",
+    "workstream": "WS-0",
+    "gate": "G-0",
+    "status": "partial",
+    "due": "Day 1",
+    "blockers": [
+      "Owner must provide redacted profile screenshots or conduct live owner-guided inspection."
+    ],
+    "completion_state": "partial",
+    "profile_framework_audit": "completed",
+    "live_account_profile_audit": "blocked_owner_evidence",
+    "reason": "Profile framework and draft bio are complete; live account profile elements cannot be audited without owner access.",
+    "gate_dependency": "G-0"
+  },
+  {
+    "task_id": "TASK-005",
+    "owner": "Revenue Architect",
+    "title": "Draft Consumer Evidence Case Starter Sheet",
+    "description": "Create the free lead magnet: a one-page intake worksheet with case summary, party list, timeline, document inventory, communication log, deadlines, desired resolution, missing evidence, and questions requiring professional review.",
+    "output_artifact": "offers/consumer-evidence/FREE_STARTER_SHEET.md",
+    "workstream": "WS-2",
+    "gate": "G-2",
+    "status": "completed",
+    "due": "Day 3",
+    "dependencies": [],
+    "completed_date": "2026-07-27"
+  },
+  {
+    "task_id": "TASK-006",
+    "owner": "Revenue Architect",
+    "title": "Build Consumer Evidence Intake Pack outline",
+    "description": "Define the $9 entry product contents, file structure, and educational-use terms.",
+    "output_artifact": "offers/consumer-evidence/INTAKE_PACK/INTAKE_PACK_OUTLINE.md",
+    "workstream": "WS-2",
+    "gate": "G-2",
+    "status": "completed",
+    "due": "Day 4",
+    "dependencies": [
+      "TASK-005"
+    ],
+    "completed_date": "2026-07-27"
+  },
+  {
+    "task_id": "TASK-007",
+    "owner": "Justice Scribe",
+    "title": "Draft first ten video scripts",
+    "description": "Produce scripts for the first ten videos from the initial twenty-video list, using the full script structure in the master mission.",
+    "output_artifact": "scripts/001_010/SCRIPT_INDEX.md",
+    "workstream": "WS-3",
+    "gate": "G-3",
+    "status": "completed",
+    "due": "Day 5",
+    "dependencies": [
+      "TASK-002",
+      "TASK-003"
+    ],
+    "completed_date": "2026-07-27",
+    "note": "Script index with titles, pillars, risk ratings, and CTAs completed. Full scripts pending source-packet verification."
+  },
+  {
+    "task_id": "TASK-008",
+    "owner": "Athena",
+    "title": "Verify legal claims in first ten scripts",
+    "description": "Attach a source packet to each moderate- or high-risk script. Classify every claim V1\u2013V5 and assign risk rating.",
+    "output_artifact": "scripts/001_010/source_packets/SOURCE_PACKET_INDEX.md",
+    "workstream": "WS-3",
+    "gate": "G-3",
+    "status": "completed",
+    "due": "Day 6",
+    "dependencies": [
+      "TASK-007"
+    ],
+    "completed_date": "2026-07-27",
+    "note": "Preliminary source packets attached. Athena must finalize jurisdiction-specific wording before production."
+  },
+  {
+    "task_id": "TASK-009",
+    "owner": "Revenue Architect",
+    "title": "Create landing-page wireframe",
+    "description": "Design the landing page for the Consumer Evidence Intake Pack with problem statement, inclusions, exclusions, price, disclaimer, checkout, privacy notice, and UTM tracking.",
+    "output_artifact": "offers/consumer-evidence/LANDING_PAGE_WIREFRAME.md",
+    "workstream": "WS-2",
+    "gate": "G-2",
+    "status": "completed",
+    "due": "Day 5",
+    "dependencies": [
+      "TASK-005"
+    ],
+    "completed_date": "2026-07-27"
+  },
+  {
+    "task_id": "TASK-010",
+    "owner": "Observatory",
+    "title": "Create analytics dashboard schema",
+    "description": "Define video-level and business metrics, content classification rules, and weekly experiment tracking schema.",
+    "output_artifact": "dashboard/DASHBOARD_SCHEMA.md",
+    "workstream": "WS-7",
+    "gate": "G-9",
+    "status": "completed",
+    "due": "Day 4",
+    "dependencies": [],
+    "completed_date": "2026-07-27"
+  },
+  {
+    "task_id": "TASK-011",
+    "owner": "Justice Scribe",
+    "title": "Prepare first LIVE agenda",
+    "description": "Build the Consumer Evidence Clinic agenda, moderation rules, question-routing framework, and comment-mining template.",
+    "output_artifact": "live/CONSUMER_EVIDENCE_CLINIC_AGENDA.md",
+    "workstream": "WS-5",
+    "gate": "G-5",
+    "status": "completed",
+    "due": "Day 6",
+    "dependencies": [
+      "TASK-002",
+      "TASK-003"
+    ],
+    "completed_date": "2026-07-27"
+  },
+  {
+    "task_id": "TASK-012",
+    "owner": "Revenue Architect",
+    "title": "Identify ten TikTok Shop product candidates",
+    "description": "Score at least ten candidate products using the 35/50 scoring model and produce an affiliate shortlist aligned with document/evidence workflows.",
+    "output_artifact": "affiliate/PRODUCT_SHORTLIST.md",
+    "workstream": "WS-6",
+    "gate": "G-6",
+    "status": "completed",
+    "due": "Day 7",
+    "dependencies": [
+      "TASK-001"
+    ],
+    "completed_date": "2026-07-27",
+    "note": "Candidate shortlist completed; live TikTok Shop listing verification still pending account access."
+  },
+  {
+    "task_id": "TASK-013",
+    "owner": "Revenue Architect",
+    "title": "Create TikTok One sponsor-profile draft",
+    "description": "Draft creator profile, sponsor target list, media kit, rate card, and contract checklist for brand collaboration opportunities.",
+    "output_artifact": "sponsorship/SPONSOR_PROFILE.md",
+    "workstream": "WS-6",
+    "gate": "G-7",
+    "status": "completed",
+    "due": "Day 7",
+    "dependencies": [],
+    "completed_date": "2026-07-27",
+    "note": "Profile draft complete. Account metrics and live TikTok One availability need verification."
+  },
+  {
+    "task_id": "TASK-014",
+    "owner": "Hermes",
+    "title": "Establish evidence repository structure",
+    "description": "Create subfolders for gate checklists, screenshots, URLs, and verification evidence; write README explaining naming conventions.",
+    "output_artifact": "artifacts/README.md + subfolders",
+    "workstream": "WS-0",
+    "gate": "G-0",
+    "status": "completed",
+    "due": "Day 1",
+    "dependencies": [],
+    "completed_date": "2026-07-27"
+  },
+  {
+    "task_id": "TASK-015",
+    "owner": "Hermes",
+    "title": "Issue Day One mission status report",
+    "description": "Publish the Day One status report with current state, task queue, gates in progress, risks, and decisions needed.",
+    "output_artifact": "reports/tiktok/SP-TKM-001_DAY_ONE_STATUS.md",
+    "workstream": "WS-0",
+    "gate": "G-0",
+    "status": "completed",
+    "due": "Day 1",
+    "dependencies": [],
+    "completed_date": "2026-07-27"
+  },
+  {
+    "task_id": "TASK-016",
+    "owner": "Hermes",
+    "title": "Collect owner G-0 evidence",
+    "description": "Receive redacted screenshots or conduct live owner-guided inspection of TikTok account.",
+    "output_artifact": "evidence/owner_g0/EVIDENCE_INDEX.json",
+    "workstream": "WS-0",
+    "gate": "G-0",
+    "status": "awaiting_owner",
+    "due": "Phase Three",
+    "dependencies": [],
+    "note": "Do not mark complete until evidence is actually received."
+  },
+  {
+    "task_id": "TASK-017",
+    "owner": "Hermes + Observatory",
+    "title": "Review and classify owner evidence",
+    "description": "Assign Evidence IDs, perform sensitive-data review, record acceptance status, and transfer verified facts to G0_FINDINGS.md.",
+    "output_artifact": "evidence/owner_g0/G0_FINDINGS.md",
+    "workstream": "WS-0",
+    "gate": "G-0",
+    "status": "awaiting_owner",
+    "due": "Phase Three",
+    "dependencies": [
+      "TASK-016"
+    ]
+  },
+  {
+    "task_id": "TASK-018",
+    "owner": "Hermes",
+    "title": "Close or retain G-0",
+    "description": "Update gate decision based on verified evidence; retain PENDING if any required field is unresolved.",
+    "output_artifact": "artifacts/gate_checklists/GATE_0_EVIDENCE_CHECKLIST.md",
+    "workstream": "WS-0",
+    "gate": "G-0",
+    "status": "awaiting_owner",
+    "due": "Phase Three",
+    "dependencies": [
+      "TASK-017"
+    ],
+    "note": "Do not mark complete merely because a checklist exists."
+  },
+  {
+    "task_id": "TASK-019",
+    "owner": "Hermes",
+    "title": "Add preview feature flag",
+    "description": "Add SP_TKM_001_PREVIEW_ENABLED setting and guard router registration in portal/main.py.",
+    "output_artifact": "portal/config.py + portal/main.py",
+    "workstream": "WS-2",
+    "gate": "G-2",
+    "status": "completed",
+    "due": "Phase Three",
+    "dependencies": [],
+    "completed_date": "2026-07-27"
+  },
+  {
+    "task_id": "TASK-020",
+    "owner": "Hermes",
+    "title": "Certify router and startup behavior",
+    "description": "Verify import, startup with flag disabled/enabled, route tests, regression tests, and document results.",
+    "output_artifact": "reports/tiktok/SP-TKM-001_ROUTER_CERTIFICATION.md",
+    "workstream": "WS-2",
+    "gate": "G-2",
+    "status": "completed",
+    "due": "Phase Three",
+    "dependencies": [
+      "TASK-019"
+    ],
+    "completed_date": "2026-07-27",
+    "note": "Certified for internal feature-flagged use only."
+  },
+  {
+    "task_id": "TASK-021",
+    "owner": "Justice Scribe + Isiah Howard",
+    "title": "Owner-review scripts 001\u2013020",
+    "description": "Use SCRIPT_OWNER_REVIEW.md decision record to approve, edit, revise, hold, or reject each script.",
+    "output_artifact": "reviews/SCRIPT_OWNER_REVIEW.md",
+    "workstream": "WS-3",
+    "gate": "G-3",
+    "status": "awaiting_owner",
+    "due": "Phase Three",
+    "dependencies": [],
+    "note": "Do not mark complete without owner decisions."
+  },
+  {
+    "task_id": "TASK-022",
+    "owner": "Athena + Sentinel",
+    "title": "Certify source packets",
+    "description": "Verify each moderate-risk packet contains current primary authority, correct jurisdiction, exceptions, date checked, safe wording, prohibited wording, citation.",
+    "output_artifact": "scripts/SOURCE_PACKETS_CERTIFIED.md",
+    "workstream": "WS-3",
+    "gate": "G-3",
+    "status": "partial",
+    "due": "Phase Three",
+    "dependencies": [
+      "TASK-021"
+    ],
+    "note": "Twelve packets certified; eight remain PRELIMINARY pending human review or jurisdiction-specific wording.",
+    "certified_count": 12,
+    "preliminary_count": 8,
+    "total_count": 20
+  },
+  {
+    "task_id": "TASK-023",
+    "owner": "Revenue Architect + Sentinel",
+    "title": "Review product artifacts",
+    "description": "Evaluate each product for completeness, accuracy, usability, privacy, unauthorized-practice risk, marketing-claim risk, delivery readiness.",
+    "output_artifact": "reviews/PRODUCT_REVIEW.md",
+    "workstream": "WS-2",
+    "gate": "G-2",
+    "status": "completed",
+    "due": "Phase Three",
+    "dependencies": [],
+    "completed_date": "2026-07-27",
+    "note": "All products INTERNAL DRAFT or INTERNAL REVIEWED; none REVENUE READY."
+  },
+  {
+    "task_id": "TASK-024",
+    "owner": "Hermes",
+    "title": "Verify business mailbox",
+    "description": "Confirm ISIAHH@ikesolutions.org accepts inbound mail, owner can read, reply works, spam routing acceptable, signature exists, inquiry separation ready.",
+    "output_artifact": "reviews/MAILBOX_VERIFICATION.md",
+    "workstream": "WS-6",
+    "gate": "G-7",
+    "status": "awaiting_owner",
+    "due": "Phase Three",
+    "dependencies": [],
+    "note": "Do not mark complete without a successful mailbox test."
+  },
+  {
+    "task_id": "TASK-025",
+    "owner": "Revenue Architect",
+    "title": "Confirm domain and route architecture",
+    "description": "Document intended public URL, internal route, DNS/reverse-proxy dependencies, authentication strategy, and staging plan.",
+    "output_artifact": "reviews/DOMAIN_ROUTE_ARCHITECTURE.md",
+    "workstream": "WS-2",
+    "gate": "G-2",
+    "status": "completed",
+    "due": "Phase Three",
+    "dependencies": [],
+    "completed_date": "2026-07-27"
+  },
+  {
+    "task_id": "TASK-026",
+    "owner": "Hermes",
+    "title": "Produce Phase Three return",
+    "description": "Compile Phase Three status report with corrected isolation language, feature-flag evidence, router certification, test results, G-0 inventory, product/script/mailbox status, gate table, and decision.",
+    "output_artifact": "reports/tiktok/SP-TKM-001_PHASE_THREE_STATUS.md + SP-TKM-001_PHASE_THREE_RETURN.md",
+    "workstream": "WS-0",
+    "gate": "G-0",
+    "status": "completed",
+    "due": "Phase Three",
+    "dependencies": [],
+    "completed_date": "2026-07-27"
+  },
+  {
+    "task_id": "TASK-027",
+    "owner": "Hermes",
+    "title": "Resolve or formally waive unrelated SSO test dependency",
+    "description": "Classify why portal/routers/tests/test_sso_routes.py cannot be collected; record allowed outcome.",
+    "output_artifact": "reports/tiktok/SSO_TEST_DEPENDENCY_CLASSIFICATION.md",
+    "workstream": "WS-0",
+    "gate": "G-0",
+    "status": "completed",
+    "due": "Phase Three",
+    "dependencies": [],
+    "completed_date": "2026-07-27",
+    "note": "Classification recorded as NOT EXECUTED / missing itsdangerous / no mission attribution. Allowed outcomes preserved."
+  }
+]

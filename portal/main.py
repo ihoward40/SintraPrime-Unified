@@ -32,6 +32,7 @@ from portal.routers import (
     notifications,
     recovery,
     sso,
+    sp_tkm_001,
     system_health,
     trust_compliance,
     users,
@@ -138,6 +139,8 @@ def create_app() -> FastAPI:
     app.include_router(mission_control_commands.router)
     app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["notifications"])
     app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
+    if settings.SP_TKM_001_PREVIEW_ENABLED:
+        app.include_router(sp_tkm_001.router, prefix="", tags=["sp-tkm-001"])
     app.include_router(admin_dashboard_router, prefix="/api/v1", tags=["admin-dashboard"])
 
     # Health check

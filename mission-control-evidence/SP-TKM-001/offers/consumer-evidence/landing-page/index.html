@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consumer Evidence — IKE Solutions</title>
+  <style>
+    :root { --bg:#0b0c10; --fg:#c5c6c7; --gold:#d4af37; --muted:#45a29e; --card:#1f2833; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--fg); line-height:1.55; }
+    .container { max-width:640px; margin:0 auto; padding:1.25rem; }
+    h1, h2, h3 { color:var(--gold); line-height:1.2; }
+    .hero { padding:2rem 0; }
+    .badge { display:inline-block; background:var(--card); color:var(--muted); padding:.25rem .5rem; border-radius:999px; font-size:.8rem; margin-bottom:.75rem; }
+    .cta { display:inline-block; background:var(--gold); color:#000; padding:.85rem 1.25rem; border-radius:.4rem; font-weight:700; text-decoration:none; margin:.5rem .5rem .5rem 0; }
+    .cta.secondary { background:transparent; color:var(--gold); border:1px solid var(--gold); }
+    .card { background:var(--card); padding:1.25rem; border-radius:.5rem; margin:1rem 0; }
+    ul { padding-left:1.25rem; }
+    .price { font-size:2rem; color:var(--gold); font-weight:800; }
+    .disclaimer { font-size:.85rem; color:#8d99ae; margin-top:1rem; }
+    form { display:flex; flex-direction:column; gap:.75rem; margin-top:1rem; }
+    label { font-size:.9rem; color:var(--muted); }
+    input, select { padding:.75rem; border-radius:.35rem; border:1px solid #4a5568; background:#111; color:var(--fg); font-size:1rem; }
+    button { cursor:pointer; }
+    .hidden { display:none; }
+    footer { margin-top:2rem; padding-top:1rem; border-top:1px solid #333; font-size:.8rem; color:#8d99ae; }
+    @media (max-width: 480px) { .hero h1 { font-size:1.6rem; } .container { padding:1rem; } }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <section class="hero">
+      <span class="badge">IKE Solutions · Consumer Education</span>
+      <h1>Turn scattered records into organized evidence.</h1>
+      <p>We teach consumers how to identify governing rules, organize evidence, challenge unsupported claims, and choose lawful escalation options.</p>
+      <a class="cta" href="#starter-sheet">Get the Free Starter Sheet</a>
+      <a class="cta secondary" href="#intake-pack">See the $9 Intake Pack</a>
+    </section>
+
+    <section class="card" id="problem">
+      <h2>Does this sound familiar?</h2>
+      <ul>
+        <li>Paperwork is spread across emails, drawers, and apps.</li>
+        <li>A deadline is approaching, but your records are disorganized.</li>
+        <li>It is hard to explain the issue clearly when it matters.</li>
+      </ul>
+    </section>
+
+    <section class="card" id="who-for">
+      <h2>Who this is for</h2>
+      <ul>
+        <li>Consumers facing billing, collection, credit-report, or complaint issues.</li>
+        <li>People who want to organize records before seeking professional help.</li>
+        <li>Anyone who prefers to understand their own evidence first.</li>
+      </ul>
+    </section>
+
+    <section class="card" id="starter-sheet">
+      <h2>Free Consumer Evidence Case Starter Sheet</h2>
+      <p>A one-page worksheet to organize your case summary, parties, timeline, documents, deadlines, and questions before you talk to a company, regulator, or qualified professional.</p>
+      <form id="starter-form" action="/api/v1/consumer-evidence/interest" method="POST">
+        <label for="first_name">First name</label>
+        <input type="text" id="first_name" name="first_name" required autocomplete="given-name">
+
+        <label for="email">Email address</label>
+        <input type="email" id="email" name="email" required autocomplete="email">
+
+        <label for="topic">Primary topic of interest (optional)</label>
+        <select id="topic" name="topic">
+          <option value="">— Select —</option>
+          <option value="debt">Debt / collection</option>
+          <option value="credit">Credit report</option>
+          <option value="billing">Billing dispute</option>
+          <option value="complaint">Consumer complaint</option>
+          <option value="other">Other</option>
+        </select>
+
+        <input type="hidden" id="utm_source" name="utm_source">
+        <input type="hidden" id="utm_medium" name="utm_medium">
+        <input type="hidden" id="utm_campaign" name="utm_campaign">
+        <input type="hidden" id="utm_content" name="utm_content">
+        <input type="hidden" id="event_id" name="event_id" value="email_capture_complete">
+
+        <button class="cta" type="submit">Get the Free Starter Sheet</button>
+      </form>
+      <p class="disclaimer" id="form-feedback" aria-live="polite"></p>
+    </section>
+
+    <section class="card" id="intake-pack">
+      <h2>Consumer Evidence Intake Pack</h2>
+      <div class="price">$9</div>
+      <p>Validation price. Ten guided templates + editable files to build a complete case file.</p>
+      <ul>
+        <li>Case Starter Sheet (expanded)</li>
+        <li>Party list, timeline, document inventory, communication log, deadlines tracker</li>
+        <li>Redaction guide, quick-start guide, glossary, resource directory</li>
+        <li>Editable CSV/TXT versions</li>
+      </ul>
+      <button class="cta secondary" id="waitlist-btn" type="button">Join the Waitlist — $9 Pack Coming Soon</button>
+      <p class="disclaimer">No payment required to join the waitlist. This preview has no checkout, no cart, and no payment processor.</p>
+    </section>
+
+    <section class="card" id="workshop">
+      <h2>Build Your Consumer Evidence File Workshop</h2>
+      <div class="price">$79</div>
+      <p>A 90-minute guided session to build a complete evidence file. Replay included.</p>
+      <button class="cta secondary" id="workshop-interest-btn" type="button">Notify Me When Workshop Registration Opens</button>
+    </section>
+
+    <section class="card" id="what-it-is-not">
+      <h2>What we do not do</h2>
+      <ul>
+        <li>Provide individualized legal, tax, or financial advice.</li>
+        <li>Guarantee any outcome, dispute result, or record removal.</li>
+        <li>Create an attorney-client relationship.</li>
+        <li>Draft letters or file court papers for you.</li>
+        <li>Promise debt elimination or guaranteed credit repair.</li>
+      </ul>
+    </section>
+
+    <section class="card" id="disclaimer">
+      <h2>Educational Disclaimer</h2>
+      <p>This content and these products provide general consumer education and organizational tools. They are not individualized legal, tax, or financial advice. Outcomes depend on your facts, jurisdiction, and evidence.</p>
+    </section>
+
+    <footer>
+      <p>© 2026 IKE Solutions / SintraPrime. Education only. Not a law firm.</p>
+      <p>Partnerships and Educational Sponsorships: <a href="mailto:ISIAHH@ikesolutions.org" style="color:var(--gold)">ISIAHH@ikesolutions.org</a></p>
+      <p class="disclaimer">We do not collect full Social Security numbers, account numbers, payment card numbers, or document uploads on this page.</p>
+    </footer>
+  </main>
+
+  <script>
+    function captureUTM() {
+      const params = new URLSearchParams(window.location.search);
+      ["utm_source","utm_medium","utm_campaign","utm_content"].forEach(k => {
+        const el = document.getElementById(k);
+        if (el) el.value = params.get(k) || "";
+      });
+      // Fire view event
+      sendEvent("starter_sheet_view", { utm: Object.fromEntries(params.entries()) });
+    }
+
+    function sendEvent(name, payload={}) {
+      if (typeof fetch !== "undefined") {
+        fetch("/api/v1/consumer-evidence/event", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ event_name: name, ...payload, url: location.href, t: new Date().toISOString() }),
+          keepalive: true
+        }).catch(() => {});
+      }
+    }
+
+    document.getElementById("starter-form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(this).entries());
+      fetch("/api/v1/consumer-evidence/interest", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
+      })
+      .then(r => r.json())
+      .then(() => {
+        sendEvent("email_capture_complete", { topic: data.topic, utm_source: data.utm_source });
+        document.getElementById("form-feedback").textContent = "Thanks. Check your email for the Starter Sheet.";
+        this.reset();
+      })
+      .catch(() => {
+        document.getElementById("form-feedback").textContent = "Something went wrong. Please try again.";
+      });
+    });
+
+    document.getElementById("waitlist-btn").addEventListener("click", () => {
+      const params = new URLSearchParams(window.location.search);
+      sendEvent("intake_pack_interest", { utm: Object.fromEntries(params.entries()) });
+      alert("Waitlist form coming soon. This preview does not collect payment.");
+    });
+
+    document.getElementById("workshop-interest-btn").addEventListener("click", () => {
+      const params = new URLSearchParams(window.location.search);
+      sendEvent("workshop_interest", { utm: Object.fromEntries(params.entries()) });
+      alert("Workshop waitlist coming soon.");
+    });
+
+    // Track profile visits if arriving from bio
+    sendEvent("tiktok_profile_visit", { referrer: document.referrer });
+
+    captureUTM();
+  </script>
+</body>
+</html>

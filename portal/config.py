@@ -130,6 +130,9 @@ class Settings(BaseSettings):
     NOTIFICATION_SMS_ENABLED: bool = False
     NOTIFICATION_PUSH_ENABLED: bool = False
 
+    # ── SP-TKM-001 isolated preview flag ─────────────────────────────────
+    SP_TKM_001_PREVIEW_ENABLED: bool = False
+
     # ── Tenant defaults ──────────────────────────────────────────────────
     DEFAULT_STORAGE_QUOTA_GB: int = 100
     DEFAULT_USER_QUOTA: int = 50

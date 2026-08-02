@@ -7,10 +7,8 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
-# Load environment variables
 load_dotenv()
 
-# Import settings and services using get_settings() instead of module-level constants
 from portal.admin.dashboard import router as admin_dashboard_router
 from portal.config import get_settings
 from portal.middleware.correlation_middleware import CorrelationMiddleware
@@ -20,6 +18,7 @@ from portal.middleware.session_middleware import SessionMiddleware
 from portal.middleware.timestamp_middleware import TimestampMiddleware
 from portal.routers import (
     admin,
+    agent_commons,
     auth,
     billing,
     blackstone,
@@ -47,13 +46,8 @@ def build_session_config() -> SessionConfig:
     """Build a boot-safe SSO session config from application settings."""
     settings = get_settings()
     jwt_secret_key = settings.JWT_SECRET_KEY
-
-    # The shipped development JWT placeholder can be shorter than the SSO
-    # config requires. Fall back to the app SECRET_KEY for local smoke tests
-    # while still respecting an explicitly configured JWT_SECRET_KEY.
     if len(jwt_secret_key) < 32:
         jwt_secret_key = settings.SECRET_KEY
-
     return SessionConfig(
         jwt_secret_key=jwt_secret_key,
         jwt_algorithm=settings.JWT_ALGORITHM,
@@ -74,16 +68,11 @@ def build_session_config() -> SessionConfig:
 async def lifespan(app: FastAPI):
     """Application startup and shutdown."""
     logger.info("Portal starting up...")
-
-    # Initialize services
     session_config = build_session_config()
     app.state.session_manager = SessionManager(session_config)
     app.state.jwt_service = JWTTokenService(session_config)
-
-    # Initialize security layer
     settings = get_settings()
     app.state.security_layer = SecurityLayer(settings)
-
     logger.info("Portal startup complete")
     yield
     logger.info("Portal shutting down...")
@@ -92,36 +81,24 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
     settings = get_settings()
-
     app = FastAPI(
         title="SintraPrime Unified Portal",
         description="Unified authentication, trust compliance, and admin interface",
         version="1.0.0",
         lifespan=lifespan,
     )
-
-    # CORS Middleware (single path only - use settings)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.CORS_ORIGINS,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["*"]
+        allow_headers=["*"],
     )
-
-    # Session Middleware (must come before routers that use request.session)
     app.add_middleware(SessionMiddleware)
-
-    # Rate Limiter Middleware
     app.add_middleware(RateLimiterMiddleware)
-
-    # Timestamp Middleware
     app.add_middleware(TimestampMiddleware)
-
-    # Correlation Middleware (must be outermost to provide request IDs to all downstream)
     app.add_middleware(CorrelationMiddleware)
 
-    # Register routers
     app.include_router(sso.router, prefix="/api/v1/sso", tags=["sso"])
     app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
     app.include_router(documents.router, prefix="/api/v1/documents", tags=["documents"])
@@ -136,16 +113,15 @@ def create_app() -> FastAPI:
     app.include_router(messages.router, prefix="/api/v1/messages", tags=["messages"])
     app.include_router(mission_control.router)
     app.include_router(mission_control_commands.router)
+    app.include_router(agent_commons.router)
     app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["notifications"])
     app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
     app.include_router(admin_dashboard_router, prefix="/api/v1", tags=["admin-dashboard"])
 
-    # Health check
     @app.get("/health")
     async def health_check():
         return {"status": "ok", "service": "portal"}
 
-    # Root
     @app.get("/")
     async def root():
         return {"message": "SintraPrime Unified Portal", "version": "1.0.0"}
@@ -153,7 +129,6 @@ def create_app() -> FastAPI:
     return app
 
 
-# Module-level app for ASGI servers (gunicorn, uvicorn, Cloud Run)
 app = create_app()
 
 

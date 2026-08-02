@@ -17,6 +17,7 @@ import {
   Star,
   Monitor,
   RadioTower,
+  Network,
 } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import { clsx } from 'clsx';
@@ -31,6 +32,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { path: '/mission-control', label: 'Mission Control', icon: RadioTower, badge: 'LIVE', badgeColor: 'green' },
+  { path: '/agent-commons', label: 'Agent Commons', icon: Network, badge: 'NEW', badgeColor: 'blue' },
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/legal', label: 'Legal Hub', icon: Scale, badge: '5', badgeColor: 'gold' },
   { path: '/financial', label: 'Financial Empire', icon: TrendingUp },
@@ -65,7 +67,6 @@ export default function Sidebar() {
         borderRight: '1px solid rgba(212,175,55,0.15)',
       }}
     >
-      {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-slate-800/50">
         <div
           className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center"
@@ -82,16 +83,13 @@ export default function Sidebar() {
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="text-sm font-bold text-gold-gradient leading-tight whitespace-nowrap">
-                SintraPrime
-              </div>
+              <div className="text-sm font-bold text-gold-gradient leading-tight whitespace-nowrap">SintraPrime</div>
               <div className="text-[10px] text-slate-500 whitespace-nowrap">AI Law & Finance</div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Nav Items */}
       <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path ||
@@ -103,9 +101,7 @@ export default function Sidebar() {
               <motion.div
                 className={clsx(
                   'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 cursor-pointer relative group',
-                  isActive
-                    ? 'bg-gold/10 text-gold'
-                    : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                  isActive ? 'bg-gold/10 text-gold' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
                 )}
                 whileHover={{ x: sidebarCollapsed ? 0 : 2 }}
                 whileTap={{ scale: 0.98 }}
@@ -116,10 +112,7 @@ export default function Sidebar() {
                     className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-gold rounded-r-full"
                   />
                 )}
-                <div className={clsx(
-                  'flex-shrink-0 w-5 h-5',
-                  isActive ? 'text-gold' : ''
-                )}>
+                <div className={clsx('flex-shrink-0 w-5 h-5', isActive ? 'text-gold' : '')}>
                   <Icon className="w-5 h-5" />
                 </div>
 
@@ -133,10 +126,7 @@ export default function Sidebar() {
                     >
                       <span className="text-sm font-medium whitespace-nowrap">{item.label}</span>
                       {item.badge && (
-                        <span className={clsx(
-                          'text-[10px] font-semibold px-1.5 py-0.5 rounded-full',
-                          badgeStyles[item.badgeColor || 'gold']
-                        )}>
+                        <span className={clsx('text-[10px] font-semibold px-1.5 py-0.5 rounded-full', badgeStyles[item.badgeColor || 'gold'])}>
                           {item.badge}
                         </span>
                       )}
@@ -144,7 +134,6 @@ export default function Sidebar() {
                   )}
                 </AnimatePresence>
 
-                {/* Tooltip for collapsed state */}
                 {sidebarCollapsed && (
                   <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-slate-200 text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border border-slate-700">
                     {item.label}
@@ -161,7 +150,6 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Status badges */}
       <AnimatePresence>
         {!sidebarCollapsed && (
           <motion.div
@@ -176,22 +164,17 @@ export default function Sidebar() {
             </div>
             <div className="flex items-center gap-2">
               <Star className="w-3.5 h-3.5 text-gold" />
-              <span className="text-[11px] text-slate-500">AI Parliament: Active</span>
+              <span className="text-[11px] text-slate-500">Agent Commons: Governed</span>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Collapse toggle */}
       <button
         onClick={toggleSidebar}
         className="flex items-center justify-center h-10 border-t border-slate-800/50 text-slate-500 hover:text-gold transition-colors"
       >
-        {sidebarCollapsed ? (
-          <ChevronRight className="w-4 h-4" />
-        ) : (
-          <ChevronLeft className="w-4 h-4" />
-        )}
+        {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
       </button>
     </motion.div>
   );

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Mapping
+from typing import Any
 
 from .adapters import AgentAdapter
 from .models import LifecycleStatus, MessageRecord, RunStatus, SupervisorRun
@@ -78,9 +79,18 @@ class GovernedSupervisor:
                 "material_disagreement": True,
             }
             run.approval_id = self.store.create_approval(
-                tenant_id, run.run_id, f"Owner approval required for: {', '.join(blocked_actions)}"
+                tenant_id,
+                run.run_id,
+                f"Owner approval required for: {', '.join(blocked_actions)}",
             )
-            self._record(run, "supervisor", [owner_agent], LifecycleStatus.BLOCKED, run.reconciliation, True)
+            self._record(
+                run,
+                "supervisor",
+                [owner_agent],
+                LifecycleStatus.BLOCKED,
+                run.reconciliation,
+                True,
+            )
             self.store.update_run(run)
             return run
 
@@ -90,16 +100,31 @@ class GovernedSupervisor:
             "supervisor",
             [builder_agent],
             LifecycleStatus.ASSIGNED,
-            {"objective": objective, "acceptance_criteria": run.acceptance_criteria, "role": "builder"},
+            {
+                "objective": objective,
+                "acceptance_criteria": run.acceptance_criteria,
+                "role": "builder",
+            },
         )
 
         context = self._build_context(run)
         builder = await self.adapters[builder_agent].invoke(
-            {"task_id": run.task_id, "objective": objective, "acceptance_criteria": run.acceptance_criteria},
+            {
+                "task_id": run.task_id,
+                "objective": objective,
+                "acceptance_criteria": run.acceptance_criteria,
+            },
             context,
         )
         run.builder_result = builder.output
-        self._record(run, builder_agent, ["supervisor"], LifecycleStatus.RESULT, builder.output, evidence=builder.evidence)
+        self._record(
+            run,
+            builder_agent,
+            ["supervisor"],
+            LifecycleStatus.RESULT,
+            builder.output,
+            evidence=builder.evidence,
+        )
 
         review = await self.adapters[reviewer_agent].invoke(
             {
@@ -111,11 +136,20 @@ class GovernedSupervisor:
             self._build_context(run),
         )
         run.review_result = review.output
-        self._record(run, reviewer_agent, ["supervisor"], LifecycleStatus.RESULT, review.output, evidence=review.evidence)
+        self._record(
+            run,
+            reviewer_agent,
+            ["supervisor"],
+            LifecycleStatus.RESULT,
+            review.output,
+            evidence=review.evidence,
+        )
 
         disagreement = self._material_disagreement(builder.output, review.output)
         run.reconciliation = {
-            "summary": review.output.get("summary") or builder.output.get("summary") or "Supervisor run completed.",
+            "summary": review.output.get("summary")
+            or builder.output.get("summary")
+            or "Supervisor run completed.",
             "builder": builder_agent,
             "reviewer": reviewer_agent,
             "material_disagreement": disagreement,
@@ -124,38 +158,83 @@ class GovernedSupervisor:
         if disagreement:
             run.status = RunStatus.WAITING_APPROVAL
             run.approval_id = self.store.create_approval(
-                tenant_id, run.run_id, "Builder and reviewer materially disagree. Owner decision required."
+                tenant_id,
+                run.run_id,
+                "Builder and reviewer materially disagree. Owner decision required.",
             )
-            self._record(run, "supervisor", [owner_agent], LifecycleStatus.BLOCKED, run.reconciliation, True)
+            self._record(
+                run,
+                "supervisor",
+                [owner_agent],
+                LifecycleStatus.BLOCKED,
+                run.reconciliation,
+                True,
+            )
         else:
             run.status = RunStatus.COMPLETED
-            self._record(run, "supervisor", [owner_agent], LifecycleStatus.RESULT, run.reconciliation, False)
+            self._record(
+                run,
+                "supervisor",
+                [owner_agent],
+                LifecycleStatus.RESULT,
+                run.reconciliation,
+                False,
+            )
 
         self.store.update_run(run)
         return run
 
-    def approve(self, tenant_id: str, run_id: str, approval_id: str, note: str = "") -> SupervisorRun:
+    def approve(
+        self,
+        tenant_id: str,
+        run_id: str,
+        approval_id: str,
+        note: str = "",
+    ) -> SupervisorRun:
         run = self.store.get_run(tenant_id, run_id)
         if run.approval_id != approval_id or run.status != RunStatus.WAITING_APPROVAL:
             raise ValueError("approval does not match a waiting supervisor run")
         self.store.decide_approval(tenant_id, approval_id, approved=True, note=note)
         run.status = RunStatus.COMPLETED
-        self._record(run, run.owner_agent, ["supervisor"], LifecycleStatus.CLOSED, {"decision": "approved", "note": note})
+        self._record(
+            run,
+            run.owner_agent,
+            ["supervisor"],
+            LifecycleStatus.CLOSED,
+            {"decision": "approved", "note": note},
+        )
         self.store.update_run(run)
         return run
 
-    def reject(self, tenant_id: str, run_id: str, approval_id: str, note: str = "") -> SupervisorRun:
+    def reject(
+        self,
+        tenant_id: str,
+        run_id: str,
+        approval_id: str,
+        note: str = "",
+    ) -> SupervisorRun:
         run = self.store.get_run(tenant_id, run_id)
         if run.approval_id != approval_id or run.status != RunStatus.WAITING_APPROVAL:
             raise ValueError("approval does not match a waiting supervisor run")
         self.store.decide_approval(tenant_id, approval_id, approved=False, note=note)
         run.status = RunStatus.CANCELLED
-        self._record(run, run.owner_agent, ["supervisor"], LifecycleStatus.REJECTED, {"decision": "rejected", "note": note})
+        self._record(
+            run,
+            run.owner_agent,
+            ["supervisor"],
+            LifecycleStatus.REJECTED,
+            {"decision": "rejected", "note": note},
+        )
         self.store.update_run(run)
         return run
 
-    def _build_context(self, run: SupervisorRun) -> Dict[str, Any]:
-        messages = self.store.get_thread(run.tenant_id, run.workspace_id, run.channel_id, run.thread_id)
+    def _build_context(self, run: SupervisorRun) -> dict[str, Any]:
+        messages = self.store.get_thread(
+            run.tenant_id,
+            run.workspace_id,
+            run.channel_id,
+            run.thread_id,
+        )
         bounded = messages[-50:]
         return {
             "tenant_id": run.tenant_id,
@@ -164,18 +243,21 @@ class GovernedSupervisor:
             "thread_id": run.thread_id,
             "task_id": run.task_id,
             "thread_history": bounded,
-            "provenance": [{"message_id": m["message_id"], "from_agent": m["from_agent"]} for m in bounded],
+            "provenance": [
+                {"message_id": message["message_id"], "from_agent": message["from_agent"]}
+                for message in bounded
+            ],
         }
 
     def _record(
         self,
         run: SupervisorRun,
         from_agent: str,
-        to_agents: List[str],
+        to_agents: list[str],
         status: LifecycleStatus,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
         owner_decision_required: bool = False,
-        evidence: List[str] | None = None,
+        evidence: list[str] | None = None,
     ) -> None:
         self.store.append_message(
             MessageRecord(
@@ -197,16 +279,26 @@ class GovernedSupervisor:
     def _validate_agents(self, builder_agent: str, reviewer_agent: str) -> None:
         if builder_agent == reviewer_agent:
             raise ValueError("builder and reviewer must be independent agents")
-        missing = [agent for agent in (builder_agent, reviewer_agent) if agent not in self.adapters]
+        missing = [
+            agent
+            for agent in (builder_agent, reviewer_agent)
+            if agent not in self.adapters
+        ]
         if missing:
             raise KeyError(f"unregistered adapters: {', '.join(missing)}")
 
     @staticmethod
-    def _material_disagreement(builder: Dict[str, Any], reviewer: Dict[str, Any]) -> bool:
+    def _material_disagreement(
+        builder: dict[str, Any], reviewer: dict[str, Any]
+    ) -> bool:
         if reviewer.get("material_disagreement") is True:
             return True
         if reviewer.get("approved") is False:
             return True
         builder_decision = builder.get("decision")
         reviewer_decision = reviewer.get("decision")
-        return bool(builder_decision and reviewer_decision and builder_decision != reviewer_decision)
+        return bool(
+            builder_decision
+            and reviewer_decision
+            and builder_decision != reviewer_decision
+        )

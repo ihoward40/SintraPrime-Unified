@@ -76,6 +76,11 @@ class VoiceCommand(Base):
     )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    confirmation_target_restated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    confirmation_target_fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
     events: Mapped[list[VoiceCommandEvent]] = relationship(
         "VoiceCommandEvent",
         back_populates="command",

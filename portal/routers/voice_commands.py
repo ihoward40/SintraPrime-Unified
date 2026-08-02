@@ -45,7 +45,6 @@ class VoiceCommandSubmitRequest(BaseModel):
     voice_session_id: str | None = Field(default=None, max_length=80)
     requested_capability: str | None = Field(default=None, max_length=40)
     target_resource: str | None = Field(default=None, max_length=255)
-    normalized_intent: str | None = Field(default=None, max_length=8000)
 
 
 class VoiceCommandConfirmRequest(BaseModel):
@@ -126,7 +125,6 @@ async def submit_command(
         voice_session_id=body.voice_session_id,
         requested_capability=body.requested_capability,
         target_resource=body.target_resource,
-        normalized_intent=body.normalized_intent,
     )
     result = await submit_voice_command(db, submission, current_user)
     return VoiceCommandResponse.from_model(result.command)

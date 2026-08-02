@@ -11,6 +11,7 @@ provider registry.
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import uuid
@@ -31,7 +32,7 @@ from voice_concierge.governed import (
     create_envelope,
 )
 from voice_concierge.governed.command_envelope import RiskClass, VoiceSource
-from voice_concierge.governed.confirmation import PendingConfirmation
+from voice_concierge.governed.confirmation import PendingConfirmation, target_fingerprint
 from voice_concierge.governed.mock_providers import default_mock_registry
 from voice_concierge.governed.orchestrator import (
     OrchestrationOutcome,
@@ -54,6 +55,8 @@ from ..services.audit_service import audit
 from ..websocket.connection_manager import ws_manager
 
 log = structlog.get_logger(__name__)
+_CONFIRMATION_LOCKS_GUARD = asyncio.Lock()
+_CONFIRMATION_LOCKS: dict[tuple[str, str], asyncio.Lock] = {}
 
 
 class VoiceCommandNotFoundError(Exception):
@@ -83,7 +86,6 @@ class VoiceCommandSubmission:
     voice_session_id: str | None = None
     requested_capability: str | None = None
     target_resource: str | None = None
-    normalized_intent: str | None = None
 
 
 @dataclass(frozen=True)
@@ -147,6 +149,16 @@ def _providers_for(
     override: dict[VoiceCapability, VoiceActionProvider] | None,
 ) -> dict[VoiceCapability, VoiceActionProvider]:
     return override if override is not None else default_mock_registry()
+
+
+async def _confirmation_lock(tenant_id: str, command_id: str) -> asyncio.Lock:
+    key = (tenant_id, command_id)
+    async with _CONFIRMATION_LOCKS_GUARD:
+        lock = _CONFIRMATION_LOCKS.get(key)
+        if lock is None:
+            lock = asyncio.Lock()
+            _CONFIRMATION_LOCKS[key] = lock
+        return lock
 
 
 async def _append_events(
@@ -300,8 +312,8 @@ async def submit_voice_command(
     flags = flags if flags is not None else VoiceFeatureFlags.from_env()
     providers = _providers_for(providers)
 
-    normalized_intent = submission.normalized_intent or submission.raw_transcript
-    risk_class = classify(normalized_intent)
+    normalized_intent = submission.raw_transcript
+    risk_class = classify(submission.raw_transcript)
     envelope: VoiceCommandEnvelope = create_envelope(
         session_id=submission.voice_session_id or f"vsess-{uuid.uuid4().hex[:12]}",
         principal_id=current_user.user_id,
@@ -340,6 +352,11 @@ async def submit_voice_command(
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
     )
+    if outcome.pending_confirmation is not None:
+        restated_target = envelope.target_resource or envelope.normalized_intent
+        command_row.confirmation_target_restated_at = datetime.now(UTC)
+        command_row.confirmation_target_fingerprint = target_fingerprint(restated_target)
+
     db.add(command_row)
     await db.flush()
 
@@ -357,13 +374,16 @@ async def _load_command(
     db: AsyncSession,
     current_user: CurrentUser,
     command_id: str,
+    *,
+    for_update: bool = False,
 ) -> VoiceCommand:
-    result = await db.execute(
-        select(VoiceCommand).where(
-            VoiceCommand.tenant_id == str(current_user.tenant_id),
-            VoiceCommand.command_id == command_id,
-        )
+    stmt = select(VoiceCommand).where(
+        VoiceCommand.tenant_id == str(current_user.tenant_id),
+        VoiceCommand.command_id == command_id,
     )
+    if for_update:
+        stmt = stmt.with_for_update()
+    result = await db.execute(stmt)
     command_row = result.scalar_one_or_none()
     if command_row is None:
         raise VoiceCommandNotFoundError(command_id)
@@ -422,56 +442,75 @@ async def confirm_voice_command(
     confirmed, mock-execute it.
     """
     providers = _providers_for(providers)
-    command_row = await _load_command(db, current_user, command_id)
-    if command_row.session_state != str(SessionState.AWAITING_CONFIRMATION):
-        raise VoiceCommandStateError(
-            f"command {command_id} is not awaiting confirmation (state={command_row.session_state})",
-            command_id=command_id,
+    lock = await _confirmation_lock(str(current_user.tenant_id), command_id)
+    async with lock:
+        command_row = await _load_command(db, current_user, command_id, for_update=True)
+        if command_row.session_state != str(SessionState.AWAITING_CONFIRMATION):
+            raise VoiceCommandStateError(
+                f"command {command_id} is not awaiting confirmation (state={command_row.session_state})",
+                command_id=command_id,
+            )
+
+        pending_count_result = await db.execute(
+            select(func.count(VoiceCommand.id)).where(
+                VoiceCommand.tenant_id == str(current_user.tenant_id),
+                VoiceCommand.voice_session_id == command_row.voice_session_id,
+                VoiceCommand.session_state == str(SessionState.AWAITING_CONFIRMATION),
+            )
+        )
+        pending_count = pending_count_result.scalar_one()
+
+        pending = PendingConfirmation(
+            command_id=command_row.command_id,
+            action_description=command_row.normalized_intent,
+            target=command_row.target_resource or command_row.normalized_intent,
+            created_at=command_row.created_at.replace(tzinfo=UTC)
+            if command_row.created_at.tzinfo is None
+            else command_row.created_at,
+        )
+        pending.apply_restated_evidence(
+            restated_at=command_row.confirmation_target_restated_at.replace(tzinfo=UTC)
+            if command_row.confirmation_target_restated_at
+            and command_row.confirmation_target_restated_at.tzinfo is None
+            else command_row.confirmation_target_restated_at,
+            target_fingerprint=command_row.confirmation_target_fingerprint,
+            command_id=command_row.command_id,
         )
 
-    pending_count_result = await db.execute(
-        select(func.count(VoiceCommand.id)).where(
-            VoiceCommand.tenant_id == str(current_user.tenant_id),
-            VoiceCommand.voice_session_id == command_row.voice_session_id,
-            VoiceCommand.session_state == str(SessionState.AWAITING_CONFIRMATION),
+        effective_target = current_target or command_row.target_resource or command_row.normalized_intent
+        confirmation_check = pending.evaluate(
+            utterance,
+            current_target=effective_target,
+            pending_count=pending_count,
         )
-    )
-    pending_count = pending_count_result.scalar_one()
 
-    pending = PendingConfirmation(
-        command_id=command_row.command_id,
-        action_description=command_row.normalized_intent,
-        target=command_row.target_resource or command_row.normalized_intent,
-        created_at=command_row.created_at.replace(tzinfo=UTC)
-        if command_row.created_at.tzinfo is None
-        else command_row.created_at,
-    )
-    # The API response returned when confirmation became required already
-    # restated the exact target to the caller — satisfying the "system has
-    # restated the target" precondition for an ambiguous affirmation.
-    pending.restate_target()
+        envelope = _rehydrate_envelope(command_row, confirmation_state=ConfirmationState.REQUIRED)
+        session = _rehydrate_session(command_row, current_user)
 
-    envelope = _rehydrate_envelope(command_row, confirmation_state=ConfirmationState.REQUIRED)
-    session = _rehydrate_session(command_row, current_user)
+        if confirmation_check.confirmed:
+            command_row.session_state = str(SessionState.EXECUTING)
+            command_row.confirmation_state = str(ConfirmationState.CONFIRMED)
+            command_row.result = "execution_claimed"
+            command_row.updated_at = datetime.now(UTC)
+            await db.flush()
 
-    outcome = _confirm_voice_command(
-        envelope=envelope,
-        session=session,
-        pending=pending,
-        utterance=utterance,
-        current_target=current_target or command_row.target_resource or command_row.normalized_intent,
-        pending_count=pending_count,
-        providers=providers,
-    )
+        outcome = _confirm_voice_command(
+            envelope=envelope,
+            session=session,
+            pending=pending,
+            utterance=utterance,
+            current_target=effective_target,
+            pending_count=pending_count,
+            providers=providers,
+        )
 
-    previous_hash, start_sequence = await _last_event_hash(db, command_row)
-    events = await _append_events(
-        db, command_row, session, start_sequence=start_sequence, previous_hash=previous_hash
-    )
-    await _finalize(db, current_user, command_row, outcome, events, audit_action="voice_command_confirmation")
+        previous_hash, start_sequence = await _last_event_hash(db, command_row)
+        events = await _append_events(
+            db, command_row, session, start_sequence=start_sequence, previous_hash=previous_hash
+        )
+        await _finalize(db, current_user, command_row, outcome, events, audit_action="voice_command_confirmation")
 
-    return VoiceCommandResult(command=command_row, outcome=outcome)
-
+        return VoiceCommandResult(command=command_row, outcome=outcome)
 
 async def cancel_voice_command(
     db: AsyncSession,

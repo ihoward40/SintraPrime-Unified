@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS voice_commands (
     created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at               TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     completed_at            TIMESTAMPTZ,
+    confirmation_target_restated_at TIMESTAMPTZ,
+    confirmation_target_fingerprint VARCHAR(64),
     CONSTRAINT ck_voice_commands_risk_class CHECK (
         risk_class IN ('read', 'draft', 'write', 'sensitive_write', 'prohibited')
     ),

@@ -43,7 +43,6 @@ export interface VoiceCommandSubmitRequest {
   voice_session_id?: string;
   requested_capability?: string;
   target_resource?: string;
-  normalized_intent?: string;
 }
 
 export interface VoiceCommandConfirmRequest {

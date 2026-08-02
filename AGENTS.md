@@ -89,4 +89,4 @@ When the user requests a durable behavior change, record it here or in the relev
 | `tests/AGENTS.md` | Root-level tests | Scheduler tests, agent unit tests, security tests (not portal-level tests)
 | `.mesh/AGENTS.md` | Agent Mesh coordination | Ledger, registry, protocol messages, and transport status |
 | `governance/blackstone/AGENTS.md` | Blackstone Governance Library | Constitutional charter, standards, knowledge core, architecture, certification, registry, casebook |
-| `voice/governed/AGENTS.md` | SP-VOICE-001 Governed Voice Operations | Voice command envelope, risk classifier, policy decision, session state machine, confirmation, receipts, feature flags |
+| `voice_concierge/governed/AGENTS.md` | SP-VOICE-001 Governed Voice Operations | Voice command envelope, risk classifier, policy decision, session state machine, confirmation, receipts, feature flags |

@@ -15,6 +15,7 @@ import CaseLawSearch from './pages/CaseLawSearch';
 import Settings from './pages/Settings';
 import OperationsFloor from './pages/OperationsFloor';
 import Login from './pages/Login';
+import VoiceConcierge from './pages/VoiceConcierge';
 import MissionControlLayout from './pages/mission-control/MissionControlLayout';
 import MissionControlHome from './pages/mission-control/MissionControlHome';
 import MissionControlSurface from './pages/mission-control/MissionControlSurface';
@@ -43,6 +44,7 @@ function AppContent() {
             <Route path=":surface" element={<MissionControlSurface />} />
           </Route>
           <Route path="operations-floor" element={<OperationsFloor />} />
+          <Route path="voice-concierge" element={<VoiceConcierge />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>

@@ -6,7 +6,7 @@ Owns all FastAPI route handler modules. These are the API surface — the contra
 
 ## Ownership
 
-- All files in `portal/routers/` (auth, admin, billing, cases, clients, documents, messages, notifications, recovery, sso, trust_compliance, users)
+- All files in `portal/routers/` (auth, admin, billing, cases, clients, documents, messages, notifications, recovery, sso, trust_compliance, users, mission_control_commands, voice_commands)
 - Router tests in `portal/routers/tests/`
 
 ## Local Contracts

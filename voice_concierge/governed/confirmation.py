@@ -28,7 +28,7 @@ _AMBIGUOUS_YES = frozenset({"yes", "do it", "go ahead", "yep", "yeah", "confirm"
 _DENIALS = frozenset({"no", "cancel", "stop", "don't", "do not", "nope", "abort"})
 
 
-def _target_fingerprint(target: str) -> str:
+def target_fingerprint(target: str) -> str:
     """Stable fingerprint of the exact action target, used to detect changes."""
     return hashlib.sha256(target.strip().lower().encode("utf-8")).hexdigest()
 
@@ -52,24 +52,54 @@ class PendingConfirmation:
     target: str
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     target_restated: bool = False
+    target_restated_at: datetime | None = None
+    target_restated_fingerprint: str | None = None
+    target_restated_command_id: str | None = None
     _fingerprint: str = field(init=False)
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "_fingerprint", _target_fingerprint(self.target))
+        object.__setattr__(self, "_fingerprint", target_fingerprint(self.target))
 
-    def restate_target(self) -> None:
-        """Mark that the system has restated the target back to the principal.
+    def restate_target(self, *, restated_at: datetime | None = None) -> None:
+        """Persist evidence that this command's target was restated.
 
-        Ambiguous affirmations ("yes") are only honoured after this is set.
+        Ambiguous affirmations ("yes") are only honoured when this evidence is
+        current, target-matching, and tied to this command.
         """
         self.target_restated = True
+        self.target_restated_at = restated_at or datetime.now(UTC)
+        self.target_restated_fingerprint = self._fingerprint
+        self.target_restated_command_id = self.command_id
+
+    def apply_restated_evidence(
+        self,
+        *,
+        restated_at: datetime | None,
+        target_fingerprint: str | None,
+        command_id: str,
+    ) -> None:
+        self.target_restated = restated_at is not None and target_fingerprint is not None
+        self.target_restated_at = restated_at
+        self.target_restated_fingerprint = target_fingerprint
+        self.target_restated_command_id = command_id
+
+    def has_current_restated_evidence(self, *, current_target: str, now: datetime) -> bool:
+        if not self.target_restated:
+            return False
+        if self.target_restated_command_id != self.command_id:
+            return False
+        if self.target_restated_at is None or self.target_restated_at < self.created_at:
+            return False
+        if now - self.target_restated_at > CONFIRMATION_TTL:
+            return False
+        return self.target_restated_fingerprint == target_fingerprint(current_target)
 
     def is_expired(self, now: datetime | None = None) -> bool:
         now = now or datetime.now(UTC)
         return now - self.created_at > CONFIRMATION_TTL
 
     def target_changed(self, current_target: str) -> bool:
-        return _target_fingerprint(current_target) != self._fingerprint
+        return target_fingerprint(current_target) != self._fingerprint
 
     def evaluate(
         self,
@@ -117,7 +147,7 @@ class PendingConfirmation:
                 return ConfirmationOutcome(
                     False, "ambiguous affirmation rejected: multiple pending actions"
                 )
-            if not self.target_restated:
+            if not self.has_current_restated_evidence(current_target=current_target, now=now):
                 return ConfirmationOutcome(
                     False, "ambiguous affirmation rejected: target not restated"
                 )

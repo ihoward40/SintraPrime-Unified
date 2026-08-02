@@ -103,7 +103,7 @@ packages = [
 profile = "black"
 line_length = 100
 skip_gitignore = true
-known_first_party = ["portal", "packages"]
+known_first_party = ["portal", "packages", "voice_concierge"]
 
 [tool.black]
 line-length = 100
@@ -168,7 +168,8 @@ exclude = [
     "superintelligence",
     "trust_law",
     "twin_layer",
-    # Legacy speech modules only; voice/governed/ (SP-VOICE-001) is linted.
+    # Legacy speech modules only; voice_concierge/governed/ (SP-VOICE-001) is
+    # a separate top-level package and is linted normally.
     "voice/__init__.py",
     "voice/legal_nlp.py",
     "voice/persona.py",
@@ -219,7 +220,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["portal", "operator"]
+known-first-party = ["portal", "operator", "voice_concierge"]
 
 [tool.ruff.lint.per-file-ignores]
 # ── Per-file baseline ──────────────────────────────────────────────────
@@ -256,7 +257,7 @@ known-first-party = ["portal", "operator"]
 "tests/**" = ["ARG002", "F401", "F811", "F841", "N802", "N999", "PT009", "PT011", "PT027", "RUF059"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "portal/tests", "voice/governed/tests"]
+testpaths = ["tests", "portal/tests", "voice_concierge/governed/tests"]
 python_files = "test_*.py"
 asyncio_mode = "auto"
 addopts = "-m 'not experimental'"

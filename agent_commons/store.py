@@ -188,6 +188,16 @@ class AgentCommonsStore:
                 raise KeyError(f"run not found: {run_id}")
             return self._decode_run(row)
 
+    def list_runs(self, tenant_id: str, limit: int = 50) -> list[SupervisorRun]:
+        bounded_limit = max(1, min(limit, 200))
+        with self._lock:
+            rows = self._connection.execute(
+                """SELECT * FROM supervisor_runs
+                   WHERE tenant_id=? ORDER BY updated_at DESC LIMIT ?""",
+                (tenant_id, bounded_limit),
+            ).fetchall()
+            return [self._decode_run(row) for row in rows]
+
     def create_approval(self, tenant_id: str, run_id: str, reason: str) -> str:
         approval_id = uuid.uuid4().hex
         with self._lock, self._connection:

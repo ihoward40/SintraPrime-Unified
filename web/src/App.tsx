@@ -11,6 +11,7 @@ import CaseManagement from './pages/CaseManagement';
 import DocumentVault from './pages/DocumentVault';
 import EntityGovernance from './pages/EntityGovernance';
 import AIParliament from './pages/AIParliament';
+import AgentCommons from './pages/AgentCommons';
 import CaseLawSearch from './pages/CaseLawSearch';
 import Settings from './pages/Settings';
 import OperationsFloor from './pages/OperationsFloor';
@@ -36,6 +37,7 @@ function AppContent() {
           <Route path="documents" element={<DocumentVault />} />
           <Route path="entities" element={<EntityGovernance />} />
           <Route path="ai-parliament" element={<AIParliament />} />
+          <Route path="agent-commons" element={<AgentCommons />} />
           <Route path="caselaw" element={<CaseLawSearch />} />
           <Route path="settings" element={<Settings />} />
           <Route path="mission-control" element={<MissionControlLayout />}>

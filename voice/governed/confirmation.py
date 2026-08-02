@@ -33,6 +33,26 @@ def _target_fingerprint(target: str) -> str:
     return hashlib.sha256(target.strip().lower().encode("utf-8")).hexdigest()
 
 
+def _canonical_text(value: str) -> str:
+    return " ".join(value.strip().lower().split())
+
+
+def _matches_explicit_target_confirmation(utterance: str, target: str) -> bool:
+    said = _canonical_text(utterance)
+    if not said.startswith("confirm "):
+        return False
+
+    confirmation_body = said.removeprefix("confirm ").strip()
+    if not confirmation_body:
+        return False
+
+    canonical_target = _canonical_text(target)
+    short_fingerprint = _target_fingerprint(target)[:8]
+    return canonical_target in confirmation_body or any(
+        token.lstrip("#") == short_fingerprint for token in confirmation_body.split()
+    )
+
+
 class ConfirmationError(Exception):
     """Raised when a confirmation attempt violates the protocol."""
 
@@ -97,9 +117,8 @@ class PendingConfirmation:
         if said in _DENIALS:
             return ConfirmationOutcome(False, "explicitly denied")
 
-        # Explicit, target-naming confirmation always allowed if it names the target.
-        explicit = _target_fingerprint(current_target)[:8]
-        if said.startswith("confirm ") and explicit:
+        # Explicit confirmation must name the exact target or include its fingerprint.
+        if _matches_explicit_target_confirmation(said, current_target):
             return ConfirmationOutcome(True, "explicit confirmation")
 
         if said in _AMBIGUOUS_YES:

@@ -198,14 +198,18 @@ def test_confirmation_expires_after_ttl():
     created = datetime.now(UTC) - CONFIRMATION_TTL - timedelta(seconds=1)
     pc = PendingConfirmation("vcmd-1", "send email", "jordan@example.com", created_at=created)
     pc.restate_target()
-    out = pc.evaluate("confirm send", current_target="jordan@example.com", pending_count=1)
+    out = pc.evaluate(
+        "confirm jordan@example.com", current_target="jordan@example.com", pending_count=1
+    )
     assert out.confirmed is False
     assert "expired" in out.reason
 
 
-def test_confirmation_valid_within_ttl():
+def test_confirmation_valid_with_exact_target():
     pc = PendingConfirmation("vcmd-1", "send email", "jordan@example.com")
-    out = pc.evaluate("confirm send", current_target="jordan@example.com", pending_count=1)
+    out = pc.evaluate(
+        "confirm jordan@example.com", current_target="jordan@example.com", pending_count=1
+    )
     assert out.confirmed is True
 
 
@@ -215,9 +219,31 @@ def test_confirmation_valid_within_ttl():
 def test_changed_target_invalidates_confirmation():
     pc = PendingConfirmation("vcmd-1", "send email", "jordan@example.com")
     pc.restate_target()
-    out = pc.evaluate("confirm send", current_target="someone-else@example.com", pending_count=1)
+    out = pc.evaluate(
+        "confirm jordan@example.com",
+        current_target="someone-else@example.com",
+        pending_count=1,
+    )
     assert out.confirmed is False
     assert "target changed" in out.reason
+
+
+def test_confirmation_rejected_when_exact_target_missing():
+    pc = PendingConfirmation("vcmd-1", "send email", "jordan@example.com")
+    out = pc.evaluate("confirm send the email", current_target="jordan@example.com", pending_count=1)
+    assert out.confirmed is False
+    assert "unrecognized" in out.reason
+
+
+def test_confirmation_rejected_when_target_mismatched():
+    pc = PendingConfirmation("vcmd-1", "send email", "jordan@example.com")
+    out = pc.evaluate(
+        "confirm someone-else@example.com",
+        current_target="jordan@example.com",
+        pending_count=1,
+    )
+    assert out.confirmed is False
+    assert "unrecognized" in out.reason
 
 
 # ── ambiguous "yes" handling ─────────────────────────────────────────────────

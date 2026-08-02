@@ -1,11 +1,31 @@
+from types import SimpleNamespace
+
 import pytest
 
 from portal.routers import agent_commons
 
 
+@pytest.fixture(autouse=True)
+def development_runtime(monkeypatch):
+    monkeypatch.setattr(
+        agent_commons,
+        "get_settings",
+        lambda: SimpleNamespace(ENVIRONMENT="development"),
+    )
+    monkeypatch.setenv("WEB_CONCURRENCY", "1")
+    monkeypatch.setenv("AGENT_COMMONS_STORAGE_MODE", "sqlite")
+    monkeypatch.setenv("AGENT_COMMONS_EVENT_BACKEND", "in_process")
+    agent_commons.get_store.cache_clear()
+    agent_commons.get_event_bus.cache_clear()
+    agent_commons.get_supervisor.cache_clear()
+    yield
+    agent_commons.get_store.cache_clear()
+    agent_commons.get_event_bus.cache_clear()
+    agent_commons.get_supervisor.cache_clear()
+
+
 def test_adapter_mode_defaults_to_disabled(monkeypatch):
     monkeypatch.delenv("AGENT_COMMONS_ADAPTER_MODE", raising=False)
-    agent_commons.get_supervisor.cache_clear()
 
     assert agent_commons.get_adapter_mode() == agent_commons.ADAPTER_MODE_DISABLED
     assert agent_commons.get_supervisor().adapters == {}

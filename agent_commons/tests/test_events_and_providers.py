@@ -9,17 +9,20 @@ from agent_commons.provider_adapters import CallableAgentAdapter, ProviderPolicy
 @pytest.mark.asyncio
 async def test_event_bus_isolates_tenants():
     bus = AgentCommonsEventBus()
-    tenant_a = bus.subscribe("tenant-a").__aiter__()
-    tenant_b = bus.subscribe("tenant-b").__aiter__()
+    tenant_a = await bus.open_subscription("tenant-a")
+    tenant_b = await bus.open_subscription("tenant-b")
+    try:
+        await bus.publish("tenant-a", {"type": "run.updated", "data": {"run_id": "a"}})
 
-    await bus.publish("tenant-a", {"type": "run.updated", "data": {"run_id": "a"}})
+        event = await bus.next_event(tenant_a, 0.2)
+        assert event is not None
+        assert event["tenant_id"] == "tenant-a"
+        assert event["data"]["run_id"] == "a"
 
-    event = await asyncio.wait_for(tenant_a.__anext__(), timeout=0.2)
-    assert event["tenant_id"] == "tenant-a"
-    assert event["data"]["run_id"] == "a"
-
-    with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(tenant_b.__anext__(), timeout=0.05)
+        assert await bus.next_event(tenant_b, 0.05) is None
+    finally:
+        await bus.close_subscription(tenant_a)
+        await bus.close_subscription(tenant_b)
 
 
 @pytest.mark.asyncio

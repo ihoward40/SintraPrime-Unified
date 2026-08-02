@@ -12,8 +12,14 @@ async def test_builder_and_reviewer_complete_without_owner_gate():
     supervisor = GovernedSupervisor(
         store,
         {
-            "builder": MockAgentAdapter("builder", ["build"], {"summary": "candidate", "decision": "ship"}),
-            "reviewer": MockAgentAdapter("reviewer", ["review"], {"summary": "review passed", "approved": True, "decision": "ship"}),
+            "builder": MockAgentAdapter(
+                "builder", ["build"], {"summary": "candidate", "decision": "ship"}
+            ),
+            "reviewer": MockAgentAdapter(
+                "reviewer",
+                ["review"],
+                {"summary": "review passed", "approved": True, "decision": "ship"},
+            ),
         },
     )
 
@@ -33,7 +39,12 @@ async def test_builder_and_reviewer_complete_without_owner_gate():
     assert run.status is RunStatus.COMPLETED
     assert run.approval_id is None
     messages = store.get_thread("tenant-a", "ws-1", "engineering", "thread-1")
-    assert [message["status"] for message in messages] == ["ASSIGNED", "RESULT", "RESULT", "RESULT"]
+    assert [message["status"] for message in messages] == [
+        "ASSIGNED",
+        "RESULT",
+        "RESULT",
+        "RESULT",
+    ]
 
 
 @pytest.mark.asyncio
@@ -43,7 +54,11 @@ async def test_material_disagreement_requires_owner_approval():
         store,
         {
             "builder": MockAgentAdapter("builder", ["build"], {"decision": "ship"}),
-            "reviewer": MockAgentAdapter("reviewer", ["review"], {"approved": False, "material_disagreement": True}),
+            "reviewer": MockAgentAdapter(
+                "reviewer",
+                ["review"],
+                {"approved": False, "material_disagreement": True},
+            ),
         },
     )
 
@@ -62,7 +77,12 @@ async def test_material_disagreement_requires_owner_approval():
 
     assert run.status is RunStatus.WAITING_APPROVAL
     assert run.approval_id
-    approved = supervisor.approve("tenant-a", run.run_id, run.approval_id, "Owner accepts the risk")
+    approved = supervisor.approve(
+        "tenant-a",
+        run.run_id,
+        run.approval_id,
+        "Owner accepts the risk",
+    )
     assert approved.status is RunStatus.COMPLETED
 
 
@@ -99,14 +119,25 @@ async def test_idempotency_returns_existing_run():
         store,
         {
             "builder": MockAgentAdapter("builder", ["build"], {"decision": "ship"}),
-            "reviewer": MockAgentAdapter("reviewer", ["review"], {"approved": True, "decision": "ship"}),
+            "reviewer": MockAgentAdapter(
+                "reviewer",
+                ["review"],
+                {"approved": True, "decision": "ship"},
+            ),
         },
     )
-    kwargs = dict(
-        tenant_id="tenant-a", workspace_id="ws-1", channel_id="engineering", thread_id="thread-4",
-        owner_agent="isiah", objective="Idempotent task", builder_agent="builder", reviewer_agent="reviewer",
-        acceptance_criteria=[], idempotency_key="same-key",
-    )
+    kwargs = {
+        "tenant_id": "tenant-a",
+        "workspace_id": "ws-1",
+        "channel_id": "engineering",
+        "thread_id": "thread-4",
+        "owner_agent": "isiah",
+        "objective": "Idempotent task",
+        "builder_agent": "builder",
+        "reviewer_agent": "reviewer",
+        "acceptance_criteria": [],
+        "idempotency_key": "same-key",
+    }
     first = await supervisor.run_objective(**kwargs)
     second = await supervisor.run_objective(**kwargs)
     assert first.run_id == second.run_id

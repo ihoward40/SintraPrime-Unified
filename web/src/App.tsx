@@ -15,6 +15,7 @@ import CaseLawSearch from './pages/CaseLawSearch';
 import Settings from './pages/Settings';
 import OperationsFloor from './pages/OperationsFloor';
 import Login from './pages/Login';
+import Setup from './pages/Setup';
 import VoiceConcierge from './pages/VoiceConcierge';
 import MissionControlLayout from './pages/mission-control/MissionControlLayout';
 import MissionControlHome from './pages/mission-control/MissionControlHome';
@@ -27,6 +28,7 @@ function AppContent() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/setup" element={<Setup />} />
         <Route path="/" element={<Layout />}>
           <Route index element={<LiveDashboard />} />
           <Route path="dashboard" element={<Dashboard />} />

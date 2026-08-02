@@ -114,3 +114,9 @@ async def test_approved_action_gate_does_not_claim_completion():
     assert updated["status"] == RunStatus.PENDING.value
     assert updated["reconciliation"]["execution_pending"] is True
     assert updated["builder_result"] is None
+
+    messages = store.get_thread("tenant-a", "ws", "channel", "thread")
+    statuses = [message["status"] for message in messages]
+    assert statuses == ["BLOCKED", "ACK"]
+    assert "CLOSED" not in statuses
+    assert messages[-1]["payload"]["execution_pending"] is True

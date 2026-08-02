@@ -42,3 +42,14 @@ def test_voice_source_type_matches_backend_enum() -> None:
     assert "mobile_voice" not in source
     assert "telephony" not in source
     assert "text_fallback" not in source
+
+
+def test_command_state_speech_is_deduplicated() -> None:
+    source = _voice_page_source()
+
+    assert "function commandAnnouncementKey(command: VoiceCommandResponse): string" in source
+    assert "const announceCommand = useCallback" in source
+    assert "announcedStatesRef.current.add(key);" in source
+    assert "announceCommand(result);" in source
+    assert "const announcement = buildResultAnnouncement(result);" not in source
+    assert "if (announcement) speak(announcement);" not in source

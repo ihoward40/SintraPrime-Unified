@@ -130,6 +130,10 @@ function buildConfirmationPrompt(command: VoiceCommandResponse): string {
   return `Confirmation required. ${command.resolved_capability} is classified as ${command.risk_class}${target}. Review the ledger, then confirm, deny, or cancel.`;
 }
 
+function commandAnnouncementKey(command: VoiceCommandResponse): string {
+  return `${command.command_id}:${command.session_state}:${command.provider_resource_id ?? ''}`;
+}
+
 function buildResultAnnouncement(command: VoiceCommandResponse): string | null {
   if (command.session_state === 'awaiting_confirmation') return buildConfirmationPrompt(command);
   if (command.session_state === 'completed') {
@@ -196,20 +200,28 @@ export default function VoiceConcierge() {
     };
   }, [ttsSupported]);
 
+  const announceCommand = useCallback(
+    (command: VoiceCommandResponse) => {
+      const announcement = buildResultAnnouncement(command);
+      if (!announcement) return false;
+
+      const key = commandAnnouncementKey(command);
+      if (announcedStatesRef.current.has(key)) return false;
+
+      announcedStatesRef.current.add(key);
+      speak(announcement);
+      return true;
+    },
+    [speak],
+  );
+
   const handleCommandsChanged = useCallback(
     (nextCommands: VoiceCommandResponse[]) => {
       for (const command of nextCommands) {
-        const key = `${command.command_id}:${command.session_state}:${command.provider_resource_id ?? ''}`;
-        if (announcedStatesRef.current.has(key)) continue;
-        const announcement = buildResultAnnouncement(command);
-        if (announcement) {
-          announcedStatesRef.current.add(key);
-          speak(announcement);
-          break;
-        }
+        if (announceCommand(command)) break;
       }
     },
-    [speak],
+    [announceCommand],
   );
 
   useEffect(() => {
@@ -318,8 +330,7 @@ export default function VoiceConcierge() {
       setInterimTranscript('');
       const next = [result, ...commands.filter((command) => command.command_id !== result.command_id)];
       setCommands(next);
-      const announcement = buildResultAnnouncement(result);
-      if (announcement) speak(announcement);
+      announceCommand(result);
       await refresh();
     } catch {
       setError('Unable to submit the voice command. It was not recorded.');
@@ -333,8 +344,7 @@ export default function VoiceConcierge() {
     setBusyId(commandId);
     try {
       const result = await voiceApi.confirm(commandId, { utterance });
-      const announcement = buildResultAnnouncement(result);
-      if (announcement) speak(announcement);
+      announceCommand(result);
       await refresh();
     } catch {
       setError(`Unable to resolve confirmation for ${commandId}.`);
@@ -348,8 +358,7 @@ export default function VoiceConcierge() {
     setBusyId(commandId);
     try {
       const result = await voiceApi.cancel(commandId);
-      const announcement = buildResultAnnouncement(result);
-      if (announcement) speak(announcement);
+      announceCommand(result);
       await refresh();
     } catch {
       setError(`Unable to cancel ${commandId}.`);

@@ -25,6 +25,10 @@ from portal.auth.rbac import (
 )
 
 router = APIRouter(prefix="/api/v1/agent-commons", tags=["agent-commons"])
+ADAPTER_MODE_DISABLED = "disabled"
+ADAPTER_MODE_MOCK = "mock"
+SUPPORTED_ADAPTER_MODES = {ADAPTER_MODE_DISABLED, ADAPTER_MODE_MOCK}
+SSE_RETRY_MILLISECONDS = 3_000
 
 
 class ObjectiveRequest(BaseModel):
@@ -54,6 +58,16 @@ class MessageRequest(BaseModel):
     )
 
 
+def get_adapter_mode() -> str:
+    mode = os.getenv("AGENT_COMMONS_ADAPTER_MODE", ADAPTER_MODE_DISABLED).strip().lower()
+    if mode not in SUPPORTED_ADAPTER_MODES:
+        raise RuntimeError(
+            "AGENT_COMMONS_ADAPTER_MODE must be one of: "
+            f"{', '.join(sorted(SUPPORTED_ADAPTER_MODES))}"
+        )
+    return mode
+
+
 @lru_cache(maxsize=1)
 def get_store() -> AgentCommonsStore:
     database_path = os.getenv("AGENT_COMMONS_DB_PATH", "data/agent_commons.sqlite3")
@@ -67,32 +81,35 @@ def get_event_bus() -> AgentCommonsEventBus:
 
 @lru_cache(maxsize=1)
 def get_supervisor() -> GovernedSupervisor:
-    adapters = {
-        "hermes": MockAgentAdapter(
-            "hermes",
-            ["orchestrate", "evidence"],
-            {"summary": "Hermes adapter not connected", "decision": "hold"},
-        ),
-        "codex": MockAgentAdapter(
-            "codex",
-            ["code", "test"],
-            {"summary": "Codex adapter not connected", "decision": "hold"},
-        ),
-        "claude-code": MockAgentAdapter(
-            "claude-code",
-            ["review", "architecture"],
-            {
-                "summary": "Claude adapter not connected",
-                "approved": False,
-                "material_disagreement": True,
-            },
-        ),
-        "manus": MockAgentAdapter(
-            "manus",
-            ["research", "implement"],
-            {"summary": "Manus adapter not connected", "decision": "hold"},
-        ),
-    }
+    mode = get_adapter_mode()
+    adapters = {}
+    if mode == ADAPTER_MODE_MOCK:
+        adapters = {
+            "hermes": MockAgentAdapter(
+                "hermes",
+                ["orchestrate", "evidence"],
+                {"summary": "Hermes mock adapter", "decision": "hold"},
+            ),
+            "codex": MockAgentAdapter(
+                "codex",
+                ["code", "test"],
+                {"summary": "Codex mock adapter", "decision": "hold"},
+            ),
+            "claude-code": MockAgentAdapter(
+                "claude-code",
+                ["review", "architecture"],
+                {
+                    "summary": "Claude mock adapter",
+                    "approved": False,
+                    "material_disagreement": True,
+                },
+            ),
+            "manus": MockAgentAdapter(
+                "manus",
+                ["research", "implement"],
+                {"summary": "Manus mock adapter", "decision": "hold"},
+            ),
+        }
     return GovernedSupervisor(get_store(), adapters)
 
 
@@ -117,11 +134,21 @@ def _run_payload(run: Any) -> dict[str, Any]:
     }
 
 
+def _encode_sse(event: dict[str, Any], event_id: int) -> str:
+    return (
+        f"id: {event_id}\n"
+        f"event: {event.get('type', 'message')}\n"
+        f"retry: {SSE_RETRY_MILLISECONDS}\n"
+        f"data: {json.dumps(event, default=str)}\n\n"
+    )
+
+
 @router.get("/agents")
 async def list_agents(
     user: CurrentUser = Depends(require_permissions(Permission.MISSION_COMMAND_READ)),
     supervisor: GovernedSupervisor = Depends(get_supervisor),
 ) -> dict[str, Any]:
+    mode = get_adapter_mode()
     agents = []
     for agent_id, adapter in supervisor.adapters.items():
         health, capabilities = await asyncio.gather(
@@ -131,11 +158,16 @@ async def list_agents(
         agents.append(
             {
                 "agent_id": agent_id,
-                "health": health,
+                "health": {**health, "adapter_mode": mode},
                 "capabilities": capabilities,
             }
         )
-    return {"tenant_id": user.tenant_id, "agents": agents}
+    return {
+        "tenant_id": user.tenant_id,
+        "adapter_mode": mode,
+        "operational": bool(agents) and mode != ADAPTER_MODE_DISABLED,
+        "agents": agents,
+    }
 
 
 @router.post("/objectives", status_code=status.HTTP_202_ACCEPTED)
@@ -145,6 +177,11 @@ async def create_objective(
     supervisor: GovernedSupervisor = Depends(get_supervisor),
     events: AgentCommonsEventBus = Depends(get_event_bus),
 ) -> dict[str, Any]:
+    if get_adapter_mode() == ADAPTER_MODE_DISABLED:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Agent Commons adapters are disabled; configure an explicit adapter mode.",
+        )
     try:
         run = await supervisor.run_objective(
             tenant_id=user.tenant_id,
@@ -269,23 +306,26 @@ async def stream_events(
 ) -> StreamingResponse:
     async def event_stream():
         iterator = events.subscribe(user.tenant_id).__aiter__()
+        event_id = 0
         while True:
             try:
                 event = await asyncio.wait_for(
                     iterator.__anext__(),
                     timeout=heartbeat_seconds,
                 )
-                yield (
-                    f"event: {event.get('type', 'message')}\n"
-                    f"data: {json.dumps(event, default=str)}\n\n"
-                )
+                event_id += 1
+                yield _encode_sse(event, event_id)
             except TimeoutError:
-                yield ": heartbeat\n\n"
+                yield f": heartbeat\nretry: {SSE_RETRY_MILLISECONDS}\n\n"
             except StopAsyncIteration:
                 return
 
     return StreamingResponse(
         event_stream(),
         media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
     )

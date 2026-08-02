@@ -4,13 +4,15 @@ import asyncio
 import json
 import os
 import uuid
+from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Optional
+from typing import Any
 
 from .adapters import AgentAdapter, AgentInvocation
 
-
-ProviderCallable = Callable[[Dict[str, Any], Dict[str, Any]], Awaitable[Dict[str, Any]]]
+ProviderCallable = Callable[
+    [dict[str, Any], dict[str, Any]], Awaitable[dict[str, Any]]
+]
 
 
 @dataclass(frozen=True)
@@ -31,26 +33,28 @@ class CallableAgentAdapter(AgentAdapter):
     def __init__(
         self,
         agent_id: str,
-        capabilities: List[str],
+        capabilities: list[str],
         invoke_callable: ProviderCallable,
-        policy: Optional[ProviderPolicy] = None,
+        policy: ProviderPolicy | None = None,
     ) -> None:
         self.agent_id = agent_id
         self._capabilities = tuple(capabilities)
         self._invoke_callable = invoke_callable
         self._policy = policy or ProviderPolicy()
         self._cancelled: set[str] = set()
-        self._events: dict[str, asyncio.Queue[Dict[str, Any]]] = {}
+        self._events: dict[str, asyncio.Queue[dict[str, Any]]] = {}
 
-    async def health(self) -> Dict[str, Any]:
+    async def health(self) -> dict[str, Any]:
         return {"agent_id": self.agent_id, "status": "ok", "provider": "callable"}
 
-    async def capabilities(self) -> List[str]:
+    async def capabilities(self) -> list[str]:
         return list(self._capabilities)
 
-    async def invoke(self, task: Dict[str, Any], context: Dict[str, Any]) -> AgentInvocation:
+    async def invoke(
+        self, task: dict[str, Any], context: dict[str, Any]
+    ) -> AgentInvocation:
         run_id = uuid.uuid4().hex
-        queue: asyncio.Queue[Dict[str, Any]] = asyncio.Queue()
+        queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
         self._events[run_id] = queue
         await queue.put({"run_id": run_id, "type": "started", "agent_id": self.agent_id})
         try:
@@ -63,10 +67,19 @@ class CallableAgentAdapter(AgentAdapter):
             serialized = json.dumps(output, default=str)
             if len(serialized) > self._policy.max_output_characters:
                 raise ValueError("provider output exceeds configured limit")
-            await queue.put({"run_id": run_id, "type": "completed", "agent_id": self.agent_id})
+            await queue.put(
+                {"run_id": run_id, "type": "completed", "agent_id": self.agent_id}
+            )
             return AgentInvocation(run_id=run_id, output=output)
         except Exception as exc:
-            await queue.put({"run_id": run_id, "type": "failed", "agent_id": self.agent_id, "error": type(exc).__name__})
+            await queue.put(
+                {
+                    "run_id": run_id,
+                    "type": "failed",
+                    "agent_id": self.agent_id,
+                    "error": type(exc).__name__,
+                }
+            )
             raise
         finally:
             await queue.put({"run_id": run_id, "type": "closed"})
@@ -78,7 +91,9 @@ class CallableAgentAdapter(AgentAdapter):
             await queue.put({"run_id": run_id, "type": "cancel_requested"})
         return True
 
-    async def stream_events(self, run_id: str) -> AsyncIterator[Dict[str, Any]]:
+    async def stream_events(
+        self, run_id: str
+    ) -> AsyncIterator[dict[str, Any]]:
         queue = self._events.get(run_id)
         if queue is None:
             return
@@ -93,17 +108,22 @@ class CallableAgentAdapter(AgentAdapter):
 class OpenAISupervisorAdapter(CallableAgentAdapter):
     """Responses-API adapter with dependency injection and no import-time SDK requirement."""
 
-    def __init__(self, client: Any, model: Optional[str] = None) -> None:
+    def __init__(self, client: Any, model: str | None = None) -> None:
         self._client = client
         self._model = model or os.getenv("OPENAI_SUPERVISOR_MODEL", "gpt-5")
         super().__init__(
             agent_id="openai-supervisor",
             capabilities=["decompose", "delegate", "review", "reconcile", "escalate"],
             invoke_callable=self._invoke_openai,
-            policy=ProviderPolicy(timeout_seconds=180.0, max_output_characters=120_000),
+            policy=ProviderPolicy(
+                timeout_seconds=180.0,
+                max_output_characters=120_000,
+            ),
         )
 
-    async def _invoke_openai(self, task: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _invoke_openai(
+        self, task: dict[str, Any], context: dict[str, Any]
+    ) -> dict[str, Any]:
         response = await self._client.responses.create(
             model=self._model,
             input=[
@@ -115,7 +135,13 @@ class OpenAISupervisorAdapter(CallableAgentAdapter):
                         "financial, or government communications. Escalate those actions to the owner."
                     ),
                 },
-                {"role": "user", "content": json.dumps({"task": task, "context": context}, default=str)},
+                {
+                    "role": "user",
+                    "content": json.dumps(
+                        {"task": task, "context": context},
+                        default=str,
+                    ),
+                },
             ],
         )
         text = getattr(response, "output_text", "")

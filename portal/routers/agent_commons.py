@@ -19,7 +19,6 @@ from portal.auth.rbac import (
     CurrentUser,
     Permission,
     Role,
-    get_current_user,
     require_permissions,
     require_role,
 )
@@ -28,6 +27,10 @@ router = APIRouter(prefix="/api/v1/agent-commons", tags=["agent-commons"])
 ADAPTER_MODE_DISABLED = "disabled"
 ADAPTER_MODE_MOCK = "mock"
 SUPPORTED_ADAPTER_MODES = {ADAPTER_MODE_DISABLED, ADAPTER_MODE_MOCK}
+STORAGE_MODE_SQLITE = "sqlite"
+STORAGE_MODE_POSTGRES = "postgres"
+EVENT_BACKEND_IN_PROCESS = "in_process"
+EVENT_BACKEND_REDIS = "redis"
 SSE_RETRY_MILLISECONDS = 3_000
 
 
@@ -47,17 +50,6 @@ class ApprovalRequest(BaseModel):
     note: str = Field(default="", max_length=4_000)
 
 
-class MessageRequest(BaseModel):
-    workspace_id: str = Field(min_length=1, max_length=120)
-    channel_id: str = Field(min_length=1, max_length=120)
-    thread_id: str = Field(min_length=1, max_length=160)
-    message: str = Field(min_length=1, max_length=20_000)
-    to_agents: list[str] = Field(
-        default_factory=lambda: ["supervisor"],
-        max_length=25,
-    )
-
-
 def get_adapter_mode() -> str:
     mode = os.getenv("AGENT_COMMONS_ADAPTER_MODE", ADAPTER_MODE_DISABLED).strip().lower()
     if mode not in SUPPORTED_ADAPTER_MODES:
@@ -68,14 +60,62 @@ def get_adapter_mode() -> str:
     return mode
 
 
+def _is_production() -> bool:
+    value = os.getenv("APP_ENV", os.getenv("ENVIRONMENT", "development"))
+    return value.strip().lower() in {"prod", "production"}
+
+
+def _worker_count() -> int:
+    raw = os.getenv("WEB_CONCURRENCY", os.getenv("GUNICORN_WORKERS", "1"))
+    try:
+        return max(1, int(raw))
+    except ValueError as exc:
+        raise RuntimeError("worker count must be an integer") from exc
+
+
+def get_storage_mode() -> str:
+    return os.getenv("AGENT_COMMONS_STORAGE_MODE", STORAGE_MODE_SQLITE).strip().lower()
+
+
+def get_event_backend() -> str:
+    return os.getenv("AGENT_COMMONS_EVENT_BACKEND", EVENT_BACKEND_IN_PROCESS).strip().lower()
+
+
+def validate_runtime_backends() -> None:
+    storage_mode = get_storage_mode()
+    event_backend = get_event_backend()
+    if storage_mode not in {STORAGE_MODE_SQLITE, STORAGE_MODE_POSTGRES}:
+        raise RuntimeError("unsupported Agent Commons storage mode")
+    if event_backend not in {EVENT_BACKEND_IN_PROCESS, EVENT_BACKEND_REDIS}:
+        raise RuntimeError("unsupported Agent Commons event backend")
+    if _is_production() and storage_mode != STORAGE_MODE_POSTGRES:
+        raise RuntimeError(
+            "Agent Commons is disabled in production until shared PostgreSQL persistence is configured"
+        )
+    if (_is_production() or _worker_count() > 1) and event_backend != EVENT_BACKEND_REDIS:
+        raise RuntimeError(
+            "Agent Commons is disabled for production or multi-worker use until a shared event broker is configured"
+        )
+    if storage_mode == STORAGE_MODE_POSTGRES:
+        raise RuntimeError(
+            "Agent Commons PostgreSQL persistence is not implemented in Increment 1; feature remains fail-closed"
+        )
+    if event_backend == EVENT_BACKEND_REDIS:
+        raise RuntimeError(
+            "Agent Commons Redis event delivery is not implemented in Increment 1; feature remains fail-closed"
+        )
+
+
 @lru_cache(maxsize=1)
 def get_store() -> AgentCommonsStore:
+    validate_runtime_backends()
     database_path = os.getenv("AGENT_COMMONS_DB_PATH", "data/agent_commons.sqlite3")
     return AgentCommonsStore(database_path)
 
 
 @lru_cache(maxsize=1)
 def get_event_bus() -> AgentCommonsEventBus:
+    validate_runtime_backends()
     return AgentCommonsEventBus()
 
 
@@ -86,18 +126,15 @@ def get_supervisor() -> GovernedSupervisor:
     if mode == ADAPTER_MODE_MOCK:
         adapters = {
             "hermes": MockAgentAdapter(
-                "hermes",
-                ["orchestrate", "evidence"],
+                "hermes", ["orchestrate", "evidence"],
                 {"summary": "Hermes mock adapter", "decision": "hold"},
             ),
             "codex": MockAgentAdapter(
-                "codex",
-                ["code", "test"],
+                "codex", ["code", "test"],
                 {"summary": "Codex mock adapter", "decision": "hold"},
             ),
             "claude-code": MockAgentAdapter(
-                "claude-code",
-                ["review", "architecture"],
+                "claude-code", ["review", "architecture"],
                 {
                     "summary": "Claude mock adapter",
                     "approved": False,
@@ -105,8 +142,7 @@ def get_supervisor() -> GovernedSupervisor:
                 },
             ),
             "manus": MockAgentAdapter(
-                "manus",
-                ["research", "implement"],
+                "manus", ["research", "implement"],
                 {"summary": "Manus mock adapter", "decision": "hold"},
             ),
         }
@@ -151,10 +187,7 @@ async def list_agents(
     mode = get_adapter_mode()
     agents = []
     for agent_id, adapter in supervisor.adapters.items():
-        health, capabilities = await asyncio.gather(
-            adapter.health(),
-            adapter.capabilities(),
-        )
+        health, capabilities = await asyncio.gather(adapter.health(), adapter.capabilities())
         agents.append(
             {
                 "agent_id": agent_id,
@@ -165,6 +198,8 @@ async def list_agents(
     return {
         "tenant_id": user.tenant_id,
         "adapter_mode": mode,
+        "storage_mode": get_storage_mode(),
+        "event_backend": get_event_backend(),
         "operational": bool(agents) and mode != ADAPTER_MODE_DISABLED,
         "agents": agents,
     }
@@ -199,10 +234,7 @@ async def create_objective(
     except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     payload = _run_payload(run)
-    await events.publish(
-        user.tenant_id,
-        {"type": "supervisor.run.updated", "data": payload},
-    )
+    await events.publish(user.tenant_id, {"type": "supervisor.run.updated", "data": payload})
     return payload
 
 
@@ -232,10 +264,7 @@ async def get_thread(
         "channel_id": channel_id,
         "thread_id": thread_id,
         "messages": store.get_thread(
-            user.tenant_id,
-            workspace_id,
-            channel_id,
-            thread_id,
+            user.tenant_id, workspace_id, channel_id, thread_id
         ),
     }
 
@@ -251,20 +280,11 @@ async def approve_run(
     run = supervisor.store.get_run(user.tenant_id, run_id)
     if run.status is not RunStatus.WAITING_APPROVAL or not run.approval_id:
         raise HTTPException(status_code=409, detail="run is not waiting for approval")
-    updated = supervisor.approve(
-        user.tenant_id,
-        run_id,
-        run.approval_id,
-        request.note,
-    )
+    updated = supervisor.approve(user.tenant_id, run_id, run.approval_id, request.note)
     payload = _run_payload(updated)
     await events.publish(
         user.tenant_id,
-        {
-            "type": "supervisor.run.approved",
-            "actor_id": user.user_id,
-            "data": payload,
-        },
+        {"type": "supervisor.run.approved", "actor_id": user.user_id, "data": payload},
     )
     return payload
 
@@ -280,20 +300,11 @@ async def reject_run(
     run = supervisor.store.get_run(user.tenant_id, run_id)
     if run.status is not RunStatus.WAITING_APPROVAL or not run.approval_id:
         raise HTTPException(status_code=409, detail="run is not waiting for approval")
-    updated = supervisor.reject(
-        user.tenant_id,
-        run_id,
-        run.approval_id,
-        request.note,
-    )
+    updated = supervisor.reject(user.tenant_id, run_id, run.approval_id, request.note)
     payload = _run_payload(updated)
     await events.publish(
         user.tenant_id,
-        {
-            "type": "supervisor.run.rejected",
-            "actor_id": user.user_id,
-            "data": payload,
-        },
+        {"type": "supervisor.run.rejected", "actor_id": user.user_id, "data": payload},
     )
     return payload
 
@@ -301,24 +312,22 @@ async def reject_run(
 @router.get("/events")
 async def stream_events(
     heartbeat_seconds: float = Query(default=15.0, ge=5.0, le=60.0),
-    user: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(require_permissions(Permission.MISSION_COMMAND_READ)),
     events: AgentCommonsEventBus = Depends(get_event_bus),
 ) -> StreamingResponse:
     async def event_stream():
-        iterator = events.subscribe(user.tenant_id).__aiter__()
+        subscription = await events.open_subscription(user.tenant_id)
         event_id = 0
-        while True:
-            try:
-                event = await asyncio.wait_for(
-                    iterator.__anext__(),
-                    timeout=heartbeat_seconds,
-                )
+        try:
+            while True:
+                event = await events.next_event(subscription, heartbeat_seconds)
+                if event is None:
+                    yield f": heartbeat\nretry: {SSE_RETRY_MILLISECONDS}\n\n"
+                    continue
                 event_id += 1
                 yield _encode_sse(event, event_id)
-            except TimeoutError:
-                yield f": heartbeat\nretry: {SSE_RETRY_MILLISECONDS}\n\n"
-            except StopAsyncIteration:
-                return
+        finally:
+            await events.close_subscription(subscription)
 
     return StreamingResponse(
         event_stream(),

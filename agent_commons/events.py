@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 from collections import defaultdict
-from collections.abc import AsyncIterator
 from contextlib import suppress
 from dataclasses import dataclass, field
 from typing import Any
@@ -19,8 +18,8 @@ class EventSubscription:
 class AgentCommonsEventBus:
     """Tenant-isolated in-process event fan-out for SSE clients.
 
-    Events are observable state changes only. Private reasoning and hidden
-    chain-of-thought are never published.
+    This implementation is safe only for a single worker. Production routing
+    rejects it unless an explicit shared event backend is configured.
     """
 
     def __init__(self) -> None:
@@ -37,15 +36,37 @@ class AgentCommonsEventBus:
                     subscription.queue.get_nowait()
             await subscription.queue.put(payload)
 
-    async def subscribe(self, tenant_id: str) -> AsyncIterator[dict[str, Any]]:
+    async def open_subscription(self, tenant_id: str) -> EventSubscription:
         subscription = EventSubscription(tenant_id=tenant_id)
         async with self._lock:
             self._subscriptions[tenant_id].add(subscription)
+        return subscription
+
+    async def close_subscription(self, subscription: EventSubscription) -> None:
+        async with self._lock:
+            subscriptions = self._subscriptions.get(subscription.tenant_id)
+            if subscriptions is None:
+                return
+            subscriptions.discard(subscription)
+            if not subscriptions:
+                self._subscriptions.pop(subscription.tenant_id, None)
+
+    async def next_event(
+        self,
+        subscription: EventSubscription,
+        timeout_seconds: float,
+    ) -> dict[str, Any] | None:
+        try:
+            async with asyncio.timeout(timeout_seconds):
+                return await subscription.queue.get()
+        except TimeoutError:
+            return None
+
+    async def subscribe(self, tenant_id: str):
+        """Compatibility iterator for tests and non-SSE consumers."""
+        subscription = await self.open_subscription(tenant_id)
         try:
             while True:
                 yield await subscription.queue.get()
         finally:
-            async with self._lock:
-                self._subscriptions[tenant_id].discard(subscription)
-                if not self._subscriptions[tenant_id]:
-                    self._subscriptions.pop(tenant_id, None)
+            await self.close_subscription(subscription)

@@ -44,6 +44,8 @@ ENV HOST=0.0.0.0
 ENV PORT=8080
 ENV LOG_LEVEL=INFO
 ENV PYTHONUNBUFFERED=1
+# Keep runtime validation aligned with the Gunicorn command below.
+ENV WEB_CONCURRENCY=4
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

@@ -6,7 +6,7 @@ import threading
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .models import MessageRecord, RunStatus, SupervisorRun
 
@@ -63,12 +63,21 @@ class AgentCommonsStore:
 
     def append_message(self, message: MessageRecord) -> None:
         values = (
-            message.message_id, message.tenant_id, message.workspace_id,
-            message.channel_id, message.thread_id, message.task_id,
-            message.from_agent, json.dumps(message.to_agents), message.status.value,
-            json.dumps(message.payload), json.dumps(message.evidence),
-            message.correlation_id, int(message.owner_decision_required),
-            message.timestamp, json.dumps(message.trace),
+            message.message_id,
+            message.tenant_id,
+            message.workspace_id,
+            message.channel_id,
+            message.thread_id,
+            message.task_id,
+            message.from_agent,
+            json.dumps(message.to_agents),
+            message.status.value,
+            json.dumps(message.payload),
+            json.dumps(message.evidence),
+            message.correlation_id,
+            int(message.owner_decision_required),
+            message.timestamp,
+            json.dumps(message.trace),
         )
         with self._lock, self._connection:
             self._connection.execute(
@@ -76,7 +85,13 @@ class AgentCommonsStore:
                 values,
             )
 
-    def get_thread(self, tenant_id: str, workspace_id: str, channel_id: str, thread_id: str) -> List[Dict[str, Any]]:
+    def get_thread(
+        self,
+        tenant_id: str,
+        workspace_id: str,
+        channel_id: str,
+        thread_id: str,
+    ) -> list[dict[str, Any]]:
         rows = self._connection.execute(
             """SELECT * FROM commons_messages
                WHERE tenant_id=? AND workspace_id=? AND channel_id=? AND thread_id=?
@@ -85,7 +100,11 @@ class AgentCommonsStore:
         ).fetchall()
         return [self._decode_message(row) for row in rows]
 
-    def save_run(self, run: SupervisorRun, idempotency_key: Optional[str] = None) -> SupervisorRun:
+    def save_run(
+        self,
+        run: SupervisorRun,
+        idempotency_key: str | None = None,
+    ) -> SupervisorRun:
         with self._lock, self._connection:
             if idempotency_key:
                 existing = self._connection.execute(
@@ -95,14 +114,25 @@ class AgentCommonsStore:
                 if existing:
                     return self.get_run(run.tenant_id, existing["run_id"])
             values = (
-                run.run_id, run.tenant_id, run.workspace_id, run.channel_id,
-                run.thread_id, run.task_id, run.objective, run.owner_agent,
-                run.builder_agent, run.reviewer_agent,
-                json.dumps(run.acceptance_criteria), run.status.value,
+                run.run_id,
+                run.tenant_id,
+                run.workspace_id,
+                run.channel_id,
+                run.thread_id,
+                run.task_id,
+                run.objective,
+                run.owner_agent,
+                run.builder_agent,
+                run.reviewer_agent,
+                json.dumps(run.acceptance_criteria),
+                run.status.value,
                 self._json_or_none(run.builder_result),
                 self._json_or_none(run.review_result),
-                self._json_or_none(run.reconciliation), run.approval_id,
-                idempotency_key, run.created_at, run.updated_at,
+                self._json_or_none(run.reconciliation),
+                run.approval_id,
+                idempotency_key,
+                run.created_at,
+                run.updated_at,
             )
             self._connection.execute(
                 "INSERT INTO supervisor_runs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -118,10 +148,14 @@ class AgentCommonsStore:
                    review_result_json=?, reconciliation_json=?, approval_id=?, updated_at=?
                    WHERE tenant_id=? AND run_id=?""",
                 (
-                    run.status.value, self._json_or_none(run.builder_result),
+                    run.status.value,
+                    self._json_or_none(run.builder_result),
                     self._json_or_none(run.review_result),
-                    self._json_or_none(run.reconciliation), run.approval_id,
-                    run.updated_at, run.tenant_id, run.run_id,
+                    self._json_or_none(run.reconciliation),
+                    run.approval_id,
+                    run.updated_at,
+                    run.tenant_id,
+                    run.run_id,
                 ),
             )
             if cursor.rowcount != 1:
@@ -145,22 +179,34 @@ class AgentCommonsStore:
             )
         return approval_id
 
-    def decide_approval(self, tenant_id: str, approval_id: str, approved: bool, note: str = "") -> None:
+    def decide_approval(
+        self,
+        tenant_id: str,
+        approval_id: str,
+        approved: bool,
+        note: str = "",
+    ) -> None:
         with self._lock, self._connection:
             cursor = self._connection.execute(
                 """UPDATE owner_approvals SET status=?, decision_note=?, decided_at=?
                    WHERE tenant_id=? AND approval_id=? AND status='pending'""",
-                ("approved" if approved else "rejected", note, time.time(), tenant_id, approval_id),
+                (
+                    "approved" if approved else "rejected",
+                    note,
+                    time.time(),
+                    tenant_id,
+                    approval_id,
+                ),
             )
             if cursor.rowcount != 1:
                 raise KeyError(f"pending approval not found: {approval_id}")
 
     @staticmethod
-    def _json_or_none(value: Any) -> Optional[str]:
+    def _json_or_none(value: Any) -> str | None:
         return None if value is None else json.dumps(value)
 
     @staticmethod
-    def _decode_message(row: sqlite3.Row) -> Dict[str, Any]:
+    def _decode_message(row: sqlite3.Row) -> dict[str, Any]:
         result = dict(row)
         for key in ("to_agents_json", "payload_json", "evidence_json", "trace_json"):
             result[key.removesuffix("_json")] = json.loads(result.pop(key))
@@ -169,15 +215,26 @@ class AgentCommonsStore:
 
     @staticmethod
     def _decode_run(row: sqlite3.Row) -> SupervisorRun:
-        decode = lambda key: json.loads(row[key]) if row[key] else None
+        def decode(key: str) -> Any:
+            return json.loads(row[key]) if row[key] else None
+
         return SupervisorRun(
-            run_id=row["run_id"], tenant_id=row["tenant_id"],
-            workspace_id=row["workspace_id"], channel_id=row["channel_id"],
-            thread_id=row["thread_id"], task_id=row["task_id"],
-            objective=row["objective"], owner_agent=row["owner_agent"],
-            builder_agent=row["builder_agent"], reviewer_agent=row["reviewer_agent"],
+            run_id=row["run_id"],
+            tenant_id=row["tenant_id"],
+            workspace_id=row["workspace_id"],
+            channel_id=row["channel_id"],
+            thread_id=row["thread_id"],
+            task_id=row["task_id"],
+            objective=row["objective"],
+            owner_agent=row["owner_agent"],
+            builder_agent=row["builder_agent"],
+            reviewer_agent=row["reviewer_agent"],
             acceptance_criteria=json.loads(row["acceptance_criteria_json"]),
-            status=RunStatus(row["status"]), builder_result=decode("builder_result_json"),
-            review_result=decode("review_result_json"), reconciliation=decode("reconciliation_json"),
-            approval_id=row["approval_id"], created_at=row["created_at"], updated_at=row["updated_at"],
+            status=RunStatus(row["status"]),
+            builder_result=decode("builder_result_json"),
+            review_result=decode("review_result_json"),
+            reconciliation=decode("reconciliation_json"),
+            approval_id=row["approval_id"],
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
         )

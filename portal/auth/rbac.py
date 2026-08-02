@@ -185,6 +185,12 @@ class Permission(StrEnum):
     MISSION_AGENT_REASSIGN = "mission_control:agent_reassign"
     MISSION_COMMAND_ADMIN  = "mission_control:command_admin"
 
+    # SP-VOICE-001 governed voice operations (mock-first, bounded)
+    VOICE_COMMAND_CREATE  = "voice:command_create"
+    VOICE_COMMAND_READ    = "voice:command_read"
+    VOICE_COMMAND_CONFIRM = "voice:command_confirm"
+    VOICE_COMMAND_CANCEL  = "voice:command_cancel"
+
 
 # ── Role → Permission mapping ─────────────────────────────────────────────────
 
@@ -223,6 +229,9 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.MISSION_RUN_START, Permission.MISSION_RUN_PAUSE, Permission.MISSION_RUN_RESUME,
         Permission.MISSION_RUN_CANCEL, Permission.MISSION_AGENT_ASSIGN,
         Permission.MISSION_AGENT_REASSIGN,
+        # SP-VOICE-001 governed voice operations
+        Permission.VOICE_COMMAND_CREATE, Permission.VOICE_COMMAND_READ,
+        Permission.VOICE_COMMAND_CONFIRM, Permission.VOICE_COMMAND_CANCEL,
     ]),
 
     Role.ATTORNEY: frozenset([
@@ -241,6 +250,9 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.MISSION_COMMAND_READ, Permission.MISSION_COMMAND_CREATE,
         Permission.MISSION_RUN_START, Permission.MISSION_RUN_PAUSE, Permission.MISSION_RUN_RESUME,
         Permission.MISSION_AGENT_ASSIGN,
+        # SP-VOICE-001 governed voice operations
+        Permission.VOICE_COMMAND_CREATE, Permission.VOICE_COMMAND_READ,
+        Permission.VOICE_COMMAND_CONFIRM, Permission.VOICE_COMMAND_CANCEL,
     ]),
 
     Role.PARALEGAL: frozenset([
@@ -251,6 +263,7 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.MSG_SEND, Permission.MSG_READ, Permission.MSG_CREATE_THREAD,
         Permission.BILLING_READ, Permission.BILLING_TIME_TRACK,
         Permission.NOTIF_READ,
+        Permission.VOICE_COMMAND_READ,
     ]),
 
     Role.ACCOUNTANT: frozenset([

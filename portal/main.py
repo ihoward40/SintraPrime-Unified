@@ -35,6 +35,7 @@ from portal.routers import (
     system_health,
     trust_compliance,
     users,
+    voice_commands,
 )
 from portal.security.security_layer import SecurityLayer
 from portal.sso.jwt_service import JWTTokenService
@@ -136,6 +137,7 @@ def create_app() -> FastAPI:
     app.include_router(messages.router, prefix="/api/v1/messages", tags=["messages"])
     app.include_router(mission_control.router)
     app.include_router(mission_control_commands.router)
+    app.include_router(voice_commands.router)
     app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["notifications"])
     app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
     app.include_router(admin_dashboard_router, prefix="/api/v1", tags=["admin-dashboard"])

@@ -95,6 +95,7 @@ class GovernedSupervisor:
             return run
 
         run.status = RunStatus.RUNNING
+        self.store.update_run(run)
         self._record(
             run,
             "supervisor",
@@ -107,43 +108,61 @@ class GovernedSupervisor:
             },
         )
 
-        context = self._build_context(run)
-        builder = await self.adapters[builder_agent].invoke(
-            {
-                "task_id": run.task_id,
-                "objective": objective,
-                "acceptance_criteria": run.acceptance_criteria,
-            },
-            context,
-        )
-        run.builder_result = builder.output
-        self._record(
-            run,
-            builder_agent,
-            ["supervisor"],
-            LifecycleStatus.RESULT,
-            builder.output,
-            evidence=builder.evidence,
-        )
+        try:
+            context = self._build_context(run)
+            builder = await self.adapters[builder_agent].invoke(
+                {
+                    "task_id": run.task_id,
+                    "objective": objective,
+                    "acceptance_criteria": run.acceptance_criteria,
+                },
+                context,
+            )
+            run.builder_result = builder.output
+            self._record(
+                run,
+                builder_agent,
+                ["supervisor"],
+                LifecycleStatus.RESULT,
+                builder.output,
+                evidence=builder.evidence,
+            )
 
-        review = await self.adapters[reviewer_agent].invoke(
-            {
-                "task_id": run.task_id,
-                "objective": "Independently review the builder result",
-                "candidate": builder.output,
-                "acceptance_criteria": run.acceptance_criteria,
-            },
-            self._build_context(run),
-        )
-        run.review_result = review.output
-        self._record(
-            run,
-            reviewer_agent,
-            ["supervisor"],
-            LifecycleStatus.RESULT,
-            review.output,
-            evidence=review.evidence,
-        )
+            review = await self.adapters[reviewer_agent].invoke(
+                {
+                    "task_id": run.task_id,
+                    "objective": "Independently review the builder result",
+                    "candidate": builder.output,
+                    "acceptance_criteria": run.acceptance_criteria,
+                },
+                self._build_context(run),
+            )
+            run.review_result = review.output
+            self._record(
+                run,
+                reviewer_agent,
+                ["supervisor"],
+                LifecycleStatus.RESULT,
+                review.output,
+                evidence=review.evidence,
+            )
+        except Exception as exc:
+            run.status = RunStatus.FAILED
+            run.reconciliation = {
+                "summary": "Agent invocation failed.",
+                "failure_type": type(exc).__name__,
+                "failed_agent": reviewer_agent if run.builder_result is not None else builder_agent,
+            }
+            self._record(
+                run,
+                "supervisor",
+                [owner_agent],
+                LifecycleStatus.BLOCKED,
+                run.reconciliation,
+                False,
+            )
+            self.store.update_run(run)
+            raise
 
         disagreement = self._material_disagreement(builder.output, review.output)
         run.reconciliation = {

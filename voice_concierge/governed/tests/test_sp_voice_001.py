@@ -21,7 +21,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from voice.governed import (
+from voice_concierge.governed import (
     ChildTask,
     ConfirmationState,
     InvalidTransitionError,
@@ -39,7 +39,7 @@ from voice.governed import (
     evaluate,
     transcript_hash,
 )
-from voice.governed.confirmation import CONFIRMATION_TTL
+from voice_concierge.governed.confirmation import CONFIRMATION_TTL
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 

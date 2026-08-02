@@ -1,11 +1,12 @@
 """SP-VOICE-001 Increment Two — governed voice command service.
 
-Bridges the pure ``voice.governed`` orchestrator to tenant-scoped persistence,
-audit, and realtime status. Every execution this service can produce is a
-mock/sandboxed provider outcome (see ``voice.governed.mock_providers``) — this
-module never contacts a real telephony, calendar, messaging, filing, or
-payment backend, and it enforces mock-only execution defensively even if a
-caller supplies a custom provider registry.
+Bridges the pure ``voice_concierge.governed`` orchestrator to tenant-scoped
+persistence, audit, and realtime status. Every execution this service can
+produce is a mock/sandboxed provider outcome (see
+``voice_concierge.governed.mock_providers``) — this module never contacts a
+real telephony, calendar, messaging, filing, or payment backend, and it
+enforces mock-only execution defensively even if a caller supplies a custom
+provider registry.
 """
 
 from __future__ import annotations
@@ -21,7 +22,7 @@ import structlog
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from voice.governed import (
+from voice_concierge.governed import (
     ConfirmationState,
     VoiceCommandEnvelope,
     VoiceFeatureFlags,
@@ -29,23 +30,23 @@ from voice.governed import (
     classify,
     create_envelope,
 )
-from voice.governed.command_envelope import RiskClass, VoiceSource
-from voice.governed.confirmation import PendingConfirmation
-from voice.governed.mock_providers import default_mock_registry
-from voice.governed.orchestrator import (
+from voice_concierge.governed.command_envelope import RiskClass, VoiceSource
+from voice_concierge.governed.confirmation import PendingConfirmation
+from voice_concierge.governed.mock_providers import default_mock_registry
+from voice_concierge.governed.orchestrator import (
     OrchestrationOutcome,
 )
-from voice.governed.orchestrator import (
+from voice_concierge.governed.orchestrator import (
     cancel_voice_command as _cancel_voice_command,
 )
-from voice.governed.orchestrator import (
+from voice_concierge.governed.orchestrator import (
     confirm_voice_command as _confirm_voice_command,
 )
-from voice.governed.orchestrator import (
+from voice_concierge.governed.orchestrator import (
     handle_voice_command as _handle_voice_command,
 )
-from voice.governed.providers import ProviderResult, VoiceActionProvider, VoiceCapability
-from voice.governed.session import SessionState
+from voice_concierge.governed.providers import ProviderResult, VoiceActionProvider, VoiceCapability
+from voice_concierge.governed.session import SessionState
 
 from ..auth.rbac import CurrentUser
 from ..models.voice_command import VoiceCommand, VoiceCommandEvent, VoiceCommandReceipt

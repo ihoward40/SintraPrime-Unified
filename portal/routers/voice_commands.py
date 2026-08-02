@@ -2,7 +2,7 @@
 
 Every endpoint here is RBAC-gated, tenant-scoped from the verified JWT (never
 from client-supplied identifiers), and can only ever produce mock/sandboxed
-outcomes — see ``voice.governed.mock_providers`` and
+outcomes — see ``voice_concierge.governed.mock_providers`` and
 ``portal/services/voice_command_service.py``. No endpoint in this router can
 place a real phone call, send a real email/message, create a real calendar
 event, submit a real filing, or move real money.
@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from voice.governed.command_envelope import VoiceSource
+from voice_concierge.governed.command_envelope import VoiceSource
 
 from ..auth.rbac import CurrentUser, Permission, require_permissions
 from ..database import get_db

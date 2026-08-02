@@ -5,8 +5,8 @@ Mirrors the Mission Control governed command ledger pattern
 projection row tracks current lifecycle state, an append-only, hash-chained
 event table records every transition, and an immutable receipt closes out
 each terminal outcome. Nothing in this module executes any action — it is
-pure persistence for outcomes produced by ``voice.governed`` (mock-only
-execution).
+pure persistence for outcomes produced by ``voice_concierge.governed``
+(mock-only execution).
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ class VoiceCommand(Base):
     """Tenant-scoped, mutable projection of a single voice command's lifecycle.
 
     ``command_id`` is the ``vcmd-...`` identifier minted by
-    ``voice.governed.command_envelope``; it is unique per tenant so a voice
+    ``voice_concierge.governed.command_envelope``; it is unique per tenant so a voice
     command can be looked up, confirmed, or cancelled by callers holding only
     the id and their own tenant/session context.
     """

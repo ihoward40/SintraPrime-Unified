@@ -4,7 +4,7 @@ import { apiClient } from './client';
  * SP-VOICE-001 Increment Two client — governed voice command ledger.
  *
  * Every command this API can produce is a mock/sandboxed provider outcome
- * (see `voice/governed/mock_providers.py` and
+ * (see `voice_concierge/governed/mock_providers.py` and
  * `portal/services/voice_command_service.py`). This client never places a
  * real phone call, sends a real email/message, creates a real calendar
  * event, submits a real filing, or moves real money — it only reads and

@@ -15,16 +15,16 @@ from __future__ import annotations
 
 import pytest
 
-from voice.governed.command_envelope import (
+from voice_concierge.governed.command_envelope import (
     ConfirmationState,
     RiskClass,
     VoiceSource,
     create_envelope,
 )
-from voice.governed.confirmation import PendingConfirmation
-from voice.governed.flags import VoiceFeatureFlags
-from voice.governed.mock_providers import default_mock_registry
-from voice.governed.orchestrator import (
+from voice_concierge.governed.confirmation import PendingConfirmation
+from voice_concierge.governed.flags import VoiceFeatureFlags
+from voice_concierge.governed.mock_providers import default_mock_registry
+from voice_concierge.governed.orchestrator import (
     RESULT_ALLOWED,
     RESULT_AWAITING_CONFIRMATION,
     RESULT_CANCELLED,
@@ -34,8 +34,12 @@ from voice.governed.orchestrator import (
     confirm_voice_command,
     handle_voice_command,
 )
-from voice.governed.providers import ProviderExecutionError, VoiceCapability, resolve_capability
-from voice.governed.session import InvalidTransitionError, SessionState, VoiceSession
+from voice_concierge.governed.providers import (
+    ProviderExecutionError,
+    VoiceCapability,
+    resolve_capability,
+)
+from voice_concierge.governed.session import InvalidTransitionError, SessionState, VoiceSession
 
 
 def make_envelope(**overrides):

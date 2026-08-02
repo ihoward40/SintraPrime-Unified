@@ -1,4 +1,4 @@
-# voice/governed — SP-VOICE-001 Governed Voice Operations
+# voice_concierge/governed — SP-VOICE-001 Governed Voice Operations
 
 ## Purpose
 
@@ -65,7 +65,7 @@ execution means invoking a sandboxed mock provider, nothing else.
 
 ## Verification
 
-- `python -m pytest voice/governed/tests/ -q`
+- `python -m pytest voice_concierge/governed/tests/ -q`
 
 ## Child DOX Index
 

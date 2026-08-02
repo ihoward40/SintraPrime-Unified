@@ -43,7 +43,7 @@ async def test_callable_adapter_invokes_provider_and_streams_observable_events()
 
 @pytest.mark.asyncio
 async def test_callable_adapter_enforces_timeout():
-    async def slow_provider(task, context):
+    async def slow_provider(_task, _context):
         await asyncio.sleep(0.1)
         return {"summary": "late"}
 

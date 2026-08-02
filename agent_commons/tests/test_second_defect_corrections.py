@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import pytest
 
 from agent_commons.adapters import MockAgentAdapter
@@ -6,6 +8,14 @@ from agent_commons.models import RunStatus, SupervisorRun
 from agent_commons.store import AgentCommonsStore
 from agent_commons.supervisor import GovernedSupervisor
 from portal.routers import agent_commons
+
+
+def set_environment(monkeypatch, environment: str) -> None:
+    monkeypatch.setattr(
+        agent_commons,
+        "get_settings",
+        lambda: SimpleNamespace(ENVIRONMENT=environment),
+    )
 
 
 @pytest.mark.asyncio
@@ -88,7 +98,7 @@ def test_task_and_idempotency_uniqueness_are_tenant_scoped():
 
 
 def test_production_requires_shared_postgres(monkeypatch):
-    monkeypatch.setenv("APP_ENV", "production")
+    set_environment(monkeypatch, "production")
     monkeypatch.setenv("AGENT_COMMONS_STORAGE_MODE", "sqlite")
     monkeypatch.setenv("AGENT_COMMONS_EVENT_BACKEND", "redis")
 
@@ -97,7 +107,7 @@ def test_production_requires_shared_postgres(monkeypatch):
 
 
 def test_multi_worker_requires_shared_event_broker(monkeypatch):
-    monkeypatch.setenv("APP_ENV", "development")
+    set_environment(monkeypatch, "development")
     monkeypatch.setenv("WEB_CONCURRENCY", "4")
     monkeypatch.setenv("AGENT_COMMONS_STORAGE_MODE", "sqlite")
     monkeypatch.setenv("AGENT_COMMONS_EVENT_BACKEND", "in_process")
@@ -107,7 +117,7 @@ def test_multi_worker_requires_shared_event_broker(monkeypatch):
 
 
 def test_unimplemented_shared_backends_remain_fail_closed(monkeypatch):
-    monkeypatch.setenv("APP_ENV", "development")
+    set_environment(monkeypatch, "development")
     monkeypatch.setenv("WEB_CONCURRENCY", "1")
     monkeypatch.setenv("AGENT_COMMONS_STORAGE_MODE", "postgres")
     monkeypatch.setenv("AGENT_COMMONS_EVENT_BACKEND", "in_process")

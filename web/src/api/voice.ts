@@ -11,7 +11,7 @@ import { apiClient } from './client';
  * drives the governed mock ledger.
  */
 
-export type VoiceSource = 'desktop_voice' | 'mobile_voice' | 'telephony' | 'text_fallback';
+export type VoiceSource = 'desktop_voice' | 'remote_voice' | 'transcript_import';
 
 export interface VoiceCommandResponse {
   command_id: string;

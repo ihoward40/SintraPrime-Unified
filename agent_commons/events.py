@@ -2,14 +2,18 @@ from __future__ import annotations
 
 import asyncio
 from collections import defaultdict
+from collections.abc import AsyncIterator
+from contextlib import suppress
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterator, Dict, Set
+from typing import Any
 
 
 @dataclass(eq=False)
 class EventSubscription:
     tenant_id: str
-    queue: asyncio.Queue[Dict[str, Any]] = field(default_factory=lambda: asyncio.Queue(maxsize=200))
+    queue: asyncio.Queue[dict[str, Any]] = field(
+        default_factory=lambda: asyncio.Queue(maxsize=200)
+    )
 
 
 class AgentCommonsEventBus:
@@ -20,22 +24,20 @@ class AgentCommonsEventBus:
     """
 
     def __init__(self) -> None:
-        self._subscriptions: dict[str, Set[EventSubscription]] = defaultdict(set)
+        self._subscriptions: dict[str, set[EventSubscription]] = defaultdict(set)
         self._lock = asyncio.Lock()
 
-    async def publish(self, tenant_id: str, event: Dict[str, Any]) -> None:
+    async def publish(self, tenant_id: str, event: dict[str, Any]) -> None:
         payload = {"tenant_id": tenant_id, **event}
         async with self._lock:
             subscribers = tuple(self._subscriptions.get(tenant_id, set()))
         for subscription in subscribers:
             if subscription.queue.full():
-                try:
+                with suppress(asyncio.QueueEmpty):
                     subscription.queue.get_nowait()
-                except asyncio.QueueEmpty:
-                    pass
             await subscription.queue.put(payload)
 
-    async def subscribe(self, tenant_id: str) -> AsyncIterator[Dict[str, Any]]:
+    async def subscribe(self, tenant_id: str) -> AsyncIterator[dict[str, Any]]:
         subscription = EventSubscription(tenant_id=tenant_id)
         async with self._lock:
             self._subscriptions[tenant_id].add(subscription)

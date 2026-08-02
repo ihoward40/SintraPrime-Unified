@@ -1,4 +1,5 @@
 """ORM models package."""
+
 from .audit import AuditLog
 from .audit_record import AuditRecord
 from .billing import Expense, Invoice, InvoiceLineItem, Payment, TimeEntry, TrustAccount

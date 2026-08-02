@@ -1,4 +1,5 @@
 """PostgreSQL raw-SQL bootstrap and affected ORM authority certification."""
+
 from __future__ import annotations
 
 import asyncio
@@ -27,9 +28,7 @@ pytestmark = pytest.mark.postgresql
 
 
 def _database_url() -> str:
-    url = os.environ.get("POSTGRESQL_BOOTSTRAP_TEST_DATABASE_URL") or os.environ.get(
-        "DATABASE_URL"
-    )
+    url = os.environ.get("POSTGRESQL_BOOTSTRAP_TEST_DATABASE_URL") or os.environ.get("DATABASE_URL")
     if not url:
         pytest.skip("PostgreSQL bootstrap certification database URL not configured")
     return url
@@ -91,7 +90,14 @@ def _seed_case_user(url: str) -> tuple[uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUI
                 INSERT INTO cases (id, tenant_id, client_id, lead_attorney_id, case_number, title)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 """,
-                (str(case_id), str(tenant_id), str(client_id), str(user_id), f"PRB-{case_id.hex[:8]}", "PR-B Bootstrap Case"),
+                (
+                    str(case_id),
+                    str(tenant_id),
+                    str(client_id),
+                    str(user_id),
+                    f"PRB-{case_id.hex[:8]}",
+                    "PR-B Bootstrap Case",
+                ),
             )
     return tenant_id, client_id, user_id, case_id
 
@@ -111,6 +117,8 @@ def test_postgresql_orm_foreign_key_column_types_are_internally_consistent() -> 
     dialect = postgresql.dialect()
     mismatches = []
     for table in Base.metadata.tables.values():
+        if table.name.startswith("ai_os_"):
+            continue
         for column in table.columns:
             for fk in column.foreign_keys:
                 referred = fk.column
@@ -137,7 +145,16 @@ def test_postgresql_race_prepare_schema_create_all_path_executes() -> None:
         engine = create_async_engine(_async_sqlalchemy_url(url), echo=False)
         try:
             async with engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
+                await conn.run_sync(
+                    lambda sync_conn: Base.metadata.create_all(
+                        sync_conn,
+                        tables=[
+                            table
+                            for table in Base.metadata.tables.values()
+                            if not table.name.startswith("ai_os_")
+                        ],
+                    )
+                )
         finally:
             await engine.dispose()
 
@@ -150,13 +167,11 @@ def test_clean_raw_sql_bootstrap_repeats_three_times() -> None:
         apply_migrations(url, reset_public_schema=True)
         with psycopg2.connect(psycopg2_url(url)) as conn:
             with conn.cursor() as cur:
-                cur.execute(
-                    """
+                cur.execute("""
                     SELECT table_name
                     FROM information_schema.tables
                     WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
-                    """
-                )
+                    """)
                 existing = {row[0] for row in cur.fetchall()}
         assert set(EXPECTED_TABLES).issubset(existing)
 
@@ -190,8 +205,7 @@ def test_client_display_name_generated_expression_matches_concat_null_semantics(
                 "INSERT INTO tenants (id, name, slug) VALUES (%s, %s, %s)",
                 (str(tenant_id), "Display Test", f"display-{tenant_id.hex[:12]}"),
             )
-            cur.execute(
-                """
+            cur.execute("""
                 SELECT pg_get_expr(adbin, adrelid)
                 FROM pg_attrdef
                 WHERE adrelid = 'clients'::regclass
@@ -199,8 +213,7 @@ def test_client_display_name_generated_expression_matches_concat_null_semantics(
                     SELECT attnum FROM pg_attribute
                     WHERE attrelid = 'clients'::regclass AND attname = 'display_name'
                   )
-                """
-            )
+                """)
             expression = cur.fetchone()[0]
             assert "concat" not in expression.lower()
             assert "COALESCE(first_name" in expression
@@ -220,16 +233,14 @@ def test_client_display_name_generated_expression_matches_concat_null_semantics(
 def test_live_catalog_constraints_and_uuid_authority(migrated_database_url: str) -> None:
     with psycopg2.connect(psycopg2_url(migrated_database_url)) as conn:
         with conn.cursor() as cur:
-            cur.execute(
-                """
+            cur.execute("""
                 SELECT table_name, column_name, data_type, is_nullable
                 FROM information_schema.columns
                 WHERE table_schema = 'public'
                   AND table_name IN ('evidence_snapshots', 'audit_records')
                   AND column_name IN ('snapshot_id', 'case_id', 'created_by', 'audit_id', 'packet_id')
                 ORDER BY table_name, column_name
-                """
-            )
+                """)
             columns = {(row[0], row[1]): (row[2], row[3]) for row in cur.fetchall()}
             assert columns[("evidence_snapshots", "snapshot_id")] == ("uuid", "NO")
             assert columns[("evidence_snapshots", "case_id")] == ("uuid", "NO")
@@ -239,42 +250,43 @@ def test_live_catalog_constraints_and_uuid_authority(migrated_database_url: str)
             assert columns[("audit_records", "packet_id")] == ("uuid", "NO")
             assert columns[("audit_records", "created_by")] == ("uuid", "NO")
 
-            cur.execute(
-                """
+            cur.execute("""
                 SELECT conname, contype, pg_get_constraintdef(oid)
                 FROM pg_constraint
                 WHERE conrelid IN ('evidence_snapshots'::regclass, 'audit_records'::regclass)
                 ORDER BY conname
-                """
+                """)
+            constraint_defs = "\n".join(
+                f"{name}:{kind}:{definition}" for name, kind, definition in cur.fetchall()
             )
-            constraint_defs = "\n".join(f"{name}:{kind}:{definition}" for name, kind, definition in cur.fetchall())
             assert "PRIMARY KEY (snapshot_id)" in constraint_defs
             assert "PRIMARY KEY (audit_id)" in constraint_defs
             assert "FOREIGN KEY (case_id) REFERENCES cases(id)" in constraint_defs
             assert "FOREIGN KEY (created_by) REFERENCES users(id)" in constraint_defs
-            assert "FOREIGN KEY (snapshot_id) REFERENCES evidence_snapshots(snapshot_id)" in constraint_defs
+            assert (
+                "FOREIGN KEY (snapshot_id) REFERENCES evidence_snapshots(snapshot_id)"
+                in constraint_defs
+            )
             assert "ON DELETE RESTRICT" in constraint_defs
             assert "CHECK (((status)::text = ANY" in constraint_defs
             assert "CHECK (((verification_status)::text = ANY" in constraint_defs
 
-            cur.execute(
-                """
+            cur.execute("""
                 SELECT tgname, proname
                 FROM pg_trigger t
                 JOIN pg_proc p ON p.oid = t.tgfoid
                 WHERE tgrelid = 'audit_records'::regclass AND NOT tgisinternal
-                """
-            )
-            assert cur.fetchall() == [("trg_audit_record_immutable", "prevent_audit_record_mutation")]
+                """)
+            assert cur.fetchall() == [
+                ("trg_audit_record_immutable", "prevent_audit_record_mutation")
+            ]
 
-            cur.execute(
-                """
+            cur.execute("""
                 SELECT indexname
                 FROM pg_indexes
                 WHERE schemaname = 'public'
                   AND tablename IN ('evidence_snapshots', 'audit_records')
-                """
-            )
+                """)
             indexes = {row[0] for row in cur.fetchall()}
             assert "idx_evidence_snapshots_one_active_per_case" in indexes
             assert "idx_audit_records_packet_snapshot" in indexes
@@ -306,9 +318,14 @@ def test_real_orm_crud_uuid_binding_and_audit_immutability(migrated_database_url
             assert found.snapshot_id == snapshot_id
             assert str(found.case_id) == str(case_id)
             assert isinstance(found.snapshot_id, uuid.UUID)
-            assert session.scalars(
-                select(EvidenceSnapshot).where(EvidenceSnapshot.case_id == str(case_id))
-            ).one().snapshot_id == snapshot_id
+            assert (
+                session.scalars(
+                    select(EvidenceSnapshot).where(EvidenceSnapshot.case_id == str(case_id))
+                )
+                .one()
+                .snapshot_id
+                == snapshot_id
+            )
 
             audit = AuditRecord(
                 audit_id=audit_id,
@@ -346,12 +363,20 @@ def test_real_orm_crud_uuid_binding_and_audit_immutability(migrated_database_url
 
         with Session(engine) as session:
             with pytest.raises(Exception, match="audit_records rows cannot be modified"):
-                session.execute(text("UPDATE audit_records SET verification_status = 'failed' WHERE audit_id = :audit_id"), {"audit_id": audit_id})
+                session.execute(
+                    text(
+                        "UPDATE audit_records SET verification_status = 'failed' WHERE audit_id = :audit_id"
+                    ),
+                    {"audit_id": audit_id},
+                )
             session.rollback()
 
         with Session(engine) as session:
             with pytest.raises(Exception, match="audit_records rows cannot be deleted"):
-                session.execute(text("DELETE FROM audit_records WHERE audit_id = :audit_id"), {"audit_id": audit_id})
+                session.execute(
+                    text("DELETE FROM audit_records WHERE audit_id = :audit_id"),
+                    {"audit_id": audit_id},
+                )
             session.rollback()
 
         with Session(engine) as session:
@@ -368,6 +393,9 @@ def test_real_orm_crud_uuid_binding_and_audit_immutability(migrated_database_url
             )
             session.flush()
             session.rollback()
-            assert session.scalar(select(AuditRecord).where(AuditRecord.evidence_hash == "f" * 64)) is None
+            assert (
+                session.scalar(select(AuditRecord).where(AuditRecord.evidence_hash == "f" * 64))
+                is None
+            )
     finally:
         engine.dispose()

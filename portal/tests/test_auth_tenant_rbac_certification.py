@@ -35,6 +35,8 @@ EVIDENCE_SCHEMA_VERSION = "1.0"
 APPROVED_PUBLIC_V1_ROUTES = {
     "/api/v1/auth/login",
     "/api/v1/auth/refresh",
+    "/api/v1/auth/setup/status",
+    "/api/v1/auth/setup",
     "/api/v1/auth/password/reset-request",
     "/api/v1/auth/password/reset-confirm",
     "/api/v1/documents/share/{share_token}",
@@ -49,6 +51,8 @@ APPROVED_PUBLIC_V1_ROUTES = {
 PUBLIC_ROUTE_JUSTIFICATIONS = {
     "/api/v1/auth/login": "Credential exchange must be public so anonymous users can obtain a session.",
     "/api/v1/auth/refresh": "Refresh-token rotation is cookie-based and intentionally callable before access-token auth.",
+    "/api/v1/auth/setup/status": "First-run setup discovery is public but only reports whether bootstrap remains available.",
+    "/api/v1/auth/setup": "First-run owner bootstrap is public only while no user exists and then fails closed permanently.",
     "/api/v1/auth/password/reset-request": "Password reset initiation must be public to prevent account enumeration and support lost-password recovery.",
     "/api/v1/auth/password/reset-confirm": "Password reset completion must be public because the one-time reset token is the authorization artifact.",
     "/api/v1/documents/share/{share_token}": "Shared-document access is token-gated and intentionally public for external recipients.",

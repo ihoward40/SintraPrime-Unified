@@ -5,14 +5,17 @@ password reset, email verification, session management.
 
 from __future__ import annotations
 
+import asyncio
+import re
 import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from ..auth.jwt_handler import (
     TokenError,
@@ -31,6 +34,7 @@ from ..auth.password_handler import (
     verify_password,
 )
 from ..auth.rbac import CurrentUser, get_current_user
+from ..auth.rbac import Role as RbacRole
 from ..auth.session_manager import (
     blocklist_jti,
     create_session,
@@ -43,14 +47,18 @@ from ..auth.session_manager import (
 )
 from ..config import get_settings
 from ..database import get_db
-from ..models.user import User
+from ..models.user import Role as RoleModel
+from ..models.user import Tenant, User
 from ..services.audit_service import audit
 from ..services.notification_service import send_email
+from ..services.permission_provisioning import PermissionSyncError, sync_permission_manifest
 
 router = APIRouter()
 settings = get_settings()
 
 REFRESH_COOKIE_NAME = "refresh_token"
+_FIRST_RUN_SETUP_LOCK_KEY = 246001
+_FIRST_RUN_SETUP_LOCAL_LOCK = asyncio.Lock()
 
 
 # ── Request / Response schemas ────────────────────────────────────────────────
@@ -108,6 +116,17 @@ class ChangePasswordRequest(BaseModel):
     new_password: str = Field(..., min_length=12)
 
 
+class FirstRunSetupStatus(BaseModel):
+    available: bool
+
+
+class FirstRunSetupRequest(BaseModel):
+    owner_name: str = Field(..., min_length=1, max_length=200)
+    email: EmailStr
+    password: str = Field(..., min_length=12)
+    organization_name: str = Field(..., min_length=1, max_length=255)
+
+
 # ── Helper ────────────────────────────────────────────────────────────────────
 
 async def _get_user_by_email(db: AsyncSession, email: str, tenant_id: str | None = None) -> User | None:
@@ -116,6 +135,39 @@ async def _get_user_by_email(db: AsyncSession, email: str, tenant_id: str | None
         stmt = stmt.where(User.tenant_id == tenant_id)
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
+
+
+async def _has_any_user(db: AsyncSession) -> bool:
+    count = await db.scalar(select(func.count(User.id)).where(User.deleted_at.is_(None)))
+    return bool(count)
+
+
+async def _acquire_first_run_setup_guard(db: AsyncSession) -> asyncio.Lock | None:
+    bind = db.get_bind()
+    dialect_name = bind.dialect.name if bind is not None else ""
+    if dialect_name == "postgresql":
+        await db.execute(
+            text("SELECT pg_advisory_xact_lock(:lock_key)"),
+            {"lock_key": _FIRST_RUN_SETUP_LOCK_KEY},
+        )
+        return None
+
+    await _FIRST_RUN_SETUP_LOCAL_LOCK.acquire()
+    return _FIRST_RUN_SETUP_LOCAL_LOCK
+
+
+def _split_owner_name(owner_name: str) -> tuple[str, str]:
+    parts = owner_name.strip().split()
+    if not parts:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Owner name is required")
+    if len(parts) == 1:
+        return parts[0], "Owner"
+    return parts[0], " ".join(parts[1:])
+
+
+def _tenant_slug(name: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", name.strip().lower()).strip("-")
+    return slug or "first-run-tenant"
 
 
 def _build_login_response(
@@ -163,6 +215,93 @@ def _build_login_response(
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
+
+@router.get("/setup/status", response_model=FirstRunSetupStatus)
+async def first_run_setup_status(db: AsyncSession = Depends(get_db)) -> FirstRunSetupStatus:
+    """Return whether first-run owner setup is still available."""
+    return FirstRunSetupStatus(available=not await _has_any_user(db))
+
+
+@router.post("/setup", response_model=LoginResponse, status_code=status.HTTP_201_CREATED)
+async def first_run_setup(
+    body: FirstRunSetupRequest,
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+) -> LoginResponse:
+    """Create the first tenant and owner user, then issue a normal login session."""
+    local_guard = await _acquire_first_run_setup_guard(db)
+    try:
+        if await _has_any_user(db):
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="First-run setup is already complete")
+
+        try:
+            validate_password_strength(body.password)
+        except PasswordError as exc:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+        try:
+            await sync_permission_manifest(db)
+        except PermissionSyncError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+        role = await db.scalar(
+            select(RoleModel)
+            .options(selectinload(RoleModel.permissions))
+            .where(RoleModel.name == RbacRole.FIRM_ADMIN.value, RoleModel.is_system.is_(True))
+        )
+        if role is None:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Owner role unavailable")
+
+        first_name, last_name = _split_owner_name(body.owner_name)
+        tenant = Tenant(
+            id=str(uuid.uuid4()),
+            name=body.organization_name.strip(),
+            slug=_tenant_slug(body.organization_name),
+            is_active=True,
+        )
+        owner = User(
+            id=str(uuid.uuid4()),
+            tenant_id=tenant.id,
+            role_id=role.id,
+            email=str(body.email).lower(),
+            email_verified=True,
+            hashed_password=hash_password(body.password),
+            first_name=first_name,
+            last_name=last_name,
+            password_changed_at=datetime.now(UTC),
+            is_active=True,
+            is_locked=False,
+        )
+        db.add(tenant)
+        db.add(owner)
+        await db.flush()
+
+        owner.role_ref = role
+        login_response, _refresh_token, family_id = _build_login_response(owner, response)
+        await register_refresh_family(family_id, str(owner.id))
+        await create_session(
+            user_id=str(owner.id),
+            email=owner.email,
+            ip_address=request.client.host if request.client else "unknown",
+            user_agent=request.headers.get("user-agent", ""),
+        )
+        await audit(
+            db,
+            action="first_run_owner_setup",
+            user_id=str(owner.id),
+            tenant_id=str(tenant.id),
+            status="success",
+            actor_email=owner.email,
+            actor_role=login_response.role,
+            actor_ip=request.client.host if request.client else "unknown",
+        )
+        await db.commit()
+        return login_response
+    finally:
+        if local_guard is not None:
+            local_guard.release()
+
 
 @router.post("/login", response_model=LoginResponse)
 async def login(
@@ -238,22 +377,15 @@ async def login(
     user.last_login_ip = ip
     await db.commit()
 
-    login_response, refresh_token, family_id = _build_login_response(user, response)
+    login_response, _refresh_token, family_id = _build_login_response(user, response)
 
     # Register refresh family + session
-    from ..auth.jwt_handler import decode_refresh_token
-    rt_payload = decode_refresh_token(refresh_token)
-    rt_jti = rt_payload["jti"]
-    await register_refresh_family(family_id, rt_jti)
-    at_payload = {"jti": get_token_jti(login_response.access_token)}
+    await register_refresh_family(family_id, str(user.id))
     await create_session(
         user_id=str(user.id),
-        tenant_id=str(user.tenant_id),
-        role=login_response.role,
-        device_info=user_agent,
+        email=user.email,
         ip_address=ip,
-        refresh_token_jti=rt_jti,
-        access_token_jti=at_payload["jti"] or "",
+        user_agent=user_agent,
     )
 
     await audit(db, action="login", user_id=str(user.id), tenant_id=str(user.tenant_id),
@@ -280,7 +412,7 @@ async def refresh_token(
     jti = payload.get("jti", "")
 
     # Validate family (detects reuse)
-    valid = await validate_refresh_family(family_id, jti)
+    valid = await validate_refresh_family(family_id)
     if not valid:
         response.delete_cookie(REFRESH_COOKIE_NAME)
         await revoke_all_user_sessions(payload["sub"])
@@ -316,12 +448,10 @@ async def refresh_token(
         tenant_id=str(user.tenant_id),
         family=family_id,
     )
-    new_rt_payload = decode_refresh_token(new_refresh_token)
-    new_rt_jti = new_rt_payload["jti"]
-    await rotate_refresh_family(family_id, new_rt_jti)
+    await rotate_refresh_family(family_id)
 
     # Blocklist old refresh JTI
-    await blocklist_jti(jti, ttl=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 86400)
+    await blocklist_jti(jti, ttl_seconds=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 86400)
 
     response.set_cookie(
         key=REFRESH_COOKIE_NAME,
@@ -353,13 +483,13 @@ async def logout(
     if auth_header.startswith("Bearer "):
         access_jti = get_token_jti(auth_header[7:])
         if access_jti:
-            await blocklist_jti(access_jti, ttl=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+            await blocklist_jti(access_jti, ttl_seconds=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60)
 
     # Blocklist refresh token
     if refresh_token:
         rt_jti = get_token_jti(refresh_token, is_refresh=True)
         if rt_jti:
-            await blocklist_jti(rt_jti, ttl=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 86400)
+            await blocklist_jti(rt_jti, ttl_seconds=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 86400)
 
     response.delete_cookie(REFRESH_COOKIE_NAME)
     await audit(db, action="logout", user_id=current_user.user_id,

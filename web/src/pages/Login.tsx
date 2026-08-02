@@ -1,10 +1,10 @@
-import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Lock, Mail, Scale } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import { login, type LoginResponse } from '../api/auth';
+import { getFirstRunSetupStatus, login, type LoginResponse } from '../api/auth';
 import { useAppStore } from '../store/appStore';
 
 export default function LoginPage() {
@@ -17,6 +17,27 @@ export default function LoginPage() {
   const [challengeToken, setChallengeToken] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [setupAvailable, setSetupAvailable] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getFirstRunSetupStatus()
+      .then((status) => {
+        if (!cancelled) {
+          setSetupAvailable(status.available);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSetupAvailable(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -149,6 +170,14 @@ export default function LoginPage() {
               {challengeToken ? 'Verify MFA' : 'Sign In'}
             </Button>
           </form>
+
+          {setupAvailable && (
+            <div className="mt-5 text-center text-sm text-slate-500">
+              <Link to="/setup" className="text-gold hover:text-amber-200">
+                Create first owner account
+              </Link>
+            </div>
+          )}
         </Card>
       </motion.div>
     </div>

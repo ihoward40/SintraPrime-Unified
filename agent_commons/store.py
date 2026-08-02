@@ -23,7 +23,7 @@ class AgentCommonsStore:
         self._migrate()
 
     def _migrate(self) -> None:
-        with self._connection:
+        with self._lock, self._connection:
             self._connection.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS commons_messages (
@@ -92,13 +92,14 @@ class AgentCommonsStore:
         channel_id: str,
         thread_id: str,
     ) -> list[dict[str, Any]]:
-        rows = self._connection.execute(
-            """SELECT * FROM commons_messages
-               WHERE tenant_id=? AND workspace_id=? AND channel_id=? AND thread_id=?
-               ORDER BY timestamp ASC""",
-            (tenant_id, workspace_id, channel_id, thread_id),
-        ).fetchall()
-        return [self._decode_message(row) for row in rows]
+        with self._lock:
+            rows = self._connection.execute(
+                """SELECT * FROM commons_messages
+                   WHERE tenant_id=? AND workspace_id=? AND channel_id=? AND thread_id=?
+                   ORDER BY timestamp ASC""",
+                (tenant_id, workspace_id, channel_id, thread_id),
+            ).fetchall()
+            return [self._decode_message(row) for row in rows]
 
     def save_run(
         self,
@@ -162,13 +163,14 @@ class AgentCommonsStore:
                 raise KeyError(f"run not found: {run.run_id}")
 
     def get_run(self, tenant_id: str, run_id: str) -> SupervisorRun:
-        row = self._connection.execute(
-            "SELECT * FROM supervisor_runs WHERE tenant_id=? AND run_id=?",
-            (tenant_id, run_id),
-        ).fetchone()
-        if row is None:
-            raise KeyError(f"run not found: {run_id}")
-        return self._decode_run(row)
+        with self._lock:
+            row = self._connection.execute(
+                "SELECT * FROM supervisor_runs WHERE tenant_id=? AND run_id=?",
+                (tenant_id, run_id),
+            ).fetchone()
+            if row is None:
+                raise KeyError(f"run not found: {run_id}")
+            return self._decode_run(row)
 
     def create_approval(self, tenant_id: str, run_id: str, reason: str) -> str:
         approval_id = uuid.uuid4().hex

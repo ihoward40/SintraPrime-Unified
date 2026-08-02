@@ -12,7 +12,7 @@ from .models import MessageRecord, RunStatus, SupervisorRun
 
 
 class AgentCommonsStore:
-    """Tenant-scoped SQLite persistence for Agent Commons threads, runs, and approvals."""
+    """Tenant-scoped SQLite persistence for local development and tests."""
 
     def __init__(self, database_path: str = ":memory:") -> None:
         if database_path != ":memory:":
@@ -39,19 +39,6 @@ class AgentCommonsStore:
                 CREATE INDEX IF NOT EXISTS idx_commons_thread
                     ON commons_messages(tenant_id, workspace_id, channel_id, thread_id, timestamp);
 
-                CREATE TABLE IF NOT EXISTS supervisor_runs (
-                    run_id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL,
-                    workspace_id TEXT NOT NULL, channel_id TEXT NOT NULL,
-                    thread_id TEXT NOT NULL, task_id TEXT NOT NULL UNIQUE,
-                    objective TEXT NOT NULL, owner_agent TEXT NOT NULL,
-                    builder_agent TEXT NOT NULL, reviewer_agent TEXT NOT NULL,
-                    acceptance_criteria_json TEXT NOT NULL, status TEXT NOT NULL,
-                    builder_result_json TEXT, review_result_json TEXT,
-                    reconciliation_json TEXT, approval_id TEXT,
-                    idempotency_key TEXT UNIQUE, created_at REAL NOT NULL,
-                    updated_at REAL NOT NULL
-                );
-
                 CREATE TABLE IF NOT EXISTS owner_approvals (
                     approval_id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL,
                     run_id TEXT NOT NULL, reason TEXT NOT NULL,
@@ -60,24 +47,67 @@ class AgentCommonsStore:
                 );
                 """
             )
+            self._ensure_tenant_scoped_runs_table()
+
+    def _ensure_tenant_scoped_runs_table(self) -> None:
+        row = self._connection.execute(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='supervisor_runs'"
+        ).fetchone()
+        if row is None:
+            self._create_runs_table()
+            return
+        schema = (row["sql"] or "").replace("\n", " ").lower()
+        legacy_global_unique = (
+            "task_id text not null unique" in schema
+            or "idempotency_key text unique" in schema
+        )
+        if not legacy_global_unique:
+            return
+        self._connection.execute("ALTER TABLE supervisor_runs RENAME TO supervisor_runs_legacy")
+        self._create_runs_table()
+        self._connection.execute(
+            """INSERT INTO supervisor_runs (
+                run_id, tenant_id, workspace_id, channel_id, thread_id, task_id,
+                objective, owner_agent, builder_agent, reviewer_agent,
+                acceptance_criteria_json, status, builder_result_json,
+                review_result_json, reconciliation_json, approval_id,
+                idempotency_key, created_at, updated_at
+            ) SELECT
+                run_id, tenant_id, workspace_id, channel_id, thread_id, task_id,
+                objective, owner_agent, builder_agent, reviewer_agent,
+                acceptance_criteria_json, status, builder_result_json,
+                review_result_json, reconciliation_json, approval_id,
+                idempotency_key, created_at, updated_at
+            FROM supervisor_runs_legacy"""
+        )
+        self._connection.execute("DROP TABLE supervisor_runs_legacy")
+
+    def _create_runs_table(self) -> None:
+        self._connection.execute(
+            """CREATE TABLE supervisor_runs (
+                run_id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL,
+                workspace_id TEXT NOT NULL, channel_id TEXT NOT NULL,
+                thread_id TEXT NOT NULL, task_id TEXT NOT NULL,
+                objective TEXT NOT NULL, owner_agent TEXT NOT NULL,
+                builder_agent TEXT NOT NULL, reviewer_agent TEXT NOT NULL,
+                acceptance_criteria_json TEXT NOT NULL, status TEXT NOT NULL,
+                builder_result_json TEXT, review_result_json TEXT,
+                reconciliation_json TEXT, approval_id TEXT,
+                idempotency_key TEXT, created_at REAL NOT NULL,
+                updated_at REAL NOT NULL,
+                UNIQUE (tenant_id, task_id),
+                UNIQUE (tenant_id, idempotency_key)
+            )"""
+        )
 
     def append_message(self, message: MessageRecord) -> None:
         values = (
-            message.message_id,
-            message.tenant_id,
-            message.workspace_id,
-            message.channel_id,
-            message.thread_id,
-            message.task_id,
-            message.from_agent,
-            json.dumps(message.to_agents),
-            message.status.value,
-            json.dumps(message.payload),
-            json.dumps(message.evidence),
-            message.correlation_id,
-            int(message.owner_decision_required),
-            message.timestamp,
-            json.dumps(message.trace),
+            message.message_id, message.tenant_id, message.workspace_id,
+            message.channel_id, message.thread_id, message.task_id,
+            message.from_agent, json.dumps(message.to_agents), message.status.value,
+            json.dumps(message.payload), json.dumps(message.evidence),
+            message.correlation_id, int(message.owner_decision_required),
+            message.timestamp, json.dumps(message.trace),
         )
         with self._lock, self._connection:
             self._connection.execute(
@@ -109,31 +139,20 @@ class AgentCommonsStore:
         with self._lock, self._connection:
             if idempotency_key:
                 existing = self._connection.execute(
-                    "SELECT run_id FROM supervisor_runs WHERE idempotency_key=? AND tenant_id=?",
-                    (idempotency_key, run.tenant_id),
+                    "SELECT run_id FROM supervisor_runs WHERE tenant_id=? AND idempotency_key=?",
+                    (run.tenant_id, idempotency_key),
                 ).fetchone()
                 if existing:
                     return self.get_run(run.tenant_id, existing["run_id"])
             values = (
-                run.run_id,
-                run.tenant_id,
-                run.workspace_id,
-                run.channel_id,
-                run.thread_id,
-                run.task_id,
-                run.objective,
-                run.owner_agent,
-                run.builder_agent,
-                run.reviewer_agent,
-                json.dumps(run.acceptance_criteria),
-                run.status.value,
+                run.run_id, run.tenant_id, run.workspace_id, run.channel_id,
+                run.thread_id, run.task_id, run.objective, run.owner_agent,
+                run.builder_agent, run.reviewer_agent,
+                json.dumps(run.acceptance_criteria), run.status.value,
                 self._json_or_none(run.builder_result),
                 self._json_or_none(run.review_result),
-                self._json_or_none(run.reconciliation),
-                run.approval_id,
-                idempotency_key,
-                run.created_at,
-                run.updated_at,
+                self._json_or_none(run.reconciliation), run.approval_id,
+                idempotency_key, run.created_at, run.updated_at,
             )
             self._connection.execute(
                 "INSERT INTO supervisor_runs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -153,10 +172,7 @@ class AgentCommonsStore:
                     self._json_or_none(run.builder_result),
                     self._json_or_none(run.review_result),
                     self._json_or_none(run.reconciliation),
-                    run.approval_id,
-                    run.updated_at,
-                    run.tenant_id,
-                    run.run_id,
+                    run.approval_id, run.updated_at, run.tenant_id, run.run_id,
                 ),
             )
             if cursor.rowcount != 1:
@@ -193,11 +209,8 @@ class AgentCommonsStore:
                 """UPDATE owner_approvals SET status=?, decision_note=?, decided_at=?
                    WHERE tenant_id=? AND approval_id=? AND status='pending'""",
                 (
-                    "approved" if approved else "rejected",
-                    note,
-                    time.time(),
-                    tenant_id,
-                    approval_id,
+                    "approved" if approved else "rejected", note, time.time(),
+                    tenant_id, approval_id,
                 ),
             )
             if cursor.rowcount != 1:
@@ -221,22 +234,16 @@ class AgentCommonsStore:
             return json.loads(row[key]) if row[key] else None
 
         return SupervisorRun(
-            run_id=row["run_id"],
-            tenant_id=row["tenant_id"],
-            workspace_id=row["workspace_id"],
-            channel_id=row["channel_id"],
-            thread_id=row["thread_id"],
-            task_id=row["task_id"],
-            objective=row["objective"],
-            owner_agent=row["owner_agent"],
-            builder_agent=row["builder_agent"],
-            reviewer_agent=row["reviewer_agent"],
+            run_id=row["run_id"], tenant_id=row["tenant_id"],
+            workspace_id=row["workspace_id"], channel_id=row["channel_id"],
+            thread_id=row["thread_id"], task_id=row["task_id"],
+            objective=row["objective"], owner_agent=row["owner_agent"],
+            builder_agent=row["builder_agent"], reviewer_agent=row["reviewer_agent"],
             acceptance_criteria=json.loads(row["acceptance_criteria_json"]),
             status=RunStatus(row["status"]),
             builder_result=decode("builder_result_json"),
             review_result=decode("review_result_json"),
             reconciliation=decode("reconciliation_json"),
-            approval_id=row["approval_id"],
-            created_at=row["created_at"],
+            approval_id=row["approval_id"], created_at=row["created_at"],
             updated_at=row["updated_at"],
         )

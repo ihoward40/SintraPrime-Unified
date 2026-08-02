@@ -12,29 +12,62 @@ Key Components:
 - ResponseFormatter: Converts text responses for natural voice delivery
 """
 
-from .voice_engine import VoiceEngine, VoiceConfig, SessionManager
-from .persona import SeniorPartnerPersona, PersonaConfig
-from .speech_processor import SpeechProcessor, SpeechConfig, TranscriptionResult
-from .legal_nlp import LegalNLPProcessor, NLPResult, IntentResult
-from .response_formatter import ResponseFormatter, FormattingConfig
-from .wake_word import WakeWordDetector, WakeWordConfig
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .legal_nlp import IntentResult, LegalNLPProcessor, NLPResult
+    from .persona import PersonaConfig, SeniorPartnerPersona
+    from .response_formatter import FormattingConfig, ResponseFormatter
+    from .speech_processor import SpeechConfig, SpeechProcessor, TranscriptionResult
+    from .voice_engine import SessionManager, VoiceConfig, VoiceEngine
+    from .wake_word import WakeWordConfig, WakeWordDetector
+
+_LAZY_EXPORTS = {
+    'VoiceEngine': ('.voice_engine', 'VoiceEngine'),
+    'VoiceConfig': ('.voice_engine', 'VoiceConfig'),
+    'SessionManager': ('.voice_engine', 'SessionManager'),
+    'SeniorPartnerPersona': ('.persona', 'SeniorPartnerPersona'),
+    'PersonaConfig': ('.persona', 'PersonaConfig'),
+    'SpeechProcessor': ('.speech_processor', 'SpeechProcessor'),
+    'SpeechConfig': ('.speech_processor', 'SpeechConfig'),
+    'TranscriptionResult': ('.speech_processor', 'TranscriptionResult'),
+    'LegalNLPProcessor': ('.legal_nlp', 'LegalNLPProcessor'),
+    'NLPResult': ('.legal_nlp', 'NLPResult'),
+    'IntentResult': ('.legal_nlp', 'IntentResult'),
+    'ResponseFormatter': ('.response_formatter', 'ResponseFormatter'),
+    'FormattingConfig': ('.response_formatter', 'FormattingConfig'),
+    'WakeWordDetector': ('.wake_word', 'WakeWordDetector'),
+    'WakeWordConfig': ('.wake_word', 'WakeWordConfig'),
+}
+
+
+def __getattr__(name):
+    if name not in _LAZY_EXPORTS:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+    module_name, attr_name = _LAZY_EXPORTS[name]
+    from importlib import import_module
+
+    value = getattr(import_module(module_name, __name__), attr_name)
+    globals()[name] = value
+    return value
 
 __all__ = [
-    'VoiceEngine',
-    'VoiceConfig',
-    'SessionManager',
-    'SeniorPartnerPersona',
-    'PersonaConfig',
-    'SpeechProcessor',
-    'SpeechConfig',
-    'TranscriptionResult',
+    'FormattingConfig',
+    'IntentResult',
     'LegalNLPProcessor',
     'NLPResult',
-    'IntentResult',
+    'PersonaConfig',
     'ResponseFormatter',
-    'FormattingConfig',
-    'WakeWordDetector',
+    'SeniorPartnerPersona',
+    'SessionManager',
+    'SpeechConfig',
+    'SpeechProcessor',
+    'TranscriptionResult',
+    'VoiceConfig',
+    'VoiceEngine',
     'WakeWordConfig',
+    'WakeWordDetector',
 ]
 
 __version__ = '1.0.0'

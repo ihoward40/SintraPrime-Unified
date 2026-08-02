@@ -22,6 +22,7 @@ from portal.auth.rbac import (
     require_permissions,
     require_role,
 )
+from portal.config import get_settings
 
 router = APIRouter(prefix="/api/v1/agent-commons", tags=["agent-commons"])
 ADAPTER_MODE_DISABLED = "disabled"
@@ -61,8 +62,7 @@ def get_adapter_mode() -> str:
 
 
 def _is_production() -> bool:
-    value = os.getenv("APP_ENV", os.getenv("ENVIRONMENT", "development"))
-    return value.strip().lower() in {"prod", "production"}
+    return get_settings().ENVIRONMENT.strip().lower() in {"prod", "production"}
 
 
 def _worker_count() -> int:
@@ -238,6 +238,18 @@ async def create_objective(
     return payload
 
 
+@router.get("/runs")
+async def list_runs(
+    limit: int = Query(default=50, ge=1, le=200),
+    user: CurrentUser = Depends(require_permissions(Permission.MISSION_COMMAND_READ)),
+    store: AgentCommonsStore = Depends(get_store),
+) -> dict[str, Any]:
+    return {
+        "tenant_id": user.tenant_id,
+        "runs": [_run_payload(run) for run in store.list_runs(user.tenant_id, limit)],
+    }
+
+
 @router.get("/runs/{run_id}")
 async def get_run(
     run_id: str,
@@ -281,6 +293,15 @@ async def approve_run(
     if run.status is not RunStatus.WAITING_APPROVAL or not run.approval_id:
         raise HTTPException(status_code=409, detail="run is not waiting for approval")
     updated = supervisor.approve(user.tenant_id, run_id, run.approval_id, request.note)
+    if updated.builder_result is None and updated.reconciliation and updated.reconciliation.get("blocked_actions"):
+        updated.status = RunStatus.PENDING
+        updated.reconciliation = {
+            **updated.reconciliation,
+            "summary": "Owner approval recorded; supervised execution has not yet run.",
+            "authorization_recorded": True,
+            "execution_pending": True,
+        }
+        supervisor.store.update_run(updated)
     payload = _run_payload(updated)
     await events.publish(
         user.tenant_id,

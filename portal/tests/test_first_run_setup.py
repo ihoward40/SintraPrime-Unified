@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncGenerator
 
 import pytest
@@ -131,3 +132,59 @@ async def test_first_run_owner_can_use_normal_login(client: AsyncClient) -> None
     payload = decode_access_token(response.json()["access_token"])
     assert payload["role"] == "FIRM_ADMIN"
     assert Permission.VOICE_COMMAND_CREATE.value in payload["permissions"]
+
+
+@pytest.mark.asyncio
+async def test_concurrent_first_run_setup_creates_one_owner(tmp_path) -> None:
+    db_path = tmp_path / "first_run_setup.db"
+    engine = create_async_engine(f"sqlite+aiosqlite:///{db_path}", echo=False)
+    async with engine.begin() as conn:
+        await conn.run_sync(
+            lambda sync_conn: Base.metadata.create_all(
+                sync_conn,
+                tables=[
+                    Tenant.__table__,
+                    Role.__table__,
+                    PermissionModel.__table__,
+                    RolePermission.__table__,
+                    User.__table__,
+                    AuditLog.__table__,
+                ],
+            )
+        )
+
+    session_maker = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+    app = FastAPI()
+    app.include_router(auth.router, prefix="/api/v1/auth")
+
+    async def _override_db() -> AsyncGenerator[AsyncSession, None]:
+        async with session_maker() as db:
+            yield db
+
+    app.dependency_overrides[get_db] = _override_db
+    transport = ASGITransport(app=app)
+    payload_a = await _setup_payload()
+    payload_b = {
+        **payload_a,
+        "owner_name": "Grace Hopper",
+        "email": "grace@example.com",
+        "organization_name": "Beta Legal Ops",
+    }
+
+    try:
+        async with AsyncClient(transport=transport, base_url="http://testserver") as test_client:
+            response_a, response_b = await asyncio.gather(
+                test_client.post("/api/v1/auth/setup", json=payload_a),
+                test_client.post("/api/v1/auth/setup", json=payload_b),
+            )
+
+        assert sorted([response_a.status_code, response_b.status_code]) == [201, 409]
+
+        async with session_maker() as db:
+            users = (await db.execute(select(User))).scalars().all()
+            tenants = (await db.execute(select(Tenant))).scalars().all()
+            assert len(users) == 1
+            assert len(tenants) == 1
+    finally:
+        app.dependency_overrides.clear()
+        await engine.dispose()

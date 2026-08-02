@@ -5,6 +5,7 @@ password reset, email verification, session management.
 
 from __future__ import annotations
 
+import asyncio
 import re
 import secrets
 import uuid
@@ -12,7 +13,7 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -56,6 +57,8 @@ router = APIRouter()
 settings = get_settings()
 
 REFRESH_COOKIE_NAME = "refresh_token"
+_FIRST_RUN_SETUP_LOCK_KEY = 246001
+_FIRST_RUN_SETUP_LOCAL_LOCK = asyncio.Lock()
 
 
 # ── Request / Response schemas ────────────────────────────────────────────────
@@ -139,6 +142,20 @@ async def _has_any_user(db: AsyncSession) -> bool:
     return bool(count)
 
 
+async def _acquire_first_run_setup_guard(db: AsyncSession) -> asyncio.Lock | None:
+    bind = db.get_bind()
+    dialect_name = bind.dialect.name if bind is not None else ""
+    if dialect_name == "postgresql":
+        await db.execute(
+            text("SELECT pg_advisory_xact_lock(:lock_key)"),
+            {"lock_key": _FIRST_RUN_SETUP_LOCK_KEY},
+        )
+        return None
+
+    await _FIRST_RUN_SETUP_LOCAL_LOCK.acquire()
+    return _FIRST_RUN_SETUP_LOCAL_LOCK
+
+
 def _split_owner_name(owner_name: str) -> tuple[str, str]:
     parts = owner_name.strip().split()
     if not parts:
@@ -213,72 +230,77 @@ async def first_run_setup(
     db: AsyncSession = Depends(get_db),
 ) -> LoginResponse:
     """Create the first tenant and owner user, then issue a normal login session."""
-    if await _has_any_user(db):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="First-run setup is already complete")
-
+    local_guard = await _acquire_first_run_setup_guard(db)
     try:
-        validate_password_strength(body.password)
-    except PasswordError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+        if await _has_any_user(db):
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="First-run setup is already complete")
 
-    try:
-        await sync_permission_manifest(db)
-    except PermissionSyncError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        try:
+            validate_password_strength(body.password)
+        except PasswordError as exc:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 
-    role = await db.scalar(
-        select(RoleModel)
-        .options(selectinload(RoleModel.permissions))
-        .where(RoleModel.name == RbacRole.FIRM_ADMIN.value, RoleModel.is_system.is_(True))
-    )
-    if role is None:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Owner role unavailable")
+        try:
+            await sync_permission_manifest(db)
+        except PermissionSyncError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
-    first_name, last_name = _split_owner_name(body.owner_name)
-    tenant = Tenant(
-        id=str(uuid.uuid4()),
-        name=body.organization_name.strip(),
-        slug=_tenant_slug(body.organization_name),
-        is_active=True,
-    )
-    owner = User(
-        id=str(uuid.uuid4()),
-        tenant_id=tenant.id,
-        role_id=role.id,
-        email=str(body.email).lower(),
-        email_verified=True,
-        hashed_password=hash_password(body.password),
-        first_name=first_name,
-        last_name=last_name,
-        password_changed_at=datetime.now(UTC),
-        is_active=True,
-        is_locked=False,
-    )
-    db.add(tenant)
-    db.add(owner)
-    await db.flush()
+        role = await db.scalar(
+            select(RoleModel)
+            .options(selectinload(RoleModel.permissions))
+            .where(RoleModel.name == RbacRole.FIRM_ADMIN.value, RoleModel.is_system.is_(True))
+        )
+        if role is None:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Owner role unavailable")
 
-    owner.role_ref = role
-    login_response, _refresh_token, family_id = _build_login_response(owner, response)
-    await register_refresh_family(family_id, str(owner.id))
-    await create_session(
-        user_id=str(owner.id),
-        email=owner.email,
-        ip_address=request.client.host if request.client else "unknown",
-        user_agent=request.headers.get("user-agent", ""),
-    )
-    await audit(
-        db,
-        action="first_run_owner_setup",
-        user_id=str(owner.id),
-        tenant_id=str(tenant.id),
-        status="success",
-        actor_email=owner.email,
-        actor_role=login_response.role,
-        actor_ip=request.client.host if request.client else "unknown",
-    )
-    await db.commit()
-    return login_response
+        first_name, last_name = _split_owner_name(body.owner_name)
+        tenant = Tenant(
+            id=str(uuid.uuid4()),
+            name=body.organization_name.strip(),
+            slug=_tenant_slug(body.organization_name),
+            is_active=True,
+        )
+        owner = User(
+            id=str(uuid.uuid4()),
+            tenant_id=tenant.id,
+            role_id=role.id,
+            email=str(body.email).lower(),
+            email_verified=True,
+            hashed_password=hash_password(body.password),
+            first_name=first_name,
+            last_name=last_name,
+            password_changed_at=datetime.now(UTC),
+            is_active=True,
+            is_locked=False,
+        )
+        db.add(tenant)
+        db.add(owner)
+        await db.flush()
+
+        owner.role_ref = role
+        login_response, _refresh_token, family_id = _build_login_response(owner, response)
+        await register_refresh_family(family_id, str(owner.id))
+        await create_session(
+            user_id=str(owner.id),
+            email=owner.email,
+            ip_address=request.client.host if request.client else "unknown",
+            user_agent=request.headers.get("user-agent", ""),
+        )
+        await audit(
+            db,
+            action="first_run_owner_setup",
+            user_id=str(owner.id),
+            tenant_id=str(tenant.id),
+            status="success",
+            actor_email=owner.email,
+            actor_role=login_response.role,
+            actor_ip=request.client.host if request.client else "unknown",
+        )
+        await db.commit()
+        return login_response
+    finally:
+        if local_guard is not None:
+            local_guard.release()
 
 
 @router.post("/login", response_model=LoginResponse)

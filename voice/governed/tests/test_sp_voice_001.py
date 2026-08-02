@@ -16,6 +16,7 @@ Covers directive §Tests/Unit Tests:
 from __future__ import annotations
 
 import dataclasses
+import sys
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -41,6 +42,10 @@ from voice.governed import (
 from voice.governed.confirmation import CONFIRMATION_TTL
 
 # ── helpers ──────────────────────────────────────────────────────────────────
+
+
+def test_import_governed_does_not_load_legacy_voice_engine():
+    assert 'voice.voice_engine' not in sys.modules
 
 
 def make_envelope(**overrides):

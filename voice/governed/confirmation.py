@@ -97,10 +97,20 @@ class PendingConfirmation:
         if said in _DENIALS:
             return ConfirmationOutcome(False, "explicitly denied")
 
-        # Explicit, target-naming confirmation always allowed if it names the target.
-        explicit = _target_fingerprint(current_target)[:8]
-        if said.startswith("confirm ") and explicit:
-            return ConfirmationOutcome(True, "explicit confirmation")
+        # Explicit confirmation is only valid if the named word actually
+        # references the pending action or its target — a bare "confirm "
+        # prefix with unrelated content must NOT be treated as confirmation.
+        if said.startswith("confirm "):
+            named = said[len("confirm ") :].strip()
+            action_words = set(self.action_description.strip().lower().split())
+            target_words = set(
+                self.target.strip().lower().replace("@", " ").replace(".", " ").split()
+            )
+            if named and (named in action_words or named in target_words):
+                return ConfirmationOutcome(True, "explicit confirmation")
+            return ConfirmationOutcome(
+                False, "explicit confirmation rejected: action or target not named"
+            )
 
         if said in _AMBIGUOUS_YES:
             if pending_count != 1:

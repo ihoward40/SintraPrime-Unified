@@ -245,6 +245,16 @@ def test_ambiguous_yes_accepted_after_restatement_single_pending():
     assert out.confirmed is True
 
 
+def test_explicit_confirmation_rejects_unrelated_word():
+    """A bare 'confirm <word>' must not pass unless the word actually names
+    the pending action or its target (regression for exact-target defect)."""
+    pc = PendingConfirmation("vcmd-1", "send email", "jordan@example.com")
+    pc.restate_target()
+    out = pc.evaluate("confirm banana", current_target="jordan@example.com", pending_count=1)
+    assert out.confirmed is False
+    assert "not named" in out.reason
+
+
 def test_explicit_denial_rejected():
     pc = PendingConfirmation("vcmd-1", "send email", "jordan@example.com")
     pc.restate_target()

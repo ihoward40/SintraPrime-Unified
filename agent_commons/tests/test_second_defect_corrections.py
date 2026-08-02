@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 
 from agent_commons.adapters import MockAgentAdapter

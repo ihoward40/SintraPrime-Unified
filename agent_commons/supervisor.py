@@ -225,6 +225,43 @@ class GovernedSupervisor:
         self.store.update_run(run)
         return run
 
+    def approve_pre_execution(
+        self,
+        tenant_id: str,
+        run_id: str,
+        approval_id: str,
+        note: str = "",
+    ) -> SupervisorRun:
+        """Record owner authorization without claiming the work has executed."""
+        run = self.store.get_run(tenant_id, run_id)
+        if run.approval_id != approval_id or run.status != RunStatus.WAITING_APPROVAL:
+            raise ValueError("approval does not match a waiting supervisor run")
+        if run.builder_result is not None or not (
+            run.reconciliation and run.reconciliation.get("blocked_actions")
+        ):
+            raise ValueError("run is not a pre-execution action gate")
+        self.store.decide_approval(tenant_id, approval_id, approved=True, note=note)
+        run.status = RunStatus.PENDING
+        run.reconciliation = {
+            **run.reconciliation,
+            "summary": "Owner approval recorded; supervised execution has not yet run.",
+            "authorization_recorded": True,
+            "execution_pending": True,
+        }
+        self._record(
+            run,
+            run.owner_agent,
+            ["supervisor"],
+            LifecycleStatus.ACK,
+            {
+                "decision": "approved",
+                "note": note,
+                "execution_pending": True,
+            },
+        )
+        self.store.update_run(run)
+        return run
+
     def reject(
         self,
         tenant_id: str,

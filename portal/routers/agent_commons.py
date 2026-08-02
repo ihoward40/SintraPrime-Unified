@@ -292,16 +292,23 @@ async def approve_run(
     run = supervisor.store.get_run(user.tenant_id, run_id)
     if run.status is not RunStatus.WAITING_APPROVAL or not run.approval_id:
         raise HTTPException(status_code=409, detail="run is not waiting for approval")
-    updated = supervisor.approve(user.tenant_id, run_id, run.approval_id, request.note)
-    if updated.builder_result is None and updated.reconciliation and updated.reconciliation.get("blocked_actions"):
-        updated.status = RunStatus.PENDING
-        updated.reconciliation = {
-            **updated.reconciliation,
-            "summary": "Owner approval recorded; supervised execution has not yet run.",
-            "authorization_recorded": True,
-            "execution_pending": True,
-        }
-        supervisor.store.update_run(updated)
+    is_pre_execution_gate = run.builder_result is None and bool(
+        run.reconciliation and run.reconciliation.get("blocked_actions")
+    )
+    if is_pre_execution_gate:
+        updated = supervisor.approve_pre_execution(
+            user.tenant_id,
+            run_id,
+            run.approval_id,
+            request.note,
+        )
+    else:
+        updated = supervisor.approve(
+            user.tenant_id,
+            run_id,
+            run.approval_id,
+            request.note,
+        )
     payload = _run_payload(updated)
     await events.publish(
         user.tenant_id,

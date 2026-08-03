@@ -48,6 +48,24 @@ class RefreshMetadataRequest(BaseModel):
     reason: str | None = None
 
 
+class UCCFilingEvaluationRequest(BaseModel):
+    filing_jurisdiction: str
+    filing_number: str | None = None
+    filing_office: str | None = None
+    filing_date: date
+    debtor_type: str
+    debtor_name: str
+    secured_party: str | None = None
+    collateral_summary: str
+    security_agreement_available: bool = False
+    value_evidence_available: bool = False
+    debtor_rights_in_collateral: bool = False
+    amendments: list[dict[str, Any]] = Field(default_factory=list)
+    continuation_records: list[dict[str, Any]] = Field(default_factory=list)
+    termination_status: str | None = None
+    duration_exception: str | None = None
+
+
 def _authorized_actor(
     x_reviewer_role: str | None = Header(default=None),
     x_reviewer_identity: str | None = Header(default=None),
@@ -174,12 +192,37 @@ async def refresh_authority_metadata(
 
 @router.get("/legal-rules/compare")
 async def compare_legal_rules(
-    jurisdiction: str,
-    domain: str,
-    topic: str,
+    jurisdiction: str = "NJ",
+    domain: str = "trust_law",
+    topic: str = "revocable trust",
+    jurisdictions: str | None = None,
     as_of_date: date | None = Query(default=None),
 ):
-    return service.compare(jurisdiction, domain, topic, as_of_date=as_of_date)
+    parsed = None
+    if jurisdictions:
+        parsed = [item.strip().upper() for item in jurisdictions.split(",") if item.strip()]
+    return service.compare(jurisdiction, domain, topic, as_of_date=as_of_date, jurisdictions=parsed)
+
+
+@router.post("/ucc-filings/evaluate")
+async def evaluate_ucc_filing(
+    payload: UCCFilingEvaluationRequest,
+    x_reviewer_role: str | None = Header(default=None),
+    x_reviewer_identity: str | None = Header(default=None),
+):
+    role, identity = _authorized_actor(x_reviewer_role, x_reviewer_identity)
+    try:
+        return service.evaluate_ucc_filing(payload.model_dump(), role, identity)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/ucc-filings/{evaluation_id}")
+async def get_ucc_filing_evaluation(evaluation_id: str):
+    evaluation = service.get_ucc_evaluation(evaluation_id)
+    if evaluation is None:
+        raise HTTPException(status_code=404, detail="evaluation not found")
+    return evaluation
 
 
 @router.post("/legal-rules/{rule_id}/submit-review")

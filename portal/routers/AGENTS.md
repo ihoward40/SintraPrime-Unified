@@ -17,6 +17,7 @@ Owns all FastAPI route handler modules. These are the API surface: the contract 
 - All other production routes: rate-limited (100 req/min/user), require session/auth middleware.
 - Jurisdiction Phase 2A write endpoints are controlled and must require reviewer role and identity headers until integrated with the portal's full authorization stack.
 - Review/challenge/stale-source write routes must not claim automatic credential verification and must create audit records through the service layer.
+- UCC filing-assessment write routes are controlled review endpoints; they must validate facts, redact sensitive identifiers, and avoid storing or displaying unredacted private identifiers.
 
 **Legacy/demo exception:** `recovery.py` and `trust_compliance.py` may temporarily contain minimal orchestration logic (lightweight JSON/demo endpoints). New production logic should move into `portal/services/` where practical.
 

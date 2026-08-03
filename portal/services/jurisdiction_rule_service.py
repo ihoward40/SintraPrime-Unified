@@ -5,10 +5,12 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any
 
+from legal_authority.comparison import JurisdictionComparisonService
 from legal_authority.engine import RuleEvaluationEngine
 from legal_authority.repository import LegalAuthorityRepository
 from legal_authority.review_workflow import ReviewWorkflow
 from legal_authority.source_monitor import SourceMonitor
+from legal_authority.ucc_filing import UCCFilingAssessmentService
 
 
 class JurisdictionRuleService:
@@ -19,6 +21,8 @@ class JurisdictionRuleService:
         self.engine = RuleEvaluationEngine(self.repository)
         self.review_workflow = ReviewWorkflow(self.repository)
         self.source_monitor = SourceMonitor(self.repository)
+        self.comparison_service = JurisdictionComparisonService(self.repository)
+        self.ucc_filing_service = UCCFilingAssessmentService(self.repository)
 
     def list_jurisdictions(self) -> list[dict[str, Any]]:
         return self.repository.list_jurisdictions()
@@ -106,8 +110,28 @@ class JurisdictionRuleService:
         domain: str,
         topic: str,
         as_of_date: date | None = None,
+        jurisdictions: list[str] | None = None,
     ) -> dict[str, Any]:
+        if jurisdictions:
+            return self.comparison_service.compare(jurisdictions, domain, topic, as_of_date)
         return self.engine.compare_rules(jurisdiction, domain, topic, as_of_date)
+
+    def compare_region(
+        self,
+        jurisdictions: list[str],
+        domain: str,
+        topic: str,
+        as_of_date: date | None = None,
+    ) -> dict[str, Any]:
+        return self.comparison_service.compare(jurisdictions, domain, topic, as_of_date)
+
+    def evaluate_ucc_filing(
+        self, payload: dict[str, Any], actor_role: str, actor_identity: str
+    ) -> dict[str, Any]:
+        return self.ucc_filing_service.evaluate(payload, actor_role, actor_identity)
+
+    def get_ucc_evaluation(self, evaluation_id: str) -> dict[str, Any] | None:
+        return self.ucc_filing_service.get(evaluation_id)
 
     def review_queue(self, code: str) -> dict[str, Any] | None:
         if self.repository.get_jurisdiction(code) is None:

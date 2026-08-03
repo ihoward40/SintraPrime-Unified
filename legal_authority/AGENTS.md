@@ -8,6 +8,7 @@ Owns the data-backed legal authority, jurisdiction rule, conflict, professional-
 
 - Pydantic schemas for legal authorities, jurisdiction rules, professional review records, legal challenges, audit events, source refresh results, and conflict records.
 - JSON-backed repository loading and governed appends from `data/jurisdictions/`.
+- Federal overlay authority package at `data/federal/`, including source limitations and review-gated issue-spotting rules.
 - Rule evaluation, supersession, conflict detection, cross-jurisdiction comparison, UCC filing assessment, provenance response shaping, production gate checks, challenge preservation, and manual stale-source metadata comparison.
 
 ## Local Contracts

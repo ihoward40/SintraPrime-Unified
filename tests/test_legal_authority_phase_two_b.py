@@ -15,6 +15,7 @@ from portal.main import create_app
 def test_governed_jurisdiction_packages_validate():
     result = LegalAuthorityRepository().validate_jurisdiction_packages()
     assert result["validated_packages"] == ["new_jersey", "new_york", "pennsylvania"]
+    assert result["federal_package_validated"] is True
     assert result["authority_count"] >= 58
     assert result["rule_count"] >= 74
 

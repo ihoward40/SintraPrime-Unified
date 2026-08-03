@@ -77,6 +77,34 @@ def _authorized_actor(
     return x_reviewer_role, x_reviewer_identity
 
 
+@router.get("/federal/domains")
+async def list_federal_domains():
+    return service.federal_domains()
+
+
+@router.get("/federal/rules")
+async def list_federal_rules(domain: str | None = None, topic: str | None = None):
+    return service.federal_rules(domain=domain, topic=topic)
+
+
+@router.get("/federal/rules/{rule_id}")
+async def get_federal_rule(rule_id: str, as_of_date: date | None = Query(default=None)):
+    payload = service.get_rule("FED", rule_id, as_of_date=as_of_date)
+    if payload is None:
+        raise HTTPException(status_code=404, detail="federal rule not found")
+    return payload
+
+
+@router.get("/federal/authorities")
+async def list_federal_authorities():
+    return service.federal_authorities()
+
+
+@router.get("/federal/conflicts")
+async def list_federal_conflicts():
+    return service.federal_conflicts()
+
+
 @router.get("/jurisdictions")
 async def list_jurisdictions():
     return service.list_jurisdictions()

@@ -1,0 +1,494 @@
+[
+  {
+    "id": "FED-RULE-FDCPA-VALIDATION",
+    "jurisdiction": "FED",
+    "domain": "consumer_debt_collection",
+    "topic": "FDCPA debt validation and collection communications",
+    "rule_statement": "A qualifying FDCPA dispute and validation workflow must be evaluated against the debt, collector, communication, notice, and timing facts; the engine flags missing facts rather than declaring a violation.",
+    "rule_logic": {
+      "conditions": [
+        "qualifying_consumer_debt",
+        "debt_collector_status",
+        "validation_notice",
+        "timely_dispute",
+        "collection_communication"
+      ],
+      "conclusion": "issue_spot_fdcpa_validation"
+    },
+    "authority_ids": [
+      "FED-FDCPA-15-1692"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.8,
+    "requires_human_review": true,
+    "effective_from": "1977-09-20",
+    "exceptions": [
+      {
+        "issue": "professional review",
+        "rule": "No liability, deadline, or remedy conclusion without licensed-attorney review."
+      }
+    ],
+    "version": "1.0.0",
+    "rule_category": "FEDERAL_OVERLAY",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [
+      "Collector status and transaction facts are not yet modeled."
+    ],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-RULE-FCRA-REINVESTIGATION",
+    "jurisdiction": "FED",
+    "domain": "credit_reporting",
+    "topic": "FCRA consumer dispute and reinvestigation",
+    "rule_statement": "A consumer-report dispute should be checked for notice, completeness, supporting evidence, recipient, and timing; a reinvestigation deadline is issue-spotted only until facts and current Regulation V text are reviewed.",
+    "rule_logic": {
+      "conditions": [
+        "consumer_report",
+        "direct_or_fcra_dispute",
+        "furnisher_or_agency",
+        "dispute_date",
+        "evidence_submitted"
+      ],
+      "conclusion": "issue_spot_fcra_reinvestigation"
+    },
+    "authority_ids": [
+      "FED-FCRA-15-1681",
+      "FED-REG-FCRA-12-CFR-1022"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.78,
+    "requires_human_review": true,
+    "effective_from": "1970-10-26",
+    "exceptions": [
+      {
+        "issue": "regulatory source status",
+        "rule": "Regulation V is locator-only pending official text capture and review."
+      }
+    ],
+    "version": "1.0.0",
+    "rule_category": "FEDERAL_OVERLAY",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [
+      "No deadline engine exists in Phase 2C-1."
+    ],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-RULE-TILA-FCBA-DISCLOSURE",
+    "jurisdiction": "FED",
+    "domain": "consumer_credit",
+    "topic": "TILA disclosures and Fair Credit Billing Act dispute",
+    "rule_statement": "Consumer-credit disclosure and billing-error issue spotting requires transaction type, account, statement, notice, and creditor-response evidence; filing-office or account records do not establish TILA or FCBA compliance.",
+    "rule_logic": {
+      "conditions": [
+        "consumer_credit_transaction",
+        "required_disclosure",
+        "billing_error",
+        "notice_date",
+        "creditor_response"
+      ],
+      "conclusion": "issue_spot_tila_fcba"
+    },
+    "authority_ids": [
+      "FED-TILA-FCBA-15-1601",
+      "FED-REG-TILA-12-CFR-1026"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.75,
+    "requires_human_review": true,
+    "effective_from": "1968-05-29",
+    "exceptions": [
+      {
+        "issue": "regulatory source status",
+        "rule": "Regulation Z is locator-only pending official text capture and review."
+      }
+    ],
+    "version": "1.0.0",
+    "rule_category": "FEDERAL_OVERLAY",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-RULE-EFTA-UNAUTHORIZED-TRANSFER",
+    "jurisdiction": "FED",
+    "domain": "electronic_transfers",
+    "topic": "EFTA unauthorized electronic fund transfer issue spotting",
+    "rule_statement": "Potential EFTA error or unauthorized-transfer issues depend on the consumer, account, access device, notice, institution, and timing facts; the engine must not infer liability from an account statement alone.",
+    "rule_logic": {
+      "conditions": [
+        "consumer_account",
+        "electronic_transfer",
+        "unauthorized_or_error_claim",
+        "consumer_notice",
+        "notice_timing"
+      ],
+      "conclusion": "issue_spot_efta_transfer"
+    },
+    "authority_ids": [
+      "FED-EFTA-15-1693",
+      "FED-REG-EFTA-12-CFR-1005"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.78,
+    "requires_human_review": true,
+    "effective_from": "1978-11-10",
+    "exceptions": [
+      {
+        "issue": "regulatory source status",
+        "rule": "Regulation E is locator-only pending official text capture and review."
+      }
+    ],
+    "version": "1.0.0",
+    "rule_category": "FEDERAL_OVERLAY",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-RULE-ECOA-ADVERSE-ACTION",
+    "jurisdiction": "FED",
+    "domain": "consumer_credit",
+    "topic": "ECOA credit discrimination and adverse action notice",
+    "rule_statement": "Credit-application issue spotting should identify applicant, creditor, protected basis, adverse action, stated reasons, and application dates; it does not determine discrimination or remedy.",
+    "rule_logic": {
+      "conditions": [
+        "credit_application",
+        "creditor",
+        "adverse_action",
+        "protected_basis",
+        "notice_or_reasons"
+      ],
+      "conclusion": "issue_spot_ecoa_adverse_action"
+    },
+    "authority_ids": [
+      "FED-ECOA-15-1691",
+      "FED-REG-ECOA-12-CFR-1002"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.76,
+    "requires_human_review": true,
+    "effective_from": "1974-10-28",
+    "exceptions": [
+      {
+        "issue": "regulatory source status",
+        "rule": "Regulation B is locator-only pending official text capture and review."
+      }
+    ],
+    "version": "1.0.0",
+    "rule_category": "FEDERAL_OVERLAY",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-RULE-BANKRUPTCY-ESTATE",
+    "jurisdiction": "FED",
+    "domain": "bankruptcy",
+    "topic": "bankruptcy property of estate and trust interests",
+    "rule_statement": "Bankruptcy estate issue spotting begins with the debtor's legal or equitable interests and the applicable statutory exclusions; trust ownership, beneficiary interests, spendthrift provisions, and timing require bankruptcy counsel review.",
+    "rule_logic": {
+      "conditions": [
+        "bankruptcy_case",
+        "debtor_interest",
+        "trust_or_entity_interest",
+        "petition_date",
+        "exclusion_or_exception"
+      ],
+      "conclusion": "federal_bankruptcy_estate_review_required"
+    },
+    "authority_ids": [
+      "FED-BANKRUPTCY-11-362-541-548"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.78,
+    "requires_human_review": true,
+    "effective_from": "1978-11-06",
+    "exceptions": [
+      {
+        "issue": "bankruptcy",
+        "rule": "FEDERAL_BANKRUPTCY_REVIEW_REQUIRED; no bankruptcy filing or exemption advice."
+      }
+    ],
+    "version": "1.0.0",
+    "rule_category": "BANKRUPTCY_ONLY_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [
+      "No bankruptcy case or document model exists in Phase 2C-1."
+    ],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-RULE-BANKRUPTCY-STAY",
+    "jurisdiction": "FED",
+    "domain": "bankruptcy",
+    "topic": "automatic stay and collection activity",
+    "rule_statement": "A bankruptcy petition may trigger an automatic stay, but statutory exceptions, case status, relief-from-stay orders, and postpetition conduct must be checked before any collection conclusion.",
+    "rule_logic": {
+      "conditions": [
+        "bankruptcy_petition",
+        "collection_action",
+        "stay_exception",
+        "relief_order",
+        "case_status"
+      ],
+      "conclusion": "federal_bankruptcy_stay_review_required"
+    },
+    "authority_ids": [
+      "FED-BANKRUPTCY-11-362-541-548"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.82,
+    "requires_human_review": true,
+    "effective_from": "1978-11-06",
+    "exceptions": [
+      {
+        "issue": "bankruptcy",
+        "rule": "FEDERAL_BANKRUPTCY_REVIEW_REQUIRED; do not advise that all collection activity is stayed."
+      }
+    ],
+    "version": "1.0.0",
+    "rule_category": "BANKRUPTCY_ONLY_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-RULE-BENEFITS-SOCIAL-SECURITY",
+    "jurisdiction": "FED",
+    "domain": "creditor_protection",
+    "topic": "Social Security federal-benefit garnishment protection",
+    "rule_statement": "Social Security benefits generally receive federal anti-assignment and process protection, but express statutory exceptions and commingling or tracing facts must be reviewed.",
+    "rule_logic": {
+      "conditions": [
+        "social_security_benefit",
+        "levy_or_garnishment",
+        "support_or_tax_exception",
+        "deposit_account",
+        "traceability"
+      ],
+      "conclusion": "federal_benefit_protection_issue_spot"
+    },
+    "authority_ids": [
+      "FED-SS-42-407",
+      "FED-SUPPORT-42-659"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.82,
+    "requires_human_review": true,
+    "effective_from": "1935-08-14",
+    "exceptions": [
+      {
+        "issue": "support and tax",
+        "rule": "Do not treat federal-benefit protection as absolute against every federal or support process."
+      }
+    ],
+    "version": "1.0.0",
+    "rule_category": "EXEMPTION_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-RULE-TAX-LIEN-LEVY",
+    "jurisdiction": "FED",
+    "domain": "federal_tax",
+    "topic": "federal tax lien and levy issue spotting",
+    "rule_statement": "Federal tax collection analysis must distinguish lien attachment, lien notice and priority, levy authority, exemptions, and release or wrongful-levy remedies; a state UCC filing does not defeat a federal tax claim by itself.",
+    "rule_logic": {
+      "conditions": [
+        "tax_assessment",
+        "demand",
+        "nonpayment",
+        "notice",
+        "property_interest",
+        "levy_or_lien"
+      ],
+      "conclusion": "federal_tax_collection_review_required"
+    },
+    "authority_ids": [
+      "FED-TAX-LIEN-26-6321",
+      "FED-TAX-LEVY-26-6331-6334"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.8,
+    "requires_human_review": true,
+    "effective_from": "1954-08-16",
+    "exceptions": [
+      {
+        "issue": "tax",
+        "rule": "CPA or tax-attorney review is required for tax conclusions and deadlines."
+      }
+    ],
+    "version": "1.0.0",
+    "rule_category": "FEDERAL_OVERLAY",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [
+      "No tax notice or deadline model exists in Phase 2C-1."
+    ],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-RULE-SCRA-INTEREST",
+    "jurisdiction": "FED",
+    "domain": "servicemember_protection",
+    "topic": "SCRA interest cap and qualifying military service",
+    "rule_statement": "A qualifying pre-service obligation may be subject to the SCRA six-percent interest limitation, but military status, debt timing, written request, and covered-obligation facts must be established.",
+    "rule_logic": {
+      "conditions": [
+        "servicemember",
+        "pre_service_debt",
+        "military_service_period",
+        "written_request",
+        "covered_obligation"
+      ],
+      "conclusion": "issue_spot_scra_interest_cap"
+    },
+    "authority_ids": [
+      "FED-SCRA-50-3937"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.78,
+    "requires_human_review": true,
+    "effective_from": "2003-12-19",
+    "exceptions": [
+      {
+        "issue": "SCRA",
+        "rule": "Military-status verification and exceptions require professional review."
+      }
+    ],
+    "version": "1.0.0",
+    "rule_category": "FEDERAL_OVERLAY",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-RULE-ARBITRATION-EVIDENCE",
+    "jurisdiction": "FED",
+    "domain": "procedure",
+    "topic": "arbitration agreement and evidence preservation",
+    "rule_statement": "An arbitration clause and possible evidence-preservation duty require separate fact review; an agreement may be enforceable under the FAA, while loss of electronically stored information is analyzed under applicable procedure and court orders.",
+    "rule_logic": {
+      "conditions": [
+        "written_arbitration_term",
+        "contract_formation",
+        "claim_scope",
+        "preservation_trigger",
+        "stored_information"
+      ],
+      "conclusion": "issue_spot_arbitration_and_preservation"
+    },
+    "authority_ids": [
+      "FED-FAA-9-2",
+      "FED-FRCP-37-E"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.74,
+    "requires_human_review": true,
+    "effective_from": "2015-12-01",
+    "exceptions": [
+      {
+        "issue": "procedure",
+        "rule": "Do not infer enforceability, waiver, sanctions, or spoliation from document presence alone."
+      }
+    ],
+    "version": "1.0.0",
+    "rule_category": "PROCEDURAL_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-RULE-UCC-FEDERAL-INTERSECTION",
+    "jurisdiction": "FED",
+    "domain": "ucc_intersection",
+    "topic": "federal liens bankruptcy and state Article 9 intersection",
+    "rule_statement": "Article 9 filing and perfection are principally state-law questions; federal bankruptcy and tax liens may alter priority, estate treatment, or collection consequences and must be analyzed separately.",
+    "rule_logic": {
+      "conditions": [
+        "state_ucc_filing",
+        "security_agreement",
+        "federal_tax_lien",
+        "bankruptcy_case",
+        "priority_issue"
+      ],
+      "conclusion": "separate_state_ucc_and_federal_overlay_review"
+    },
+    "authority_ids": [
+      "FED-BANKRUPTCY-11-362-541-548",
+      "FED-TAX-LIEN-26-6321",
+      "FED-FAA-9-2"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.72,
+    "requires_human_review": true,
+    "effective_from": "1978-11-06",
+    "exceptions": [
+      {
+        "issue": "UCC",
+        "rule": "No federal UCC is implied; state enactment, federal bankruptcy, tax, and other overlays remain distinct."
+      }
+    ],
+    "version": "1.0.0",
+    "rule_category": "FEDERAL_OVERLAY",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [
+      "Persistent UCC matter and evidence models are Phase 2C-2 and later."
+    ],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-RULE-VA-RAILROAD-BENEFITS",
+    "jurisdiction": "FED",
+    "domain": "creditor_protection",
+    "topic": "VA and Railroad Retirement federal-benefit protections",
+    "rule_statement": "VA and Railroad Retirement benefits may receive federal anti-assignment or legal-process protection, but benefit type, deposit, tracing, support, tax, bankruptcy, and statutory-exception facts must be reviewed.",
+    "rule_logic": {
+      "conditions": [
+        "va_or_railroad_benefit",
+        "levy_or_garnishment",
+        "support_or_tax_exception",
+        "deposit_account",
+        "traceability"
+      ],
+      "conclusion": "federal_va_railroad_benefit_review_required"
+    },
+    "authority_ids": [
+      "FED-VA-38-5301",
+      "FED-RRA-45-231M"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.78,
+    "requires_human_review": true,
+    "effective_from": "1937-06-24",
+    "exceptions": [
+      {
+        "issue": "federal benefits",
+        "rule": "Issue spotting only; do not treat VA or Railroad Retirement protection as absolute against every process."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "rule_category": "EXEMPTION_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  }
+]

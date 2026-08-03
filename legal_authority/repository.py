@@ -27,6 +27,7 @@ class LegalAuthorityRepository:
     def __init__(self, root: Path | None = None) -> None:
         self.root = root or Path(__file__).resolve().parents[1]
         self.data_root = self.root / "data" / "jurisdictions"
+        self.federal_root = self.root / "data" / "federal"
 
     @cached_property
     def coverage(self) -> dict[str, Any]:
@@ -48,7 +49,7 @@ class LegalAuthorityRepository:
     @cached_property
     def authorities(self) -> dict[str, LegalAuthority]:
         records: dict[str, LegalAuthority] = {}
-        for jurisdiction_dir in self._jurisdiction_dirs():
+        for jurisdiction_dir in self._data_dirs():
             path = jurisdiction_dir / "authorities.json"
             if not path.exists():
                 continue
@@ -60,7 +61,7 @@ class LegalAuthorityRepository:
     @cached_property
     def rules(self) -> dict[str, JurisdictionRule]:
         records: dict[str, JurisdictionRule] = {}
-        for jurisdiction_dir in self._jurisdiction_dirs():
+        for jurisdiction_dir in self._data_dirs():
             path = jurisdiction_dir / "rules.json"
             if not path.exists():
                 continue
@@ -79,7 +80,7 @@ class LegalAuthorityRepository:
     @cached_property
     def conflicts(self) -> dict[str, ConflictRecord]:
         records: dict[str, ConflictRecord] = {}
-        for jurisdiction_dir in self._jurisdiction_dirs():
+        for jurisdiction_dir in self._data_dirs():
             path = jurisdiction_dir / "conflicts.json"
             if not path.exists():
                 continue
@@ -91,7 +92,7 @@ class LegalAuthorityRepository:
     @cached_property
     def reviews(self) -> dict[str, ProfessionalReview]:
         records: dict[str, ProfessionalReview] = {}
-        for jurisdiction_dir in self._jurisdiction_dirs():
+        for jurisdiction_dir in self._data_dirs():
             path = jurisdiction_dir / "reviews.json"
             if not path.exists():
                 continue
@@ -103,7 +104,7 @@ class LegalAuthorityRepository:
     @cached_property
     def challenges(self) -> dict[str, LegalChallenge]:
         records: dict[str, LegalChallenge] = {}
-        for jurisdiction_dir in self._jurisdiction_dirs():
+        for jurisdiction_dir in self._data_dirs():
             path = jurisdiction_dir / "challenges.json"
             if not path.exists():
                 continue
@@ -115,7 +116,7 @@ class LegalAuthorityRepository:
     @cached_property
     def audit_events(self) -> dict[str, AuditEvent]:
         records: dict[str, AuditEvent] = {}
-        for jurisdiction_dir in self._jurisdiction_dirs():
+        for jurisdiction_dir in self._data_dirs():
             path = jurisdiction_dir / "audit_events.json"
             if not path.exists():
                 continue
@@ -312,22 +313,72 @@ class LegalAuthorityRepository:
                             f"{code}: {filename} record {getattr(record, 'id', 'unknown')} has jurisdiction {record_jurisdiction}"
                         )
 
+        federal_dir = self.federal_root
+        if not federal_dir.exists():
+            errors.append("FED: missing package directory data/federal")
+        else:
+            missing_files = sorted(
+                name
+                for name in REQUIRED_JURISDICTION_PACKAGE_FILES
+                if not (federal_dir / name).exists()
+            )
+            if missing_files:
+                errors.append(f"FED: missing package files {missing_files}")
+            for raw in self._read_json(federal_dir / "authorities.json"):
+                authority = LegalAuthority.model_validate(raw)
+                if authority.jurisdiction != "FED":
+                    errors.append(
+                        f"FED: authority {authority.id} has jurisdiction {authority.jurisdiction}"
+                    )
+                if authority.id in seen_authorities:
+                    errors.append(f"duplicate authority id {authority.id}")
+                seen_authorities.add(authority.id)
+            for raw in self._read_json(federal_dir / "rules.json"):
+                rule = JurisdictionRule.model_validate(raw)
+                if rule.jurisdiction != "FED":
+                    errors.append(f"FED: rule {rule.id} has jurisdiction {rule.jurisdiction}")
+                if rule.id in seen_rules:
+                    errors.append(f"duplicate rule id {rule.id}")
+                seen_rules.add(rule.id)
+                missing_refs = [aid for aid in rule.authority_ids if aid not in loaded_authorities]
+                if missing_refs:
+                    errors.append(f"FED: rule {rule.id} missing authorities {missing_refs}")
+                if rule.review_status == "APPROVED" and rule.requires_human_review:
+                    errors.append(f"FED: rule {rule.id} bypasses human-review gate")
+            for filename, model_type in (
+                ("conflicts.json", ConflictRecord),
+                ("reviews.json", ProfessionalReview),
+                ("challenges.json", LegalChallenge),
+                ("audit_events.json", AuditEvent),
+            ):
+                for raw in self._read_json(federal_dir / filename):
+                    model_type.model_validate(raw)
         if errors:
             raise ValueError("jurisdiction package validation failed: " + "; ".join(errors))
         return {
             "validated_packages": sorted(JURISDICTION_SLUGS.values()),
+            "federal_package_validated": True,
             "authority_count": len(loaded_authorities),
             "rule_count": len(loaded_rules),
             "errors": [],
         }
+
+    def _data_dirs(self) -> list[Path]:
+        dirs = self._jurisdiction_dirs()
+        if self.federal_root.exists():
+            dirs.append(self.federal_root)
+        return dirs
 
     def _jurisdiction_dirs(self) -> list[Path]:
         return sorted([path for path in self.data_root.iterdir() if path.is_dir()])
 
     def _jurisdiction_dir(self, jurisdiction: str) -> Path:
         normalized_code = jurisdiction.upper()
-        slug = JURISDICTION_SLUGS.get(normalized_code, normalized_code.lower())
-        path = self.data_root / slug
+        if normalized_code == "FED":
+            path = self.federal_root
+        else:
+            slug = JURISDICTION_SLUGS.get(normalized_code, normalized_code.lower())
+            path = self.data_root / slug
         if not path.exists():
             raise KeyError(jurisdiction)
         return path

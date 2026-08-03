@@ -98,6 +98,41 @@ class JurisdictionRuleService:
         )
         return payload
 
+    def federal_domains(self) -> list[dict[str, Any]]:
+        rules = self.repository.query_rules(jurisdiction="FED")
+        grouped: dict[str, list[Any]] = {}
+        for rule in rules:
+            grouped.setdefault(rule.domain, []).append(rule)
+        return [
+            {
+                "domain": domain,
+                "rule_count": len(domain_rules),
+                "topics": sorted({rule.topic for rule in domain_rules}),
+                "human_review_required": all(rule.requires_human_review for rule in domain_rules),
+                "production_eligible": False,
+            }
+            for domain, domain_rules in sorted(grouped.items())
+        ]
+
+    def federal_rules(
+        self, domain: str | None = None, topic: str | None = None
+    ) -> list[dict[str, Any]]:
+        rules = self.repository.query_rules(jurisdiction="FED", domain=domain, topic=topic)
+        return [self._rule_payload(rule.id) for rule in rules]
+
+    def federal_authorities(self) -> list[dict[str, Any]]:
+        return [
+            authority.model_dump(mode="json")
+            for authority in sorted(self.repository.authorities.values(), key=lambda item: item.id)
+            if authority.jurisdiction == "FED"
+        ]
+
+    def federal_conflicts(self) -> list[dict[str, Any]]:
+        return [
+            conflict.model_dump(mode="json")
+            for conflict in self.repository.conflicts_for_jurisdiction("FED")
+        ]
+
     def get_authority(self, authority_id: str) -> dict[str, Any] | None:
         authority = self.repository.get_authority(authority_id)
         if authority is None:

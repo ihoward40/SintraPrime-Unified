@@ -1,0 +1,19 @@
+[
+  {
+    "id": "NJ-CONFLICT-ENGINE-OVERLAP",
+    "issue": "Overlapping fixture rules assert different conclusions for the same date window.",
+    "jurisdiction": "NJ",
+    "competing_rules": ["NJ-ENGINE-CONFLICT-A", "NJ-ENGINE-CONFLICT-B"],
+    "competing_authorities": ["NJ-UTC-2015-276", "NJ-UVTA-2021-92"],
+    "authority_ranking": [
+      {"authority_id": "NJ-UTC-2015-276", "authority_type": "NEW_JERSEY_STATUTE", "authority_weight": 850},
+      {"authority_id": "NJ-UVTA-2021-92", "authority_type": "NEW_JERSEY_STATUTE", "authority_weight": 850}
+    ],
+    "date_relationship": "Both fixture rules are effective from 2020-01-01 with no end date.",
+    "factual_distinctions": ["Different legal domains can share equal statutory authority weight."],
+    "unresolved_questions": ["Determine which rule is narrower or whether one record should be superseded."],
+    "recommended_controlling_rule": null,
+    "confidence": 0.0,
+    "human_review_required": true
+  }
+]

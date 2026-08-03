@@ -8,6 +8,10 @@ import LegalHub from './pages/LegalHub';
 import FinancialEmpire from './pages/FinancialEmpire';
 import TrustLaw from './pages/TrustLaw';
 import NewJerseyJurisdiction from './pages/NewJerseyJurisdiction';
+import NewYorkJurisdiction from './pages/NewYorkJurisdiction';
+import PennsylvaniaJurisdiction from './pages/PennsylvaniaJurisdiction';
+import NortheastComparison from './pages/NortheastComparison';
+import UCCFilingAssessment from './pages/UCCFilingAssessment';
 import CaseManagement from './pages/CaseManagement';
 import DocumentVault from './pages/DocumentVault';
 import EntityGovernance from './pages/EntityGovernance';
@@ -37,6 +41,10 @@ function AppContent() {
           <Route path="financial" element={<FinancialEmpire />} />
           <Route path="trust-law" element={<TrustLaw />} />
           <Route path="jurisdictions/new-jersey" element={<NewJerseyJurisdiction />} />
+          <Route path="jurisdictions/new-york" element={<NewYorkJurisdiction />} />
+          <Route path="jurisdictions/pennsylvania" element={<PennsylvaniaJurisdiction />} />
+          <Route path="jurisdictions/northeast-comparison" element={<NortheastComparison />} />
+          <Route path="ucc/filing-assessment" element={<UCCFilingAssessment />} />
           <Route path="cases" element={<LiveCaseManagement />} />
           <Route path="documents" element={<DocumentVault />} />
           <Route path="entities" element={<EntityGovernance />} />

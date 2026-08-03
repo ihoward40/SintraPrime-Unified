@@ -22,6 +22,7 @@ import OperationsFloor from './pages/OperationsFloor';
 import Login from './pages/Login';
 import Setup from './pages/Setup';
 import VoiceConcierge from './pages/VoiceConcierge';
+import MatterWorkspace from './pages/MatterWorkspace';
 import MissionControlLayout from './pages/mission-control/MissionControlLayout';
 import MissionControlHome from './pages/mission-control/MissionControlHome';
 import MissionControlSurface from './pages/mission-control/MissionControlSurface';
@@ -45,6 +46,7 @@ function AppContent() {
           <Route path="jurisdictions/pennsylvania" element={<PennsylvaniaJurisdiction />} />
           <Route path="jurisdictions/northeast-comparison" element={<NortheastComparison />} />
           <Route path="ucc/filing-assessment" element={<UCCFilingAssessment />} />
+          <Route path="matters/:matterId" element={<MatterWorkspace />} />
           <Route path="cases" element={<LiveCaseManagement />} />
           <Route path="documents" element={<DocumentVault />} />
           <Route path="entities" element={<EntityGovernance />} />

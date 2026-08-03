@@ -21,6 +21,7 @@ import {
   Landmark,
   GitCompareArrows,
   ClipboardCheck,
+  BriefcaseBusiness,
 } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import { clsx } from 'clsx';
@@ -44,6 +45,7 @@ const navItems: NavItem[] = [
   { path: '/jurisdictions/pennsylvania', label: 'Pennsylvania Pilot', icon: Landmark, badge: 'PA', badgeColor: 'amber' },
   { path: '/jurisdictions/northeast-comparison', label: 'NE Comparison', icon: GitCompareArrows, badge: 'NE', badgeColor: 'blue' },
   { path: '/ucc/filing-assessment', label: 'UCC Assessment', icon: ClipboardCheck, badge: 'UCC', badgeColor: 'blue' },
+  { path: '/matters/matter-1', label: 'Matter Workspace', icon: BriefcaseBusiness, badge: 'MATTER', badgeColor: 'blue' },
   { path: '/cases', label: 'Case Management', icon: Gavel, badge: '3', badgeColor: 'red' },
   { path: '/documents', label: 'Document Vault', icon: FileText },
   { path: '/entities', label: 'Entity Governance', icon: Building2 },

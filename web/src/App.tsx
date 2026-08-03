@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import LegalHub from './pages/LegalHub';
 import FinancialEmpire from './pages/FinancialEmpire';
 import TrustLaw from './pages/TrustLaw';
+import NewJerseyJurisdiction from './pages/NewJerseyJurisdiction';
 import CaseManagement from './pages/CaseManagement';
 import DocumentVault from './pages/DocumentVault';
 import EntityGovernance from './pages/EntityGovernance';
@@ -35,6 +36,7 @@ function AppContent() {
           <Route path="legal" element={<LegalHub />} />
           <Route path="financial" element={<FinancialEmpire />} />
           <Route path="trust-law" element={<TrustLaw />} />
+          <Route path="jurisdictions/new-jersey" element={<NewJerseyJurisdiction />} />
           <Route path="cases" element={<LiveCaseManagement />} />
           <Route path="documents" element={<DocumentVault />} />
           <Route path="entities" element={<EntityGovernance />} />

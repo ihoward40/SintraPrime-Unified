@@ -32,3 +32,7 @@ Owns all FastAPI route handler modules. These are the API surface: the contract 
 ## Child DOX Index
 
 *(None - all router files are leaf modules.)*
+
+## Persistent Matter Intelligence Routes
+
+`matter_intelligence.py` owns authenticated `/api/v1/matters/{matter_id}/intelligence` routes for persistent parties, accounts, filings, communications, disputes, attachment metadata, assessments, assessment versions, reviews, and audit events. Routes delegate to `MatterIntelligenceService`, enforce `matter_intelligence:read`, `matter_intelligence:write`, or `matter_intelligence:review`, and preserve tenant/matter scope. Deadline, evidence-graph, export, and frontend routes are intentionally out of scope for Phase 2C-2.

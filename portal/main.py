@@ -27,6 +27,7 @@ from portal.routers import (
     clients,
     documents,
     jurisdictions,
+    matter_intelligence,
     messages,
     mission_control,
     mission_control_commands,
@@ -128,6 +129,7 @@ def create_app() -> FastAPI:
     app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
     app.include_router(documents.router, prefix="/api/v1/documents", tags=["documents"])
     app.include_router(jurisdictions.router)
+    app.include_router(matter_intelligence.router)
     app.include_router(trust_compliance.router)
     app.include_router(recovery.router)
     app.include_router(system_health.router)

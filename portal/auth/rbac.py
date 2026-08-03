@@ -129,6 +129,11 @@ class Permission(StrEnum):
     CASE_READ_PRIVATE_NOTES = "case:read_private_notes"
     CASE_CONFLICT_CHECK  = "case:conflict_check"
 
+    # Persistent matter intelligence
+    MATTER_INTELLIGENCE_READ = "matter_intelligence:read"
+    MATTER_INTELLIGENCE_WRITE = "matter_intelligence:write"
+    MATTER_INTELLIGENCE_REVIEW = "matter_intelligence:review"
+
     # Document management
     DOC_UPLOAD           = "document:upload"
     DOC_READ             = "document:read"
@@ -207,6 +212,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.CASE_CREATE, Permission.CASE_READ, Permission.CASE_UPDATE,
         Permission.CASE_DELETE, Permission.CASE_ASSIGN, Permission.CASE_CLOSE,
         Permission.CASE_READ_PRIVATE_NOTES, Permission.CASE_CONFLICT_CHECK,
+          Permission.MATTER_INTELLIGENCE_READ, Permission.MATTER_INTELLIGENCE_WRITE,
+          Permission.MATTER_INTELLIGENCE_REVIEW,
         # Documents
         Permission.DOC_UPLOAD, Permission.DOC_READ, Permission.DOC_UPDATE, Permission.DOC_DELETE,
         Permission.DOC_SHARE, Permission.DOC_SHARE_EXTERNAL, Permission.DOC_DOWNLOAD,
@@ -239,6 +246,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.CASE_CREATE, Permission.CASE_READ, Permission.CASE_UPDATE,
         Permission.CASE_ASSIGN, Permission.CASE_CLOSE,
         Permission.CASE_READ_PRIVATE_NOTES, Permission.CASE_CONFLICT_CHECK,
+          Permission.MATTER_INTELLIGENCE_READ, Permission.MATTER_INTELLIGENCE_WRITE,
+          Permission.MATTER_INTELLIGENCE_REVIEW,
         Permission.DOC_UPLOAD, Permission.DOC_READ, Permission.DOC_UPDATE,
         Permission.DOC_SHARE, Permission.DOC_SHARE_EXTERNAL, Permission.DOC_DOWNLOAD,
         Permission.DOC_VERSION, Permission.DOC_BULK, Permission.DOC_SIGN,
@@ -257,6 +266,7 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
 
     Role.PARALEGAL: frozenset([
         Permission.CLIENT_READ,
+        Permission.MATTER_INTELLIGENCE_READ, Permission.MATTER_INTELLIGENCE_WRITE,
         Permission.CASE_READ, Permission.CASE_UPDATE,
         Permission.DOC_UPLOAD, Permission.DOC_READ, Permission.DOC_DOWNLOAD,
         Permission.DOC_VERSION, Permission.DOC_BULK,
@@ -268,6 +278,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
 
     Role.ACCOUNTANT: frozenset([
         Permission.CLIENT_READ,
+        Permission.MATTER_INTELLIGENCE_READ, Permission.MATTER_INTELLIGENCE_WRITE,
+        Permission.MATTER_INTELLIGENCE_REVIEW,
         Permission.DOC_UPLOAD, Permission.DOC_READ, Permission.DOC_DOWNLOAD,
         Permission.BILLING_READ, Permission.BILLING_CREATE, Permission.BILLING_UPDATE,
         Permission.BILLING_TRUST, Permission.BILLING_REPORT, Permission.PAYMENT_PROCESS,

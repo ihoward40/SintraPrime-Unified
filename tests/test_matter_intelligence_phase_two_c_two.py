@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -42,6 +43,46 @@ def test_matter_intelligence_models_are_persistent_and_tenant_scoped():
         assert model.__tablename__ == table_name
         assert "tenant_id" in model.__table__.columns
         assert "matter_id" in model.__table__.columns
+
+
+def test_audit_chain_validation_detects_tampering():
+    first = SimpleNamespace(
+        matter_id="matter-1",
+        actor_id="actor-1",
+        action="party_created",
+        object_type="matter_party",
+        object_id="party-1",
+        details_redacted={},
+        previous_hash=None,
+        entry_hash="",
+    )
+    content = {
+        "matter_id": first.matter_id,
+        "actor_id": first.actor_id,
+        "action": first.action,
+        "object_type": first.object_type,
+        "object_id": first.object_id,
+        "details": first.details_redacted,
+        "previous_hash": first.previous_hash,
+    }
+    import hashlib
+    import json
+
+    first.entry_hash = hashlib.sha256(
+        json.dumps(content, sort_keys=True, default=str).encode("utf-8")
+    ).hexdigest()
+    second = SimpleNamespace(
+        matter_id="matter-1",
+        actor_id="actor-1",
+        action="assessment_created",
+        object_type="matter_assessment",
+        object_id="assessment-1",
+        details_redacted={"version": 1},
+        previous_hash=first.entry_hash,
+        entry_hash="tampered",
+    )
+    assert MatterIntelligenceService.validate_audit_chain([first])
+    assert not MatterIntelligenceService.validate_audit_chain([first, second])
 
 
 def test_matter_intelligence_roles_are_explicitly_gated():
@@ -128,3 +169,4 @@ def test_matter_migration_contains_down_contract_and_no_deadline_engine():
     assert "CREATE TABLE IF NOT EXISTS matter_audit_events" in migration
     assert "-- DOWN MIGRATION:" in migration
     assert "matter_deadlines" not in migration
+    assert not migration.rstrip().endswith('"""')

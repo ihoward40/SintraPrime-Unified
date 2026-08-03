@@ -644,6 +644,28 @@ class MatterIntelligenceService:
         )
         return _model_payload(assessment)
 
+    @staticmethod
+    def validate_audit_chain(events: list[Any]) -> bool:
+        """Validate the matter-local audit chain in chronological order."""
+        previous_hash: str | None = None
+        for event in events:
+            content = {
+                "matter_id": event.matter_id,
+                "actor_id": event.actor_id,
+                "action": event.action,
+                "object_type": event.object_type,
+                "object_id": event.object_id,
+                "details": event.details_redacted or {},
+                "previous_hash": previous_hash,
+            }
+            expected_hash = hashlib.sha256(
+                json.dumps(content, sort_keys=True, default=str).encode("utf-8")
+            ).hexdigest()
+            if event.previous_hash != previous_hash or event.entry_hash != expected_hash:
+                return False
+            previous_hash = event.entry_hash
+        return True
+
     async def audit_events(
         self, db: AsyncSession, matter_id: str, tenant_id: str
     ) -> list[dict[str, Any]]:

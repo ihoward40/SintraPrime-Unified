@@ -25,6 +25,7 @@ from portal.routers import (
     blackstone,
     cases,
     clients,
+    deadline_evidence,
     documents,
     jurisdictions,
     matter_intelligence,
@@ -129,6 +130,7 @@ def create_app() -> FastAPI:
     app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
     app.include_router(documents.router, prefix="/api/v1/documents", tags=["documents"])
     app.include_router(jurisdictions.router)
+    app.include_router(deadline_evidence.router)
     app.include_router(matter_intelligence.router)
     app.include_router(trust_compliance.router)
     app.include_router(recovery.router)

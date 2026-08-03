@@ -153,12 +153,12 @@ def test_matter_routes_require_authenticated_rbac_context():
     )
 
 
-def test_matter_routes_are_registered_without_deadline_or_frontend_surface():
+def test_matter_routes_are_registered_without_frontend_surface():
     app = create_app()
     paths = {route.path for route in app.routes}
     assert "/api/v1/matters/{matter_id}/intelligence/parties" in paths
     assert "/api/v1/matters/{matter_id}/intelligence/assessments/{assessment_id}/versions" in paths
-    assert not any("deadline" in path for path in paths if "matter" in path)
+    assert "/api/v1/matters/{matter_id}/intelligence/deadlines" in paths
 
 
 def test_matter_migration_contains_down_contract_and_no_deadline_engine():

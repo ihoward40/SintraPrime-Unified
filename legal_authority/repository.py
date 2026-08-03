@@ -1,13 +1,23 @@
-"""JSON-backed repository for Phase 1 legal authority data."""
+"""JSON-backed repository for governed legal authority data."""
 
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from functools import cached_property
 from pathlib import Path
 from typing import Any
 
-from legal_authority.models import ConflictRecord, JurisdictionRule, LegalAuthority
+from pydantic import BaseModel
+
+from legal_authority.models import (
+    AuditEvent,
+    ConflictRecord,
+    JurisdictionRule,
+    LegalAuthority,
+    LegalChallenge,
+    ProfessionalReview,
+)
 
 
 class LegalAuthorityRepository:
@@ -67,16 +77,87 @@ class LegalAuthorityRepository:
 
     @cached_property
     def conflicts(self) -> dict[str, ConflictRecord]:
-        path = self.data_root / "new_jersey" / "conflicts.json"
-        if not path.exists():
-            return {}
-        return {item["id"]: ConflictRecord.model_validate(item) for item in self._read_json(path)}
+        records: dict[str, ConflictRecord] = {}
+        for jurisdiction_dir in self._jurisdiction_dirs():
+            path = jurisdiction_dir / "conflicts.json"
+            if not path.exists():
+                continue
+            for item in self._read_json(path):
+                conflict = ConflictRecord.model_validate(item)
+                records[conflict.id] = conflict
+        return records
+
+    @cached_property
+    def reviews(self) -> dict[str, ProfessionalReview]:
+        records: dict[str, ProfessionalReview] = {}
+        for jurisdiction_dir in self._jurisdiction_dirs():
+            path = jurisdiction_dir / "reviews.json"
+            if not path.exists():
+                continue
+            for item in self._read_json(path):
+                review = ProfessionalReview.model_validate(item)
+                records[review.id] = review
+        return records
+
+    @cached_property
+    def challenges(self) -> dict[str, LegalChallenge]:
+        records: dict[str, LegalChallenge] = {}
+        for jurisdiction_dir in self._jurisdiction_dirs():
+            path = jurisdiction_dir / "challenges.json"
+            if not path.exists():
+                continue
+            for item in self._read_json(path):
+                challenge = LegalChallenge.model_validate(item)
+                records[challenge.id] = challenge
+        return records
+
+    @cached_property
+    def audit_events(self) -> dict[str, AuditEvent]:
+        records: dict[str, AuditEvent] = {}
+        for jurisdiction_dir in self._jurisdiction_dirs():
+            path = jurisdiction_dir / "audit_events.json"
+            if not path.exists():
+                continue
+            for item in self._read_json(path):
+                event = AuditEvent.model_validate(item)
+                records[event.id] = event
+        return records
 
     def get_authority(self, authority_id: str) -> LegalAuthority | None:
         return self.authorities.get(authority_id)
 
     def get_rule(self, rule_id: str) -> JurisdictionRule | None:
         return self.rules.get(rule_id)
+
+    def get_review(self, review_id: str) -> ProfessionalReview | None:
+        return self.reviews.get(review_id)
+
+    def get_challenge(self, challenge_id: str) -> LegalChallenge | None:
+        return self.challenges.get(challenge_id)
+
+    def reviews_for_rule(self, rule_id: str) -> list[ProfessionalReview]:
+        return sorted(
+            [review for review in self.reviews.values() if review.object_id == rule_id],
+            key=lambda review: review.reviewed_at
+            or review.expires_at
+            or datetime.min.replace(tzinfo=UTC),
+        )
+
+    def challenges_for_rule(self, rule_id: str) -> list[LegalChallenge]:
+        return sorted(
+            [challenge for challenge in self.challenges.values() if challenge.object_id == rule_id],
+            key=lambda challenge: challenge.created_at,
+        )
+
+    def conflicts_for_jurisdiction(self, jurisdiction: str) -> list[ConflictRecord]:
+        return sorted(
+            [
+                conflict
+                for conflict in self.conflicts.values()
+                if conflict.jurisdiction == jurisdiction.upper()
+            ],
+            key=lambda conflict: conflict.id,
+        )
 
     def query_rules(
         self,
@@ -113,13 +194,83 @@ class LegalAuthorityRepository:
             selected, key=lambda rule: (rule.jurisdiction, rule.domain, rule.topic, rule.id)
         )
 
+    def stale_authorities(self, jurisdiction: str) -> list[LegalAuthority]:
+        normalized = jurisdiction.upper()
+        return sorted(
+            [
+                authority
+                for authority in self.authorities.values()
+                if authority.jurisdiction == normalized
+                and (
+                    authority.change_detected
+                    or authority.source_availability_status
+                    in {"LOCATOR_ONLY", "BROKEN_LINK", "UNAVAILABLE"}
+                    or authority.manual_review_status in {"QUEUED", "INVALIDATED_PENDING_REVIEW"}
+                )
+            ],
+            key=lambda authority: authority.id,
+        )
+
     def authorities_for_rule(self, rule: JurisdictionRule) -> list[LegalAuthority]:
         return [self.authorities[authority_id] for authority_id in rule.authority_ids]
 
+    def append_review(self, review: ProfessionalReview) -> None:
+        self._append_jurisdiction_record(review.jurisdiction, "reviews.json", review)
+        self._clear_cache("reviews")
+
+    def append_challenge(self, challenge: LegalChallenge) -> None:
+        self._append_jurisdiction_record(challenge.jurisdiction, "challenges.json", challenge)
+        self._clear_cache("challenges")
+
+    def append_audit_event(self, jurisdiction: str, event: AuditEvent) -> None:
+        self._append_jurisdiction_record(jurisdiction, "audit_events.json", event)
+        self._clear_cache("audit_events")
+
+    def replace_authority(self, authority: LegalAuthority) -> None:
+        path = self._jurisdiction_dir(authority.jurisdiction) / "authorities.json"
+        records = self._read_json(path)
+        replaced = False
+        updated = authority.model_dump(mode="json")
+        for index, record in enumerate(records):
+            if record["id"] == authority.id:
+                records[index] = updated
+                replaced = True
+                break
+        if not replaced:
+            raise KeyError(authority.id)
+        self._write_json(path, records)
+        self._clear_cache("authorities")
+
+    def _append_jurisdiction_record(
+        self, jurisdiction: str, filename: str, model: BaseModel
+    ) -> None:
+        path = self._jurisdiction_dir(jurisdiction) / filename
+        records = self._read_json(path) if path.exists() else []
+        records.append(model.model_dump(mode="json"))
+        self._write_json(path, records)
+
     def _jurisdiction_dirs(self) -> list[Path]:
         return [path for path in self.data_root.iterdir() if path.is_dir()]
+
+    def _jurisdiction_dir(self, jurisdiction: str) -> Path:
+        normalized = jurisdiction.lower()
+        if normalized == "nj":
+            normalized = "new_jersey"
+        path = self.data_root / normalized
+        if not path.exists():
+            raise KeyError(jurisdiction)
+        return path
+
+    def _clear_cache(self, name: str) -> None:
+        self.__dict__.pop(name, None)
 
     @staticmethod
     def _read_json(path: Path) -> Any:
         with path.open("r", encoding="utf-8") as handle:
             return json.load(handle)
+
+    @staticmethod
+    def _write_json(path: Path, payload: Any) -> None:
+        with path.open("w", encoding="utf-8") as handle:
+            json.dump(payload, handle, indent=2, sort_keys=False)
+            handle.write("\n")

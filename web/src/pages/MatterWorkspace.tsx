@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -10,8 +10,10 @@ import {
   CircleDot,
   Clock3,
   FileCheck2,
+  FileJson,
   FileText,
   Fingerprint,
+  FileDown,
   GitBranch,
   History,
   Landmark,
@@ -24,6 +26,7 @@ import {
   UsersRound,
 } from 'lucide-react';
 import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
 import Badge, { type BadgeVariant } from '../components/ui/Badge';
 import { apiClient } from '../api/client';
 import { useAppStore } from '../store/appStore';
@@ -72,6 +75,9 @@ export default function MatterWorkspace() {
   const { matterId = 'matter-1' } = useParams<{ matterId: string }>();
   const user = useAppStore((state) => state.user);
   const canReview = user?.role === 'attorney';
+  const canExport = user?.role === 'attorney' || user?.role === 'admin';
+  const [exportingFormat, setExportingFormat] = useState<'JSON' | 'PDF' | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
   const base = `/matters/${encodeURIComponent(matterId)}/intelligence`;
   const parties = useQuery({ queryKey: ['matter', matterId, 'parties'], queryFn: () => fetchList<Party>(`${base}/parties`) });
   const accounts = useQuery({ queryKey: ['matter', matterId, 'accounts'], queryFn: () => fetchList<Account>(`${base}/accounts`) });
@@ -91,14 +97,35 @@ export default function MatterWorkspace() {
     ...deadlines.data?.map((item) => ({ date: item.due_at, label: item.title || 'Untitled deadline', detail: `${titleCase(item.deadline_type)} deadline`, icon: CalendarClock, tone: 'text-amber-400' })) || [],
     ...audit.data?.map((item) => ({ date: item.created_at, label: titleCase(item.action), detail: item.object_type || 'Audit event', icon: History, tone: 'text-slate-400' })) || [],
   ].sort((a, b) => (new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime())), [communications.data, deadlines.data, audit.data]);
-  const nodeById = useMemo(() => new Map((nodes.data || []).map((node) => [node.id, node])), [nodes.data]);
+  const nodeById = useMemo(() => new Map((nodes.data || []).map((node) => [node.id, node])), [nodes.data]);  const exportMatter = async (format: 'JSON' | 'PDF') => {
+    setExportingFormat(format);
+    setExportError(null);
+    try {
+      const response = await apiClient.post<Blob>(`/matters/${encodeURIComponent(matterId)}/exports`, { format }, { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: format === 'JSON' ? 'application/json' : 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `matter-${matterId}-export.${format.toLowerCase()}`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setExportError('The export could not be generated. Your authorization and the protected matter API were not changed.');
+    } finally {
+      setExportingFormat(null);
+    }
+  };
 
   return <main className="space-y-6" data-testid="matter-workspace">
     <header className="flex flex-col gap-4 border-b border-gold/20 pb-5 lg:flex-row lg:items-end lg:justify-between">
       <div><div className="flex flex-wrap items-center gap-2"><Badge variant="blue" size="sm" dot>Persistent matter</Badge><Badge variant={canReview ? 'green' : 'amber'} size="sm">{canReview ? 'Attorney review access' : 'Read-only review posture'}</Badge></div><h1 className="mt-3 text-3xl font-black tracking-tight text-white">Matter workspace</h1><p className="mt-1 font-mono text-xs text-slate-500">{matterId}</p></div>
-      <div className="flex items-center gap-2 border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-200"><LockKeyhole className="h-4 w-4" aria-hidden="true" /> Authorization is enforced by the API</div>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex items-center gap-2 border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-200"><LockKeyhole className="h-4 w-4" aria-hidden="true" /> Authorization is enforced by the API</div>
+        {canExport && <div className="flex flex-wrap gap-2" aria-label="Matter export actions"><Button variant="outline" size="sm" icon={FileJson} loading={exportingFormat === 'JSON'} disabled={exportingFormat !== null} onClick={() => void exportMatter('JSON')}>JSON export</Button><Button variant="outline" size="sm" icon={FileDown} loading={exportingFormat === 'PDF'} disabled={exportingFormat !== null} onClick={() => void exportMatter('PDF')}>PDF export</Button></div>}
+      </div>
     </header>
     <div className="border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-100" role="note"><ShieldAlert className="mr-2 inline h-4 w-4 text-amber-300" aria-hidden="true" />Educational and issue-spotting output only. This system does not provide a legal opinion or replace review by a licensed attorney.</div>
+    {exportError && <div className="border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-sm text-rose-200" role="alert">{exportError}</div>}
     {hasError && <div className="border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-sm text-rose-200" role="alert"><AlertTriangle className="mr-2 inline h-4 w-4" aria-hidden="true" />Some matter data could not be loaded. Protected API responses are not replaced with invented records.</div>}
     {isLoading && <div className="border border-slate-800 bg-slate-950/60 px-4 py-3 text-sm text-slate-400" role="status"><Clock3 className="mr-2 inline h-4 w-4 animate-pulse" aria-hidden="true" />Loading matter records...</div>}
 

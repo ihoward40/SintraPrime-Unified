@@ -1,6 +1,7 @@
 """
 Portal FastAPI application entry point with integrated trust layer.
 """
+
 import logging
 from contextlib import asynccontextmanager
 
@@ -28,6 +29,7 @@ from portal.routers import (
     deadline_evidence,
     documents,
     jurisdictions,
+    matter_export,
     matter_intelligence,
     messages,
     mission_control,
@@ -110,7 +112,7 @@ def create_app() -> FastAPI:
         allow_origins=settings.CORS_ORIGINS,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["*"]
+        allow_headers=["*"],
     )
 
     # Session Middleware (must come before routers that use request.session)
@@ -132,6 +134,7 @@ def create_app() -> FastAPI:
     app.include_router(jurisdictions.router)
     app.include_router(deadline_evidence.router)
     app.include_router(matter_intelligence.router)
+    app.include_router(matter_export.router)
     app.include_router(trust_compliance.router)
     app.include_router(recovery.router)
     app.include_router(system_health.router)
@@ -167,4 +170,5 @@ app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

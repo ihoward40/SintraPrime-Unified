@@ -35,4 +35,4 @@ Owns all FastAPI route handler modules. These are the API surface: the contract 
 
 ## Persistent Matter Intelligence Routes
 
-`matter_intelligence.py` and `deadline_evidence.py` own authenticated `/api/v1/matters/{matter_id}/intelligence` routes for persistent matter records, versioned deadlines, evidence nodes/links/findings, reviews, and audit events. Routes delegate to service layers, enforce `matter_intelligence:read`, `matter_intelligence:write`, or `matter_intelligence:review`, and preserve tenant/matter scope. Frontend matter views and export routes remain deferred.
+`matter_intelligence.py` and `deadline_evidence.py` own authenticated `/api/v1/matters/{matter_id}/intelligence` routes for persistent matter records, versioned deadlines, evidence nodes/links/findings, reviews, and audit events. Routes delegate to service layers, enforce `matter_intelligence:read`, `matter_intelligence:write`, or `matter_intelligence:review`, and preserve tenant/matter scope. Frontend matter views are implemented in the web subtree; `matter_export.py` owns authenticated JSON/PDF packet export routes and delegates packet assembly to `services/matter_export_service.py`.

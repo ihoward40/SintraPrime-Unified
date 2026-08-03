@@ -27,6 +27,8 @@ test.describe('Matter workspace', () => {
     await expect(page.getByText('Evidence graph is empty')).toBeVisible();
     await expect(page.getByText('No open findings')).toBeVisible();
     await expect(page.getByText('Read-only review posture')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'JSON export' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'PDF export' })).toBeVisible();
   });
 
   test('surfaces protected API failures without inventing matter records', async ({ page }) => {

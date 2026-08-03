@@ -133,6 +133,7 @@ class Permission(StrEnum):
     MATTER_INTELLIGENCE_READ = "matter_intelligence:read"
     MATTER_INTELLIGENCE_WRITE = "matter_intelligence:write"
     MATTER_INTELLIGENCE_REVIEW = "matter_intelligence:review"
+    MATTER_INTELLIGENCE_EXPORT = "matter_intelligence:export"
 
     # Document management
     DOC_UPLOAD           = "document:upload"
@@ -213,7 +214,7 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.CASE_DELETE, Permission.CASE_ASSIGN, Permission.CASE_CLOSE,
         Permission.CASE_READ_PRIVATE_NOTES, Permission.CASE_CONFLICT_CHECK,
           Permission.MATTER_INTELLIGENCE_READ, Permission.MATTER_INTELLIGENCE_WRITE,
-          Permission.MATTER_INTELLIGENCE_REVIEW,
+          Permission.MATTER_INTELLIGENCE_REVIEW, Permission.MATTER_INTELLIGENCE_EXPORT,
         # Documents
         Permission.DOC_UPLOAD, Permission.DOC_READ, Permission.DOC_UPDATE, Permission.DOC_DELETE,
         Permission.DOC_SHARE, Permission.DOC_SHARE_EXTERNAL, Permission.DOC_DOWNLOAD,
@@ -247,7 +248,7 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.CASE_ASSIGN, Permission.CASE_CLOSE,
         Permission.CASE_READ_PRIVATE_NOTES, Permission.CASE_CONFLICT_CHECK,
           Permission.MATTER_INTELLIGENCE_READ, Permission.MATTER_INTELLIGENCE_WRITE,
-          Permission.MATTER_INTELLIGENCE_REVIEW,
+          Permission.MATTER_INTELLIGENCE_REVIEW, Permission.MATTER_INTELLIGENCE_EXPORT,
         Permission.DOC_UPLOAD, Permission.DOC_READ, Permission.DOC_UPDATE,
         Permission.DOC_SHARE, Permission.DOC_SHARE_EXTERNAL, Permission.DOC_DOWNLOAD,
         Permission.DOC_VERSION, Permission.DOC_BULK, Permission.DOC_SIGN,

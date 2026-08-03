@@ -10,6 +10,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from legal_authority.constants import JURISDICTION_SLUGS, REQUIRED_JURISDICTION_PACKAGE_FILES
 from legal_authority.models import (
     AuditEvent,
     ConflictRecord,
@@ -249,14 +250,84 @@ class LegalAuthorityRepository:
         records.append(model.model_dump(mode="json"))
         self._write_json(path, records)
 
+    def validate_jurisdiction_packages(self) -> dict[str, Any]:
+        """Validate governed jurisdiction package structure and relationships."""
+        errors: list[str] = []
+        seen_authorities: set[str] = set()
+        seen_rules: set[str] = set()
+        loaded_authorities = self.authorities
+        loaded_rules = self.rules
+        for jurisdiction in self.list_jurisdictions():
+            code = jurisdiction["code"]
+            slug = JURISDICTION_SLUGS.get(code)
+            if not slug:
+                continue
+            package_dir = self.data_root / slug
+            if not package_dir.exists():
+                errors.append(f"{code}: missing package directory {slug}")
+                continue
+            missing_files = sorted(
+                name
+                for name in REQUIRED_JURISDICTION_PACKAGE_FILES
+                if not (package_dir / name).exists()
+            )
+            if missing_files:
+                errors.append(f"{code}: missing package files {missing_files}")
+
+            for raw in self._read_json(package_dir / "authorities.json"):
+                authority = LegalAuthority.model_validate(raw)
+                if authority.jurisdiction not in {code, "FED"}:
+                    errors.append(
+                        f"{code}: authority {authority.id} has jurisdiction {authority.jurisdiction}"
+                    )
+                if authority.id in seen_authorities:
+                    errors.append(f"duplicate authority id {authority.id}")
+                seen_authorities.add(authority.id)
+
+            for raw in self._read_json(package_dir / "rules.json"):
+                rule = JurisdictionRule.model_validate(raw)
+                if rule.jurisdiction != code:
+                    errors.append(f"{code}: rule {rule.id} has jurisdiction {rule.jurisdiction}")
+                if rule.id in seen_rules:
+                    errors.append(f"duplicate rule id {rule.id}")
+                seen_rules.add(rule.id)
+                missing_refs = [aid for aid in rule.authority_ids if aid not in loaded_authorities]
+                if missing_refs:
+                    errors.append(f"{code}: rule {rule.id} missing authorities {missing_refs}")
+                if rule.review_status == "APPROVED" and rule.requires_human_review:
+                    errors.append(f"{code}: rule {rule.id} bypasses human-review gate")
+
+            for filename, model_type in (
+                ("conflicts.json", ConflictRecord),
+                ("reviews.json", ProfessionalReview),
+                ("challenges.json", LegalChallenge),
+                ("audit_events.json", AuditEvent),
+            ):
+                path = package_dir / filename
+                for raw in self._read_json(path):
+                    record = model_type.model_validate(raw)
+                    record_jurisdiction = getattr(record, "jurisdiction", code)
+                    if record_jurisdiction != code:
+                        errors.append(
+                            f"{code}: {filename} record {getattr(record, 'id', 'unknown')} has jurisdiction {record_jurisdiction}"
+                        )
+
+        if errors:
+            raise ValueError("jurisdiction package validation failed: " + "; ".join(errors))
+        return {
+            "validated_packages": sorted(JURISDICTION_SLUGS.values()),
+            "authority_count": len(loaded_authorities),
+            "rule_count": len(loaded_rules),
+            "errors": [],
+        }
+
     def _jurisdiction_dirs(self) -> list[Path]:
-        return [path for path in self.data_root.iterdir() if path.is_dir()]
+        return sorted([path for path in self.data_root.iterdir() if path.is_dir()])
 
     def _jurisdiction_dir(self, jurisdiction: str) -> Path:
-        normalized = jurisdiction.lower()
-        if normalized == "nj":
-            normalized = "new_jersey"
-        path = self.data_root / normalized
+        normalized_code = jurisdiction.upper()
+        slug = JURISDICTION_SLUGS.get(normalized_code, normalized_code.lower())
+        path = self.data_root / slug
         if not path.exists():
             raise KeyError(jurisdiction)
         return path

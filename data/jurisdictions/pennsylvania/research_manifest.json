@@ -1,0 +1,394 @@
+{
+  "jurisdiction": "PA",
+  "generated_at": "2026-08-03T00:00:00Z",
+  "authority_count": 13,
+  "rule_count": 20,
+  "human_review_required": true,
+  "production_eligible": false,
+  "research_topics": [
+    {
+      "topic": "governing trust statute uniform trust act applicability",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "PA-TRUST-CH77"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "Pennsylvania Chapter 77 is the primary state trust-law framework for express trusts in this package.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "trust creation capacity purpose beneficiary oral trusts",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "PA-TRUST-CREATION-7731-7737"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "Pennsylvania trust creation uses statutory written methods and requirements; oral trusts are unenforceable.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "spendthrift validity support exceptions government claims",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "PA-TRUST-CREDITORS-7741-7748"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "A Pennsylvania spendthrift provision must restrain voluntary and involuntary transfer, subject to support, services, and government-claim exceptions.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "discretionary trusts mandatory overdue distributions beneficiary trustee",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "PA-TRUST-CREDITORS-7741-7748"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "Pennsylvania limits creditor-compelled discretionary distributions but treats overdue mandatory distributions separately.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "revocable trust settlor creditor self-settled power of withdrawal",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "PA-TRUST-CREDITORS-7741-7748"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "Pennsylvania creditor exposure for revocable trusts, settlor-benefit trusts, and withdrawal powers follows Chapter 77 creditor provisions.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "nonjudicial settlement representation virtual representation",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "PA-TRUST-CH77"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "Pennsylvania nonjudicial settlement and representation structures apply only within Chapter 77 limits and mandatory rules.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "modification reformation termination uneconomic tax objectives division combination",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "PA-TRUST-MODIFICATION-7740"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "Pennsylvania trust modification and termination may proceed by consent/court rules, uneconomic trust rules, tax-objective modification, division, or combination.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "decanting directed trusts trust protectors investment advisers distribution advisers",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "PA-TRUST-DIRECTED-7780H1",
+        "PA-TRUST-MODIFICATION-7740"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "Pennsylvania directed-trust and trust-protector provisions can authorize modification-like powers; decanting-style analysis needs instrument and Chapter 77 review.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "trustee acceptance resignation removal successor cotrustees bond compensation duties loyalty prudence recordkeeping reporting",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "PA-TRUST-ADMIN-7761-7780"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "Pennsylvania trustee rules cover acceptance, bonds, cotrustees, vacancy, resignation, removal, compensation, loyalty, prudence, delegation, recordkeeping, and reporting.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "exempt property household goods motor vehicle tools of trade retirement insurance annuity",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "PA-JUDGMENT-EXEMPTIONS-42-8121"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "Pennsylvania execution exemptions must be evaluated under 42 Pa.C.S. 8121-8128 and specific pension, insurance, annuity, support, or government-claim statutes.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "wage garnishment personal earnings support exceptions residential lease",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "PA-JUDGMENT-EXEMPTIONS-42-8121"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "Pennsylvania personal earnings are generally protected from ordinary process except statutory exceptions such as support and certain rent/residential-lease claims.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "tenancy by entirety creditor protection spouse claims",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "PA-JUDGMENT-EXEMPTIONS-42-8121"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "Pennsylvania tenancy-by-entirety treatment is issue-spotted as potentially protective against separate creditors but requires title, marital, joint-debt, and federal review.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "voidable transfer fraudulent transfer limitations remedies",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "PA-UVTA-12-5101"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "Pennsylvania voidable-transfer analysis requires creditor timing, actual-intent and constructive-transfer factors, remedies, and limitation/repose review.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "bank attachment levy deposit account exempt funds",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "PA-JUDGMENT-EXEMPTIONS-42-8121"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "Pennsylvania bank attachment and turnover exposure is procedural and is not automatically avoided by trust or account labels.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "resident trust fiduciary income tax PA source income inheritance tax",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "PA-TAX-TRUSTS-PA41"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "Pennsylvania trust-tax review must distinguish irrevocable taxpayer status, resident trust tests, PA-source income, PA-41 filing, inheritance tax, and professional tax review.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "UCC filing office central local fixture filings transmitting utility",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "PA-UCC-CH95",
+        "PA-DOS-UCC-GUIDANCE"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "Pennsylvania Article 9 filing uses the Department of State/Bureau central filing system except real-property-related local filing categories.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "trust debtor naming individual organization estate debtor",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "PA-UCC-9503"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "Pennsylvania UCC 9503 debtor-name rules distinguish organizations, individuals, trusts, and decedents estates.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "continuation window lapse ordinary five year financing statement",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "PA-UCC-9515-9520"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "An ordinary Pennsylvania financing statement is effective for five years and continuation can be filed only within six months before lapse unless a special duration applies.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "forms fees electronic filing rejection grounds search information statement privacy redaction",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "PA-DOS-UCC-GUIDANCE",
+        "PA-UCC-9515-9520"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "Pennsylvania filing-office guidance requires accepted forms, fees, exact debtor indexing, online attachment limits, and privacy redaction caution.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "bankruptcy spendthrift estate property fraudulent transfer automatic stay discharge",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "PA-TRUST-CREDITORS-7741-7748",
+        "PA-JUDGMENT-EXEMPTIONS-42-8121"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "Pennsylvania trust and exemption conclusions that intersect bankruptcy require federal bankruptcy review and are not filing advice.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    }
+  ]
+}

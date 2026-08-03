@@ -1,0 +1,378 @@
+{
+  "jurisdiction": "NY",
+  "generated_at": "2026-08-03T00:00:00Z",
+  "authority_count": 16,
+  "rule_count": 19,
+  "human_review_required": true,
+  "production_eligible": false,
+  "research_topics": [
+    {
+      "topic": "trust execution lifetime trust creation validity",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "NY-EPTL-7-1-17"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "A New York lifetime trust must be written and executed under EPTL 7-1.17 formalities; New York UTC adoption is not assumed.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "revocation amendment lifetime trust",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "NY-EPTL-7-1-17"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "New York lifetime trust amendments or revocations must be written and executed under EPTL 7-1.17 unless the instrument imposes additional controls.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "spendthrift validity statutory restraint transfer",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "NY-EPTL-7-1-5"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "New York restricts transfer of certain express-trust income interests; creditor access needs EPTL and enforcement review.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "self-settled asset protection settlor creditor exposure",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "NY-EPTL-7-3-1"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "A New York disposition in trust for the creator\u2019s use is void against existing or subsequent creditors; ordinary self-settled asset-protection treatment is not encoded as available.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "decanting trust merger division modification termination",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "NY-EPTL-10-6-6"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "New York decanting requires EPTL 10-6.6 and trust-discretion fact review.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "trustee accounting beneficiary information recordkeeping removal compensation bonds",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "NY-EPTL-7-2",
+        "NY-SCPA-TRUSTEE-ADMIN"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "New York trustee accounting, removal, and fiduciary administration require EPTL/SCPA analysis.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "bank restraint levy exempt funds protected benefits",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "NY-CPLR-5222-A"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "A New York restraint affecting a natural person bank account must follow CPLR 5222-a notices and exemption-claim procedures.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "wage garnishment income execution support exceptions",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "NY-CPLR-5231"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "New York income execution is capped by CPLR 5231 and federal consumer-credit limits; support orders may differ.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "homestead personal property exemptions household goods motor vehicle tools of trade",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "NY-CPLR-5205-5206"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "New York civil-enforcement exemptions are issue-spotted under CPLR Article 52; amounts and categories require current review.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "retirement protection insurance annuity exemptions",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "NY-EPTL-7-3-1",
+        "NY-CPLR-5205-5206"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "New York retirement, insurance, and annuity protections must be separated from self-settled trust exposure and bankruptcy-only analysis.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "voidable transfer actual intent constructive fraud limitations repose",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "NY-DCL-UVTA"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "New York UVTA analysis requires creditor timing, intent badges, value, insolvency, remedies, and limitation periods.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "tenancy by entirety creditor treatment",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "NY-CPLR-5205-5206"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "New York tenancy-by-entirety exposure is flagged for title, spouse, judgment, and property-location review.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "resident trust nonresident trust New York source income NYC fiduciary",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "NY-TAX-IT205-2025"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "New York trust taxation depends on resident-trust tests, source income, fiduciary filing status, and NYC/Yonkers overlays.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "UCC filing office central local fixture transmitting utility cooperative filing",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "NY-UCC-9-501",
+        "NY-DOS-UCC-FORMS-FEES"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "New York UCC filing is central with the Secretary of State except statutory real-property and transmitting-utility categories.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "trust debtor naming individual organization estate debtor",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "NY-UCC-9-503",
+        "NY-DOS-UCC-FORMS-FEES"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "New York UCC 9-503 debtor-name rules distinguish registered organizations, individuals, decedent estates, and trusts.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "continuation window lapse ordinary five year financing statement",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "NY-UCC-9-515-520"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "An ordinary New York financing statement generally lasts five years; continuation is effective only within the six-month window before lapse unless a special duration applies.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "filing office acceptance attachment enforceability security agreement value debtor rights",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "NY-UCC-9-515-520",
+        "NY-DOS-UCC-FORMS-FEES"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "A filing-office acknowledgment confirms receipt and indexing; it does not independently establish attachment, enforceability, ownership, priority, or validity of every collateral claim.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "filing office rejection grounds fees electronic filing search requests forms",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "NY-UCC-9-515-520",
+        "NY-DOS-UCC-FORMS-FEES",
+        "NY-DOS-UCC-RULES"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "New York UCC forms, fees, e-filing, search requests, and filing-office refusal issues require both Article 9 and DOS rules/guidance.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    },
+    {
+      "topic": "bankruptcy spendthrift estate property fraudulent transfer automatic stay discharge",
+      "research_status": "PRIMARY_AUTHORITY_LOCATED_RULE_ENCODED",
+      "primary_authorities": [
+        "NY-EPTL-7-3-1"
+      ],
+      "secondary_sources": [],
+      "rule_summary": "New York trust and creditor rules intersecting bankruptcy require federal bankruptcy review; no bankruptcy filing advice is encoded.",
+      "exceptions": [
+        {
+          "issue": "professional review",
+          "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+        }
+      ],
+      "open_questions": [
+        "Licensed professional review has not approved this rule for production use."
+      ],
+      "human_review_required": true
+    }
+  ]
+}

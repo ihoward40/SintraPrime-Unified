@@ -1,0 +1,693 @@
+[
+  {
+    "id": "NY-TRUST-LIFETIME-EXECUTION",
+    "jurisdiction": "NY",
+    "domain": "trust_law",
+    "topic": "trust execution lifetime trust creation validity",
+    "rule_statement": "A New York lifetime trust must be written and executed under EPTL 7-1.17 formalities; New York UTC adoption is not assumed.",
+    "rule_logic": {
+      "conditions": [
+        "trust_execution_lifetime_trust_creation_validity"
+      ],
+      "conclusion": "NY-TRUST-LIFETIME-EXECUTION"
+    },
+    "authority_ids": [
+      "NY-EPTL-7-1-17"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.9,
+    "requires_human_review": true,
+    "effective_from": "1997-12-25",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "professional review",
+        "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NY-TRUST-REVOCATION-AMENDMENT",
+    "jurisdiction": "NY",
+    "domain": "trust_law",
+    "topic": "revocation amendment lifetime trust",
+    "rule_statement": "New York lifetime trust amendments or revocations must be written and executed under EPTL 7-1.17 unless the instrument imposes additional controls.",
+    "rule_logic": {
+      "conditions": [
+        "revocation_amendment_lifetime_trust"
+      ],
+      "conclusion": "NY-TRUST-REVOCATION-AMENDMENT"
+    },
+    "authority_ids": [
+      "NY-EPTL-7-1-17"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.88,
+    "requires_human_review": true,
+    "effective_from": "1997-12-25",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "professional review",
+        "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NY-TRUST-SPENDTHRIFT-INCOME",
+    "jurisdiction": "NY",
+    "domain": "trust_law",
+    "topic": "spendthrift validity statutory restraint transfer",
+    "rule_statement": "New York restricts transfer of certain express-trust income interests; creditor access needs EPTL and enforcement review.",
+    "rule_logic": {
+      "conditions": [
+        "spendthrift_validity_statutory_restraint_transfer"
+      ],
+      "conclusion": "NY-TRUST-SPENDTHRIFT-INCOME"
+    },
+    "authority_ids": [
+      "NY-EPTL-7-1-5"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.82,
+    "requires_human_review": true,
+    "effective_from": "1967-09-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "professional review",
+        "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NY-TRUST-SELF-SETTLED-CREDITOR-EXPOSURE",
+    "jurisdiction": "NY",
+    "domain": "trust_law",
+    "topic": "self-settled asset protection settlor creditor exposure",
+    "rule_statement": "A New York disposition in trust for the creator\u2019s use is void against existing or subsequent creditors; ordinary self-settled asset-protection treatment is not encoded as available.",
+    "rule_logic": {
+      "conditions": [
+        "self-settled_asset_protection_settlor_creditor_exposure"
+      ],
+      "conclusion": "NY-TRUST-SELF-SETTLED-CREDITOR-EXPOSURE"
+    },
+    "authority_ids": [
+      "NY-EPTL-7-3-1"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.9,
+    "requires_human_review": true,
+    "effective_from": "1967-09-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "professional review",
+        "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NY-TRUST-DECANTING",
+    "jurisdiction": "NY",
+    "domain": "trust_law",
+    "topic": "decanting trust merger division modification termination",
+    "rule_statement": "New York decanting requires EPTL 10-6.6 and trust-discretion fact review.",
+    "rule_logic": {
+      "conditions": [
+        "decanting_trust_merger_division_modification_termination"
+      ],
+      "conclusion": "NY-TRUST-DECANTING"
+    },
+    "authority_ids": [
+      "NY-EPTL-10-6-6"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.82,
+    "requires_human_review": true,
+    "effective_from": "2011-08-17",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "professional review",
+        "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NY-TRUST-TRUSTEE-ACCOUNTING-ADMIN",
+    "jurisdiction": "NY",
+    "domain": "trust_law",
+    "topic": "trustee accounting beneficiary information recordkeeping removal compensation bonds",
+    "rule_statement": "New York trustee accounting, removal, and fiduciary administration require EPTL/SCPA analysis.",
+    "rule_logic": {
+      "conditions": [
+        "trustee_accounting_beneficiary_information_recordkeeping_removal_compensation_bonds"
+      ],
+      "conclusion": "NY-TRUST-TRUSTEE-ACCOUNTING-ADMIN"
+    },
+    "authority_ids": [
+      "NY-EPTL-7-2",
+      "NY-SCPA-TRUSTEE-ADMIN"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.74,
+    "requires_human_review": true,
+    "effective_from": "1967-09-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "professional review",
+        "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NY-CREDITOR-BANK-RESTRAINT-EXEMPT-FUNDS",
+    "jurisdiction": "NY",
+    "domain": "creditor_protection",
+    "topic": "bank restraint levy exempt funds protected benefits",
+    "rule_statement": "A New York restraint affecting a natural person bank account must follow CPLR 5222-a notices and exemption-claim procedures.",
+    "rule_logic": {
+      "conditions": [
+        "bank_restraint_levy_exempt_funds_protected_benefits"
+      ],
+      "conclusion": "NY-CREDITOR-BANK-RESTRAINT-EXEMPT-FUNDS"
+    },
+    "authority_ids": [
+      "NY-CPLR-5222-A"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.88,
+    "requires_human_review": true,
+    "effective_from": "2009-01-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "professional review",
+        "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "PROCEDURAL_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NY-CREDITOR-WAGE-INCOME-EXECUTION",
+    "jurisdiction": "NY",
+    "domain": "creditor_protection",
+    "topic": "wage garnishment income execution support exceptions",
+    "rule_statement": "New York income execution is capped by CPLR 5231 and federal consumer-credit limits; support orders may differ.",
+    "rule_logic": {
+      "conditions": [
+        "wage_garnishment_income_execution_support_exceptions"
+      ],
+      "conclusion": "NY-CREDITOR-WAGE-INCOME-EXECUTION"
+    },
+    "authority_ids": [
+      "NY-CPLR-5231"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.88,
+    "requires_human_review": true,
+    "effective_from": "1963-09-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "professional review",
+        "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "EXEMPTION_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NY-CREDITOR-HOMESTEAD-PERSONAL-EXEMPTIONS",
+    "jurisdiction": "NY",
+    "domain": "creditor_protection",
+    "topic": "homestead personal property exemptions household goods motor vehicle tools of trade",
+    "rule_statement": "New York civil-enforcement exemptions are issue-spotted under CPLR Article 52; amounts and categories require current review.",
+    "rule_logic": {
+      "conditions": [
+        "homestead_personal_property_exemptions_household_goods_motor_vehicle_tools_of_trade"
+      ],
+      "conclusion": "NY-CREDITOR-HOMESTEAD-PERSONAL-EXEMPTIONS"
+    },
+    "authority_ids": [
+      "NY-CPLR-5205-5206"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.76,
+    "requires_human_review": true,
+    "effective_from": "1963-09-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "professional review",
+        "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "EXEMPTION_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NY-CREDITOR-RETIREMENT-INSURANCE-ANNUITY",
+    "jurisdiction": "NY",
+    "domain": "creditor_protection",
+    "topic": "retirement protection insurance annuity exemptions",
+    "rule_statement": "New York retirement, insurance, and annuity protections must be separated from self-settled trust exposure and bankruptcy-only analysis.",
+    "rule_logic": {
+      "conditions": [
+        "retirement_protection_insurance_annuity_exemptions"
+      ],
+      "conclusion": "NY-CREDITOR-RETIREMENT-INSURANCE-ANNUITY"
+    },
+    "authority_ids": [
+      "NY-EPTL-7-3-1",
+      "NY-CPLR-5205-5206"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.75,
+    "requires_human_review": true,
+    "effective_from": "1967-09-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "professional review",
+        "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "EXEMPTION_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NY-CREDITOR-VOIDABLE-TRANSFER",
+    "jurisdiction": "NY",
+    "domain": "creditor_protection",
+    "topic": "voidable transfer actual intent constructive fraud limitations repose",
+    "rule_statement": "New York UVTA analysis requires creditor timing, intent badges, value, insolvency, remedies, and limitation periods.",
+    "rule_logic": {
+      "conditions": [
+        "voidable_transfer_actual_intent_constructive_fraud_limitations_repose"
+      ],
+      "conclusion": "NY-CREDITOR-VOIDABLE-TRANSFER"
+    },
+    "authority_ids": [
+      "NY-DCL-UVTA"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.82,
+    "requires_human_review": true,
+    "effective_from": "2020-04-04",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "professional review",
+        "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NY-CREDITOR-TENANCY-BY-ENTIRETY",
+    "jurisdiction": "NY",
+    "domain": "creditor_protection",
+    "topic": "tenancy by entirety creditor treatment",
+    "rule_statement": "New York tenancy-by-entirety exposure is flagged for title, spouse, judgment, and property-location review.",
+    "rule_logic": {
+      "conditions": [
+        "tenancy_by_entirety_creditor_treatment"
+      ],
+      "conclusion": "NY-CREDITOR-TENANCY-BY-ENTIRETY"
+    },
+    "authority_ids": [
+      "NY-CPLR-5205-5206"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.62,
+    "requires_human_review": true,
+    "effective_from": "1963-09-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "professional review",
+        "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "EXEMPTION_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NY-TAX-RESIDENT-TRUST",
+    "jurisdiction": "NY",
+    "domain": "trust_tax",
+    "topic": "resident trust nonresident trust New York source income NYC fiduciary",
+    "rule_statement": "New York trust taxation depends on resident-trust tests, source income, fiduciary filing status, and NYC/Yonkers overlays.",
+    "rule_logic": {
+      "conditions": [
+        "resident_trust_nonresident_trust_New_York_source_income_NYC_fiduciary"
+      ],
+      "conclusion": "NY-TAX-RESIDENT-TRUST"
+    },
+    "authority_ids": [
+      "NY-TAX-IT205-2025"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.75,
+    "requires_human_review": true,
+    "effective_from": "2025-01-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "professional review",
+        "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NY-UCC-FILING-OFFICE",
+    "jurisdiction": "NY",
+    "domain": "ucc_article9",
+    "topic": "UCC filing office central local fixture transmitting utility cooperative filing",
+    "rule_statement": "New York UCC filing is central with the Secretary of State except statutory real-property and transmitting-utility categories.",
+    "rule_logic": {
+      "conditions": [
+        "UCC_filing_office_central_local_fixture_transmitting_utility_cooperative_filing"
+      ],
+      "conclusion": "NY-UCC-FILING-OFFICE"
+    },
+    "authority_ids": [
+      "NY-UCC-9-501",
+      "NY-DOS-UCC-FORMS-FEES"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.9,
+    "requires_human_review": true,
+    "effective_from": "2013-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "professional review",
+        "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "PROCEDURAL_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NY-UCC-DEBTOR-NAMING-TRUSTS",
+    "jurisdiction": "NY",
+    "domain": "ucc_article9",
+    "topic": "trust debtor naming individual organization estate debtor",
+    "rule_statement": "New York UCC 9-503 debtor-name rules distinguish registered organizations, individuals, decedent estates, and trusts.",
+    "rule_logic": {
+      "conditions": [
+        "trust_debtor_naming_individual_organization_estate_debtor"
+      ],
+      "conclusion": "NY-UCC-DEBTOR-NAMING-TRUSTS"
+    },
+    "authority_ids": [
+      "NY-UCC-9-503",
+      "NY-DOS-UCC-FORMS-FEES"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.9,
+    "requires_human_review": true,
+    "effective_from": "2013-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "professional review",
+        "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "PROCEDURAL_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NY-UCC-CONTINUATION-WINDOW",
+    "jurisdiction": "NY",
+    "domain": "ucc_article9",
+    "topic": "continuation window lapse ordinary five year financing statement",
+    "rule_statement": "An ordinary New York financing statement generally lasts five years; continuation is effective only within the six-month window before lapse unless a special duration applies.",
+    "rule_logic": {
+      "conditions": [
+        "continuation_window_lapse_ordinary_five_year_financing_statement"
+      ],
+      "conclusion": "NY-UCC-CONTINUATION-WINDOW"
+    },
+    "authority_ids": [
+      "NY-UCC-9-515-520"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.9,
+    "requires_human_review": true,
+    "effective_from": "2013-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "professional review",
+        "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "PROCEDURAL_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NY-UCC-ACCEPTANCE-NOT-ATTACHMENT",
+    "jurisdiction": "NY",
+    "domain": "ucc_article9",
+    "topic": "filing office acceptance attachment enforceability security agreement value debtor rights",
+    "rule_statement": "A filing-office acknowledgment confirms receipt and indexing; it does not independently establish attachment, enforceability, ownership, priority, or validity of every collateral claim.",
+    "rule_logic": {
+      "conditions": [
+        "filing_office_acceptance_attachment_enforceability_security_agreement_value_debtor_rights"
+      ],
+      "conclusion": "NY-UCC-ACCEPTANCE-NOT-ATTACHMENT"
+    },
+    "authority_ids": [
+      "NY-UCC-9-515-520",
+      "NY-DOS-UCC-FORMS-FEES"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.88,
+    "requires_human_review": true,
+    "effective_from": "2013-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "professional review",
+        "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "PROCEDURAL_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NY-UCC-REFUSAL-FEES-EFILE",
+    "jurisdiction": "NY",
+    "domain": "ucc_article9",
+    "topic": "filing office rejection grounds fees electronic filing search requests forms",
+    "rule_statement": "New York UCC forms, fees, e-filing, search requests, and filing-office refusal issues require both Article 9 and DOS rules/guidance.",
+    "rule_logic": {
+      "conditions": [
+        "filing_office_rejection_grounds_fees_electronic_filing_search_requests_forms"
+      ],
+      "conclusion": "NY-UCC-REFUSAL-FEES-EFILE"
+    },
+    "authority_ids": [
+      "NY-UCC-9-515-520",
+      "NY-DOS-UCC-FORMS-FEES",
+      "NY-DOS-UCC-RULES"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.86,
+    "requires_human_review": true,
+    "effective_from": "2013-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "professional review",
+        "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "PROCEDURAL_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NY-BANKRUPTCY-TRUST-ISSUE-SPOT",
+    "jurisdiction": "NY",
+    "domain": "bankruptcy_overlay",
+    "topic": "bankruptcy spendthrift estate property fraudulent transfer automatic stay discharge",
+    "rule_statement": "New York trust and creditor rules intersecting bankruptcy require federal bankruptcy review; no bankruptcy filing advice is encoded.",
+    "rule_logic": {
+      "conditions": [
+        "bankruptcy_context_present"
+      ],
+      "conclusion": "FEDERAL_BANKRUPTCY_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NY-EPTL-7-3-1"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.58,
+    "requires_human_review": true,
+    "effective_from": "1967-09-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "professional review",
+        "rule": "Apply as issue spotting only until reviewed by licensed counsel."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "BANKRUPTCY_ONLY_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  }
+]

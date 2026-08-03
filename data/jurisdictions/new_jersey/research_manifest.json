@@ -1,24 +1,466 @@
 [
-  {"topic": "New Jersey Uniform Trust Code applicability", "research_status": "primary_authority_verified", "primary_authorities": ["NJ-UTC-2015-276"], "secondary_sources": [], "rule_summary": "UTC scope encoded for express and express-administered trusts.", "exceptions": ["Specific statutes, judgments, and decrees may alter administration."], "open_questions": [], "human_review_required": true},
-  {"topic": "Trust creation requirements", "research_status": "primary_authority_verified", "primary_authorities": ["NJ-UTC-CREATION-3B31-18-25"], "secondary_sources": [], "rule_summary": "Creation method, intent, property, duties, purpose, beneficiaries, and charitable/noncharitable exceptions captured.", "exceptions": ["Oral trust proof and execution facts."], "open_questions": ["No production execution checklist encoded."], "human_review_required": true},
-  {"topic": "Settlor capacity", "research_status": "primary_authority_verified", "primary_authorities": ["NJ-UTC-REVOCABLE-3B31-42-45"], "secondary_sources": [], "rule_summary": "Capacity is issue-spotted for trust creation, amendment, revocation, and property addition.", "exceptions": ["Undue influence and medical capacity facts."], "open_questions": [], "human_review_required": true},
-  {"topic": "Trust purpose and definite beneficiaries", "research_status": "primary_authority_verified", "primary_authorities": ["NJ-UTC-CREATION-3B31-18-25"], "secondary_sources": [], "rule_summary": "Valid purpose, charitable purposes, and beneficiary rules captured.", "exceptions": ["Animal and noncharitable purpose trusts require specific terms."], "open_questions": [], "human_review_required": true},
-  {"topic": "Charitable trusts", "research_status": "primary_authority_verified", "primary_authorities": ["NJ-UTC-CREATION-3B31-18-25", "NJ-UTC-NJSA-3B31-11-26-34"], "secondary_sources": [], "rule_summary": "Charitable purpose and cy pres/modification pathways captured.", "exceptions": ["Attorney General or charitable enforcement practice not fully encoded."], "open_questions": ["Confirm notice/enforcement practice before production."], "human_review_required": true},
-  {"topic": "Oral trusts", "research_status": "primary_authority_partial", "primary_authorities": ["NJ-UTC-CREATION-3B31-18-25"], "secondary_sources": [], "rule_summary": "Oral trust topic is flagged for evidence and statute-of-frauds review.", "exceptions": ["Real property and evidentiary standards."], "open_questions": ["Detailed oral trust evidentiary rule not production encoded."], "human_review_required": true},
-  {"topic": "Governing law and principal place of administration", "research_status": "primary_authority_verified", "primary_authorities": ["NJ-UTC-GOVLAW-3B31-7-8"], "secondary_sources": [], "rule_summary": "Choice of governing law and administration contacts captured.", "exceptions": ["Conflict-of-laws issues."], "open_questions": [], "human_review_required": true},
-  {"topic": "Trust registration", "research_status": "open_question", "primary_authorities": ["NJ-UTC-GOVLAW-3B31-7-8"], "secondary_sources": [], "rule_summary": "Registration is not production encoded; routed to human review.", "exceptions": [], "open_questions": ["Identify any court-specific registration mechanism or absence thereof."], "human_review_required": true},
-  {"topic": "Certification of trust", "research_status": "primary_authority_verified", "primary_authorities": ["NJ-UTC-LIABILITY-3B31-70-81"], "secondary_sources": [], "rule_summary": "Certification of trust is available as an issue-spotted pathway.", "exceptions": ["Transaction-specific recipient requirements."], "open_questions": [], "human_review_required": true},
-  {"topic": "Trustee acceptance resignation removal successor co-trustees", "research_status": "primary_authority_verified", "primary_authorities": ["NJ-UTC-TRUSTEES-3B31-46-53"], "secondary_sources": [], "rule_summary": "Trustee lifecycle provisions encoded.", "exceptions": ["Court orders and trust terms."], "open_questions": [], "human_review_required": true},
-  {"topic": "Trustee powers and duties", "research_status": "primary_authority_verified", "primary_authorities": ["NJ-UTC-DUTIES-3B31-54-69"], "secondary_sources": [], "rule_summary": "Duties of loyalty, prudence, impartiality, recordkeeping, reporting, disclosure, and powers captured.", "exceptions": ["Mandatory/default split and investment facts."], "open_questions": [], "human_review_required": true},
-  {"topic": "Trustee compensation liability limitation periods", "research_status": "primary_authority_partial", "primary_authorities": ["NJ-UTC-LIABILITY-3B31-70-81", "NJ-UTC-DUTIES-3B31-54-69"], "secondary_sources": [], "rule_summary": "Liability, remedies, limitation period, reliance, and exculpation topics captured; compensation left review-gated.", "exceptions": ["Fee statute and local fiduciary practice."], "open_questions": ["Encode compensation-specific authority in Phase 2."], "human_review_required": true},
-  {"topic": "Modification reformation termination NJSA uneconomic trust decanting", "research_status": "primary_authority_partial", "primary_authorities": ["NJ-UTC-NJSA-3B31-11-26-34"], "secondary_sources": [], "rule_summary": "Modification, reformation, termination, NJSA, uneconomic trust, tax modification, combination, and division captured; decanting left open.", "exceptions": ["Representation, consent, charitable trust, and court approval issues."], "open_questions": ["Confirm New Jersey decanting authority before encoding."], "human_review_required": true},
-  {"topic": "Spendthrift discretionary mandatory overdue creditor exceptions", "research_status": "primary_authority_verified", "primary_authorities": ["NJ-UTC-CREDITORS-3B31-35-41"], "secondary_sources": [], "rule_summary": "Spendthrift, discretionary, mandatory, overdue distribution, settlor-creditor, and exceptions captured as warnings.", "exceptions": ["Support orders, government claims, bankruptcy."], "open_questions": [], "human_review_required": true},
-  {"topic": "Revocable irrevocable self-settled trust exposure powers of withdrawal beneficiary trustee", "research_status": "primary_authority_verified", "primary_authorities": ["NJ-UTC-CREDITORS-3B31-35-41", "NJ-UTC-REVOCABLE-3B31-42-45"], "secondary_sources": [], "rule_summary": "Exposure warnings encoded for revocable trusts and irrevocable settlor-benefit/control issues.", "exceptions": ["Federal tax and bankruptcy overlays."], "open_questions": [], "human_review_required": true},
-  {"topic": "Uniform Voidable Transactions Act", "research_status": "primary_authority_verified", "primary_authorities": ["NJ-UVTA-2021-92"], "secondary_sources": ["NJ Law Revision Commission project page used as locator only"], "rule_summary": "Actual-intent, constructive, creditor timing, limitation, governing-law, and bankruptcy-overlay warnings captured.", "exceptions": ["Fact-specific insolvency and intent."], "open_questions": [], "human_review_required": true},
-  {"topic": "Exemptions garnishment levy retirement insurance annuity TBE homestead support government bankruptcy", "research_status": "research_in_progress", "primary_authorities": ["NJ-UVTA-2021-92"], "secondary_sources": [], "rule_summary": "Collection/exemption topics are routed to human review and not marked primary complete.", "exceptions": ["Federal and state exemption details."], "open_questions": ["Encode specific New Jersey exemption authorities in Phase 2."], "human_review_required": true},
-  {"topic": "UCC filing office central local fixture transmitting utility", "research_status": "primary_authority_verified", "primary_authorities": ["NJ-UCC9-2001-117", "NJ-DORES-UCC-FILING-GUIDANCE-2025"], "secondary_sources": [], "rule_summary": "Central/local filing office and fixture/transmitting utility distinctions captured.", "exceptions": ["Collateral and real-property facts."], "open_questions": [], "human_review_required": true},
-  {"topic": "UCC debtor naming organizations individuals trusts", "research_status": "primary_authority_verified", "primary_authorities": ["NJ-UCC9-2013-65-DEBTOR-NAME"], "secondary_sources": [], "rule_summary": "Registered organization, individual, and trust debtor naming rules captured.", "exceptions": ["Current public organic record and driver's license facts."], "open_questions": [], "human_review_required": true},
-  {"topic": "UCC financing statements amendments assignments continuations terminations information statements lapse", "research_status": "primary_authority_verified", "primary_authorities": ["NJ-UCC9-2001-117", "NJ-DORES-UCC-FILING-GUIDANCE-2025"], "secondary_sources": [], "rule_summary": "UCC lifecycle topics captured with continuation/lapse warning.", "exceptions": ["Actual lapse date and authorization facts."], "open_questions": [], "human_review_required": true},
-  {"topic": "UCC rejection grounds search requests search logic fees electronic filing", "research_status": "primary_authority_partial", "primary_authorities": ["NJ-NJAC-17-33-UCC-RULES", "NJ-DORES-UCC-FILING-GUIDANCE-2025", "NJ-DORES-UCC-FEES-2026"], "secondary_sources": ["Cornell LII regulation copy used as locator for N.J.A.C. 17:33"], "rule_summary": "Filing rejection, search, fee, and electronic filing topics captured with official-code limitation.", "exceptions": ["Official N.J.A.C. text check required."], "open_questions": ["Acquire official New Jersey Administrative Code text for production."], "human_review_required": true},
-  {"topic": "Unsupported private law claims", "research_status": "quarantined", "primary_authorities": ["NJ-PRIVATE-UNSUPPORTED-BANK-SIGNATURE-CARD"], "secondary_sources": [], "rule_summary": "Unsupported bank signature card levy claim quarantined and excluded from active rules.", "exceptions": [], "open_questions": [], "human_review_required": true}
+  {
+    "topic": "New Jersey Uniform Trust Code applicability",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "NJ-UTC-2015-276"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "UTC scope encoded for express and express-administered trusts.",
+    "exceptions": [
+      "Specific statutes, judgments, and decrees may alter administration."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Trust creation requirements",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "NJ-UTC-CREATION-3B31-18-25"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Creation method, intent, property, duties, purpose, beneficiaries, and charitable/noncharitable exceptions captured.",
+    "exceptions": [
+      "Oral trust proof and execution facts."
+    ],
+    "open_questions": [
+      "No production execution checklist encoded."
+    ],
+    "human_review_required": true
+  },
+  {
+    "topic": "Settlor capacity",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "NJ-UTC-REVOCABLE-3B31-42-45"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Capacity is issue-spotted for trust creation, amendment, revocation, and property addition.",
+    "exceptions": [
+      "Undue influence and medical capacity facts."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Trust purpose and definite beneficiaries",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "NJ-UTC-CREATION-3B31-18-25"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Valid purpose, charitable purposes, and beneficiary rules captured.",
+    "exceptions": [
+      "Animal and noncharitable purpose trusts require specific terms."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Charitable trusts",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "NJ-UTC-CREATION-3B31-18-25",
+      "NJ-UTC-NJSA-3B31-11-26-34"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Charitable purpose and cy pres/modification pathways captured.",
+    "exceptions": [
+      "Attorney General or charitable enforcement practice not fully encoded."
+    ],
+    "open_questions": [
+      "Confirm notice/enforcement practice before production."
+    ],
+    "human_review_required": true
+  },
+  {
+    "topic": "Oral trusts",
+    "research_status": "primary_authority_partial",
+    "primary_authorities": [
+      "NJ-UTC-CREATION-3B31-18-25"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Oral trust topic is flagged for evidence and statute-of-frauds review.",
+    "exceptions": [
+      "Real property and evidentiary standards."
+    ],
+    "open_questions": [
+      "Detailed oral trust evidentiary rule not production encoded."
+    ],
+    "human_review_required": true
+  },
+  {
+    "topic": "Governing law and principal place of administration",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "NJ-UTC-GOVLAW-3B31-7-8"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Choice of governing law and administration contacts captured.",
+    "exceptions": [
+      "Conflict-of-laws issues."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Trust registration",
+    "research_status": "open_question",
+    "primary_authorities": [
+      "NJ-UTC-GOVLAW-3B31-7-8"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Registration is not production encoded; routed to human review.",
+    "exceptions": [],
+    "open_questions": [
+      "Identify any court-specific registration mechanism or absence thereof."
+    ],
+    "human_review_required": true
+  },
+  {
+    "topic": "Certification of trust",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "NJ-UTC-LIABILITY-3B31-70-81"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Certification of trust is available as an issue-spotted pathway.",
+    "exceptions": [
+      "Transaction-specific recipient requirements."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Trustee acceptance resignation removal successor co-trustees",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "NJ-UTC-TRUSTEES-3B31-46-53"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Trustee lifecycle provisions encoded.",
+    "exceptions": [
+      "Court orders and trust terms."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Trustee powers and duties",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "NJ-UTC-DUTIES-3B31-54-69"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Duties of loyalty, prudence, impartiality, recordkeeping, reporting, disclosure, and powers captured.",
+    "exceptions": [
+      "Mandatory/default split and investment facts."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Trustee compensation liability limitation periods",
+    "research_status": "primary_authority_partial",
+    "primary_authorities": [
+      "NJ-UTC-LIABILITY-3B31-70-81",
+      "NJ-UTC-DUTIES-3B31-54-69"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Liability, remedies, limitation period, reliance, and exculpation topics captured; compensation left review-gated.",
+    "exceptions": [
+      "Fee statute and local fiduciary practice."
+    ],
+    "open_questions": [
+      "Encode compensation-specific authority in Phase 2."
+    ],
+    "human_review_required": true
+  },
+  {
+    "topic": "Modification reformation termination NJSA uneconomic trust decanting",
+    "research_status": "primary_authority_partial",
+    "primary_authorities": [
+      "NJ-UTC-NJSA-3B31-11-26-34"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Modification, reformation, termination, NJSA, uneconomic trust, tax modification, combination, and division captured; decanting left open.",
+    "exceptions": [
+      "Representation, consent, charitable trust, and court approval issues."
+    ],
+    "open_questions": [
+      "Confirm New Jersey decanting authority before encoding."
+    ],
+    "human_review_required": true
+  },
+  {
+    "topic": "Spendthrift discretionary mandatory overdue creditor exceptions",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "NJ-UTC-CREDITORS-3B31-35-41"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Spendthrift, discretionary, mandatory, overdue distribution, settlor-creditor, and exceptions captured as warnings.",
+    "exceptions": [
+      "Support orders, government claims, bankruptcy."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Revocable irrevocable self-settled trust exposure powers of withdrawal beneficiary trustee",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "NJ-UTC-CREDITORS-3B31-35-41",
+      "NJ-UTC-REVOCABLE-3B31-42-45"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Exposure warnings encoded for revocable trusts and irrevocable settlor-benefit/control issues.",
+    "exceptions": [
+      "Federal tax and bankruptcy overlays."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Uniform Voidable Transactions Act",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "NJ-UVTA-2021-92"
+    ],
+    "secondary_sources": [
+      "NJ Law Revision Commission project page used as locator only"
+    ],
+    "rule_summary": "Actual-intent, constructive, creditor timing, limitation, governing-law, and bankruptcy-overlay warnings captured.",
+    "exceptions": [
+      "Fact-specific insolvency and intent."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Exemptions garnishment levy retirement insurance annuity TBE homestead support government bankruptcy",
+    "research_status": "research_in_progress",
+    "primary_authorities": [
+      "NJ-UVTA-2021-92"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Collection/exemption topics are routed to human review and not marked primary complete.",
+    "exceptions": [
+      "Federal and state exemption details."
+    ],
+    "open_questions": [
+      "Encode specific New Jersey exemption authorities in Phase 2."
+    ],
+    "human_review_required": true
+  },
+  {
+    "topic": "UCC filing office central local fixture transmitting utility",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "NJ-UCC9-2001-117",
+      "NJ-DORES-UCC-FILING-GUIDANCE-2025"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Central/local filing office and fixture/transmitting utility distinctions captured.",
+    "exceptions": [
+      "Collateral and real-property facts."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "UCC debtor naming organizations individuals trusts",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "NJ-UCC9-2013-65-DEBTOR-NAME"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Registered organization, individual, and trust debtor naming rules captured.",
+    "exceptions": [
+      "Current public organic record and driver's license facts."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "UCC financing statements amendments assignments continuations terminations information statements lapse",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "NJ-UCC9-2001-117",
+      "NJ-DORES-UCC-FILING-GUIDANCE-2025"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "UCC lifecycle topics captured with continuation/lapse warning.",
+    "exceptions": [
+      "Actual lapse date and authorization facts."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "UCC rejection grounds search requests search logic fees electronic filing",
+    "research_status": "primary_authority_partial",
+    "primary_authorities": [
+      "NJ-NJAC-17-33-UCC-RULES",
+      "NJ-DORES-UCC-FILING-GUIDANCE-2025",
+      "NJ-DORES-UCC-FEES-2026"
+    ],
+    "secondary_sources": [
+      "Cornell LII regulation copy used as locator for N.J.A.C. 17:33"
+    ],
+    "rule_summary": "Filing rejection, search, fee, and electronic filing topics captured with official-code limitation.",
+    "exceptions": [
+      "Official N.J.A.C. text check required."
+    ],
+    "open_questions": [
+      "Acquire official New Jersey Administrative Code text for production."
+    ],
+    "human_review_required": true
+  },
+  {
+    "topic": "Unsupported private law claims",
+    "research_status": "quarantined",
+    "primary_authorities": [
+      "NJ-PRIVATE-UNSUPPORTED-BANK-SIGNATURE-CARD"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Unsupported bank signature card levy claim quarantined and excluded from active rules.",
+    "exceptions": [],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "wage execution and garnishment limits",
+    "research_status": "PRIMARY_AUTHORITY_PARTIAL",
+    "primary_authorities": [
+      "NJ-EXEC-WAGE-2A17-56"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Phase 2A encoded issue-spotting rules with professional-review gates and provenance.",
+    "exceptions": [
+      "Educational and issue-spotting only; no production legal opinion."
+    ],
+    "open_questions": [
+      "Licensed-attorney review has not occurred.",
+      "Official compiled source confirmation may be required for locator-only records."
+    ],
+    "human_review_required": true,
+    "rule_ids": [
+      "NJ-CREDITOR-WAGE-EXECUTION-LIMITS"
+    ]
+  },
+  {
+    "topic": "bank levy, exempt funds, and turnover procedure",
+    "research_status": "PRIMARY_AUTHORITY_PARTIAL",
+    "primary_authorities": [
+      "NJ-COURTS-JUDGMENT-COLLECTION",
+      "FED-SS-42USC407",
+      "FED-VA-38USC5301",
+      "FED-GARNISHMENT-31CFR212"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Phase 2A encoded issue-spotting rules with professional-review gates and provenance.",
+    "exceptions": [
+      "Educational and issue-spotting only; no production legal opinion."
+    ],
+    "open_questions": [
+      "Licensed-attorney review has not occurred.",
+      "Official compiled source confirmation may be required for locator-only records."
+    ],
+    "human_review_required": true,
+    "rule_ids": [
+      "NJ-CREDITOR-BANK-LEVY-TURNOVER",
+      "NJ-CREDITOR-EXEMPT-BENEFITS-DEPOSIT-ACCOUNTS"
+    ]
+  },
+  {
+    "topic": "retirement, pension, and property exemptions",
+    "research_status": "PRIMARY_AUTHORITY_PARTIAL",
+    "primary_authorities": [
+      "NJ-PENSION-EXEMPTIONS-43-8A-20-43-19-17",
+      "NJ-EXEC-PERSONAL-PROPERTY-2A17-19-20"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Phase 2A encoded issue-spotting rules with professional-review gates and provenance.",
+    "exceptions": [
+      "Educational and issue-spotting only; no production legal opinion."
+    ],
+    "open_questions": [
+      "Licensed-attorney review has not occurred.",
+      "Official compiled source confirmation may be required for locator-only records."
+    ],
+    "human_review_required": true,
+    "rule_ids": [
+      "NJ-CREDITOR-RETIREMENT-PENSION-PROTECTION",
+      "NJ-CREDITOR-PROPERTY-EXEMPTIONS"
+    ]
+  },
+  {
+    "topic": "bankruptcy interface",
+    "research_status": "FEDERAL_BANKRUPTCY_REVIEW_REQUIRED",
+    "primary_authorities": [
+      "FED-BANKRUPTCY-11USC-522-541-548"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Phase 2A encoded issue-spotting rules with professional-review gates and provenance.",
+    "exceptions": [
+      "Educational and issue-spotting only; no production legal opinion."
+    ],
+    "open_questions": [
+      "Licensed-attorney review has not occurred.",
+      "Official compiled source confirmation may be required for locator-only records."
+    ],
+    "human_review_required": true,
+    "rule_ids": [
+      "NJ-BANKRUPTCY-TRUST-ASSET-EXPOSURE"
+    ]
+  },
+  {
+    "topic": "trust administration depth",
+    "research_status": "PRIMARY_AUTHORITY_PARTIAL",
+    "primary_authorities": [
+      "NJ-UTC-2015-276",
+      "NJ-UPIA-2001-212",
+      "NJ-MEDICAID-TRUSTS-NJAC-10-71-4-11"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Phase 2A encoded issue-spotting rules with professional-review gates and provenance.",
+    "exceptions": [
+      "Educational and issue-spotting only; no production legal opinion."
+    ],
+    "open_questions": [
+      "Licensed-attorney review has not occurred.",
+      "Official compiled source confirmation may be required for locator-only records."
+    ],
+    "human_review_required": true,
+    "rule_ids": [
+      "NJ-TRUST-DECANTING-UNSUPPORTED",
+      "NJ-TRUST-DIRECTED-TRUSTS-PROTECTORS-ADVISERS",
+      "NJ-TRUST-VIRTUAL-REPRESENTATION-NJSA",
+      "NJ-TRUST-PRINCIPAL-INCOME-DIGITAL-ASSETS-TAX-SNT-CHARITY"
+    ]
+  },
+  {
+    "topic": "N.J.A.C. 17:33 official source verification",
+    "research_status": "LOCATOR_ONLY_REVIEW_REQUIRED",
+    "primary_authorities": [
+      "NJ-NJAC-17-33-UCC-RULES",
+      "NJ-OAL-NJAC-PUBLIC-ACCESS",
+      "NJ-TREASURY-UCC-RULE-ADOPTION-2023"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Phase 2A encoded issue-spotting rules with professional-review gates and provenance.",
+    "exceptions": [
+      "Educational and issue-spotting only; no production legal opinion."
+    ],
+    "open_questions": [
+      "Licensed-attorney review has not occurred.",
+      "Official compiled source confirmation may be required for locator-only records."
+    ],
+    "human_review_required": true,
+    "rule_ids": [
+      "NJ-UCC-NJAC-17-33-OFFICIAL-SOURCE-LIMITATION"
+    ]
+  }
 ]

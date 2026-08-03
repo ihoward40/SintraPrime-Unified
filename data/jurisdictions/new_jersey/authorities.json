@@ -19,8 +19,17 @@
     "authority_weight": 850,
     "summary": "Enacts New Jersey's Uniform Trust Code, including trust creation, administration, creditor claims, trustee duties, modification, termination, certification, and transition provisions.",
     "quoted_text": null,
-    "limitations": ["Source verification is not professional legal approval.", "Session law should be checked against current compiled statutes before professional use."],
-    "tags": ["trust", "utc", "formation", "administration", "creditors"],
+    "limitations": [
+      "Source verification is not professional legal approval.",
+      "Session law should be checked against current compiled statutes before professional use."
+    ],
+    "tags": [
+      "trust",
+      "utc",
+      "formation",
+      "administration",
+      "creditors"
+    ],
     "content_hash": null,
     "created_at": "2026-08-03T00:00:00Z",
     "updated_at": "2026-08-03T00:00:00Z"
@@ -45,8 +54,16 @@
     "authority_weight": 850,
     "summary": "Covers methods of creating a trust, creation requirements, trust purposes, charitable purposes, fraud or duress, animal trusts, and noncharitable trusts without ascertainable beneficiaries.",
     "quoted_text": null,
-    "limitations": ["Does not resolve fact-specific capacity, undue influence, or execution disputes."],
-    "tags": ["trust", "creation", "capacity", "beneficiaries", "charitable"],
+    "limitations": [
+      "Does not resolve fact-specific capacity, undue influence, or execution disputes."
+    ],
+    "tags": [
+      "trust",
+      "creation",
+      "capacity",
+      "beneficiaries",
+      "charitable"
+    ],
     "content_hash": null,
     "created_at": "2026-08-03T00:00:00Z",
     "updated_at": "2026-08-03T00:00:00Z"
@@ -71,8 +88,14 @@
     "authority_weight": 850,
     "summary": "Addresses governing law selected in trust terms and trustee duties around principal place of administration.",
     "quoted_text": null,
-    "limitations": ["Choice-of-law clauses may require conflict-of-laws analysis."],
-    "tags": ["trust", "governing_law", "administration"],
+    "limitations": [
+      "Choice-of-law clauses may require conflict-of-laws analysis."
+    ],
+    "tags": [
+      "trust",
+      "governing_law",
+      "administration"
+    ],
     "content_hash": null,
     "created_at": "2026-08-03T00:00:00Z",
     "updated_at": "2026-08-03T00:00:00Z"
@@ -97,8 +120,16 @@
     "authority_weight": 850,
     "summary": "Provides routes for nonjudicial settlement agreements, consent modification, unanticipated circumstances, cy pres, uneconomic trust termination, reformation, tax modification, and combination or division.",
     "quoted_text": null,
-    "limitations": ["Court approval and representation issues may alter available modification paths."],
-    "tags": ["trust", "modification", "termination", "njsa", "reformation"],
+    "limitations": [
+      "Court approval and representation issues may alter available modification paths."
+    ],
+    "tags": [
+      "trust",
+      "modification",
+      "termination",
+      "njsa",
+      "reformation"
+    ],
     "content_hash": null,
     "created_at": "2026-08-03T00:00:00Z",
     "updated_at": "2026-08-03T00:00:00Z"
@@ -123,8 +154,16 @@
     "authority_weight": 850,
     "summary": "Defines beneficiary creditor rights, spendthrift protection, discretionary trust treatment, settlor-creditor exposure, overdue mandatory distributions, and trustee personal obligations.",
     "quoted_text": null,
-    "limitations": ["Exceptions, support orders, bankruptcy, and fraudulent transfer overlays require separate review."],
-    "tags": ["trust", "creditors", "spendthrift", "discretionary", "settlor"],
+    "limitations": [
+      "Exceptions, support orders, bankruptcy, and fraudulent transfer overlays require separate review."
+    ],
+    "tags": [
+      "trust",
+      "creditors",
+      "spendthrift",
+      "discretionary",
+      "settlor"
+    ],
     "content_hash": null,
     "created_at": "2026-08-03T00:00:00Z",
     "updated_at": "2026-08-03T00:00:00Z"
@@ -149,8 +188,15 @@
     "authority_weight": 850,
     "summary": "Covers capacity to create, amend, revoke, or add property to revocable trusts and the holder of settlor powers during revocability.",
     "quoted_text": null,
-    "limitations": ["Does not determine creditor priority or probate contest facts."],
-    "tags": ["trust", "revocable", "capacity", "settlor"],
+    "limitations": [
+      "Does not determine creditor priority or probate contest facts."
+    ],
+    "tags": [
+      "trust",
+      "revocable",
+      "capacity",
+      "settlor"
+    ],
     "content_hash": null,
     "created_at": "2026-08-03T00:00:00Z",
     "updated_at": "2026-08-03T00:00:00Z"
@@ -175,8 +221,17 @@
     "authority_weight": 850,
     "summary": "Governs trustee acceptance or declination, bond, co-trustee participation, vacancy filling, resignation, removal, transition delivery, and expense reimbursement.",
     "quoted_text": null,
-    "limitations": ["Trust terms and court orders may affect trustee succession and removal."],
-    "tags": ["trust", "trustee", "acceptance", "resignation", "removal", "successor"],
+    "limitations": [
+      "Trust terms and court orders may affect trustee succession and removal."
+    ],
+    "tags": [
+      "trust",
+      "trustee",
+      "acceptance",
+      "resignation",
+      "removal",
+      "successor"
+    ],
     "content_hash": null,
     "created_at": "2026-08-03T00:00:00Z",
     "updated_at": "2026-08-03T00:00:00Z"
@@ -201,8 +256,18 @@
     "authority_weight": 850,
     "summary": "Includes duties to administer, loyalty, impartiality, prudent administration, special skills, delegation, control and protection, recordkeeping, disclosure, discretionary powers, and general trustee powers.",
     "quoted_text": null,
-    "limitations": ["Investment standards and fiduciary facts require professional review."],
-    "tags": ["trust", "trustee", "duties", "loyalty", "prudence", "recordkeeping", "reporting"],
+    "limitations": [
+      "Investment standards and fiduciary facts require professional review."
+    ],
+    "tags": [
+      "trust",
+      "trustee",
+      "duties",
+      "loyalty",
+      "prudence",
+      "recordkeeping",
+      "reporting"
+    ],
     "content_hash": null,
     "created_at": "2026-08-03T00:00:00Z",
     "updated_at": "2026-08-03T00:00:00Z"
@@ -227,8 +292,16 @@
     "authority_weight": 850,
     "summary": "Covers distribution on termination, breach remedies, damages, limitation of actions, reliance on trust instruments, exculpation, beneficiary consent, trustee personal liability, and certification of trust.",
     "quoted_text": null,
-    "limitations": ["Does not substitute for malpractice, damages, or litigation analysis."],
-    "tags": ["trust", "liability", "limitations", "certification", "remedies"],
+    "limitations": [
+      "Does not substitute for malpractice, damages, or litigation analysis."
+    ],
+    "tags": [
+      "trust",
+      "liability",
+      "limitations",
+      "certification",
+      "remedies"
+    ],
     "content_hash": null,
     "created_at": "2026-08-03T00:00:00Z",
     "updated_at": "2026-08-03T00:00:00Z"
@@ -253,8 +326,15 @@
     "authority_weight": 850,
     "summary": "Renames and updates New Jersey voidable transaction law, including actual-intent and constructive theories, remedies, burden provisions, governing law, and relation to electronic signatures law.",
     "quoted_text": null,
-    "limitations": ["Fact-intensive insolvency and intent analysis requires counsel.", "Bankruptcy avoidance powers require federal review."],
-    "tags": ["creditors", "voidable_transactions", "fraudulent_transfer"],
+    "limitations": [
+      "Fact-intensive insolvency and intent analysis requires counsel.",
+      "Bankruptcy avoidance powers require federal review."
+    ],
+    "tags": [
+      "creditors",
+      "voidable_transactions",
+      "fraudulent_transfer"
+    ],
     "content_hash": null,
     "created_at": "2026-08-03T00:00:00Z",
     "updated_at": "2026-08-03T00:00:00Z"
@@ -279,8 +359,15 @@
     "authority_weight": 850,
     "summary": "Replaces New Jersey UCC Article 9 and governs secured transactions, perfection, filing, filing office, financing statements, amendments, continuations, terminations, lapse, and priority provisions.",
     "quoted_text": null,
-    "limitations": ["Article 9 filing analysis depends on debtor location, collateral type, and transaction facts."],
-    "tags": ["ucc", "article9", "filing", "perfection"],
+    "limitations": [
+      "Article 9 filing analysis depends on debtor location, collateral type, and transaction facts."
+    ],
+    "tags": [
+      "ucc",
+      "article9",
+      "filing",
+      "perfection"
+    ],
     "content_hash": null,
     "created_at": "2026-08-03T00:00:00Z",
     "updated_at": "2026-08-03T00:00:00Z"
@@ -305,8 +392,15 @@
     "authority_weight": 850,
     "summary": "Updates Article 9 debtor-name rules, including registered organizations, trusts as debtors, individual debtor driver's-license rules, and transition-related amendments.",
     "quoted_text": null,
-    "limitations": ["Name sufficiency is strict and requires current source records."],
-    "tags": ["ucc", "article9", "debtor_name", "trust_debtor"],
+    "limitations": [
+      "Name sufficiency is strict and requires current source records."
+    ],
+    "tags": [
+      "ucc",
+      "article9",
+      "debtor_name",
+      "trust_debtor"
+    ],
     "content_hash": null,
     "created_at": "2026-08-03T00:00:00Z",
     "updated_at": "2026-08-03T00:00:00Z"
@@ -331,8 +425,15 @@
     "authority_weight": 700,
     "summary": "Official DORES guidance describes UCC-1 and UCC-3 filing services, electronic confirmation, IACA form output, and business rules under N.J.A.C. 17:33 et seq.",
     "quoted_text": null,
-    "limitations": ["Guidance cannot override enacted Article 9 or binding administrative rules."],
-    "tags": ["ucc", "filing_office", "electronic_filing", "official_guidance"],
+    "limitations": [
+      "Guidance cannot override enacted Article 9 or binding administrative rules."
+    ],
+    "tags": [
+      "ucc",
+      "filing_office",
+      "electronic_filing",
+      "official_guidance"
+    ],
     "content_hash": null,
     "created_at": "2026-08-03T00:00:00Z",
     "updated_at": "2026-08-03T00:00:00Z"
@@ -357,8 +458,15 @@
     "authority_weight": 700,
     "summary": "Official fee schedule lists UCC filing, search certificate, copy, certification, expedited, and bulk access fees.",
     "quoted_text": null,
-    "limitations": ["Fees can change and must be rechecked before filing."],
-    "tags": ["ucc", "fees", "search", "official_guidance"],
+    "limitations": [
+      "Fees can change and must be rechecked before filing."
+    ],
+    "tags": [
+      "ucc",
+      "fees",
+      "search",
+      "official_guidance"
+    ],
     "content_hash": null,
     "created_at": "2026-08-03T00:00:00Z",
     "updated_at": "2026-08-03T00:00:00Z"
@@ -383,8 +491,16 @@
     "authority_weight": 760,
     "summary": "Administrative rules governing UCC filing office procedures, acceptance and refusal, processing, information management, and search requests.",
     "quoted_text": null,
-    "limitations": ["Cornell LII is a locator copy; official New Jersey Administrative Code should be checked for professional use."],
-    "tags": ["ucc", "regulation", "filing_office", "rejection", "search"],
+    "limitations": [
+      "Cornell LII is a locator copy; official New Jersey Administrative Code should be checked for professional use."
+    ],
+    "tags": [
+      "ucc",
+      "regulation",
+      "filing_office",
+      "rejection",
+      "search"
+    ],
     "content_hash": null,
     "created_at": "2026-08-03T00:00:00Z",
     "updated_at": "2026-08-03T00:00:00Z"
@@ -409,9 +525,559 @@
     "authority_weight": 0,
     "summary": "Preserved only as quarantined unsupported source material. It must not become an active New Jersey rule.",
     "quoted_text": null,
-    "limitations": ["Quarantined unsupported claim; do not use for legal conclusions."],
-    "tags": ["unsupported_claim", "quarantine", "creditors"],
+    "limitations": [
+      "Quarantined unsupported claim; do not use for legal conclusions."
+    ],
+    "tags": [
+      "unsupported_claim",
+      "quarantine",
+      "creditors"
+    ],
     "content_hash": null,
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-EXEC-WAGE-2A17-56",
+    "jurisdiction": "NJ",
+    "authority_type": "NEW_JERSEY_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "N.J.S.A. 2A:17-56",
+    "title": "New Jersey wage execution limits",
+    "court_or_agency": "New Jersey Legislature",
+    "docket_or_bill_number": null,
+    "source_url": "https://law.justia.com/codes/new-jersey/title-2a/section-2a-17-56/",
+    "source_document_id": "NJSA-2A-17-56",
+    "publication_date": null,
+    "effective_date": null,
+    "repeal_date": null,
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2a_research",
+    "verification_status": "PRIMARY_SOURCE_LOCATED",
+    "authority_weight": 850,
+    "summary": "Limits execution against wages, salary, income from trust funds, and similar earnings, with poverty-level and State wage execution provisions.",
+    "quoted_text": null,
+    "limitations": [
+      "Justia is a locator copy; current official compiled statute requires professional review before production use."
+    ],
+    "tags": [
+      "creditors",
+      "wage_execution",
+      "garnishment"
+    ],
+    "content_hash": null,
+    "last_checked_at": "2026-08-03T00:00:00Z",
+    "next_review_at": "2027-08-03T00:00:00Z",
+    "expected_review_frequency_days": 365,
+    "source_availability_status": "LOCATOR_ONLY",
+    "current_hash": null,
+    "change_detected": false,
+    "manual_review_status": "QUEUED",
+    "supersession_candidate": null,
+    "broken_link_status": null,
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-EXEC-PERSONAL-PROPERTY-2A17-19-20",
+    "jurisdiction": "NJ",
+    "authority_type": "NEW_JERSEY_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "N.J.S.A. 2A:17-19 to 2A:17-20",
+    "title": "New Jersey personal property execution exemption and inventory process",
+    "court_or_agency": "New Jersey Legislature",
+    "docket_or_bill_number": null,
+    "source_url": "https://law.justia.com/codes/new-jersey/title-2a/section-2a-17-19/",
+    "source_document_id": "NJSA-2A-17-19-20",
+    "publication_date": null,
+    "effective_date": null,
+    "repeal_date": null,
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2a_research",
+    "verification_status": "PRIMARY_SOURCE_LOCATED",
+    "authority_weight": 850,
+    "summary": "Provides a limited personal property exemption and inventory process for property subject to levy.",
+    "quoted_text": null,
+    "limitations": [
+      "Locator copy only; official current compiled statutes and court process should be checked."
+    ],
+    "tags": [
+      "creditors",
+      "exemptions",
+      "household_goods",
+      "motor_vehicle",
+      "tools_of_trade"
+    ],
+    "content_hash": null,
+    "last_checked_at": "2026-08-03T00:00:00Z",
+    "next_review_at": "2027-08-03T00:00:00Z",
+    "expected_review_frequency_days": 365,
+    "source_availability_status": "LOCATOR_ONLY",
+    "current_hash": null,
+    "change_detected": false,
+    "manual_review_status": "QUEUED",
+    "supersession_candidate": null,
+    "broken_link_status": null,
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-COURTS-JUDGMENT-COLLECTION",
+    "jurisdiction": "NJ",
+    "authority_type": "OFFICIAL_AGENCY_GUIDANCE",
+    "source_classification": "OFFICIAL_GUIDANCE",
+    "citation": "New Jersey Courts, Collecting Money in a Civil Case; Civil judgment FAQ",
+    "title": "New Jersey Courts judgment collection guidance",
+    "court_or_agency": "New Jersey Judiciary",
+    "docket_or_bill_number": null,
+    "source_url": "https://www.njcourts.gov/es/node/499601",
+    "source_document_id": "NJCOURTS-COLLECTING-MONEY",
+    "publication_date": null,
+    "effective_date": null,
+    "repeal_date": null,
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2a_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 700,
+    "summary": "Official court guidance describes wage garnishment, bank levy, writ execution, turnover motion practice, sheriff process, and listed exempt benefits.",
+    "quoted_text": null,
+    "limitations": [
+      "Official guidance is procedural and cannot override statutes, court rules, or federal benefit protections."
+    ],
+    "tags": [
+      "creditors",
+      "bank_levy",
+      "turnover",
+      "writ",
+      "exempt_benefits"
+    ],
+    "content_hash": null,
+    "last_checked_at": "2026-08-03T00:00:00Z",
+    "next_review_at": "2027-08-03T00:00:00Z",
+    "expected_review_frequency_days": 365,
+    "source_availability_status": "AVAILABLE",
+    "current_hash": null,
+    "change_detected": false,
+    "manual_review_status": "NOT_REQUIRED",
+    "supersession_candidate": null,
+    "broken_link_status": null,
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-TAXATION-JUDGMENT-LEVY",
+    "jurisdiction": "NJ",
+    "authority_type": "OFFICIAL_AGENCY_GUIDANCE",
+    "source_classification": "OFFICIAL_GUIDANCE",
+    "citation": "NJ Division of Taxation, Judgment Unit",
+    "title": "State tax judgment and levy guidance",
+    "court_or_agency": "New Jersey Division of Taxation",
+    "docket_or_bill_number": null,
+    "source_url": "https://www.nj.gov/treasury/taxation/organization/cea-judgments.shtml",
+    "source_document_id": "NJ-TAX-JUDGMENT-UNIT",
+    "publication_date": null,
+    "effective_date": null,
+    "repeal_date": null,
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2a_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 700,
+    "summary": "Official tax guidance states Certificates of Debt have docketed judgment effect and that warrants of execution may be used for bank levies and vehicle liens.",
+    "quoted_text": null,
+    "limitations": [
+      "Tax collection powers require separate tax-law review and may differ from ordinary civil creditors."
+    ],
+    "tags": [
+      "creditors",
+      "tax_claims",
+      "government_claims",
+      "bank_levy"
+    ],
+    "content_hash": null,
+    "last_checked_at": "2026-08-03T00:00:00Z",
+    "next_review_at": "2027-08-03T00:00:00Z",
+    "expected_review_frequency_days": 365,
+    "source_availability_status": "AVAILABLE",
+    "current_hash": null,
+    "change_detected": false,
+    "manual_review_status": "NOT_REQUIRED",
+    "supersession_candidate": null,
+    "broken_link_status": null,
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-PENSION-EXEMPTIONS-43-8A-20-43-19-17",
+    "jurisdiction": "NJ",
+    "authority_type": "NEW_JERSEY_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "N.J.S.A. 43:8A-20; N.J.S.A. 43:19-17",
+    "title": "New Jersey public pension exemption provisions",
+    "court_or_agency": "New Jersey Legislature",
+    "docket_or_bill_number": null,
+    "source_url": "https://law.justia.com/codes/new-jersey/title-43/section-43-8a-20/",
+    "source_document_id": "NJSA-43-PENSION-EXEMPTIONS",
+    "publication_date": null,
+    "effective_date": null,
+    "repeal_date": null,
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2a_research",
+    "verification_status": "PRIMARY_SOURCE_LOCATED",
+    "authority_weight": 850,
+    "summary": "Selected New Jersey pension statutes exempt covered pension, annuity, retirement allowance, contribution return, or pension payments from execution, levy, garnishment, attachment, or other process.",
+    "quoted_text": null,
+    "limitations": [
+      "Locator copy only; protection is plan-specific and exceptions must be checked."
+    ],
+    "tags": [
+      "creditors",
+      "pension",
+      "retirement",
+      "exemptions"
+    ],
+    "content_hash": null,
+    "last_checked_at": "2026-08-03T00:00:00Z",
+    "next_review_at": "2027-08-03T00:00:00Z",
+    "expected_review_frequency_days": 365,
+    "source_availability_status": "LOCATOR_ONLY",
+    "current_hash": null,
+    "change_detected": false,
+    "manual_review_status": "QUEUED",
+    "supersession_candidate": null,
+    "broken_link_status": null,
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-SS-42USC407",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "42 U.S.C. 407",
+    "title": "Social Security anti-assignment and legal-process protection",
+    "court_or_agency": "United States Congress",
+    "docket_or_bill_number": null,
+    "source_url": "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title42-section407",
+    "source_document_id": "USC-42-407",
+    "publication_date": null,
+    "effective_date": null,
+    "repeal_date": null,
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2a_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 950,
+    "summary": "Federal law protects Social Security benefits from assignment and most execution, levy, attachment, garnishment, or other legal process.",
+    "quoted_text": null,
+    "limitations": [
+      "Federal exceptions and account-protection regulations require separate review."
+    ],
+    "tags": [
+      "creditors",
+      "federal_overlay",
+      "social_security",
+      "exempt_benefits"
+    ],
+    "content_hash": null,
+    "last_checked_at": "2026-08-03T00:00:00Z",
+    "next_review_at": "2027-08-03T00:00:00Z",
+    "expected_review_frequency_days": 365,
+    "source_availability_status": "AVAILABLE",
+    "current_hash": null,
+    "change_detected": false,
+    "manual_review_status": "NOT_REQUIRED",
+    "supersession_candidate": null,
+    "broken_link_status": null,
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-VA-38USC5301",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "38 U.S.C. 5301",
+    "title": "Veterans benefits anti-assignment and creditor protection",
+    "court_or_agency": "United States Congress",
+    "docket_or_bill_number": null,
+    "source_url": "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title38-section5301",
+    "source_document_id": "USC-38-5301",
+    "publication_date": null,
+    "effective_date": null,
+    "repeal_date": null,
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2a_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 950,
+    "summary": "Federal law protects many VA benefits from taxation, creditor claims, attachment, levy, or seizure before or after receipt, subject to statutory exceptions.",
+    "quoted_text": null,
+    "limitations": [
+      "Federal exceptions and benefit tracing questions require review."
+    ],
+    "tags": [
+      "creditors",
+      "federal_overlay",
+      "veterans_benefits",
+      "exempt_benefits"
+    ],
+    "content_hash": null,
+    "last_checked_at": "2026-08-03T00:00:00Z",
+    "next_review_at": "2027-08-03T00:00:00Z",
+    "expected_review_frequency_days": 365,
+    "source_availability_status": "AVAILABLE",
+    "current_hash": null,
+    "change_detected": false,
+    "manual_review_status": "NOT_REQUIRED",
+    "supersession_candidate": null,
+    "broken_link_status": null,
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-GARNISHMENT-31CFR212",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "31 C.F.R. pt. 212",
+    "title": "Garnishment of accounts containing federal benefit payments",
+    "court_or_agency": "United States Department of the Treasury and federal agencies",
+    "docket_or_bill_number": null,
+    "source_url": "https://www.law.cornell.edu/cfr/text/31/part-212",
+    "source_document_id": "CFR-31-PART-212",
+    "publication_date": null,
+    "effective_date": null,
+    "repeal_date": null,
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2a_research",
+    "verification_status": "PRIMARY_SOURCE_LOCATED",
+    "authority_weight": 950,
+    "summary": "Federal account-garnishment regulations require financial institutions to review accounts for covered benefit payments and protect a calculated protected amount.",
+    "quoted_text": null,
+    "limitations": [
+      "Cornell is a locator copy; eCFR/GovInfo should be checked for professional use."
+    ],
+    "tags": [
+      "creditors",
+      "bank_levy",
+      "federal_overlay",
+      "exempt_funds"
+    ],
+    "content_hash": null,
+    "last_checked_at": "2026-08-03T00:00:00Z",
+    "next_review_at": "2027-08-03T00:00:00Z",
+    "expected_review_frequency_days": 365,
+    "source_availability_status": "LOCATOR_ONLY",
+    "current_hash": null,
+    "change_detected": false,
+    "manual_review_status": "QUEUED",
+    "supersession_candidate": null,
+    "broken_link_status": null,
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-BANKRUPTCY-11USC-522-541-548",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "11 U.S.C. 522, 541, 548",
+    "title": "Bankruptcy estate, exemptions, spendthrift exclusion, and fraudulent transfer provisions",
+    "court_or_agency": "United States Congress",
+    "docket_or_bill_number": null,
+    "source_url": "https://uscode.house.gov/view.xhtml?req=%28title%3A11+section%3A522%28d%29+edition%3Aprelim%29",
+    "source_document_id": "USC-11-522-541-548",
+    "publication_date": null,
+    "effective_date": null,
+    "repeal_date": null,
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2a_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 950,
+    "summary": "Federal bankruptcy provisions create issue spotting for estate property, exemption selection, spendthrift exclusions, automatic bankruptcy overlays, and avoidance lookbacks.",
+    "quoted_text": null,
+    "limitations": [
+      "Issue spotting only; bankruptcy filing advice and counsel review are required."
+    ],
+    "tags": [
+      "bankruptcy",
+      "federal_overlay",
+      "estate_property",
+      "fraudulent_transfer"
+    ],
+    "content_hash": null,
+    "last_checked_at": "2026-08-03T00:00:00Z",
+    "next_review_at": "2027-08-03T00:00:00Z",
+    "expected_review_frequency_days": 365,
+    "source_availability_status": "AVAILABLE",
+    "current_hash": null,
+    "change_detected": false,
+    "manual_review_status": "NOT_REQUIRED",
+    "supersession_candidate": null,
+    "broken_link_status": null,
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-UPIA-2001-212",
+    "jurisdiction": "NJ",
+    "authority_type": "NEW_JERSEY_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "P.L.2001, c.212; N.J.S.A. 3B:19B-1 et seq.",
+    "title": "New Jersey Uniform Principal and Income Act",
+    "court_or_agency": "New Jersey Legislature",
+    "docket_or_bill_number": null,
+    "source_url": "https://pub.njleg.gov/bills/2000/PL01/212_.HTM",
+    "source_document_id": "PL2001-c212",
+    "publication_date": "2001-08-14",
+    "effective_date": "2002-01-01",
+    "repeal_date": null,
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2a_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 850,
+    "summary": "Governs allocation of trust and estate receipts and disbursements between principal and income.",
+    "quoted_text": null,
+    "limitations": [
+      "Trust accounting and tax-sensitive allocations require professional review."
+    ],
+    "tags": [
+      "trust",
+      "principal_and_income",
+      "accounting"
+    ],
+    "content_hash": null,
+    "last_checked_at": "2026-08-03T00:00:00Z",
+    "next_review_at": "2027-08-03T00:00:00Z",
+    "expected_review_frequency_days": 365,
+    "source_availability_status": "AVAILABLE",
+    "current_hash": null,
+    "change_detected": false,
+    "manual_review_status": "NOT_REQUIRED",
+    "supersession_candidate": null,
+    "broken_link_status": null,
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-MEDICAID-TRUSTS-NJAC-10-71-4-11",
+    "jurisdiction": "NJ",
+    "authority_type": "NEW_JERSEY_REGULATION",
+    "source_classification": "SECONDARY_LEGAL_SOURCE",
+    "citation": "N.J.A.C. 10:71-4.11",
+    "title": "Medicaid trust treatment locator copy",
+    "court_or_agency": "New Jersey Department of Human Services",
+    "docket_or_bill_number": null,
+    "source_url": "https://www.law.cornell.edu/regulations/new-jersey/N-J-A-C-10-71-4-11",
+    "source_document_id": "NJAC-10-71-4-11",
+    "publication_date": null,
+    "effective_date": null,
+    "repeal_date": null,
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2a_research",
+    "verification_status": "SECONDARY_SOURCE_ONLY",
+    "authority_weight": 760,
+    "summary": "Locator copy identifies New Jersey Medicaid trust-resource provisions relevant to special-needs and eligibility issue spotting.",
+    "quoted_text": null,
+    "limitations": [
+      "Locator copy only; not official current N.J.A.C. text. Human review required."
+    ],
+    "tags": [
+      "trust",
+      "special_needs",
+      "medicaid",
+      "locator_only"
+    ],
+    "content_hash": null,
+    "last_checked_at": "2026-08-03T00:00:00Z",
+    "next_review_at": "2027-08-03T00:00:00Z",
+    "expected_review_frequency_days": 365,
+    "source_availability_status": "LOCATOR_ONLY",
+    "current_hash": null,
+    "change_detected": false,
+    "manual_review_status": "QUEUED",
+    "supersession_candidate": null,
+    "broken_link_status": null,
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-OAL-NJAC-PUBLIC-ACCESS",
+    "jurisdiction": "NJ",
+    "authority_type": "OFFICIAL_AGENCY_GUIDANCE",
+    "source_classification": "OFFICIAL_GUIDANCE",
+    "citation": "New Jersey Office of Administrative Law, Administrative Code public access guidance",
+    "title": "Official N.J.A.C. public access guidance",
+    "court_or_agency": "New Jersey Office of Administrative Law",
+    "docket_or_bill_number": null,
+    "source_url": "https://www.nj.gov/oal/rules/",
+    "source_document_id": "NJ-OAL-NJAC-ACCESS",
+    "publication_date": null,
+    "effective_date": null,
+    "repeal_date": null,
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2a_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 700,
+    "summary": "Official OAL guidance identifies the official New Jersey Administrative Code publication path and public access through LexisNexis.",
+    "quoted_text": null,
+    "limitations": [
+      "Guidance verifies source pathway, not the substantive current text of every rule."
+    ],
+    "tags": [
+      "ucc",
+      "administrative_code",
+      "source_verification"
+    ],
+    "content_hash": null,
+    "last_checked_at": "2026-08-03T00:00:00Z",
+    "next_review_at": "2027-08-03T00:00:00Z",
+    "expected_review_frequency_days": 365,
+    "source_availability_status": "AVAILABLE",
+    "current_hash": null,
+    "change_detected": false,
+    "manual_review_status": "NOT_REQUIRED",
+    "supersession_candidate": null,
+    "broken_link_status": null,
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-TREASURY-UCC-RULE-ADOPTION-2023",
+    "jurisdiction": "NJ",
+    "authority_type": "OFFICIAL_AGENCY_GUIDANCE",
+    "source_classification": "OFFICIAL_GUIDANCE",
+    "citation": "NJ Treasury Rules Amendments, Dec. 4, 2023 UCC Rules",
+    "title": "Treasury notice of UCC Rules adopted as N.J.A.C. 17:33",
+    "court_or_agency": "New Jersey Department of the Treasury",
+    "docket_or_bill_number": null,
+    "source_url": "https://www.nj.gov/www.nj.gov/treasury/rulesamend.shtml",
+    "source_document_id": "NJ-TREASURY-UCC-RULES-2023",
+    "publication_date": "2023-12-04",
+    "effective_date": "2023-12-04",
+    "repeal_date": null,
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2a_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 700,
+    "summary": "Official Treasury rule-adoption page confirms UCC rules were adopted as N.J.A.C. 17:33 effective December 4, 2023.",
+    "quoted_text": null,
+    "limitations": [
+      "Does not supply complete current official N.J.A.C. text; dependent filing-office rules remain human-review gated."
+    ],
+    "tags": [
+      "ucc",
+      "njac_17_33",
+      "source_verification"
+    ],
+    "content_hash": null,
+    "last_checked_at": "2026-08-03T00:00:00Z",
+    "next_review_at": "2027-08-03T00:00:00Z",
+    "expected_review_frequency_days": 365,
+    "source_availability_status": "AVAILABLE",
+    "current_hash": null,
+    "change_detected": false,
+    "manual_review_status": "NOT_REQUIRED",
+    "supersession_candidate": null,
+    "broken_link_status": null,
     "created_at": "2026-08-03T00:00:00Z",
     "updated_at": "2026-08-03T00:00:00Z"
   }

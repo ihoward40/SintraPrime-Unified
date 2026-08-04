@@ -43,6 +43,8 @@ const navItems: NavItem[] = [
   { path: '/jurisdictions/new-jersey', label: 'New Jersey Pilot', icon: Landmark, badge: 'NJ', badgeColor: 'amber' },
   { path: '/jurisdictions/new-york', label: 'New York Pilot', icon: Landmark, badge: 'NY', badgeColor: 'amber' },
   { path: '/jurisdictions/pennsylvania', label: 'Pennsylvania Pilot', icon: Landmark, badge: 'PA', badgeColor: 'amber' },
+  { path: '/jurisdictions/delaware', label: 'Delaware Pilot', icon: Landmark, badge: 'DE', badgeColor: 'amber' },
+  { path: '/jurisdictions/connecticut', label: 'Connecticut Pilot', icon: Landmark, badge: 'CT', badgeColor: 'amber' },
   { path: '/jurisdictions/northeast-comparison', label: 'NE Comparison', icon: GitCompareArrows, badge: 'NE', badgeColor: 'blue' },
   { path: '/ucc/filing-assessment', label: 'UCC Assessment', icon: ClipboardCheck, badge: 'UCC', badgeColor: 'blue' },
   { path: '/matters/matter-1', label: 'Matter Workspace', icon: BriefcaseBusiness, badge: 'MATTER', badgeColor: 'blue' },

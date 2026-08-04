@@ -224,20 +224,30 @@ The ADR remains Proposed. The following governance decisions are required before
 - Do not begin Mission Control implementation.
 - Do not mark complete with required gates unrun.
 
+## Push Result
+
+- Push command: `git push origin docs/mythos-brain-adr-handoff:docs/mythos-brain-adr`
+- Push result: SUCCESS — fast-forward `c44b3c85..68c55ebf`
+- Remote tip after push: 68c55ebf4883faa855b282866b62033aaa269bec
+- Remote tree SHA after push: 3751bb693d0f5413476ce64dfde67dce31b11bd6
+- PR #256 was NOT merged — only the branch was updated.
+
 ## Handoff Receipt
 
 Outgoing agent: Hermes (Lane B — PR #256 ADR-002 Refinement)
 
-Outgoing HEAD: (see commits above — final head after all 3 Lane B commits)
+Outgoing HEAD: 68c55ebf4883faa855b282866b62033aaa269bec (pushed to origin/docs/mythos-brain-adr)
+
+Outgoing tree SHA: 3751bb693d0f5413476ce64dfde67dce31b11bd6
 
 Outgoing worktree status: CLEAN (all changes committed and pushed)
 
-Lane B commits (in order):
+Lane B commits (in order, all pushed):
 1. 1c4b0bc5 — docs: add PR 256 multi-agent handoff record
 2. 3878f9f9 — docs: refine Mythos Brain execution and failure semantics
-3. (this commit) — docs: update PR 256 handoff with refinement results
+3. 68c55ebf — docs: update PR 256 handoff with refinement results
 
-Branch: docs/mythos-brain-adr-handoff → origin/docs/mythos-brain-adr (fast-forward push)
+Branch: docs/mythos-brain-adr-handoff → origin/docs/mythos-brain-adr (fast-forward push SUCCEEDED)
 
 CI baseline: All 12 workflows green before Lane B (head 1f100189, then c44b3c85). Lane B changed only markdown documentation files; CI should remain green. Re-validate on GitHub after push.
 

@@ -7,7 +7,7 @@ import Dashboard from './pages/Dashboard';
 import LegalHub from './pages/LegalHub';
 import FinancialEmpire from './pages/FinancialEmpire';
 import TrustLaw from './pages/TrustLaw';
-import NewJers*** from './pages/NewJers***';
+import NewJerseyJurisdiction from './pages/NewJerseyJurisdiction';
 import NewYorkJurisdiction from './pages/NewYorkJurisdiction';
 import PennsylvaniaJurisdiction from './pages/PennsylvaniaJurisdiction';
 import DelawareJurisdiction from './pages/DelawareJurisdiction';
@@ -43,7 +43,7 @@ function AppContent() {
           <Route path="legal" element={<LegalHub />} />
           <Route path="financial" element={<FinancialEmpire />} />
           <Route path="trust-law" element={<TrustLaw />} />
-          <Route path="jurisdictions/new-jersey" element={<NewJers*** />} />
+          <Route path="jurisdictions/new-jersey" element={<NewJerseyJurisdiction />} />
           <Route path="jurisdictions/new-york" element={<NewYorkJurisdiction />} />
           <Route path="jurisdictions/pennsylvania" element={<PennsylvaniaJurisdiction />} />
           <Route path="jurisdictions/delaware" element={<DelawareJurisdiction />} />

@@ -1,0 +1,907 @@
+[
+  {
+    "id": "CT-TRUST-CUTS-APPLICABILITY",
+    "jurisdiction": "CT",
+    "domain": "trust_law",
+    "topic": "uniform trust code applicability Connecticut UTC CUTS",
+    "rule_statement": "Connecticut has enacted the Connecticut Uniform Trust Code (CUTS), Conn. Gen. Stat. §§ 45a-287 to 45a-499, with significant nonuniform provisions compared to the model UTC. CUTS applies to express trusts formed or administered in Connecticut, with specific departures from model UTC that require careful review.",
+    "rule_logic": {
+      "conditions": [
+        "trust_is_express_or_statutory_trust",
+        "trust_is_administered_in_or_governed_by_connecticut_law"
+      ],
+      "conclusion": "CUTS_APPLIES"
+    },
+    "authority_ids": [
+      "CT-TRUST-UTC-45287"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.93,
+    "requires_human_review": true,
+    "effective_from": "2008-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "statutory trusts",
+        "rule": "Connecticut statutory trusts formed under specific enabling statutes may have separate governance provisions."
+      },
+      {
+        "issue": "nonuniform provisions",
+        "rule": "Connecticut has material departures from the model UTC that affect creditor rights, spendthrift enforceability, and self-settled trust rules."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-TRUST-CREATION-REQUIREMENTS",
+    "jurisdiction": "CT",
+    "domain": "trust_law",
+    "topic": "trust creation settlor capacity intent property lawful purpose beneficiary oral",
+    "rule_statement": "A Connecticut express trust requires a written instrument signed by the trustee for land trusts, lawful purpose, ascertainable beneficiaries or a definite oriable class, trustee acceptance, and settlor capacity. Oral trusts for personal property are recognized subject to proof by clear and convincing evidence.",
+    "rule_logic": {
+      "conditions": [
+        "settlor_capacity",
+        "intent_to_create_trust",
+        "trust_property",
+        "lawful_purpose",
+        "beneficiary_definite_or_ascertainable"
+      ],
+      "conclusion": "EXPRESS_TRUST_CREATED"
+    },
+    "authority_ids": [
+      "CT-TRUST-CREATION-45299"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.91,
+    "requires_human_review": true,
+    "effective_from": "2008-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "oral trust personal property",
+        "rule": "Oral trusts for personal property are recognized in Connecticut but require proof by clear and convincing evidence."
+      },
+      {
+        "issue": "charitable purpose trust",
+        "rule": "A trust for a definite charitable purpose does not require ascertainable individual beneficiaries."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-TRUST-REVOCABLE-EXPOSURE",
+    "jurisdiction": "CT",
+    "domain": "trust_law",
+    "topic": "revocable trust settlor creditor exposure",
+    "rule_statement": "A Connecticut revocable trust is treated as the settlor's property during lifetime. Settlor's creditors may reach assets in a revocable trust because the settlor retains the power to revoke and control. Post-death, revocable trust assets pass through the estate and are subject to estate creditor claims.",
+    "rule_logic": {
+      "conditions": [
+        "trust_is_revocable",
+        "settlor_is_creditor",
+        "settlor_retains_revocation_power"
+      ],
+      "conclusion": "SETTLOR_CREDITOR_MAY_REACH_TRUST_ASSETS"
+    },
+    "authority_ids": [
+      "CT-TRUST-REVOCABLE-45313"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.93,
+    "requires_human_review": true,
+    "effective_from": "2008-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "postdeath creditor claims",
+        "rule": "Estate creditor claims must be presented against the estate and resolved through estate administration, not directly against the trust."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-SELF-SETTLED-NO-PROTECTION",
+    "jurisdiction": "CT",
+    "domain": "creditor_protection",
+    "topic": "self-settled trust no asset protection Connecticut",
+    "rule_statement": "Connecticut explicitly does NOT provide asset protection for self-settled trusts. A settlor who creates an irrevocable trust for the settlor's own benefit (a self-settled trust) may not claim spendthrift protection under Connecticut law. The settlor's creditors may reach assets in a self-settled trust.",
+    "rule_logic": {
+      "conditions": [
+        "settlor_creates_irrevocable_trust",
+        "settlor_is_a_beneficiary_of_trust"
+      ],
+      "conclusion": "SELF_SETTLED_TRUST_NO_SPENDTHRIFT_PROTECTION"
+    },
+    "authority_ids": [
+      "CT-TRUST-CREDITOR-45478"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.93,
+    "requires_human_review": true,
+    "effective_from": "2008-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "third-party settled trust",
+        "rule": "A trust settled by a third party (not the beneficiary) IS entitled to spendthrift protection."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-SPENDTHRIFT-VALIDITY",
+    "jurisdiction": "CT",
+    "domain": "creditor_protection",
+    "topic": "spendthrift validity third party settled trust creditor restraint",
+    "rule_statement": "Connecticut enforces spendthrift clauses in trusts settled by a third party (not the beneficiary). A beneficiary's right to distributions may be restrained from anticipation or assignment, and creditors may not reach future distributions, except for statutory exception creditors including support claimants, government claimants, and certain tort creditors.",
+    "rule_logic": {
+      "conditions": [
+        "valid_spendthrift_clause",
+        "trust_settled_by_third_party",
+        "beneficiary_is_not_settlor",
+        "distribution_not_yet_made"
+      ],
+      "conclusion": "SPENDTHRIFT_PROTECTION_ENFORCED"
+    },
+    "authority_ids": [
+      "CT-TRUST-CREDITOR-45478"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.92,
+    "requires_human_review": true,
+    "effective_from": "2008-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "child support alimony",
+        "rule": "A court may order distributions for the support of a beneficiary's minor children or spouse despite a spendthrift clause."
+      },
+      {
+        "issue": "government claims",
+        "rule": "State and federal government claims for taxes, welfare, and regulatory violations may reach spendthrift-protected distributions."
+      },
+      {
+        "issue": "self-settled trust",
+        "rule": "A trust where the settlor is also a beneficiary is NOT protected by a spendthrift clause under Connecticut law."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-DISCRETIONARY-OVERDUE",
+    "jurisdiction": "CT",
+    "domain": "trust_law",
+    "topic": "discretionary trusts mandatory distributions overdue trustee discretion",
+    "rule_statement": "A trustee's discretionary distribution power does not create a creditor claim until the trustee makes a distribution decision. Mandatory distributions (those required by the trust terms) that are overdue may be enforced by a court. Discretionary distributions are generally not enforceable until the trustee decides to make them.",
+    "rule_logic": {
+      "conditions": [
+        "trustee_discretionary_power_exists",
+        "trustee_made_distribution_decision",
+        "distribution_overdue_mandatory"
+      ],
+      "conclusion": "MANDATORY_DISTRIBUTION_ENFORCEABLE"
+    },
+    "authority_ids": [
+      "CT-TRUST-UTC-45287",
+      "CT-TRUST-TRUSTEE-DUTIES-45320"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.89,
+    "requires_human_review": true,
+    "effective_from": "2008-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "spendthrift clause",
+        "rule": "A spendthrift clause may prevent a creditor from enforcing a distribution against the trustee even if the distribution is overdue."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-DIRECTED-TRUST",
+    "jurisdiction": "CT",
+    "domain": "trust_law",
+    "topic": "directed trust investment direction distribution adviser trustee powers",
+    "rule_statement": "Connecticut's CUTS directed trust provisions (Conn. Gen. Stat. §§ 45a-292 to 45a-298) authorize trust instruments to name a directed trustee, investment adviser, or distribution adviser. The directed trustee must follow permissible directions unless the direction is manifestly contrary to the trust terms.",
+    "rule_logic": {
+      "conditions": [
+        "trust_instrument_names_directed_trustee",
+        "direction_given_is_permissible",
+        "direction_not_contrary_to_trust_terms"
+      ],
+      "conclusion": "DIRECTED_TRUST_STRUCTURE_VALID"
+    },
+    "authority_ids": [
+      "CT-TRUST-DIRECTED-45292"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.90,
+    "requires_human_review": true,
+    "effective_from": "2008-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "improper direction",
+        "rule": "A directed trustee who follows an improper direction may be held liable for the consequences."
+      },
+      {
+        "issue": "ERISA plan assets",
+        "rule": "ERISA fiduciary duty rules may override Connecticut exculpation provisions for employee benefit plan trusts."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-TRUST-PROTECTOR",
+    "jurisdiction": "CT",
+    "domain": "trust_law",
+    "topic": "trust protector trustee removal appointment modification",
+    "rule_statement": "Connecticut's CUTS authorizes trust protectors with powers to remove and appoint trustees, modify trust terms, and direct trust administration. The scope of trust protector powers is defined by the trust instrument. A trust protector owes fiduciary duties unless the trust instrument exculpates the protector.",
+    "rule_logic": {
+      "conditions": [
+        "trust_instrument_names_protector",
+        "protector_acts_within_granted_powers",
+        "protector_not_exculpated"
+      ],
+      "conclusion": "PROTECTOR_ACTION_VALID"
+    },
+    "authority_ids": [
+      "CT-TRUST-PROTECTOR-45291"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.88,
+    "requires_human_review": true,
+    "effective_from": "2008-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "exculpatory language",
+        "rule": "If the trust instrument exculpates the trust protector, fiduciary duty may be limited or eliminated."
+      },
+      {
+        "issue": "court review",
+        "rule": "A court may review a trust protector's exercise of power for abuse of discretion."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-TRUST-DECANTING",
+    "jurisdiction": "CT",
+    "domain": "trust_law",
+    "topic": "decanting trust modification trustee discretionary distribution second trust",
+    "rule_statement": "Connecticut's decanting statute (Conn. Gen. Stat. §§ 45a-293 to 45a-293a) authorizes a trustee with discretionary distribution power to make a principal distribution to a second trust (decanting) for the benefit of some or all beneficiaries. Notice to beneficiaries is required; certain decanting actions require court approval.",
+    "rule_logic": {
+      "conditions": [
+        "trustee_has_discretionary_distribution_power",
+        "second_trust_benefits_beneficiaries",
+        "notice_given_or_court_approval_obtained"
+      ],
+      "conclusion": "DECANTING_AUTHORIZED"
+    },
+    "authority_ids": [
+      "CT-TRUST-DECANTING-45293"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.88,
+    "requires_human_review": true,
+    "effective_from": "2008-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "beneficiary objection",
+        "rule": "A beneficiary may object to a decanting action that materially diminishes the beneficiary's interest."
+      },
+      {
+        "issue": "creditor challenge",
+        "rule": "A creditor of a beneficiary may challenge a decanting that diminishes the beneficiary's interest in the original trust."
+      },
+      {
+        "issue": "fraudulent transfer",
+        "rule": "Decanting may be voided if it constitutes a fraudulent transfer under Connecticut law."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-TRUST-MODIFICATION",
+    "jurisdiction": "CT",
+    "domain": "trust_law",
+    "topic": "nonjudicial settlement trust modification termination reformation",
+    "rule_statement": "Connecticut's CUTS allows interested parties (trustees, beneficiaries, and settlor if living) to enter a nonjudicial settlement agreement (NJSA) to modify, terminate, or reform a non-charitable trust, provided all interested parties consent and the agreement does not violate a material purpose of the trust.",
+    "rule_logic": {
+      "conditions": [
+        "all_interest_holders_consent",
+        "no_material_purpose_violated",
+        "agreement_fairly_resolves_all_interests"
+      ],
+      "conclusion": "NJSA_VALID_AND_BINDING"
+    },
+    "authority_ids": [
+      "CT-TRUST-MODIFICATION-45364"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.89,
+    "requires_human_review": true,
+    "effective_from": "2008-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "charitable trust",
+        "rule": "Charitable trust modifications require the involvement of the Connecticut Attorney General."
+      },
+      {
+        "issue": "court approval",
+        "rule": "For fundamental changes, court approval may be required even if all parties consent."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-TRUSTEE-REMOVAL",
+    "jurisdiction": "CT",
+    "domain": "trust_law",
+    "topic": "trustee removal successor appointment resignation co-trustee",
+    "rule_statement": "A Connecticut trustee may be removed by the settlor (if reserved in the trust instrument), by a trust protector with removal power, by a court upon petition showing cause, or by resignation with proper notice to beneficiaries. A successor trustee may be appointed by the trust instrument or by a court.",
+    "rule_logic": {
+      "conditions": [
+        "removal_basis_exists",
+        "proper_notice_given",
+        "successor_trustee_identified"
+      ],
+      "conclusion": "TRUSTEE_REMOVAL_VALID"
+    },
+    "authority_ids": [
+      "CT-TRUST-TRUSTEE-DUTIES-45320"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.89,
+    "requires_human_review": true,
+    "effective_from": "2008-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "independent trustee in self-settled trust",
+        "rule": "An independent trustee named to satisfy self-settled trust requirements cannot be removed without cause."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-GOVERNING-LAW",
+    "jurisdiction": "CT",
+    "domain": "trust_law",
+    "topic": "governing law choice of law Connecticut situs principal administration",
+    "rule_statement": "Connecticut law governs a trust if the trust instrument designates Connecticut as governing law, or if the trust is administered in Connecticut and the instrument is silent. Connecticut recognizes and enforces choice-of-law provisions subject to constitutional limits.",
+    "rule_logic": {
+      "conditions": [
+        "trust_instrument_designates_connecticut_law",
+        "or_trust_administered_in_connecticut_and_instrument_silent"
+      ],
+      "conclusion": "CONNECTICUT_LAW_GOVERNS"
+    },
+    "authority_ids": [
+      "CT-TRUST-GOVLAW-45302"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.93,
+    "requires_human_review": true,
+    "effective_from": "2008-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "federal constitutional limits",
+        "rule": "Federal Due Process and Full Faith and Credit Clause may limit choice-of-law enforcement."
+      },
+      {
+        "issue": "real property elsewhere",
+        "rule": "Transfers of real property located in another state are governed by that state's law."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-TRUST-CERTIFICATION",
+    "jurisdiction": "CT",
+    "domain": "trust_law",
+    "topic": "certification of trust trustee third party reliance",
+    "rule_statement": "A Connecticut trustee may provide a written certification of trust (rather than the full trust instrument) to a third party. The certification must include the trust's existence, the trustee's powers, the trust's amendment provisions, and whether the trust is revocable. Third parties relying on an accurate certification are protected.",
+    "rule_logic": {
+      "conditions": [
+        "trustee_provides_written_certification",
+        "certification_contains_required_elements",
+        "third_party_relies_on_certification"
+      ],
+      "conclusion": "THIRD_PARTY_PROTECTED"
+    },
+    "authority_ids": [
+      "CT-TRUST-CERTIFICATION-45477"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.92,
+    "requires_human_review": true,
+    "effective_from": "2008-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "inaccurate certification",
+        "rule": "A trustee who provides an inaccurate certification may be liable to a harmed third party."
+      },
+      {
+        "issue": "material term omitted",
+        "rule": "If a material term is omitted from the certification, the third party may not be bound by the disclosed terms."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-BENEFICIARY-INFORMATION",
+    "jurisdiction": "CT",
+    "domain": "trust_law",
+    "topic": "beneficiary information rights trust accounting trustee reporting",
+    "rule_statement": "A Connecticut trust beneficiary has the right to receive information about the trust, including the trust instrument, an accounting of trust transactions, and information about the trustee's identity and contact information. The trustee must keep beneficiaries reasonably informed of trust administration.",
+    "rule_logic": {
+      "conditions": [
+        "beneficiary_has_vested_or_contingent_interest",
+        "beneficiary_requests_information"
+      ],
+      "conclusion": "TRUSTEE_MUST_DISCLOSE"
+    },
+    "authority_ids": [
+      "CT-TRUST-TRUSTEE-DUTIES-45320"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.90,
+    "requires_human_review": true,
+    "effective_from": "2008-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "impossibility or undue burden",
+        "rule": "A trustee may not be required to disclose information if it is impossible or would cause undue burden."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-UCC-FILING-OFFICE",
+    "jurisdiction": "CT",
+    "domain": "ucc_article9",
+    "topic": "UCC filing office central filing local filing fixture",
+    "rule_statement": "UCC Article 9 filings in Connecticut are made with the Connecticut Secretary of State as the central filing office. Fixture filings (for goods that become part of real property) are made with the town clerk in the town where the real property is located. There is no separate local filing system for non-fixture collateral in Connecticut.",
+    "rule_logic": {
+      "conditions": [
+        "collateral_is_fixturing_good"
+      ],
+      "conclusion": "LOCAL_FILING_REQUIRED_TOWN_CLERK"
+    },
+    "authority_ids": [
+      "CT-UCC-9-501"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.94,
+    "requires_human_review": true,
+    "effective_from": "2013-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "transmitting utility",
+        "rule": "A financing statement for a transmitting utility's collateral may be filed centrally with the Secretary of State."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-UCC-DEBTOR-NAMING",
+    "jurisdiction": "CT",
+    "domain": "ucc_article9",
+    "topic": "UCC debtor naming trust estate organization individual",
+    "rule_statement": "Under Connecticut UCC Article 9, the name of a registered organization debtor is its name as shown in its public organic record. A trust debtor is named using the name set forth in its trust agreement or certification. An individual debtor's name is the debtor's legal name as it appears on the driver's license or government-issued identification.",
+    "rule_logic": {
+      "conditions": [
+        "debtor_is_registered_organization",
+        "or_debtor_is_trust",
+        "or_debtor_is_individual"
+      ],
+      "conclusion": "DEBTOR_NAME_DETERMINED"
+    },
+    "authority_ids": [
+      "CT-UCC-9-501"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.89,
+    "requires_human_review": true,
+    "effective_from": "2013-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "insufficient name",
+        "rule": "If the debtor name provided does not sufficiently identify the debtor, the filing may be seriously misleading to third parties searching the records."
+      },
+      {
+        "issue": "trust without named settlor",
+        "rule": "A trust without a designated name or named settlor may not have a clear debtor name for UCC filing purposes."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-UCC-CONTINUATION-WINDOW",
+    "jurisdiction": "CT",
+    "domain": "ucc_article9",
+    "topic": "UCC continuation statement lapse window renewal",
+    "rule_statement": "A Connecticut UCC financing statement lapses five years after filing unless a continuation statement is filed before lapse. The continuation statement must be filed within the six-month period before lapse (between 5 years 6 months and 6 years after the original filing). Each continuation extends the statement for an additional five years.",
+    "rule_logic": {
+      "conditions": [
+        "original_filing_made",
+        "continuation_statement_filed_before_lapse",
+        "continuation_window_observed"
+      ],
+      "conclusion": "UCC_FILING_CONTINUED"
+    },
+    "authority_ids": [
+      "CT-UCC-9-501"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.94,
+    "requires_human_review": true,
+    "effective_from": "2013-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "fixture filing",
+        "rule": "A fixture filing (covering goods attached to real property) is effective for the shorter of the period of the security interest's perfection or 20 years."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-HOMESTEAD-EXEMPTION",
+    "jurisdiction": "CT",
+    "domain": "creditor_protection",
+    "topic": "homestead exemption residential property Connecticut",
+    "rule_statement": "Connecticut provides a homestead exemption for a debtor's primary residence, subject to statutory value limitations and eligibility conditions (income-based or age-based). The exemption protects a portion of the home's equity from creditor execution and bankruptcy proceedings.",
+    "rule_logic": {
+      "conditions": [
+        "property_is_primary_residence",
+        "homestead_claimed",
+        "value_within_statutory_limit",
+        "eligibility_conditions_met"
+      ],
+      "conclusion": "HOMESTEAD_EXEMPTION_APPLIES"
+    },
+    "authority_ids": [
+      "CT-HOMESTEAD-4931q"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.85,
+    "requires_human_review": true,
+    "effective_from": "2013-01-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "mortgage lien",
+        "rule": "A mortgage or deed of trust on the property is not subject to the homestead exemption."
+      },
+      {
+        "issue": "property tax lien",
+        "rule": "Delinquent property taxes may be collected from the homestead property despite the exemption."
+      },
+      {
+        "issue": "federal liens",
+        "rule": "Federal tax liens and certain other federal claims may override state homestead exemptions."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-WAGE-GARNISHMENT",
+    "jurisdiction": "CT",
+    "domain": "creditor_protection",
+    "topic": "wage garnishment exempt funds garnishee Connecticut",
+    "rule_statement": "Connecticut limits wage garnishment to the lesser of 15% of gross weekly wages or the amount by which weekly wages exceed 30 times the federal minimum wage. Certain funds in a bank account that are traceable to exempt sources (wages, social security, etc.) may be protected from garnishment.",
+    "rule_logic": {
+      "conditions": [
+        "garnishment_order_issued",
+        "employer_or_bank_is_garnishee",
+        "debtor_claims_exemption",
+        "funds_are_exempt_source"
+      ],
+      "conclusion": "GARNISHMENT_LIMITED_OR_FUNDS_EXEMPT"
+    },
+    "authority_ids": [
+      "CT-HOMESTEAD-4931q"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.84,
+    "requires_human_review": true,
+    "effective_from": "2013-01-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "child support",
+        "rule": "Child support orders may attach up to 50% of a debtor's disposable income and are not subject to standard wage garnishment limits."
+      },
+      {
+        "issue": "government claims",
+        "rule": "Government judgments for taxes, student loans, or regulatory violations may have higher or no garnishment limits."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-RESIDENT-TRUST-TAXATION",
+    "jurisdiction": "CT",
+    "domain": "trust_tax",
+    "topic": "resident trust taxation Connecticut fiduciary filing income tax",
+    "rule_statement": "Connecticut imposes an income tax on trusts with Connecticut nexus, including resident trusts (those where the trust is administered in Connecticut or whose governing law is Connecticut) and nonresident trusts with Connecticut source income. Fiduciary income tax returns are required when Connecticut tax obligations exist.",
+    "rule_logic": {
+      "conditions": [
+        "trust_has_connecticut_nexus",
+        "trust_is_not_exempt",
+        "connecticut_source_income_exists_or_resident_trust"
+      ],
+      "conclusion": "CONNECTICUT_TRUST_TAX_OBLIGATION"
+    },
+    "authority_ids": [
+      "CT-TRUST-TAXATION-DRS",
+      "CT-TRUST-GOVLAW-45302"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.75,
+    "requires_human_review": true,
+    "effective_from": "2008-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "grantor trust",
+        "rule": "A grantor trust (where the grantor is taxed on trust income) may have different Connecticut filing obligations depending on grantor's residency."
+      },
+      {
+        "issue": "Connecticut estate tax",
+        "rule": "Connecticut has its own estate tax (separate from the federal estate tax) with a lower exemption threshold than the federal exemption."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-POWERS-WITHDRAWAL",
+    "jurisdiction": "CT",
+    "domain": "creditor_protection",
+    "topic": "power of withdrawal creditor claim Crummey notice",
+    "rule_statement": "A power of withdrawal held by a beneficiary is a property interest that may be reached by the beneficiary's creditors. A Crummey notice (written notice of a withdrawal right) creates a window during which a creditor may challenge the withdrawal power before it lapses.",
+    "rule_logic": {
+      "conditions": [
+        "beneficiary_holds_power_of_withdrawal",
+        "creditor_claim_exists",
+        "power_not_yet_lapsed_or_released"
+      ],
+      "conclusion": "CREDITOR_MAY_CHALLENGE_WITHDRAWAL_POWER"
+    },
+    "authority_ids": [
+      "CT-TRUST-CREDITOR-45478"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.88,
+    "requires_human_review": true,
+    "effective_from": "2008-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "limited power of appointment",
+        "rule": "A limited power of appointment (that cannot be exercised in favor of the power holder) is generally not reachable by the power holder's creditors."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "CT-TENANCY-BY-ENTIRETY",
+    "jurisdiction": "CT",
+    "domain": "creditor_protection",
+    "topic": "tenancy by entirety creditor protection joint ownership spouse",
+    "rule_statement": "Connecticut recognizes tenancy by the entirety for real property held by married couples. Property held as tenants by the entirety is generally protected from creditor claims against only one spouse, because both spouses have an equal and undivided interest in the whole property.",
+    "rule_logic": {
+      "conditions": [
+        "property_held_by_married_couple_as_tenants_by_entirety",
+        "creditor_claim_is_against_only_one_spouse",
+        "property_is_real_property"
+      ],
+      "conclusion": "TENANCY_BY_ENTIRETY_PROTECTION_APPLIES"
+    },
+    "authority_ids": [
+      "CT-HOMESTEAD-4931q"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.82,
+    "requires_human_review": true,
+    "effective_from": "2013-01-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "joint creditor",
+        "rule": "If both spouses are debtors on the same debt, the creditor may reach entirety property."
+      },
+      {
+        "issue": "divorce",
+        "rule": "Upon divorce, tenancy by entirety converts to tenancy in common, and each spouse's interest becomes individually liable for that spouse's debts."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  }
+]

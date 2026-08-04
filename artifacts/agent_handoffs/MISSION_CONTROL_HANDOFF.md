@@ -4,10 +4,10 @@
 
 - Branch: feat/mission-control-foundation
 - Base: main at 22b384a707f87ab7dcc3051f483eba000ab8e71f
-- Current HEAD: 22b384a707f87ab7dcc3051f483eba000ab8e71f
-- Tree SHA: 272a1101ffe9f9cff260e782f3b9a2f058de0c02
-- Worktree: C:/Users/admin/SintraPrime-Unified-adr-002
-- Worktree status: CLEAN (fresh branch, no changes yet)
+- Current HEAD: 759c4e3944a8d564e7f1945e7c3e7be4ef64dbce
+- Tree SHA: 6e151330f0dfa3678e4138abb9a30408b3de5a23
+- Worktree: C:/Users/admin/SintraPrime-Unified-mission-control
+- Worktree status: DIRTY (handoff + implementation in progress)
 - Created: 2026-08-04
 - Created by: Hermes
 
@@ -47,36 +47,48 @@ The Mission Control implementation must conform to ADR-002 as accepted:
 
 ## Current Work State
 
-Status: BRANCH_CREATED — AWAITING IMPLEMENTATION DIRECTIVE
+Status: CLAIMED — IMPLEMENTATION DIRECTIVE RECEIVED
 
 Current agent: Hermes
 
-Current task: Branch created, handoff record created, awaiting implementation directive.
+Current task: Mission Control Foundation implementation under ADR-002 baseline. Scope: read-only operational dashboard, intent and execution-state projection, correlation and causation visibility, tenant-scoped filtering, disabled cancellation controls, Sigma continuation condition as blocking gate, read-only APIs, frontend shell, tests and local certification.
 
 Task started: 2026-08-04
 
-Expected stop boundary: Stop after branch creation and handoff. Do not begin implementation without explicit directive.
+Expected stop boundary: Stop after implementation, tests, and local certification. Do not deploy. Do not begin Phase 3B. Do not push, merge, or create PR without explicit authorization.
 
 ## File Ownership
 
 | File or directory | Agent | Purpose | State |
 |---|---|---|---|
-| artifacts/agent_handoffs/MISSION_CONTROL_HANDOFF.md | Hermes | This handoff record | NEW |
+| artifacts/agent_handoffs/MISSION_CONTROL_HANDOFF.md | Hermes | This handoff record | UPDATED |
+| portal/schemas/mission_control_projection.py | Hermes | Read-only projection Pydantic schemas | NEW |
+| portal/services/mission_control_projection_service.py | Hermes | Read-only query service (tenant-scoped) | NEW |
+| portal/services/sigma_gate.py | Hermes | SIGMA_LEASE_EXPIRY_CONTINUATION_GATE | NEW |
+| portal/routers/mission_control.py | Hermes | Extended with read-only GET endpoints | MODIFIED |
+| portal/tests/test_mission_control_projection.py | Hermes | Focused projection + tenant isolation + read-only enforcement tests | NEW |
+| portal/tests/test_mission_control_sigma_gate.py | Hermes | Sigma gate tests | NEW |
+| web/src/api/missionControl.ts | Hermes | Extended API client for projection endpoints | MODIFIED |
+| web/src/pages/mission-control/MissionControlHome.tsx | Hermes | Extended with intent/run-control projection views | MODIFIED |
+| web/src/pages/mission-control/MissionControlSurface.tsx | Hermes | Extended with data adapters for surfaces | MODIFIED |
+| web/src/pages/mission-control/sections.ts | Hermes | May add new surface entries if needed | MODIFIED |
 
 ## Changes Completed
 
 - Created fresh branch feat/mission-control-foundation from main at 22b384a7
 - Created this handoff record
+- Read all existing mission control code (models, routers, services, tests, frontend)
+- Confirmed ADR-002 architectural baseline and Sigma condition
 
 ## Changes In Progress
 
-- None (awaiting implementation directive)
+- Mission Control Foundation implementation (read-only projection APIs, Sigma gate, frontend, tests)
 
 ## Validation
 
 | Gate | Result | Notes |
 |---|---|---|
-| CI | N/A | Fresh branch from main; no changes yet |
+| CI | PENDING | Awaiting implementation and local certification |
 
 ## Next Required Action
 
@@ -102,8 +114,12 @@ Outgoing HEAD: 22b384a707f87ab7dcc3051f483eba000ab8e71f (feat/mission-control-fo
 
 Outgoing worktree status: CLEAN
 
-Incoming agent: (awaiting implementation directive)
+Incoming agent: Hermes
 
-Incoming agent acknowledgment: (pending)
+Incoming agent acknowledgment: CLAIMED — implementation directive received from Principal. Scope is Mission Control Foundation only (read-only dashboard, intent/execution-state projection, correlation/causation visibility, tenant-scoped filtering, disabled cancellation controls, Sigma continuation condition as blocking gate, read-only APIs, frontend shell, tests, local certification). No revenue, commerce, Stripe, Polsia, or Phase 3B work.
 
 Handoff time: 2026-08-04
+
+Worktree: C:/Users/admin/SintraPrime-Unified-mission-control
+
+Verified HEAD: 759c4e3944a8d564e7f1945e7c3e7be4ef64dbce

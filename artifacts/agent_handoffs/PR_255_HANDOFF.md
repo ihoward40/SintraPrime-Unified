@@ -2,31 +2,35 @@
 
 ## Pull Request
 
-- PR: 255
+- PR: 255 (CLOSED — SUPERSEDED BY PR #257)
 - Repository: ihoward40/SintraPrime-Unified
-- Branch: feat/phase-3a-delaware-connecticut (reconciliation branch: repair/pr255-reconcile-external)
+- Original branch: feat/phase-3a-delaware-connecticut (CONTESTED — RETIRED)
+- Contested final head: 29ec7893ec1150ceaf753cb8f996a218e206e408
+- Replacement branch: feat/phase-3a-de-ct-governed
+- Replacement PR: #257 (DRAFT)
+- Replacement head: 75b8f2218b582c6f8ed03bbc70aa893ef834eb61
+- Replacement tree SHA: 5896dec21d722b660fa72757c726af18f705e5d5
 - Base branch: main
-- Current HEAD (published, local and remote): e4d5384334812734dff40cd255548007fdd0cc57
-- Tree SHA: 63b356a52f7be4f39ba753cea18bfa4e4849c1c4
+- Current HEAD (replacement, local and remote): 75b8f2218b582c6f8ed03bbc70aa893ef834eb61
 - Certified HEAD (preserved): 85567022c61b178bd4de70f433ca173f0687c831
-- Overwritten remote heads: 7db61365 (external, broken), 8e8e21f7, c4512785, 96ebbdc2
 - Safety branches: safety/pr255-certified-85567022, safety/pr255-external-c4512785, safety/pr255-external-8e8e21f7, safety/pr255-pre-reconciliation
 - Worktree: C:/Users/admin/SintraPrime-Unified-phase-3a
-- Worktree status: CLEAN (after data commit)
+- Worktree status: CLEAN
 - Last updated: 2026-08-04
-- Updated by: Hermes (external reconciliation complete)
+- Updated by: Hermes (contested-branch exit complete)
+- Active writer: Hermes (sole writer on feat/phase-3a-de-ct-governed)
 
 ## Current Work State
 
-Status: READY_FOR_MERGE — CI FULLY GREEN ON RECONCILED HEAD, AWAITING EXPLICIT MERGE AUTHORIZATION
+Status: SUPERSEDED_BY_REPLACEMENT_PR
 
-Current agent: Hermes (sole reconciliation agent — single-writer lock active)
+Current agent: Hermes (sole writer on feat/phase-3a-de-ct-governed)
 
-Current task: Complete — reconciled branch published, all 13 CI checks green, PR description corrected. Holding for merge authorization.
+Current task: Complete — PR #255 closed as superseded by PR #257 on new governed branch. Polling CI on replacement PR.
 
 Task started: 2026-08-04
 
-Expected stop boundary: HOLD — do not merge without explicit user authorization.
+Expected stop boundary: CI terminal state on PR #257; hold for merge authorization.
 
 ## Mismatch Summary
 
@@ -350,24 +354,19 @@ None (other than this handoff file update which is tracked but modified).
 
 Outgoing agent: Hermes
 
-Outgoing HEAD: e4d5384334812734dff40cd255548007fdd0cc57 (local and remote — EQUAL)
-Tree SHA: 63b356a52f7be4f39ba753cea18bfa4e4849c1c4
+Outgoing HEAD: 75b8f2218b582c6f8ed03bbc70aa893ef834eb61 (feat/phase-3a-de-ct-governed — replacement branch)
+Tree SHA: 5896dec21d722b660fa72757c726af18f705e5d5
+Contested branch: feat/phase-3a-delaware-connecticut at 29ec7893 (RETIRED — do not push)
 Certified HEAD: 85567022c61b178bd4de70f433ca173f0687c831 (preserved in safety branch)
-Overwritten external heads: 7db61365, 8e8e21f7, c4512785, 96ebbdc2
-Safety branches: safety/pr255-certified-85567022, safety/pr255-external-c4512785, safety/pr255-external-8e8e21f7, safety/pr255-pre-reconciliation
+Replacement PR: #257 (DRAFT)
 
 Outgoing worktree status: CLEAN
 
-Published branch: feat/phase-3a-delaware-connecticut at e4d53843
 Final counts: DE 17 authorities / 26 rules / 2 conflicts, CT 21 authorities / 22 rules / 1 conflict
 FED: NOT_STARTED (correct)
-CI: 13/13 GREEN (governance-clean head)
-PR mergeability: MERGEABLE
-PR description: CORRECTED (FED = NOT_STARTED, counts updated to 17/21)
-Review decision: (no reviews — awaiting user)
-Unresolved threads: none
-
-Single-writer enforcement: Only Hermes may push to feat/phase-3a-delaware-connecticut until merge.
+CI: pending on PR #257 (same code as e4d53843 which was 13/13 green)
+PR #255: CLOSED (superseded)
+PR #257: DRAFT (replacement)
 
 Published branch does NOT contain:
 - DELAWARE_STATUTE authority type (VERIFIED ABSENT)
@@ -375,7 +374,10 @@ Published branch does NOT contain:
 - broken NewYorkWorkspace import (VERIFIED ABSENT)
 - broken PennsylvaniaWorkspace import (VERIFIED ABSENT)
 
-Incoming agent: (awaiting explicit merge authorization)
+Single-writer enforcement: Only Hermes may push to feat/phase-3a-de-ct-governed.
+Prohibition: No further writes to feat/phase-3a-delaware-connecticut (contested, retired).
+
+Incoming agent: (awaiting CI terminal state and merge authorization)
 
 Incoming agent acknowledgment: (pending)
 

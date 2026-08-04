@@ -113,6 +113,26 @@ The Mythos Brain does **NOT**:
 ## 8. Signatures
 | Role | Name | Date | Decision |
 | :--- | :--- | :--- | :--- |
-| **Project Owner** | Isiah Howard | 2026-08-04 | Proposed |
+| **Project Owner** | Isiah Howard | 2026-08-04 | REQUEST_CHANGES |
 | **Architect** | Manus AI | 2026-08-04 | Proposed |
 | **Security Reviewer** | Sigma Agent | 2026-08-04 | Pending |
+
+### 8.1 Owner Review Notes (Isiah Howard, 2026-08-04)
+
+The architecture direction is approved — a central execution coordinator is needed. The following changes are required before this ADR can be accepted:
+
+**Status consistency:** The alternatives table (Section 4) marks the Mythos Brain as "Proposed" with a yellow circle. Keep this consistent with the ADR header status. Do not advance to "Approved" until both reviews are recorded.
+
+**Authority boundaries (Section 2.2):** The Brain owns execution coordination and intent state. Domain services (portal, trust_law, legal_authority, etc.) must retain authoritative domain records. Read-only queries need not route through the Brain unless policy or correlation requires it. Executors may retain domain-owned state under defined boundaries. Add this clarification.
+
+**Delivery semantics (Section 2.3):** The current text covers at-least-once, idempotency, and backoff. Add explicit definitions for: transactional outbox (dispatch records written in the same transaction as the state change), inbox/deduplication (executors track processed idempotency keys), replay behavior, lease ownership with heartbeat and expiry, dead-letter queue handling, and poison-message quarantine.
+
+**Cancellation scopes (Section 2.4):** Replace "Global Halt" with three scoped controls:
+1. Execution-scoped cancellation (specific execution by ID, permissioned to owner/admin).
+2. Tenant-scoped emergency stop (all executions for one tenant, permissioned to tenant admin).
+3. Platform emergency stop (all executions platform-wide, permissioned to platform operators only, mandatory incident report).
+Each requires explicit permission, immutable audit event, reason, blast-radius display, confirmation, and recovery procedure. A universal unscoped kill switch is rejected.
+
+**Security and failure boundaries (Section 2.5):** Add specifications for: tenant isolation, actor delegation via signed dispatch envelopes, service-to-service authentication, policy-version snapshots (recording which policy version authorized an intent), stale approval invalidation (if policy tightened since approval), split-brain prevention (lease-based leadership), brain unavailability behavior (in-flight executions continue, new dispatches queued), degraded read-only operation, executor compromise handling (credential revocation, task redelivery, audit trail), RTO/RPO targets, and recovery/replay procedure.
+
+**Acceptance criteria (Section 6):** Replace "100% idempotency" with: "All state-changing executor contracts must pass duplicate-delivery tests proving one externally observable effect for repeated delivery of the same idempotency key." Replace "Stop All" with scoped cancellation latency targets by execution class (e.g., execution-scoped 2s, tenant-scoped 5s, platform emergency 10s).

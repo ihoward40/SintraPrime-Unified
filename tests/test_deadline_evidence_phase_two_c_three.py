@@ -102,7 +102,9 @@ def test_evidence_approval_requires_attorney():
 def test_routes_require_authentication_and_register_scope():
     client = TestClient(create_app())
     assert client.get("/api/v1/matters/matter-1/intelligence/deadlines").status_code == 401
-    paths = {route.path for route in create_app().routes}
+    from portal.tests.support.route_enumeration import get_terminal_route_paths
+
+    paths = get_terminal_route_paths(create_app())
     assert "/api/v1/matters/{matter_id}/intelligence/deadlines/calculate" in paths
     assert "/api/v1/matters/{matter_id}/intelligence/evidence/nodes" in paths
     assert not any(

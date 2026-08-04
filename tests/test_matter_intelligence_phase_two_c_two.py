@@ -155,7 +155,9 @@ def test_matter_routes_require_authenticated_rbac_context():
 
 def test_matter_routes_are_registered_without_frontend_surface():
     app = create_app()
-    paths = {route.path for route in app.routes}
+    from portal.tests.support.route_enumeration import get_terminal_route_paths
+
+    paths = get_terminal_route_paths(app)
     assert "/api/v1/matters/{matter_id}/intelligence/parties" in paths
     assert "/api/v1/matters/{matter_id}/intelligence/assessments/{assessment_id}/versions" in paths
     assert "/api/v1/matters/{matter_id}/intelligence/deadlines" in paths

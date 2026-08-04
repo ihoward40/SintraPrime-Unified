@@ -151,7 +151,9 @@ def test_export_route_requires_auth_and_registers_scope():
     assert (
         client.post("/api/v1/matters/matter-1/exports", json={"format": "JSON"}).status_code == 401
     )
-    paths = {route.path for route in create_app().routes}
+    from portal.tests.support.route_enumeration import get_terminal_route_paths
+
+    paths = get_terminal_route_paths(create_app())
     assert "/api/v1/matters/{matter_id}/exports" in paths
 
 

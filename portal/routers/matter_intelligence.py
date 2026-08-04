@@ -33,19 +33,11 @@ def _error(exc: MatterIntelligenceError) -> HTTPException:
     return HTTPException(status_code=422, detail=str(exc))
 
 
-def _actor_read() -> CurrentUser:
-    return Depends(require_permissions(Permission.MATTER_INTELLIGENCE_READ))
-
-
-def _actor_write() -> CurrentUser:
-    return Depends(require_permissions(Permission.MATTER_INTELLIGENCE_WRITE))
-
-
 @router.post("/{matter_id}/intelligence/parties", status_code=status.HTTP_201_CREATED)
 async def create_party(
     matter_id: str,
     body: MatterPartyCreate,
-    current_user: CurrentUser = _actor_write(),
+    current_user: CurrentUser = Depends(require_permissions(Permission.MATTER_INTELLIGENCE_WRITE)),
     db: AsyncSession = Depends(get_db),
 ):
     try:
@@ -63,7 +55,9 @@ async def create_party(
 
 @router.get("/{matter_id}/intelligence/parties")
 async def list_parties(
-    matter_id: str, current_user: CurrentUser = _actor_read(), db: AsyncSession = Depends(get_db)
+    matter_id: str,
+    current_user: CurrentUser = Depends(require_permissions(Permission.MATTER_INTELLIGENCE_READ)),
+    db: AsyncSession = Depends(get_db),
 ):
     try:
         return await service.list_parties(db, matter_id, current_user.tenant_id)
@@ -75,7 +69,7 @@ async def list_parties(
 async def create_account(
     matter_id: str,
     body: MatterAccountCreate,
-    current_user: CurrentUser = _actor_write(),
+    current_user: CurrentUser = Depends(require_permissions(Permission.MATTER_INTELLIGENCE_WRITE)),
     db: AsyncSession = Depends(get_db),
 ):
     try:
@@ -93,7 +87,9 @@ async def create_account(
 
 @router.get("/{matter_id}/intelligence/accounts")
 async def list_accounts(
-    matter_id: str, current_user: CurrentUser = _actor_read(), db: AsyncSession = Depends(get_db)
+    matter_id: str,
+    current_user: CurrentUser = Depends(require_permissions(Permission.MATTER_INTELLIGENCE_READ)),
+    db: AsyncSession = Depends(get_db),
 ):
     try:
         return await service.list_accounts(db, matter_id, current_user.tenant_id)
@@ -105,7 +101,7 @@ async def list_accounts(
 async def create_filing(
     matter_id: str,
     body: MatterFilingCreate,
-    current_user: CurrentUser = _actor_write(),
+    current_user: CurrentUser = Depends(require_permissions(Permission.MATTER_INTELLIGENCE_WRITE)),
     db: AsyncSession = Depends(get_db),
 ):
     try:
@@ -123,7 +119,9 @@ async def create_filing(
 
 @router.get("/{matter_id}/intelligence/filings")
 async def list_filings(
-    matter_id: str, current_user: CurrentUser = _actor_read(), db: AsyncSession = Depends(get_db)
+    matter_id: str,
+    current_user: CurrentUser = Depends(require_permissions(Permission.MATTER_INTELLIGENCE_READ)),
+    db: AsyncSession = Depends(get_db),
 ):
     try:
         return await service.list_filings(db, matter_id, current_user.tenant_id)
@@ -135,7 +133,7 @@ async def list_filings(
 async def create_communication(
     matter_id: str,
     body: MatterCommunicationCreate,
-    current_user: CurrentUser = _actor_write(),
+    current_user: CurrentUser = Depends(require_permissions(Permission.MATTER_INTELLIGENCE_WRITE)),
     db: AsyncSession = Depends(get_db),
 ):
     try:
@@ -153,7 +151,9 @@ async def create_communication(
 
 @router.get("/{matter_id}/intelligence/communications")
 async def list_communications(
-    matter_id: str, current_user: CurrentUser = _actor_read(), db: AsyncSession = Depends(get_db)
+    matter_id: str,
+    current_user: CurrentUser = Depends(require_permissions(Permission.MATTER_INTELLIGENCE_READ)),
+    db: AsyncSession = Depends(get_db),
 ):
     try:
         return await service.list_communications(db, matter_id, current_user.tenant_id)
@@ -165,7 +165,7 @@ async def list_communications(
 async def create_dispute(
     matter_id: str,
     body: MatterDisputeCreate,
-    current_user: CurrentUser = _actor_write(),
+    current_user: CurrentUser = Depends(require_permissions(Permission.MATTER_INTELLIGENCE_WRITE)),
     db: AsyncSession = Depends(get_db),
 ):
     try:
@@ -183,7 +183,9 @@ async def create_dispute(
 
 @router.get("/{matter_id}/intelligence/disputes")
 async def list_disputes(
-    matter_id: str, current_user: CurrentUser = _actor_read(), db: AsyncSession = Depends(get_db)
+    matter_id: str,
+    current_user: CurrentUser = Depends(require_permissions(Permission.MATTER_INTELLIGENCE_READ)),
+    db: AsyncSession = Depends(get_db),
 ):
     try:
         return await service.list_disputes(db, matter_id, current_user.tenant_id)
@@ -195,7 +197,7 @@ async def list_disputes(
 async def register_attachment(
     matter_id: str,
     body: MatterAttachmentCreate,
-    current_user: CurrentUser = _actor_write(),
+    current_user: CurrentUser = Depends(require_permissions(Permission.MATTER_INTELLIGENCE_WRITE)),
     db: AsyncSession = Depends(get_db),
 ):
     try:
@@ -213,7 +215,9 @@ async def register_attachment(
 
 @router.get("/{matter_id}/intelligence/attachments")
 async def list_attachments(
-    matter_id: str, current_user: CurrentUser = _actor_read(), db: AsyncSession = Depends(get_db)
+    matter_id: str,
+    current_user: CurrentUser = Depends(require_permissions(Permission.MATTER_INTELLIGENCE_READ)),
+    db: AsyncSession = Depends(get_db),
 ):
     try:
         return await service.list_attachments(db, matter_id, current_user.tenant_id)
@@ -225,7 +229,7 @@ async def list_attachments(
 async def create_assessment(
     matter_id: str,
     body: MatterAssessmentCreate,
-    current_user: CurrentUser = _actor_write(),
+    current_user: CurrentUser = Depends(require_permissions(Permission.MATTER_INTELLIGENCE_WRITE)),
     db: AsyncSession = Depends(get_db),
 ):
     try:
@@ -243,7 +247,9 @@ async def create_assessment(
 
 @router.get("/{matter_id}/intelligence/assessments")
 async def list_assessments(
-    matter_id: str, current_user: CurrentUser = _actor_read(), db: AsyncSession = Depends(get_db)
+    matter_id: str,
+    current_user: CurrentUser = Depends(require_permissions(Permission.MATTER_INTELLIGENCE_READ)),
+    db: AsyncSession = Depends(get_db),
 ):
     try:
         return await service.list_assessments(db, matter_id, current_user.tenant_id)
@@ -259,7 +265,7 @@ async def add_assessment_version(
     matter_id: str,
     assessment_id: str,
     body: MatterAssessmentVersionCreate,
-    current_user: CurrentUser = _actor_write(),
+    current_user: CurrentUser = Depends(require_permissions(Permission.MATTER_INTELLIGENCE_WRITE)),
     db: AsyncSession = Depends(get_db),
 ):
     try:
@@ -280,7 +286,7 @@ async def add_assessment_version(
 async def list_assessment_versions(
     matter_id: str,
     assessment_id: str,
-    current_user: CurrentUser = _actor_read(),
+    current_user: CurrentUser = Depends(require_permissions(Permission.MATTER_INTELLIGENCE_READ)),
     db: AsyncSession = Depends(get_db),
 ):
     try:
@@ -315,7 +321,9 @@ async def review_assessment(
 
 @router.get("/{matter_id}/intelligence/audit-events")
 async def list_audit_events(
-    matter_id: str, current_user: CurrentUser = _actor_read(), db: AsyncSession = Depends(get_db)
+    matter_id: str,
+    current_user: CurrentUser = Depends(require_permissions(Permission.MATTER_INTELLIGENCE_READ)),
+    db: AsyncSession = Depends(get_db),
 ):
     try:
         return await service.audit_events(db, matter_id, current_user.tenant_id)

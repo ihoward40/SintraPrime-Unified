@@ -7,6 +7,7 @@ import re
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 from uuid import UUID, uuid4
 
 import jwt
@@ -381,7 +382,28 @@ def classify_route(route: APIRoute) -> dict[str, str | list[str]]:
 
 def collect_route_matrix(app: FastAPI | None = None) -> list[dict[str, str | list[str]]]:
     app = app or create_app()
-    routes = [route for route in app.routes if isinstance(route, APIRoute) and route.path.startswith("/api/v1/")]
+    # Use recursive terminal-route iteration to handle _IncludedRouter wrappers
+    # (FastAPI 0.139+) in addition to flat APIRoute objects (older versions).
+    from portal.tests.support.route_enumeration import iter_terminal_routes
+
+    routes: list[Any] = []
+    for full_path, route in iter_terminal_routes(app.routes):
+        if not isinstance(route, APIRoute):
+            continue
+        if not full_path.startswith("/api/v1/"):
+            continue
+        # Ensure classify_route sees the full mounted path.  On older
+        # FastAPI, route.path is already the full path; on newer versions
+        # the _IncludedRouter wrapper may need the prefix reconstructed.
+        if route.path != full_path:
+            route = SimpleNamespace(
+                path=full_path,
+                methods=route.methods,
+                name=route.name,
+                endpoint=route.endpoint,
+                dependant=route.dependant,
+            )
+        routes.append(route)
     if not routes:
         root = Path(__file__).resolve().parents[2]
         main_source = (root / "portal" / "main.py").read_text(encoding="utf-8", errors="ignore")

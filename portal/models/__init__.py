@@ -4,8 +4,26 @@ from .audit_record import AuditRecord
 from .billing import Expense, Invoice, InvoiceLineItem, Payment, TimeEntry, TrustAccount
 from .case import Case, CaseDeadline, CaseEvent, CaseNote, CaseTask
 from .client import Client, Matter
+from .deadline_evidence import (
+    MatterDeadline,
+    MatterDeadlineVersion,
+    MatterEvidenceFinding,
+    MatterEvidenceLink,
+    MatterEvidenceNode,
+)
 from .document import Document, DocumentFolder, DocumentShare, DocumentVersion
 from .evidence_snapshot import EvidenceSnapshot
+from .matter_intelligence import (
+    MatterAccount,
+    MatterAssessment,
+    MatterAssessmentVersion,
+    MatterAttachment,
+    MatterAuditEvent,
+    MatterCommunication,
+    MatterDispute,
+    MatterFiling,
+    MatterParty,
+)
 from .message import Message, MessageAttachment, MessageThread
 from .mission_control_command import (
     MissionControlCommand,
@@ -39,6 +57,20 @@ __all__ = [
     "Invoice",
     "InvoiceLineItem",
     "Matter",
+    "MatterAccount",
+    "MatterAssessment",
+    "MatterAssessmentVersion",
+    "MatterAttachment",
+    "MatterAuditEvent",
+    "MatterCommunication",
+    "MatterDeadline",
+    "MatterDeadlineVersion",
+    "MatterDispute",
+    "MatterEvidenceFinding",
+    "MatterEvidenceLink",
+    "MatterEvidenceNode",
+    "MatterFiling",
+    "MatterParty",
     "Message",
     "MessageAttachment",
     "MessageThread",

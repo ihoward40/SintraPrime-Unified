@@ -1,0 +1,1206 @@
+[
+  {
+    "id": "NJ-TRUST-UTC-APPLICABILITY",
+    "jurisdiction": "NJ",
+    "domain": "trust_law",
+    "topic": "uniform trust code applicability",
+    "rule_statement": "New Jersey's Uniform Trust Code applies to express trusts, charitable or noncharitable, and statutory, judgment, or decree trusts administered as express trusts.",
+    "rule_logic": {
+      "conditions": [
+        "trust_is_express_or_administered_as_express"
+      ],
+      "conclusion": "NJ_UTC_APPLIES"
+    },
+    "authority_ids": [
+      "NJ-UTC-2015-276"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.93,
+    "requires_human_review": true,
+    "effective_from": "2016-07-17",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "other statute",
+        "rule": "Specific statutes, judgments, decrees, and mandatory UTC rules may control."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-TRUST-CREATION-REQUIREMENTS",
+    "jurisdiction": "NJ",
+    "domain": "trust_law",
+    "topic": "trust creation requirements settlor capacity purpose definite beneficiaries charitable oral trusts",
+    "rule_statement": "Trust creation in New Jersey requires statutory creation method and creation requirements, including capacity, intent, duties, property, valid purpose, and beneficiary rules; charitable and limited noncharitable trusts have separate rules.",
+    "rule_logic": {
+      "conditions": [
+        "settlor_capacity",
+        "intent",
+        "trust_property",
+        "trustee_duties",
+        "valid_purpose",
+        "beneficiary_or_charitable_exception"
+      ],
+      "conclusion": "TRUST_CREATION_ISSUE_SPOTTED"
+    },
+    "authority_ids": [
+      "NJ-UTC-CREATION-3B31-18-25",
+      "NJ-UTC-REVOCABLE-3B31-42-45"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.86,
+    "requires_human_review": true,
+    "effective_from": "2016-07-17",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "oral trust",
+        "rule": "Evidence and statute-of-frauds issues require professional review."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-TRUST-GOVERNING-LAW-ADMINISTRATION",
+    "jurisdiction": "NJ",
+    "domain": "trust_law",
+    "topic": "governing law principal place of administration trust registration",
+    "rule_statement": "New Jersey trust governing law and principal place of administration analysis begins with N.J.S.A. 3B:31-7 and 3B:31-8; registration issues require separate court and local practice review.",
+    "rule_logic": {
+      "conditions": [
+        "trust_terms_or_administration_contacts"
+      ],
+      "conclusion": "GOVERNING_LAW_AND_ADMINISTRATION_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-UTC-GOVLAW-3B31-7-8"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.8,
+    "requires_human_review": true,
+    "effective_from": "2016-07-17",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "registration",
+        "rule": "No production registration rule is encoded in Phase 1."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-TRUST-TRUSTEE-SUCCESSION",
+    "jurisdiction": "NJ",
+    "domain": "trust_law",
+    "topic": "trustee acceptance resignation removal successor trustees co-trustees compensation",
+    "rule_statement": "Trustee acceptance, resignation, removal, co-trustee conduct, vacancies, successor appointment, and reimbursement are governed by New Jersey UTC trustee provisions; compensation must be reviewed under trust terms and applicable fiduciary law.",
+    "rule_logic": {
+      "conditions": [
+        "trustee_status_change_or_compensation_issue"
+      ],
+      "conclusion": "TRUSTEE_SUCCESSION_AND_COMPENSATION_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-UTC-TRUSTEES-3B31-46-53",
+      "NJ-UTC-DUTIES-3B31-54-69"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.84,
+    "requires_human_review": true,
+    "effective_from": "2016-07-17",
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-TRUST-TRUSTEE-DUTIES",
+    "jurisdiction": "NJ",
+    "domain": "trust_law",
+    "topic": "trustee powers duties loyalty prudence impartiality recordkeeping reporting beneficiary information rights",
+    "rule_statement": "New Jersey trustee duties include administration, loyalty, impartiality, prudence, special skills, delegation, control and protection, recordkeeping, reporting/disclosure, discretionary powers, and general statutory powers.",
+    "rule_logic": {
+      "conditions": [
+        "trustee_action_or_inaction"
+      ],
+      "conclusion": "TRUSTEE_DUTY_ANALYSIS_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-UTC-DUTIES-3B31-54-69"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.87,
+    "requires_human_review": true,
+    "effective_from": "2016-07-17",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "trust terms",
+        "rule": "Mandatory and default-rule split must be checked before applying trust terms."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-TRUST-CERTIFICATION",
+    "jurisdiction": "NJ",
+    "domain": "trust_law",
+    "topic": "certification of trust",
+    "rule_statement": "New Jersey recognizes certification of trust under N.J.S.A. 3B:31-81; users should provide issue-spotting output only until the certificate content and transaction context are professionally reviewed.",
+    "rule_logic": {
+      "conditions": [
+        "third_party_requests_trust_information"
+      ],
+      "conclusion": "CERTIFICATION_OF_TRUST_AVAILABLE_WITH_REVIEW"
+    },
+    "authority_ids": [
+      "NJ-UTC-LIABILITY-3B31-70-81"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.9,
+    "requires_human_review": true,
+    "effective_from": "2016-07-17",
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-TRUST-MODIFICATION-TERMINATION",
+    "jurisdiction": "NJ",
+    "domain": "trust_law",
+    "topic": "modification reformation termination nonjudicial settlement agreements uneconomic trust termination decanting",
+    "rule_statement": "New Jersey UTC provides multiple modification, reformation, termination, nonjudicial settlement, uneconomic trust, tax objective, combination, and division pathways; Phase 1 does not encode a completed New Jersey decanting conclusion.",
+    "rule_logic": {
+      "conditions": [
+        "change_or_termination_requested"
+      ],
+      "conclusion": "MODIFICATION_TERMINATION_PATHWAYS_AVAILABLE_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-UTC-NJSA-3B31-11-26-34"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.82,
+    "requires_human_review": true,
+    "effective_from": "2016-07-17",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "decanting",
+        "rule": "Open question in Phase 1; do not produce final decanting instruction."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-TRUST-REVOCABLE-CREDITOR-EXPOSURE",
+    "jurisdiction": "NJ",
+    "domain": "trust_law",
+    "topic": "revocable trust exposure settlor creditor rules",
+    "rule_statement": "During revocability, New Jersey UTC settlor-creditor and settlor-power provisions require treating revocable trust exposure as an issue requiring creditor review rather than asset-protection certainty.",
+    "rule_logic": {
+      "conditions": [
+        "trust_revocable",
+        "settlor_retains_revocation_power"
+      ],
+      "conclusion": "REVOCABLE_TRUST_CREDITOR_EXPOSURE_WARNING"
+    },
+    "authority_ids": [
+      "NJ-UTC-CREDITORS-3B31-35-41",
+      "NJ-UTC-REVOCABLE-3B31-42-45"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.86,
+    "requires_human_review": true,
+    "effective_from": "2016-07-17",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "bankruptcy",
+        "rule": "Federal bankruptcy overlay is not marked complete."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-TRUST-IRREVOCABLE-SETTLOR-BENEFIT",
+    "jurisdiction": "NJ",
+    "domain": "trust_law",
+    "topic": "irrevocable trust settlor benefit self-settled trust limitations powers of withdrawal beneficiary serving as trustee",
+    "rule_statement": "For irrevocable trusts involving settlor benefit, self-settled features, powers of withdrawal, or beneficiary-trustee control, New Jersey UTC creditor provisions require human review before any protection conclusion.",
+    "rule_logic": {
+      "conditions": [
+        "irrevocable_trust",
+        "settlor_benefit_or_withdrawal_power_or_control"
+      ],
+      "conclusion": "SELF_SETTLED_OR_CONTROL_EXPOSURE_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-UTC-CREDITORS-3B31-35-41"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.82,
+    "requires_human_review": true,
+    "effective_from": "2016-07-17",
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-TRUST-SPENDTHRIFT-DISCRETIONARY-MANDATORY",
+    "jurisdiction": "NJ",
+    "domain": "trust_law",
+    "topic": "spendthrift provisions discretionary trusts mandatory distributions overdue distributions creditor exceptions",
+    "rule_statement": "New Jersey UTC has separate rules for spendthrift restrictions, discretionary trusts, mandatory distributions, overdue distributions, and creditor exceptions; the system may warn and cite but not approve creditor-protection outcomes.",
+    "rule_logic": {
+      "conditions": [
+        "beneficiary_creditor_claim",
+        "spendthrift_or_distribution_term"
+      ],
+      "conclusion": "BENEFICIARY_CREDITOR_RULE_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-UTC-CREDITORS-3B31-35-41"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.88,
+    "requires_human_review": true,
+    "effective_from": "2016-07-17",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "support orders",
+        "rule": "Support-order exceptions require separate review."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-CREDITOR-UVTA-ACTUAL-CONSTRUCTIVE",
+    "jurisdiction": "NJ",
+    "domain": "creditor_protection",
+    "topic": "uniform voidable transactions act actual intent constructive fraud present future creditors limitations periods",
+    "rule_statement": "New Jersey UVTA issues include actual-intent and constructive theories, present versus future creditors, limitations, remedies, burdens, and debtor-location governing law; no transfer should be encoded as protective without review.",
+    "rule_logic": {
+      "conditions": [
+        "asset_transfer",
+        "creditor_context"
+      ],
+      "conclusion": "VOIDABLE_TRANSACTION_WARNING"
+    },
+    "authority_ids": [
+      "NJ-UVTA-2021-92"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.9,
+    "requires_human_review": true,
+    "effective_from": "2021-08-10",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "bankruptcy",
+        "rule": "Federal bankruptcy avoidance powers require federal review."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-CREDITOR-EXEMPTIONS-LEVY-GARNISHMENT",
+    "jurisdiction": "NJ",
+    "domain": "creditor_protection",
+    "topic": "exemptions wage garnishment bank account levy retirement life insurance annuity tenancy by the entirety homestead support government bankruptcy overlays",
+    "rule_statement": "New Jersey exemption, wage garnishment, bank levy, retirement account, life insurance, annuity, tenancy by the entirety, homestead, support, government-claim, and bankruptcy overlay issues remain human-review gated in Phase 1.",
+    "rule_logic": {
+      "conditions": [
+        "collection_or_exemption_issue"
+      ],
+      "conclusion": "EXEMPTION_AND_LEVY_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-UVTA-2021-92"
+    ],
+    "status": "HUMAN_REVIEW_REQUIRED",
+    "confidence": 0.55,
+    "requires_human_review": true,
+    "effective_from": "2021-08-10",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "ordinary bank signature card",
+        "rule": "No claim is encoded that a bank signature card defeats levy."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-UCC-FILING-OFFICE",
+    "jurisdiction": "NJ",
+    "domain": "ucc_article9",
+    "topic": "filing office central local fixture filings transmitting utilities electronic filing filing fees",
+    "rule_statement": "For New Jersey Article 9, central filing is generally with the state filing office except fixture, as-extracted, and timber-related local real-property filings; transmitting utilities and electronic filing require Article 9, DORES, and N.J.A.C. review.",
+    "rule_logic": {
+      "conditions": [
+        "nj_law_governs_perfection",
+        "collateral_type_identified"
+      ],
+      "conclusion": "DETERMINE_CENTRAL_OR_LOCAL_FILING_OFFICE"
+    },
+    "authority_ids": [
+      "NJ-UCC9-2001-117",
+      "NJ-DORES-UCC-FILING-GUIDANCE-2025",
+      "NJ-DORES-UCC-FEES-2026"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.88,
+    "requires_human_review": true,
+    "effective_from": "2001-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "fixtures",
+        "rule": "Fixture filing may require local real property office."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-UCC-DEBTOR-NAMING-TRUSTS",
+    "jurisdiction": "NJ",
+    "domain": "ucc_article9",
+    "topic": "debtor naming organization names individual names trusts as debtors nonuniform New Jersey provisions current Article 9 amendments transition rules",
+    "rule_statement": "New Jersey debtor-name rules include registered organizations, individuals, and trusts as debtors; trust collateral requires the statutory trust-name or settlor/testator naming path and separate indication that collateral is held in trust.",
+    "rule_logic": {
+      "conditions": [
+        "financing_statement",
+        "debtor_name_required"
+      ],
+      "conclusion": "STRICT_DEBTOR_NAME_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-UCC9-2013-65-DEBTOR-NAME"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.9,
+    "requires_human_review": true,
+    "effective_from": "2013-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "driver license",
+        "rule": "Individual debtor rule depends on current unexpired New Jersey driver's license status."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [
+      "NJ-UCC-DEBTOR-NAMING-TRUSTS-PRE-2013"
+    ],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-UCC-DEBTOR-NAMING-TRUSTS-PRE-2013",
+    "jurisdiction": "NJ",
+    "domain": "ucc_article9",
+    "topic": "historical trust debtor naming pre 2013",
+    "rule_statement": "Historical pre-2013 New Jersey Article 9 debtor-name treatment remains available only for historical analysis and is superseded for current filings by the 2013 amendments.",
+    "rule_logic": {
+      "conditions": [
+        "filing_date_before_2013_07_01"
+      ],
+      "conclusion": "HISTORICAL_DEBTOR_NAME_RULE"
+    },
+    "authority_ids": [
+      "NJ-UCC9-2001-117"
+    ],
+    "status": "HISTORICAL",
+    "confidence": 0.72,
+    "requires_human_review": true,
+    "effective_from": "2001-07-01",
+    "effective_to": "2013-07-01",
+    "exceptions": [],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [
+      "NJ-UCC-DEBTOR-NAMING-TRUSTS"
+    ],
+    "version": "0.9.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-UCC-FINANCING-STATEMENTS-AMENDMENTS",
+    "jurisdiction": "NJ",
+    "domain": "ucc_article9",
+    "topic": "financing statements amendments assignments continuations terminations information statements continuation window lapse",
+    "rule_statement": "New Jersey Article 9 financing statements, amendments, assignments, continuations, terminations, information statements, lapse, and continuation windows are governed by enacted Article 9 and official filing-office rules.",
+    "rule_logic": {
+      "conditions": [
+        "ucc_record_lifecycle_event"
+      ],
+      "conclusion": "UCC_RECORD_LIFECYCLE_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-UCC9-2001-117",
+      "NJ-DORES-UCC-FILING-GUIDANCE-2025"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.84,
+    "requires_human_review": true,
+    "effective_from": "2001-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "continuation window",
+        "rule": "Continuation timing must be calculated from the actual lapse date."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-UCC-FILING-REJECTION-SEARCH",
+    "jurisdiction": "NJ",
+    "domain": "ucc_article9",
+    "topic": "filing office rejection grounds search requests search logic",
+    "rule_statement": "New Jersey UCC rejection and search logic must follow Article 9 and N.J.A.C. 17:33 filing-office procedures; ambiguous, unauthorized, false, fraudulent, or defective records may trigger refusal or removal review.",
+    "rule_logic": {
+      "conditions": [
+        "filing_rejected_or_search_requested"
+      ],
+      "conclusion": "FILING_OFFICE_PROCEDURE_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-NJAC-17-33-UCC-RULES",
+      "NJ-DORES-UCC-FILING-GUIDANCE-2025",
+      "NJ-DORES-UCC-FEES-2026"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.78,
+    "requires_human_review": true,
+    "effective_from": "2023-12-04",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "official code copy",
+        "rule": "Current official N.J.A.C. text should be checked before final advice."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-CONTAIN-UNSUPPORTED-BANK-CARD",
+    "jurisdiction": "NJ",
+    "domain": "creditor_protection",
+    "topic": "unsupported private bank signature card levy claim",
+    "rule_statement": "The unsupported claim that an ordinary bank signature card defeats levy is quarantined and cannot become an active jurisdiction rule.",
+    "rule_logic": {
+      "conditions": [
+        "claim_mentions_bank_signature_card_defeats_levy"
+      ],
+      "conclusion": "QUARANTINE_UNSUPPORTED_PRIVATE_LAW_CLAIM"
+    },
+    "authority_ids": [
+      "NJ-PRIVATE-UNSUPPORTED-BANK-SIGNATURE-CARD"
+    ],
+    "status": "QUARANTINED",
+    "confidence": 0.0,
+    "requires_human_review": true,
+    "effective_from": null,
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "0.1.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-ENGINE-FUTURE-RULE",
+    "jurisdiction": "NJ",
+    "domain": "engine_fixture",
+    "topic": "future rule selection fixture",
+    "rule_statement": "Future fixture rule must not apply early.",
+    "rule_logic": {
+      "conditions": [
+        "fixture"
+      ],
+      "conclusion": "FUTURE"
+    },
+    "authority_ids": [
+      "NJ-UTC-2015-276"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.5,
+    "requires_human_review": true,
+    "effective_from": "2099-01-01",
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-ENGINE-MISSING-DATE-RULE",
+    "jurisdiction": "NJ",
+    "domain": "engine_fixture",
+    "topic": "missing date fixture",
+    "rule_statement": "Missing date fixture must require review.",
+    "rule_logic": {
+      "conditions": [
+        "fixture"
+      ],
+      "conclusion": "MISSING_DATE"
+    },
+    "authority_ids": [
+      "NJ-UTC-2015-276"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.5,
+    "requires_human_review": true,
+    "effective_from": null,
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-ENGINE-CONFLICT-A",
+    "jurisdiction": "NJ",
+    "domain": "engine_fixture",
+    "topic": "overlapping conflict fixture",
+    "rule_statement": "Conflict fixture A.",
+    "rule_logic": {
+      "conditions": [
+        "fixture"
+      ],
+      "conclusion": "A"
+    },
+    "authority_ids": [
+      "NJ-UTC-2015-276"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.5,
+    "requires_human_review": true,
+    "effective_from": "2020-01-01",
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [
+      "NJ-ENGINE-CONFLICT-B"
+    ],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-ENGINE-CONFLICT-B",
+    "jurisdiction": "NJ",
+    "domain": "engine_fixture",
+    "topic": "overlapping conflict fixture",
+    "rule_statement": "Conflict fixture B.",
+    "rule_logic": {
+      "conditions": [
+        "fixture"
+      ],
+      "conclusion": "B"
+    },
+    "authority_ids": [
+      "NJ-UVTA-2021-92"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.5,
+    "requires_human_review": true,
+    "effective_from": "2020-01-01",
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [
+      "NJ-ENGINE-CONFLICT-A"
+    ],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "NJ-CREDITOR-WAGE-EXECUTION-LIMITS",
+    "jurisdiction": "NJ",
+    "domain": "creditor_protection",
+    "topic": "wage execution garnishment limits STATE_RULE EXEMPTION_RULE",
+    "rule_statement": "New Jersey wage execution is limited by N.J.S.A. 2A:17-56; the rule is an exemption issue-spotting rule and must not be merged with bankruptcy exemptions.",
+    "rule_logic": {
+      "conditions": [
+        "facts_match_topic"
+      ],
+      "conclusion": "WAGE_EXECUTION_LIMIT_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-EXEC-WAGE-2A17-56"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.82,
+    "requires_human_review": true,
+    "effective_from": null,
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "2.0.0",
+    "rule_category": "EXEMPTION_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [
+      "official compiled statute verification pending"
+    ],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-CREDITOR-BANK-LEVY-TURNOVER",
+    "jurisdiction": "NJ",
+    "domain": "creditor_protection",
+    "topic": "bank account levy procedures turnover orders supplementary proceedings PROCEDURAL_RULE",
+    "rule_statement": "New Jersey bank-account levy issue spotting requires writ execution, sheriff or officer process, account freeze, and turnover motion review; holding funds in a trust or on a bank signature card is not encoded as automatic levy protection.",
+    "rule_logic": {
+      "conditions": [
+        "facts_match_topic"
+      ],
+      "conclusion": "BANK_LEVY_TURNOVER_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-COURTS-JUDGMENT-COLLECTION"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.8,
+    "requires_human_review": true,
+    "effective_from": null,
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "2.0.0",
+    "rule_category": "PROCEDURAL_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-CREDITOR-EXEMPT-BENEFITS-DEPOSIT-ACCOUNTS",
+    "jurisdiction": "NJ",
+    "domain": "creditor_protection",
+    "topic": "exempt funds deposit accounts public benefits Social Security federal benefits FEDERAL_OVERLAY",
+    "rule_statement": "Deposit-account levy analysis must identify exempt benefit funds and federal account-garnishment overlays, including Social Security, veterans, unemployment, welfare, SSI, and other protected benefits.",
+    "rule_logic": {
+      "conditions": [
+        "facts_match_topic"
+      ],
+      "conclusion": "PROTECTED_BENEFIT_TRACE_AND_FEDERAL_OVERLAY_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-COURTS-JUDGMENT-COLLECTION",
+      "FED-SS-42USC407",
+      "FED-VA-38USC5301",
+      "FED-GARNISHMENT-31CFR212"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.81,
+    "requires_human_review": true,
+    "effective_from": null,
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "2.0.0",
+    "rule_category": "FEDERAL_OVERLAY",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-CREDITOR-RETIREMENT-PENSION-PROTECTION",
+    "jurisdiction": "NJ",
+    "domain": "creditor_protection",
+    "topic": "retirement account pension IRA protections EXEMPTION_RULE",
+    "rule_statement": "New Jersey pension and retirement protection is plan-specific; selected public pension statutes provide execution protections, while IRA and bankruptcy interactions require separate federal and state review.",
+    "rule_logic": {
+      "conditions": [
+        "facts_match_topic"
+      ],
+      "conclusion": "RETIREMENT_PENSION_EXEMPTION_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-PENSION-EXEMPTIONS-43-8A-20-43-19-17",
+      "FED-BANKRUPTCY-11USC-522-541-548"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.7,
+    "requires_human_review": true,
+    "effective_from": null,
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "2.0.0",
+    "rule_category": "EXEMPTION_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-CREDITOR-PROPERTY-EXEMPTIONS",
+    "jurisdiction": "NJ",
+    "domain": "creditor_protection",
+    "topic": "household goods motor vehicle tools of trade homestead residential exemption EXEMPTION_RULE",
+    "rule_statement": "New Jersey ordinary civil execution exemption issue spotting begins with the limited personal-property exemption; Phase 2A does not encode a general homestead exemption or separate vehicle/tools-of-trade dollar rule as production advice.",
+    "rule_logic": {
+      "conditions": [
+        "facts_match_topic"
+      ],
+      "conclusion": "PERSONAL_PROPERTY_EXEMPTION_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-EXEC-PERSONAL-PROPERTY-2A17-19-20"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.68,
+    "requires_human_review": true,
+    "effective_from": null,
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "2.0.0",
+    "rule_category": "EXEMPTION_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [
+      "topic-specific exemption amounts require official current statute review"
+    ],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-CREDITOR-SUPPORT-GOVERNMENT-TAX-EXCEPTIONS",
+    "jurisdiction": "NJ",
+    "domain": "creditor_protection",
+    "topic": "child support spousal support government claim tax claim exceptions PROCEDURAL_RULE STATE_RULE",
+    "rule_statement": "Support, government, and tax claims may use exceptions or specialized procedures; New Jersey state tax warrants and support orders require separate professional review and cannot be averaged with ordinary creditor rules.",
+    "rule_logic": {
+      "conditions": [
+        "facts_match_topic"
+      ],
+      "conclusion": "SUPPORT_GOVERNMENT_TAX_EXCEPTION_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-TAXATION-JUDGMENT-LEVY",
+      "NJ-COURTS-JUDGMENT-COLLECTION"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.72,
+    "requires_human_review": true,
+    "effective_from": null,
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "2.0.0",
+    "rule_category": "PROCEDURAL_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-CREDITOR-UVTA-TIMING-REMEDIES",
+    "jurisdiction": "NJ",
+    "domain": "creditor_protection",
+    "topic": "voidable transfer remedies limitations repose actual intent constructive fraud present future creditors",
+    "rule_statement": "New Jersey UVTA remedies, limitations, and repose are fact-specific; transfer timing, debtor insolvency, badges of fraud, creditor class, and bankruptcy avoidance overlays require counsel review.",
+    "rule_logic": {
+      "conditions": [
+        "facts_match_topic"
+      ],
+      "conclusion": "VOIDABLE_TRANSFER_TIMING_AND_REMEDIES_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-UVTA-2021-92",
+      "FED-BANKRUPTCY-11USC-522-541-548"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.86,
+    "requires_human_review": true,
+    "effective_from": "2021-08-10",
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "2.0.0",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-BANKRUPTCY-TRUST-ASSET-EXPOSURE",
+    "jurisdiction": "NJ",
+    "domain": "bankruptcy_overlay",
+    "topic": "property of estate revocable trust self settled trust beneficiary interests spendthrift exclusions automatic stay discharge limitations BANKRUPTCY_ONLY_RULE",
+    "rule_statement": "Bankruptcy interface rules are issue spotting only: estate property, revocable and self-settled trust interests, beneficiary interests, spendthrift exclusions, transfer lookbacks, automatic stay, exemption selection, and discharge limits are labeled FEDERAL_BANKRUPTCY_REVIEW_REQUIRED.",
+    "rule_logic": {
+      "conditions": [
+        "facts_match_topic"
+      ],
+      "conclusion": "FEDERAL_BANKRUPTCY_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "FED-BANKRUPTCY-11USC-522-541-548",
+      "NJ-UTC-CREDITORS-3B31-35-41"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.74,
+    "requires_human_review": true,
+    "effective_from": null,
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "2.0.0",
+    "rule_category": "BANKRUPTCY_ONLY_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [
+      "bankruptcy counsel review required"
+    ],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-TRUST-DECANTING-UNSUPPORTED",
+    "jurisdiction": "NJ",
+    "domain": "trust_law",
+    "topic": "decanting unsupported where New Jersey authorization unclear",
+    "rule_statement": "Phase 2A did not locate clear current New Jersey statutory decanting authority; do not present decanting as available without attorney review or another authority path such as modification, distribution discretion, or court approval.",
+    "rule_logic": {
+      "conditions": [
+        "facts_match_topic"
+      ],
+      "conclusion": "DECANTING_UNSUPPORTED_PENDING_AUTHORITY"
+    },
+    "authority_ids": [
+      "NJ-UTC-NJSA-3B31-11-26-34"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.58,
+    "requires_human_review": true,
+    "effective_from": "2016-07-17",
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "2.0.0",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [
+      "no clear New Jersey decanting authority located in Phase 2A"
+    ],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-TRUST-DIRECTED-TRUSTS-PROTECTORS-ADVISERS",
+    "jurisdiction": "NJ",
+    "domain": "trust_law",
+    "topic": "directed trusts trust protectors excluded fiduciaries delegation investment advisers distribution advisers trustee bonds trustee compensation",
+    "rule_statement": "New Jersey UTC provisions cover powers to direct, investment advisers, delegation, trustee bond, and compensation-adjacent administration questions; trust protector or excluded fiduciary labels require careful mapping to the statute and trust terms.",
+    "rule_logic": {
+      "conditions": [
+        "facts_match_topic"
+      ],
+      "conclusion": "DIRECTED_TRUST_AND_ADVISER_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-UTC-TRUSTEES-3B31-46-53",
+      "NJ-UTC-DUTIES-3B31-54-69"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.78,
+    "requires_human_review": true,
+    "effective_from": "2016-07-17",
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "2.0.0",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-TRUST-VIRTUAL-REPRESENTATION-NJSA",
+    "jurisdiction": "NJ",
+    "domain": "trust_law",
+    "topic": "virtual representation nonjudicial settlement agreements trustee removal standards limitation periods consent release ratification",
+    "rule_statement": "New Jersey UTC supports virtual representation, nonjudicial settlement, removal standards, breach-of-trust limitation periods, and beneficiary consent, release, or ratification issue spotting, all subject to mandatory rules and representation adequacy.",
+    "rule_logic": {
+      "conditions": [
+        "facts_match_topic"
+      ],
+      "conclusion": "REPRESENTATION_NJSA_LIMITATION_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-UTC-2015-276",
+      "NJ-UTC-NJSA-3B31-11-26-34",
+      "NJ-UTC-LIABILITY-3B31-70-81"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.84,
+    "requires_human_review": true,
+    "effective_from": "2016-07-17",
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "2.0.0",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-TRUST-PRINCIPAL-INCOME-DIGITAL-ASSETS-TAX-SNT-CHARITY",
+    "jurisdiction": "NJ",
+    "domain": "trust_law",
+    "topic": "principal and income allocation digital assets tax objectives special needs trust charitable oversight",
+    "rule_statement": "Principal and income allocation, tax-objective modification, digital assets, special-needs trust considerations, and charitable oversight are separate trust-administration topics; Medicaid and digital-asset issues remain source-limited and review gated.",
+    "rule_logic": {
+      "conditions": [
+        "facts_match_topic"
+      ],
+      "conclusion": "SPECIAL_ADMINISTRATION_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-UPIA-2001-212",
+      "NJ-UTC-NJSA-3B31-11-26-34",
+      "NJ-MEDICAID-TRUSTS-NJAC-10-71-4-11"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.69,
+    "requires_human_review": true,
+    "effective_from": "2016-07-17",
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "2.0.0",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [
+      "digital asset authority not completed",
+      "special-needs regulation locator only"
+    ],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "NJ-UCC-NJAC-17-33-OFFICIAL-SOURCE-LIMITATION",
+    "jurisdiction": "NJ",
+    "domain": "ucc_article9",
+    "topic": "N.J.A.C. 17:33 official source verification locator-only authority search electronic filing",
+    "rule_statement": "N.J.A.C. 17:33 filing-office rules remain human-review gated: official OAL/Treasury sources confirm the rule path and adoption, but current full official text was not captured in Phase 2A.",
+    "rule_logic": {
+      "conditions": [
+        "facts_match_topic"
+      ],
+      "conclusion": "UCC_ADMIN_RULE_LOCATOR_ONLY_REVIEW_REQUIRED"
+    },
+    "authority_ids": [
+      "NJ-NJAC-17-33-UCC-RULES",
+      "NJ-OAL-NJAC-PUBLIC-ACCESS",
+      "NJ-TREASURY-UCC-RULE-ADOPTION-2023"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.76,
+    "requires_human_review": true,
+    "effective_from": "2023-12-04",
+    "effective_to": null,
+    "exceptions": [],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "2.0.0",
+    "rule_category": "PROCEDURAL_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": [
+      "current official N.J.A.C. 17:33 text not captured"
+    ],
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  }
+]

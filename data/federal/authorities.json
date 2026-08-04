@@ -1,0 +1,537 @@
+[
+  {
+    "id": "FED-FDCPA-15-1692",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "15 U.S.C. 1692 et seq.",
+    "title": "Fair Debt Collection Practices Act",
+    "court_or_agency": "United States Congress",
+    "source_url": "https://uscode.house.gov/view.xhtml?req=(title:15%20section:1692%20edition:prelim)",
+    "effective_date": "1977-09-20",
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2c_1_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 950,
+    "summary": "Federal debt-collection conduct, validation, venue, remedies, and limitation framework.",
+    "limitations": [
+      "Coverage is issue spotting, not a liability or limitations opinion.",
+      "Debt-collector, consumer, debt, and transaction facts require review."
+    ],
+    "tags": [
+      "fdcpa",
+      "debt_collection",
+      "validation"
+    ],
+    "source_availability_status": "AVAILABLE",
+    "manual_review_status": "QUEUED",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-FCRA-15-1681",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "15 U.S.C. 1681 et seq.",
+    "title": "Fair Credit Reporting Act",
+    "court_or_agency": "United States Congress",
+    "source_url": "https://uscode.house.gov/view.xhtml?req=(title:15%20section:1681%20edition:prelim)",
+    "effective_date": "1970-10-26",
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2c_1_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 950,
+    "summary": "Federal consumer-reporting accuracy, permissible-purpose, dispute, furnisher, and remedy framework.",
+    "limitations": [
+      "The package does not determine whether a report is inaccurate or whether a private claim is timely."
+    ],
+    "tags": [
+      "fcra",
+      "credit_reporting",
+      "reinvestigation"
+    ],
+    "source_availability_status": "AVAILABLE",
+    "manual_review_status": "QUEUED",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-TILA-FCBA-15-1601",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "15 U.S.C. 1601 et seq.; 15 U.S.C. 1666 et seq.",
+    "title": "Truth in Lending Act and Fair Credit Billing Act",
+    "court_or_agency": "United States Congress",
+    "source_url": "https://uscode.house.gov/view.xhtml?req=(title:15%20section:1601%20edition:prelim)",
+    "effective_date": "1968-05-29",
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2c_1_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 950,
+    "summary": "Federal consumer-credit disclosure, rescission, billing-error, and creditor-response framework.",
+    "limitations": [
+      "Transaction type, creditor status, timing, and implementing regulation must be reviewed."
+    ],
+    "tags": [
+      "tila",
+      "fcba",
+      "credit_disclosure",
+      "billing_error"
+    ],
+    "source_availability_status": "AVAILABLE",
+    "manual_review_status": "QUEUED",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-EFTA-15-1693",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "15 U.S.C. 1693 et seq.",
+    "title": "Electronic Fund Transfer Act",
+    "court_or_agency": "United States Congress",
+    "source_url": "https://uscode.house.gov/view.xhtml?req=(title:15%20section:1693%20edition:prelim)",
+    "effective_date": "1978-11-10",
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2c_1_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 950,
+    "summary": "Federal electronic-transfer authorization, error-resolution, liability, and disclosure framework.",
+    "limitations": [
+      "Unauthorized-transfer analysis depends on consumer notice, access device, institution, and timing facts."
+    ],
+    "tags": [
+      "efta",
+      "regulation_e",
+      "unauthorized_transfer"
+    ],
+    "source_availability_status": "AVAILABLE",
+    "manual_review_status": "QUEUED",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-ECOA-15-1691",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "15 U.S.C. 1691 et seq.",
+    "title": "Equal Credit Opportunity Act",
+    "court_or_agency": "United States Congress",
+    "source_url": "https://uscode.house.gov/view.xhtml?req=(title:15%20section:1691%20edition:prelim)",
+    "effective_date": "1974-10-28",
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2c_1_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 950,
+    "summary": "Federal credit-discrimination prohibition and adverse-action notice framework.",
+    "limitations": [
+      "Protected-class, creditor, application, adverse-action, and causation questions require professional review."
+    ],
+    "tags": [
+      "ecoa",
+      "regulation_b",
+      "adverse_action"
+    ],
+    "source_availability_status": "AVAILABLE",
+    "manual_review_status": "QUEUED",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-BANKRUPTCY-11-362-541-548",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "11 U.S.C. 362, 541, 548",
+    "title": "Bankruptcy automatic stay, estate property, and fraudulent transfers",
+    "court_or_agency": "United States Congress",
+    "source_url": "https://uscode.house.gov/browse/prelim@title11",
+    "effective_date": "1978-11-06",
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2c_1_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 950,
+    "summary": "Bankruptcy estate, automatic-stay, and transfer-avoidance provisions relevant to creditor and trust issue spotting.",
+    "limitations": [
+      "Bankruptcy-only issue spotting; no filing, discharge, exemption, or litigation advice."
+    ],
+    "tags": [
+      "bankruptcy",
+      "automatic_stay",
+      "estate_property",
+      "fraudulent_transfer"
+    ],
+    "source_availability_status": "AVAILABLE",
+    "manual_review_status": "QUEUED",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-SS-42-407",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "42 U.S.C. 407",
+    "title": "Social Security benefit anti-assignment and process protection",
+    "court_or_agency": "United States Congress",
+    "source_url": "https://uscode.house.gov/view.xhtml?req=(title:42%20section:407%20edition:prelim)",
+    "effective_date": "1935-08-14",
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2c_1_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 950,
+    "summary": "Social Security rights and payments generally receive federal process protections subject to express exceptions.",
+    "limitations": [
+      "Benefits, commingling, support, tax, and account-traceability facts require review."
+    ],
+    "tags": [
+      "social_security",
+      "benefits",
+      "garnishment"
+    ],
+    "source_availability_status": "AVAILABLE",
+    "manual_review_status": "QUEUED",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-SUPPORT-42-659",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "42 U.S.C. 659",
+    "title": "Federal consent to income withholding for support obligations",
+    "court_or_agency": "United States Congress",
+    "source_url": "https://uscode.house.gov/view.xhtml?req=(title:42%20section:659%20edition:prelim)",
+    "effective_date": "1975-01-01",
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2c_1_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 950,
+    "summary": "Federal payments and employment remuneration may be subject to qualifying support enforcement processes.",
+    "limitations": [
+      "This does not generalize to ordinary commercial debt collection or all federal benefits."
+    ],
+    "tags": [
+      "support",
+      "garnishment",
+      "federal_payments"
+    ],
+    "source_availability_status": "AVAILABLE",
+    "manual_review_status": "QUEUED",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-TAX-LIEN-26-6321",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "26 U.S.C. 6321",
+    "title": "Federal tax lien",
+    "court_or_agency": "United States Congress",
+    "source_url": "https://uscode.house.gov/view.xhtml?req=(title:26%20section:6321%20edition:prelim)",
+    "effective_date": "1954-08-16",
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2c_1_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 950,
+    "summary": "A federal tax lien may arise after assessment, demand, and nonpayment against property and rights to property.",
+    "limitations": [
+      "Attachment, priority, notice, discharge, nominee, and collection questions require tax counsel review."
+    ],
+    "tags": [
+      "tax_lien",
+      "irs",
+      "priority"
+    ],
+    "source_availability_status": "AVAILABLE",
+    "manual_review_status": "QUEUED",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-TAX-LEVY-26-6331-6334",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "26 U.S.C. 6331, 6334",
+    "title": "Federal tax levy and exempt property",
+    "court_or_agency": "United States Congress",
+    "source_url": "https://uscode.house.gov/view.xhtml?req=(title:26%20section:6331%20edition:prelim)",
+    "effective_date": "1954-08-16",
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2c_1_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 950,
+    "summary": "Federal levy authority and statutory levy exemptions operate after the required collection prerequisites.",
+    "limitations": [
+      "Notice, demand, levy release, wrongful levy, and exemptions require current IRS and tax-professional review."
+    ],
+    "tags": [
+      "tax_levy",
+      "irs",
+      "exempt_property"
+    ],
+    "source_availability_status": "AVAILABLE",
+    "manual_review_status": "QUEUED",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-SCRA-50-3937",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "50 U.S.C. 3937",
+    "title": "Servicemembers Civil Relief Act interest-rate limitation",
+    "court_or_agency": "United States Congress",
+    "source_url": "https://uscode.house.gov/view.xhtml?req=(title:50%20section:3937%20edition:prelim)",
+    "effective_date": "2003-12-19",
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2c_1_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 950,
+    "summary": "Pre-service debt interest may be capped at six percent during qualifying military service and specified periods.",
+    "limitations": [
+      "Military status, debt timing, written request, and covered obligation facts require review."
+    ],
+    "tags": [
+      "scra",
+      "servicemember",
+      "interest_cap"
+    ],
+    "source_availability_status": "AVAILABLE",
+    "manual_review_status": "QUEUED",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-FAA-9-2",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "9 U.S.C. 2",
+    "title": "Federal Arbitration Act enforceability baseline",
+    "court_or_agency": "United States Congress",
+    "source_url": "https://uscode.house.gov/view.xhtml?req=(title:9%20section:2%20edition:prelim)",
+    "effective_date": "1925-02-12",
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2c_1_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 950,
+    "summary": "Written arbitration provisions in covered commerce contracts are generally enforceable subject to applicable defenses and court rulings.",
+    "limitations": [
+      "Formation, delegation, unconscionability, waiver, scope, and statutory claims require case-specific review."
+    ],
+    "tags": [
+      "faa",
+      "arbitration",
+      "contract"
+    ],
+    "source_availability_status": "AVAILABLE",
+    "manual_review_status": "QUEUED",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-FRCP-37-E",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_RULE_OF_CIVIL_PROCEDURE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "Fed. R. Civ. P. 37(e)",
+    "title": "Failure to preserve electronically stored information",
+    "court_or_agency": "United States Supreme Court",
+    "source_url": "https://www.uscourts.gov/rules-policies/current-rules-practice-procedure/federal-rules-civil-procedure",
+    "effective_date": "2015-12-01",
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2c_1_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 730,
+    "summary": "Federal civil procedure provides measures for lost electronically stored information when preservation duties and prejudice or intent conditions are met.",
+    "limitations": [
+      "Preservation duties, proportionality, prejudice, intent, and sanctions require litigation counsel review."
+    ],
+    "tags": [
+      "evidence",
+      "ediscovery",
+      "preservation"
+    ],
+    "source_availability_status": "AVAILABLE",
+    "manual_review_status": "QUEUED",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-REG-FCRA-12-CFR-1022",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_REGULATION",
+    "source_classification": "OFFICIAL_GUIDANCE",
+    "citation": "12 C.F.R. Part 1022, Regulation V",
+    "title": "FCRA implementing regulations",
+    "court_or_agency": "Consumer Financial Protection Bureau",
+    "source_url": "https://www.ecfr.gov/current/title-12/chapter-X/part-1022",
+    "effective_date": "2012-01-01",
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2c_1_research",
+    "verification_status": "PRIMARY_SOURCE_LOCATED",
+    "authority_weight": 920,
+    "summary": "Electronic CFR location for FCRA implementing rules and furnisher or user obligations.",
+    "limitations": [
+      "The eCFR is authoritative but unofficial electronic text; current official publication and amendments require review."
+    ],
+    "tags": [
+      "fcra",
+      "regulation_v",
+      "ecfr"
+    ],
+    "source_availability_status": "LOCATOR_ONLY",
+    "manual_review_status": "QUEUED",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-REG-EFTA-12-CFR-1005",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_REGULATION",
+    "source_classification": "OFFICIAL_GUIDANCE",
+    "citation": "12 C.F.R. Part 1005, Regulation E",
+    "title": "EFTA implementing regulations",
+    "court_or_agency": "Consumer Financial Protection Bureau",
+    "source_url": "https://www.ecfr.gov/current/title-12/chapter-X/part-1005",
+    "effective_date": "2011-07-21",
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2c_1_research",
+    "verification_status": "PRIMARY_SOURCE_LOCATED",
+    "authority_weight": 920,
+    "summary": "Electronic CFR location for EFTA error-resolution, disclosures, and transfer-liability rules.",
+    "limitations": [
+      "The eCFR is authoritative but unofficial electronic text; transaction-specific exceptions require review."
+    ],
+    "tags": [
+      "efta",
+      "regulation_e",
+      "ecfr"
+    ],
+    "source_availability_status": "LOCATOR_ONLY",
+    "manual_review_status": "QUEUED",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-REG-TILA-12-CFR-1026",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_REGULATION",
+    "source_classification": "OFFICIAL_GUIDANCE",
+    "citation": "12 C.F.R. Part 1026, Regulation Z",
+    "title": "TILA implementing regulations",
+    "court_or_agency": "Consumer Financial Protection Bureau",
+    "source_url": "https://www.ecfr.gov/current/title-12/chapter-X/part-1026",
+    "effective_date": "2011-07-21",
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2c_1_research",
+    "verification_status": "PRIMARY_SOURCE_LOCATED",
+    "authority_weight": 920,
+    "summary": "Electronic CFR location for TILA disclosures, rescission, and credit-card provisions.",
+    "limitations": [
+      "The eCFR is authoritative but unofficial electronic text; coverage does not determine transaction applicability."
+    ],
+    "tags": [
+      "tila",
+      "regulation_z",
+      "ecfr"
+    ],
+    "source_availability_status": "LOCATOR_ONLY",
+    "manual_review_status": "QUEUED",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-REG-ECOA-12-CFR-1002",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_REGULATION",
+    "source_classification": "OFFICIAL_GUIDANCE",
+    "citation": "12 C.F.R. Part 1002, Regulation B",
+    "title": "ECOA implementing regulations",
+    "court_or_agency": "Consumer Financial Protection Bureau",
+    "source_url": "https://www.ecfr.gov/current/title-12/chapter-X/part-1002",
+    "effective_date": "2011-07-21",
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2c_1_research",
+    "verification_status": "PRIMARY_SOURCE_LOCATED",
+    "authority_weight": 920,
+    "summary": "Electronic CFR location for ECOA application, adverse-action notices, and creditor requirements.",
+    "limitations": [
+      "The eCFR is authoritative but unofficial electronic text; protected-class and application facts require review."
+    ],
+    "tags": [
+      "ecoa",
+      "regulation_b",
+      "ecfr"
+    ],
+    "source_availability_status": "LOCATOR_ONLY",
+    "manual_review_status": "QUEUED",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-VA-38-5301",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "38 U.S.C. 5301",
+    "title": "VA benefits nonassignability and exemption",
+    "court_or_agency": "United States Congress",
+    "source_url": "https://uscode.house.gov/view.xhtml?req=(title:38%20section:5301%20edition:prelim)",
+    "effective_date": "1958-09-02",
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2c_1_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 950,
+    "summary": "VA benefits receive federal nonassignment and process protections subject to statutory exceptions.",
+    "limitations": [
+      "Benefit type, support, tax, and other statutory exceptions require review."
+    ],
+    "tags": [
+      "va",
+      "veterans_benefits",
+      "garnishment"
+    ],
+    "source_availability_status": "AVAILABLE",
+    "manual_review_status": "QUEUED",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  },
+  {
+    "id": "FED-RRA-45-231M",
+    "jurisdiction": "FED",
+    "authority_type": "FEDERAL_STATUTE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "45 U.S.C. 231m",
+    "title": "Railroad Retirement benefits protection",
+    "court_or_agency": "United States Congress",
+    "source_url": "https://uscode.house.gov/view.xhtml?req=(title:45%20section:231m%20edition:prelim)",
+    "effective_date": "1937-06-24",
+    "last_verified_at": "2026-08-03T00:00:00Z",
+    "verified_by": "codex_phase_2c_1_research",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 950,
+    "summary": "Railroad Retirement benefits receive federal anti-assignment and legal-process protections subject to statutory exceptions.",
+    "limitations": [
+      "Benefit type, support, tax, bankruptcy, and account-tracing facts require review."
+    ],
+    "tags": [
+      "railroad_retirement",
+      "benefits",
+      "garnishment"
+    ],
+    "source_availability_status": "AVAILABLE",
+    "manual_review_status": "QUEUED",
+    "created_at": "2026-08-03T00:00:00Z",
+    "updated_at": "2026-08-03T00:00:00Z"
+  }
+]

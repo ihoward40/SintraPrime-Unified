@@ -1,0 +1,537 @@
+{
+  "schema_version": 1,
+  "generated_for": "fifty_state_trust_intelligence_phase_0",
+  "support_levels": [
+    "NOT_STARTED",
+    "RESEARCH_IN_PROGRESS",
+    "PRIMARY_AUTHORITY_PARTIAL",
+    "PRIMARY_AUTHORITY_COMPLETE",
+    "RULES_ENCODED",
+    "TESTED",
+    "HUMAN_REVIEWED",
+    "PRODUCTION_ELIGIBLE"
+  ],
+  "default_status": "NOT_STARTED",
+  "jurisdictions": [
+    {
+      "code": "AL",
+      "name": "Alabama",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "AK",
+      "name": "Alaska",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "AZ",
+      "name": "Arizona",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "AR",
+      "name": "Arkansas",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "CA",
+      "name": "California",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "CO",
+      "name": "Colorado",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "CT",
+      "name": "Connecticut",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "DE",
+      "name": "Delaware",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "FL",
+      "name": "Florida",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "GA",
+      "name": "Georgia",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "HI",
+      "name": "Hawaii",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "ID",
+      "name": "Idaho",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "IL",
+      "name": "Illinois",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "IN",
+      "name": "Indiana",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "IA",
+      "name": "Iowa",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "KS",
+      "name": "Kansas",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "KY",
+      "name": "Kentucky",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "LA",
+      "name": "Louisiana",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "ME",
+      "name": "Maine",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "MD",
+      "name": "Maryland",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "MA",
+      "name": "Massachusetts",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "MI",
+      "name": "Michigan",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "MN",
+      "name": "Minnesota",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "MS",
+      "name": "Mississippi",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "MO",
+      "name": "Missouri",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "MT",
+      "name": "Montana",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "NE",
+      "name": "Nebraska",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "NV",
+      "name": "Nevada",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "NH",
+      "name": "New Hampshire",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "NJ",
+      "name": "New Jersey",
+      "support_status": "TESTED",
+      "researched": true,
+      "encoded": true,
+      "tested": true,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "NM",
+      "name": "New Mexico",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "NY",
+      "name": "New York",
+      "support_status": "TESTED",
+      "researched": true,
+      "encoded": true,
+      "tested": true,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "NC",
+      "name": "North Carolina",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "ND",
+      "name": "North Dakota",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "OH",
+      "name": "Ohio",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "OK",
+      "name": "Oklahoma",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "OR",
+      "name": "Oregon",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "PA",
+      "name": "Pennsylvania",
+      "support_status": "TESTED",
+      "researched": true,
+      "encoded": true,
+      "tested": true,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "RI",
+      "name": "Rhode Island",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "SC",
+      "name": "South Carolina",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "SD",
+      "name": "South Dakota",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "TN",
+      "name": "Tennessee",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "TX",
+      "name": "Texas",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "UT",
+      "name": "Utah",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "VT",
+      "name": "Vermont",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "VA",
+      "name": "Virginia",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "WA",
+      "name": "Washington",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "WV",
+      "name": "West Virginia",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "WI",
+      "name": "Wisconsin",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "WY",
+      "name": "Wyoming",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "DC",
+      "name": "District of Columbia",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    },
+    {
+      "code": "FED",
+      "name": "Federal overlays",
+      "support_status": "NOT_STARTED",
+      "researched": false,
+      "encoded": false,
+      "tested": false,
+      "human_reviewed": false,
+      "production_eligible": false
+    }
+  ]
+}

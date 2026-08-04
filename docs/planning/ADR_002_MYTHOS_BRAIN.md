@@ -1,8 +1,8 @@
 # ADR 002: Mythos Brain — Unified Execution Coordination
 
-**Status:** Proposed
+**Status:** Accepted
 
-> The ADR remains Proposed until the Project Owner and Security Reviewer formally record their decisions in Section 8. No part of this document should be read as Accepted.
+> ADR-002 was accepted on 2026-08-04 after owner review (REQUEST_CHANGES, resolved) and Sigma security review (APPROVE_WITH_CONDITIONS). The condition — defining explicit criteria for optional executor continuation during Brain unavailability — is to be satisfied in the implementation ADR or a narrowly scoped amendment.
 
 ## 1. Context and Problem Statement
 The SintraPrime platform has evolved into a multi-agent, multi-module system. Currently, authority is distributed across the `portal`, `agents/`, and `workflow_builder/`, leading to fragmented audit trails, inconsistent governance enforcement, and the lack of coordinated cancellation for autonomous actions. We need a central **Execution Coordinator** to manage the lifecycle of all system intents.
@@ -92,7 +92,7 @@ The Brain provides scoped cancellation to ensure system safety and low-latency r
 | :--- | :--- | :--- | :--- |
 | **Distributed Authority** | No single bottleneck; faster local execution. | Impossible to enforce global governance; audit gaps. | ❌ Rejected |
 | **Portal-Only Authority** | Leverages existing API security. | Cannot handle background tasks or autonomous agent loops. | ❌ Rejected |
-| **Mythos Brain (Central)** | Unified control; audit integrity; scalable governance. | Higher initial design complexity. | 🟡 Proposed — Pending Governance Approval |
+| **Mythos Brain (Central)** | Unified control; audit integrity; scalable governance. | Higher initial design complexity. | ✅ Accepted |
 
 ---
 
@@ -158,9 +158,9 @@ The Mythos Brain does **NOT**:
 ## 8. Signatures
 | Role | Name | Date | Decision |
 | :--- | :--- | :--- | :--- |
-| **Project Owner** | Isiah Howard | 2026-08-04 | REQUEST_CHANGES |
+| **Project Owner** | Isiah Howard | 2026-08-04 | APPROVED (REQUEST_CHANGES resolved) |
 | **Architect** | Manus AI | 2026-08-04 | Proposed |
-| **Security Reviewer** | Sigma Agent | 2026-08-04 | Pending |
+| **Security Reviewer** | Sigma Agent | 2026-08-04 | APPROVE_WITH_CONDITIONS |
 
 ### 8.1 Owner Review Notes (Isiah Howard, 2026-08-04)
 
@@ -179,3 +179,23 @@ The architecture direction is approved — a central execution coordinator is ne
 6. **Security and failure boundaries (Section 2.5):** Expanded to define: tenant isolation, actor delegation, service-to-service authentication, authenticated/signed dispatch envelopes, policy-version snapshots, stale approval invalidation, privilege boundaries, executor-compromise response, split-brain prevention, brain unavailability behavior, degraded read-only operation, in-flight execution behavior, recovery and replay authority, RTO target (≤ 5 min, provisional), and RPO target (≤ 30 sec, provisional). Both targets are marked as requiring implementation validation.
 
 7. **Acceptance criteria (Section 6):** Replaced "100% of Brain-dispatched actions pass a double-submit test" with "Every state-changing executor contract must pass duplicate-delivery certification proving one externally observable effect for repeated delivery of the same idempotency key." Replaced the universal two-second "Stop All" criterion with three scoped targets: execution-scoped ≤ 2s, tenant-scoped ≤ 5s, platform break-glass ≤ 10s. Added stale-approval-invalidation acceptance criterion. Clarified that latency targets require implementation testing and may vary by execution class.
+
+### 8.2 Sigma Security Review Notes (Sigma Agent, 2026-08-04)
+
+Review conducted against ADR-002 at head 345e8e71. Six security evaluation areas assessed:
+
+1. **Tenant Isolation:** ADEQUATE — Dispatch envelopes carry tenant_id, executors enforce isolation, idempotency keys are tenant-scoped, cancellation controls are scoped to tenant boundaries.
+
+2. **Authority Boundaries:** ADEQUATE — Brain owns intent/dispatch/cancellation state only. Domain services retain authoritative domain records. Read-only queries bypass the Brain. Universal domain database explicitly rejected.
+
+3. **Execution Semantics:** ADEQUATE — 14 mechanisms specified (at-least-once, transactional outbox, executor inbox/dedup, idempotency-key scope/retention, lease ownership, heartbeat, lease expiration, replay, bounded retry classes, dead-letter queue, poison-message quarantine, causation-chain preservation, partial-failure handling, failure isolation). Retry safety tied to infrastructure, not declarations.
+
+4. **Privilege Boundaries:** ADEQUATE — Actor delegation via authenticated dispatch envelopes, service-to-service auth (mTLS or signed JWT), signed dispatch to prevent forgery, least-privilege credentials, executor-compromise response with credential revocation, policy-version snapshots, stale approval invalidation.
+
+5. **Failure Handling:** ADEQUATE WITH CONDITION — Split-brain prevention (lease-based leadership), degraded mode, recovery/replay authority, panic mode, RTO/RPO targets (provisional). **CONDITION:** The in-flight execution behavior (Section 2.5) allows optional executor continuation after lease expiry during Brain unavailability. Implementation must define explicit criteria for when optional continuation is permitted and require mandatory completion reporting on Brain recovery. This condition does not block acceptance; it is to be satisfied in the implementation ADR or a narrowly scoped amendment.
+
+6. **Auditability:** ADEQUATE — Correlation propagation mandated, causation chains preserved on every dispatch, immutable audit events for all cancellation controls, full audit trail for executor-compromise response, deterministic and auditable recovery.
+
+**Decision: APPROVE_WITH_CONDITIONS**
+
+The ADR adequately specifies the architecture for acceptance. One condition (Section 2.5 in-flight continuation criteria) is deferred to implementation. The architecture is approved for merge and implementation.

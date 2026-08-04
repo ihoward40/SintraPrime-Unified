@@ -1,7 +1,11 @@
 # ADR 002: Mythos Brain — Unified Execution Coordination
 
+**Status:** Proposed
+
+> The ADR remains Proposed until the Project Owner and Security Reviewer formally record their decisions in Section 8. No part of this document should be read as Accepted.
+
 ## 1. Context and Problem Statement
-The SintraPrime platform has evolved into a multi-agent, multi-module system. Currently, authority is distributed across the `portal`, `agents/`, and `workflow_builder/`, leading to fragmented audit trails, inconsistent governance enforcement, and the lack of a "kill switch" for autonomous actions. We need a central **Execution Coordinator** to manage the lifecycle of all system intents.
+The SintraPrime platform has evolved into a multi-agent, multi-module system. Currently, authority is distributed across the `portal`, `agents/`, and `workflow_builder/`, leading to fragmented audit trails, inconsistent governance enforcement, and the lack of coordinated cancellation for autonomous actions. We need a central **Execution Coordinator** to manage the lifecycle of all system intents.
 
 ---
 
@@ -15,27 +19,57 @@ All execution requests, regardless of origin, must implement the UEP, which enfo
 - **Idempotency Keys:** All state-changing operations must provide a client-generated idempotency key to prevent duplicate execution in distributed environments.
 
 ### 2.2 Authority Boundaries
-- **Mythos Brain (Coordinator):** Owns the "intent" ledger, execution state machine (PENDING, RUNNING, COMPLETED, FAILED, CANCELLED), and HITL escalation gates.
-- **Executors (Workers):** Modules like `workflow_builder` or `agents/nova` act as stateless execution engines that receive instructions from the Brain and report progress.
+- **Mythos Brain (Coordinator):** Owns intent records, execution-control state, dispatch attempts, approvals, cancellation state, correlation, and causation. The Brain must not become a universal domain database.
+- **Domain Services:** Modules such as `portal`, `trust_law`, `legal_authority`, and `workflow_builder` retain authoritative domain records and domain transactions. The Brain does not own or duplicate domain data.
+- **Executors (Workers):** Modules like `agents/nova` act as execution engines that receive instructions from the Brain and report progress. Executors may retain governed checkpoints and domain-owned operational state under defined boundaries.
+- **Read-Only Queries:** Read-only queries bypass the Brain unless policy evaluation, correlation, or audit requirements require routing through it.
 - **Mission Control:** Serves as the read-only visual projection of the Brain's active state.
 
-### 2.3 Delivery, Idempotency, and Retries
-- **At-Least-Once Delivery:** The Brain guarantees that every authorized intent is dispatched to an executor at least once.
-- **Idempotency Requirement:** All executors MUST be idempotent. Re-running a command with the same `idempotency_key` must result in the same side effects as the first successful execution.
-- **Exponential Backoff:** The Brain manages retries with jittered exponential backoff for transient failures, ensuring system stability during high-load or partial outage scenarios.
+### 2.3 Durable Delivery Semantics
+The Brain guarantees durable dispatch of authorized intents. Retry safety follows from the delivery infrastructure, not merely from declaring executors idempotent.
+
+- **At-Least-Once Delivery:** The Brain guarantees that every authorized intent is dispatched to an executor at least once. Executors must tolerate redelivery.
+- **Transactional Outbox:** Dispatch records are written to a transactional outbox in the same database transaction as the state change that triggered them. This ensures no intent is lost if the process crashes after authorization but before dispatch.
+- **Executor Inbox and Deduplication:** Executors maintain an inbox of processed idempotency keys. On redelivery, the executor detects the duplicate and returns the cached result without re-executing the side effect.
+- **Idempotency-Key Scope and Retention:** Idempotency keys are scoped to the tenant and the executor contract. Keys are retained for a configured retention period to handle late redelivery. After retention expiry, the key is eligible for garbage collection.
+- **Lease Ownership:** An executor acquires a time-bounded lease on a task before processing. No other executor processes the same task while the lease is valid.
+- **Heartbeat:** Executors send heartbeats to renew the lease while processing is active. If heartbeats stop, the lease expires and the task becomes eligible for redelivery.
+- **Lease Expiration:** On lease expiry, the Brain may reassign the task to another executor. The original executor must stop processing and discard any partial results that were not committed.
+- **Replay Behavior:** The Brain can replay an intent from the outbox. Executors must treat replay identically to original delivery — the inbox deduplication ensures only one side effect is produced.
+- **Bounded Retry Classes:** The Brain retries failed dispatches with jittered exponential backoff. Retry classes are defined by failure type: transient (network, timeout), application (validation, business rule), and infrastructure (database, queue). Each class has a configurable maximum retry count and backoff ceiling.
+- **Dead-Letter Queue:** After max retries are exhausted, the intent is moved to a dead-letter queue for manual intervention. Dead-lettered intents are alerted and require explicit operator action to requeue or discard.
+- **Poison-Message Quarantine:** Messages that repeatedly fail validation (not execution) are quarantined and alerted. Poison messages are not retried automatically because the failure is deterministic, not transient.
+- **Causation-Chain Preservation:** Every dispatch carries the originating intent ID and the full causal chain. This enables audit reconstruction and debugging of complex multi-step workflows.
+- **Partial-Failure Handling:** If an executor completes some but not all side effects, the Brain records the partial state. Recovery is handled by the replay mechanism — the executor's inbox deduplication prevents duplicate side effects on the completed portions.
 - **Failure Isolation:** The Coordinator (Brain) is strictly isolated from the Executors. Failure of an executor does not impact the stability or state of the coordinator.
 
-### 2.4 Cancellation Primitives
-The Brain provides scoped cancellation to ensure system safety and low-latency response:
-- **Global Halt:** Immediate suspension of all non-critical execution across the entire system or a specific tenant.
-- **Workstream Cancellation:** Halts a specific logical grouping of tasks or a causation chain (e.g., "Stop this specific legal research loop").
-- **Executor Revocation:** Signals a specific agent or worker to checkpoint and terminate immediately.
-- **Prioritized Delivery:** Cancellation signals are prioritized in the message bus, bypassing standard execution queues to ensure immediate effect.
+### 2.4 Cancellation Controls
+The Brain provides scoped cancellation to ensure system safety and low-latency response. A universal unscoped kill switch is explicitly rejected — every control must be scoped, permissioned, and audited.
+
+- **Execution-Scoped Cancellation:** Stops a specific execution by ID. Permissioned to the execution owner or tenant admin. The control requires: explicit permission, reason, immutable audit event, blast-radius preview, confirmation, and recovery procedure.
+- **Tenant-Scoped Emergency Suspension:** Suspends all executions for a specific tenant. Permissioned to tenant admins. The control requires: explicit permission, reason, immutable audit event, blast-radius preview, confirmation, and recovery procedure.
+- **Platform Break-Glass Emergency Suspension:** Suspends all executions platform-wide. Permissioned to platform operators only with elevated authorization. The control requires: explicit permission, reason, immutable audit event, blast-radius preview, confirmation, recovery procedure, and a mandatory incident record. This is the most destructive control and must be used only for governance breaches or safety-critical situations.
+- **Prioritized Delivery:** Cancellation and suspension signals are prioritized over standard execution dispatch, bypassing standard queues to ensure immediate effect.
 
 ### 2.5 Security and Failure Boundaries
 - **Policy Enforcement Point (PEP):** The Brain acts as the PEP, validating every intent against the `governed_inference` layer before dispatch.
+- **Tenant Isolation:** One tenant's execution cannot affect another. All dispatch envelopes carry `tenant_id` and executors enforce isolation at the tenant boundary.
+- **Actor Delegation:** The Brain propagates `actor_id` and permissions to executors via authenticated dispatch envelopes. Executors do not accept unsigned or unauthenticated dispatch.
+- **Service-to-Service Authentication:** The Brain and executors authenticate via mutual TLS or signed JWT tokens. No executor accepts a dispatch without verifying the Brain's identity.
+- **Authenticated or Signed Dispatch Envelopes:** All dispatch messages carry a signature or auth token that executors verify before processing. This prevents forged dispatch.
+- **Policy-Version Snapshots:** The Brain records which policy version was active when an intent was authorized. This prevents stale approvals from bypassing updated policies.
+- **Stale Approval Invalidation:** If a policy has tightened since an approval was granted, the approval is invalidated and the intent must be re-authorized under the current policy version.
+- **Privilege Boundaries:** Executors operate with least-privilege credentials. The Brain does not grant executors permissions beyond what the originating actor's policy allows.
+- **Executor-Compromise Response:** If an executor is compromised, its credentials are revoked, its in-flight tasks are redelivered to other executors, and a full audit trail is preserved for forensic review.
+- **Split-Brain Prevention:** The Brain uses lease-based leadership. Only one active leader accepts new intents. Followers are read-only. If the leader loses its lease, a follower takes over with no split-brain window.
+- **Brain Unavailability Behavior:** If the Brain is unavailable, in-flight executions continue to completion. New intents are queued and held. The system operates in degraded mode — no new dispatches, no new cancellations, but existing work is not lost.
+- **Degraded Read-Only Operation:** When the Brain is partially unavailable, read-only queries (including Mission Control dashboard) continue to function against the last-known state. New dispatches are paused until the Brain recovers.
+- **In-Flight Execution Behavior:** In-flight executions are not cancelled by Brain unavailability. They continue under their existing lease. If the lease expires while the Brain is still unavailable, the executor may optionally continue processing if it has local state to complete the task, but must report completion when the Brain recovers.
+- **Recovery and Replay Authority:** On Brain recovery, the outbox is drained. In-flight intents are checked against executor acknowledgments. Unconfirmed intents are replayed. The recovery procedure is deterministic and auditable.
+- **Panic Mode:** In the event of a detected governance breach, the Brain enters "Panic Mode," locking all outbound dispatch, requiring administrative reset. This is the governance-breach equivalent of the platform break-glass suspension.
 - **Failure Isolation:** A failure in an executor (e.g., an agent crash) must not corrupt the Brain's intent ledger.
-- **Panic Mode:** In the event of a detected governance breach, the Brain enters a "Panic Mode," locking all outbound API connectors and requiring administrative reset.
+- **RTO Target:** Brain state store Recovery Time Objective: ≤ 5 minutes (provisional — requires implementation validation).
+- **RPO Target:** Brain state store Recovery Point Objective: ≤ 30 seconds (provisional — requires implementation validation).
 
 ---
 
@@ -48,8 +82,8 @@ The Brain provides scoped cancellation to ensure system safety and low-latency r
 
 ### Negative / Risks
 - **Centralized Complexity:** The coordinator could become a bottleneck if it attempts to manage domain-specific logic.
-- **Performance:** Synchronous coordination adds latency; requires a robust async-first message bus (Redis/Celery).
-- **Single Point of Failure:** If the Brain's state store fails, all system execution stops.
+- **Transport Requirements:** The Brain requires a transport layer that supports durable delivery, acknowledgments, leasing, retries, priority control messages, replay, observability, dead-letter handling, and tenant isolation. Technology selection (e.g., Redis, Celery, RabbitMQ, Kafka) belongs in a later implementation ADR — it is not predetermined by this architecture.
+- **Single Point of Failure:** If the Brain's state store fails, all new system execution stops until recovery. In-flight executions continue under degraded mode. RTO/RPO targets (5 min / 30 sec) are provisional and require implementation validation.
 
 ---
 
@@ -58,7 +92,7 @@ The Brain provides scoped cancellation to ensure system safety and low-latency r
 | :--- | :--- | :--- | :--- |
 | **Distributed Authority** | No single bottleneck; faster local execution. | Impossible to enforce global governance; audit gaps. | ❌ Rejected |
 | **Portal-Only Authority** | Leverages existing API security. | Cannot handle background tasks or autonomous agent loops. | ❌ Rejected |
-| **Mythos Brain (Central)** | Unified control; audit integrity; scalable governance. | Higher initial design complexity. | 🟡 Proposed |
+| **Mythos Brain (Central)** | Unified control; audit integrity; scalable governance. | Higher initial design complexity. | 🟡 Proposed — Pending Governance Approval |
 
 ---
 
@@ -71,6 +105,7 @@ graph TD
     subgraph Mythos Brain (Coordinator)
         UEP[Unified Execution Protocol]
         Ledger[(Intent Ledger)]
+        Outbox[(Transactional Outbox)]
         Policy[Governance Policy Engine]
         Escalation[HITL Gateway]
     end
@@ -80,24 +115,33 @@ graph TD
     UEP --> Policy
     Policy -->|Requires Review| Escalation
     Policy -->|Authorized| Ledger
+    Ledger --> Outbox
     subgraph Executors (Stateless)
         WF[Workflow Engine]
         Nova[Nova Executor]
         Inference[Governed Inference]
     end
-    Ledger -->|Dispatch| WF
-    Ledger -->|Dispatch| Nova
-    Ledger -->|Dispatch| Inference
+    Outbox -->|Dispatch| WF
+    Outbox -->|Dispatch| Nova
+    Outbox -->|Dispatch| Inference
+    WF -.->|Heartbeat| Ledger
+    Nova -.->|Heartbeat| Ledger
+    Inference -.->|Heartbeat| Ledger
 ```
 
 ---
 
 ## 6. Acceptance Criteria for Phase 3
 - [ ] **One Protocol:** A single Python base class or Protocol that all executors must implement.
-- [ ] **Authority Boundary:** `agents/` and `workflow_builder/` no longer manage their own persistence; they report to the Brain.
-- [ ] **Idempotency:** 100% of Brain-dispatched actions pass a "double-submit" test.
-- [ ] **Cancellation:** A "Stop All" command in the Portal successfully halts a running Nova agent action within 2 seconds.
+- [ ] **Authority Boundary:** `agents/` and `workflow_builder/` no longer manage their own persistence; they report to the Brain. Domain services retain authoritative domain records.
+- [ ] **Durable Delivery:** Every state-changing executor contract must pass duplicate-delivery certification proving one externally observable effect for repeated delivery of the same idempotency key.
+- [ ] **Cancellation — Execution-Scoped:** An execution-scoped cancellation signal halts a running execution within target ≤ 2 seconds (requires implementation testing; may vary by execution class).
+- [ ] **Cancellation — Tenant-Scoped:** A tenant-scoped emergency suspension halts all executions for a tenant within target ≤ 5 seconds (requires implementation testing).
+- [ ] **Cancellation — Platform Break-Glass:** A platform break-glass suspension halts all executions platform-wide within target ≤ 10 seconds (requires implementation testing; requires incident record and elevated operator authorization).
 - [ ] **Human Escalation:** Any action with `risk_level > threshold` creates a blocking `ApprovalRequest` in the database.
+- [ ] **Stale Approval Invalidation:** If a policy version has tightened since an approval was granted, the approval is automatically invalidated and the intent requires re-authorization.
+
+> Latency targets for cancellation are provisional and require implementation testing. They may vary by execution class, network conditions, and executor responsiveness.
 
 ---
 
@@ -107,6 +151,7 @@ The Mythos Brain does **NOT**:
 - Manage domain state (e.g., Matter details, Financial records) directly.
 - Execute code outside of the pre-defined "Safe-Zone" (Airlock).
 - Replace the `governed_inference` router, but rather consumes its outputs.
+- Predetermine the transport technology (Redis, Celery, RabbitMQ, Kafka, etc.). Technology selection belongs in a later implementation ADR.
 
 ---
 
@@ -119,20 +164,18 @@ The Mythos Brain does **NOT**:
 
 ### 8.1 Owner Review Notes (Isiah Howard, 2026-08-04)
 
-The architecture direction is approved — a central execution coordinator is needed. The following changes are required before this ADR can be accepted:
+The architecture direction is approved — a central execution coordinator is needed. The following six changes were required and have been implemented in the ADR body:
 
-**Status consistency:** The alternatives table (Section 4) marks the Mythos Brain as "Proposed" with a yellow circle. Keep this consistent with the ADR header status. Do not advance to "Approved" until both reviews are recorded.
+1. **Status consistency (Section 4):** Alternatives table verdict changed to "Proposed — Pending Governance Approval." Will not advance to Approved until both reviews are recorded.
 
-**Authority boundaries (Section 2.2):** The Brain owns execution coordination and intent state. Domain services (portal, trust_law, legal_authority, etc.) must retain authoritative domain records. Read-only queries need not route through the Brain unless policy or correlation requires it. Executors may retain domain-owned state under defined boundaries. Add this clarification.
+2. **Authority boundaries (Section 2.2):** Expanded to clarify that the Brain owns intent records, execution-control state, dispatch attempts, approvals, cancellation state, correlation, and causation. Domain services retain authoritative domain records and domain transactions. Read-only queries bypass the Brain unless policy/correlation/audit requires it. Executors may retain governed checkpoints and domain-owned operational state. The Brain must not become a universal domain database.
 
-**Delivery semantics (Section 2.3):** The current text covers at-least-once, idempotency, and backoff. Add explicit definitions for: transactional outbox (dispatch records written in the same transaction as the state change), inbox/deduplication (executors track processed idempotency keys), replay behavior, lease ownership with heartbeat and expiry, dead-letter queue handling, and poison-message quarantine.
+3. **Durable delivery semantics (Section 2.3):** Replaced the simplified delivery section with explicit definitions for: at-least-once delivery, transactional outbox, executor inbox and deduplication, idempotency-key scope and retention, lease ownership, heartbeat, lease expiration, replay behavior, bounded retry classes, dead-letter queue, poison-message quarantine, causation-chain preservation, and partial-failure handling. Removed any implication that retry safety follows merely from declaring executors idempotent.
 
-**Cancellation scopes (Section 2.4):** Replace "Global Halt" with three scoped controls:
-1. Execution-scoped cancellation (specific execution by ID, permissioned to owner/admin).
-2. Tenant-scoped emergency stop (all executions for one tenant, permissioned to tenant admin).
-3. Platform emergency stop (all executions platform-wide, permissioned to platform operators only, mandatory incident report).
-Each requires explicit permission, immutable audit event, reason, blast-radius display, confirmation, and recovery procedure. A universal unscoped kill switch is rejected.
+4. **Cancellation controls (Section 2.4):** Replaced "Global Halt," "Workstream Cancellation," and "Executor Revocation" with three scoped controls: execution-scoped cancellation, tenant-scoped emergency suspension, and platform break-glass emergency suspension. Each requires explicit permission, reason, immutable audit event, blast-radius preview, confirmation, and recovery procedure. The platform-wide control additionally requires an incident record and elevated operator authorization. A universal unscoped kill switch is explicitly rejected.
 
-**Security and failure boundaries (Section 2.5):** Add specifications for: tenant isolation, actor delegation via signed dispatch envelopes, service-to-service authentication, policy-version snapshots (recording which policy version authorized an intent), stale approval invalidation (if policy tightened since approval), split-brain prevention (lease-based leadership), brain unavailability behavior (in-flight executions continue, new dispatches queued), degraded read-only operation, executor compromise handling (credential revocation, task redelivery, audit trail), RTO/RPO targets, and recovery/replay procedure.
+5. **Transport neutrality (Section 3):** Removed Redis/Celery as a predetermined architecture choice. Replaced with required transport capabilities: durable delivery, acknowledgments, leasing, retries, priority control messages, replay, observability, dead-letter handling, and tenant isolation. Technology selection belongs in a later implementation ADR.
 
-**Acceptance criteria (Section 6):** Replace "100% idempotency" with: "All state-changing executor contracts must pass duplicate-delivery tests proving one externally observable effect for repeated delivery of the same idempotency key." Replace "Stop All" with scoped cancellation latency targets by execution class (e.g., execution-scoped 2s, tenant-scoped 5s, platform emergency 10s).
+6. **Security and failure boundaries (Section 2.5):** Expanded to define: tenant isolation, actor delegation, service-to-service authentication, authenticated/signed dispatch envelopes, policy-version snapshots, stale approval invalidation, privilege boundaries, executor-compromise response, split-brain prevention, brain unavailability behavior, degraded read-only operation, in-flight execution behavior, recovery and replay authority, RTO target (≤ 5 min, provisional), and RPO target (≤ 30 sec, provisional). Both targets are marked as requiring implementation validation.
+
+7. **Acceptance criteria (Section 6):** Replaced "100% of Brain-dispatched actions pass a double-submit test" with "Every state-changing executor contract must pass duplicate-delivery certification proving one externally observable effect for repeated delivery of the same idempotency key." Replaced the universal two-second "Stop All" criterion with three scoped targets: execution-scoped ≤ 2s, tenant-scoped ≤ 5s, platform break-glass ≤ 10s. Added stale-approval-invalidation acceptance criterion. Clarified that latency targets require implementation testing and may vary by execution class.

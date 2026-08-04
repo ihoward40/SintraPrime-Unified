@@ -6,26 +6,25 @@
 - Repository: ihoward40/SintraPrime-Unified
 - Branch: feat/phase-3a-delaware-connecticut
 - Base branch: main
-- Current HEAD (local): 2f815c72c028b3a58daa51c33ad1e754e88fecad
-- Current HEAD (published/remote): f00d915e404e6922256fa1f74913926807ac0335
-- Tree SHA (local HEAD): 5c24fda3f3e770d86f5155b56e556ac8c8651a39
+- Current HEAD (local and remote): 21b08f794eb103224143b38b49350f57e1a4c042
+- Tree SHA: c41b236ee9afcb0ba4af28cf7d8b0d35305b4661
 - Safety branch: safety/pr255-pre-reconciliation (at 2f815c72)
 - Worktree: C:/Users/admin/SintraPrime-Unified-phase-3a
-- Worktree status: DIRTY — artifacts/agent_handoffs/PR_255_HANDOFF.md (uncommitted update)
+- Worktree status: CLEAN
 - Last updated: 2026-08-04
-- Updated by: Hermes (steps 1-8 complete)
+- Updated by: Hermes (publication reconciliation complete)
 
 ## Current Work State
 
-Status: READY_FOR_PUBLICATION_RECONCILIATION
+Status: READY_FOR_MERGE — CI FULLY GREEN, AWAITING EXPLICIT MERGE AUTHORIZATION
 
 Current agent: Hermes
 
-Current task: Complete — all 8 steps executed. Awaiting user authorization for force-with-lease push.
+Current task: Complete — force-with-lease push executed, PR description corrected, all 13 CI checks green. Holding for merge authorization.
 
 Task started: 2026-08-04
 
-Expected stop boundary: STOP — return evidence to user. Do not push without authorization.
+Expected stop boundary: HOLD — do not merge without explicit user authorization.
 
 ## Mismatch Summary
 
@@ -156,9 +155,9 @@ See Validation matrix below.
 
 This document is the final handoff update. Status set to READY_FOR_PUBLICATION_RECONCILIATION.
 
-## CI Status (Published PR #255 — c2f2caa2, now f00d915e)
+## CI Status — Before Reconciliation (published c2f2caa2/f00d915e)
 
-| Workflow | Result (c2f2caa2) | Root Cause |
+| Workflow | Result | Root Cause |
 |---|---|---|
 | Sigma Quality Gate | FAIL | unsupported jurisdiction CT (same schema/constants defect) |
 | test | FAIL | unsupported jurisdiction CT + FED TESTED vs NOT_STARTED |
@@ -173,7 +172,38 @@ This document is the final handoff update. Status set to READY_FOR_PUBLICATION_R
 | postgresql-bootstrap-certification | PASS | — |
 | postgresql-race | PASS | — |
 
-All 3 CI failures are caused by the published branch's incompatible data schema, missing constants.py update, and wrong FED status. The local branch fixes all three issues.
+All 3 CI failures were caused by the published branch's incompatible data schema, missing constants.py update, and wrong FED status. The local branch fixes all three issues.
+
+## CI Status — After Reconciliation (published 21b08f79 — FINAL)
+
+| Workflow | Result | Run ID | Duration |
+|---|---|---|---|
+| Sigma Quality Gate | PASS | 30901919736 | 4m7s |
+| test | PASS | 30901919734 | 1m53s |
+| verify | PASS | 30901919832 | 2m20s |
+| smoke | PASS | 30901919765 | 34s |
+| lint | PASS | 30901919734 | 11s |
+| security | PASS | 30901919734 | 41s |
+| auth-tenant-rbac-certification | PASS | 30901919734 | 34s |
+| claims-validation | PASS | 30901919734 | 27s |
+| audit-correlation-non-http-certification | PASS | 30901919734 | 34s |
+| http-correlation-ws-hardening-certification | PASS | 30901919734 | 35s |
+| postgresql-bootstrap-certification | PASS | 30901919734 | 56s |
+| postgresql-race | PASS | 30901919734 | 1m9s |
+| Build canonical portal image | PASS | 30901920009 | 44s |
+
+ALL 13 CI CHECKS GREEN. The three previously-failing workflows (Sigma, test, verify) now pass with the reconciled local implementation.
+
+## Publication Reconciliation Record
+
+- Authorization: User explicitly authorized force-with-lease push with lease SHA f00d915e404e6922256fa1f74913926807ac0335.
+- Pre-push verification: local HEAD = 21b08f79, remote HEAD = f00d915e (matched expected), worktree clean.
+- Disposable test output removed: web/test-results/ (Playwright artifacts only).
+- Force-with-lease push executed: git push --force-with-lease=refs/heads/feat/phase-3a-delaware-connecticut:f00d915e... origin feat/phase-3a-delaware-connecticut
+- Push result: f00d915e...21b08f79 feat/phase-3a-delaware-connecticut -> feat/phase-3a-delaware-connecticut (forced update)
+- Post-push verification: local HEAD = remote HEAD = 21b08f794eb103224143b38b49350f57e1a4c042, tree = c41b236ee9afcb0ba4af28cf7d8b0d35305b4661.
+- PR description corrected via gh pr edit 255 — FED now correctly described as NOT_STARTED; governed counts included; research manifest limitations noted.
+- PR mergeability: MERGEABLE, mergeStateStatus: CLEAN, no reviews, no unresolved threads.
 
 ## Validation (Local Branch — 2f815c72)
 
@@ -242,18 +272,16 @@ None (other than this handoff file update which is tracked but modified).
 
 ## Next Required Action
 
-1. **USER AUTHORIZATION REQUIRED:** Authorize force-with-lease push of local branch to origin/feat/phase-3a-delaware-connecticut. Command: `git push --force-with-lease origin feat/phase-3a-delaware-connecticut`
-2. **After push:** Verify GitHub CI runs on the updated branch and all 12 workflows pass.
-3. **After CI green:** Correct the PR #255 description using: `gh pr edit 255 --body "..."` with the corrected text (FED = NOT_STARTED, not TESTED).
-4. **After PR description corrected:** Update this handoff file with CERTIFIED status and the final push/CI evidence.
-5. **Then:** Merge PR #255 (after user authorization).
-6. **Then:** Merge PR #256 (after ADR refinements are reviewed and Accepted governance decision is recorded).
+1. **HOLDING FOR MERGE AUTHORIZATION:** PR #255 is published at 21b08f79, all 13 CI checks green, PR description corrected, MERGEABLE + CLEAN. Awaiting explicit user authorization to merge.
+2. **After merge authorized:** Merge PR #255 via gh pr merge 255 (squash or merge per user preference).
+3. **After PR #255 merged:** Await owner and security review of PR #256 ADR-002. Then merge PR #256 after Accepted governance decision.
+4. **After both merged:** Mission Control / Phase 3B / Mythos Brain implementation may begin (per global stop rule).
 
 ## Prohibited Actions
 
-- Do not merge PR #255.
+- Do not merge PR #255 without explicit user authorization.
 - Do not deploy.
-- Do not force-push without explicit user authorization.
+- Do not force-push (already completed — branch is published).
 - Do not modify files claimed by another active agent.
 - Do not begin unrelated work.
 - Do not mark complete with required gates unrun.
@@ -262,14 +290,18 @@ None (other than this handoff file update which is tracked but modified).
 
 Outgoing agent: Hermes
 
-Outgoing HEAD: 2f815c72c028b3a58daa51c33ad1e754e88fecad (local)
-Published HEAD: f00d915e404e6922256fa1f74913926807ac0335 (remote — divergent)
+Outgoing HEAD: 21b08f794eb103224143b38b49350f57e1a4c042 (local and remote — EQUAL)
+Tree SHA: c41b236ee9afcb0ba4af28cf7d8b0d35305b4661
 Safety branch: safety/pr255-pre-reconciliation (at 2f815c72)
 
-Outgoing worktree status: DIRTY — artifacts/agent_handoffs/PR_255_HANDOFF.md (this update, uncommitted)
+Outgoing worktree status: CLEAN
 
-Normal push possible: NO (divergent histories)
-Force-with-lease push required: YES
+Published branch matches certified local implementation: YES
+CI: 13/13 GREEN
+PR mergeability: MERGEABLE, CLEAN
+PR description: CORRECTED (FED = NOT_STARTED)
+Review decision: (no reviews — awaiting user)
+Unresolved threads: none
 
 Incoming agent: (awaiting user authorization for push)
 

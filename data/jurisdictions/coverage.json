@@ -76,20 +76,20 @@
     {
       "code": "CT",
       "name": "Connecticut",
-      "support_status": "NOT_STARTED",
-      "researched": false,
-      "encoded": false,
-      "tested": false,
+      "support_status": "TESTED",
+      "researched": true,
+      "encoded": true,
+      "tested": true,
       "human_reviewed": false,
       "production_eligible": false
     },
     {
       "code": "DE",
       "name": "Delaware",
-      "support_status": "NOT_STARTED",
-      "researched": false,
-      "encoded": false,
-      "tested": false,
+      "support_status": "TESTED",
+      "researched": true,
+      "encoded": true,
+      "tested": true,
       "human_reviewed": false,
       "production_eligible": false
     },

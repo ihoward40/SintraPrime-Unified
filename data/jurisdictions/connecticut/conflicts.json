@@ -1,0 +1,31 @@
+[
+  {
+    "id": "CT-CONFLICT-SELF-SETTLED-NO-PROTECTION",
+    "issue": "Connecticut explicitly denies spendthrift protection to self-settled trusts. This creates a fundamental conflict with states like Delaware and Alaska that provide strong self-settled asset protection for DAPT-qualified transfers. A trust governed by Connecticut law may not receive DAPT protection even if the trustee structure is designed for DAPT compliance.",
+    "jurisdiction": "CT",
+    "competing_rules": [
+      "CT-SELF-SETTLED-NO-PROTECTION",
+      "DE-DAPT-ASSET-PROTECTION"
+    ],
+    "competing_authorities": [
+      "CT-TRUST-CREDITOR-45478",
+      "DE-TRUST-DAPT-4901"
+    ],
+    "authority_ranking": [
+      {"authority_id": "CT-TRUST-CREDITOR-45478", "authority_type": "CONNECTICUT_STATUTE", "authority_weight": 850},
+      {"authority_id": "DE-TRUST-DAPT-4901", "authority_type": "DELAWARE_CODE", "authority_weight": 850}
+    ],
+    "date_relationship": "CT CUTS effective 2008-07-01. DE DAPT effective 2015-07-01.",
+    "factual_distinctions": [
+      "CT CUTS explicitly prohibits self-settled spendthrift protection.",
+      "DE DAPT explicitly authorizes self-settled asset protection subject to conditions."
+    ],
+    "unresolved_questions": [
+      "Whether a CT-governed trust with a DE DAPT trustee structure is effective for asset protection purposes.",
+      "Whether DE law applies to a CT-governed trust that migrates situs to DE."
+    ],
+    "recommended_controlling_rule": null,
+    "confidence": 0.0,
+    "human_review_required": true
+  }
+]

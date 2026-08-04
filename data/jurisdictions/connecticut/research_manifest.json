@@ -1,0 +1,160 @@
+[
+  {
+    "topic": "Connecticut Uniform Trust Code (CUTS) applicability and nonuniform provisions",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "CT-TRUST-UTC-45287"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Connecticut has enacted the CUTS with significant nonuniform provisions from the model UTC. CUTS applies to express trusts formed or administered in Connecticut. Specific departures from model UTC require case-by-case review.",
+    "exceptions": [
+      "Statutory trusts formed under specific Connecticut enabling statutes.",
+      "Nonuniform provisions govern creditor rights, spendthrift enforceability, and self-settled trust rules."
+    ],
+    "open_questions": [
+      "How courts interpret specific nonuniform CUTS provisions in light of other states' UTC precedent."
+    ],
+    "human_review_required": true
+  },
+  {
+    "topic": "Connecticut trust creation requirements",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "CT-TRUST-CREATION-45299"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Trust creation requires written instrument for land trusts, lawful purpose, ascertainable beneficiaries or charitable purpose, trustee acceptance, and settlor capacity. Oral trusts for personal property recognized subject to proof.",
+    "exceptions": [
+      "Oral trusts for personal property require clear and convincing evidence.",
+      "Charitable purpose trusts exempt from beneficiary ascertainability."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Connecticut self-settled trust — no asset protection",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "CT-TRUST-CREDITOR-45478"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Connecticut explicitly prohibits spendthrift protection for self-settled trusts. A settlor who creates an irrevocable trust for their own benefit cannot claim creditor protection under Connecticut law. Third-party settled trusts ARE protected.",
+    "exceptions": [
+      "Third-party settled trusts retain spendthrift protection."
+    ],
+    "open_questions": [
+      "Whether specific trust structures or spendthrift clause language affect the self-settled rule."
+    ],
+    "human_review_required": true
+  },
+  {
+    "topic": "Connecticut spendthrift enforcement for third-party settled trusts",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "CT-TRUST-CREDITOR-45478"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Connecticut enforces spendthrift clauses in third-party settled trusts. Exception creditors (support, government, tort) may reach protected distributions.",
+    "exceptions": [
+      "Child support and alimony.",
+      "Government claims."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Connecticut directed trust",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "CT-TRUST-DIRECTED-45292"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Connecticut CUTS authorizes directed trustees, investment advisers, and distribution advisers with fiduciary obligations when following directions.",
+    "exceptions": [
+      "Improper directions create directed trustee liability.",
+      "ERISA contexts limit exculpation."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Connecticut decanting",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "CT-TRUST-DECANTING-45293"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Connecticut decanting statute authorizes trustees with discretionary power to distribute to a second trust. Beneficiary notice and court approval required for certain decantings.",
+    "exceptions": [
+      "Beneficiary objection.",
+      "Creditor challenge.",
+      "Fraudulent transfer."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Connecticut trust modification and NJSA",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "CT-TRUST-MODIFICATION-45364"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Connecticut NJSA can modify or terminate non-charitable trusts with all interested parties' consent without a material purpose violation. Charitable trusts require AG involvement.",
+    "exceptions": [
+      "Charitable trust AG involvement.",
+      "Court approval for fundamental changes."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Connecticut UCC Article 9 filing office",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "CT-UCC-9-501"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "CT SOS is central filing office for UCC liens. Fixture filings go to the town clerk in the town where real property is located. No separate local filing system for non-fixture collateral.",
+    "exceptions": [
+      "Transmitting utilities central filing."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Connecticut trust taxation",
+    "research_status": "primary_authority_partial",
+    "primary_authorities": [
+      "CT-TRUST-TAXATION-DRS",
+      "CT-TRUST-GOVLAW-45302"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Connecticut imposes income tax on trusts with CT nexus. Connecticut has its own estate tax separate from federal, with a lower exemption threshold.",
+    "exceptions": [
+      "Grantor trust rules.",
+      "Estate tax filing thresholds."
+    ],
+    "open_questions": [
+      "Specific CT nexus tests for nonresident trusts require DRS guidance verification."
+    ],
+    "human_review_required": true
+  },
+  {
+    "topic": "Connecticut homestead and wage garnishment",
+    "research_status": "primary_authority_partial",
+    "primary_authorities": [
+      "CT-HOMESTEAD-4931q"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Connecticut homestead exemption for primary residence with income/age eligibility. Wage garnishment limited to 15% of gross weekly wages above minimum wage threshold.",
+    "exceptions": [
+      "Mortgages, tax liens.",
+      "Child support higher garnishment limits."
+    ],
+    "open_questions": [
+      "Exact dollar value caps for homestead exemption require DRS/Official compiler verification."
+    ],
+    "human_review_required": true
+  }
+]

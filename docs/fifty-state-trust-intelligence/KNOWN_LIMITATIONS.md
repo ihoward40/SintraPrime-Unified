@@ -1,7 +1,8 @@
 # Known Limitations
 
 - New Jersey, New York, and Pennsylvania have not received real licensed-attorney legal review.
-- New Jersey, New York, and Pennsylvania remain `TESTED`, not `HUMAN_REVIEWED` and not `PRODUCTION_ELIGIBLE`.
+- Delaware and Connecticut have not received real licensed-attorney legal review.
+- New Jersey, New York, Pennsylvania, Delaware, and Connecticut remain `TESTED`, not `HUMAN_REVIEWED` and not `PRODUCTION_ELIGIBLE`.
 - All other states, the District of Columbia, and federal overlays remain `NOT_STARTED`.
 - N.J.A.C. 17:33 was constrained by official-source access. Official OAL/Treasury sources identify the official Administrative Code access path and adoption notice, but Phase 2A did not capture full current official text.
 - Several creditor and exemption authorities remain source-limited records pending official compiled-source review.

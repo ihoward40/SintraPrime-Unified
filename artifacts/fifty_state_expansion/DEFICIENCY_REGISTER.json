@@ -573,5 +573,34 @@
       "Statutory drift creates proposed updates requiring review"
     ],
     "status": "open"
+  },
+  {
+    "id": "DEF-0025",
+    "domain": "jurisdiction_coverage",
+    "severity": "high",
+    "description": "Delaware DAPT and Connecticut CUTS rules present novel risks not found in NJ/NY/PA: federal bankruptcy override of DAPT (11 U.S.C. § 548), DAPT 'no direct benefit' ongoing litigation, Connecticut's explicit self-settled prohibition vs. Delaware DAPT, and CUTS nonuniform provisions requiring case-by-case review. These require licensed-attorney review before any production use.",
+    "evidence": [
+      "data/jurisdictions/delaware/rules.json",
+      "data/jurisdictions/connecticut/rules.json",
+      "data/jurisdictions/delaware/conflicts.json",
+      "data/jurisdictions/connecticut/conflicts.json",
+      "docs/fifty-state-trust-intelligence/DELAWARE.md",
+      "docs/fifty-state-trust-intelligence/CONNECTICUT.md"
+    ],
+    "affected_files": [
+      "data/jurisdictions/delaware/",
+      "data/jurisdictions/connecticut/"
+    ],
+    "recommended_action": "Phase 3A rules are TESTED but not HUMAN_REVIEWED. DAPT and CUTS rules require licensed-attorney review before production eligibility. No DAPT or CUTS rule may advance to production without explicit attorney review and bankruptcy-risk disclosure.",
+    "acceptance_criteria": [
+      "All DAPT rules are flagged HUMAN_REVIEW_REQUIRED and blocked from production eligibility.",
+      "All CT self-settled prohibition rules are flagged HUMAN_REVIEW_REQUIRED and blocked from production eligibility.",
+      "Bankruptcy override conflict records are present and visible in comparison output.",
+      "Licensed-attorney review records are entered for all DAPT and CUTS rules before any production advancement."
+    ],
+    "status": "open",
+    "phase_3a_notes": [
+      "Added in Phase 3A. DEF-0025 captures novel legal risks specific to Delaware DAPT and Connecticut CUTS that were not present in NJ/NY/PA."
+    ]
   }
 ]

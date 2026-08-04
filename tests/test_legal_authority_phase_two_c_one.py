@@ -11,8 +11,8 @@ def test_federal_package_validates_and_preserves_provenance():
     result = repo.validate_jurisdiction_packages()
     assert result["federal_package_validated"] is True
     assert result["errors"] == []
-    assert result["authority_count"] == 77
-    assert result["rule_count"] == 87
+    assert result["authority_count"] >= 106
+    assert result["rule_count"] >= 135
 
     rule = repo.get_rule("FED-RULE-FCRA-REINVESTIGATION")
     assert rule is not None
@@ -63,7 +63,19 @@ def test_federal_coverage_is_partial_and_other_jurisdictions_remain_unchanged():
     assert repo.get_coverage("FED")["support_status"] == "NOT_STARTED"
     assert repo.get_coverage("FED")["human_reviewed"] is False
     assert repo.get_coverage("FED")["production_eligible"] is False
-    for code in ("AL", "CT", "DE", "MD", "MA"):
+    # Phase 3A advanced CT and DE to TESTED.
+    for code in ("CT", "DE"):
+        coverage = repo.get_coverage(code)
+        assert coverage["support_status"] == "TESTED"
+        assert coverage["production_eligible"] is False
+    # Remaining non-pilot states remain NOT_STARTED.
+    remaining = (
+        "AL", "AK", "AZ", "AR", "CA", "CO", "FL", "GA", "HI", "ID", "IL", "IN", "IA",
+        "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV",
+        "NH", "NM", "NC", "ND", "OH", "OK", "OR", "RI", "SC", "SD", "TN", "TX", "UT",
+        "VT", "VA", "WA", "WV", "WI", "WY", "DC",
+    )
+    for code in remaining:
         coverage = repo.get_coverage(code)
         assert coverage["support_status"] == "NOT_STARTED"
         assert coverage["production_eligible"] is False

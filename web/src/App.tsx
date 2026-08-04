@@ -10,6 +10,8 @@ import TrustLaw from './pages/TrustLaw';
 import NewJerseyJurisdiction from './pages/NewJerseyJurisdiction';
 import NewYorkJurisdiction from './pages/NewYorkJurisdiction';
 import PennsylvaniaJurisdiction from './pages/PennsylvaniaJurisdiction';
+import DelawareJurisdiction from './pages/DelawareJurisdiction';
+import ConnecticutJurisdiction from './pages/ConnecticutJurisdiction';
 import NortheastComparison from './pages/NortheastComparison';
 import UCCFilingAssessment from './pages/UCCFilingAssessment';
 import CaseManagement from './pages/CaseManagement';
@@ -44,6 +46,8 @@ function AppContent() {
           <Route path="jurisdictions/new-jersey" element={<NewJerseyJurisdiction />} />
           <Route path="jurisdictions/new-york" element={<NewYorkJurisdiction />} />
           <Route path="jurisdictions/pennsylvania" element={<PennsylvaniaJurisdiction />} />
+          <Route path="jurisdictions/delaware" element={<DelawareJurisdiction />} />
+          <Route path="jurisdictions/connecticut" element={<ConnecticutJurisdiction />} />
           <Route path="jurisdictions/northeast-comparison" element={<NortheastComparison />} />
           <Route path="ucc/filing-assessment" element={<UCCFilingAssessment />} />
           <Route path="matters/:matterId" element={<MatterWorkspace />} />

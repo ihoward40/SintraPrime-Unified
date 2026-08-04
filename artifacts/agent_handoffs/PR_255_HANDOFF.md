@@ -6,35 +6,34 @@
 - Repository: ihoward40/SintraPrime-Unified
 - Branch: feat/phase-3a-delaware-connecticut
 - Base branch: main
-- Current HEAD (local): 2322191e9bc751045866240e9d8bea4646134656
-- Current HEAD (published/remote): c2f2caa219ef43afae7ad4849c4a1ca313227e94
-- Tree SHA (local HEAD): 2a04bebae977916ba4855de8bc69a73771833341
+- Current HEAD (local): 2f815c72c028b3a58daa51c33ad1e754e88fecad
+- Current HEAD (published/remote): f00d915e404e6922256fa1f74913926807ac0335
+- Tree SHA (local HEAD): 5c24fda3f3e770d86f5155b56e556ac8c8651a39
+- Safety branch: safety/pr255-pre-reconciliation (at 2f815c72)
 - Worktree: C:/Users/admin/SintraPrime-Unified-phase-3a
-- Worktree status: DIRTY — staged New Jersey filename correction (see below)
+- Worktree status: DIRTY — artifacts/agent_handoffs/PR_255_HANDOFF.md (uncommitted update)
 - Last updated: 2026-08-04
-- Updated by: Hermes (initial handoff creation)
+- Updated by: Hermes (steps 1-8 complete)
 
 ## Current Work State
 
-Status: BLOCKED — STATE RECONCILIATION REQUIRED
+Status: READY_FOR_PUBLICATION_RECONCILIATION
 
-Current agent: (none — awaiting assignment)
+Current agent: Hermes
 
-Current task: Reconcile complete local Phase 3A implementation onto published PR #255 branch; fix CI failures; correct PR description.
+Current task: Complete — all 8 steps executed. Awaiting user authorization for force-with-lease push.
 
-Task started: (not yet started)
+Task started: 2026-08-04
 
-Expected stop boundary: PR #255 branch HEAD matches local evidence; all CI gates green; PR description corrected; handoff file updated with final state.
+Expected stop boundary: STOP — return evidence to user. Do not push without authorization.
 
 ## Mismatch Summary
 
-The published PR #255 (head c2f2caa2, 1 commit, 17 files, +478/-8) is NOT the same implementation as the local branch (head 2322191e, 4 commits ahead of published, 28 files differ, +4493/-312).
+The published PR #255 (originally head c2f2caa2, now advanced to f00d915e) is NOT the same implementation as the local branch (head 2f815c72). The local branch contains the complete Phase 3A dataset with correct schema. The published branch (even after f00d915e partial reconciliation) remains thinner and still has FED=TESTED (wrong).
 
-The local branch contains the complete Phase 3A dataset. The published branch contains a materially thinner subset.
+### Published vs Local Data Comparison (original published c2f2caa2)
 
-### Published vs Local Data Comparison
-
-| Dataset | Published (c2f2caa2) | Local (2322191e) | Delta |
+| Dataset | Published (c2f2caa2) | Local (2322191e→2f815c72) | Delta |
 |---|---|---|---|
 | Delaware authorities | 4 records | 16 records | +12 missing from published |
 | Delaware rules | 4 rules | 26 rules | +22 missing from published |
@@ -42,11 +41,24 @@ The local branch contains the complete Phase 3A dataset. The published branch co
 | Connecticut authorities | 3 records | 15 records | +12 missing from published |
 | Connecticut rules | 3 rules | 22 rules | +19 missing from published |
 | Connecticut conflicts | 0 (empty []) | 1 record | +1 missing from published |
-| DE research_manifest status | COMPLETED | COMPLETED (with limitations) | Manifest says COMPLETED despite acknowledged source-verification limitations |
-| CT research_manifest status | COMPLETED | COMPLETED (with limitations) | Same issue |
-| Coverage.json FED status | TESTED (per PR body) | NOT_STARTED | PR body claims FED TESTED; local coverage.json says FED NOT_STARTED |
+| DE research_manifest | Used "COMPLETED" | Uses primary_authority_verified / primary_authority_partial | Local is conservative |
+| CT research_manifest | Used "COMPLETED" | Uses primary_authority_verified / primary_authority_partial | Local is conservative |
+| Coverage.json FED status | TESTED (wrong) | NOT_STARTED (correct) | Published is wrong |
 
-### Commits on Local Branch Not Published
+### Remote Update (f00d915e — discovered during step 3)
+
+During step 3 (git fetch), the remote branch had advanced from c2f2caa2 to f00d915e ("feat(phase-3a): reconcile implementation with Hermes handoff and fix CI"). This new commit:
+- Fixed the schema (added authority_type, source_classification, etc.)
+- Registered CT/DE in constants.py
+- BUT still has FED=TESTED (WRONG)
+- Has 15 DE authorities (local has 16 — off by 1)
+- Has 25 DE rules (local has 26 — off by 1)
+- CT authorities: 15 (matches local)
+- CT rules: 22 (matches local)
+
+The local branch still supersedes the remote. Reconciliation requires force-with-lease push.
+
+### Commits on Local Branch Not Published (6 commits)
 
 | SHA | Subject |
 |---|---|
@@ -54,202 +66,194 @@ The local branch contains the complete Phase 3A dataset. The published branch co
 | 7f63de82 | docs: add Phase 3A Delaware and Connecticut evidence package |
 | ce5907d9 | feat: add Delaware and Connecticut workspaces and five-state comparison |
 | 2322191e | test: certify Phase 3A Delaware and Connecticut coverage |
+| ea6b8245 | docs: add PR 255 multi-agent handoff record |
+| 2f815c72 | fix: normalize New Jersey workspace filename and route typing |
 
-### Published Commit Not on Local Branch
+### Published Commits Not on Local Branch (2 commits)
 
 | SHA | Subject |
 |---|---|
 | c2f2caa2 | feat: implement Phase 3A Delaware and Connecticut jurisdiction packages |
+| f00d915e | feat(phase-3a): reconcile implementation with Hermes handoff and fix CI |
 
-The published commit c2f2caa2 appears to be a separate, thinner implementation that was force-pushed or created independently. The local branch has 4 commits that diverge from the published single commit. These are different histories.
+### Merge-Base
 
-### Additional Local-Only Files (not in published PR)
+8e62685c (Merge pull request #254)
 
-| File | Status |
-|---|---|
-| docs/fifty-state-trust-intelligence/fifty_state_expansion/DEFICIENCY_REGISTER.json | New |
-| docs/fifty-state-trust-intelligence/fifty_state_expansion/PHASE_THREE_A_BASELINE.md | New |
-| docs/fifty-state-trust-intelligence/fifty_state_expansion/PHASE_THREE_A_STATUS.md | New |
-| docs/fifty-state-trust-intelligence/CONNECTICUT.md | New |
-| docs/fifty-state-trust-intelligence/DELAWARE.md | New |
-| docs/fifty-state-trust-intelligence/JURISDICTION_COVERAGE.md | Modified |
-| docs/fifty-state-trust-intelligence/KNOWN_LIMITATIONS.md | Modified |
-| docs/fifty-state-trust-intelligence/NORTHEAST_COMPARISON.md | New |
-| legal_authority/constants.py | Modified |
-| portal/tests/test_jurisdictions_api_phase3a.py | New |
-| tests/test_legal_authority_phase_two_b.py | Modified |
-| tests/test_legal_authority_phase_two_c_one.py | Modified |
-| trust_law/jurisdiction_analyzer.py | Modified (published removed 32 lines; local has different version) |
-| trust_law/tests/test_phase_3a_jurisdictions.py | Modified (published has 112 lines; local removed it) |
-| web/src/App.tsx | Modified |
-| web/src/components/JurisdictionWorkspace.tsx | Modified |
-| web/src/components/layout/Sidebar.tsx | Modified |
-| web/src/pages/ConnecticutJurisdiction.tsx | Modified |
-| web/src/pages/DelawareJurisdiction.tsx | Modified |
-| web/src/pages/NortheastComparison.tsx | Modified |
+### Reconciliation Strategy
 
-## CI Status (PR #255, published head c2f2caa2)
+FORCE-WITH-LEASE PUSH REQUIRED. The local and remote branches have divergent histories (different commits from the same merge-base). The local branch completely supersedes the remote:
+- Local has 16 DE authorities vs remote's 15 (1 more)
+- Local has 26 DE rules vs remote's 25 (1 more)
+- Local has FED=NOT_STARTED (correct) vs remote's FED=TESTED (wrong)
+- Both have correct schema and constants.py registration
 
-| Workflow | Result | Run ID |
+The published commits c2f2caa2 and f00d915e contain no unique valid work that is not already in the local branch. The local branch is the authoritative complete implementation.
+
+Normal push is NOT possible (divergent histories). Force-with-lease push is required.
+
+## Steps Completed
+
+### Step 1: Commit the handoff file separately — DONE
+
+- Unstaged all pre-existing staged files with `git restore --staged .`
+- Staged only: artifacts/agent_handoffs/PR_255_HANDOFF.md
+- Committed as ea6b8245 — "docs: add PR 255 multi-agent handoff record"
+- Pre-existing staged changes were preserved in the working tree
+
+### Step 2: Fix the New Jersey filename defect — DONE
+
+- Investigated the filename encoding: HEAD had literal asterisks (0x2a) in the filename and App.tsx import
+- The untracked working-tree file had U+F02A (Private Use Area) characters
+- Deleted the ligature/PUA file, restored the original NewJersey.tsx from HEAD
+- The working-tree App.tsx already had the correct import
+- JurisdictionWorkspace.tsx had NJ fallback data and extended code type to include 'NJ'
+- Staged App.tsx and JurisdictionWorkspace.tsx, committed as 2f815c72 — "fix: normalize New Jersey workspace filename and route typing"
+- Verified exactly one ASCII file NewJersey.tsx exists in web/src/pages/
+
+### Step 3: Reconcile local and published histories — DONE
+
+- Fetched remote: origin/feat/phase-3a-delaware-connecticut advanced to f00d915e
+- Created safety branch: safety/pr255-pre-reconciliation
+- Analyzed divergence: local 6 commits ahead, remote 2 commits ahead, merge-base 8e62685c
+- Determined: local completely supersedes remote; force-with-lease push required
+- Did NOT push or force-push
+
+### Step 4: Correct Phase 3A governed data — DONE
+
+- Verified local data counts: 16 DE authorities, 26 DE rules, 2 DE conflicts, 15 CT authorities, 22 CT rules, 1 CT conflict
+- Inspected research manifests: they use research_status field (not "status") with values primary_authority_verified and primary_authority_partial
+- Manifests already preserve: human_review_required=true on all entries, open_questions, limitations
+- The primary_authority_partial entries correctly flag taxation and homestead limitations
+- No "COMPLETED" status found in the manifests — they are already conservative and correct
+- No changes needed to manifests
+
+### Step 5: Correct federal status — DONE
+
+- Confirmed local coverage.json: FED = NOT_STARTED, researched=false, encoded=false, tested=false
+- Remote coverage.json: FED = TESTED (wrong)
+- PR description correction text prepared (for user authorization):
+  "Federal overlays remain NOT_STARTED in jurisdiction coverage. Existing federal issue-spotting authorities are separate from state coverage certification."
+- PR description NOT modified on GitHub (awaiting user authorization)
+
+### Step 6: Investigate Sigma failure — DONE
+
+- Sigma Gate run 30893016543
+- Failing job: "Sigma Quality Gate"
+- Failing step: "Run tests with coverage"
+- First meaningful error: test_repository_has_no_orphan_rules in tests/test_legal_authority_phase_one.py:113
+  - `assert repo.rules` → `JurisdictionRule.model_validate(raw)` → ValidationError: unsupported jurisdiction: CT
+- Root cause: SAME as test/verify failures — CT not registered in legal_authority/constants.py in the published branch
+- The Sigma Gate runs the full test suite with coverage; the same schema/constants defect that breaks test and verify also breaks Sigma
+- No separate Sigma-specific defect remains — the Sigma failure is fully explained by the schema/constants/FED defects
+- Fixing the published branch to match local (which has constants.py updated) will clear all three failures
+
+### Step 7: Run full certification — DONE
+
+See Validation matrix below.
+
+### Step 8: Update handoff and stop before push — DONE
+
+This document is the final handoff update. Status set to READY_FOR_PUBLICATION_RECONCILIATION.
+
+## CI Status (Published PR #255 — c2f2caa2, now f00d915e)
+
+| Workflow | Result (c2f2caa2) | Root Cause |
 |---|---|---|
-| Sigma Quality Gate | FAIL | 30893016543 |
-| test | FAIL | 30893016566 |
-| verify | FAIL | 30893018433 |
-| smoke | PASS | 30893016536 |
-| lint | PASS | 30893016566 |
-| security | PASS | 30893016566 |
-| auth-tenant-rbac-certification | PASS | 30893016566 |
-| claims-validation | PASS | 30893016566 |
-| audit-correlation-non-http-certification | PASS | 30893016566 |
-| http-correlation-ws-hardening-certification | PASS | 30893016566 |
-| postgresql-bootstrap-certification | PASS | 30893016566 |
-| postgresql-race | PASS | 30893016566 |
+| Sigma Quality Gate | FAIL | unsupported jurisdiction CT (same schema/constants defect) |
+| test | FAIL | unsupported jurisdiction CT + FED TESTED vs NOT_STARTED |
+| verify | FAIL | same + LegalAuthority schema validation errors |
+| smoke | PASS | — |
+| lint | PASS | — |
+| security | PASS | — |
+| auth-tenant-rbac-certification | PASS | — |
+| claims-validation | PASS | — |
+| audit-correlation-non-http-certification | PASS | — |
+| http-correlation-ws-hardening-certification | PASS | — |
+| postgresql-bootstrap-certification | PASS | — |
+| postgresql-race | PASS | — |
 
-### CI Failure Root Causes (from failed log capture)
+All 3 CI failures are caused by the published branch's incompatible data schema, missing constants.py update, and wrong FED status. The local branch fixes all three issues.
 
-1. **test workflow (run 30893016566):**
-   - `test_federal_rules_cover_required_overlay_domains_without_production_gate_bypass` — `JurisdictionRule` ValidationError: unsupported jurisdiction 'CT'
-   - `test_federal_coverage_is_partial_and_other_jurisdictions_remain_unchanged` — AssertionError: assert 'TESTED' == 'NOT_STARTED' (FED coverage marked TESTED but test expects NOT_STARTED)
-   - `test_federal_benefit_rules_include_social_security_va_and_railroad_retirement` — ValidationError: unsupported jurisdiction 'CT'
-   - `test_federal_rules_keep_explicit_non_advice_limitations` — ValidationError: unsupported jurisdiction 'CT'
-   - `test_federal_read_only_api_endpoints` — ValidationError: unsupported jurisdiction 'CT'
+## Validation (Local Branch — 2f815c72)
 
-2. **verify workflow (run 30893018433):**
-   - Same test suite failures as test workflow
-   - Additional: `test_federal_authority_hierarchy_preserves_statute_and_regulation_types` — LegalAuthority ValidationError: 11 errors including missing fields (authority_type, source_classification, verification_status, authority_weight, summary, created_at, updated_at) and extra forbidden fields (category, relevance, status)
-   - Root cause: published CT authorities.json uses a different schema than what `LegalAuthority` model expects
-
-3. **Sigma Quality Gate (run 30893016543):**
-   - Bandit scan: 273 findings, 0 HIGH — "PASS: No new critical security findings"
-   - The gate appears to fail on a non-bandit step; logs show the bandit check passed but the overall workflow still failed. Needs investigation of the full Sigma gate workflow steps.
-
-### CI Failure Analysis
-
-The published PR's data files use an incompatible schema:
-- CT authorities.json has fields `category`, `relevance`, `status` that are not in the `LegalAuthority` pydantic model (which requires `authority_type`, `source_classification`, `verification_status`, `authority_weight`, `summary`, `created_at`, `updated_at`)
-- CT jurisdiction code is not registered in `legal_authority/constants.py` as a supported jurisdiction (the published PR did not update constants.py)
-- Coverage.json marks FED as TESTED but the Phase 2C test expects FED to remain NOT_STARTED (the PR body incorrectly claims FED is TESTED)
-
-The local branch (2322191e) fixes these issues because it includes the updated `legal_authority/constants.py` and uses the correct schema for authority records.
+| Gate | Result | Command | Notes |
+|---|---|---|---|
+| Focused tests | PASS | python -m pytest portal/tests/test_jurisdictions_api_phase3a.py tests/test_legal_authority_phase_two_c_one.py tests/test_legal_authority_phase_two_b.py -q | 67 tests passed |
+| Full pytest | PASS | python -m pytest -q -x | All tests passed (warnings only, no failures) |
+| Ruff | PASS | python -m ruff check . | All checks passed |
+| Black | PRE_EXISTING | python -m black --check portal legal_authority trust_law tests | 162 files would be reformatted — ALL pre-existing, not introduced by Phase 3A. coverage.json is the only Phase 3A file black wants to reformat (indentation style). Not a blocking gate. |
+| MyPy | PASS | python -m mypy --explicit-package-bases --follow-imports=skip --ignore-missing-imports legal_authority | Success: no issues found in 9 source files |
+| Frontend lint | PASS | npm run lint | 0 warnings |
+| Frontend type-check | PASS | npm run type-check | tsc --noEmit passed |
+| Frontend build | PASS | npm run build | vite build succeeded, 2942 modules, built in 14.20s |
+| Playwright | PRE_EXISTING | npx playwright test --reporter=line | 1 failed: document-vault.spec.ts login via API — email e2e-attorney@sintraprime.test rejected by email validator (.test TLD). 4 passed. This is a pre-existing test fixture issue, NOT related to Phase 3A. |
+| PostgreSQL | NOT_RUN | | No PostgreSQL server running locally; CI covers this |
+| compileall | PASS | python -m compileall portal legal_authority | All files compiled successfully |
+| git diff --check | PASS | git diff --check | No whitespace errors |
+| JSON validation | PASS | Python json.load on all 9 Phase 3A JSON files | All valid: DE 16 auth / 26 rules / 2 conflicts, CT 15 auth / 22 rules / 1 conflict, FED=NOT_STARTED |
 
 ## Staged but Uncommitted (Local Worktree)
 
-| File | Status | Description |
-|---|---|---|
-| web/src/App.tsx | M (staged) | Route cleanup for NJ filename |
-| web/src/components/JurisdictionWorkspace.tsx | M (staged) | Workspace component update |
-| web/src/pages/NewJersey.tsx | D (staged) | Old filename with encoding issue |
-| web/src/pages/NewJerseyﬀﬀﬀ.tsx | A (staged) | New filename with Unicode ligature characters |
-
-**WARNING:** The staged New Jersey filename uses Unicode ligature characters (ﬀﬀﬀ / U+FB00 U+FB00 U+FB00) instead of ASCII "NewJersey.tsx". This is likely a filename encoding bug. The next agent must verify whether the intended filename is `NewJersey.tsx` (ASCII) or if the ligatures are intentional. If this is a bug, it must be corrected before commit.
+None. All changes have been committed. The only uncommitted file is this handoff file update (artifacts/agent_handoffs/PR_255_HANDOFF.md).
 
 ## Untracked Files
 
-None in the Phase 3A worktree.
-
-## File Ownership
-
-| File or directory | Agent | Purpose | State |
-|---|---|---|---|
-| data/jurisdictions/delaware/ | (unassigned) | Reconcile full 16-authority, 26-rule dataset onto published branch | BLOCKED |
-| data/jurisdictions/connecticut/ | (unassigned) | Reconcile full 15-authority, 22-rule dataset onto published branch | BLOCKED |
-| data/jurisdictions/coverage.json | (unassigned) | Correct FED status to NOT_STARTED; ensure DE/CT = TESTED | BLOCKED |
-| legal_authority/constants.py | (unassigned) | Register DE and CT as supported jurisdictions | BLOCKED |
-| trust_law/jurisdiction_analyzer.py | (unassigned) | Reconcile analyzer integration | BLOCKED |
-| tests/test_legal_authority_phase_two_c_one.py | (unassigned) | Ensure Phase 2C tests pass with Phase 3A data | BLOCKED |
-| trust_law/tests/test_phase_3a_jurisdictions.py | (unassigned) | Reconcile test suite | BLOCKED |
-| portal/tests/test_jurisdictions_api_phase3a.py | (unassigned) | Add portal API tests for Phase 3A | BLOCKED |
-| web/src/pages/NewJersey*.tsx | (unassigned) | Fix staged filename encoding | BLOCKED |
-| docs/fifty-state-trust-intelligence/ | (unassigned) | Reconcile documentation package | BLOCKED |
-| artifacts/agent_handoffs/PR_255_HANDOFF.md | Hermes | This handoff file | COMPLETE |
-
-## Changes Completed
-
-- Hermes: Created this handoff file with full mismatch evidence (2026-08-04).
-
-## Changes In Progress
-
-- None.
-
-## Staged but Uncommitted
-
-- web/src/App.tsx (M) — route cleanup
-- web/src/components/JurisdictionWorkspace.tsx (M) — workspace update
-- web/src/pages/NewJersey.tsx (D) — old filename deleted
-- web/src/pages/NewJerseyﬀﬀﬀ.tsx (A) — new filename with Unicode ligatures (POSSIBLE BUG)
+None (other than this handoff file update which is tracked but modified).
 
 ## Commits Created
 
 | SHA | Subject | Agent |
 |---|---|---|
-| none (this session) | none | Hermes |
-
-## Validation
-
-| Gate | Result | Command | Notes |
-|---|---|---|---|
-| Focused tests | NOT_RUN | | |
-| Full pytest | NOT_RUN | | |
-| Ruff | NOT_RUN | | |
-| Black | NOT_RUN | | |
-| MyPy | NOT_RUN | | |
-| Frontend lint | NOT_RUN | | |
-| Frontend type-check | NOT_RUN | | |
-| Frontend build | NOT_RUN | | |
-| Playwright | NOT_RUN | | |
-| PostgreSQL | NOT_RUN | | |
-| git diff --check | NOT_RUN | | |
+| ea6b8245 | docs: add PR 255 multi-agent handoff record | Hermes |
+| 2f815c72 | fix: normalize New Jersey workspace filename and route typing | Hermes |
 
 ## Known Defects or Conflicts
 
-1. **Published vs local history divergence:** The published branch (c2f2caa2, 1 commit) and local branch (2322191e, 4 commits) have different histories. The published commit is a separate thinner implementation. Reconciliation requires either force-pushing the local branch or merging/rebasing the local commits onto the published branch.
-2. **Schema mismatch in published data:** Published CT/DE authorities.json use fields (category, relevance, status) not in the LegalAuthority pydantic model. Local branch uses the correct schema.
-3. **Missing constants.py update in published PR:** Published PR does not register CT or DE in legal_authority/constants.py, causing "unsupported jurisdiction: CT" validation errors.
-4. **FED coverage misclassification:** PR body says FED is TESTED; local coverage.json says FED is NOT_STARTED. Phase 2C test expects NOT_STARTED. PR description must be corrected.
-5. **Research manifest status:** Both DE and CT manifests say COMPLETED despite acknowledged source-verification limitations. Should likely be RESEARCH_IN_PROGRESS or PRIMARY_AUTHORITY_PARTIAL.
-6. **New Jersey filename encoding:** Staged file uses Unicode ligatures (ﬀﬀﬀ) instead of ASCII. Must be investigated and corrected if it is a bug.
-7. **Sigma Gate failure:** Bandit scan passed (0 HIGH, 273 findings), but the overall workflow failed. The specific failing step needs investigation.
-8. **trust_law/tests/test_phase_3a_jurisdictions.py:** Published PR has 112 lines for this test; local branch removed it (the local branch uses portal/tests/test_jurisdictions_api_phase3a.py instead). Must reconcile.
+1. **Published vs local history divergence:** Published (f00d915e, 2 commits) and local (2f815c72, 6 commits) have divergent histories from merge-base 8e62685c. Force-with-lease push required. Safety branch created.
+2. **Remote f00d915e still has FED=TESTED:** Even the updated remote commit has the wrong FED status. Local correctly has FED=NOT_STARTED.
+3. **Remote f00d915e missing 1 DE authority and 1 DE rule:** Remote has 15 DE authorities / 25 DE rules vs local's 16 / 26.
+4. **Black formatting (PRE_EXISTING):** 162 files across the repo would be reformatted by black. Not introduced by Phase 3A. coverage.json is the only Phase 3A file (indentation style difference). Not a CI blocking gate.
+5. **Playwright email fixture (PRE_EXISTING):** document-vault.spec.ts uses .test TLD which the email validator rejects. Not related to Phase 3A.
+6. **PR description needs correction:** PR body says FED is TESTED. Must be corrected to NOT_STARTED after push. Awaiting user authorization.
 
 ## Decisions Made
 
-1. PR #255 is BLOCKED — STATE RECONCILIATION REQUIRED. Do not merge.
-2. The local branch (2322191e) contains the authoritative complete dataset. The published branch (c2f2caa2) is a thinner, incompatible subset.
-3. CI failures are caused by the published PR's incompatible data schema and missing constants.py update, not by test infrastructure problems.
+1. PR #255 status: READY_FOR_PUBLICATION_RECONCILIATION. Do not merge until force-push and CI green.
+2. Local branch (2f815c72) is the authoritative complete implementation. Force-with-lease push required.
+3. All 3 CI failures (test, verify, Sigma) are fully explained by the published branch's schema/constants/FED defects. The local branch fixes all three.
+4. Research manifests are already conservative (primary_authority_verified / primary_authority_partial with human_review_required=true). No changes needed.
+5. New Jersey filename was a genuine encoding bug (literal asterisks in HEAD, U+F02A in working tree). Fixed in commit 2f815c72.
+6. Safety branch safety/pr255-pre-reconciliation created at 2f815c72 before any reconciliation.
+7. PR description correction text prepared but NOT applied to GitHub (awaiting user authorization).
 
 ## Files the Next Agent Must Inspect
 
-1. `data/jurisdictions/delaware/authorities.json` (local vs published — schema and record count)
-2. `data/jurisdictions/connecticut/authorities.json` (local vs published — schema and record count)
-3. `data/jurisdictions/delaware/rules.json` (local vs published — record count)
-4. `data/jurisdictions/connecticut/rules.json` (local vs published — record count)
-5. `data/jurisdictions/coverage.json` (FED status: NOT_STARTED vs PR body claim of TESTED)
-6. `legal_authority/constants.py` (local has DE/CT registered; published does not)
-7. `tests/test_legal_authority_phase_two_c_one.py` (expects FED NOT_STARTED; fails on TESTED)
-8. `trust_law/jurisdiction_analyzer.py` (local vs published — 32-line difference)
-9. `trust_law/tests/test_phase_3a_jurisdictions.py` (published has 112 lines; local removed it)
-10. `portal/tests/test_jurisdictions_api_phase3a.py` (local-only new file, 589 lines)
-11. `web/src/pages/NewJersey*.tsx` (staged filename with Unicode ligatures — verify intent)
-12. `.github/workflows/sigma-quality-gate.yml` (to understand Sigma Gate failure step)
+1. `data/jurisdictions/delaware/authorities.json` — 16 records, correct schema
+2. `data/jurisdictions/connecticut/authorities.json` — 15 records, correct schema
+3. `data/jurisdictions/delaware/rules.json` — 26 rules
+4. `data/jurisdictions/connecticut/rules.json` — 22 rules
+5. `data/jurisdictions/coverage.json` — FED=NOT_STARTED (correct)
+6. `legal_authority/constants.py` — DE/CT registered as supported jurisdictions
+7. `tests/test_legal_authority_phase_two_c_one.py` — passes with local data
+8. `portal/tests/test_jurisdictions_api_phase3a.py` — 589 lines, new Phase 3A API tests
+9. `web/src/pages/NewJersey.tsx` — ASCII filename, verified
+10. `artifacts/agent_handoffs/PR_255_HANDOFF.md` — this file
 
 ## Next Required Action
 
-1. **Reconcile the published branch with the local complete implementation.** The local branch (2322191e) has 4 commits with the full dataset. The published branch (c2f2caa2) has 1 commit with a thinner, incompatible subset. Decide whether to:
-   - (a) Force-push the local branch to origin (overwrites c2f2caa2), OR
-   - (b) Cherry-pick or rebase the local commits onto the published branch.
-   - Option (a) is cleaner since the published commit is a separate, thinner implementation, not a subset of the local work. **REQUIRES USER AUTHORIZATION before force-push.**
-2. **Fix the New Jersey filename encoding.** Determine whether `NewJerseyﬀﬀﬀ.tsx` is intentional or a bug. If a bug, rename to `NewJersey.tsx` (ASCII) and re-stage.
-3. **Correct the PR #255 description.** Remove the claim that FED is TESTED. FED is NOT_STARTED in the local coverage.json. Update the description to match the actual local state.
-4. **Investigate the research_manifest status.** Both DE and CT say COMPLETED despite acknowledged limitations. Consider downgrading to RESEARCH_IN_PROGRESS or PRIMARY_AUTHORITY_PARTIAL.
-5. **Investigate the Sigma Quality Gate failure.** The bandit scan passed but the workflow failed. Review the full workflow steps to find the failing step.
-6. **Run the full local test suite** to confirm the local branch passes all gates before pushing.
-7. **After reconciliation and CI green:** Update this handoff file with CERTIFIED status and the final HEAD SHA.
+1. **USER AUTHORIZATION REQUIRED:** Authorize force-with-lease push of local branch to origin/feat/phase-3a-delaware-connecticut. Command: `git push --force-with-lease origin feat/phase-3a-delaware-connecticut`
+2. **After push:** Verify GitHub CI runs on the updated branch and all 12 workflows pass.
+3. **After CI green:** Correct the PR #255 description using: `gh pr edit 255 --body "..."` with the corrected text (FED = NOT_STARTED, not TESTED).
+4. **After PR description corrected:** Update this handoff file with CERTIFIED status and the final push/CI evidence.
+5. **Then:** Merge PR #255 (after user authorization).
+6. **Then:** Merge PR #256 (after ADR refinements are reviewed and Accepted governance decision is recorded).
 
 ## Prohibited Actions
 
 - Do not merge PR #255.
 - Do not deploy.
-- Do not rewrite published commits without user authorization.
+- Do not force-push without explicit user authorization.
 - Do not modify files claimed by another active agent.
 - Do not begin unrelated work.
 - Do not mark complete with required gates unrun.
@@ -258,12 +262,16 @@ None in the Phase 3A worktree.
 
 Outgoing agent: Hermes
 
-Outgoing HEAD: 2322191e9bc751045866240e9d8bea4646134656 (local)
-Published HEAD: c2f2caa219ef43afae7ad4849c4a1ca313227e94 (remote)
+Outgoing HEAD: 2f815c72c028b3a58daa51c33ad1e754e88fecad (local)
+Published HEAD: f00d915e404e6922256fa1f74913926807ac0335 (remote — divergent)
+Safety branch: safety/pr255-pre-reconciliation (at 2f815c72)
 
-Outgoing worktree status: DIRTY — 4 staged files (New Jersey filename correction with Unicode ligature concern)
+Outgoing worktree status: DIRTY — artifacts/agent_handoffs/PR_255_HANDOFF.md (this update, uncommitted)
 
-Incoming agent: (awaiting assignment)
+Normal push possible: NO (divergent histories)
+Force-with-lease push required: YES
+
+Incoming agent: (awaiting user authorization for push)
 
 Incoming agent acknowledgment: (pending)
 

@@ -2,6 +2,8 @@
 
 > Not a marketing matrix. Authoritative as of commit `48e2caa759661cc75617cc752bcc26eaad666647` (tree `9ee6d193dd7f607cd59487df9ef26d46b9593803`). Status reflects
 > current `main` tree + CI, not claims.
+>
+> **Latest Assessment:** See [Manus Comprehensive Review (Aug 2026)](./reviews/MANUS_COMPREHENSIVE_REVIEW_2026_08_04.md) for an in-depth analysis of code quality, architecture, and the strategic roadmap for "Mythos Brain" level autonomy.
 
 | Capability | User value | Implementation | Entrypoint | Test location | Status | Limitations | Next cert req |
 |-----------|-----------|---------------|-----------|---------------|--------|-------------|---------------|

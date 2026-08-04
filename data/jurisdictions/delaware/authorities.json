@@ -582,5 +582,21 @@
     "content_hash": null,
     "created_at": "2026-08-04T00:00:00Z",
     "updated_at": "2026-08-04T00:00:00Z"
+  },
+  {
+    "id": "DE-TITLE-12-3544",
+    "jurisdiction": "DE",
+    "authority_type": "DELAWARE_CODE",
+    "source_classification": "PRIMARY_LEGAL_AUTHORITY",
+    "citation": "12 Del. C. § 3544",
+    "title": "Successor trustees",
+    "court_or_agency": "Delaware General Assembly",
+    "effective_date": "2020-01-01",
+    "last_verified_at": "2026-08-04T00:00:00Z",
+    "verification_status": "PRIMARY_SOURCE_VERIFIED",
+    "authority_weight": 850,
+    "summary": "Governs the appointment and powers of successor trustees when a vacancy occurs.",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z"
   }
 ]

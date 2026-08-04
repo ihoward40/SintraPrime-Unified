@@ -27,6 +27,7 @@ from portal.services.mission_control_command_service import (
     IDEMPOTENCY_KEY_MIN_LENGTH,
     compute_event_hash,
 )
+from portal.tests.helpers.route_inventory import iter_resolved_routes
 
 TENANT_ID = "00000000-0000-0000-0000-000000000002"
 USER_ID = "00000000-0000-0000-0000-000000000001"
@@ -285,7 +286,7 @@ async def test_supported_commands_persist_and_refuse(
 
 @pytest.mark.asyncio
 async def test_no_operational_mutation_routes_are_added(client: TestClient, db: AsyncSession) -> None:
-    paths = {route.path for route in client.app.routes}
+    paths = {resolved.path for resolved in iter_resolved_routes(client.app)}
     assert "/runs/{id}/pause" not in paths
     assert "/runs/{id}/resume" not in paths
     assert "/runs/{id}/cancel" not in paths

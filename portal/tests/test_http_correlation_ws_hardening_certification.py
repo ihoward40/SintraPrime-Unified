@@ -43,6 +43,7 @@ from portal.middleware.correlation_middleware import (
     generate_request_id,
     validate_inbound_request_id,
 )
+from portal.tests.helpers.route_inventory import iter_resolved_routes
 
 settings = get_settings()
 
@@ -586,74 +587,6 @@ class TestWebSocketTokenTransport:
 
 
 class TestMountedRouteCount:
-    @staticmethod
-    def _normalize_path(path: str) -> str:
-        """Normalize a route path by collapsing duplicate slashes."""
-        if not path:
-            return ""
-        normalized = path
-        while "//" in normalized:
-            normalized = normalized.replace("//", "/")
-        return normalized
-
-    @staticmethod
-    def _iter_terminal_routes(routes, prefix="", _visited=None):
-        """Recursively flatten the route tree, yielding (full_path, route).
-
-        Handles all known route-container shapes across FastAPI/Starlette
-        versions without relying on private class names:
-
-        - ``Mount`` / ``APIRouter``: children exposed via ``.routes``,
-          prefix from ``route.path``.
-        - ``_IncludedRouter`` (FastAPI 0.139+): children exposed via
-          ``.original_router.routes``, prefix from
-          ``.include_context.prefix``.  Does NOT have ``.routes`` or
-          ``.path``.
-
-        Only terminal (leaf) routes are yielded.  Cycle-safe via an
-        ``id()``-based visited set.
-        """
-        if _visited is None:
-            _visited = set()
-        for route in routes:
-            rid = id(route)
-            if rid in _visited:
-                continue
-            _visited.add(rid)
-
-            # Determine this route's own path segment and child collection.
-            # _IncludedRouter has no .path; its prefix lives in include_context.
-            route_path = getattr(route, "path", "") or ""
-            child_prefix = f"{prefix}{route_path}"
-
-            # Collect child routes from every known container shape.
-            child_collections = []
-
-            # Shape 1: Mount / APIRouter — direct .routes attribute
-            direct_routes = getattr(route, "routes", None)
-            if direct_routes and isinstance(direct_routes, list):
-                child_collections.append(direct_routes)
-
-            # Shape 2: _IncludedRouter (FastAPI 0.139+) —
-            # .original_router.routes + .include_context.prefix
-            original_router = getattr(route, "original_router", None)
-            if original_router is not None:
-                orig_routes = getattr(original_router, "routes", None)
-                if orig_routes and isinstance(orig_routes, list):
-                    ctx = getattr(route, "include_context", None)
-                    ctx_prefix = getattr(ctx, "prefix", "") if ctx else ""
-                    # _IncludedRouter contributes its own prefix, not .path
-                    child_collections.append(orig_routes)
-                    child_prefix = f"{prefix}{ctx_prefix}"
-
-            if child_collections:
-                for children in child_collections:
-                    yield from TestMountedRouteCount._iter_terminal_routes(
-                        children, child_prefix, _visited
-                    )
-            else:
-                yield TestMountedRouteCount._normalize_path(child_prefix), route
-
     def test_websocket_route_count_remains_one(self):
         app = create_app()
         # Discover the admin WebSocket route by its full mounted path.
@@ -664,9 +597,9 @@ class TestMountedRouteCount:
         # discovered even when ``app.routes`` only contains the Mount.
         expected_path = "/api/v1/admin/ws"
         ws_routes = [
-            (full_path, route)
-            for full_path, route in self._iter_terminal_routes(app.routes)
-            if full_path == expected_path
+            (resolved.path, resolved.route)
+            for resolved in iter_resolved_routes(app)
+            if resolved.path == expected_path
         ]
         assert len(ws_routes) == 1, (
             f"Expected exactly 1 admin WebSocket route at {expected_path}, "

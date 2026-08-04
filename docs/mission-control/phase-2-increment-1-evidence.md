@@ -1,242 +1,205 @@
-# Mission Control Phase Two Increment One Evidence
+# Mission Control Phase Two Increment One — Corrected Certification Evidence
 
-## Scope
+## Certification state
 
-Authorized increment: command ledger + guard + idempotency + refusal-only endpoint.
+- Original PR: #210 (merged; certification suspended)
+- Superseded implementation: `795bdaf2f8da94b7bb4706874be688c477c7f9ba`
+- Superseded tree: `320084225fa78244e4373272c5e9a82b7651c240`
+- Correction base: `daa65ca4aeba3157677d55d7124a634ec276d658`
+- Correction base tree: `8235d88108f05a04e043c88c80bb8048c52bb749`
+- Correction branch: `fix/pr210-certification-reproducibility`
+- Corrective implementation commit: `450ca21393edc9c05f0fcadada1f6b292708a9fc`
+- Corrective implementation tree: `99b5dbb7cc15fd23acdbf0a6bdb5f930bd31e8fa`
+- Verification timestamp: `2026-07-31T21:34:18Z`
+- Final evidence commit/tree and exact-head CI run IDs: recorded in the draft PR body because a commit cannot contain its own identity or CI runs triggered after it is pushed.
 
-No command in this increment mutates run, task, scheduler, agent, mission, or assignment state. The Mission Control UI remains read-only and no frontend files were changed.
+The PR #210 version of this document remains preserved in Git history at the superseded implementation commit. Its stale `20`/`125` test counts and `git diff --check` claim are superseded by the reproducible results below.
 
-## Baseline
+## Authorized correction scope
 
-- Frozen tag: `mission-control-phase-1`
-- Baseline commit: `bedccf2ff92291b9fbc51c72146255dd83d26663`
-- Baseline tree: `eeb8886fae074d1c20f9aa18ed65272c40cf0ca8`
-- Working branch: `feat/mission-control-phase-2-command-ledger`
-- Parent for implementation branch: `bedccf2ff92291b9fbc51c72146255dd83d26663`
-- Final commit/tree: recorded in PR metadata, PR comments, and completion response. A commit cannot contain its own hash without changing that hash.
+Only certification reproducibility was changed:
 
-## Changed Files
+1. declared the missing async SQLite test dependency and synchronized managed dependency exports;
+2. replaced fragile route-path inspection with a shared recursive inventory helper;
+3. normalized the three isolated trailing CR line endings and regenerated this evidence.
 
-- `portal/auth/rbac.py`
-- `portal/main.py`
-- `portal/migrations/add_mission_control_command_ledger.sql`
-- `portal/models/__init__.py`
-- `portal/models/audit.py`
-- `portal/models/mission_control_command.py`
-- `portal/routers/mission_control_commands.py`
-- `portal/services/audit_service.py`
-- `portal/services/mission_control_command_guard.py`
-- `portal/services/mission_control_command_service.py`
+No supported command, refusal behavior, authorization rule, idempotency behavior, collision recovery, hash linkage, audit transaction, persistence behavior, database schema semantics, frontend, Operations Floor, Phase One artifact, scheduler, runner, task, mission, agent, assignment, or Increment Two behavior changed.
+
+## Changed files
+
+Implementation commit:
+
+- `pyproject.toml`
+- `requirements.txt`
+- `requirements-py313-windows.txt`
+- `portal/tests/helpers/__init__.py`
+- `portal/tests/helpers/route_inventory.py`
+- `portal/tests/test_route_inventory.py`
 - `portal/tests/test_mission_control_commands.py`
-- `portal/tests/test_service_units.py`
-- `docs/mission-control/phase-2-increment-1-evidence.md`
+- `portal/tests/test_http_correlation_ws_hardening_certification.py`
+- `portal/migrations/add_mission_control_command_ledger.sql`
+- `portal/models/mission_control_command.py`
+- `portal/services/mission_control_command_guard.py`
 
-## Migration
+Evidence-only commit adds this document update.
 
-- File: `portal/migrations/add_mission_control_command_ledger.sql`
-- SHA256: `8898E116F75261C57185C2232803137085FCF6B2F4DE2896B49CFE4CEBD2BD71`
+## Dependency provenance
 
-Migration creates only:
+Source-of-truth correction:
+
+- `aiosqlite>=0.20.0` added to `dev`, `test`, and `all` optional dependency groups in `pyproject.toml`.
+
+Repository-managed exports synchronized:
+
+- `requirements.txt`: `aiosqlite>=0.20.0`
+- `requirements-py313-windows.txt`: `aiosqlite==0.22.1`
+
+The repository had no committed `uv.lock` at the correction base, so no new lock file was introduced.
+
+Artifact SHA-256 values:
+
+| Artifact | SHA-256 |
+|---|---|
+| `pyproject.toml` | `8ce5b9644c2f31abe377487ce265b126922e40dab15b114aae95656564737f66` |
+| `requirements.txt` | `960a79ba7519f40cb14adea1e55b800ef622551a592f40b5d8c6a70ec3089bf8` |
+| `requirements-py313-windows.txt` | `3036739beeec18019f3c6939dfd79e0f2111cd994c9e0dcffae22b1d48b7453e` |
+
+## Clean-environment installation
+
+Command, run from the repository root with no pre-existing `.venv-cert` and no intervening manual installation:
+
+```bash
+UV_PROJECT_ENVIRONMENT=.venv-cert uv sync --extra dev --extra portal
+```
+
+Result: **PASS**, exit code `0`. The isolated environment installed `aiosqlite==0.22.1` directly from committed dependency metadata.
+
+Resolved verification versions:
+
+| Component | Version |
+|---|---:|
+| Python | `3.13.14` |
+| FastAPI | `0.141.1` |
+| SQLAlchemy | `2.0.51` |
+| aiosqlite | `0.22.1` |
+| pytest | `9.1.1` |
+
+## Route inventory design
+
+`portal/tests/helpers/route_inventory.py` recursively resolves terminal routes across:
+
+- FastAPI `APIRoute` leaves;
+- Starlette `Mount` containers;
+- nested `.routes` collections;
+- FastAPI `_IncludedRouter` wrappers via `.original_router.routes`;
+- `.include_context.prefix`;
+- duplicate/trailing slash normalization;
+- cyclic graphs through ancestry-based cycle prevention.
+
+Ancestry-based prevention allows the same router to remain visible when legitimately mounted under distinct prefixes. The Mission Control prohibited-route assertion and the existing WebSocket route-count certification both use the shared helper.
+
+Route-inventory and WebSocket certification commands:
+
+```bash
+.venv-cert/bin/python -m pytest   portal/tests/test_route_inventory.py   portal/tests/test_http_correlation_ws_hardening_certification.py   --collect-only -q
+
+.venv-cert/bin/python -m pytest   portal/tests/test_route_inventory.py   portal/tests/test_http_correlation_ws_hardening_certification.py   -q
+```
+
+Collection: `5 + 122 = 127`. Result: **127 passed**, exit code `0`. No route-object `AttributeError` occurred.
+
+## Exact test results
+
+### Mission Control command suite
+
+```bash
+.venv-cert/bin/python -m pytest portal/tests/test_mission_control_commands.py --collect-only -q
+.venv-cert/bin/python -m pytest portal/tests/test_mission_control_commands.py -q
+```
+
+- Collected: `45`
+- Result: **45 passed**
+- Exit code: `0`
+
+This suite includes the recursive no-operational-mutation-route assertion.
+
+### Combined focused suite
+
+```bash
+.venv-cert/bin/python -m pytest   portal/tests/test_mission_control_commands.py   portal/tests/test_mission_control.py   portal/tests/test_rbac.py   portal/tests/test_service_units.py   --collect-only -q
+
+.venv-cert/bin/python -m pytest   portal/tests/test_mission_control_commands.py   portal/tests/test_mission_control.py   portal/tests/test_rbac.py   portal/tests/test_service_units.py   -q
+```
+
+Collection:
+
+- `test_mission_control_commands.py`: `45`
+- `test_mission_control.py`: `1`
+- `test_rbac.py`: `34`
+- `test_service_units.py`: `70`
+- Total: `150`
+
+Result: **150 passed**, exit code `0`.
+
+### Service-unit suite
+
+```bash
+.venv-cert/bin/python -m pytest portal/tests/test_service_units.py --collect-only -q
+.venv-cert/bin/python -m pytest portal/tests/test_service_units.py -q
+```
+
+- Collected: `70`
+- Result: **70 passed**
+- Exit code: `0`
+
+## Static and metadata validation
+
+### Ruff
+
+```bash
+.venv-cert/bin/ruff check   portal/tests/helpers/route_inventory.py   portal/tests/test_route_inventory.py   portal/tests/test_mission_control_commands.py   portal/tests/test_http_correlation_ws_hardening_certification.py   portal/models/mission_control_command.py   portal/services/mission_control_command_guard.py
+```
+
+Result: **PASS**, exit code `0`.
+
+### Python compilation
+
+```bash
+.venv-cert/bin/python -m py_compile   portal/tests/helpers/route_inventory.py   portal/tests/test_route_inventory.py   portal/tests/test_mission_control_commands.py   portal/tests/test_http_correlation_ws_hardening_certification.py   portal/models/mission_control_command.py   portal/services/mission_control_command_guard.py
+```
+
+Result: **PASS**, exit code `0`.
+
+### SQLAlchemy metadata registration
+
+The metadata smoke check imported `portal.models` and verified exact registration of:
 
 - `mission_control_commands`
 - `mission_control_command_events`
 - `mission_control_command_receipts`
 
-It does not create run-state, scheduler-state, mission-state, agent-state, or assignment-state tables.
+Result: **PASS**, exit code `0`.
 
-## Permission Matrix
+### Diff integrity and line endings
 
-| Permission | Super Admin | Firm Admin | Attorney | Paralegal | Accountant | Viewer | Client |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| `mission_control:command_read` | yes | yes | yes | no | no | no | no |
-| `mission_control:command_create` | yes | yes | yes | no | no | no | no |
-| `mission_control:run_start` | yes | yes | yes | no | no | no | no |
-| `mission_control:run_pause` | yes | yes | yes | no | no | no | no |
-| `mission_control:run_resume` | yes | yes | yes | no | no | no | no |
-| `mission_control:run_cancel` | yes | yes | no | no | no | no | no |
-| `mission_control:agent_assign` | yes | yes | yes | no | no | no | no |
-| `mission_control:agent_reassign` | yes | yes | no | no | no | no | no |
-| `mission_control:command_admin` | yes | no | no | no | no | no | no |
-
-Super Admin receives all permissions through the existing `frozenset(Permission)` behavior.
-
-## Endpoint
-
-`POST /api/v1/mission-control/commands`
-
-No direct mutation endpoints were added.
-
-## Request Example
-
-```json
-{
-  "command_type": "PAUSE_RUN",
-  "target_type": "run",
-  "target_id": "run-123",
-  "idempotency_key": "client-generated-key-0001",
-  "reason": "operator requested hold",
-  "payload": {},
-  "metadata": {
-    "source": "mission-control-ui"
-  }
-}
+```bash
+git diff --check daa65ca4aeba3157677d55d7124a634ec276d658..450ca21393edc9c05f0fcadada1f6b292708a9fc
 ```
 
-## Refusal Response Example
+Result: **PASS**, exit code `0`.
 
-```json
-{
-  "command_id": "uuid",
-  "command_type": "PAUSE_RUN",
-  "target_type": "run",
-  "target_id": "run-123",
-  "state": "REFUSED",
-  "reason_code": "COMMAND_EXECUTION_NOT_ENABLED",
-  "reason": "operator requested hold",
-  "duplicate": false,
-  "idempotency_key": "client-generated-key-0001",
-  "request_hash": "sha256",
-  "audit_log_id": "uuid",
-  "event_ids": ["uuid", "uuid", "uuid"],
-  "receipt_id": "uuid",
-  "created_at": "timestamp",
-  "completed_at": "timestamp"
-}
-```
+The isolated trailing CR was removed from each authorized file. Corrected SHA-256 values:
 
-## Idempotency Contract
-
-Idempotency keys are required and must be 16-128 characters.
-
-- New command: HTTP 201 with `duplicate: false`.
-- Identical replay: HTTP 200 with `duplicate: true`.
-- Changed replay: HTTP 409 with `DUPLICATE_CONFLICT`.
-
-The service recovers from the database unique-constraint collision path for concurrent requests. If the initial lookup misses because another transaction won the `(tenant_id, requested_by, idempotency_key)` race, the losing request rolls back its failed insert, reloads the winning command, and returns the deterministic replay/conflict response.
-
-## Idempotency Replay Example
-
-Same tenant + requester + idempotency key + identical canonical request hash returns the original command response with:
-
-```json
-{
-  "duplicate": true,
-  "state": "REFUSED",
-  "reason_code": "COMMAND_EXECUTION_NOT_ENABLED"
-}
-```
-
-No second command row, event chain, audit row, or receipt row is created.
-
-## Duplicate Conflict Example
-
-Same tenant + requester + idempotency key + changed canonical request hash returns HTTP 409:
-
-```json
-{
-  "detail": {
-    "state": "DUPLICATE_CONFLICT",
-    "reason_code": "IDEMPOTENCY_KEY_CONFLICT",
-    "command_id": "original-command-id"
-  }
-}
-```
-
-No second command row, event chain, audit row, or receipt row is created.
-
-## Command Target Compatibility
-
-| Command | Allowed target types |
+| File | SHA-256 |
 |---|---|
-| `START_GOVERNED_RUN` | `run`, `mission` |
-| `PAUSE_RUN` | `run` |
-| `RESUME_RUN` | `run` |
-| `CANCEL_RUN` | `run` |
-| `ASSIGN_AGENT` | `run`, `task`, `mission` |
-| `REASSIGN_AGENT` | `run`, `task`, `mission` |
+| `portal/migrations/add_mission_control_command_ledger.sql` | `20e0e8b532e6233df7cb72048c016855fb0fe7d4b2e255eb3acb9ea1a0713356` |
+| `portal/models/mission_control_command.py` | `e3c7286b64b703c5a3ce4438e629cb57a21929c1d6bfc520441e726c5546588f` |
+| `portal/services/mission_control_command_guard.py` | `707f2526b51b2ba3d5d04c992229adb1b5ab84ab6207d4df6e0b988011f9bcd8` |
 
-Invalid command-target combinations return HTTP 422 before command, event, audit, or receipt persistence.
+## Exact-head CI and review closure
 
-## Audit And Receipt Behavior
+Final pushed-head workflow run IDs, job conclusions, live unresolved-review count, review quiet-period result, and the final certification recommendation are recorded in the draft PR body after GitHub completes checks against the evidence commit. This committed report does not fabricate future run identifiers.
 
-For an accepted non-duplicate command request, the service:
+## Current recommendation
 
-1. creates a `mission_control_commands` row;
-2. appends `RECEIVED`, `VALIDATING`, and `REFUSED` command events;
-3. writes the existing hash-chained `audit_logs` record;
-4. creates a `REFUSAL` receipt with a deterministic receipt hash;
-5. publishes requester-scoped realtime status on a best-effort basis.
-
-Atomic behavior: audit failure rolls back the command transaction and raises. It does not leave an apparently successful command record.
-
-## Command Event Hash Verification
-
-Focused tests recompute each event hash from:
-
-- command ID;
-- sequence;
-- event type;
-- state;
-- payload;
-- previous hash.
-
-The test asserts the stored `previous_hash` and `event_hash` chain is deterministic.
-
-## Realtime Behavior
-
-The implementation reuses `ws_manager.send_to_user` for requester-scoped command status events only.
-
-No unauthenticated or tenant-wide Mission Control command broadcasts were added. Realtime delivery failure is logged and does not change the terminal `REFUSED` outcome.
-
-## Proof No Mutation Path Was Enabled
-
-- No frontend files changed.
-- Mission Control command buttons remain disabled.
-- No direct `/runs/{id}/pause`, `/runs/{id}/resume`, `/runs/{id}/cancel`, `/agents/{id}/assign`, or `/agents/{id}/reassign` endpoints were added.
-- Code search for direct scheduler mutation calls in touched portal/web areas returned no matches.
-- The command guard always returns `COMMAND_EXECUTION_NOT_ENABLED`.
-- Tests assert supported commands persist and end in `REFUSED`.
-
-## Phase One Visual Evidence
-
-No files under these Phase One evidence paths were changed:
-
-- `docs/ui-audit/screenshots/preservation-main-20260718`
-- `docs/ui-audit/preservation-main-20260718-results.json`
-
-`git diff -- docs/ui-audit/screenshots/preservation-main-20260718 docs/ui-audit/preservation-main-20260718-results.json` returned no output.
-
-## Verification Results
-
-Passed:
-
-- `python -m py_compile portal\tests\test_mission_control_commands.py portal\models\mission_control_command.py portal\models\audit.py portal\services\audit_service.py portal\services\mission_control_command_service.py portal\routers\mission_control_commands.py`
-- `python -m pytest portal\tests\test_mission_control_commands.py -q` -> 20 passed
-- `python -m pytest portal\tests\test_mission_control.py portal\tests\test_rbac.py -q` -> 35 passed
-- `python -m pytest portal\tests\test_service_units.py -q` -> 70 passed
-- `python -m pytest portal\tests\test_mission_control_commands.py portal\tests\test_mission_control.py portal\tests\test_rbac.py portal\tests\test_service_units.py -q` -> 125 passed
-- `python -m ruff check` on touched Python files -> all checks passed
-- `git diff --check` -> clean
-- SQLAlchemy model smoke check confirmed `mission_control_commands`, `mission_control_command_events`, and `mission_control_command_receipts` are registered in metadata.
-- Focused collision-recovery tests prove stale initial lookup plus unique-constraint collision reloads the winning command and creates no duplicate command, events, audit entry, or receipt.
-
-Full repository Python test command:
-
-- `python -m pytest --tb=short -q` completed with 4 failures in `tests/test_scheduler_executor.py`.
-- Failures are Windows shell environment failures while spawning Unix-like shell commands `echo`, `sleep`, and `false` from `scheduler/task_executor.py` tests.
-- These failures are unrelated to the Mission Control command ledger and do not indicate a command mutation path.
-
-Frontend checks:
-
-- Not run because no frontend or shared frontend types were touched.
-
-## Known Limitations
-
-- Increment One records and refuses commands only.
-- No confirmation flow exists.
-- No approval consumption exists.
-- No runner pause/resume/cancel integration exists.
-- No scheduler mutation exists.
-- No assignment mutation exists.
-- No command history UI is enabled.
-- Command rows are a projection; command events and receipts are the immutable history.
+**REVIEW INCOMPLETE** until the final evidence commit is pushed, exact-head CI is green, review threads are refreshed, and the required quiet period closes. Command execution and Increment Two remain prohibited.

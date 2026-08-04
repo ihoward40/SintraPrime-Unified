@@ -111,6 +111,7 @@ SintraPrime combines capabilities not commonly found together in a single platfo
 - **[REPOSITORY_STATUS.md](docs/REPOSITORY_STATUS.md)** — Subsystem status taxonomy
 - **[docs/CLAIMS.md](docs/CLAIMS.md)** — Every feature claim → test file → proof
 - **[SECURITY.md](docs/SECURITY.md)** — Security architecture and current controls
+- **[MANUS_REVIEW.md](docs/reviews/MANUS_COMPREHENSIVE_REVIEW_2026_08_04.md)** — Manus Comprehensive Review & Strategic Roadmap (Aug 2026)
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — Code style, domain knowledge requirements, testing standards
 
 **For governance:**

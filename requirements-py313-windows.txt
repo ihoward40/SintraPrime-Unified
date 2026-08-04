@@ -43,7 +43,7 @@ langgraph==1.0.10
 stripe==12.0.0
 
 # Security & auth
-cryptography==48.0.1
+cryptography==50.0.0
 pyjwt==2.13.0
 python-jose==3.4.0
 bcrypt==5.0.0

@@ -6,9 +6,10 @@
 - Repository: ihoward40/SintraPrime-Unified
 - Branch: feat/phase-3a-delaware-connecticut (reconciliation branch: repair/pr255-reconcile-external)
 - Base branch: main
-- Current HEAD (reconciliation): b36c9ab9393caf9b019c90f72e2bbf28aa3d9c85
+- Current HEAD (published, local and remote): e4d5384334812734dff40cd255548007fdd0cc57
+- Tree SHA: 63b356a52f7be4f39ba753cea18bfa4e4849c1c4
 - Certified HEAD (preserved): 85567022c61b178bd4de70f433ca173f0687c831
-- External HEAD (remote, broken): 8e8e21f7da2eb27dcc60f3133e982607728ac1c0
+- Overwritten remote heads: 7db61365 (external, broken), 8e8e21f7, c4512785, 96ebbdc2
 - Safety branches: safety/pr255-certified-85567022, safety/pr255-external-c4512785, safety/pr255-external-8e8e21f7, safety/pr255-pre-reconciliation
 - Worktree: C:/Users/admin/SintraPrime-Unified-phase-3a
 - Worktree status: CLEAN (after data commit)
@@ -17,15 +18,15 @@
 
 ## Current Work State
 
-Status: READY_FOR_CONTROLLED_REPUBLICATION
+Status: READY_FOR_MERGE — CI FULLY GREEN ON RECONCILED HEAD, AWAITING EXPLICIT MERGE AUTHORIZATION
 
-Current agent: Hermes (sole reconciliation agent)
+Current agent: Hermes (sole reconciliation agent — single-writer lock active)
 
-Current task: Selectively incorporate valid external changes, reject regressions, republish with force-with-lease.
+Current task: Complete — reconciled branch published, all 13 CI checks green, PR description corrected. Holding for merge authorization.
 
 Task started: 2026-08-04
 
-Expected stop boundary: Push reconciled branch, verify CI terminal state, hold for merge authorization.
+Expected stop boundary: HOLD — do not merge without explicit user authorization.
 
 ## Mismatch Summary
 
@@ -175,25 +176,25 @@ This document is the final handoff update. Status set to READY_FOR_PUBLICATION_R
 
 All 3 CI failures were caused by the published branch's incompatible data schema, missing constants.py update, and wrong FED status. The local branch fixes all three issues.
 
-## CI Status — After Reconciliation (published 21b08f79 — FINAL)
+## CI Status — Final Reconciliation (published e4d53843 — GOVERNANCE-CLEAN)
 
 | Workflow | Result | Run ID | Duration |
 |---|---|---|---|
-| Sigma Quality Gate | PASS | 30901919736 | 4m7s |
-| test | PASS | 30901919734 | 1m53s |
-| verify | PASS | 30901919832 | 2m20s |
-| smoke | PASS | 30901919765 | 34s |
-| lint | PASS | 30901919734 | 11s |
-| security | PASS | 30901919734 | 41s |
-| auth-tenant-rbac-certification | PASS | 30901919734 | 34s |
-| claims-validation | PASS | 30901919734 | 27s |
-| audit-correlation-non-http-certification | PASS | 30901919734 | 34s |
-| http-correlation-ws-hardening-certification | PASS | 30901919734 | 35s |
-| postgresql-bootstrap-certification | PASS | 30901919734 | 56s |
-| postgresql-race | PASS | 30901919734 | 1m9s |
-| Build canonical portal image | PASS | 30901920009 | 44s |
+| Sigma Quality Gate | PASS | 30903832197 | 4m20s |
+| test | PASS | 30903832112 | 1m56s |
+| verify | PASS | 30903832454 | 2m16s |
+| smoke | PASS | 30903832279 | 51s |
+| lint | PASS | 30903832112 | 9s |
+| security | PASS | 30903832112 | 44s |
+| auth-tenant-rbac-certification | PASS | 30903832112 | 36s |
+| claims-validation | PASS | 30903832112 | 24s |
+| audit-correlation-non-http-certification | PASS | 30903832112 | 34s |
+| http-correlation-ws-hardening-certification | PASS | 30903832112 | 38s |
+| postgresql-bootstrap-certification | PASS | 30903832112 | 51s |
+| postgresql-race | PASS | 30903832112 | 52s |
+| Build canonical portal image | PASS | 30903832297 | 1m1s |
 
-ALL 13 CI CHECKS GREEN. The three previously-failing workflows (Sigma, test, verify) now pass with the reconciled local implementation.
+ALL 13 CI CHECKS GREEN on the reconciled, governance-clean head.
 
 ## Publication Reconciliation Record (First Push)
 
@@ -349,24 +350,32 @@ None (other than this handoff file update which is tracked but modified).
 
 Outgoing agent: Hermes
 
-Outgoing HEAD: b36c9ab9393caf9b019c90f72e2bbf28aa3d9c85 (reconciliation branch)
+Outgoing HEAD: e4d5384334812734dff40cd255548007fdd0cc57 (local and remote — EQUAL)
+Tree SHA: 63b356a52f7be4f39ba753cea18bfa4e4849c1c4
 Certified HEAD: 85567022c61b178bd4de70f433ca173f0687c831 (preserved in safety branch)
-External remote HEAD: 8e8e21f7da2eb27dcc60f3133e982607728ac1c0 (broken, to be overwritten)
+Overwritten external heads: 7db61365, 8e8e21f7, c4512785, 96ebbdc2
 Safety branches: safety/pr255-certified-85567022, safety/pr255-external-c4512785, safety/pr255-external-8e8e21f7, safety/pr255-pre-reconciliation
 
 Outgoing worktree status: CLEAN
 
-Reconciliation branch: repair/pr255-reconcile-external
+Published branch: feat/phase-3a-delaware-connecticut at e4d53843
 Final counts: DE 17 authorities / 26 rules / 2 conflicts, CT 21 authorities / 22 rules / 1 conflict
 FED: NOT_STARTED (correct)
-All local gates: PASS (12/12 run, 2 PRE_EXISTING, 1 NOT_RUN)
-PR description: CORRECTED (FED = NOT_STARTED, counts need update for 17/21)
+CI: 13/13 GREEN (governance-clean head)
+PR mergeability: MERGEABLE
+PR description: CORRECTED (FED = NOT_STARTED, counts updated to 17/21)
 Review decision: (no reviews — awaiting user)
 Unresolved threads: none
 
 Single-writer enforcement: Only Hermes may push to feat/phase-3a-delaware-connecticut until merge.
 
-Incoming agent: (awaiting user authorization for controlled republication)
+Published branch does NOT contain:
+- DELAWARE_STATUTE authority type (VERIFIED ABSENT)
+- PR_256_HANDOFF.md (VERIFIED ABSENT)
+- broken NewYorkWorkspace import (VERIFIED ABSENT)
+- broken PennsylvaniaWorkspace import (VERIFIED ABSENT)
+
+Incoming agent: (awaiting explicit merge authorization)
 
 Incoming agent acknowledgment: (pending)
 

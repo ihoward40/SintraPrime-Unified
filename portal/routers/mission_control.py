@@ -38,7 +38,7 @@ from ..services.mission_control_projection_service import (
     list_commands,
     list_run_controls,
 )
-from ..services.sigma_gate import get_cancellation_status, get_gate_status
+from ..services.sigma_gate import get_cancellation_status
 from .system_health import (
     _check_agents,
     _check_database,

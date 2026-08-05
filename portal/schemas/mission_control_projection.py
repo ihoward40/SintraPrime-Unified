@@ -24,7 +24,8 @@ Review corrections applied:
 - Freshness metadata (FreshnessMeta, classify_freshness) on every projection
   response so consumers can detect stale reads.
 - Causation graph safety metadata (truncated, total_links, warnings) and
-  MAX_CAUSATION_LINKS cap.
+  MAX_CAUSATION_LINKS cap. Warnings include duplicate hashes, missing parents,
+  and cycle detection results.
 """
 
 from __future__ import annotations
@@ -96,6 +97,18 @@ def _ensure_aware(dt: datetime) -> datetime:
 
 class FreshnessMeta(BaseModel):
     """Freshness metadata describing how current a projection is.
+
+    This measures **record age** — the gap between when the projection was
+    assembled (``generated_at``) and the latest timestamp from the underlying
+    source records (``source_updated_at``). It does NOT measure projection
+    pipeline lag or source synchronization health. A command that completed
+    yesterday will always be labeled STALE even if the projection system is
+    perfectly current, because the underlying record is old.
+
+    Consumers should treat the ``state`` field as an indicator of whether the
+    displayed data reflects recent source activity, not as a measure of
+    projection infrastructure health. A separate source synchronization
+    watermark would be needed to distinguish projection lag from record age.
 
     ``generated_at`` is when the projection was assembled. ``source_updated_at``
     is the latest timestamp from the underlying source records. The ``state``
@@ -378,7 +391,7 @@ class CausationChain(BaseModel):
     Safety metadata:
     - ``truncated``: True if the chain exceeded MAX_CAUSATION_LINKS and was cut.
     - ``total_links``: The total number of links before truncation.
-    - ``warnings``: Diagnostic warnings (duplicates, missing parents).
+    - ``warnings``: Diagnostic warnings (duplicates, missing parents, cycles).
     """
 
     command_id: str

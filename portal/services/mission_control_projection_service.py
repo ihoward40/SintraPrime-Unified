@@ -20,7 +20,8 @@ Review corrections applied:
   with event/receipt counts instead of full payloads, events, and receipts.
 - Freshness metadata (FreshnessMeta) is computed on every response.
 - Causation graph safety: duplicate hash detection, missing-parent detection,
-  truncation above MAX_CAUSATION_LINKS, and deterministic ordering.
+  cycle detection via previous_hash traversal, truncation above
+  MAX_CAUSATION_LINKS, and deterministic ordering.
 """
 
 from __future__ import annotations
@@ -428,6 +429,102 @@ def _to_run_control_projection(rc: MissionControlRunControl) -> RunControlProjec
     )
 
 
+# ── Cycle detection ────────────────────────────────────────────────────────────
+
+
+def detect_cycles(links: list[CausationLink]) -> list[str]:
+    """Detect cycles in the previous_hash chain by graph traversal.
+
+    Builds a hash-to-parent map from the links and traverses the graph
+    starting from each node. If a node is revisited during a traversal
+    before the path is completed, a cycle is identified.
+
+    Returns a list of warning strings describing any cycles found.
+    Each warning includes the involved node hashes or source IDs.
+    """
+    if not links:
+        return []
+
+    # Build hash -> link map for traversal
+    hash_to_link: dict[str, CausationLink] = {}
+    for link in links:
+        hash_to_link[link.hash] = link
+
+    # Build hash -> previous_hash adjacency (the "parent" pointer)
+    # A cycle exists if following previous_hash pointers leads back to a
+    # node already on the current path.
+    warnings: list[str] = []
+
+    # We track globally visited nodes (fully explored) and currently-visiting
+    # nodes (on the active path) to detect back-edges.
+    visited: set[str] = set()
+    visiting: set[str] = set()
+
+    def _traverse(start_hash: str) -> list[str] | None:
+        """Follow previous_hash chain from start_hash. Return cycle path if found."""
+        path: list[str] = []
+        current: str | None = start_hash
+        # Limit traversal to prevent unbounded loops (defensive)
+        max_depth = len(hash_to_link) + 1
+        depth = 0
+
+        while current is not None and depth < max_depth:
+            if current in visiting:
+                # Found a cycle — current is already on the path
+                # Extract the cycle portion
+                cycle_start_idx = path.index(current)
+                return [*path[cycle_start_idx:], current]
+
+            if current in visited:
+                # Already fully explored this node — no cycle from here
+                # Clean up: remove path nodes from visiting, mark as visited
+                for h in path:
+                    visiting.discard(h)
+                    visited.add(h)
+                return None
+
+            visiting.add(current)
+            path.append(current)
+
+            link = hash_to_link.get(current)
+            if link is None:
+                # current is a hash that doesn't correspond to a link
+                # (e.g., a missing parent — already detected above)
+                break
+
+            current = link.previous_hash
+            depth += 1
+
+        # Mark all nodes on this path as visited (no cycle found)
+        for h in path:
+            visiting.discard(h)
+            visited.add(h)
+        return None
+
+    # Check each node as a potential cycle entry point
+    for link_hash in hash_to_link:
+        if link_hash in visited:
+            continue
+        cycle_path = _traverse(link_hash)
+        if cycle_path is not None:
+            # Get source IDs for the involved nodes for the warning message
+            involved_hashes = cycle_path
+            involved_ids: list[str] = []
+            for h in involved_hashes:
+                lk = hash_to_link.get(h)
+                if lk is not None:
+                    involved_ids.append(f"{lk.source_type}:{lk.source_id}")
+            warnings.append(
+                f"Cycle detected in previous_hash chain. "
+                f"Involved nodes: {involved_hashes}. "
+                f"Source IDs: {involved_ids}"
+            )
+            # Clear visiting set for next iteration
+            visiting.clear()
+
+    return warnings
+
+
 # ── Correlation / causation chain ─────────────────────────────────────────────
 
 
@@ -449,6 +546,8 @@ async def get_causation_chain(
     - Duplicate hashes are detected and reported as warnings.
     - Missing parents (previous_hash not in the set of node hashes) are
       detected and reported as warnings.
+    - Cycles in the previous_hash chain are detected by graph traversal
+      and reported as warnings with involved node hashes and source IDs.
     - The chain is truncated at MAX_CAUSATION_LINKS with ``truncated`` and
       ``total_links`` metadata.
 
@@ -556,6 +655,10 @@ async def get_causation_chain(
             missing_parents.append(link.previous_hash)
     if missing_parents:
         warnings.append(f"Missing parent hashes: {sorted(set(missing_parents))}")
+
+    # Safety: cycle detection via previous_hash traversal
+    cycle_warnings = detect_cycles(links)
+    warnings.extend(cycle_warnings)
 
     # Safety: truncation
     total_links = len(links)

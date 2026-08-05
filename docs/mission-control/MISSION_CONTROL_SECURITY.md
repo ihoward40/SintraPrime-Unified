@@ -56,6 +56,47 @@ The pre-existing `POST /api/v1/mission-control/commands` endpoint is **refusal-o
 
 Mission Control stores **no card data, no secrets, and no sensitive data**. It is a read-only projection of command and run-control state. No credentials, tokens, or payment data pass through or persist in Mission Control.
 
+### 7.1 Redaction
+
+Raw payload bodies and sensitive detail references are redacted in detail projections:
+
+- Payload fields not in `EXPOSED_PAYLOAD_FIELDS` are replaced with `REDACTED`.
+- Evidence references are replaced with count-preserving `REDACTED` sentinels.
+- `last_error`, `confirmation_ref`, and `recovery_ref` are redacted.
+- Free-text error fields are redacted.
+
+### 7.2 Operational Identifier Exposure in List Summaries
+
+List summary responses (`CommandSummary`, `RunControlSummary`) expose the
+following operational identifiers. These are NOT secrets — they are operational
+metadata needed for audit trail, deduplication, and correlation. The exposure
+decision for each is documented below:
+
+| Identifier | Exposed in list? | Rationale |
+|------------|-----------------|-----------|
+| `idempotency_key` | Yes | Required for deduplication verification by operators |
+| `request_hash` | Yes | Integrity verification; it is a hash, not the raw request |
+| `requested_by` | Yes | Principal identity; needed for audit trail in list view |
+| `audit_log_id` | Yes | Links to audit trail; null when no audit entry exists |
+| `target_id` | Yes | Identifies the target resource; not sensitive |
+| `incident_id` | Yes (run-control) | Links to incident tracking; null when no incident |
+
+These identifiers are exposed only to authenticated users with the
+`MISSION_COMMAND_READ` permission. Raw payload bodies, evidence references,
+error details, and sensitive run-control fields are redacted and available
+only in detail views (which require the same permission).
+
+If any identifier needs to be moved to detail-only in the future, the list
+summary schema must be updated and the frontend contract synchronized.
+
+### 7.3 Freshness Metadata
+
+The `freshness` field on projection responses measures **record age** — the
+gap between when the projection was assembled and the latest timestamp from
+the underlying source records. It does NOT measure projection pipeline lag
+or source synchronization health. See the API reference (section 5) for
+the full semantics.
+
 ## 8. Summary
 
 | Control | Status |

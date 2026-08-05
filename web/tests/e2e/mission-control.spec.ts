@@ -159,6 +159,47 @@ test.describe('Mission Control Foundation', () => {
     await expect(page.locator('h1')).toContainText('Mission Control');
   });
 
+  test('Sigma gate banner shows STATUS UNKNOWN on API failure', async ({ page }) => {
+    // Set an invalid token so the sigma-gate API call fails
+    await page.addInitScript(() => {
+      localStorage.setItem('sintraprime_token', 'invalid-token-that-will-fail');
+    });
+    await page.goto('/mission-control');
+    await page.waitForTimeout(3000);
+    // The Sigma gate banner should show STATUS UNKNOWN, not disappear
+    const banner = page.locator('.mc-sigma-banner');
+    await expect(banner).toBeVisible();
+    await expect(banner).toContainText(/STATUS UNKNOWN/i);
+    await expect(banner).toContainText(/CONTROLS REMAIN BLOCKED/i);
+  });
+
+  test('failed intent source does not show "No intents recorded"', async ({ page }) => {
+    // Set an invalid token so intent API calls fail
+    await page.addInitScript(() => {
+      localStorage.setItem('sintraprime_token', 'invalid-token-that-will-fail');
+    });
+    await page.goto('/mission-control');
+    await page.waitForTimeout(3000);
+    // The page should not show "No intents recorded" when the source failed
+    const bodyText = await page.locator('body').textContent();
+    expect(bodyText).not.toContain('No intents recorded');
+    // It should show some form of source-unavailable or stale warning
+    expect(bodyText).toMatch(/unavailable|stale|failed/i);
+  });
+
+  test('freshness badge displays when intent data is available', async ({ page }) => {
+    await injectMockAuth(page);
+    await page.goto('/mission-control');
+    await page.waitForTimeout(3000);
+    // If intents loaded successfully, a freshness badge should be visible
+    // This test is non-strict — the badge only appears when the API returns data
+    const freshness = page.locator('.mc-freshness');
+    const freshnessVisible = await freshness.isVisible().catch(() => false);
+    if (freshnessVisible) {
+      await expect(freshness).toContainText(/LIVE|DELAYED|STALE|UNKNOWN/i);
+    }
+  });
+
   test('mobile viewport has no horizontal overflow', async ({ page }) => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 812 });

@@ -28,6 +28,18 @@ function CausationChainView({ chain }: { chain: CausationChain }) {
         <strong>{chain.command_type}</strong>
         <span className={`mc-state ${chain.command_state.toLowerCase()}`}>{chain.command_state}</span>
       </div>
+      {chain.truncated && (
+        <div className="mc-chain-truncated">
+          Chain truncated at {chain.links.length} links (total: {chain.total_links}).
+        </div>
+      )}
+      {chain.warnings.length > 0 && (
+        <div className="mc-chain-warnings">
+          {chain.warnings.map((w, i) => (
+            <div key={i} className="mc-chain-warning">{w}</div>
+          ))}
+        </div>
+      )}
       <ol className="mc-chain-links">
         {chain.links.map((link, i) => (
           <li key={`${link.source_type}-${link.source_id}`} className="mc-chain-link">
@@ -122,6 +134,7 @@ export default function MissionControlSurface() {
               <th>Target</th>
               <th>Created</th>
               <th>Events</th>
+              <th>Receipts</th>
             </tr>
           </thead>
           <tbody>
@@ -133,7 +146,8 @@ export default function MissionControlSurface() {
                   {cmd.target_type}:{cmd.target_id}
                 </td>
                 <td>{cmd.created_at ? new Date(cmd.created_at).toLocaleString() : '—'}</td>
-                <td>{cmd.events.length}</td>
+                <td>{cmd.event_count}</td>
+                <td>{cmd.receipt_count}</td>
               </tr>
             ))}
           </tbody>
@@ -149,6 +163,7 @@ export default function MissionControlSurface() {
               <th>Version</th>
               <th>Snapshot</th>
               <th>Created</th>
+              <th>Events</th>
             </tr>
           </thead>
           <tbody>
@@ -159,6 +174,7 @@ export default function MissionControlSurface() {
                 <td>v{rc.state_version}</td>
                 <td>{rc.workflow_status_snapshot}</td>
                 <td>{rc.created_at ? new Date(rc.created_at).toLocaleString() : '—'}</td>
+                <td>{rc.event_count}</td>
               </tr>
             ))}
           </tbody>
@@ -195,6 +211,8 @@ export default function MissionControlSurface() {
           </div>
         </div>
       )}
+
+      {data.kind === 'causation' && <CausationChainView chain={data.data} />}
     </div>
   );
 }

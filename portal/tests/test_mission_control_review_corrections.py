@@ -1113,3 +1113,231 @@ class TestCausationLinkSchema:
                 hash="hash-value",
             )
             assert link.source_type == source_type
+
+
+# ── 10. Cycle detection tests ─────────────────────────────────────────────────
+
+
+class TestCycleDetection:
+    """Tests for previous_hash cycle detection in causation chains.
+
+    These tests verify that detect_cycles correctly identifies:
+    - Self-cycles (A.previous_hash = A.hash)
+    - Two-node cycles (A -> B -> A)
+    - Longer cycles (A -> B -> C -> A)
+    - Valid acyclic chains produce no cycle warnings
+    """
+
+    def test_self_cycle_detected(self):
+        """A node whose previous_hash points to itself is a self-cycle."""
+        from portal.services.mission_control_projection_service import detect_cycles
+
+        links = [
+            CausationLink(
+                source_type="command_event",
+                source_id="evt-self-1",
+                sequence=1,
+                event_type="RECEIVED",
+                state="RECEIVED",
+                hash="hash-self-A",
+                previous_hash="hash-self-A",  # points to itself
+            ),
+        ]
+        warnings = detect_cycles(links)
+        assert len(warnings) >= 1
+        assert any("Cycle" in w for w in warnings)
+        assert any("hash-self-A" in w for w in warnings)
+
+    def test_two_node_cycle_detected(self):
+        """A -> B -> A is a two-node cycle."""
+        from portal.services.mission_control_projection_service import detect_cycles
+
+        links = [
+            CausationLink(
+                source_type="command_event",
+                source_id="evt-two-A",
+                sequence=1,
+                event_type="RECEIVED",
+                state="RECEIVED",
+                hash="hash-two-A",
+                previous_hash="hash-two-B",  # A -> B
+            ),
+            CausationLink(
+                source_type="command_event",
+                source_id="evt-two-B",
+                sequence=2,
+                event_type="EVALUATED",
+                state="EVALUATED",
+                hash="hash-two-B",
+                previous_hash="hash-two-A",  # B -> A
+            ),
+        ]
+        warnings = detect_cycles(links)
+        assert len(warnings) >= 1
+        assert any("Cycle" in w for w in warnings)
+
+    def test_longer_cycle_detected(self):
+        """A -> B -> C -> A is a three-node cycle."""
+        from portal.services.mission_control_projection_service import detect_cycles
+
+        links = [
+            CausationLink(
+                source_type="command_event",
+                source_id="evt-long-A",
+                sequence=1,
+                event_type="RECEIVED",
+                state="RECEIVED",
+                hash="hash-long-A",
+                previous_hash="hash-long-C",  # A -> C
+            ),
+            CausationLink(
+                source_type="command_event",
+                source_id="evt-long-B",
+                sequence=2,
+                event_type="EVALUATED",
+                state="EVALUATED",
+                hash="hash-long-B",
+                previous_hash="hash-long-A",  # B -> A
+            ),
+            CausationLink(
+                source_type="command_event",
+                source_id="evt-long-C",
+                sequence=3,
+                event_type="DISPATCHED",
+                state="DISPATCHED",
+                hash="hash-long-C",
+                previous_hash="hash-long-B",  # C -> B
+            ),
+        ]
+        warnings = detect_cycles(links)
+        assert len(warnings) >= 1
+        assert any("Cycle" in w for w in warnings)
+
+    def test_valid_acyclic_chain_no_cycle_warning(self):
+        """A valid linear chain with no cycles should not produce cycle warnings."""
+        from portal.services.mission_control_projection_service import detect_cycles
+
+        links = [
+            CausationLink(
+                source_type="command_event",
+                source_id="evt-acyclic-1",
+                sequence=1,
+                event_type="RECEIVED",
+                state="RECEIVED",
+                hash="hash-acyclic-1",
+                previous_hash=None,  # genesis
+            ),
+            CausationLink(
+                source_type="command_event",
+                source_id="evt-acyclic-2",
+                sequence=2,
+                event_type="EVALUATED",
+                state="EVALUATED",
+                hash="hash-acyclic-2",
+                previous_hash="hash-acyclic-1",
+            ),
+            CausationLink(
+                source_type="command_event",
+                source_id="evt-acyclic-3",
+                sequence=3,
+                event_type="DISPATCHED",
+                state="DISPATCHED",
+                hash="hash-acyclic-3",
+                previous_hash="hash-acyclic-2",
+            ),
+        ]
+        warnings = detect_cycles(links)
+        # No cycle warnings should be present
+        assert not any("Cycle" in w for w in warnings)
+
+    def test_empty_links_no_cycle_warning(self):
+        """Empty links list should produce no warnings."""
+        from portal.services.mission_control_projection_service import detect_cycles
+
+        warnings = detect_cycles([])
+        assert warnings == []
+
+    def test_cycle_warning_contains_source_ids(self):
+        """Cycle warning should include source IDs for diagnosis."""
+        from portal.services.mission_control_projection_service import detect_cycles
+
+        links = [
+            CausationLink(
+                source_type="command_event",
+                source_id="evt-diag-1",
+                sequence=1,
+                event_type="RECEIVED",
+                state="RECEIVED",
+                hash="hash-diag-1",
+                previous_hash="hash-diag-2",
+            ),
+            CausationLink(
+                source_type="command_event",
+                source_id="evt-diag-2",
+                sequence=2,
+                event_type="EVALUATED",
+                state="EVALUATED",
+                hash="hash-diag-2",
+                previous_hash="hash-diag-1",
+            ),
+        ]
+        warnings = detect_cycles(links)
+        assert len(warnings) >= 1
+        # Warning should contain source IDs
+        cycle_warning = next(w for w in warnings if "Cycle" in w)
+        assert "command_event" in cycle_warning
+
+    @pytest.mark.asyncio
+    async def test_cycle_detected_in_full_causation_chain(self, db: AsyncSession):
+        """Cycle detection should fire when building a real causation chain."""
+        from portal.services.mission_control_projection_service import get_causation_chain
+
+        cmd = MissionControlCommand(
+            id="cmd-cycle-001",
+            tenant_id=TENANT_A,
+            requested_by=USER_A,
+            command_type="PAUSE_RUN",
+            target_type="run",
+            target_id="run-001",
+            idempotency_key="idem-cycle-001",
+            request_hash="hash-cycle",
+            state="REFUSED",
+            payload={},
+            metadata_json={},
+        )
+        db.add(cmd)
+        await db.flush()
+
+        # Event 1: hash-A, previous=hash-B
+        db.add(
+            MissionControlCommandEvent(
+                id="evt-cycle-1",
+                command_id="cmd-cycle-001",
+                sequence=1,
+                event_type="RECEIVED",
+                state="RECEIVED",
+                payload={},
+                previous_hash="hash-cycle-B",
+                event_hash="hash-cycle-A",
+            )
+        )
+        await db.flush()
+
+        # Event 2: hash-B, previous=hash-A  (creates A <-> B cycle)
+        db.add(
+            MissionControlCommandEvent(
+                id="evt-cycle-2",
+                command_id="cmd-cycle-001",
+                sequence=2,
+                event_type="EVALUATED",
+                state="EVALUATED",
+                payload={},
+                previous_hash="hash-cycle-A",
+                event_hash="hash-cycle-B",
+            )
+        )
+        await db.flush()
+
+        chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id="cmd-cycle-001")
+        assert chain is not None
+        assert any("Cycle" in w for w in chain.warnings)

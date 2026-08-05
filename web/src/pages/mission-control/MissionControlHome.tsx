@@ -3,11 +3,13 @@ import {
   Activity,
   AlertTriangle,
   CheckCircle2,
+  Clock,
   LockKeyhole,
   Radio,
   RefreshCw,
   ShieldAlert,
   ShieldX,
+  ShieldQuestion,
 } from 'lucide-react';
 import {
   getMissionControlSummary,
@@ -19,9 +21,61 @@ import {
   CommandListResponse,
   RunControlListResponse,
   CancellationControlStatus,
+  FreshnessMeta,
+  SourceLoadState,
 } from '../../api/missionControl';
 
 const unavailable: MissionMetric = { value: null, status: 'unavailable' };
+
+// ── Per-source state container ─────────────────────────────────────────────────
+
+interface SourceState<T> {
+  status: SourceLoadState;
+  data: T | null;
+  error: string | null;
+  freshness: FreshnessMeta | null;
+}
+
+function initialSourceState<T>(): SourceState<T> {
+  return { status: 'LOADING', data: null, error: null, freshness: null };
+}
+
+// ── Freshness badge ────────────────────────────────────────────────────────────
+
+function FreshnessBadge({ freshness }: { freshness: FreshnessMeta | null }) {
+  if (!freshness) return null;
+  const cls = freshness.state.toLowerCase();
+  const label = freshness.state;
+  const seconds =
+    freshness.freshness_seconds !== null
+      ? `${Math.round(freshness.freshness_seconds)}s`
+      : 'n/a';
+  return (
+    <span className={`mc-freshness ${cls}`} title={`Record age: ${seconds}`}>
+      <Clock /> {label} ({seconds})
+    </span>
+  );
+}
+
+// ── Source status banner ───────────────────────────────────────────────────────
+
+function SourceStatusBanner({ status, error }: { status: SourceLoadState; error: string | null }) {
+  if (status === 'AVAILABLE' || status === 'LOADING') return null;
+  const messages: Record<SourceLoadState, string> = {
+    AVAILABLE: '',
+    LOADING: '',
+    STALE: 'Prior data retained but may be outdated.',
+    UNAVAILABLE: 'Source is unavailable. No data displayed.',
+    ERROR: error ?? 'An unexpected error occurred while loading this source.',
+  };
+  return (
+    <div className={`mc-source-warning ${status.toLowerCase()}`}>
+      <AlertTriangle /> {messages[status]}
+    </div>
+  );
+}
+
+// ── Metric card ────────────────────────────────────────────────────────────────
 
 function MetricCard({
   label,
@@ -50,15 +104,48 @@ function MetricCard({
   );
 }
 
-function SigmaGateBanner({ status }: { status: CancellationControlStatus | null }) {
+// ── Sigma gate banner ──────────────────────────────────────────────────────────
+
+function SigmaGateBanner({
+  status,
+  loadState,
+}: {
+  status: CancellationControlStatus | null;
+  loadState: SourceLoadState;
+}) {
+  // If the Sigma-gate request itself failed, show STATUS UNKNOWN — never hide the banner.
+  if (loadState === 'UNAVAILABLE' || loadState === 'ERROR') {
+    return (
+      <div className="mc-sigma-banner unknown">
+        <ShieldQuestion />
+        <div>
+          <strong>SIGMA_LEASE_EXPIRY_CONTINUATION_GATE</strong>
+          <span> — STATUS UNKNOWN</span>
+          <p>
+            Sigma-gate retrieval failed. Controls remain BLOCKED. Do not assume the
+            gate is satisfied.
+          </p>
+          <div className="mc-cancellation-controls">
+            <span className="disabled">Execution-scoped: DISABLED</span>
+            <span className="disabled">Tenant-scoped: DISABLED</span>
+            <span className="disabled">Platform break-glass: DISABLED</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // STALE: show the last-known state but warn it may be outdated.
+  const staleWarning = loadState === 'STALE';
+
   if (!status) return null;
   const blocked = status.gate.state === 'BLOCKED';
   return (
-    <div className={`mc-sigma-banner ${blocked ? 'blocked' : 'satisfied'}`}>
+    <div className={`mc-sigma-banner ${blocked ? 'blocked' : 'satisfied'}${staleWarning ? ' stale' : ''}`}>
       <ShieldX />
       <div>
         <strong>{status.gate.gate_id}</strong>
-        <span> — {status.gate.state}</span>
+        <span> — {status.gate.state}{staleWarning ? ' (STALE READ)' : ''}</span>
         <p>{status.reason}</p>
         <div className="mc-cancellation-controls">
           <span className={status.execution_scoped === 'DISABLED' ? 'disabled' : 'enabled'}>
@@ -76,113 +163,272 @@ function SigmaGateBanner({ status }: { status: CancellationControlStatus | null 
   );
 }
 
-function IntentList({ intents }: { intents: CommandListResponse | null }) {
-  if (!intents || intents.items.length === 0) {
+// ── Intent list ────────────────────────────────────────────────────────────────
+
+function IntentList({
+  state,
+}: {
+  state: SourceState<CommandListResponse>;
+}) {
+  const { status, data, error } = state;
+
+  if (status === 'LOADING' && !data) {
+  return (
+      <div className="mc-loading-source">Loading intent projections…</div>
+    );
+  }
+
+  if ((status === 'UNAVAILABLE' || status === 'ERROR') && !data) {
     return (
-      <div className="mc-empty">
-        No intents recorded. Commands submitted through the governed ingestion layer will appear here.
+      <div className="mc-source-unavailable">
+        <AlertTriangle />
+        Intent projection source is unavailable.
+        {error ? ` ${error}` : ''}
       </div>
     );
   }
+
+  if (!data || data.items.length === 0) {
+    // Only show "No intents recorded" when the source is AVAILABLE and returned an empty list.
+    if (status === 'AVAILABLE') {
+      return (
+        <div className="mc-empty">
+          No intents recorded. Commands submitted through the governed ingestion layer will appear here.
+        </div>
+      );
+    }
+    // STALE with no data — don't claim empty
+    return (
+      <div className="mc-source-stale">
+        <AlertTriangle />
+        Intent data is stale and no prior data is available.
+      </div>
+    );
+  }
+
   return (
-    <table className="mc-table">
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>State</th>
-          <th>Target</th>
-          <th>Created</th>
-          <th>Events</th>
-        </tr>
-      </thead>
-      <tbody>
-        {intents.items.map((cmd) => (
-          <tr key={cmd.id}>
-            <td>{cmd.command_type}</td>
-            <td className={`mc-state ${cmd.state.toLowerCase()}`}>{cmd.state}</td>
-            <td>
-              {cmd.target_type}:{cmd.target_id}
-            </td>
-            <td>{cmd.created_at ? new Date(cmd.created_at).toLocaleString() : '—'}</td>
-            <td>{cmd.events.length}</td>
+    <>
+      {status === 'STALE' && (
+        <div className="mc-source-warning stale">
+          <AlertTriangle /> Showing prior intent data — source refresh failed.
+        </div>
+      )}
+      <table className="mc-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>State</th>
+            <th>Target</th>
+            <th>Created</th>
+            <th>Events</th>
+            <th>Receipts</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {data.items.map((cmd) => (
+            <tr key={cmd.id}>
+              <td>{cmd.command_type}</td>
+              <td className={`mc-state ${cmd.state.toLowerCase()}`}>{cmd.state}</td>
+              <td>
+                {cmd.target_type}:{cmd.target_id}
+              </td>
+              <td>{cmd.created_at ? new Date(cmd.created_at).toLocaleString() : '—'}</td>
+              <td>{cmd.event_count}</td>
+              <td>{cmd.receipt_count}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
   );
 }
 
-function RunControlList({ controls }: { controls: RunControlListResponse | null }) {
-  if (!controls || controls.items.length === 0) {
+// ── Run control list ───────────────────────────────────────────────────────────
+
+function RunControlListSection({
+  state,
+}: {
+  state: SourceState<RunControlListResponse>;
+}) {
+  const { status, data, error } = state;
+
+  if (status === 'LOADING' && !data) {
     return (
-      <div className="mc-empty">
-        No run-control projections. Active workflow controls will appear here when the execution
-        layer connects.
+      <div className="mc-loading-source">Loading run-control projections…</div>
+    );
+  }
+
+  if ((status === 'UNAVAILABLE' || status === 'ERROR') && !data) {
+    return (
+      <div className="mc-source-unavailable">
+        <AlertTriangle />
+        Run-control projection source is unavailable.
+        {error ? ` ${error}` : ''}
       </div>
     );
   }
+
+  if (!data || data.items.length === 0) {
+    if (status === 'AVAILABLE') {
+      return (
+        <div className="mc-empty">
+          No run-control projections. Active workflow controls will appear here when the execution
+          layer connects.
+        </div>
+      );
+    }
+    return (
+      <div className="mc-source-stale">
+        <AlertTriangle />
+        Run-control data is stale and no prior data is available.
+      </div>
+    );
+  }
+
   return (
-    <table className="mc-table">
-      <thead>
-        <tr>
-          <th>Workflow</th>
-          <th>State</th>
-          <th>Version</th>
-          <th>Snapshot</th>
-          <th>Created</th>
-          <th>Events</th>
-        </tr>
-      </thead>
-      <tbody>
-        {controls.items.map((rc) => (
-          <tr key={rc.id}>
-            <td>{rc.workflow_id}</td>
-            <td className={`mc-state ${rc.state.toLowerCase()}`}>{rc.state}</td>
-            <td>v{rc.state_version}</td>
-            <td>{rc.workflow_status_snapshot}</td>
-            <td>{rc.created_at ? new Date(rc.created_at).toLocaleString() : '—'}</td>
-            <td>{rc.events.length}</td>
+    <>
+      {status === 'STALE' && (
+        <div className="mc-source-warning stale">
+          <AlertTriangle /> Showing prior run-control data — source refresh failed.
+        </div>
+      )}
+      <table className="mc-table">
+        <thead>
+          <tr>
+            <th>Workflow</th>
+            <th>State</th>
+            <th>Version</th>
+            <th>Snapshot</th>
+            <th>Created</th>
+            <th>Events</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {data.items.map((rc) => (
+            <tr key={rc.id}>
+              <td>{rc.workflow_id}</td>
+              <td className={`mc-state ${rc.state.toLowerCase()}`}>{rc.state}</td>
+              <td>v{rc.state_version}</td>
+              <td>{rc.workflow_status_snapshot}</td>
+              <td>{rc.created_at ? new Date(rc.created_at).toLocaleString() : '—'}</td>
+              <td>{rc.event_count}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
   );
 }
+
+// ── Main component ─────────────────────────────────────────────────────────────
 
 export default function MissionControlHome() {
-  const [summary, setSummary] = useState<MissionControlSummary | null>(null);
-  const [connection, setConnection] = useState<'live' | 'degraded' | 'offline'>('offline');
-  const [error, setError] = useState('');
-  const [intents, setIntents] = useState<CommandListResponse | null>(null);
-  const [runControls, setRunControls] = useState<RunControlListResponse | null>(null);
-  const [cancellationStatus, setCancellationStatus] =
-    useState<CancellationControlStatus | null>(null);
+  const [summaryState, setSummaryState] = useState<SourceState<MissionControlSummary>>(
+    initialSourceState(),
+  );
+  const [intentsState, setIntentsState] = useState<SourceState<CommandListResponse>>(
+    initialSourceState(),
+  );
+  const [runControlsState, setRunControlsState] = useState<SourceState<RunControlListResponse>>(
+    initialSourceState(),
+  );
+  const [sigmaState, setSigmaState] = useState<SourceState<CancellationControlStatus>>(
+    initialSourceState(),
+  );
 
   const refresh = useCallback(async () => {
-    try {
-      const [nextSummary, nextIntents, nextRunControls, nextCancellation] = await Promise.allSettled([
-        getMissionControlSummary(),
-        listIntents({ limit: 20 }),
-        listRunControls({ limit: 20 }),
-        getCancellationStatus(),
-      ]);
+    // Fire all requests in parallel; each source gets independent error handling.
+    // We use Promise.allSettled so one failure does not mask others.
 
-      if (nextSummary.status === 'fulfilled') {
-        setSummary(nextSummary.value);
-        setConnection(nextSummary.value.health === 'healthy' ? 'live' : 'degraded');
-        setError('');
-      } else {
-        setConnection('offline');
-        setError('Telemetry endpoint is unavailable. No operational values are being inferred.');
-      }
+    // Summary
+    setSummaryState((prev) => ({
+      status: 'LOADING',
+      data: prev.data,
+      error: null,
+      freshness: prev.freshness,
+    }));
+    getMissionControlSummary()
+      .then((data) => {
+        setSummaryState({ status: 'AVAILABLE', data, error: null, freshness: null });
+      })
+      .catch((err: unknown) => {
+        setSummaryState((prev) => ({
+          status: prev.data ? 'STALE' : 'UNAVAILABLE',
+          data: prev.data,
+          error: err instanceof Error ? err.message : 'Summary request failed',
+          freshness: prev.freshness,
+        }));
+      });
 
-      if (nextIntents.status === 'fulfilled') setIntents(nextIntents.value);
-      if (nextRunControls.status === 'fulfilled') setRunControls(nextRunControls.value);
-      if (nextCancellation.status === 'fulfilled') setCancellationStatus(nextCancellation.value);
-    } catch {
-      setConnection('offline');
-      setError('Telemetry endpoint is unavailable. No operational values are being inferred.');
-    }
+    // Intents
+    setIntentsState((prev) => ({
+      status: 'LOADING',
+      data: prev.data,
+      error: null,
+      freshness: prev.freshness,
+    }));
+    listIntents({ limit: 20 })
+      .then((data) => {
+        setIntentsState({
+          status: 'AVAILABLE',
+          data,
+          error: null,
+          freshness: data.freshness ?? null,
+        });
+      })
+      .catch((err: unknown) => {
+        setIntentsState((prev) => ({
+          status: prev.data ? 'STALE' : 'UNAVAILABLE',
+          data: prev.data,
+          error: err instanceof Error ? err.message : 'Intent request failed',
+          freshness: prev.freshness,
+        }));
+      });
+
+    // Run controls
+    setRunControlsState((prev) => ({
+      status: 'LOADING',
+      data: prev.data,
+      error: null,
+      freshness: prev.freshness,
+    }));
+    listRunControls({ limit: 20 })
+      .then((data) => {
+        setRunControlsState({
+          status: 'AVAILABLE',
+          data,
+          error: null,
+          freshness: data.freshness ?? null,
+        });
+      })
+      .catch((err: unknown) => {
+        setRunControlsState((prev) => ({
+          status: prev.data ? 'STALE' : 'UNAVAILABLE',
+          data: prev.data,
+          error: err instanceof Error ? err.message : 'Run-control request failed',
+          freshness: prev.freshness,
+        }));
+      });
+
+    // Sigma gate
+    setSigmaState((prev) => ({
+      status: 'LOADING',
+      data: prev.data,
+      error: null,
+      freshness: prev.freshness,
+    }));
+    getCancellationStatus()
+      .then((data) => {
+        setSigmaState({ status: 'AVAILABLE', data, error: null, freshness: null });
+      })
+      .catch((err: unknown) => {
+        setSigmaState((prev) => ({
+          status: prev.data ? 'STALE' : 'UNAVAILABLE',
+          data: prev.data,
+          error: err instanceof Error ? err.message : 'Sigma-gate request failed',
+          freshness: prev.freshness,
+        }));
+      });
   }, []);
 
   useEffect(() => {
@@ -190,6 +436,16 @@ export default function MissionControlHome() {
     const timer = window.setInterval(refresh, 30_000);
     return () => window.clearInterval(timer);
   }, [refresh]);
+
+  const summary = summaryState.data;
+  const connection =
+    summaryState.status === 'AVAILABLE'
+      ? summary?.health === 'healthy'
+        ? 'live'
+        : 'degraded'
+      : summaryState.status === 'STALE'
+        ? 'degraded'
+        : 'offline';
 
   const metrics = summary ?? {
     active_agents: unavailable,
@@ -221,13 +477,23 @@ export default function MissionControlHome() {
           <RefreshCw /> Refresh
         </button>
       </div>
-      {error && (
+      {summaryState.status === 'UNAVAILABLE' && (
         <div className="mc-warning">
-          <ShieldAlert /> {error}
+          <ShieldAlert /> Telemetry endpoint is unavailable. No operational values are being inferred.
+        </div>
+      )}
+      {summaryState.status === 'STALE' && (
+        <div className="mc-warning">
+          <ShieldAlert /> Telemetry refresh failed. Showing prior data — values may be outdated.
         </div>
       )}
 
-      <SigmaGateBanner status={cancellationStatus} />
+      <SigmaGateBanner status={sigmaState.data} loadState={sigmaState.status} />
+      {sigmaState.status === 'STALE' && (
+        <div className="mc-source-warning stale">
+          <AlertTriangle /> Sigma-gate data is stale — prior status shown but may be outdated.
+        </div>
+      )}
 
       <section className="mc-command-strip" aria-label="Command controls">
         <div>
@@ -278,9 +544,13 @@ export default function MissionControlHome() {
             <p className="mc-eyebrow">INTENT PROJECTION</p>
             <h2>Command ledger</h2>
           </div>
-          <span>{intents ? `${intents.total} total` : '—'}</span>
+          <span>
+            {intentsState.data ? `${intentsState.data.total} total` : '—'}
+            {intentsState.freshness && <FreshnessBadge freshness={intentsState.freshness} />}
+          </span>
         </div>
-        <IntentList intents={intents} />
+        <SourceStatusBanner status={intentsState.status} error={intentsState.error} />
+        <IntentList state={intentsState} />
       </section>
 
       <section>
@@ -289,9 +559,13 @@ export default function MissionControlHome() {
             <p className="mc-eyebrow">EXECUTION-STATE PROJECTION</p>
             <h2>Run controls</h2>
           </div>
-          <span>{runControls ? `${runControls.total} total` : '—'}</span>
+          <span>
+            {runControlsState.data ? `${runControlsState.data.total} total` : '—'}
+            {runControlsState.freshness && <FreshnessBadge freshness={runControlsState.freshness} />}
+          </span>
         </div>
-        <RunControlList controls={runControls} />
+        <SourceStatusBanner status={runControlsState.status} error={runControlsState.error} />
+        <RunControlListSection state={runControlsState} />
       </section>
 
       <section className="mc-systems">

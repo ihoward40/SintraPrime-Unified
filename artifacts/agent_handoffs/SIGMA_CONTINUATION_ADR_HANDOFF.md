@@ -72,25 +72,48 @@ The ADR-MC-001 must address:
 
 ## Current Work State
 
-Status: BRANCH CREATED — AWAITING AUTHORIZATION TO DRAFT ADR BODY
+Status: ADR-MC-001 DRAFTED — AWAITING REVIEW AND RATIFICATION
 
 Current agent: Hermes
 
-Current task: Create the initial handoff record only. Do not draft the ADR body until separately authorized.
+Current task: Draft the ADR-MC-001 body under the authorized scope. The draft is complete and located at docs/mission-control/ADR_MC_001_EXECUTOR_CONTINUATION.md.
 
 ## Validation
 
 | Gate | Result | Notes |
 |---|---|---|
 | CI | N/A | No code changes; documentation branch only |
+| Scope check | PASS | Document defines architecture and governance only; no implementation |
+| Prohibition check | PASS | No code, no cancellation activation, no command authority, no deployment, no Phase 3B |
+
+## Changes Completed
+
+- Drafted docs/mission-control/ADR_MC_001_EXECUTOR_CONTINUATION.md with:
+  - Executor lease lifecycle (acquisition, renewal, expiry)
+  - Brain outage detection
+  - Continuation eligibility criteria
+  - Continuation limits
+  - Idempotency requirements
+  - Reconciliation protocol
+  - Replay semantics
+  - Duplicate suppression
+  - Completion receipts
+  - Split-brain handling
+  - Audit chain requirements
+  - Tenant isolation guarantees
+  - Recovery protocol
+  - Sequence diagrams, state-machine diagrams, timing diagrams
+  - Failure matrices and threat model
+  - Invariants, glossary, implementation prerequisites
+  - Explicit non-goals
+  - Acceptance criteria
 
 ## Next Required Action
 
-1. Receive authorization to draft the ADR-MC-001 body
-2. Draft the ADR under the authorized scope above
-3. Submit for Sigma review and owner approval
-4. Ratify and merge
-5. Implement the ratified criteria (separate branch, separate authorization)
+1. Submit ADR-MC-001 for Sigma review and owner approval
+2. Iterate on review feedback
+3. Ratify and merge
+4. Open implementation branch (separate authorization) for the components listed in Section 9.1
 
 ## Handoff Receipt
 
@@ -98,14 +121,20 @@ Outgoing agent: Hermes
 
 Branch: feat/sigma-executor-continuation-adr
 
+Current HEAD: 2900d3c90a87b850d2c6ce7d1a00ef792a9f99f9
+
 Base: 97bd539f82ee9099003b0ba5c3729092bf470604 (main, post-merge)
 
 Baseline tag: mission-control-foundation-v1
+
+ADR draft: docs/mission-control/ADR_MC_001_EXECUTOR_CONTINUATION.md
 
 Sigma gate: BLOCKED
 
 Deployment: NOT AUTHORIZED
 
 Phase 3B: BLOCKED
+
+Implementation: NOT AUTHORIZED
 
 Handoff time: 2026-08-05

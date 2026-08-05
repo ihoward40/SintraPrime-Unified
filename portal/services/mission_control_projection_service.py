@@ -69,10 +69,8 @@ def _min_dt() -> datetime:
     return datetime.min.replace(tzinfo=UTC)
 
 
-def _ensure_aware(dt: datetime | None) -> datetime | None:
-    """Normalize a timezone-naive datetime to UTC, preserving None."""
-    if dt is None:
-        return None
+def _ensure_aware(dt: datetime) -> datetime:
+    """Normalize a timezone-naive datetime to UTC."""
     if dt.tzinfo is None:
         return dt.replace(tzinfo=UTC)
     return dt
@@ -609,19 +607,19 @@ async def get_causation_chain(
     )
     rc_result = await db.execute(rc_query)
     rc_events = list(rc_result.scalars().all())
-    for e in rc_events:
+    for rc_evt in rc_events:
         links.append(
             CausationLink(
                 source_type="run_control_event",
-                source_id=e.id,
-                sequence=e.sequence,
-                event_type=e.event_type,
-                state=e.new_state,
-                hash=e.event_hash,
-                previous_hash=e.previous_event_hash,
-                created_at=e.created_at,
-                command_id=e.command_id,
-                run_control_id=e.run_control_id,
+                source_id=rc_evt.id,
+                sequence=rc_evt.sequence,
+                event_type=rc_evt.event_type,
+                state=rc_evt.new_state,
+                hash=rc_evt.event_hash,
+                previous_hash=rc_evt.previous_event_hash,
+                created_at=rc_evt.created_at,
+                command_id=rc_evt.command_id,
+                run_control_id=rc_evt.run_control_id,
             )
         )
 

@@ -26,7 +26,7 @@ from ..schemas.mission_control_projection import (
     SigmaGateStatus,
 )
 
-GATE_ID = "SIGMA_LEASE_EXPIRY_CONTINUATION_GATE"
+GATE_ID: Literal["SIGMA_LEASE_EXPIRY_CONTINUATION_GATE"] = "SIGMA_LEASE_EXPIRY_CONTINUATION_GATE"
 
 # The gate is BLOCKED in the Foundation phase. The state is a constant —
 # it does not transition at runtime. Transition requires an ADR amendment

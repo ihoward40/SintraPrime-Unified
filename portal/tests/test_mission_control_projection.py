@@ -160,6 +160,15 @@ class TestSigmaGateAPI:
 
 
 class TestReadOnlyEnforcement:
+    """Verify that no new mutation routes were introduced.
+
+    The pre-existing POST /api/v1/mission-control/commands endpoint is
+    refusal-only (returns COMMAND_EXECUTION_NOT_ENABLED) and remains
+    unchanged. No new POST/PUT/PATCH/DELETE projection route was added.
+    No cancellation, approval, retry, replay, lease, or dispatch mutation
+    was added.
+    """
+
     def test_no_post_on_intents(self, client: TestClient):
         response = client.post("/api/v1/mission-control/intents", json={})
         assert response.status_code == 405

@@ -1,0 +1,136 @@
+{
+  "sintraprime_symbols": [
+    {
+      "symbol": "AgentNetwork",
+      "file": "agent_protocol/__init__.py",
+      "kind": "class"
+    },
+    {
+      "symbol": "AgentNode",
+      "file": "agent_protocol/agent_node.py",
+      "kind": "class"
+    },
+    {
+      "symbol": "AgentDiscovery",
+      "file": "agent_protocol/agent_discovery.py",
+      "kind": "class"
+    },
+    {
+      "symbol": "AgentCapabilities",
+      "file": "agent_protocol/message_types.py",
+      "kind": "dataclass"
+    },
+    {
+      "symbol": "AgentMessage",
+      "file": "agent_protocol/message_types.py",
+      "kind": "dataclass"
+    },
+    {
+      "symbol": "MessageType",
+      "file": "agent_protocol/message_types.py",
+      "kind": "enum"
+    },
+    {
+      "symbol": "MessageRouter",
+      "file": "channels/message_router.py",
+      "kind": "class"
+    },
+    {
+      "symbol": "ApprovalGateway",
+      "file": "agents/nova/approval_gateway.py",
+      "kind": "class"
+    },
+    {
+      "symbol": "ApprovalRequest",
+      "file": "agents/nova/approval_gateway.py",
+      "kind": "dataclass"
+    },
+    {
+      "symbol": "ApprovalStatus",
+      "file": "agents/nova/approval_gateway.py",
+      "kind": "enum"
+    },
+    {
+      "symbol": "ApprovalTier",
+      "file": "agents/nova/approval_gateway.py",
+      "kind": "enum"
+    },
+    {
+      "symbol": "ExecutionLedger",
+      "file": "agents/nova/execution_ledger.py",
+      "kind": "class"
+    },
+    {
+      "symbol": "LedgerEntry",
+      "file": "agents/nova/execution_ledger.py",
+      "kind": "dataclass"
+    },
+    {
+      "symbol": "ConstitutionalEvidenceLedger",
+      "file": "blackstone/bra/cel.py",
+      "kind": "class"
+    },
+    {
+      "symbol": "EvidenceItemRecord",
+      "file": "blackstone/bra/cel.py",
+      "kind": "dataclass"
+    },
+    {
+      "symbol": "CustodyEvent",
+      "file": "blackstone/bra/cel.py",
+      "kind": "dataclass"
+    },
+    {
+      "symbol": "Tenant",
+      "file": "portal/models/user.py",
+      "kind": "class"
+    },
+    {
+      "symbol": "User",
+      "file": "portal/models/user.py",
+      "kind": "class"
+    },
+    {
+      "symbol": "Role",
+      "file": "portal/models/user.py",
+      "kind": "class"
+    }
+  ],
+  "hermes_symbols": [
+    {
+      "symbol": "ProfileRoute",
+      "file": "gateway/profile_routing.py",
+      "kind": "dataclass"
+    },
+    {
+      "symbol": "parse_profile_routes",
+      "file": "gateway/profile_routing.py",
+      "kind": "function"
+    },
+    {
+      "symbol": "match_profile_route",
+      "file": "gateway/profile_routing.py",
+      "kind": "function"
+    },
+    {
+      "symbol": "_PROFILE_ID_RE",
+      "file": "hermes_cli/profiles.py",
+      "kind": "regex"
+    },
+    {
+      "symbol": "NO_BUNDLED_SKILLS_MARKER",
+      "file": "hermes_cli/profiles.py",
+      "kind": "constant"
+    },
+    {
+      "symbol": "DescribeOutcome",
+      "file": "hermes_cli/profile_describer.py",
+      "kind": "dataclass"
+    },
+    {
+      "symbol": "_collect_skills",
+      "file": "hermes_cli/profile_describer.py",
+      "kind": "function"
+    }
+  ]
+}

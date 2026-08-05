@@ -76,6 +76,9 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
     REDIS_SESSION_DB: int = 1
 
+    # ── Hermes Quicksilver (Increment One) ────────────────────────────────
+    HERMES_QUICKSILVER_ENABLED: bool = False
+
     # ── Rate Limiting ────────────────────────────────────────────────────
     RATE_LIMIT_DEFAULT: int = 100       # requests per minute per user
     RATE_LIMIT_AUTH: int = 10           # requests per minute on auth endpoints
@@ -179,6 +182,10 @@ class Settings(BaseSettings):
     @property
     def encryption_key_bytes(self) -> bytes:
         return self.ENCRYPTION_KEY.encode()[:32]
+
+    @property
+    def is_hermes_quicksilver_enabled(self) -> bool:
+        return self.HERMES_QUICKSILVER_ENABLED
 
 
 @lru_cache

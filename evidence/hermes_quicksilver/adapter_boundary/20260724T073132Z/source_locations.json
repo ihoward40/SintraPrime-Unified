@@ -1,0 +1,73 @@
+{
+  "sintraprime": {
+    "agent_identity_registry": {
+      "agent_id_type": "str",
+      "capability_type": "AgentCapabilities dataclass",
+      "discovery": "agent_protocol/agent_discovery.py (UDP broadcast, optional central registry via SINTRA_REGISTRY_URL, manual SINTRA_PEERS)",
+      "node": "agent_protocol/agent_node.py",
+      "network_facade": "agent_protocol/__init__.py AgentNetwork",
+      "message_type": "agent_protocol/message_types.py AgentMessage"
+    },
+    "routing": {
+      "message_router": "channels/message_router.py",
+      "intent_detection": "MessageRouter.detect_intent (keyword regex patterns)",
+      "handler_dispatch": "MessageRouter.route_to_handler"
+    },
+    "approval": {
+      "approval_gateway": "agents/nova/approval_gateway.py",
+      "request_type": "ApprovalRequest dataclass",
+      "status_enum": "ApprovalStatus",
+      "tier_enum": "ApprovalTier",
+      "auto_approve_actions": "AUTO_APPROVE_ACTIONS set",
+      "legal_review_actions": "LEGAL_REVIEW_ACTIONS set"
+    },
+    "audit_evidence": {
+      "execution_ledger": "agents/nova/execution_ledger.py",
+      "ledger_entry": "LedgerEntry dataclass",
+      "cel": "blackstone/bra/cel.py ConstitutionalEvidenceLedger",
+      "evidence_item": "EvidenceItemRecord dataclass",
+      "custody_event": "CustodyEvent dataclass"
+    },
+    "tenant_context": {
+      "tenant_model": "portal/models/user.py Tenant",
+      "user_model": "portal/models/user.py User",
+      "role_model": "portal/models/user.py Role",
+      "tenant_id_type": "uuid.UUID stored as String(36)",
+      "user_id_type": "uuid.UUID stored as String(36)"
+    },
+    "feature_flags": {
+      "env_examples": [
+        "SINTRA_ENABLE_SWARMS",
+        "NOVA_ALLOW_DYNAMIC_EXEC",
+        "ENABLE_SUPERINTELLIGENCE",
+        "ENABLE_TWIN_TUI",
+        "ENABLE_AGENT_SWARMS",
+        "ENABLE_HIVE_MIND"
+      ],
+      "finding": "No centralized FeatureFlag database model found; feature toggles use environment variables and docker-compose defaults."
+    }
+  },
+  "hermes": {
+    "profile_identity": {
+      "profile_id_type": "str matching ^[a-z0-9][a-z0-9_-]{0,63}$",
+      "profile_registry": "hermes_cli/profiles.py",
+      "profile_dir_layout": "~/.hermes/profiles/<name>/ with isolated config.yaml, .env, sessions, memory, skills, logs, cron, workspace",
+      "profile_description": "hermes_cli/profile_describer.py writes profile.yaml description_auto",
+      "profile_routing": "gateway/profile_routing.py maps platform/guild/chat/thread to profile"
+    },
+    "runtime_version": {
+      "pyproject_version": "0.18.2",
+      "package_json_version": "1.0.0",
+      "cli_version": "v0.15.2",
+      "cli_behind_source": "1893 commits"
+    },
+    "integration_surface_options": {
+      "filesystem_profile_yaml": "read profile.yaml and config.yaml under ~/.hermes/profiles/<name>/",
+      "cli_profile_list_describe": "hermes profile list --json / hermes profile describe <name> --json",
+      "python_import_profiles": "from hermes_cli import profiles (couples to internals)",
+      "gateway_api": "gateway/profile_routing.py is inbound-only, not an exposed API for external query"
+    },
+    "recommended_surface": "filesystem read-only adapter with CLI fallback for profile enumeration/description",
+    "fallback_surface": "CLI subprocess invocation"
+  }
+}

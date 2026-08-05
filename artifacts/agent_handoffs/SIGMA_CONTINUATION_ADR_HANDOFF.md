@@ -72,48 +72,45 @@ The ADR-MC-001 must address:
 
 ## Current Work State
 
-Status: ADR-MC-001 DRAFTED — AWAITING REVIEW AND RATIFICATION
+Status: ADR-MC-001 REVIEW CYCLE 1 COMPLETE — AWAITING REVIEW FEEDBACK
 
 Current agent: Hermes
 
-Current task: Draft the ADR-MC-001 body under the authorized scope. The draft is complete and located at docs/mission-control/ADR_MC_001_EXECUTOR_CONTINUATION.md.
+Current task: Architecture review corrections applied to ADR-MC-001 draft. The draft is located at docs/mission-control/ADR_MC_001_EXECUTOR_CONTINUATION.md.
 
 ## Validation
 
 | Gate | Result | Notes |
 |---|---|---|
-| CI | N/A | No code changes; documentation branch only |
+| CI | PENDING | Documentation branch only; waiting for terminal state |
 | Scope check | PASS | Document defines architecture and governance only; no implementation |
 | Prohibition check | PASS | No code, no cancellation activation, no command authority, no deployment, no Phase 3B |
 
+## Review Cycle 1 — REQUEST CHANGES (2026-08-05)
+
+Review blockers identified and resolved:
+
+1. **Expired lease authority contradictory** — RESOLVED by introducing a distinct Continuation Capability (Section 2.1.4), separate from the lease token, unusable before lease expiry, and validated by downstream systems.
+2. **Duplicate-suppression keys unsafe** — RESOLVED by defining stable external-effect identity `(command_id, operation_id, side_effect_slot)` and treating `continuation_id` as metadata only (Section 2.5).
+3. **Replay semantics can duplicate side effects** — RESOLVED by requiring reconciliation before replay, giving replay a new execution identity while preserving original external-effect identities (Section 2.7).
+4. **"First completed wins" not a conflict policy** — RESOLVED by separating result selection, effect reconciliation, compensation, and manual review (Section 2.6).
+5. **Witness model undefined** — RESOLVED by fully defining independent control-plane witnesses, quorum, self-exclusion, replay resistance, and stale/compromised witness handling (Section 2.2.4).
+6. **Clock and time authority missing** — RESOLVED by adding trusted time source, signed anchors, monotonic time, skew tolerance, and rollback handling (Section 2.8).
+7. **Policy validity unprovable during outage** — RESOLVED by replacing "policy has not been superseded" with a pinned policy snapshot hash and bounded validity in the capability (Section 2.11).
+8. **Revocation/cancellation cache not authoritative** — RESOLVED by adding revocation watermark, cache-age limit, fail-closed rules, and default STOP for high-risk commands (Section 2.10).
+9. **Side-effect safety too permissive** — RESOLVED by classifying side effects as Class 0–3 and prohibiting Class 3 (irreversible/high-risk) during continuation (Section 2.9).
+10. **Audit-chain truncation mixed into authority** — RESOLVED by clarifying that the authoritative audit ledger is never truncated; only read projections may paginate/truncate (Section 2.13).
+
 ## Changes Completed
 
-- Drafted docs/mission-control/ADR_MC_001_EXECUTOR_CONTINUATION.md with:
-  - Executor lease lifecycle (acquisition, renewal, expiry)
-  - Brain outage detection
-  - Continuation eligibility criteria
-  - Continuation limits
-  - Idempotency requirements
-  - Reconciliation protocol
-  - Replay semantics
-  - Duplicate suppression
-  - Completion receipts
-  - Split-brain handling
-  - Audit chain requirements
-  - Tenant isolation guarantees
-  - Recovery protocol
-  - Sequence diagrams, state-machine diagrams, timing diagrams
-  - Failure matrices and threat model
-  - Invariants, glossary, implementation prerequisites
-  - Explicit non-goals
-  - Acceptance criteria
+- Rewrote docs/mission-control/ADR_MC_001_EXECUTOR_CONTINUATION.md to address all review blockers.
+- Updated handoff record with actual HEAD SHA and tree SHA after commit.
 
 ## Next Required Action
 
-1. Submit ADR-MC-001 for Sigma review and owner approval
-2. Iterate on review feedback
-3. Ratify and merge
-4. Open implementation branch (separate authorization) for the components listed in Section 9.1
+1. Wait for all CI workflows to reach terminal state.
+2. Submit corrected ADR-MC-001 for next review cycle.
+3. Do not mark ready for review until review accepts the corrections.
 
 ## Handoff Receipt
 
@@ -121,7 +118,9 @@ Outgoing agent: Hermes
 
 Branch: feat/sigma-executor-continuation-adr
 
-Current HEAD: 2900d3c90a87b850d2c6ce7d1a00ef792a9f99f9
+Current HEAD: see git log (handoff file does not recursively contain its own commit SHA)
+
+Tree SHA: see git rev-parse 'HEAD^{tree}'
 
 Base: 97bd539f82ee9099003b0ba5c3729092bf470604 (main, post-merge)
 

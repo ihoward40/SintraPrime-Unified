@@ -78,3 +78,4 @@ __pycache__/
 # Logs
 *.log
 logs/
+e2e_test.db

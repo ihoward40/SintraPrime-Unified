@@ -284,8 +284,12 @@ async def test_supported_commands_persist_and_refuse(
 
 
 @pytest.mark.asyncio
-async def test_no_operational_mutation_routes_are_added(client: TestClient, db: AsyncSession) -> None:
-    paths = {route.path for route in client.app.routes}
+async def test_no_operational_mutation_routes_are_added(
+    client: TestClient, db: AsyncSession
+) -> None:
+    from portal.tests.support.route_enumeration import iter_terminal_routes
+
+    paths = {path for path, _ in iter_terminal_routes(client.app.routes)}
     assert "/runs/{id}/pause" not in paths
     assert "/runs/{id}/resume" not in paths
     assert "/runs/{id}/cancel" not in paths
@@ -298,9 +302,15 @@ async def test_no_operational_mutation_routes_are_added(client: TestClient, db: 
 
 
 @pytest.mark.asyncio
-async def test_same_idempotency_key_and_request_replays(client: TestClient, db: AsyncSession) -> None:
-    first = client.post("/api/v1/mission-control/commands", json=_body("PAUSE_RUN", "same-key-1234567890"))
-    second = client.post("/api/v1/mission-control/commands", json=_body("PAUSE_RUN", "same-key-1234567890"))
+async def test_same_idempotency_key_and_request_replays(
+    client: TestClient, db: AsyncSession
+) -> None:
+    first = client.post(
+        "/api/v1/mission-control/commands", json=_body("PAUSE_RUN", "same-key-1234567890")
+    )
+    second = client.post(
+        "/api/v1/mission-control/commands", json=_body("PAUSE_RUN", "same-key-1234567890")
+    )
 
     assert first.status_code == 201
     assert second.status_code == 200
@@ -391,7 +401,9 @@ async def test_same_idempotency_key_and_changed_request_conflicts(
     client: TestClient,
     db: AsyncSession,
 ) -> None:
-    first = client.post("/api/v1/mission-control/commands", json=_body("PAUSE_RUN", "conflict-key-1234567890"))
+    first = client.post(
+        "/api/v1/mission-control/commands", json=_body("PAUSE_RUN", "conflict-key-1234567890")
+    )
     changed = _body("PAUSE_RUN", "conflict-key-1234567890")
     changed["target_id"] = "run-456"
     second = client.post("/api/v1/mission-control/commands", json=changed)
@@ -410,7 +422,9 @@ def test_missing_idempotency_key_returns_422(client: TestClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_tenant_and_actor_come_from_server_context(client: TestClient, db: AsyncSession) -> None:
+async def test_tenant_and_actor_come_from_server_context(
+    client: TestClient, db: AsyncSession
+) -> None:
     response = client.post("/api/v1/mission-control/commands", json=_body())
     assert response.status_code == 201
     result = await db.execute(select(MissionControlCommand))
@@ -458,7 +472,9 @@ async def test_audit_record_and_receipt_are_created(client: TestClient, db: Asyn
 
 
 @pytest.mark.asyncio
-async def test_audit_failure_rolls_back_command(client: TestClient, db: AsyncSession, monkeypatch) -> None:
+async def test_audit_failure_rolls_back_command(
+    client: TestClient, db: AsyncSession, monkeypatch
+) -> None:
     async def _fail_audit(*args, **kwargs):
         raise RuntimeError("audit unavailable")
 
@@ -494,12 +510,28 @@ async def test_realtime_failure_does_not_change_refusal_outcome(
     assert await _count(db, MissionControlCommand) == 1
 
 
-def test_existing_mission_control_summary_contract_remains_unchanged(client: TestClient, monkeypatch) -> None:
-    monkeypatch.setattr(mission_control, "_check_database", lambda: {"status": "healthy", "type": "sqlite"})
-    monkeypatch.setattr(mission_control, "_check_recovery_api", lambda: {"status": "healthy", "external_action": "locked"})
-    monkeypatch.setattr(mission_control, "_check_evidence_platform", lambda: {"status": "healthy", "cases": [{"evidence_items": 3}]})
-    monkeypatch.setattr(mission_control, "_check_scheduler", lambda: {"status": "healthy", "jobs": 4})
-    monkeypatch.setattr(mission_control, "_check_agents", lambda: {"status": "healthy", "running": 2})
+def test_existing_mission_control_summary_contract_remains_unchanged(
+    client: TestClient, monkeypatch
+) -> None:
+    monkeypatch.setattr(
+        mission_control, "_check_database", lambda: {"status": "healthy", "type": "sqlite"}
+    )
+    monkeypatch.setattr(
+        mission_control,
+        "_check_recovery_api",
+        lambda: {"status": "healthy", "external_action": "locked"},
+    )
+    monkeypatch.setattr(
+        mission_control,
+        "_check_evidence_platform",
+        lambda: {"status": "healthy", "cases": [{"evidence_items": 3}]},
+    )
+    monkeypatch.setattr(
+        mission_control, "_check_scheduler", lambda: {"status": "healthy", "jobs": 4}
+    )
+    monkeypatch.setattr(
+        mission_control, "_check_agents", lambda: {"status": "healthy", "running": 2}
+    )
 
     response = client.get("/api/v1/mission-control/summary")
     assert response.status_code == 200

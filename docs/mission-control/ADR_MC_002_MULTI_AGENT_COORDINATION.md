@@ -92,10 +92,10 @@ A formal handoff sequence is mandatory:
 2. Outgoing agent updates the handoff with exact HEAD, tree SHA, dirty state, tests, CI, and next action.
 3. Outgoing agent records the transfer as PENDING.
 4. Incoming agent independently verifies the evidence (HEAD, tree, dirty state, remote state).
-5. Incoming agent records CLAIMED and becomes the owner.
+5. Incoming agent records the transition `TRANSFER_PENDING -> ACTIVE` and becomes the owner.
 6. Only then may writes resume.
 
-No verbal or chat-only ownership transfer is sufficient. The handoff file is the controlling source of truth.
+No verbal or chat-only ownership transfer is sufficient. The handoff is the **controlling coordination record**. Operational truth is established only by convergence among the committed handoff, Git object state, remote references, CI receipts, and review state. On any mismatch, freeze, preserve, and reconcile under `HANDOFF_INTEGRITY_MISMATCH` (see 2.A, 2.E).
 
 ### 2.E Handoff Record Requirements
 
@@ -364,6 +364,20 @@ Safety branches preserve pre-rewrite and contested work and must not be deleted 
 
 Deletion itself must be recorded as an auditable event (who, when, which branch, which authorization, which retention evidence).
 
+### 2.V ACTIVE_CORRECTION State
+
+`ACTIVE_CORRECTION` is a governed correction transition that allows a writer to address reviewer-requested changes without losing the review context. Rules:
+
+- The existing branch owner remains the sole writer.
+- Local edits and narrow commits are allowed.
+- Normal push is allowed.
+- Only reviewer-requested defect corrections are allowed; no unrelated features.
+- Force-push is prohibited absent separate authorization.
+- The PR remains draft or review-blocked during ACTIVE_CORRECTION.
+- Return to `REVIEW` requires updated handoff, exact head, CI terminal state, and correction evidence.
+
+The transition is `REVIEW -> ACTIVE_CORRECTION -> REVIEW`. `ACTIVE_CORRECTION` is added to the branch lifecycle, branch-state transition matrix, state-to-permission matrix, PR lifecycle, and handoff requirements.
+
 ### 2.U Writer Model: Bots and Automation
 
 "One writer" spans all mutation paths: local Git, the GitHub web UI, the GitHub API/gh CLI, API-driven agents, bots (e.g., Dependabot), and CI-authored commits.
@@ -378,7 +392,7 @@ Deletion itself must be recorded as an auditable event (who, when, which branch,
 |---|-----------|-------------|
 | 1 | At most one authorized writer exists for a governed branch. | Handoff claim; CI ownership checks |
 | 2 | No agent writes before recording a valid claim. | Claim-before-write rule |
-| 3 | No ownership transfer is valid without a synchronized handoff. | Handoff PENDING -> CLAIMED sequence |
+| 3 | No ownership transfer is valid without a synchronized handoff. | Handoff PENDING -> ACTIVE sequence |
 | 4 | Unknown remote changes always stop publication. | `REMOTE_HEAD_CHANGED` protocol |
 | 5 | No force-push occurs without an exact lease SHA. | Force-with-lease + lease verification |
 | 6 | No contested branch is merged. | CONTESTED state blocks merge |
@@ -408,29 +422,54 @@ ACTIVE -- freeze --> FROZEN -- release --> ACTIVE
 ACTIVE -- open PR --> REVIEW -- merge --> MERGED -- archive --> ARCHIVED
 ACTIVE -- contest --> CONTESTED -- supersede --> SUPERSEDED -- retire --> RETIRED -- archive --> ARCHIVED
 ACTIVE -- abandon --> ABANDONED -- archive --> ARCHIVED
+ACTIVE -- enter-correction --> ACTIVE_CORRECTION -- return-to-review --> REVIEW
+REVIEW -- enter-correction --> ACTIVE_CORRECTION -- return-to-review --> REVIEW
 CONTESTED -- supersede --> SUPERSEDED
 FROZEN -- supersede --> SUPERSEDED
 ```
 
+Note: `CLAIMED` here is a **branch-level** state meaning "a claim is attached to this branch". The claim's own state is determined by the claim lifecycle (4.2): PENDING, ACTIVE, RENEWING, STALE, EXPIRED, RELEASED, REVOKED, TRANSFER_PENDING. `CLAIMED` is not one of the claim states.
+
 ### 4.2 Ownership Claim Lifecycle
 
+The claim lifecycle uses exactly the declared states: `PENDING`, `ACTIVE`, `RENEWING`, `STALE`, `EXPIRED`, `RELEASED`, `REVOKED`, `TRANSFER_PENDING`. The intermediate `CLAIMED` state is removed; verified claims enter `ACTIVE` directly.
+
 ```text
-EMPTY -- create --> PENDING -- verify --> CLAIMED (ACTIVE WRITER)
-CLAIMED -- heartbeat --> CLAIMED
-CLAIMED -- expire --> STALE
-CLAIMED -- transfer-init --> TRANSFER_PENDING -- verify --> CLAIMED (new owner)
-CLAIMED -- release --> RELEASED
-STALE -- recover --> CLAIMED
-STALE -- takeover-auth --> CLAIMED (new owner)
+EMPTY -- create --> PENDING
+PENDING -- verify --> ACTIVE
+ACTIVE -- heartbeat --> RENEWING
+RENEWING -- renew-ok --> ACTIVE
+RENEWING -- max-lifetime-reached --> REVOKED
+ACTIVE -- heartbeat-overdue --> STALE
+STALE -- recover --> ACTIVE
+STALE -- overdue-expired --> EXPIRED
+ACTIVE -- expires --> EXPIRED
+ACTIVE -- transfer-init --> TRANSFER_PENDING
+TRANSFER_PENDING -- verify-ok --> ACTIVE
+TRANSFER_PENDING -- verify-fail --> RELEASED (outgoing keeps RELEASED record)
+ACTIVE -- release --> RELEASED
+ACTIVE -- revoke --> REVOKED
+STALE -- revoke --> REVOKED
+EXPIRED -- takeover --> ACTIVE
 ```
+
+Differentiations:
+
+- `STALE`: heartbeat overdue but recovery window remains; branch is reviewed and either recovered or revoked. Does not authorize publication.
+- `EXPIRED`: claim authority has ended; branch becomes `FROZEN` and cannot be published from until explicit takeover. Does not grant automatic takeover.
+- `REVOKED`: authority was affirmatively terminated; branch becomes `FROZEN` and requires a new claim to resume.
+- `TRANSFER_PENDING`: ownership transfer initiated; outgoing agent has frozen writes but writes do not resume until verification completes successfully.
+
+This diagram is the canonical form. The text in 2.B, the invariants in Section 3, the matrices in 5.1–5.11, and the glossary in Section 8 use these same eight states.
 
 ### 4.3 Handoff Lifecycle
 
 ```text
 NONE -- outgoing freezes --> OUTGOING_UPDATED
 OUTGOING_UPDATED -- mark PENDING --> TRANSFER_PENDING
-TRANSFER_PENDING -- incoming verifies --> INCOMING_CLAIMED
-INCOMING_CLAIMED -- resume writes --> ACTIVE_WRITER
+TRANSFER_PENDING -- incoming verifies --> INCOMING_VERIFIED
+INCOMING_VERIFIED -- resume writes --> ACTIVE_WRITER
+ACTIVE_WRITER -- corresponds to --> ACTIVE (claim state)
 ```
 
 ### 4.4 Remote-Head Conflict
@@ -465,9 +504,14 @@ NONE -- push --> DRAFT
 DRAFT -- ready --> REVIEW
 REVIEW -- approve + threads clear --> MERGEABLE
 MERGEABLE -- merge --> MERGED
-REVIEW -- request changes --> CHANGES_REQUESTED -- fix --> REVIEW
+REVIEW -- request changes --> ACTIVE_CORRECTION -- fix --> REVIEW
 REVIEW -- contest --> CONTESTED (see 4.5)
+ACTIVE -- open PR --> REVIEW
+REVIEW -- enter-correction --> ACTIVE_CORRECTION -- return-to-review --> REVIEW
+ACTIVE_CORRECTION -- abandoned --> REVIEW (with note)
 ```
+
+`ACTIVE_CORRECTION` is the governed correction transition. While the PR is in `ACTIVE_CORRECTION`, the writer is the sole mutator and may publish only reviewer-requested changes. Return to `REVIEW` requires updated handoff, exact head, CI terminal state, and correction evidence. If the writer abandons corrections, the PR returns to `REVIEW` with a note rather than silently closing.
 
 ### 4.7 Emergency Freeze Lifecycle
 
@@ -496,16 +540,17 @@ Possession of any column does not grant any other column.
 
 ### 5.2 Branch-State Transition Matrix
 
-| From \ To | CLAIMED | ACTIVE | FROZEN | REVIEW | MERGED | CONTESTED | SUPERSEDED | RETIRED | ARCHIVED |
-|---|---|---|---|---|---|---|---|---|---|
-| UNCLAIMED | claim | - | - | - | - | - | - | - | - |
-| CLAIMED | - | activate | - | - | - | - | - | - | - |
-| ACTIVE | - | - | freeze | open PR | - | contest | - | abandon | - |
-| FROZEN | - | release | - | - | - | - | supersede | - | - |
-| REVIEW | - | - | - | - | merge | contest | - | - | - |
-| CONTESTED | - | - | - | - | - | - | supersede | - | - |
-| SUPERSEDED | - | - | - | - | - | - | - | retire | - |
-| RETIRED | - | - | - | - | - | - | - | - | archive |
+| From \ To | CLAIMED | ACTIVE | FROZEN | REVIEW | MERGED | CONTESTED | SUPERSEDED | RETIRED | ARCHIVED | ACTIVE_CORRECTION |
+|---|---|---|---|---|---|---|---|---|---|---|
+| UNCLAIMED | claim | - | - | - | - | - | - | - | - | - |
+| CLAIMED | - | activate | - | - | - | - | - | - | - | - |
+| ACTIVE | - | - | freeze | open PR | - | contest | - | abandon | - | enter-correction |
+| FROZEN | - | release | - | - | - | - | supersede | - | - | - |
+| REVIEW | - | - | - | - | merge | contest | - | - | - | enter-correction |
+| ACTIVE_CORRECTION | - | - | - | return-to-review | - | - | - | - | - | (re-entry allowed only from REVIEW) |
+| CONTESTED | - | - | - | - | - | - | supersede | - | - | - |
+| SUPERSEDED | - | - | - | - | - | - | - | retire | - | - |
+| RETIRED | - | - | - | - | - | - | - | - | archive | - |
 
 Claim `STALE` and `EXPIRED` states (see 2.B) transition the branch to `FROZEN`: a stale or expired claim freezes the branch and blocks all publication; it does not grant takeover. Recovery from FROZEN requires explicit reauthorization (see 2.M). The `CONTESTED -- supersede --> SUPERSEDED` edge is the single canonical label used consistently in 4.1, 4.5, and this matrix.
 
@@ -596,7 +641,8 @@ For every branch state, the following actions are allowed (Y), conditionally all
 | CLAIMED | N | N | N | N | N | N | N | N | N | N | N | N | N |
 | ACTIVE | Y | Y | C | N | C | C | Y | Y | C | N | N | C | Y |
 | FROZEN | N | N | N | N | N | N | Y | Y | N | N | N | C* | Y |
-| REVIEW | N | C | N | N | N | C | Y | Y | C | N | N | C | Y |
+| REVIEW | N | C* | N | N | N | C | Y | Y | C | N | N | C | Y |
+| ACTIVE_CORRECTION | Y | Y | C | N | N | C | Y | Y | N | N | N | N | Y |
 | CONTESTED | N | N | N | N | N | N | Y | Y | N | N | N | N | Y |
 | SUPERSEDED | N | N | N | N | N | N | Y | Y | N | N | N | N | Y |
 | RETIRED | N | N | N | N | N | N | N | N | N | N | N | N | N |
@@ -607,6 +653,8 @@ For every branch state, the following actions are allowed (Y), conditionally all
 Key rules:
 
 - **FROZEN:** no feature writes or publication; preservation and verification only. `transfer` is allowed only via explicit reauthorization (C*), never automatic.
+- **REVIEW:** no direct edits, commits, or push. The writer must transition to `ACTIVE_CORRECTION` to address reviewer-requested changes. `C*` denotes "only via an explicit state transition (e.g., REVIEW -> ACTIVE_CORRECTION) and never directly from the current state."
+- **ACTIVE_CORRECTION:** the existing branch owner remains the sole writer. Local edits, narrow commits, and normal push (C — constrained to reviewer-requested correction scope; remote must match `expected_remote_sha`) are allowed. No PR creation, no merge, no deploy, no force-push. Return to REVIEW requires updated handoff, exact head, CI terminal state, and correction evidence.
 - **CONTESTED:** no push to the contested branch; no merge; only safety/reconciliation actions.
 - **SUPERSEDED:** read-only evidence state; no return to ACTIVE (Inv 7).
 - **RETIRED:** no writes or publication.

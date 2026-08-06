@@ -65,9 +65,42 @@ Corroboration fields (populated per ADR-MC-002 2.E; handoff is a coordination re
 - Condition A: handoff corroboration fields populated — CLOSED (ratification-prep commit acefb9af; non-self-referential semantics applied)
 - Condition B: offline claim-expiry rule added — CLOSED (Section 2.S.1 added at ratification-prep commit a87f22ed)
 - ADR status: ACCEPTED (ratified 2026-08-06 by Isiah Howard; owner decision APPROVE)
-- Publication status: DRAFT PR only; merge not authorized
+- PR review disposition: REQUEST_CHANGES (codex bot automated review on PR #260 at head 5205887b)
+- PR #260: KEEP DRAFT, merge not authorized
 - Runtime implementation: NOT AUTHORIZED (preserved)
-- Next required action: open the DRAFT PR, poll CI to terminal state, and do not merge unless separately authorized.
+- Branch state: ACTIVE_CORRECTION (entered to address review threads)
+
+### PR #260 review threads (codex bot automated review)
+
+| # | Severity | File | Finding | Resolution |
+|---|---|---|---|---|
+| 1 | P1 | docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md | Record the accepted protocol in the owning DOX — AGENTS.md / Child DOX Index not updated | RESOLVED: root AGENTS.md Child DOX Index updated to reference ADR-MC-002 |
+| 2 | P1 | artifacts/agent_handoffs/ADR_MC_002_HANDOFF.md | Replace evidence SHA placeholder with durable evidence — evidence_commit_sha was prose; recorded ratification/head SHA was not an ancestor of the evidence commit | RESOLVED: two-commit pattern applied; Commit A applies substantive corrections; Commit B (metadata-only) records Commit A as evidence_commit_sha |
+| 3 | P2 | docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md | Keep Git evidence authoritative during ownership transfer — 2.D said "controlling source of truth" contradicting 2.A/2.E | RESOLVED: 2.D rewritten to "controlling coordination record" with explicit HANDOFF_INTEGRITY_MISMATCH behavior |
+| 4 | P2 | docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md | Align claim state machine with declared states — 4.2 used undefined CLAIMED and mapped expiry to STALE; RENEWING/REVOKED unreachable | RESOLVED: 4.2 rewritten using exactly the declared 8 states with all required transitions |
+| 5 | P2 | docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md | Allow review fixes to be edited and published — REVIEW state denied edits/push and no REVIEW -> ACTIVE transition | RESOLVED: ACTIVE_CORRECTION state added (2.V); added to 4.1, 4.6, 5.2, 5.11 |
+
+### Files authorized for this correction cycle
+
+- docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md
+- artifacts/agent_handoffs/ADR_MC_002_HANDOFF.md
+- AGENTS.md (scope expansion limited to DOX discoverability of the accepted ADR)
+
+### CI state
+
+- CI terminal state at PR #260 head 5205887b: 12/12 PASS (pre-correction; will re-poll after correction commits push)
+
+### Next required action
+
+- Push correction-cycle commits.
+- Poll CI to terminal at the new head.
+- Thread resolution is NOT performed automatically; thread resolution requires owner/governance authorization after corrections are published and CI is terminal.
+- Merge, mark ready, deploy, Phase 3B: NOT AUTHORIZED.
+
+### Governance locks preserved
+
+- Sigma gate BLOCKED · Cancellation DISABLED · Phase 3B BLOCKED · Runtime implementation NOT AUTHORIZED · Deployment NOT AUTHORIZED
+- Phase 1 planning branch (plan/executor-continuation-impl) untouched at 1632fbd9
 
 ## Authorized Scope
 

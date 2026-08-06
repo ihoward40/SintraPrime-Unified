@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import importlib
 import inspect
 import json
@@ -16,6 +17,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
+from portal.auth.session_manager import blocklist_jti
 from portal.auth.jwt_handler import (
     create_refresh_token,
     decode_access_token,
@@ -25,6 +27,9 @@ from portal.auth.jwt_handler import (
     settings as jwt_settings,
 )
 from portal.auth.rbac import CurrentUser, Permission, Role, get_current_user
+from portal.config import Settings
+from portal.middleware.auth_middleware import AuthMiddleware, is_public_path
+from portal.services.encryption_service import _get_key
 from portal.main import create_app
 from portal.models.billing import Invoice
 from portal.routers import billing, users
@@ -849,3 +854,106 @@ def test_non_http_entrypoint_inventory_works_outside_repo_root(app_graph, monkey
         "collect_non_http_entrypoints default root must be derived from the test file location, not Path.cwd()"
     )
     assert default_inventory["websocket_routes"], "expected at least one websocket route discovered"
+
+
+def test_production_settings_reject_insecure_secret_defaults():
+    with pytest.raises(ValueError, match="Production configuration uses insecure defaults"):
+        Settings(ENVIRONMENT="production")
+
+    secure = Settings(
+        ENVIRONMENT="production",
+        SECRET_KEY="s" * 48,
+        JWT_SECRET_KEY="j" * 48,
+        JWT_REFRESH_SECRET_KEY="r" * 48,
+        MINIO_ENDPOINT="storage.sintraprime.ai:9000",
+        MINIO_ACCESS_KEY="prod-access-key",
+        MINIO_SECRET_KEY="prod-secret-key",
+        MINIO_SECURE=True,
+        ENCRYPTION_KEY="e" * 32,
+        ENCRYPTION_SALT="salt" * 8,
+        SSO_SESSION_SECRET="o" * 48,
+    )
+    assert secure.ENVIRONMENT == "production"
+
+
+def test_encryption_service_rejects_production_fallback(monkeypatch):
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.delenv("ENCRYPTION_KEY", raising=False)
+
+    with pytest.raises(RuntimeError, match="ENCRYPTION_KEY is required in production"):
+        _get_key()
+
+    monkeypatch.setenv("ENCRYPTION_KEY", "k" * 32)
+    assert _get_key() == b"k" * 32
+
+
+@pytest.mark.asyncio
+async def test_rls_context_sets_current_and_legacy_session_variables():
+    from portal.database import _set_rls_context
+
+    class CaptureSession:
+        def __init__(self):
+            self.calls = []
+
+        async def execute(self, query, params=None):
+            self.calls.append((str(query), params or {}))
+
+    session = CaptureSession()
+    tenant_id = str(uuid4())
+    user_id = str(uuid4())
+
+    await _set_rls_context(session, tenant_id, user_id)  # type: ignore[arg-type]
+
+    rendered = "\n".join(query for query, _params in session.calls)
+    assert "app.current_tenant_id" in rendered
+    assert "app.tenant_id" in rendered
+    assert "app.current_user_id" in rendered
+    assert "app.user_id" in rendered
+    assert any(params.get("tid") == tenant_id for _query, params in session.calls)
+    assert any(params.get("uid") == user_id for _query, params in session.calls)
+
+
+def test_auth_middleware_public_allowlist_is_exact_and_protects_private_routes():
+    assert is_public_path("/")
+    assert is_public_path("/api/v1/auth/login")
+    assert is_public_path("/api/v1/documents/share/token-123")
+    assert not is_public_path("/api/v1/clients")
+    assert not is_public_path("/api/system/health")
+
+
+def test_live_app_global_auth_middleware_denies_unlisted_routes_and_allows_health():
+    client = TestClient(create_app())
+
+    assert client.get("/health").status_code == 200
+    response = client.get("/api/system/health")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Missing or invalid Authorization header"
+
+
+def test_global_auth_middleware_rejects_revoked_token_before_handler():
+    app = FastAPI()
+    app.add_middleware(AuthMiddleware)
+
+    @app.get("/protected")
+    async def protected_endpoint():
+        return {"status": "should-not-run"}
+
+    jti = str(uuid4())
+    token = make_access_token({"jti": jti})
+    asyncio.run(blocklist_jti(jti))
+
+    response = TestClient(app).get("/protected", headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Token has been revoked"
+
+
+def test_revoked_access_token_is_rejected_by_current_user_dependency(secure_app_client):
+    jti = str(uuid4())
+    token = make_access_token({"jti": jti})
+    asyncio.run(blocklist_jti(jti))
+
+    response = secure_client_request(secure_app_client, token)
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Token has been revoked"

@@ -17,6 +17,7 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from ..auth.jwt_handler import TokenError, decode_access_token
+from ..auth.session_manager import is_jti_blocklisted
 from .correlation import (
     CorrelationContext,
     create_context,
@@ -406,6 +407,9 @@ async def get_current_user(
         )
     try:
         payload = decode_access_token(credentials.credentials)
+        jti = payload.get("jti")
+        if isinstance(jti, str) and await is_jti_blocklisted(jti):
+            raise TokenError("Token has been revoked")
         user = CurrentUser(payload)
     except TokenError as exc:
         raise HTTPException(

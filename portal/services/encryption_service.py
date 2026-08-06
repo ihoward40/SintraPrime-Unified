@@ -18,15 +18,26 @@ _KEY_LENGTH = 32  # AES-256
 
 def _get_key() -> bytes:
     """Load the 256-bit AES key from the environment."""
-    key_b64 = os.environ.get(_KEY_ENV, "")
-    if key_b64:
+    key_material = os.environ.get(_KEY_ENV, "")
+    if key_material:
         try:
-            key = base64.b64decode(key_b64)
+            key = base64.b64decode(key_material)
             if len(key) == _KEY_LENGTH:
                 return key
         except Exception:
             pass
-    # Development fallback — deterministic, NOT for production
+
+        raw_key = key_material.encode("utf-8")
+        if len(raw_key) >= _KEY_LENGTH:
+            return raw_key[:_KEY_LENGTH]
+
+        if os.environ.get("ENVIRONMENT", "development").lower() == "production":
+            raise RuntimeError("ENCRYPTION_KEY must contain at least 32 bytes of key material in production")
+
+    if os.environ.get("ENVIRONMENT", "development").lower() == "production":
+        raise RuntimeError("ENCRYPTION_KEY is required in production")
+
+    # Development fallback — deterministic, NOT for production.
     import hashlib
     return hashlib.sha256(b"DEVELOPMENT_ONLY_INSECURE_KEY").digest()
 

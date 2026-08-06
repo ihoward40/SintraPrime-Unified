@@ -44,11 +44,28 @@
 
 ## Evidence Log
 
-- Handoff commit SHA: (recorded on each commit that updates this file)
-- Handoff content hash: (recorded on each commit)
-- Prior handoff commit: (chain reference, never erased)
+Corroboration fields (populated per ADR-MC-002 2.E; handoff is a coordination record, not standalone source of truth):
+
+- handoff_commit_sha: 76853ab3f004363822c1ef71dd4667579c1b85c6 (last substantive handoff update; this evidence commit is a metadata-only follow-up)
+- handoff_content_hash (pre-edit): 63521da9070157c1810efdd0ea54e2e92a88f39ebd443a9b37d764bd01896960
+- prior_handoff_commit: b56566afa69e9e51cb97940ba04b0d91d5773f1a (chain reference, never erased)
+- author_agent: Hermes
+- verification_agent: Hermes (self — no incoming ownership transfer; verified against committed Git state)
+- timestamp: 2026-08-05
+- branch HEAD at update: 76853ab3f004363822c1ef71dd4667579c1b85c6
+- tree SHA at update: 3e9cc3c217c9ff2b258932d68a27e373caa2cc1b
+- evidence_commit_sha: PENDING — populated at next handoff update (ratification; status → ACCEPTED)
 - External edits / bots / APIs / automation:
   - None recorded to date. Any direct GitHub edit, bot action, API call, or automation run must be appended here with the acting identity and timestamp.
+
+## Review State
+
+- Final architecture review: APPROVE_WITH_CONDITIONS
+- Condition A: handoff evidence fields populated (this update)
+- Condition B: offline claim-expiry rule added (this update, Section 2.S)
+- ADR status: DRAFT (not yet ratified)
+- Publication: unauthorized
+- Next required action: close Conditions A/B at ratification; only then may status move to ACCEPTED.
 
 ## Authorized Scope
 
@@ -74,7 +91,7 @@ This branch is architecture and governance documentation only.
 
 ## Current Next Action
 
-Apply REQUEST_CHANGES corrections to ADR-MC-002 (handoff tamper resistance, offline mode, renewable claim lease, safety-branch deletion, state-to-permission matrix, thread-resolution governance, consistency fixes). Commit locally. Do not push or open a PR.
+Ratification-prep corrections applied: handoff evidence fields populated (Condition A), offline claim-expiry rule added to 2.S (Condition B). Final review: APPROVE_WITH_CONDITIONS. ADR remains DRAFT. Next: close Conditions A/B at ratification; only then may status move to ACCEPTED. Do not push or open a PR.
 
 ## Governance Baseline (controlling)
 

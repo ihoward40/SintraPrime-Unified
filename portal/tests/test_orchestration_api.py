@@ -1,13 +1,76 @@
+import asyncio
+from collections.abc import AsyncGenerator
+
 from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from portal.auth.rbac import CurrentUser, Permission, Role, get_current_user
+from portal.database import Base, get_db
 from portal.main import create_app
+from portal.models.orchestration import (
+    ApprovalRequest,
+    BudgetUsage,
+    EvidenceReference,
+    OrchestrationEvent,
+    OrchestrationNode,
+    OrchestrationRun,
+    ProviderDefinition,
+    ReconciliationResult,
+    RoutingDecision,
+    VerificationResult,
+)
+from portal.models.user import Role as UserRole
+from portal.models.user import Tenant, User
 from portal.services.orchestration import orchestrator
 
 TENANT_A = "00000000-0000-0000-0000-0000000000a1"
 TENANT_B = "00000000-0000-0000-0000-0000000000b2"
 USER_A = "00000000-0000-0000-0000-000000000101"
 USER_B = "00000000-0000-0000-0000-000000000202"
+
+
+def _sqlite_sessionmaker():
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
+
+    async def init():
+        async with engine.begin() as conn:
+            await conn.run_sync(
+                lambda sync_conn: Base.metadata.create_all(
+                    sync_conn,
+                    tables=[
+                        Tenant.__table__,
+                        UserRole.__table__,
+                        User.__table__,
+                        OrchestrationRun.__table__,
+                        OrchestrationNode.__table__,
+                        OrchestrationEvent.__table__,
+                        ProviderDefinition.__table__,
+                        RoutingDecision.__table__,
+                        VerificationResult.__table__,
+                        ReconciliationResult.__table__,
+                        ApprovalRequest.__table__,
+                        BudgetUsage.__table__,
+                        EvidenceReference.__table__,
+                    ],
+                )
+            )
+
+    asyncio.run(init())
+    return async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+
+
+def _db_override(session_maker):
+    async def override() -> AsyncGenerator[AsyncSession, None]:
+        async with session_maker() as session:
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+
+    return override
+
 ALL_ORCHESTRATION_PERMS = (
     Permission.ORCHESTRATION_CREATE,
     Permission.ORCHESTRATION_READ,
@@ -27,9 +90,11 @@ def _user(*permissions: Permission, tenant_id: str = TENANT_A, user_id: str = US
     )
 
 
-def client(*permissions: Permission, tenant_id: str = TENANT_A, user_id: str = USER_A):
+def client(*permissions: Permission, tenant_id: str = TENANT_A, user_id: str = USER_A, session_maker=None):
     orchestrator.RUNS.clear()
     app = create_app()
+    maker = session_maker or _sqlite_sessionmaker()
+    app.dependency_overrides[get_db] = _db_override(maker)
     app.dependency_overrides[get_current_user] = lambda: _user(
         *(permissions or ALL_ORCHESTRATION_PERMS),
         tenant_id=tenant_id,
@@ -79,7 +144,8 @@ def test_execute_endpoint_records_routing_verification_and_approval():
 
 
 def test_run_retrieval_and_events_endpoints_are_tenant_bound():
-    test_client = client()
+    session_maker = _sqlite_sessionmaker()
+    test_client = client(session_maker=session_maker)
     created = test_client.post("/api/orchestration/plan", json={"objective": "Draft operations runbook"}).json()
 
     run_response = test_client.get(f"/api/orchestration/runs/{created['run_id']}")
@@ -89,13 +155,12 @@ def test_run_retrieval_and_events_endpoints_are_tenant_bound():
     assert events_response.status_code == 200
     assert events_response.json()[0]["event_hash"]
 
-    other_tenant_app = create_app()
-    other_tenant_app.dependency_overrides[get_current_user] = lambda: _user(
+    other_tenant_client = client(
         *ALL_ORCHESTRATION_PERMS,
         tenant_id=TENANT_B,
         user_id=USER_B,
+        session_maker=session_maker,
     )
-    other_tenant_client = TestClient(other_tenant_app)
 
     assert other_tenant_client.get(f"/api/orchestration/runs/{created['run_id']}").status_code == 404
     assert other_tenant_client.get(f"/api/orchestration/runs/{created['run_id']}/events").status_code == 404

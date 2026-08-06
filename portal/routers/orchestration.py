@@ -6,9 +6,11 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth.rbac import CurrentUser, Permission, require_permissions
-from ..services.orchestration import orchestrator
+from ..database import get_db
+from ..services.orchestration import orchestrator, persistence
 from ..services.orchestration.budget_policy import BudgetLimits
 from ..services.orchestration.schemas import ExecutionMode
 
@@ -41,8 +43,9 @@ class ApprovalDecisionRequest(BaseModel):
 async def plan(
     request: OrchestrationRequest,
     current_user: CurrentUser = Depends(require_permissions(Permission.ORCHESTRATION_CREATE)),
+    db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
-    return orchestrator.plan_run(
+    run = orchestrator.plan_run(
         objective=request.objective,
         constraints=request.constraints,
         execution_mode=request.execution_mode,
@@ -50,14 +53,17 @@ async def plan(
         tenant_id=current_user.tenant_id,
         created_by=current_user.user_id,
     )
+    await persistence.save_run(db, run)
+    return run
 
 
 @router.post("/execute")
 async def execute(
     request: OrchestrationRequest,
     current_user: CurrentUser = Depends(require_permissions(Permission.ORCHESTRATION_CREATE)),
+    db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
-    return orchestrator.execute_run(
+    run = orchestrator.execute_run(
         objective=request.objective,
         constraints=request.constraints,
         execution_mode=request.execution_mode,
@@ -65,14 +71,17 @@ async def execute(
         tenant_id=current_user.tenant_id,
         created_by=current_user.user_id,
     )
+    await persistence.save_run(db, run)
+    return run
 
 
 @router.get("/runs/{run_id}")
 async def get_run(
     run_id: str,
     current_user: CurrentUser = Depends(require_permissions(Permission.ORCHESTRATION_READ)),
+    db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
-    run = orchestrator.get_run(run_id, tenant_id=current_user.tenant_id)
+    run = await persistence.get_run(db, run_id, tenant_id=current_user.tenant_id)
     if run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orchestration run not found")
     return run
@@ -82,8 +91,9 @@ async def get_run(
 async def get_run_events(
     run_id: str,
     current_user: CurrentUser = Depends(require_permissions(Permission.ORCHESTRATION_READ)),
+    db: AsyncSession = Depends(get_db),
 ) -> list[dict[str, Any]]:
-    events = orchestrator.get_events(run_id, tenant_id=current_user.tenant_id)
+    events = await persistence.get_events(db, run_id, tenant_id=current_user.tenant_id)
     if events is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orchestration run not found")
     return events
@@ -94,7 +104,12 @@ async def cancel(
     run_id: str,
     request: CancelRequest,
     current_user: CurrentUser = Depends(require_permissions(Permission.ORCHESTRATION_CANCEL)),
+    db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
+    existing = await persistence.get_run(db, run_id, tenant_id=current_user.tenant_id)
+    if existing is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orchestration run not found")
+    orchestrator.RUNS[run_id] = existing
     try:
         run = orchestrator.cancel_run(
             run_id,
@@ -106,6 +121,7 @@ async def cancel(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     if run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orchestration run not found")
+    await persistence.save_run(db, run)
     return run
 
 
@@ -114,7 +130,12 @@ async def approve(
     run_id: str,
     request: ApprovalDecisionRequest,
     current_user: CurrentUser = Depends(require_permissions(Permission.ORCHESTRATION_APPROVE)),
+    db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
+    existing = await persistence.get_run(db, run_id, tenant_id=current_user.tenant_id)
+    if existing is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orchestration run not found")
+    orchestrator.RUNS[run_id] = existing
     try:
         run = orchestrator.approve_run(
             run_id,
@@ -127,4 +148,5 @@ async def approve(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     if run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orchestration run not found")
+    await persistence.save_run(db, run)
     return run

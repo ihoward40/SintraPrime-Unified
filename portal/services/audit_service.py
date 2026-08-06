@@ -7,6 +7,7 @@ SHA-256 chain links entries for tamper detection.
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 from datetime import UTC, datetime
 from typing import Any
@@ -79,13 +80,14 @@ async def audit(
         previous_hash=prev_hash,
         entry_hash=entry_hash,
     )
-    db.add(entry)
+    add_result = db.add(entry)
+    if inspect.isawaitable(add_result):
+        await add_result
 
     try:
         await db.flush()
     except Exception as exc:
         log.error("audit.write_failed", action=action, error=str(exc))
-        await db.rollback()
         raise
 
     log.info(

@@ -1,6 +1,8 @@
 # ADR-MC-001: Executor Continuation After Lease Expiry
 
-**Status:** DRAFT — NOT YET RATIFIED
+**Status:** ACCEPTED
+**Ratified:** 2026-08-05
+**Ratified by:** Isiah Howard — architecture review APPROVE (PR #259 ratification review)
 **References:** ADR-002 Section 2.5 (Sigma continuation condition)
 **Baseline:** mission-control-foundation-v1 at 97bd539f82ee9099003b0ba5c3729092bf470604
 **Supersedes:** None
@@ -816,9 +818,9 @@ Until this ADR is ratified and the criteria and prerequisites are implemented:
 
 | Item | State |
 |------|-------|
-| ADR-MC-001 | DRAFT — not ratified |
-| SIGMA_LEASE_EXPIRY_CONTINUATION_GATE | BLOCKED |
+| ADR-MC-001 | ACCEPTED — ratified 2026-08-05 |
+| SIGMA_LEASE_EXPIRY_CONTINUATION_GATE | BLOCKED — implementation not yet certified |
 | Cancellation controls | DISABLED |
 | Phase 3B | BLOCKED |
-| Implementation | NOT AUTHORIZED |
+| Implementation | NOT AUTHORIZED — architecture approved; implementation planning gate opens, not the safety lock |
 | Deployment | NOT AUTHORIZED |

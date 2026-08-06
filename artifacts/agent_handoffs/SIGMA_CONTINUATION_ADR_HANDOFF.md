@@ -72,11 +72,11 @@ The ADR-MC-001 must address:
 
 ## Current Work State
 
-Status: ADR-MC-001 REVIEW CYCLE 2 CORRECTIONS APPLIED — AWAITING RATIFICATION REVIEW
+Status: ADR-MC-001 RATIFIED — ACCEPTED 2026-08-05
 
 Current agent: Hermes
 
-Current task: Four architecture review conditions from APPROVE_WITH_CONDITIONS decision applied to ADR-MC-001 draft. The draft is located at docs/mission-control/ADR_MC_001_EXECUTOR_CONTINUATION.md.
+Current task: ADR-MC-001 ratified by architecture review APPROVE. Status changed from DRAFT to ACCEPTED. Implementation remains NOT AUTHORIZED. Sigma gate remains BLOCKED.
 
 ## Validation
 
@@ -110,6 +110,17 @@ Architecture approved with four conditions. All conditions are documentation-onl
 3. **Witness fault model and quorum math** — RESOLVED by replacing vague Byzantine claim with explicit fault model: N >= 3f+1, quorum >= 2f+1 for BFT; or N >= 2f+1, quorum >= f+1 for CFT with explicit documentation. Quorum must be strictly less than N in either model (Section 2.2.4).
 4. **Time-anchor language for outage expiry** — RESOLVED by clarifying that signed anchor at lease-expiry instant is not required; executor derives expiry from latest pre-outage anchor plus monotonic elapsed time; monotonic discontinuity or excessive drift forces STOP (Section 2.8).
 
+## Ratification (2026-08-05)
+
+Architecture review decision: APPROVE.
+
+- All four review cycle 2 conditions verified as resolved.
+- ADR-MC-001 status changed from DRAFT to ACCEPTED.
+- Ratified by: Isiah Howard — architecture review APPROVE (PR #259 ratification review).
+- Architecture approval opens the implementation-planning gate; it does not unblock the Sigma gate, enable cancellation, enable command authority, authorize deployment, or begin Phase 3B.
+- SIGMA_LEASE_EXPIRY_CONTINUATION_GATE remains BLOCKED until implementation is certified.
+- Implementation remains NOT AUTHORIZED.
+
 ## Changes Completed
 
 - Rewrote docs/mission-control/ADR_MC_001_EXECUTOR_CONTINUATION.md to address all review blockers.
@@ -127,9 +138,9 @@ Outgoing agent: Hermes
 
 Branch: feat/sigma-executor-continuation-adr
 
-Current HEAD: a86699d332aea779240030fc30818454f5288788
+Current HEAD: pending ratification commit
 
-Tree SHA: 64d5f779169f5e0ef3959d360ad8fc62ff80f4a5
+Tree SHA: pending ratification commit
 
 Base: 97bd539f82ee9099003b0ba5c3729092bf470604 (main, post-merge)
 

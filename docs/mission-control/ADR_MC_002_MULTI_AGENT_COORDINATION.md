@@ -338,6 +338,16 @@ Publication must remain frozen until:
 - local and remote histories are reconciled;
 - claim ownership is revalidated against the fetched remote state.
 
+### 2.S.1 Offline Claim Expiry
+
+A claim may expire while remote authority is unavailable. Expiry during outage:
+
+- immediately freezes local writes beyond preservation and testing;
+- does **not** grant takeover to any other agent;
+- the prior owner retains no publication authority after expiry;
+- ownership and claim status must be revalidated after remote connectivity returns (see claim revalidation in 2.B / 2.M);
+- any work created after claim expiry is preservation-only and cannot be published until explicitly authorized and reconciled.
+
 This is a known limitation: the protocol depends on the canonical remote as the source of truth for claims, PRs, review, and merge. Offline operation is restricted to local preservation and verification only.
 
 ### 2.T Safety-Branch Retention and Deletion

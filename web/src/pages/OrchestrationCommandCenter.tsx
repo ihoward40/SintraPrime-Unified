@@ -85,6 +85,7 @@ export default function OrchestrationCommandCenter() {
   const [constraints, setConstraints] = useState('No external providers. Preserve Principal approval.');
   const [mode, setMode] = useState('THINK_WORK_CHECK');
   const [sensitivity, setSensitivity] = useState('CONFIDENTIAL');
+  const [providerPolicy, setProviderPolicy] = useState('mock-allowlist');
   const [maxNodes, setMaxNodes] = useState(12);
   const [maxTokens, setMaxTokens] = useState(8000);
   const [run, setRun] = useState<OrchestrationRun>(initialRun);
@@ -111,7 +112,7 @@ export default function OrchestrationCommandCenter() {
           maximum_nodes: maxNodes,
           maximum_retries: 2,
           maximum_execution_time: 300,
-          approved_providers: ['reasoning_model', 'coding_model', 'research_model', 'checker_model', 'security_model'],
+          approved_providers: providerPolicy === 'checker-only' ? ['checker_model'] : ['reasoning_model', 'coding_model', 'research_model', 'checker_model', 'security_model'],
           approved_task_types: [],
         },
       });
@@ -151,25 +152,31 @@ export default function OrchestrationCommandCenter() {
             New Run
           </div>
           <label className="block text-xs font-medium text-slate-400">Objective</label>
-          <textarea value={objective} onChange={(event) => setObjective(event.target.value)} className="mt-1 h-24 w-full resize-none rounded-lg border border-slate-700 bg-slate-950 p-3 text-sm text-slate-100 outline-none focus:border-gold" />
+          <textarea aria-label="Objective" value={objective} onChange={(event) => setObjective(event.target.value)} className="mt-1 h-24 w-full resize-none rounded-lg border border-slate-700 bg-slate-950 p-3 text-sm text-slate-100 outline-none focus:border-gold" />
           <label className="mt-3 block text-xs font-medium text-slate-400">Constraints</label>
-          <textarea value={constraints} onChange={(event) => setConstraints(event.target.value)} className="mt-1 h-20 w-full resize-none rounded-lg border border-slate-700 bg-slate-950 p-3 text-sm text-slate-100 outline-none focus:border-gold" />
+          <textarea aria-label="Constraints" value={constraints} onChange={(event) => setConstraints(event.target.value)} className="mt-1 h-20 w-full resize-none rounded-lg border border-slate-700 bg-slate-950 p-3 text-sm text-slate-100 outline-none focus:border-gold" />
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
             <Field label="Execution Mode">
-              <select value={mode} onChange={(event) => setMode(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-slate-100 outline-none focus:border-gold">
+              <select aria-label="Execution Mode" value={mode} onChange={(event) => setMode(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-slate-100 outline-none focus:border-gold">
                 {executionModes.map((item) => <option key={item}>{item}</option>)}
               </select>
             </Field>
+            <Field label="Provider Policy">
+              <select aria-label="Provider Policy" value={providerPolicy} onChange={(event) => setProviderPolicy(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-slate-100 outline-none focus:border-gold" data-testid="provider-policy-select">
+                <option value="mock-allowlist">Mock allowlist</option>
+                <option value="checker-only">Checker only</option>
+              </select>
+            </Field>
             <Field label="Sensitivity">
-              <select value={sensitivity} onChange={(event) => setSensitivity(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-slate-100 outline-none focus:border-gold">
+              <select aria-label="Sensitivity" value={sensitivity} onChange={(event) => setSensitivity(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-slate-100 outline-none focus:border-gold">
                 {['PUBLIC', 'INTERNAL', 'CONFIDENTIAL', 'RESTRICTED', 'PRIVILEGED'].map((item) => <option key={item}>{item}</option>)}
               </select>
             </Field>
             <Field label="Max Nodes">
-              <input value={maxNodes} onChange={(event) => setMaxNodes(Number(event.target.value))} min={1} type="number" className="mt-1 h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-slate-100 outline-none focus:border-gold" />
+              <input aria-label="Max Nodes" value={maxNodes} onChange={(event) => setMaxNodes(Number(event.target.value))} min={1} type="number" className="mt-1 h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-slate-100 outline-none focus:border-gold" />
             </Field>
             <Field label="Input Tokens">
-              <input value={maxTokens} onChange={(event) => setMaxTokens(Number(event.target.value))} min={1} type="number" className="mt-1 h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-slate-100 outline-none focus:border-gold" />
+              <input aria-label="Input Tokens" value={maxTokens} onChange={(event) => setMaxTokens(Number(event.target.value))} min={1} type="number" className="mt-1 h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-slate-100 outline-none focus:border-gold" />
             </Field>
           </div>
           {error && <div className="mt-3 rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-300">{error}</div>}
@@ -209,6 +216,8 @@ export default function OrchestrationCommandCenter() {
           {Object.entries(roleSummary).map(([role, count]) => <Metric key={role} label={role} value={count} />)}
         </Panel>
         <Panel title="Evidence And Confidence" icon={<CheckCircle2 className="h-4 w-4 text-blue-400" />}>
+          <Metric label="Run Status" value={run.status} />
+          <Metric label="Provider Policy" value={providerPolicy} />
           <Metric label="Classification" value={run.classification.task_type} />
           <Metric label="Sensitivity" value={run.classification.sensitivity} />
           <Metric label="Final Confidence" value={run.reconciliation ? `${Math.round(run.reconciliation.final_confidence * 100)}%` : 'Pending'} />
@@ -231,7 +240,7 @@ export default function OrchestrationCommandCenter() {
         <Panel title="Final Reconciled Result" icon={<FileDown className="h-4 w-4 text-gold" />}>
           <pre className="max-h-64 overflow-auto rounded-lg bg-slate-950 p-3 text-xs text-slate-300">{JSON.stringify(run.reconciliation || {}, null, 2)}</pre>
         </Panel>
-        <Panel title="Event Timeline" icon={<Network className="h-4 w-4 text-blue-400" />}>
+        <Panel title="Audit And Evidence Timeline" icon={<Network className="h-4 w-4 text-blue-400" />}>
           <div className="space-y-2">
             {run.events.map((event) => (
               <div key={event.sequence} className="flex items-center justify-between gap-3 rounded-lg bg-slate-950/60 px-3 py-2">

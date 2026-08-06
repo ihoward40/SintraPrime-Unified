@@ -14,6 +14,7 @@ from .model_router import route_provider
 from .provider_registry import mock_provider_registry
 from .result_reconciler import reconcile_outputs
 from .schemas import ExecutionMode, NodeStatus, Role, RunStatus
+from .security import denied_actions, detect_prompt_injection, redact_text, sanitize_payload
 from .task_classifier import classify_task
 from .task_decomposer import decompose_task
 from .verifier import verify_output
@@ -29,15 +30,15 @@ def plan_run(
     execution_mode: ExecutionMode = ExecutionMode.THINK_WORK_CHECK,
     budget_limits: BudgetLimits | None = None,
 ) -> dict[str, Any]:
-    classification = classify_task(objective, constraints)
+    classification = classify_task(redact_text(objective), sanitize_payload(constraints or {}))
     budget = initial_budget_usage(budget_limits)
     nodes = decompose_task(objective=objective, classification=classification, execution_mode=execution_mode)
     validate_dag(nodes)
     run_id = str(uuid.uuid4())
     run = {
         "run_id": run_id,
-        "objective": objective,
-        "constraints": constraints or {},
+        "objective": redact_text(objective),
+        "constraints": sanitize_payload(constraints or {}),
         "classification": classification.model_dump(mode="json"),
         "execution_mode": execution_mode.value,
         "status": RunStatus.PLANNED.value,
@@ -51,7 +52,7 @@ def plan_run(
         "created_at": datetime.now(UTC).isoformat(),
         "updated_at": datetime.now(UTC).isoformat(),
     }
-    append_event(run["events"], "RUN_PLANNED", {"node_count": len(nodes)}, Role.PLANNER.value)
+    append_event(run["events"], "RUN_PLANNED", {"node_count": len(nodes), "prompt_injection": detect_prompt_injection(objective), "denied_actions": denied_actions(objective)}, Role.PLANNER.value)
     RUNS[run_id] = run
     return deepcopy(run)
 
@@ -158,7 +159,13 @@ def _execute_existing(run: dict[str, Any]) -> None:
         node["assigned_provider"] = decision.selected_provider
         node["status"] = NodeStatus.RUNNING.value
         append_event(run["events"], "NODE_STARTED", {"node_id": node_id, "provider": decision.selected_provider}, role.value)
+        if run["constraints"].get("scenario") == "provider_failure" and role == Role.WORKER and node["retry_count"] == 0:
+            node["retry_count"] = 1
+            budget = consume_budget(budget, retries=1)
+            run["budget"] = budget.model_dump(mode="json")
+            append_event(run["events"], "PROVIDER_FAILED", {"node_id": node_id, "provider": decision.selected_provider, "retry_count": 1}, role.value)
         output = _mock_output(role, run["objective"], decision.selected_provider)
+        output = sanitize_payload(output)
         node["output_artifacts"] = [output]
         node["confidence"] = output["confidence"]
         node["evidence"] = output["evidence"]

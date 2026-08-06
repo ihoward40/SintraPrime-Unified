@@ -21,6 +21,7 @@ import AIParliament from './pages/AIParliament';
 import CaseLawSearch from './pages/CaseLawSearch';
 import Settings from './pages/Settings';
 import OperationsFloor from './pages/OperationsFloor';
+import OrchestrationCommandCenter from './pages/OrchestrationCommandCenter';
 import Login from './pages/Login';
 import Setup from './pages/Setup';
 import VoiceConcierge from './pages/VoiceConcierge';
@@ -61,6 +62,11 @@ function AppContent() {
             <Route index element={<MissionControlHome />} />
             <Route path=":surface" element={<MissionControlSurface />} />
           </Route>
+          <Route path="orchestration" element={<OrchestrationCommandCenter />} />
+          <Route path="orchestration/runs" element={<OrchestrationCommandCenter />} />
+          <Route path="orchestration/runs/:runId" element={<OrchestrationCommandCenter />} />
+          <Route path="orchestration/providers" element={<OrchestrationCommandCenter />} />
+          <Route path="orchestration/policies" element={<OrchestrationCommandCenter />} />
           <Route path="operations-floor" element={<OperationsFloor />} />
           <Route path="voice-concierge" element={<VoiceConcierge />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

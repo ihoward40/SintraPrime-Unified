@@ -120,5 +120,90 @@ class TestChatAgentGovernedRouting(unittest.TestCase):
         self.assertIn("GOD MODE", messages[0]["content"])
 
 
+class TestChatAgentStreamingGovernedRouting(unittest.TestCase):
+    """Verify chat_stream delegates to GovernedInferenceRouter.invoke_stream."""
+
+    def _build_router(self, provider: MockProvider) -> GovernedInferenceRouter:
+        per_request = PerRequestPolicy(
+            max_input_tokens=12000,
+            max_output_tokens=4096,
+            timeout_seconds=60,
+            max_attempts=3,
+        )
+        policy = InferencePolicy(
+            per_request=per_request,
+            paid_models_allowed=True,
+            paid_escalation_requires_explicit_approval=False,
+        )
+        return GovernedInferenceRouter([provider], policy=policy)
+
+    def test_chat_stream_routes_through_governed_router(self):
+        provider = MockProvider(name="mock-stream", model="mock-model")
+        agent = ChatAgent()
+        agent._openai_key = "test-key"
+        agent._governed_router = self._build_router(provider)
+
+        session = agent.create_session()
+        chunks = list(agent.chat_stream(session.session_id, "Hello"))
+
+        # MockProvider yields one partial and one final result.
+        self.assertGreaterEqual(len(chunks), 1)
+        self.assertIn("mock-stream", "".join(chunks))
+        self.assertEqual(len(session.messages), 2)  # user + assistant
+        self.assertEqual(session.messages[1].role, "assistant")
+        self.assertGreater(session.token_count, 0)
+
+    def test_chat_stream_governed_router_failure_falls_back_to_legacy(self):
+        provider = MockProvider(
+            name="mock-stream",
+            model="mock-model",
+            fail_times=5,
+            error_kind=ProviderErrorKind.TRANSIENT,
+        )
+        agent = ChatAgent()
+        agent._openai_key = "test-key"
+        agent._governed_router = self._build_router(provider)
+
+        with patch("openai.OpenAI") as mock_openai_class:
+            mock_client = MagicMock()
+            mock_openai_class.return_value = mock_client
+            mock_stream = MagicMock()
+            chunk = MagicMock()
+            chunk.choices = [MagicMock()]
+            chunk.choices[0].delta.content = "legacy fallback"
+            mock_stream.__iter__ = lambda self: iter([chunk])
+            mock_client.chat.completions.create.return_value.__enter__ = lambda *args: mock_stream
+            mock_client.chat.completions.create.return_value.__exit__ = lambda *args: None
+
+            session = agent.create_session()
+            chunks = list(agent.chat_stream(session.session_id, "Hello"))
+
+        self.assertEqual("".join(chunks), "legacy fallback")
+        self.assertEqual(len(session.messages), 2)
+
+    def test_chat_stream_no_api_key_uses_fallback(self):
+        agent = ChatAgent()
+        agent._openai_key = None
+
+        session = agent.create_session()
+        chunks = list(agent.chat_stream(session.session_id, "Hello"))
+
+        self.assertEqual(len(chunks), 1)
+        self.assertIn("SintraPrime", chunks[0])
+        self.assertEqual(len(session.messages), 2)
+
+    def test_chat_stream_request_requires_streaming(self):
+        provider = MockProvider(name="mock-stream", model="mock-model")
+        agent = ChatAgent()
+        agent._openai_key = "test-key"
+        agent._governed_router = self._build_router(provider)
+
+        session = agent.create_session()
+        list(agent.chat_stream(session.session_id, "Hello"))
+
+        # Verify the provider saw a streaming request.
+        self.assertEqual(provider.invoke_count, 1)
+
+
 if __name__ == "__main__":
     unittest.main()

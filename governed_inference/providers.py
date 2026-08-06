@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from dataclasses import replace
 
 from governed_inference.contracts import (
@@ -63,9 +63,11 @@ class BaseConfiguredProvider:
             capabilities=self._capabilities,
             quality=self.quality,
             context_window=self.context_window,
+            supports_streaming=True,
+            supports_vision=False,
+            supports_structured_output=True,
             paid=self.paid,
             cloud=self.cloud,
-            supports_structured_output=True,
         )
 
     def health(self) -> ProviderHealth:
@@ -86,8 +88,9 @@ class BaseConfiguredProvider:
     def invoke(self, _request: InferenceRequest) -> InferenceResult:
         raise InferenceError(f"{self.name} adapter is not configured for network invocation")
 
-    def invoke_stream(self, request: InferenceRequest) -> InferenceResult:
-        return self.invoke(request)
+    def invoke_stream(self, request: InferenceRequest) -> Iterator[InferenceResult]:
+        """Default streaming implementation: delegate to invoke() and yield one result."""
+        yield self.invoke(request)
 
     def current_limits(self) -> ProviderLimits:
         return ProviderLimits(rate_limits_known=self.configured)
@@ -197,10 +200,12 @@ class MockProvider(BaseConfiguredProvider):
             provider_request_id=f"mock_{self.invoke_count}",
         )
 
-    def invoke_stream(self, request: InferenceRequest) -> InferenceResult:
+    def invoke_stream(self, request: InferenceRequest) -> Iterator[InferenceResult]:
         if self.stream_fails:
             raise InferenceError("partial stream failed", ProviderErrorKind.TRANSIENT)
-        return self.invoke(request)
+        partial = self.invoke(request)
+        yield replace(partial, content=partial.content, is_partial=True)
+        yield replace(partial, content=partial.content, is_partial=False)
 
 
 class DeterministicReplayProvider(MockProvider):

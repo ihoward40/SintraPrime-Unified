@@ -46,26 +46,28 @@
 
 Corroboration fields (populated per ADR-MC-002 2.E; handoff is a coordination record, not standalone source of truth):
 
-- handoff_commit_sha: 76853ab3f004363822c1ef71dd4667579c1b85c6 (last substantive handoff update; this evidence commit is a metadata-only follow-up)
-- handoff_content_hash (pre-edit): 63521da9070157c1810efdd0ea54e2e92a88f39ebd443a9b37d764bd01896960
-- prior_handoff_commit: b56566afa69e9e51cb97940ba04b0d91d5773f1a (chain reference, never erased)
+- handoff_commit_sha: acefb9affde50d85c8e6d89762b36782dc50ef95 (last substantive handoff update; this evidence commit is a metadata-only follow-up)
+- handoff_content_hash (pre-edit of this evidence commit): 3eefa67f4a420c3c78829105fa1967676702a296dd5e2d1dfb5ed1d5e46759ee
+- prior_handoff_commit: b56566afa69e9e51cb97940ba04b0d91d5773f1a (chain reference, never erased; the full handoff chain is b56566af → 76853ab3 → acefb9af)
 - author_agent: Hermes
 - verification_agent: Hermes (self — no incoming ownership transfer; verified against committed Git state)
-- timestamp: 2026-08-05
-- branch HEAD at update: 76853ab3f004363822c1ef71dd4667579c1b85c6
-- tree SHA at update: 3e9cc3c217c9ff2b258932d68a27e373caa2cc1b
-- evidence_commit_sha: PENDING — populated at next handoff update (ratification; status → ACCEPTED)
+- timestamp: 2026-08-06
+- branch HEAD at update: 25313c2113564333a8d2df9ab4d24357f5c3fff7
+- tree SHA at update: 06c8531c8de302eee8c784a406804b492be707bc
+- ratification_commit_sha: 25313c2113564333a8d2df9ab4d24357f5c3fff7 (the commit that changed ADR-MC-002 status from DRAFT to ACCEPTED and added the ratification record)
+- evidence_commit_sha: populated in the follow-up metadata-only commit (this commit); this follow-up references the ratification commit and does not falsely claim to contain its own SHA
 - External edits / bots / APIs / automation:
   - None recorded to date. Any direct GitHub edit, bot action, API call, or automation run must be appended here with the acting identity and timestamp.
 
 ## Review State
 
 - Final architecture review: APPROVE_WITH_CONDITIONS
-- Condition A: handoff evidence fields populated (this update)
-- Condition B: offline claim-expiry rule added (this update, Section 2.S)
-- ADR status: DRAFT (not yet ratified)
-- Publication: unauthorized
-- Next required action: close Conditions A/B at ratification; only then may status move to ACCEPTED.
+- Condition A: handoff corroboration fields populated — CLOSED (ratification-prep commit acefb9af; non-self-referential semantics applied)
+- Condition B: offline claim-expiry rule added — CLOSED (Section 2.S.1 added at ratification-prep commit a87f22ed)
+- ADR status: ACCEPTED (ratified 2026-08-06 by Isiah Howard; owner decision APPROVE)
+- Publication status: DRAFT PR only; merge not authorized
+- Runtime implementation: NOT AUTHORIZED (preserved)
+- Next required action: open the DRAFT PR, poll CI to terminal state, and do not merge unless separately authorized.
 
 ## Authorized Scope
 
@@ -91,7 +93,7 @@ This branch is architecture and governance documentation only.
 
 ## Current Next Action
 
-Ratification-prep corrections applied: handoff evidence fields populated (Condition A), offline claim-expiry rule added to 2.S (Condition B). Final review: APPROVE_WITH_CONDITIONS. ADR remains DRAFT. Next: close Conditions A/B at ratification; only then may status move to ACCEPTED. Do not push or open a PR.
+ADR-MC-002 RATIFIED 2026-08-06 (owner decision APPROVE). Push branch and open DRAFT PR. Poll CI to terminal state. Do not merge. Do not mark ready for review. Do not deploy. Do not begin Phase 3B.
 
 ## Governance Baseline (controlling)
 
@@ -99,7 +101,7 @@ Ratification-prep corrections applied: handoff evidence fields populated (Condit
 - Mission Control Foundation: merged and tagged
 - ADR-MC-001: ACCEPTED and merged
 - Phase 1 implementation planning: APPROVED locally at 1632fbd92ddb80e4e3739fac7cfd97e530a183c2 (frozen, not based upon)
-- ADR-MC-002: DRAFT — correction cycle in progress
+- ADR-MC-002: ACCEPTED (ratified 2026-08-06; pending DRAFT PR + CI)
 - Sigma continuation gate: BLOCKED
 - Cancellation: DISABLED
 - Runtime implementation: NOT AUTHORIZED

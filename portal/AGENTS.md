@@ -32,6 +32,7 @@ Owns the SintraPrime client portal — the FastAPI application that provides sec
 ## Child DOX Index
 
 - `routers/` — API route handlers (FastAPI router modules)
+- `services/orchestration/` — adaptive orchestration service contracts, policies, routing, verification, reconciliation, and mock-provider execution
 
 ## Persistent Matter Intelligence
 

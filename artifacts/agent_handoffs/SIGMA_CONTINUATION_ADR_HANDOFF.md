@@ -52,7 +52,7 @@ This branch is documentation and architecture only.
 - No Phase 3B
 - No changes to unrelated worktrees
 - Do not modify ADR-002 (accepted and frozen)
-- Do not begin the ADR body until separately authorized
+- ADR body has been written and corrected; no further ADR edits unless authorized
 
 ## ADR-002 Section 2.5 — Sigma Condition
 
@@ -118,9 +118,9 @@ Outgoing agent: Hermes
 
 Branch: feat/sigma-executor-continuation-adr
 
-Current HEAD: see git log (handoff file does not recursively contain its own commit SHA)
+Current HEAD: a86699d332aea779240030fc30818454f5288788
 
-Tree SHA: see git rev-parse 'HEAD^{tree}'
+Tree SHA: 64d5f779169f5e0ef3959d360ad8fc62ff80f4a5
 
 Base: 97bd539f82ee9099003b0ba5c3729092bf470604 (main, post-merge)
 

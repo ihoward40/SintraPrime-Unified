@@ -44,18 +44,20 @@
 
 ## Evidence Log
 
-Corroboration fields (populated per ADR-MC-002 2.E; handoff is a coordination record, not standalone source of truth):
+Corroboration fields (populated per ADR-MC-002 2.E; handoff is the controlling coordination record — operational truth requires convergence among committed handoff, Git object state, remote references, CI receipts, and review state):
 
-- handoff_commit_sha: acefb9affde50d85c8e6d89762b36782dc50ef95 (last substantive handoff update; this evidence commit is a metadata-only follow-up)
-- handoff_content_hash (pre-edit of this evidence commit): 3eefa67f4a420c3c78829105fa1967676702a296dd5e2d1dfb5ed1d5e46759ee
-- prior_handoff_commit: b56566afa69e9e51cb97940ba04b0d91d5773f1a (chain reference, never erased; the full handoff chain is b56566af → 76853ab3 → acefb9af)
+- handoff_commit_sha: 516b439008a67232c4389e03fb3cf1dc9dc14834 (the substantive corrections commit; this evidence commit is a metadata-only follow-up)
+- handoff_content_hash (pre-edit of this evidence commit): 8cb469315fc6ed2094aeaa84881facac6b4b9c5537790cdfeadd6ed6bd5d6a43
+- prior_handoff_commit: acefb9affde50d85c8e6d89762b36782dc50ef95 (full chain: b56566af → 76853ab3 → acefb9af → 5205887b → 516b4390)
 - author_agent: Hermes
 - verification_agent: Hermes (self — no incoming ownership transfer; verified against committed Git state)
 - timestamp: 2026-08-06
-- branch HEAD at update: 25313c2113564333a8d2df9ab4d24357f5c3fff7
-- tree SHA at update: 06c8531c8de302eee8c784a406804b492be707bc
-- ratification_commit_sha: 25313c2113564333a8d2df9ab4d24357f5c3fff7 (the commit that changed ADR-MC-002 status from DRAFT to ACCEPTED and added the ratification record)
-- evidence_commit_sha: populated in the follow-up metadata-only commit (this commit); this follow-up references the ratification commit and does not falsely claim to contain its own SHA
+- branch HEAD at update: 516b439008a67232c4389e03fb3cf1dc9dc14834
+- tree SHA at update: 59975158a24f65a135bb165eec071f2058b81f0b
+- ratification_commit_sha: 25313c2113564333a8d2df9ab4d24357f5c3fff7 (the commit that changed ADR-MC-002 status from DRAFT to ACCEPTED)
+- evidence_commit_sha: 516b439008a67232c4389e03fb3cf1dc9dc14834 (Commit A — substantive corrections; reachable: `git merge-base --is-ancestor 516b439008a67232c4389e03fb3cf1dc9dc14834 HEAD` exits 0)
+- evidence_tree_sha: 59975158a24f65a135bb165eec071f2058b81f0b
+- evidence_recorded_by_commit: CURRENT HANDOFF COMMIT — not self-referenced; intended to be populated in the next handoff update (status change or follow-up). This handoff file is the artifact that crosses the boundary.
 - External edits / bots / APIs / automation:
   - None recorded to date. Any direct GitHub edit, bot action, API call, or automation run must be appended here with the acting identity and timestamp.
 

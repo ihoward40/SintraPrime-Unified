@@ -1,6 +1,8 @@
 # ADR-MC-002: Multi-Agent Coordination Protocol
 
-**Status:** DRAFT — NOT YET RATIFIED
+**Status:** ACCEPTED
+**Ratified:** 2026-08-06
+**Ratified by:** Isiah Howard — architecture review APPROVE_WITH_CONDITIONS, conditions resolved
 **References:** ADR-002 (core authority model); Mission Control Foundation v1; ADR-MC-001 (executor continuation architecture)
 **Baseline:** mission-control-foundation-v1 at 97bd539f82ee9099003b0ba5c3729092bf470604; ADR-MC-001 merge at 006748e2f8bd82b527d1c672aa9cbaef47ce648a
 **Supersedes:** None
@@ -681,9 +683,18 @@ Until ADR-MC-002 is ratified and its controls are implemented:
 
 | Item | State |
 |------|-------|
-| ADR-MC-002 | DRAFT — not ratified |
+| ADR-MC-002 | ACCEPTED — ratified 2026-08-06 |
 | Sigma continuation gate | BLOCKED |
 | Cancellation controls | DISABLED |
 | Runtime implementation | NOT AUTHORIZED |
 | Phase 3B | BLOCKED |
 | Deployment | NOT AUTHORIZED |
+
+## 11. Ratification Record
+
+- Architecture review decision: APPROVE_WITH_CONDITIONS.
+- Condition A (handoff corroboration fields populated with non-self-referential semantics): RESOLVED at ratification-prep commit acefb9af (handoff evidence fields populated; evidence_commit_sha recorded as PENDING-to-next-update).
+- Condition B (claim expiry during REMOTE_AUTHORITY_UNAVAILABLE freezes publication and requires post-recovery claim revalidation): RESOLVED via Section 2.S.1 added at ratification-prep commit a87f22ed.
+- Ratified by: Isiah Howard, 2026-08-06.
+- Owner decision: APPROVE.
+- Operational locks preserved: Sigma gate BLOCKED, cancellation DISABLED, runtime implementation NOT AUTHORIZED, Phase 3B BLOCKED, deployment NOT AUTHORIZED.

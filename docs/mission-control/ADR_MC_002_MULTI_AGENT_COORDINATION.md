@@ -24,26 +24,55 @@ This ADR is a governance and systems-design document. It defines behavior, invar
 - Direct GitHub edits (web UI, API, gh CLI outside the declared writer) count as writes and require explicit owner authorization.
 - Force-push requires explicit owner authorization and the exact lease SHA of the remote head being overwritten.
 - Stale ownership cannot silently remain active: a claim is invalid once its heartbeat expires or it is superseded by a recorded transfer (see 2.M).
+- The handoff file is a **coordination record, not a standalone source of truth**. Git object state and independent receipts (CI, review threads, commit history) are always controlling. A writer may update the handoff but must never erase prior committed handoff history; every handoff update appends, it does not rewrite.
+- Any mismatch between handoff claims (HEAD, tree SHA, dirty state, remote SHA) and actual Git state, or between the handoff and independent receipts, produces `HANDOFF_INTEGRITY_MISMATCH`. Required behavior: freeze writes, preserve current state on a safety branch, compare committed handoff history against Git objects, treat Git object state and independent receipts as controlling evidence, and require owner or governance review before work resumes.
 
-### 2.B Branch Claiming
+### 2.B Branch Claiming — Renewable Lease
 
-A branch claim is a durable record created before implementation begins. It contains:
+A branch claim is a **renewable lease**, not permanent ownership. It is a durable record created before implementation begins. Once created it must be committed (or otherwise durably recorded) before implementation begins. A claim without a recorded `starting_sha` and `expected_remote_sha` is invalid.
+
+Required fields:
 
 | Field | Description |
 |---|---|
-| repository | The governed repository |
-| branch | The claimed branch name |
-| worktree | The local worktree path |
-| owner_agent | The agent identity that holds the claim |
-| claimed_at | Timestamp of claim creation |
-| expires_at / heartbeat | Expiry or heartbeat marker |
-| starting_sha | Exact local starting HEAD |
-| expected_remote_sha | Exact remote HEAD the writer expects |
-| permitted_paths | Files the writer may modify |
-| task_scope | The authorized task description |
-| stop_conditions | Conditions that trigger an immediate stop |
+| `claim_id` | Unique identifier for this claim instance |
+| `repository` | The governed repository |
+| `branch` | The claimed branch name |
+| `worktree` | The local worktree path |
+| `owner_agent` | The agent identity that holds the claim |
+| `authorized_git_identities` | The GitHub/web/API identities permitted to act as the writer |
+| `claimed_at` | Timestamp of claim creation |
+| `heartbeat_interval` | Period at which the claim must be refreshed |
+| `last_heartbeat_at` | Timestamp of the most recent heartbeat |
+| `expires_at` | Absolute expiry if not renewed |
+| `maximum_claim_lifetime` | Hard ceiling; renewal beyond requires reauthorization |
+| `starting_sha` | Exact local starting HEAD |
+| `expected_remote_sha` | Exact remote HEAD the writer expects |
+| `permitted_paths` | Files the writer may modify |
+| `task_scope` | The authorized task description |
+| `stop_conditions` | Conditions that trigger an immediate stop |
+| `claim_status` | One of the states below |
 
-The claim must be committed (or otherwise durably recorded) before implementation begins. A claim without a recorded starting SHA and expected remote SHA is invalid.
+Claim states:
+
+| State | Meaning |
+|---|---|
+| PENDING | Claim created, not yet verified |
+| ACTIVE | Verified, writer may write |
+| RENEWING | Heartbeat renewal in progress |
+| STALE | Heartbeat missed but within grace; classified, not auto-free |
+| EXPIRED | Past `expires_at`; branch frozen, no auto-takeover |
+| RELEASED | Owner voluntarily released |
+| REVOKED | Explicitly revoked by governance authority |
+| TRANSFER_PENDING | Ownership transfer initiated, awaiting verification |
+
+Renewal rules:
+
+- A heartbeat renews the claim only while within `maximum_claim_lifetime`.
+- Renewal updates `last_heartbeat_at` and `expires_at`; it never broadens `task_scope` or `permitted_paths`.
+- Renewal beyond `maximum_claim_lifetime` requires explicit reauthorization.
+- Expiration freezes the branch; it never grants automatic takeover.
+- Takeover requires independent verification and explicit authority (see 2.D, 2.M).
 
 ### 2.C Worktree Isolation
 
@@ -68,7 +97,29 @@ No verbal or chat-only ownership transfer is sufficient. The handoff file is the
 
 ### 2.E Handoff Record Requirements
 
-Every governed handoff must include:
+A handoff is a coordination record, not a standalone source of truth. Every handoff must be **corroborated** by:
+
+- committed handoff content (immutable in git history);
+- actual git HEAD;
+- actual tree SHA;
+- local and remote branch references;
+- worktree status (staged/modified/untracked/conflicted);
+- CI receipts;
+- review-thread state;
+- an append-only external or repository evidence record where available.
+
+Every handoff record must carry:
+
+- `handoff_commit_sha` — the commit that introduced/updated this handoff;
+- `handoff_content_hash` — hash of the handoff file content at that commit;
+- `prior_handoff_commit` — reference to the previous handoff commit (chain, never erased);
+- `author_agent` identity;
+- `timestamp`;
+- `verification_agent` — the incoming agent's identity who independently verified before claiming.
+
+A writer may update the handoff but must not erase prior committed handoff history; the handoff is append-only in effect. Any mismatch between handoff claims and Git state, or between the handoff and independent receipts, produces `HANDOFF_INTEGRITY_MISMATCH` (see 2.A).
+
+Every governed handoff must additionally include:
 
 - branch and worktree;
 - local HEAD and remote HEAD;
@@ -110,8 +161,8 @@ Codifies the governed exit pattern used for PR #255:
 - Selectively reconcile valid changes onto a fresh branch.
 - Reject regressions.
 - Publish to a fresh branch.
-- Open a replacement PR.
-- Close the contaminated PR as superseded.
+- Open a replacement PR that states `Supersedes PR #<number>` in its body.
+- Close the contaminated PR as superseded; the superseded PR must link back to the replacement PR.
 - Retire the contested branch.
 - Prohibit future publication from the contested branch.
 
@@ -171,6 +222,15 @@ Possession of one authority does not imply another.
 - Unresolved threads block merge.
 - Self-approval limitations must be documented.
 - Comment-based owner approval must not be misrepresented as GitHub review approval.
+- Review and thread resolution must be pinned to an exact published head.
+
+Thread-resolution governance:
+
+- Permitted resolvers: the original reviewer; a designated independent reviewer; the project owner or a delegated review authority.
+- A writer may not resolve a substantive defect thread solely because code changed, unless the governance policy explicitly permits it and evidence is attached.
+- Resolution requires: the exact current PR head; a reference to the corrective commit; evidence showing the finding is addressed; CI state; the resolver identity; and confirmation that the thread applies to the reviewed head.
+- If the PR head changes after resolution and the correction is materially affected, the thread must be reopened or re-reviewed.
+- All resolutions are recorded as auditable events tied to the exact head they resolved against.
 
 ### 2.L CI Ownership
 
@@ -243,6 +303,63 @@ Only ACTIVE branches may receive normal feature work.
 
 Every ownership, publication, review, supersession, recovery, and merge decision must be auditable: recorded with agent identity, exact SHAs, timestamps, and justification.
 
+### 2.S GitHub-Unavailable / Offline Mode
+
+When GitHub or the canonical remote is unreachable, the agent must:
+
+1. Return `REMOTE_AUTHORITY_UNAVAILABLE`.
+2. Enter degraded mode. Publication remains frozen.
+
+Permitted in degraded mode:
+
+- inspect the local worktree;
+- run local tests;
+- preserve work on a local safety branch;
+- update an uncommitted local recovery note;
+- create local evidence bundles.
+
+Prohibited in degraded mode:
+
+- acquire a new publication claim;
+- transfer ownership;
+- push;
+- open or update a PR;
+- resolve review threads;
+- claim remote-head equivalence;
+- mark ready;
+- merge;
+- deploy;
+- force-push.
+
+Publication must remain frozen until:
+
+- remote connectivity returns;
+- remote HEAD is fetched;
+- local and remote histories are reconciled;
+- claim ownership is revalidated against the fetched remote state.
+
+This is a known limitation: the protocol depends on the canonical remote as the source of truth for claims, PRs, review, and merge. Offline operation is restricted to local preservation and verification only.
+
+### 2.T Safety-Branch Retention and Deletion
+
+Safety branches preserve pre-rewrite and contested work and must not be deleted before governance closure.
+
+- **Minimum retention period:** a safety branch is retained for at least the governance-closure retention window (default: 90 days from closure) or until explicitly authorized for deletion.
+- **Governance closure event:** the governing PR is merged or formally abandoned; supersession evidence is preserved; no unresolved review or incident exists; final merge/tag receipt is recorded.
+- **Deletion authority:** only the project owner or a delegated repository governance authority may authorize deletion, and only after all closure conditions are met.
+- **Required evidence before deletion:** merge or abandonment receipt, supersession notice, retained CI receipt, and the recorded deletion authorization.
+- **Prohibition:** deletion is prohibited during open review, contested recovery, active audit, incident response, or unresolved merge verification.
+
+Deletion itself must be recorded as an auditable event (who, when, which branch, which authorization, which retention evidence).
+
+### 2.U Writer Model: Bots and Automation
+
+"One writer" spans all mutation paths: local Git, the GitHub web UI, the GitHub API/gh CLI, API-driven agents, bots (e.g., Dependabot), and CI-authored commits.
+
+- Automated writers (bots, automation, CI) must hold an explicit claim or a narrowly scoped publication authority before mutating a governed branch.
+- Every direct GitHub edit, bot action, API call, and automation run must be recorded in the handoff and the evidence log with the acting identity.
+- An automated writer's scope is bounded by its claim's `permitted_paths` and `authorized_git_identities`; exceeding it triggers `SCOPE_DRIFT_DETECTED`.
+
 ## 3. Formal Invariants
 
 | # | Invariant | Enforcement |
@@ -265,6 +382,9 @@ Every ownership, publication, review, supersession, recovery, and merge decision
 | 16 | An agent may never rewrite another agent's unknown work. | No mutation of other worktrees |
 | 17 | Scope drift triggers an immediate stop. | `SCOPE_DRIFT_DETECTED` |
 | 18 | The default response to uncertainty is freeze, preserve, and verify. | Emergency freeze + safety branch |
+| 19 | Handoff claims must be corroborated by committed Git state and independent receipts; a mismatch triggers freeze. | `HANDOFF_INTEGRITY_MISMATCH` protocol (2.A, 2.E) |
+| 20 | A claim is a renewable lease, not permanent ownership; expiry freezes, never grants takeover. | Heartbeat + `maximum_claim_lifetime` (2.B, 2.M) |
+| 21 | Automated writers (bots, CI, API agents) require an explicit claim or scoped authority. | Writer model (2.U) |
 
 ## 4. State Machines
 
@@ -276,7 +396,7 @@ ACTIVE -- freeze --> FROZEN -- release --> ACTIVE
 ACTIVE -- open PR --> REVIEW -- merge --> MERGED -- archive --> ARCHIVED
 ACTIVE -- contest --> CONTESTED -- supersede --> SUPERSEDED -- retire --> RETIRED -- archive --> ARCHIVED
 ACTIVE -- abandon --> ABANDONED -- archive --> ARCHIVED
-CONTESTED -- recover-valid --> SUPERSEDED
+CONTESTED -- supersede --> SUPERSEDED
 FROZEN -- supersede --> SUPERSEDED
 ```
 
@@ -375,6 +495,8 @@ Possession of any column does not grant any other column.
 | SUPERSEDED | - | - | - | - | - | - | - | retire | - |
 | RETIRED | - | - | - | - | - | - | - | - | archive |
 
+Claim `STALE` and `EXPIRED` states (see 2.B) transition the branch to `FROZEN`: a stale or expired claim freezes the branch and blocks all publication; it does not grant takeover. Recovery from FROZEN requires explicit reauthorization (see 2.M). The `CONTESTED -- supersede --> SUPERSEDED` edge is the single canonical label used consistently in 4.1, 4.5, and this matrix.
+
 ### 5.3 Agent-Action Permission Matrix
 
 | Action | Owner | Other agent | Direct GitHub edit |
@@ -452,6 +574,35 @@ Possession of any column does not grant any other column.
 | Wrong worktree | SCOPE_DRIFT_DETECTED | stop |
 | Runtime code in arch branch | SCOPE_DRIFT_DETECTED | stop |
 
+### 5.11 State-to-Permission Matrix
+
+For every branch state, the following actions are allowed (Y), conditionally allowed (C), or denied (N):
+
+| State | local edits | commits | normal push | force-with-lease | PR create | PR meta edit | review | thread resolve | ready | merge | deploy | transfer | safety branch |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| UNCLAIMED | N | N | N | N | N | N | N | N | N | N | N | N | N |
+| CLAIMED | N | N | N | N | N | N | N | N | N | N | N | N | N |
+| ACTIVE | Y | Y | C | N | C | C | Y | Y | C | N | N | C | Y |
+| FROZEN | N | N | N | N | N | N | Y | Y | N | N | N | C* | Y |
+| REVIEW | N | C | N | N | N | C | Y | Y | C | N | N | C | Y |
+| CONTESTED | N | N | N | N | N | N | Y | Y | N | N | N | N | Y |
+| SUPERSEDED | N | N | N | N | N | N | Y | Y | N | N | N | N | Y |
+| RETIRED | N | N | N | N | N | N | N | N | N | N | N | N | N |
+| MERGED | N | N | N | N | N | C | Y | Y | N | N | N | N | Y |
+| ARCHIVED | N | N | N | N | N | N | N | N | N | N | N | N | N |
+| ABANDONED | N | N | N | N | N | N | N | N | N | N | N | N | Y |
+
+Key rules:
+
+- **FROZEN:** no feature writes or publication; preservation and verification only. `transfer` is allowed only via explicit reauthorization (C*), never automatic.
+- **CONTESTED:** no push to the contested branch; no merge; only safety/reconciliation actions.
+- **SUPERSEDED:** read-only evidence state; no return to ACTIVE (Inv 7).
+- **RETIRED:** no writes or publication.
+- **MERGED:** no feature work; post-merge evidence only.
+- **ARCHIVED:** immutable/read-only.
+
+`normal push` from ACTIVE requires the manuscript to be within `permitted_paths` and the remote to match `expected_remote_sha` (else `REMOTE_HEAD_CHANGED`). `force-with-lease` is denied in all normal states; it is only permitted under the explicit 2.H authorization with an exact lease SHA.
+
 ## 6. Threat Model
 
 | # | Threat | Likelihood | Impact | Mitigation |
@@ -471,7 +622,9 @@ Possession of any column does not grant any other column.
 | T13 | Direct GitHub edit outside writer | Medium | High | Counts as write (2.A) |
 | T14 | CI result misclassification | Medium | High | Failure classification (5.6) |
 | T15 | Compromised agent credentials | Low | Critical | Emergency freeze (2.N) |
-| T16 | Deletion of safety evidence | Low | Critical | Retention rule (Inv 14) |
+| T16 | Deletion of safety evidence | Low | Critical | Retention rule (Inv 14, 2.T) |
+| T17 | Bot/automation identity spoofing | Low | Critical | Explicit claim or scoped authority required (2.U); recorded acting identity |
+| T18 | Handoff record falsified by current writer | Low | Critical | Corroboration + `HANDOFF_INTEGRITY_MISMATCH` (2.A, 2.E, Inv 19) |
 
 ## 7. Acceptance Criteria
 

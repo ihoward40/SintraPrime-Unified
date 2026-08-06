@@ -67,32 +67,41 @@ Corroboration fields (populated per ADR-MC-002 2.E; handoff is the controlling c
 - Condition A: handoff corroboration fields populated — CLOSED (ratification-prep commit acefb9af; non-self-referential semantics applied)
 - Condition B: offline claim-expiry rule added — CLOSED (Section 2.S.1 added at ratification-prep commit a87f22ed)
 - ADR status: ACCEPTED (ratified 2026-08-06 by Isiah Howard; owner decision APPROVE)
-- PR review disposition: REQUEST_CHANGES (codex bot automated review on PR #260 at head 5205887b)
-- PR #260: KEEP DRAFT, merge not authorized
+- PR #260 PR head: e6ffb6381f84015ff425ed3a5792fd61dd80bc9e
+- PR #260 tree SHA: 5adcf913f8fc2fbd20f99afeecda3be0df05b440
+- CI state at PR #260 head e6ffb638: terminal (12/12 PASS) — verified after the correction-cycle push
+- Original five codex review threads: RESOLVED at head 5d2e7101
+- New five codex review threads (surfaced after ready-for-review transition): OPEN
+- Current review disposition: REQUEST_CHANGES
+- Branch state: ACTIVE_CORRECTION (re-entered to address the new five threads)
+- Next required action: correction-cycle commit, push, CI to terminal, thread resolution only after CI terminal and corrections verified
+- Merge: NOT AUTHORIZED
+- Tag: NOT AUTHORIZED
+- Implementation-authorization branch: NOT AUTHORIZED
 - Runtime implementation: NOT AUTHORIZED (preserved)
-- Branch state: ACTIVE_CORRECTION (entered to address review threads)
-
-### Final architecture disposition after correction cycle
-
-- Final architecture disposition: APPROVE
-- All five PR #260 review threads: RESOLVED against exact head 5d2e7101
-- CI: terminal (12/12 PASS) at corrected head
-- Unresolved threads: 0
-- Branch state: ACTIVE_CORRECTION -> READY_FOR_REVIEW (legitimate transition out of correction)
-- Next action: PR #260 ready-for-review transition (deferred to owner authorization)
 - Governance locks preserved: Sigma gate BLOCKED · Cancellation DISABLED · Phase 3B BLOCKED · Runtime implementation NOT AUTHORIZED · Deployment NOT AUTHORIZED
-- PR status: DRAFT pending owner authorization to mark ready
-- Merge: NOT YET AUTHORIZED
 
 ### PR #260 review threads (codex bot automated review)
 
+### PR #260 review threads — original cycle (head 5205887b)
+
 | # | Severity | File | Finding | Resolution |
 |---|---|---|---|---|
-| 1 | P1 | docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md | Record the accepted protocol in the owning DOX — AGENTS.md / Child DOX Index not updated | RESOLVED: root AGENTS.md Child DOX Index updated to reference ADR-MC-002 |
-| 2 | P1 | artifacts/agent_handoffs/ADR_MC_002_HANDOFF.md | Replace evidence SHA placeholder with durable evidence — evidence_commit_sha was prose; recorded ratification/head SHA was not an ancestor of the evidence commit | RESOLVED: two-commit pattern applied; Commit A applies substantive corrections; Commit B (metadata-only) records Commit A as evidence_commit_sha |
-| 3 | P2 | docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md | Keep Git evidence authoritative during ownership transfer — 2.D said "controlling source of truth" contradicting 2.A/2.E | RESOLVED: 2.D rewritten to "controlling coordination record" with explicit HANDOFF_INTEGRITY_MISMATCH behavior |
-| 4 | P2 | docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md | Align claim state machine with declared states — 4.2 used undefined CLAIMED and mapped expiry to STALE; RENEWING/REVOKED unreachable | RESOLVED: 4.2 rewritten using exactly the declared 8 states with all required transitions |
-| 5 | P2 | docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md | Allow review fixes to be edited and published — REVIEW state denied edits/push and no REVIEW -> ACTIVE transition | RESOLVED: ACTIVE_CORRECTION state added (2.V); added to 4.1, 4.6, 5.2, 5.11 |
+| 1 | P1 | docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md | Record the accepted protocol in the owning DOX — AGENTS.md / Child DOX Index not updated | RESOLVED at head 5d2e7101: root AGENTS.md Child DOX Index updated to reference ADR-MC-002 |
+| 2 | P1 | artifacts/agent_handoffs/ADR_MC_002_HANDOFF.md | Replace evidence SHA placeholder with durable evidence — evidence_commit_sha was prose; recorded ratification/head SHA was not an ancestor of the evidence commit | RESOLVED at head 5d2e7101: two-commit pattern applied; Commit A applies substantive corrections; Commit B (metadata-only) records Commit A as evidence_commit_sha |
+| 3 | P2 | docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md | Keep Git evidence authoritative during ownership transfer — 2.D said "controlling source of truth" contradicting 2.A/2.E | RESOLVED at head 5d2e7101: 2.D rewritten to "controlling coordination record" with explicit HANDOFF_INTEGRITY_MISMATCH behavior |
+| 4 | P2 | docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md | Align claim state machine with declared states — 4.2 used undefined CLAIMED and mapped expiry to STALE; RENEWING/REVOKED unreachable | RESOLVED at head 5d2e7101: 4.2 rewritten using exactly the declared 8 states with all required transitions |
+| 5 | P2 | docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md | Allow review fixes to be edited and published — REVIEW state denied edits/push and no REVIEW -> ACTIVE transition | RESOLVED at head 5d2e7101: ACTIVE_CORRECTION state added (2.V); added to 4.1, 4.6, 5.2, 5.11 |
+
+### PR #260 review threads — new cycle (surface after ready-for-review; head e6ffb638)
+
+| # | Severity | File | Finding | Resolution |
+|---|---|---|---|---|
+| 1 | P1 | docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md | Failed ownership-transfer verification must trigger `HANDOFF_INTEGRITY_MISMATCH` and freeze, not `RELEASED` | RESOLVED at head (correction): 4.2 `TRANSFER_PENDING -- verify-fail --> HANDOFF_INTEGRITY_MISMATCH -- freeze --> FROZEN`; both states preserved; no RELEASED, no automatic takeover |
+| 2 | P1 | docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md | The transition matrix must preserve `REVIEW → MERGEABLE → MERGED`; it currently allows a direct review-to-merge path | RESOLVED at head: 4.1 and 4.6 enforce `REVIEW → MERGEABLE → MERGED`; 5.11 MERGEABLE row permits merge only from MERGEABLE with exact-head authorization; direct REVIEW→MERGED forbidden |
+| 3 | P1 | artifacts/agent_handoffs/ADR_MC_002_HANDOFF.md | The handoff still contains stale correction-cycle status and next actions | RESOLVED at head: Review State rewritten to reflect only current verified facts (head e6ffb638, tree 5adcf913, CI terminal 12/12, 5 original threads resolved, 5 new threads open, disposition REQUEST_CHANGES, branch state ACTIVE_CORRECTION) |
+| 4 | P2 | docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md | The stated 90-day safety-branch minimum is weakened by "or until explicitly authorized" | RESOLVED at head: 2.T rewritten with 90-day minimum as a true floor; deletion requires both governance closure AND expiration of 90-day minimum; authorization alone cannot shorten; emergency exception requires 5 specific conditions |
+| 5 | P2 | docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md | `ACTIVE → ACTIVE_CORRECTION` bypasses the review-request requirement; correction mode should begin only from `REVIEW` | RESOLVED at head: 4.1, 4.6, 5.2 enforce `REVIEW → ACTIVE_CORRECTION → REVIEW` only; ACTIVE → ACTIVE_CORRECTION removed; ACTIVE must open a PR and enter REVIEW before correction mode becomes available |
 
 ### Files authorized for this correction cycle
 

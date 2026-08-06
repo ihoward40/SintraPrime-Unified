@@ -356,13 +356,21 @@ This is a known limitation: the protocol depends on the canonical remote as the 
 
 Safety branches preserve pre-rewrite and contested work and must not be deleted before governance closure.
 
-- **Minimum retention period:** a safety branch is retained for at least the governance-closure retention window (default: 90 days from closure) or until explicitly authorized for deletion.
-- **Governance closure event:** the governing PR is merged or formally abandoned; supersession evidence is preserved; no unresolved review or incident exists; final merge/tag receipt is recorded.
-- **Deletion authority:** only the project owner or a delegated repository governance authority may authorize deletion, and only after all closure conditions are met.
-- **Required evidence before deletion:** merge or abandonment receipt, supersession notice, retained CI receipt, and the recorded deletion authorization.
-- **Prohibition:** deletion is prohibited during open review, contested recovery, active audit, incident response, or unresolved merge verification.
+- **Minimum retention:** 90 days from governance closure. The 90-day minimum is a true floor and cannot be shortened by ordinary authorization. Deletion requires both:
+  1. governance closure, and
+  2. expiration of the 90-day minimum.
+- **Deletion authority:** explicit authorized approval, independent of the retention floor. Authorization alone cannot shorten the minimum.
+- **Default:** no early deletion.
 
-Deletion itself must be recorded as an auditable event (who, when, which branch, which authorization, which retention evidence).
+If an emergency early-deletion exception is permitted, it requires:
+
+- **Exceptional authority:** principal or delegated governance authority with emergency powers, distinct from ordinary authorization.
+- **Written justification:** explicit, specific, time-bounded reason for early deletion.
+- **Incident/evidence preservation:** the deleted safety branch's contents must first be preserved as an immutable replacement archive (snapshot, detached tag, or read-only mirror) with verifiable provenance.
+- **Independent approval:** a second governing authority (separate from the requester) must approve in writing.
+- **Audit:** the deletion, the preservation archive, and the approvals are recorded as auditable events.
+
+The emergency exception is the only path that bypasses the 90-day minimum, and it is conditional on all five conditions above.
 
 ### 2.V ACTIVE_CORRECTION State
 
@@ -419,16 +427,19 @@ The transition is `REVIEW -> ACTIVE_CORRECTION -> REVIEW`. `ACTIVE_CORRECTION` i
 ```text
 UNCLAIMED -- claim --> CLAIMED -- activate --> ACTIVE
 ACTIVE -- freeze --> FROZEN -- release --> ACTIVE
-ACTIVE -- open PR --> REVIEW -- merge --> MERGED -- archive --> ARCHIVED
+ACTIVE -- open PR --> REVIEW
 ACTIVE -- contest --> CONTESTED -- supersede --> SUPERSEDED -- retire --> RETIRED -- archive --> ARCHIVED
 ACTIVE -- abandon --> ABANDONED -- archive --> ARCHIVED
-ACTIVE -- enter-correction --> ACTIVE_CORRECTION -- return-to-review --> REVIEW
+REVIEW -- approval + CI green + threads clear --> MERGEABLE
+MERGEABLE -- exact-head merge authorization --> MERGED -- archive --> ARCHIVED
 REVIEW -- enter-correction --> ACTIVE_CORRECTION -- return-to-review --> REVIEW
 CONTESTED -- supersede --> SUPERSEDED
 FROZEN -- supersede --> SUPERSEDED
 ```
 
 Note: `CLAIMED` here is a **branch-level** state meaning "a claim is attached to this branch". The claim's own state is determined by the claim lifecycle (4.2): PENDING, ACTIVE, RENEWING, STALE, EXPIRED, RELEASED, REVOKED, TRANSFER_PENDING. `CLAIMED` is not one of the claim states.
+
+`MERGEABLE` is a required gate. `REVIEW → MERGED` direct is forbidden; merge is only legal from `MERGEABLE` and only with exact-head merge authorization.
 
 ### 4.2 Ownership Claim Lifecycle
 
@@ -446,7 +457,9 @@ STALE -- overdue-expired --> EXPIRED
 ACTIVE -- expires --> EXPIRED
 ACTIVE -- transfer-init --> TRANSFER_PENDING
 TRANSFER_PENDING -- verify-ok --> ACTIVE
-TRANSFER_PENDING -- verify-fail --> RELEASED (outgoing keeps RELEASED record)
+TRANSFER_PENDING -- verify-fail --> HANDOFF_INTEGRITY_MISMATCH
+HANDOFF_INTEGRITY_MISMATCH -- freeze --> FROZEN
+TRANSFER_PENDING -- verify-fail --> HANDOFF_INTEGRITY_MISMATCH (both states preserved; no RELEASED, no automatic takeover)
 ACTIVE -- release --> RELEASED
 ACTIVE -- revoke --> REVOKED
 STALE -- revoke --> REVOKED
@@ -459,6 +472,7 @@ Differentiations:
 - `EXPIRED`: claim authority has ended; branch becomes `FROZEN` and cannot be published from until explicit takeover. Does not grant automatic takeover.
 - `REVOKED`: authority was affirmatively terminated; branch becomes `FROZEN` and requires a new claim to resume.
 - `TRANSFER_PENDING`: ownership transfer initiated; outgoing agent has frozen writes but writes do not resume until verification completes successfully.
+- `HANDOFF_INTEGRITY_MISMATCH` (claim-cycle failure mode): triggered when ownership transfer verification fails. Neither outgoing nor incoming agent gains publication authority. Both states are preserved. The branch freezes (`FROZEN`). A safety branch is created if needed. Reconciliation requires comparing Git objects, handoff history, remote refs, CI, and review state. Explicit governance authority is required before any transfer restarts. `RELEASED` is **not** the destination.
 
 This diagram is the canonical form. The text in 2.B, the invariants in Section 3, the matrices in 5.1–5.11, and the glossary in Section 8 use these same eight states.
 
@@ -503,15 +517,14 @@ RETIRED -- archive --> ARCHIVED
 NONE -- push --> DRAFT
 DRAFT -- ready --> REVIEW
 REVIEW -- approve + threads clear --> MERGEABLE
-MERGEABLE -- merge --> MERGED
+MERGEABLE -- exact-head merge authorization --> MERGED
 REVIEW -- request changes --> ACTIVE_CORRECTION -- fix --> REVIEW
 REVIEW -- contest --> CONTESTED (see 4.5)
 ACTIVE -- open PR --> REVIEW
-REVIEW -- enter-correction --> ACTIVE_CORRECTION -- return-to-review --> REVIEW
 ACTIVE_CORRECTION -- abandoned --> REVIEW (with note)
 ```
 
-`ACTIVE_CORRECTION` is the governed correction transition. While the PR is in `ACTIVE_CORRECTION`, the writer is the sole mutator and may publish only reviewer-requested changes. Return to `REVIEW` requires updated handoff, exact head, CI terminal state, and correction evidence. If the writer abandons corrections, the PR returns to `REVIEW` with a note rather than silently closing.
+The only normal correction path is `REVIEW → ACTIVE_CORRECTION → REVIEW`. `ACTIVE_CORRECTION` is reached only from `REVIEW` (never directly from `ACTIVE`). While the PR is in `ACTIVE_CORRECTION`, the writer is the sole mutator and may publish only reviewer-requested changes. Return to `REVIEW` requires updated handoff, exact head, CI terminal state, and correction evidence. If the writer abandons corrections, the PR returns to `REVIEW` with a note rather than silently closing.
 
 ### 4.7 Emergency Freeze Lifecycle
 
@@ -540,17 +553,18 @@ Possession of any column does not grant any other column.
 
 ### 5.2 Branch-State Transition Matrix
 
-| From \ To | CLAIMED | ACTIVE | FROZEN | REVIEW | MERGED | CONTESTED | SUPERSEDED | RETIRED | ARCHIVED | ACTIVE_CORRECTION |
-|---|---|---|---|---|---|---|---|---|---|---|
-| UNCLAIMED | claim | - | - | - | - | - | - | - | - | - |
-| CLAIMED | - | activate | - | - | - | - | - | - | - | - |
-| ACTIVE | - | - | freeze | open PR | - | contest | - | abandon | - | enter-correction |
-| FROZEN | - | release | - | - | - | - | supersede | - | - | - |
-| REVIEW | - | - | - | - | merge | contest | - | - | - | enter-correction |
-| ACTIVE_CORRECTION | - | - | - | return-to-review | - | - | - | - | - | (re-entry allowed only from REVIEW) |
-| CONTESTED | - | - | - | - | - | - | supersede | - | - | - |
-| SUPERSEDED | - | - | - | - | - | - | - | retire | - | - |
-| RETIRED | - | - | - | - | - | - | - | - | archive | - |
+| From \ To | CLAIMED | ACTIVE | FROZEN | REVIEW | MERGEABLE | MERGED | CONTESTED | SUPERSEDED | RETIRED | ARCHIVED | ACTIVE_CORRECTION |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| UNCLAIMED | claim | - | - | - | - | - | - | - | - | - | - |
+| CLAIMED | - | activate | - | - | - | - | - | - | - | - | - |
+| ACTIVE | - | - | freeze | open PR | - | - | contest | - | abandon | - | - |
+| FROZEN | - | release | - | - | - | - | - | supersede | - | - | - |
+| REVIEW | - | - | - | - | approval + CI green + threads clear | - | contest | - | - | - | enter-correction |
+| MERGEABLE | - | - | - | - | - | exact-head merge authorization | - | - | - | - | - |
+| ACTIVE_CORRECTION | - | - | - | return-to-review | - | - | - | - | - | - | (re-entry allowed only from REVIEW) |
+| CONTESTED | - | - | - | - | - | - | - | supersede | - | - | - |
+| SUPERSEDED | - | - | - | - | - | - | - | - | retire | - | - |
+| RETIRED | - | - | - | - | - | - | - | - | - | archive | - |
 
 Claim `STALE` and `EXPIRED` states (see 2.B) transition the branch to `FROZEN`: a stale or expired claim freezes the branch and blocks all publication; it does not grant takeover. Recovery from FROZEN requires explicit reauthorization (see 2.M). The `CONTESTED -- supersede --> SUPERSEDED` edge is the single canonical label used consistently in 4.1, 4.5, and this matrix.
 
@@ -642,6 +656,7 @@ For every branch state, the following actions are allowed (Y), conditionally all
 | ACTIVE | Y | Y | C | N | C | C | Y | Y | C | N | N | C | Y |
 | FROZEN | N | N | N | N | N | N | Y | Y | N | N | N | C* | Y |
 | REVIEW | N | C* | N | N | N | C | Y | Y | C | N | N | C | Y |
+| MERGEABLE | N | N | N | N | N | C | Y | Y | N | Y | N | N | Y |
 | ACTIVE_CORRECTION | Y | Y | C | N | N | C | Y | Y | N | N | N | N | Y |
 | CONTESTED | N | N | N | N | N | N | Y | Y | N | N | N | N | Y |
 | SUPERSEDED | N | N | N | N | N | N | Y | Y | N | N | N | N | Y |
@@ -655,6 +670,7 @@ Key rules:
 - **FROZEN:** no feature writes or publication; preservation and verification only. `transfer` is allowed only via explicit reauthorization (C*), never automatic.
 - **REVIEW:** no direct edits, commits, or push. The writer must transition to `ACTIVE_CORRECTION` to address reviewer-requested changes. `C*` denotes "only via an explicit state transition (e.g., REVIEW -> ACTIVE_CORRECTION) and never directly from the current state."
 - **ACTIVE_CORRECTION:** the existing branch owner remains the sole writer. Local edits, narrow commits, and normal push (C — constrained to reviewer-requested correction scope; remote must match `expected_remote_sha`) are allowed. No PR creation, no merge, no deploy, no force-push. Return to REVIEW requires updated handoff, exact head, CI terminal state, and correction evidence.
+- **MERGEABLE:** merge is permitted only from this state, and only with exact-head merge authorization. `REVIEW → MERGED` direct is forbidden.
 - **CONTESTED:** no push to the contested branch; no merge; only safety/reconciliation actions.
 - **SUPERSEDED:** read-only evidence state; no return to ACTIVE (Inv 7).
 - **RETIRED:** no writes or publication.

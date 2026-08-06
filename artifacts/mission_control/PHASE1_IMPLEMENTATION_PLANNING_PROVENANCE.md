@@ -36,9 +36,29 @@ Eleven files copied verbatim from source. SHA-256 hashes computed and verified s
 | 8 | `08_TEST_MATRIX.md` | `72dfc7fcc42122a2178194baac8cbba123692942950d58778aed75c772f89658` | 1210 | 124960 |
 | 9 | `09_CERTIFICATION_MATRIX.md` | `b55dc80b47d3d8a3ec5baf510938f2581bb2914fab17f5907fa4b4817dddd451` | 2214 | 138843 |
 | 10 | `10_ROLLOUT_ROLLBACK_PLAN.md` | `bde22b7d57c88905c8ec1eb1e18e88b7213e138eb55ed2f33739351fc25a6d5f` | 972 | 68296 |
-| 11 | `11_TRACEABILITY_MATRIX.md` | `a8fbedac24c26fabea471116f331482db8ec5dd0be88260b07d2e8737027add8` | 951 | 101024 |
+| 11 | `11_TRACEABILITY_MATRIX.md` (original) | `a8fbedac24c26fabea471116f331482db8ec5dd0be88260b07d2e8737027add8` | 951 | 101024 |
 
 **Totals:** 11 files, 11,917 lines, 866,724 bytes.
+
+### Traceability Correction Record
+
+The traceability matrix `11_TRACEABILITY_MATRIX.md` has been modified after publication to fix three leading-zero test ID references that did not resolve to defined tests:
+
+- Old: `RT-02.09` → New: `RT-02.9` (defined in `08_TEST_MATRIX.md`)
+- Old: `RT-05.08` → New: `RT-05.8` (defined in `08_TEST_MATRIX.md`)
+- Old: `RT-05.09` → New: `RT-05.9` (defined in `08_TEST_MATRIX.md`)
+
+This change fixes broken test references only. It does not alter test meaning or renumber valid tests. After correction, all 164 RT-references in the traceability matrix resolve exactly to IDs defined in the test matrix (referential integrity PASS).
+
+| Field | Value |
+|---|---|
+| File | `docs/mission-control/executor-continuation/implementation-plan/11_TRACEABILITY_MATRIX.md` |
+| Original SHA-256 (source published) | `a8fbedac24c26fabea471116f331482db8ec5dd0be88260b07d2e8737027add8` |
+| New SHA-256 (post-correction, current published) | `4ddc60de3d3873d82a2362caebd77f00f2c1f2dd7fc3478b45713759ebd69824` |
+| Original lines | 951 |
+| New lines | 951 (unchanged — only character-level leading-zero token replacement) |
+
+The other ten planning artifacts (01–10) remain byte-identical to the source Phase 1 commit `1632fbd92ddb80e4e3739fac7cfd97e530a183c2`. Their SHA-256 hashes above are unchanged from the original published hashes.
 
 ## Identity Distinctions
 

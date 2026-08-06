@@ -46,18 +46,18 @@
 
 Corroboration fields (populated per ADR-MC-002 2.E; handoff is the controlling coordination record — operational truth requires convergence among committed handoff, Git object state, remote references, CI receipts, and review state):
 
-- handoff_commit_sha: 516b439008a67232c4389e03fb3cf1dc9dc14834 (the substantive corrections commit; this evidence commit is a metadata-only follow-up)
-- handoff_content_hash (pre-edit of this evidence commit): 8cb469315fc6ed2094aeaa84881facac6b4b9c5537790cdfeadd6ed6bd5d6a43
-- prior_handoff_commit: acefb9affde50d85c8e6d89762b36782dc50ef95 (full chain: b56566af → 76853ab3 → acefb9af → 5205887b → 516b4390)
+- handoff_commit_sha: 0ba1832568115d038887639a1d00b09f41a12731 (the final consistency correction commit; this evidence commit is a metadata-only follow-up)
+- handoff_content_hash (pre-edit of this evidence commit): 0a58949e0dcc2e167932ff7031bfbb2216691873f372e03538932a4b1abb477a
+- prior_handoff_commit: 516b439008a67232c4389e03fb3cf1dc9dc14834 (full chain: b56566af → 76853ab3 → acefb9af → 5205887b → 516b4390 → 5d2e7101 → e6ffb638 → 0ba18325)
 - author_agent: Hermes
 - verification_agent: Hermes (self — no incoming ownership transfer; verified against committed Git state)
 - timestamp: 2026-08-06
-- branch HEAD at update: 516b439008a67232c4389e03fb3cf1dc9dc14834
-- tree SHA at update: 59975158a24f65a135bb165eec071f2058b81f0b
+- branch HEAD at update: 0ba1832568115d038887639a1d00b09f41a12731
+- tree SHA at update: b29d4cb57db15022a68dd8b85e5c125fc7fcbcd2
 - ratification_commit_sha: 25313c2113564333a8d2df9ab4d24357f5c3fff7 (the commit that changed ADR-MC-002 status from DRAFT to ACCEPTED)
-- evidence_commit_sha: 516b439008a67232c4389e03fb3cf1dc9dc14834 (Commit A — substantive corrections; reachable: `git merge-base --is-ancestor 516b439008a67232c4389e03fb3cf1dc9dc14834 HEAD` exits 0)
-- evidence_tree_sha: 59975158a24f65a135bb165eec071f2058b81f0b
-- evidence_recorded_by_commit: CURRENT HANDOFF COMMIT — not self-referenced; intended to be populated in the next handoff update (status change or follow-up). This handoff file is the artifact that crosses the boundary.
+- evidence_commit_sha: 0ba1832568115d038887639a1d00b09f41a12731 (the final consistency correction commit; reachable: `git merge-base --is-ancestor 0ba1832568115d038887639a1d00b09f41a12731 HEAD` exits 0)
+- evidence_tree_sha: b29d4cb57db15022a68dd8b85e5c125fc7fcbcd2
+- evidence_recorded_by_commit: CURRENT HANDOFF COMMIT — not self-referenced; intended to be populated in the next handoff update. This handoff file is the artifact that crosses the boundary.
 - External edits / bots / APIs / automation:
   - None recorded to date. Any direct GitHub edit, bot action, API call, or automation run must be appended here with the acting identity and timestamp.
 
@@ -67,14 +67,16 @@ Corroboration fields (populated per ADR-MC-002 2.E; handoff is the controlling c
 - Condition A: handoff corroboration fields populated — CLOSED (ratification-prep commit acefb9af; non-self-referential semantics applied)
 - Condition B: offline claim-expiry rule added — CLOSED (Section 2.S.1 added at ratification-prep commit a87f22ed)
 - ADR status: ACCEPTED (ratified 2026-08-06 by Isiah Howard; owner decision APPROVE)
-- PR #260 PR head: e6ffb6381f84015ff425ed3a5792fd61dd80bc9e
-- PR #260 tree SHA: 5adcf913f8fc2fbd20f99afeecda3be0df05b440
-- CI state at PR #260 head e6ffb638: terminal (12/12 PASS) — verified after the correction-cycle push
-- Original five codex review threads: RESOLVED at head 5d2e7101
-- New five codex review threads (surfaced after ready-for-review transition): OPEN
-- Current review disposition: REQUEST_CHANGES
-- Branch state: ACTIVE_CORRECTION (re-entered to address the new five threads)
-- Next required action: correction-cycle commit, push, CI to terminal, thread resolution only after CI terminal and corrections verified
+- PR #260 head (current, after handoff-only correction): 0ba1832568115d038887639a1d00b09f41a12731
+- PR #260 tree SHA (current): b29d4cb57db15022a68dd8b85e5c125fc7fcbcd2
+- CI at PR #260 head 0ba18325: terminal (12/12 PASS)
+- PR #260 PR head before this handoff-only correction: 0ba1832568115d038887639a1d00b09f41a12731 (same — this is the first metadata-only handoff update after the substantive corrections commit)
+- PR #260 tree SHA before this handoff-only correction: b29d4cb57db15022a68dd8b85e5c125fc7fcbcd2
+- Original five codex review threads: 5 resolved
+- Second-cycle threads: 4 substantively corrected (outdated against current head); 1 handoff-status thread remains open pending this handoff-only correction
+- Current review disposition: REQUEST_CHANGES — handoff synchronization only
+- Branch state: ACTIVE_CORRECTION
+- Next action: publish this handoff-only correction, run CI, verify exact new head, resolve all five second-cycle threads after evidence confirmation, then final re-review
 - Merge: NOT AUTHORIZED
 - Tag: NOT AUTHORIZED
 - Implementation-authorization branch: NOT AUTHORIZED
@@ -99,31 +101,13 @@ Corroboration fields (populated per ADR-MC-002 2.E; handoff is the controlling c
 |---|---|---|---|---|
 | 1 | P1 | docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md | Failed ownership-transfer verification must trigger `HANDOFF_INTEGRITY_MISMATCH` and freeze, not `RELEASED` | RESOLVED at head (correction): 4.2 `TRANSFER_PENDING -- verify-fail --> HANDOFF_INTEGRITY_MISMATCH -- freeze --> FROZEN`; both states preserved; no RELEASED, no automatic takeover |
 | 2 | P1 | docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md | The transition matrix must preserve `REVIEW → MERGEABLE → MERGED`; it currently allows a direct review-to-merge path | RESOLVED at head: 4.1 and 4.6 enforce `REVIEW → MERGEABLE → MERGED`; 5.11 MERGEABLE row permits merge only from MERGEABLE with exact-head authorization; direct REVIEW→MERGED forbidden |
-| 3 | P1 | artifacts/agent_handoffs/ADR_MC_002_HANDOFF.md | The handoff still contains stale correction-cycle status and next actions | RESOLVED at head: Review State rewritten to reflect only current verified facts (head e6ffb638, tree 5adcf913, CI terminal 12/12, 5 original threads resolved, 5 new threads open, disposition REQUEST_CHANGES, branch state ACTIVE_CORRECTION) |
+| 3 | P1 | artifacts/agent_handoffs/ADR_MC_002_HANDOFF.md | The handoff still contains stale correction-cycle status and next actions | RESOLVED at head 0ba18325: Review State rewritten to reflect only current verified facts (head 0ba18325, tree b29d4cb5, CI terminal 12/12 PASS at 0ba18325, 5 original threads resolved, 4 second-cycle threads corrected, 1 handoff-status thread pending reopened-validation after this handoff-only correction lands, disposition REQUEST_CHANGES — handoff synchronization only, branch state ACTIVE_CORRECTION); Evidence Log fields updated to 0ba18325; "Current Next Action" section at the bottom of the handoff removed as stale; "Next required action" section removed as stale; "CI state" section removed as stale. Awaiting thread resolution. |
 | 4 | P2 | docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md | The stated 90-day safety-branch minimum is weakened by "or until explicitly authorized" | RESOLVED at head: 2.T rewritten with 90-day minimum as a true floor; deletion requires both governance closure AND expiration of 90-day minimum; authorization alone cannot shorten; emergency exception requires 5 specific conditions |
 | 5 | P2 | docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md | `ACTIVE → ACTIVE_CORRECTION` bypasses the review-request requirement; correction mode should begin only from `REVIEW` | RESOLVED at head: 4.1, 4.6, 5.2 enforce `REVIEW → ACTIVE_CORRECTION → REVIEW` only; ACTIVE → ACTIVE_CORRECTION removed; ACTIVE must open a PR and enter REVIEW before correction mode becomes available |
 
 ### Files authorized for this correction cycle
 
-- docs/mission-control/ADR_MC_002_MULTI_AGENT_COORDINATION.md
-- artifacts/agent_handoffs/ADR_MC_002_HANDOFF.md
-- AGENTS.md (scope expansion limited to DOX discoverability of the accepted ADR)
-
-### CI state
-
-- CI terminal state at PR #260 head 5205887b: 12/12 PASS (pre-correction; will re-poll after correction commits push)
-
-### Next required action
-
-- Push correction-cycle commits.
-- Poll CI to terminal at the new head.
-- Thread resolution is NOT performed automatically; thread resolution requires owner/governance authorization after corrections are published and CI is terminal.
-- Merge, mark ready, deploy, Phase 3B: NOT AUTHORIZED.
-
-### Governance locks preserved
-
-- Sigma gate BLOCKED · Cancellation DISABLED · Phase 3B BLOCKED · Runtime implementation NOT AUTHORIZED · Deployment NOT AUTHORIZED
-- Phase 1 planning branch (plan/executor-continuation-impl) untouched at 1632fbd9
+- artifacts/agent_handoffs/ADR_MC_002_HANDOFF.md (only — handoff-only correction, ADR not modified this cycle)
 
 ## Authorized Scope
 
@@ -149,7 +133,7 @@ This branch is architecture and governance documentation only.
 
 ## Current Next Action
 
-ADR-MC-002 RATIFIED 2026-08-06 (owner decision APPROVE). Push branch and open DRAFT PR. Poll CI to terminal state. Do not merge. Do not mark ready for review. Do not deploy. Do not begin Phase 3B.
+Publish this handoff-only correction (artifacts/agent_handoffs/ADR_MC_002_HANDOFF.md). Run CI to terminal. Verify exact new head. Resolve all five second-cycle threads after evidence confirmation. Then final re-review. Do not merge. Do not tag. Do not open the implementation-authorization branch. Do not deploy. Do not begin Phase 3B. Do not authorize runtime implementation.
 
 ## Governance Baseline (controlling)
 
@@ -157,7 +141,7 @@ ADR-MC-002 RATIFIED 2026-08-06 (owner decision APPROVE). Push branch and open DR
 - Mission Control Foundation: merged and tagged
 - ADR-MC-001: ACCEPTED and merged
 - Phase 1 implementation planning: APPROVED locally at 1632fbd92ddb80e4e3739fac7cfd97e530a183c2 (frozen, not based upon)
-- ADR-MC-002: ACCEPTED (ratified 2026-08-06; pending DRAFT PR + CI)
+- ADR-MC-002: ACCEPTED (ratified 2026-08-06; PR #260 in correction cycle, handoff-only synchronization in progress)
 - Sigma continuation gate: BLOCKED
 - Cancellation: DISABLED
 - Runtime implementation: NOT AUTHORIZED
@@ -166,7 +150,7 @@ ADR-MC-002 RATIFIED 2026-08-06 (owner decision APPROVE). Push branch and open DR
 
 ## Timestamp
 
-2026-08-05
+2026-08-06 (last handoff-only correction)
 
 ## Single-Writer Status
 

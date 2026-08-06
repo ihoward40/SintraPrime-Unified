@@ -72,6 +72,18 @@ Corroboration fields (populated per ADR-MC-002 2.E; handoff is the controlling c
 - Runtime implementation: NOT AUTHORIZED (preserved)
 - Branch state: ACTIVE_CORRECTION (entered to address review threads)
 
+### Final architecture disposition after correction cycle
+
+- Final architecture disposition: APPROVE
+- All five PR #260 review threads: RESOLVED against exact head 5d2e7101
+- CI: terminal (12/12 PASS) at corrected head
+- Unresolved threads: 0
+- Branch state: ACTIVE_CORRECTION -> READY_FOR_REVIEW (legitimate transition out of correction)
+- Next action: PR #260 ready-for-review transition (deferred to owner authorization)
+- Governance locks preserved: Sigma gate BLOCKED · Cancellation DISABLED · Phase 3B BLOCKED · Runtime implementation NOT AUTHORIZED · Deployment NOT AUTHORIZED
+- PR status: DRAFT pending owner authorization to mark ready
+- Merge: NOT YET AUTHORIZED
+
 ### PR #260 review threads (codex bot automated review)
 
 | # | Severity | File | Finding | Resolution |

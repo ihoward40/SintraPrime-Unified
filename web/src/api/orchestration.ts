@@ -61,6 +61,11 @@ export type OrchestrationRun = {
   }>;
 };
 
+function authHeaders(): Record<string, string> {
+  const token = localStorage.getItem('sintraprime_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function executeOrchestration(payload: {
   objective: string;
   constraints: Record<string, unknown>;
@@ -69,7 +74,7 @@ export async function executeOrchestration(payload: {
 }): Promise<OrchestrationRun> {
   const response = await fetch('/api/orchestration/execute', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(payload),
   });
   if (!response.ok) {

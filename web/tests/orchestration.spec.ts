@@ -116,7 +116,9 @@ test('execution graph, role cards, approval, disagreement, and audit panels rend
 });
 
 test('starting a run sends selected provider policy and renders completed state', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('sintraprime_token', 'test-token'));
   await page.route('**/api/orchestration/execute', async (route) => {
+    expect(route.request().headers().authorization).toBe('Bearer test-token');
     const payload = route.request().postDataJSON();
     expect(payload.budget_limits.approved_providers).toEqual(['checker_model']);
     await route.fulfill({

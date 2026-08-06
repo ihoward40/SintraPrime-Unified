@@ -138,9 +138,9 @@ Outgoing agent: Hermes
 
 Branch: feat/sigma-executor-continuation-adr
 
-Current HEAD: pending ratification commit
+Current HEAD: 26c2f5d6442b6238552adb08e2ea9029b0da813b
 
-Tree SHA: pending ratification commit
+Tree SHA: 976cea72a458dfe78bab54801c7c03a9f1515c56
 
 Base: 97bd539f82ee9099003b0ba5c3729092bf470604 (main, post-merge)
 

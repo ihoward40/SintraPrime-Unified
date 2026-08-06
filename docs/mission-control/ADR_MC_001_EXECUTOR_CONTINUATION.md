@@ -49,6 +49,9 @@ Every command dispatched to an executor is associated with a lease. The lease is
   - the Brain is available.
 - Renewal extends `expires_at` and produces a new signed lease token.
 - The previous lease token is revoked and must not be honored by downstream systems.
+- Renewal invalidates any prior continuation capability. The Brain issues a new continuation capability referencing the renewed lease. Only the capability referenced by the latest valid lease may be exercised.
+- Capability rotation is auditable: the issuance, supersession, and revocation of each capability are recorded as immutable audit events.
+- Capability revocation applies even where a former capability has a later `not_valid_after`; downstream systems must reject superseded capability IDs.
 
 #### 2.1.3 Lease Expiry
 
@@ -128,7 +131,7 @@ Witnesses are independent control-plane identities, not executors. The witness m
 |---|---|
 | Witness identity | A witness is a control-plane service or Brain observer, not an executor participating in the command |
 | Authentication | Witness statements are signed with witness identity keys and include `tenant_id`, `brain_region`, `witness_id`, `statement_id`, and timestamp |
-| Quorum | Outage declaration requires at least `witness_quorum_size` valid witness statements from distinct witnesses. The quorum must be strictly less than the total witness count to tolerate Byzantine failures. |
+| Quorum | Outage declaration requires at least `witness_quorum_size` valid witness statements from distinct witnesses. The fault model is: with `N` total witnesses and `f` faulty witnesses, the system requires `N >= 3f + 1` and `witness_quorum_size >= 2f + 1`. This is the standard Byzantine fault tolerance bound: it guarantees that any quorum of `2f + 1` witnesses contains at least `f + 1` honest witnesses, so a quorum cannot be formed by faulty witnesses alone. The first implementation may use a crash-fault tolerant (CFT) model (`N >= 2f + 1`, `quorum >= f + 1`) if it explicitly documents that it is not Byzantine-fault tolerant. The `witness_quorum_size` must be strictly less than `N` in either model. |
 | Tenant partitioning | Witness statements are scoped to the tenant's Brain partition. A witness for tenant A cannot declare outage for tenant B. |
 | Replay resistance | Each statement includes a monotonically increasing nonce and a signed anchor; stale or replayed statements are rejected |
 | Stale witness protection | Witness statements older than `witness_statement_max_age` are ignored |
@@ -194,6 +197,8 @@ Where:
 - `side_effect_slot` — the specific external-effect slot being claimed (e.g., a resource write, notification, transfer)
 
 `continuation_id`, `executor_id`, `lease_token`, and replay attempt number are **execution metadata**, not part of the external-effect identity. Downstream systems must reject duplicate effects matching the same `(command_id, operation_id, side_effect_slot)` regardless of which executor or attempt produced them.
+
+**Replay identity rule:** When a replay creates a new command record, the `command_id` in the effect identity must always refer to the `root_command_id` — the original command that initiated the work — never the replay-attempt command record. See Section 2.7.
 
 #### 2.5.2 Duplicate Suppression Layers
 
@@ -309,8 +314,8 @@ Replay is the Brain-authorized re-execution of a command after recovery. It is d
 
 - Replay may occur only when the Brain explicitly authorizes it.
 - The Brain must reconcile all continuation reports before authorizing replay. Unknown or unreconciled effect status blocks replay or requires compensation/manual review.
-- Replay uses a new lease and a new **execution** identity (`replay_attempt_id`).
-- Replay does **not** receive a new external-effect identity. The replay must use the original stable `(command_id, operation_id, side_effect_slot)` identities for externally visible effects.
+- Replay uses a new lease and a new **execution** identity (`replay_attempt_id`). The replay creates a new command record, but that record is execution metadata — it is not the identity root for external effects.
+- Replay does **not** receive a new external-effect identity. Every replayed operation must derive its external-effect identity from the original root command, never from the replay-attempt command record. The stable key is `(root_command_id, operation_id, side_effect_slot)` where `root_command_id` is the original command that initiated the work. An implementer must never use the replay record's new command ID in the effect identity, as that would bypass deduplication against effects already produced by the original command or any prior continuation.
 - The Brain must mark the original command as `REPLAYED` and link the replay command through causation.
 - Executors must not autonomously replay a command during continuation.
 - A continuation that fails may be followed by a Brain-authorized replay only after the continuation is reconciled and the Brain determines which effects are already applied.
@@ -325,7 +330,7 @@ Continuation depends critically on time. The design must define trusted time sem
 | Executor clock | The executor maintains a monotonic clock for duration measurement and a wall-clock corrected by signed Brain anchors. |
 | Clock skew tolerance | Maximum skew between executor wall-clock and Brain time is `max_clock_skew_tolerance` (default: 5 seconds). Exceeding skew is a security event. |
 | Monotonic time | `max_continuation_duration` and grace periods are measured with monotonic time to prevent extension via clock rollback. |
-| Signed time anchors | The Brain issues signed time anchors at dispatch, renewal, lease expiry, and recovery. The executor uses the most recent anchor. |
+| Signed time anchors | The Brain issues signed time anchors at dispatch, renewal, and recovery. A signed anchor at the instant of lease expiry is not required: the latest pre-outage signed anchor establishes the wall-clock reference, and the executor derives lease expiry locally from that anchor plus monotonic elapsed time. The executor advances elapsed time using its monotonic clock. If the monotonic clock loses continuity (e.g., process restart, suspend/resume) or wall-clock drift exceeds `max_clock_skew_tolerance`, the executor must STOP. A fresh Brain signature at the instant of expiry is not required to declare expiry. |
 | Timestamp rollback | The executor rejects any signed timestamp that rolls backward more than `max_clock_rollback_tolerance` relative to the last anchor. Larger rollbacks require operator intervention. |
 | Disagreement | If executor and Brain time disagree beyond tolerance, the executor must stop and wait for a fresh signed anchor. Continuation is not permitted under disputed time. |
 | Capability validity | Capability `not_valid_before` and `not_valid_after` are evaluated against signed Brain anchors, not executor wall-clock alone. |
@@ -644,6 +649,7 @@ The following invariants must hold at all times. Any violation is a security or 
 | 1 | An executor without a valid lease cannot produce authoritative command effects during normal execution. | Lease token validation |
 | 2 | An executor cannot use an expired lease to authorize continuation or effects. | Lease expiry + separate capability validation |
 | 3 | A continuation capability cannot be used before lease expiry or after its own expiry. | `not_valid_before`, `not_valid_after`, signed time anchors |
+| 3a | Only the continuation capability referenced by the latest valid lease may be exercised. Prior capabilities are superseded at renewal, even if their `not_valid_after` is later. | Capability rotation audit chain; downstream capability ID validation |
 | 4 | Continuation is never the default behavior. | Eligibility check; optional stop; default class STOP |
 | 5 | Continuation cannot exceed its bounded envelope. | Capability `max_continuation_duration`; `max_continuation_operations`; monotonic clock |
 | 6 | Every continuation produces an immutable, signed receipt. | Executor receipt generation; signature verification |
@@ -674,6 +680,7 @@ The following invariants must hold at all times. Any violation is a security or 
 | Idempotency key | A key that identifies a command such that duplicate execution produces the same effect once. |
 | Continuation_id | A unique identifier for a single continuation attempt; used as metadata, not as an effect-identity boundary. |
 | Replay | A Brain-authorized re-execution of a command using a new lease and execution identity, but preserving original external-effect identities. |
+| Root command ID | The original command that initiated a unit of work. All external-effect identities for continuations and replays of that work derive from the root command ID, never from continuation or replay-attempt command records. |
 | Split-brain | A condition where multiple executors independently continue the same command. |
 | Policy snapshot | The exact version of execution policy pinned in a continuation capability. |
 | Completion receipt | An immutable, signed record of a continuation's outcome. |

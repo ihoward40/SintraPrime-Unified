@@ -72,11 +72,11 @@ The ADR-MC-001 must address:
 
 ## Current Work State
 
-Status: ADR-MC-001 REVIEW CYCLE 1 COMPLETE — AWAITING REVIEW FEEDBACK
+Status: ADR-MC-001 REVIEW CYCLE 2 CORRECTIONS APPLIED — AWAITING RATIFICATION REVIEW
 
 Current agent: Hermes
 
-Current task: Architecture review corrections applied to ADR-MC-001 draft. The draft is located at docs/mission-control/ADR_MC_001_EXECUTOR_CONTINUATION.md.
+Current task: Four architecture review conditions from APPROVE_WITH_CONDITIONS decision applied to ADR-MC-001 draft. The draft is located at docs/mission-control/ADR_MC_001_EXECUTOR_CONTINUATION.md.
 
 ## Validation
 
@@ -100,6 +100,15 @@ Review blockers identified and resolved:
 8. **Revocation/cancellation cache not authoritative** — RESOLVED by adding revocation watermark, cache-age limit, fail-closed rules, and default STOP for high-risk commands (Section 2.10).
 9. **Side-effect safety too permissive** — RESOLVED by classifying side effects as Class 0–3 and prohibiting Class 3 (irreversible/high-risk) during continuation (Section 2.9).
 10. **Audit-chain truncation mixed into authority** — RESOLVED by clarifying that the authoritative audit ledger is never truncated; only read projections may paginate/truncate (Section 2.13).
+
+## Review Cycle 2 — APPROVE_WITH_CONDITIONS (2026-08-05)
+
+Architecture approved with four conditions. All conditions are documentation-only corrections; no runtime code required.
+
+1. **Capability rotation/supersession** — RESOLVED by adding lease-renewal rules: renewal invalidates prior capability, only latest-lease capability may be exercised, rotation is auditable, revocation applies even with later not_valid_after, downstream rejects superseded capability IDs (Section 2.1.2). Added invariant 3a (Section 7).
+2. **Replay identity using root_command_id** — RESOLVED by defining root_command_id as the original command, requiring all replayed operations to derive effect identity from it, never from the replay-attempt command record (Section 2.7). Added replay identity rule to Section 2.5.1 and root_command_id to glossary (Section 8).
+3. **Witness fault model and quorum math** — RESOLVED by replacing vague Byzantine claim with explicit fault model: N >= 3f+1, quorum >= 2f+1 for BFT; or N >= 2f+1, quorum >= f+1 for CFT with explicit documentation. Quorum must be strictly less than N in either model (Section 2.2.4).
+4. **Time-anchor language for outage expiry** — RESOLVED by clarifying that signed anchor at lease-expiry instant is not required; executor derives expiry from latest pre-outage anchor plus monotonic elapsed time; monotonic discontinuity or excessive drift forces STOP (Section 2.8).
 
 ## Changes Completed
 

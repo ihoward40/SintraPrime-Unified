@@ -49,7 +49,7 @@ The causation chain traces command lineage — which command caused which comman
 
 ### 3.4 Sigma Gate
 
-The Sigma gate (`SIGMA_LEASE_EXPIRY_CONTINUATION_GATE`) is a read-only status surface in Mission Control. Its current state is **BLOCKED**. Mission Control reports the gate status but does not control it. Gate control is governed by ADR-002 Section 2.5 and is pending ratification of ADR-MC-001.
+The Sigma gate (`SIGMA_LEASE_EXPIRY_CONTINUATION_GATE`) is a read-only status surface in Mission Control. Its current state is **BLOCKED**. Mission Control reports the gate status but does not control it. Gate control is governed by ADR-002 Section 2.5. ADR-MC-001 was ratified on 2026-08-05 (status: ACCEPTED); the gate remains BLOCKED pending implementation and certification of the ADR criteria.
 
 ## 4. Read-Only API Surface
 
@@ -114,7 +114,7 @@ The pre-existing refusal-only `POST /commands` endpoint remains unchanged and ca
 - `SIGMA_LEASE_EXPIRY_CONTINUATION_GATE` is **BLOCKED**.
 - All cancellation controls are **DISABLED**.
 - `is_cancellation_blocked()` returns `True`.
-- The gate remains blocking until ADR-MC-001 is ratified and its criteria are implemented (see ADR-MC-001).
+- The gate remains blocking until ADR-MC-001's criteria are implemented and certified (ADR-MC-001 ratified 2026-08-05; see ADR-MC-001).
 
 ## 9. Transport Neutrality
 

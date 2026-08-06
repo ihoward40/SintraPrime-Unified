@@ -83,6 +83,7 @@ Continuation requires a distinct, pre-authorized **continuation capability** iss
 | `side_effect_slot_spec` | Specification of permitted side-effect slots |
 | `policy_snapshot_hash` | Cryptographic hash of the pinned policy snapshot |
 | `policy_snapshot_id` | Identifier of the pinned policy snapshot |
+| `policy_snapshot_not_valid_after` | Wall-clock time after which the pinned policy snapshot expires; the executor must not continue past this time. If this field is absent, it defaults to the capability's own `not_valid_after`. |
 | `revocation_watermark_required` | Minimum revocation sequence number the executor must have observed |
 | `signed_capability_token` | Brain-signed token binding all fields; distinct from lease token |
 
@@ -90,6 +91,7 @@ Continuation requires a distinct, pre-authorized **continuation capability** iss
 - The capability is not a general grant of authority; it is narrowly scoped to a single command, tenant, executor, operation set, and time envelope.
 - The capability cannot be used before `not_valid_before`, which is set to the lease expiry or later.
 - Downstream systems must validate the signed continuation capability token — not the expired lease — before honoring any effect produced during continuation.
+- Downstream systems must also receive and verify replay-resistant **outage evidence** — a signed bundle containing the outage declaration record, witness statements (if used), signal thresholds crossed, and the signed time anchor at declaration time. The outage evidence is bound to the capability via `capability_id` and `command_id`. A capability alone is not sufficient proof of authority while the Brain is healthy; the outage evidence proves the precondition for continuation was actually satisfied. Downstream systems must reject continuation effects that lack valid, matching outage evidence.
 - The capability is revocable through a signed revocation stream; if the executor has not observed the required revocation watermark, it must not continue.
 
 ### 2.2 Brain Outage Detection
@@ -246,6 +248,7 @@ Within `completion_report_deadline` of recovery detection, every executor that c
 | `evidence_refs` | list | References to any produced artifacts |
 | `continuation_journal` | encrypted blob | Full continuation journal |
 | `audit_receipt_id` | string | Immutable audit receipt for the continuation |
+| `outage_evidence` | signed bundle | Replay-resistant outage declaration record, witness statements, signal thresholds, and signed time anchor, bound to `capability_id` and `command_id` |
 | `revocation_watermark_observed` | integer | Revocation sequence number the executor observed |
 
 Reporting is mandatory regardless of outcome. Silent continuation is forbidden.
@@ -261,7 +264,7 @@ Result selection determines which executor-reported outcome becomes authoritativ
 | Scenario | Result Selection Rule |
 |---|---|
 | Single valid continuation, no conflict | Select that result |
-| Multiple continuations, same result and effect identity | Select the result from the first completed continuation by monotonic timestamp; mark others `DUPLICATE_AGREED` |
+| Multiple continuations, same result and effect identity | Select the result from the first completed continuation by **trusted comparable signed time**; mark others `DUPLICATE_AGREED`. Executor-local monotonic clocks cannot be compared across machines. If signed time agrees or is unavailable, use an order-independent deterministic tie-breaker: lowest `executor_id` wins. |
 | Multiple continuations, divergent results | No automatic selection; route to `MANUAL_REVIEW_REQUIRED` and effect reconciliation |
 | Invalid continuation | Discard the result; executor may be flagged |
 
@@ -389,10 +392,10 @@ Split-brain occurs when multiple executors independently continue the same comma
 
 | Scenario | Result Selection | Effect Reconciliation | Final State |
 |---|---|---|---|
-| Multiple executors continued, results agree and effects are idempotent | First completed wins; others marked `DUPLICATE_AGREED` | Deduplicate by stable effect identity | SUCCEEDED |
-| Multiple executors continued, results agree but effects are non-reversible | First completed wins; others marked `DUPLICATE_AGREED` | Freeze effects; manual review | MANUAL_REVIEW_REQUIRED |
+| Multiple executors continued, results agree and effects are idempotent | First completed by trusted comparable signed time wins (deterministic tie-breaker: lowest `executor_id`); others marked `DUPLICATE_AGREED` | Deduplicate by stable effect identity | SUCCEEDED |
+| Multiple executors continued, results agree but effects are non-reversible | First completed by trusted comparable signed time wins (deterministic tie-breaker: lowest `executor_id`); others marked `DUPLICATE_AGREED` | Freeze effects; manual review | MANUAL_REVIEW_REQUIRED |
 | Multiple executors continued, results conflict | No automatic selection | Freeze all affected downstream effects; manual review | MANUAL_REVIEW_REQUIRED |
-| Brain recovers while continuation active | Stop active continuations; complete in-progress idempotent operations safely | Report completed operations; abort in-progress operations idempotently | RECONCILING |
+| Brain recovers while continuation active | Stop active continuations. For each in-progress operation, apply the atomicity rule: if the operation has already committed or is irreversible, finish it and report the result; if the operation has not yet committed, abort it. Never instruct both finish and abort for the same operation state. | Report completed operations; abort uncommitted operations; flag partial state for reconciliation | RECONCILING |
 | Brain never recovers within capability window | Executor must stop at `not_valid_after` | Partial results recorded; manual recovery process | MANUAL_REVIEW_REQUIRED |
 
 No silent conflict resolution is permitted. All conflicts are recorded and surfaced.
@@ -429,14 +432,15 @@ Continuation respects tenant boundaries.
 The recovery protocol governs how the system returns to normal operation after Brain recovery.
 
 1. **Recovery detection** — Brain availability confirmed for `brain_recovery_confirmation_period` by direct signals and/or witness confirmation.
-2. **Report collection** — Brain receives all pending continuation reports within `completion_report_deadline`.
-3. **Reconciliation** — Brain performs result selection, effect reconciliation, compensation, and manual-review routing (Section 2.6).
-4. **Conflict freeze** — Conflicting results freeze downstream effects until resolved.
-5. **Manual review queue** — Conflicts, invalid continuations, and non-reversible effects are enqueued for operator review.
-6. **Replay authorization** — Valid commands that did not complete receive Brain-authorized replay only after reconciliation.
-7. **Policy refresh** — All executors refresh policy snapshots and revocation watermarks before accepting new work.
-8. **Audit completion** — All continuation events are finalized in the immutable audit ledger.
-9. **Gate evaluation** — Only after the implementation is certified may `SIGMA_LEASE_EXPIRY_CONTINUATION_GATE` be evaluated for unblocking.
+2. **In-progress operation atomicity** — For each executor with an active continuation, apply the operation atomicity rule: operations that have already committed or are irreversible must be finished and reported; operations that have not yet committed must be aborted. The same operation is never both finished and aborted.
+3. **Report collection** — Brain receives all pending continuation reports within `completion_report_deadline`.
+4. **Reconciliation** — Brain performs result selection, effect reconciliation, compensation, and manual-review routing (Section 2.6).
+5. **Conflict freeze** — Conflicting results freeze downstream effects until resolved.
+6. **Manual review queue** — Conflicts, invalid continuations, and non-reversible effects are enqueued for operator review.
+7. **Replay authorization** — Valid commands that did not complete receive Brain-authorized replay only after reconciliation.
+8. **Policy refresh** — All executors refresh policy snapshots and revocation watermarks before accepting new work.
+9. **Audit completion** — All continuation events are finalized in the immutable audit ledger.
+10. **Gate evaluation** — Only after the implementation is certified may `SIGMA_LEASE_EXPIRY_CONTINUATION_GATE` be evaluated for unblocking.
 
 ## 3. Sequence Diagrams
 

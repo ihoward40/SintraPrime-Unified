@@ -72,11 +72,11 @@ The ADR-MC-001 must address:
 
 ## Current Work State
 
-Status: ADR-MC-001 RATIFIED — ACCEPTED 2026-08-05
+Status: ADR-MC-001 ACCEPTED — review cycle 3 corrections applied, awaiting thread resolution
 
 Current agent: Hermes
 
-Current task: ADR-MC-001 ratified by architecture review APPROVE. Status changed from DRAFT to ACCEPTED. Implementation remains NOT AUTHORIZED. Sigma gate remains BLOCKED.
+Current task: Five documentation corrections from ratification review (REQUEST_CHANGES) applied to ADR-MC-001. ADR status remains ACCEPTED. Sigma gate remains BLOCKED.
 
 ## Validation
 
@@ -120,6 +120,16 @@ Architecture review decision: APPROVE.
 - Architecture approval opens the implementation-planning gate; it does not unblock the Sigma gate, enable cancellation, enable command authority, authorize deployment, or begin Phase 3B.
 - SIGMA_LEASE_EXPIRY_CONTINUATION_GATE remains BLOCKED until implementation is certified.
 - Implementation remains NOT AUTHORIZED.
+
+## Review Cycle 3 — REQUEST_CHANGES (2026-08-05)
+
+Five documentation corrections from ratification review. All are documentation-only; no runtime code required.
+
+1. **Outage evidence binding** — RESOLVED by requiring downstream systems to receive and verify replay-resistant outage evidence (signed bundle: outage declaration, witness statements, signal thresholds, signed time anchor) bound to capability via `capability_id` and `command_id`. Added `outage_evidence` to completion report fields (Sections 2.1.4, 2.6.2).
+2. **Cross-host ordering** — RESOLVED by replacing executor-local monotonic timestamp comparison with trusted comparable signed time; deterministic tie-breaker (lowest `executor_id`) when signed time agrees or is unavailable (Sections 2.6.3.1, 2.12.2).
+3. **Policy snapshot expiry in capability schema** — RESOLVED by adding `policy_snapshot_not_valid_after` to the signed capability field table; defaults to capability `not_valid_after` if absent (Section 2.1.4).
+4. **Recovery operation atomicity** — RESOLVED by defining the atomicity rule: committed/irreversible operations finish and report; uncommitted operations abort; never both for the same operation state. Added as step 2 in recovery protocol (Sections 2.12.2, 2.15).
+5. **Ratification record synchronization** — RESOLVED by updating MISSION_CONTROL_FOUNDATION_ARCHITECTURE.md, MISSION_CONTROL_SECURITY.md, and handoff to reflect ADR-MC-001 ACCEPTED status with ratification date 2026-08-05.
 
 ## Changes Completed
 

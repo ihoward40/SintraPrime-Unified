@@ -31,7 +31,7 @@ Read-only enforcement is verified by **6 dedicated tests** confirming that POST,
 - All cancellation controls are **DISABLED**.
 - `is_cancellation_blocked()` returns `True`.
 - The gate status is read-only in Mission Control; it cannot be toggled via the API.
-- The gate remains blocking until ADR-MC-001 is ratified and its criteria are implemented.
+- The gate remains blocking until ADR-MC-001's criteria are implemented and certified (ADR-MC-001 ratified 2026-08-05).
 
 Sigma gate behavior is verified by **5 dedicated tests**.
 

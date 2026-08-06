@@ -1,13 +1,14 @@
 # Executor Continuation Implementation Authorization Review
 
-**Status:** OPEN — EVIDENCE PUBLISHED — REVIEW DISPOSITION: APPROVE (planning and readiness only)
-**Review disposition:** APPROVE
+**Status:** OPEN — EVIDENCE PUBLISHED — DISPOSITION: PLANNING_READINESS_APPROVED — INDEPENDENT_SECURITY_REVIEW_PENDING
+**Review disposition:** PLANNING_READINESS_APPROVED — INDEPENDENT_SECURITY_REVIEW_PENDING
 **Review date:** 2026-08-06
 **Reviewed head:** eec9f4cec773dc2bff93fff73fb852486a3fdc86
 **Reviewed tree SHA:** a1885ae40683b4f7ecf4b6786cd8ae0a927aee7e
-**Blocking findings:** 0
-**Conditions:** 0
-**Traceability gaps:** 0
+**Authoritative disposition (post-correction cycle):** PLANNING_READINESS_APPROVED — INDEPENDENT_SECURITY_REVIEW_PENDING
+**Blocking findings (post-correction):** 0
+**Conditions (post-correction):** 4 (recorded as governance findings, see Section 8.3)
+**Traceability gaps (post-correction):** 0 (after correction)
 **Untested requirements:** 0
 **Uncertifiable requirements:** 0
 **Runtime implementation:** NOT AUTHORIZED
@@ -16,9 +17,7 @@
 **Phase 3B:** BLOCKED
 **Deployment:** NOT AUTHORIZED
 
-> APPROVE confirms that the published implementation plan is sufficiently complete and coherent to support a separate runtime implementation authorization decision. It does not itself authorize implementation.
-
-This APPROVE is scoped to the planning package and readiness review. It does NOT authorize: implementation; merge of PR #262; Sigma gate unblocking; cancellation activation; Phase 3B; deployment.
+> This controlling state is **PLANNING_READINESS_APPROVED — INDEPENDENT_SECURITY_REVIEW_PENDING**. The implementation plan is sufficiently complete and coherent to support a separate runtime implementation authorization decision; no final implementation authorization is granted until an independent security reviewer (distinct from the author / maintainer of this branch) records a separate decision.
 
 ## 1. Purpose
 
@@ -120,11 +119,11 @@ This review does not authorize:
 ## 8. Review Status
 
 - Evidence publication: complete (eleven files, provenance manifest, SHA-256 verified).
-- Architect review: COMPLETE.
-- Security review: COMPLETE.
-- Owner architecture decision: COMPLETE.
-- Independent security decision: COMPLETE.
-- Disposition: APPROVE (planning and readiness only).
+- Architect review: COMPLETE (recorded in 8.4).
+- Security review: PENDING (must be performed by a reviewer distinct from the author/maintainer; recorded in 8.4).
+- Owner architecture decision: COMPLETE (recorded in 8.4).
+- Independent security decision: REQUIRED — NOT YET RECORDED.
+- Disposition: PLANNING_READINESS_APPROVED — INDEPENDENT_SECURITY_REVIEW_PENDING.
 
 ### 8.1 Review Areas — Results (20 areas)
 
@@ -154,13 +153,36 @@ This review does not authorize:
 ### 8.2 Summary
 
 - Blocking findings: 0
-- Conditions: 0
-- Traceability gaps: 0
+- Conditions (governance findings requiring correction): 4 (recorded in Section 8.3)
+- Traceability gaps (post-correction): 0
 - Untested requirements: 0
 - Uncertifiable requirements: 0
+- Independent security review: required, not yet recorded
 
-The implementation plan is sufficiently complete and coherent to support a separate runtime implementation authorization decision.
+The implementation plan is sufficiently complete and coherent to support a separate runtime implementation authorization decision, contingent on:
+1. Closure of the governance findings in 8.3 (in progress).
+2. An independent security review (8.4) distinct from the author/maintainer.
+
+### 8.3 Governance Findings (Correction Cycle)
+
+These governance findings were identified during the post-publication review-consistency pass. All four have been addressed in the same correction cycle in which this section is recorded; their closure is documented in the corresponding authoritative files.
+
+| # | Finding | Severity | Closed at | Closure evidence |
+|---|---|---|---|---|
+| 1 | Review disposition did not distinguish owner architecture review from independent security review | governance | 2026-08-06 | Section 8.4 decision table now records Owner Architecture Review as recorded; Independent Security Review as REQUIRED — NOT YET RECORDED; controlling disposition downgraded to PLANNING_READINESS_APPROVED — INDEPENDENT_SECURITY_REVIEW_PENDING |
+| 2 | Squash-history ancestry claims were not future-proofed | governance | 2026-08-06 | Handoff now states explicitly: "Source commit ancestry is not preserved through squash publication. Artifact identity is established through the provenance manifest and per-file SHA-256 hashes, not commit ancestry." |
+| 3 | Disposition-bearing records (review document, handoff, manifest, PR body) were not synchronized to a single controlling state | governance | 2026-08-06 | All disposition-bearing records updated to PLANNING_READINESS_APPROVED — INDEPENDENT_SECURITY_REVIEW_PENDING. Stale "APPROVE" claims removed from disposition-bearing fields. Stale "PENDING" presented as final removed |
+| 4 | Traceability matrix referenced three undefined leading-zero test IDs (RT-02.09, RT-05.08, RT-05.09) that did not resolve to defined tests | content | 2026-08-06 | Traceability matrix corrected (RT-02.9, RT-05.8, RT-05.9). Provenance manifest updated with old/new SHA-256 for `11_TRACEABILITY_MATRIX.md`. The other ten planning artifacts remain byte-identical to source. All 164 RT-references in the matrix now resolve exactly to defined test IDs |
+
+### 8.4 Formal Decision Table
+
+| Decision | Reviewer identity | Role | Reviewed head | Reviewed tree | Decision | Timestamp | Justification |
+|---|---|---|---|---|---|---|---|
+| Owner architecture review | Isiah Howard | Project Owner / Architecture Authority | eec9f4cec773dc2bff93fff73fb852486a3fdc86 | a1885ae40683b4f7ecf4b6786cd8ae0a927aee7e | APPROVE (planning and readiness only) | 2026-08-06 | 20/20 review areas evaluated; implementation plan is sufficiently complete and coherent to support a separate runtime implementation authorization decision; explicit boundaries preserved |
+| Independent security review | _REQUIRED — NOT YET RECORDED_ | Independent Security Reviewer (must be distinct from the author/maintainer of this branch — Hermes is the author/maintainer and therefore cannot serve as the independent reviewer) | _PENDING_ | _PENDING_ | _PENDING_ | _PENDING_ | _PENDING — owner architecture review stands on its own merits but does not constitute or substitute for independent security review_ |
+
+**Boundary statement:** Until an independent security reviewer records a decision, the controlling review state is `PLANNING_READINESS_APPROVED — INDEPENDENT_SECURITY_REVIEW_PENDING`. Final implementation authorization requires both decisions to be recorded.
 
 ## 9. Next Action
 
-The review is APPROVE (planning and readiness only). The PR #262 body should be updated to reflect the disposition. The handoff should be synchronized. CI must run to terminal at the new head. PR #262 must remain DRAFT until the disposition is final and merged. No implementation authorization is granted by this APPROVE. Runtime implementation, Sigma gate unblock, cancellation activation, Phase 3B, and deployment all remain unauthorized.
+The review is `PLANNING_READINESS_APPROVED — INDEPENDENT_SECURITY_REVIEW_PENDING`. The governance findings in 8.3 have been closed in this correction cycle. The PR #262 body, handoff, and provenance manifest have been synchronized to the controlling disposition. CI must run to terminal at the new head. An independent security review (8.4) must be performed and recorded before the disposition can be elevated to `APPROVE`. PR #262 must remain DRAFT until that elevation. No implementation authorization is granted. Runtime implementation, Sigma gate unblock, cancellation activation, Phase 3B, and deployment all remain unauthorized.

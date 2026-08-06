@@ -24,25 +24,47 @@
 
 ## Branch State
 
-- Branch state: REVIEW
-- Next action: ready-for-review transition (deferred to owner authorization)
+- Branch state: ACTIVE_CORRECTION
+- Starting head: 291ca9433b2dc6a0191f381c5b569bd65a8b1848
+- Current head: pending (recorded by correction commits)
+- Current tree SHA: pending
+- Four open governance findings (closed in this correction cycle; see Section 8.3 of the review document)
+- Authorized files:
+  - docs/mission-control/EXECUTOR_CONTINUATION_IMPLEMENTATION_AUTHORIZATION_REVIEW.md
+  - artifacts/agent_handoffs/EXECUTOR_CONTINUATION_AUTHORIZATION_REVIEW_HANDOFF.md
+  - artifacts/mission_control/PHASE1_IMPLEMENTATION_PLANNING_PROVENANCE.md
+  - AGENTS.md
+  - docs/mission-control/executor-continuation/implementation-plan/11_TRACEABILITY_MATRIX.md
+- Current disposition: PLANNING_READINESS_APPROVED — INDEPENDENT_SECURITY_REVIEW_PENDING
+- Independent security review still required (must be a reviewer distinct from the author/maintainer of this branch)
+- Next action: publish corrections, run CI to terminal, verify exact new head, resolve the four governance threads after CI terminal and corrections verified, then obtain independent security review
 
 ## Review State
 
-- Review disposition: APPROVE (planning and readiness only)
-- Review date: 2026-08-06
-- Reviewed head: eec9f4cec773dc2bff93fff73fb852486a3fdc86
-- Current head at this handoff update: afec2a0bad61e9ff6d89c7c46eb301506a878f70
-- Current tree SHA: 7300b8096f51f3c80e15302c3ab21328ba777a6b
-- Twenty review areas: all PASS (0 blocking findings, 0 conditions)
-- Traceability gaps: 0
+- Owner architecture review decision: APPROVE (planning and readiness only); recorded 2026-08-06 by Isiah Howard (Project Owner / Architecture Authority); reviewed at head eec9f4cec773dc2bff93fff73fb852486a3fdc86, tree a1885ae40683b4f7ecf4b6786cd8ae0a927aee7e
+- Independent security review decision: REQUIRED — NOT YET RECORDED
+- Twenty review areas: all PASS (0 blocking findings)
+- Governance findings (non-blocking governance corrections): 4, all addressed in this correction cycle (see review document Section 8.3)
+- Traceability gaps: 0 (after correction of `11_TRACEABILITY_MATRIX.md`)
 - Untested requirements: 0
 - Uncertifiable requirements: 0
-- CI state at current head: terminal (12/12 PASS)
-- Review threads: 0
-- All 11 planning artifacts remain byte-identical to the provenance manifest
-- This APPROVE confirms the published implementation plan is sufficiently complete and coherent to support a separate runtime implementation authorization decision. It does not itself authorize implementation, merge of PR #262, Sigma gate unblocking, cancellation activation, Phase 3B, or deployment.
+- CI state: terminal (12/12 PASS) at the reviewed head
+- Review threads on PR #262: 0
+- Authoritative controlling disposition: PLANNING_READINESS_APPROVED — INDEPENDENT_SECURITY_REVIEW_PENDING
 - Runtime implementation: NOT AUTHORIZED (preserved)
+
+## Ancestry and Squash-History Honesty
+
+The handoff previously claimed ancestor relations that, while technically correct at the time of writing, were not future-proofed against squash-publication. This correction cycle records the truth:
+
+- Source Phase 1 commit `1632fbd92ddb80e4e3739fac7cfd97e530a183c2` is on a different branch (`plan/executor-continuation-impl`). It is NOT an ancestor of this branch; `git merge-base --is-ancestor 1632fbd92ddb80e4e3739fac7cfd97e530a183c2 HEAD` returns 1. This is correct behavior: identity is tracked through the provenance manifest, not commit ancestry.
+- Publication commits (`8a5dc73f`, `f0d7ff4`, `a992b353`, `afec2a0b`, `291ca943`) are direct ancestors of the current head by linear git history on the review branch. Should the PR be squash-merged, that linear ancestry becomes a single merge commit and the incremental commit history becomes a recovery point in the squash commit message and/or branch reflog.
+- **`Source commit ancestry is not preserved through squash publication. Artifact identity is established through the provenance manifest and per-file SHA-256 hashes, not commit ancestry.`**
+- The traceability-matrix correction cycle modified one artifact (`11_TRACEABILITY_MATRIX.md`); its old and new SHA-256 are recorded in the provenance manifest's traceability-correction-record section. The other ten artifacts remain byte-identical to source.
+
+## Previous Branch State (SUPERSEDED)
+
+The previous handoff version recorded branch state REVIEW and review disposition APPROVE. That state is superseded by the correction-cycle state above. The branch has re-entered ACTIVE_CORRECTION to address the four governance findings recorded in `docs/mission-control/EXECUTOR_CONTINUATION_IMPLEMENTATION_AUTHORIZATION_REVIEW.md` Section 8.3.
 
 ## Source Phase 1 Provenance
 
@@ -96,23 +118,25 @@ The Phase 1 planning package has been published into this branch. SHA-256 hashes
 
 Corroboration fields (populated per ADR-MC-002 2.E; handoff is the controlling coordination record — operational truth requires convergence among committed handoff, Git object state, remote references, CI receipts, and review state):
 
-- handoff_commit_sha: f0d7ff4258bf06d67ae717f649e859bcece76182 (Commit B — provenance + review update; this is a metadata-only follow-up)
-- prior_handoff_commit: 8a5dc73f7bf2647f1fc955aa3549cc807dc4619c (Commit A — publication)
+- handoff_commit_sha: _pending — recorded by the next handoff-synchronizing commit_
+- prior_handoff_commit: 291ca9433b2dc6a0191f381c5b569bd65a8b1848 (the pre-correction-cycle head)
 - author_agent: Hermes (acting under Isiah Howard's authorization via the owner)
 - verification_agent: Hermes (self — no incoming ownership transfer; verified against committed Git state)
 - timestamp: 2026-08-06
-- branch HEAD at update: pending (recorded by next handoff synchronizing commit)
-- tree SHA at update: pending
+- branch HEAD at update: _pending — recorded by the next handoff-synchronizing commit_
+- tree SHA at update: _pending_
 - source_Phase1_commit: 1632fbd92ddb80e4e3739fac7cfd97e530a183c2
 - source_Phase1_tree: ea927679a14f33847f8d2548776b3b2e71680540
 - source_Phase1_worktree: C:/Users/admin/Desktop/Projects/sp-impl-plan
 - baseline_tag: multi-agent-governance-v1 → 0ef3a33ff4031960690ae34eca23d1fec4853749
-- evidence_commit_sha: f0d7ff4258bf06d67ae717f649e859bcece76182 (Commit B — provenance + review update; reachable: `git merge-base --is-ancestor f0d7ff4258bf06d67ae717f649e859bcece76182 HEAD` exits 0)
-- evidence_tree_sha: pending — recorded by next handoff synchronizing commit
-- evidence_recorded_by_commit: CURRENT HANDOFF COMMIT — not self-referenced; intended to be populated in the next handoff update.
-- hash verification: all 11 source files SHA-256 verified against destination files at copy time (PASS)
+- source_Phase1_commit_ancestor_of_this_branch: NO — source commit is on `plan/executor-continuation-impl`; this branch is `review/executor-continuation-implementation-authorization`. Identity is established through the provenance manifest and per-file SHA-256 hashes, not commit ancestry. Should the PR be squash-merged, the linear history becomes a single squash-commit and the incremental ancestry is recovered via the branch reflog and provenance manifest.
+- evidence_commit_sha: _pending — recorded by the next handoff-synchronizing commit_
+- evidence_tree_sha: _pending — recorded by the next handoff-synchronizing commit_
+- evidence_recorded_by_commit: _PENDING HANDOFF COMMIT — not self-referenced; intended to be populated in the next handoff update after the correction commits are visible._
+- hash verification: all 11 source files SHA-256 verified against destination files at copy time (PASS); the traceability matrix was subsequently modified (see provenance manifest traceability-correction-record); the other ten artifacts remain byte-identical
 - external edits / bots / APIs / automation: none recorded during this evidence publication cycle
-- review disposition: APPROVE (planning and readiness only); recorded 2026-08-06; 20/20 review areas pass; 0 blocking; 0 conditions
+- authoritative controlling disposition: PLANNING_READINESS_APPROVED — INDEPENDENT_SECURITY_REVIEW_PENDING; owner architecture review APPROVE recorded by Isiah Howard; independent security review REQUIRED — NOT YET RECORDED (must be a reviewer distinct from the author/maintainer of this branch)
+- governance findings: 4 identified, 4 closed in this correction cycle (see review document Section 8.3)
 
 ## Authorized Actions
 

@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 
+from ..auth.rbac import CurrentUser, Permission, require_permissions
 from ..services.orchestration import orchestrator
 from ..services.orchestration.budget_policy import BudgetLimits
 from ..services.orchestration.schemas import ExecutionMode
@@ -32,58 +33,98 @@ class CancelRequest(BaseModel):
 class ApprovalDecisionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    principal_id: str = Field(min_length=1)
     approved: bool
     reason: str | None = None
 
 
 @router.post("/plan")
-async def plan(request: OrchestrationRequest) -> dict[str, Any]:
+async def plan(
+    request: OrchestrationRequest,
+    current_user: CurrentUser = Depends(require_permissions(Permission.ORCHESTRATION_CREATE)),
+) -> dict[str, Any]:
     return orchestrator.plan_run(
         objective=request.objective,
         constraints=request.constraints,
         execution_mode=request.execution_mode,
         budget_limits=request.budget_limits,
+        tenant_id=current_user.tenant_id,
+        created_by=current_user.user_id,
     )
 
 
 @router.post("/execute")
-async def execute(request: OrchestrationRequest) -> dict[str, Any]:
+async def execute(
+    request: OrchestrationRequest,
+    current_user: CurrentUser = Depends(require_permissions(Permission.ORCHESTRATION_CREATE)),
+) -> dict[str, Any]:
     return orchestrator.execute_run(
         objective=request.objective,
         constraints=request.constraints,
         execution_mode=request.execution_mode,
         budget_limits=request.budget_limits,
+        tenant_id=current_user.tenant_id,
+        created_by=current_user.user_id,
     )
 
 
 @router.get("/runs/{run_id}")
-async def get_run(run_id: str) -> dict[str, Any]:
-    run = orchestrator.get_run(run_id)
+async def get_run(
+    run_id: str,
+    current_user: CurrentUser = Depends(require_permissions(Permission.ORCHESTRATION_READ)),
+) -> dict[str, Any]:
+    run = orchestrator.get_run(run_id, tenant_id=current_user.tenant_id)
     if run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orchestration run not found")
     return run
 
 
 @router.get("/runs/{run_id}/events")
-async def get_run_events(run_id: str) -> list[dict[str, Any]]:
-    events = orchestrator.get_events(run_id)
+async def get_run_events(
+    run_id: str,
+    current_user: CurrentUser = Depends(require_permissions(Permission.ORCHESTRATION_READ)),
+) -> list[dict[str, Any]]:
+    events = orchestrator.get_events(run_id, tenant_id=current_user.tenant_id)
     if events is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orchestration run not found")
     return events
 
 
 @router.post("/runs/{run_id}/cancel")
-async def cancel(run_id: str, request: CancelRequest) -> dict[str, Any]:
-    run = orchestrator.cancel_run(run_id, request.reason)
+async def cancel(
+    run_id: str,
+    request: CancelRequest,
+    current_user: CurrentUser = Depends(require_permissions(Permission.ORCHESTRATION_CANCEL)),
+) -> dict[str, Any]:
+    try:
+        run = orchestrator.cancel_run(
+            run_id,
+            tenant_id=current_user.tenant_id,
+            actor_id=current_user.user_id,
+            reason=request.reason,
+        )
+    except orchestrator.OrchestrationStateError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     if run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orchestration run not found")
     return run
 
 
 @router.post("/runs/{run_id}/approve")
-async def approve(run_id: str, request: ApprovalDecisionRequest) -> dict[str, Any]:
-    run = orchestrator.approve_run(run_id, request.principal_id, request.approved, request.reason)
+async def approve(
+    run_id: str,
+    request: ApprovalDecisionRequest,
+    current_user: CurrentUser = Depends(require_permissions(Permission.ORCHESTRATION_APPROVE)),
+) -> dict[str, Any]:
+    try:
+        run = orchestrator.approve_run(
+            run_id,
+            tenant_id=current_user.tenant_id,
+            principal_id=current_user.user_id,
+            approved=request.approved,
+            reason=request.reason,
+        )
+    except orchestrator.OrchestrationStateError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     if run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orchestration run not found")
     return run

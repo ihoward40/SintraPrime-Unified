@@ -33,6 +33,8 @@ from portal.services.audit_service import audit
 BASELINE_COMMIT = "baseline-placeholder"
 EVIDENCE_SCHEMA_VERSION = "1.0"
 
+API_ROUTE_PREFIXES = ("/api/v1/", "/api/orchestration")
+
 APPROVED_PUBLIC_V1_ROUTES = {
     "/api/v1/auth/login",
     "/api/v1/auth/refresh",
@@ -390,7 +392,7 @@ def collect_route_matrix(app: FastAPI | None = None) -> list[dict[str, str | lis
     for full_path, route in iter_terminal_routes(app.routes):
         if not isinstance(route, APIRoute):
             continue
-        if not full_path.startswith("/api/v1/"):
+        if not any(full_path.startswith(prefix) for prefix in API_ROUTE_PREFIXES):
             continue
         # Ensure classify_route sees the full mounted path.  On older
         # FastAPI, route.path is already the full path; on newer versions
@@ -425,7 +427,7 @@ def collect_route_matrix(app: FastAPI | None = None) -> list[dict[str, str | lis
                     endpoint=route.endpoint,
                     dependant=route.dependant,
                 )
-                if synthetic_route.path.startswith("/api/v1/"):
+                if any(synthetic_route.path.startswith(prefix) for prefix in API_ROUTE_PREFIXES):
                     routes.append(synthetic_route)
     return [classify_route(route) for route in sorted(routes, key=lambda route: (route.path, sorted(route.methods or [])))]
 

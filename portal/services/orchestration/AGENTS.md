@@ -14,13 +14,13 @@ Owns governed adaptive orchestration service contracts and execution logic for M
 
 - Milestone One may use deterministic mock providers only.
 - External providers, paid APIs, deployment, merging, and external actions remain blocked.
-- Principal authority, checker independence, least-context instructions, budget ceilings, disagreement preservation, and audit records are mandatory.
+- Principal authority, checker independence, least-context instructions, budget ceilings, disagreement preservation, tenant-scoped run access, and audit records are mandatory.
 - Provider capabilities must be declared before routing; do not infer provider powers from names or benchmarks alone.
 
 ## Work Guidance
 
 - Keep service code provider-neutral and deterministic until certification explicitly unlocks live providers.
-- Redact secrets, credentials, protected evidence, and restricted identifiers before provider-facing records or audit payloads.
+- Redact secrets, credentials, protected evidence, and restricted identifiers recursively before provider-facing records or audit payloads.
 - Preserve separate worker and checker invocations for high-assurance flows.
 
 ## Verification

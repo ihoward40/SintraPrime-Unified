@@ -180,6 +180,12 @@ class Permission(StrEnum):
     AUDIT_READ           = "audit:read"
     AUDIT_EXPORT         = "audit:export"
 
+    # Adaptive orchestration mock operations
+    ORCHESTRATION_CREATE  = "orchestration:create"
+    ORCHESTRATION_READ    = "orchestration:read"
+    ORCHESTRATION_CANCEL  = "orchestration:cancel"
+    ORCHESTRATION_APPROVE = "orchestration:approve"
+
     # Mission Control governed commands
     MISSION_COMMAND_READ   = "mission_control:command_read"
     MISSION_COMMAND_CREATE = "mission_control:command_create"
@@ -232,6 +238,9 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.ADMIN_AUDIT_LOG, Permission.ADMIN_BRANDING, Permission.ADMIN_QUOTA,
         # Audit
         Permission.AUDIT_READ, Permission.AUDIT_EXPORT,
+        # Adaptive orchestration mock operations
+        Permission.ORCHESTRATION_CREATE, Permission.ORCHESTRATION_READ,
+        Permission.ORCHESTRATION_CANCEL, Permission.ORCHESTRATION_APPROVE,
         # Mission Control governed commands
         Permission.MISSION_COMMAND_READ, Permission.MISSION_COMMAND_CREATE,
         Permission.MISSION_RUN_START, Permission.MISSION_RUN_PAUSE, Permission.MISSION_RUN_RESUME,
@@ -257,6 +266,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.BILLING_TIME_TRACK, Permission.BILLING_REPORT,
         Permission.NOTIF_READ,
         Permission.AUDIT_READ,
+        Permission.ORCHESTRATION_CREATE, Permission.ORCHESTRATION_READ,
+        Permission.ORCHESTRATION_CANCEL, Permission.ORCHESTRATION_APPROVE,
         Permission.MISSION_COMMAND_READ, Permission.MISSION_COMMAND_CREATE,
         Permission.MISSION_RUN_START, Permission.MISSION_RUN_PAUSE, Permission.MISSION_RUN_RESUME,
         Permission.MISSION_AGENT_ASSIGN,
@@ -274,6 +285,7 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.MSG_SEND, Permission.MSG_READ, Permission.MSG_CREATE_THREAD,
         Permission.BILLING_READ, Permission.BILLING_TIME_TRACK,
         Permission.NOTIF_READ,
+        Permission.ORCHESTRATION_CREATE, Permission.ORCHESTRATION_READ,
         Permission.VOICE_COMMAND_READ,
     ]),
 
@@ -286,6 +298,7 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.BILLING_TRUST, Permission.BILLING_REPORT, Permission.PAYMENT_PROCESS,
         Permission.NOTIF_READ,
         Permission.AUDIT_READ,
+        Permission.ORCHESTRATION_CREATE, Permission.ORCHESTRATION_READ,
     ]),
 
     Role.CLIENT: frozenset([

@@ -21,6 +21,15 @@ from .verifier import verify_output
 
 
 RUNS: dict[str, dict[str, Any]] = {}
+TERMINAL_RUN_STATUSES = {RunStatus.COMPLETED.value, RunStatus.FAILED.value, RunStatus.CANCELLED.value}
+
+
+class OrchestrationStateError(ValueError):
+    """Raised when a governed run action violates the current run state."""
+
+
+def _tenant_visible(run: dict[str, Any] | None, tenant_id: str) -> bool:
+    return bool(run and run.get("tenant_id") == tenant_id)
 
 
 def plan_run(
@@ -29,6 +38,8 @@ def plan_run(
     constraints: dict[str, Any] | None = None,
     execution_mode: ExecutionMode = ExecutionMode.THINK_WORK_CHECK,
     budget_limits: BudgetLimits | None = None,
+    tenant_id: str,
+    created_by: str,
 ) -> dict[str, Any]:
     classification = classify_task(redact_text(objective), sanitize_payload(constraints or {}))
     budget = initial_budget_usage(budget_limits)
@@ -37,6 +48,8 @@ def plan_run(
     run_id = str(uuid.uuid4())
     run = {
         "run_id": run_id,
+        "tenant_id": tenant_id,
+        "created_by": created_by,
         "objective": redact_text(objective),
         "constraints": sanitize_payload(constraints or {}),
         "classification": classification.model_dump(mode="json"),
@@ -52,7 +65,16 @@ def plan_run(
         "created_at": datetime.now(UTC).isoformat(),
         "updated_at": datetime.now(UTC).isoformat(),
     }
-    append_event(run["events"], "RUN_PLANNED", {"node_count": len(nodes), "prompt_injection": detect_prompt_injection(objective), "denied_actions": denied_actions(objective)}, Role.PLANNER.value)
+    append_event(
+        run["events"],
+        "RUN_PLANNED",
+        {
+            "node_count": len(nodes),
+            "prompt_injection": detect_prompt_injection(objective),
+            "denied_actions": denied_actions(objective),
+        },
+        Role.PLANNER.value,
+    )
     RUNS[run_id] = run
     return deepcopy(run)
 
@@ -63,12 +85,16 @@ def execute_run(
     constraints: dict[str, Any] | None = None,
     execution_mode: ExecutionMode = ExecutionMode.THINK_WORK_CHECK,
     budget_limits: BudgetLimits | None = None,
+    tenant_id: str,
+    created_by: str,
 ) -> dict[str, Any]:
     run = plan_run(
         objective=objective,
         constraints=constraints,
         execution_mode=execution_mode,
         budget_limits=budget_limits,
+        tenant_id=tenant_id,
+        created_by=created_by,
     )
     run_id = run["run_id"]
     stored = RUNS[run_id]
@@ -76,44 +102,63 @@ def execute_run(
     return deepcopy(stored)
 
 
-def get_run(run_id: str) -> dict[str, Any] | None:
+def get_run(run_id: str, *, tenant_id: str) -> dict[str, Any] | None:
     run = RUNS.get(run_id)
-    return deepcopy(run) if run else None
+    return deepcopy(run) if _tenant_visible(run, tenant_id) else None
 
 
-def get_events(run_id: str) -> list[dict[str, Any]] | None:
+def get_events(run_id: str, *, tenant_id: str) -> list[dict[str, Any]] | None:
     run = RUNS.get(run_id)
-    return deepcopy(run["events"]) if run else None
+    return deepcopy(run["events"]) if _tenant_visible(run, tenant_id) else None
 
 
-def cancel_run(run_id: str, reason: str) -> dict[str, Any] | None:
+def cancel_run(run_id: str, *, tenant_id: str, actor_id: str, reason: str) -> dict[str, Any] | None:
     run = RUNS.get(run_id)
-    if not run:
+    if not _tenant_visible(run, tenant_id):
         return None
+    if run["status"] in TERMINAL_RUN_STATUSES:
+        raise OrchestrationStateError("Cannot cancel a terminal orchestration run")
     run["status"] = RunStatus.CANCELLED.value
     run["cancellation_reason"] = reason
+    run["cancelled_by"] = actor_id
+    run["updated_at"] = datetime.now(UTC).isoformat()
     for node in run["nodes"]:
         if node["status"] not in {NodeStatus.COMPLETED.value, NodeStatus.FAILED.value}:
             node["status"] = NodeStatus.CANCELLED.value
-    append_event(run["events"], "RUN_CANCELLED", {"reason": reason}, Role.PRINCIPAL.value)
+    append_event(run["events"], "RUN_CANCELLED", {"reason": reason, "actor_id": actor_id}, Role.PRINCIPAL.value)
     return deepcopy(run)
 
 
-def approve_run(run_id: str, principal_id: str, approved: bool, reason: str | None = None) -> dict[str, Any] | None:
+def approve_run(
+    run_id: str,
+    *,
+    tenant_id: str,
+    principal_id: str,
+    approved: bool,
+    reason: str | None = None,
+) -> dict[str, Any] | None:
     run = RUNS.get(run_id)
-    if not run:
+    if not _tenant_visible(run, tenant_id):
         return None
-    status = "APPROVED" if approved else "DENIED"
-    for approval in run["approvals"]:
-        approval["status"] = status
+    pending_approvals = [approval for approval in run["approvals"] if approval.get("status") == "REQUESTED"]
+    if run["status"] != RunStatus.APPROVAL_REQUIRED.value or not pending_approvals:
+        raise OrchestrationStateError("No pending Principal approval exists for this run")
+    decision_status = "APPROVED" if approved else "DENIED"
+    decided_at = datetime.now(UTC).isoformat()
+    for approval in pending_approvals:
+        approval["status"] = decision_status
         approval["principal_id"] = principal_id
         approval["decision_reason"] = reason
-        approval["decided_at"] = datetime.now(UTC).isoformat()
-    append_event(run["events"], "APPROVAL_DECIDED", {"status": status, "reason": reason}, Role.PRINCIPAL.value)
-    if approved and run["status"] == RunStatus.APPROVAL_REQUIRED.value:
-        run["status"] = RunStatus.COMPLETED.value
+        approval["decided_at"] = decided_at
+    append_event(
+        run["events"],
+        "APPROVAL_DECIDED",
+        {"status": decision_status, "reason": reason, "principal_id": principal_id},
+        Role.PRINCIPAL.value,
+    )
+    run["status"] = RunStatus.COMPLETED.value if approved else RunStatus.BLOCKED.value
+    run["updated_at"] = datetime.now(UTC).isoformat()
     return deepcopy(run)
-
 
 def _execute_existing(run: dict[str, Any]) -> None:
     run["status"] = RunStatus.RUNNING.value

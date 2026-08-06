@@ -37,18 +37,18 @@ def redact_text(value: str) -> str:
     return redacted
 
 
+def sanitize_value(value: Any) -> Any:
+    if isinstance(value, str):
+        return redact_text(value)
+    if isinstance(value, dict):
+        return sanitize_payload(value)
+    if isinstance(value, list):
+        return [sanitize_value(item) for item in value]
+    return value
+
+
 def sanitize_payload(payload: dict[str, Any]) -> dict[str, Any]:
-    sanitized: dict[str, Any] = {}
-    for key, value in payload.items():
-        if isinstance(value, str):
-            sanitized[key] = redact_text(value)
-        elif isinstance(value, dict):
-            sanitized[key] = sanitize_payload(value)
-        elif isinstance(value, list):
-            sanitized[key] = [redact_text(item) if isinstance(item, str) else item for item in value]
-        else:
-            sanitized[key] = value
-    return sanitized
+    return {key: sanitize_value(value) for key, value in payload.items()}
 
 
 def detect_prompt_injection(value: str) -> list[str]:

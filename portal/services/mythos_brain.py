@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..models.mission_control_command import MissionControlCommand, MissionControlCommandEvent
 from ..models.mission_control_outbox import MissionControlOutbox
 from ..models.mission_control_run_control import MissionControlRunControl
+from .cancellation_bus import CancellationBus, CancellationSignal, CancellationScope
 
 
 @runtime_checkable
@@ -42,8 +43,9 @@ class MythosBrainCoordinator:
     Owns the lifecycle of intent and ensures durable dispatch via the transactional outbox.
     """
 
-    def __init__(self, pep: PolicyEnforcementPoint = None):
+    def __init__(self, pep: PolicyEnforcementPoint = None, cancellation_bus: CancellationBus = None):
         self.pep = pep or PolicyEnforcementPoint()
+        self.cancellation_bus = cancellation_bus or CancellationBus()
 
     async def ingest_intent(
         self,
@@ -152,5 +154,14 @@ class MythosBrainCoordinator:
             next_attempt_at=datetime.now(UTC),
         )
         db.add(outbox_entry)
+
+        # 4. Publish to prioritized cancellation bus
+        signal = CancellationSignal(
+            scope=CancellationScope.EXECUTION,
+            target_id=command_id,
+            reason=reason,
+            principal_id=command.requested_by,
+        )
+        await self.cancellation_bus.publish(signal)
 
         return True

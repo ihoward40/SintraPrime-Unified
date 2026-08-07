@@ -11,7 +11,8 @@
     "lint": "cd web && npm run lint",
     "type-check": "cd web && npm run type-check",
     "format": "cd web && npm run format",
-    "test": "python -m pytest --tb=short -q"
+    "test": "python -m pytest --tb=short -q",
+    "test:frontend": "cd web && npm run test:orchestration"
   },
   "engines": {
     "node": ">=18.0.0",

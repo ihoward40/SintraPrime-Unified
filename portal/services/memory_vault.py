@@ -2,81 +2,58 @@ import logging
 import uuid
 from datetime import datetime, UTC
 from typing import Dict, List, Any, Optional
-from enum import Enum
-from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from ..models.mission_control_outbox import MemoryEntry
+from .remediation_service import remediation
 
 logger = logging.getLogger(__name__)
-
-class MemoryType(str, Enum):
-    LESSON_LEARNED = "LESSON_LEARNED"
-    PROVEN_PROCEDURE = "PROVEN_PROCEDURE"
-    INSTITUTIONAL_KNOWLEDGE = "INSTITUTIONAL_KNOWLEDGE"
-    AUDIT_TRAIL = "AUDIT_TRAIL"
-
-class MemoryEntry(BaseModel):
-    id: str
-    type: MemoryType
-    content: Any
-    metadata: Dict[str, Any]
-    tenant_id: str
-    created_at: datetime
-    version: int
 
 class OmniBrainMemoryVault:
     """
     Phase 9: OmniBrain Memory Vault (SP-MEMORY-001).
-    Consolidates institutional intelligence, learned lessons, and proven procedures.
+    Durable persistence of institutional intelligence.
     """
-    def __init__(self):
-        self.vault: Dict[str, MemoryEntry] = {}
-        self.index: Dict[str, List[str]] = {} # tenant_id -> list of memory_ids
-
     async def store_memory(
         self, 
+        session: AsyncSession,
         tenant_id: str, 
         content: Any, 
-        memory_type: MemoryType, 
+        memory_type: str, 
         metadata: Optional[Dict[str, Any]] = None
     ) -> str:
-        """Stores a new memory entry in the vault."""
-        memory_id = str(uuid.uuid4())
+        """Stores a new memory entry with redaction and timestamps."""
+        # Apply remediation: redaction and timestamps
+        safe_content = remediation.redact_boundaries(content)
+        safe_metadata = remediation.redact_boundaries(metadata or {})
+        
+        memory_id = f"mem-{uuid.uuid4().hex[:8]}"
         entry = MemoryEntry(
             id=memory_id,
-            type=memory_type,
-            content=content,
-            metadata=metadata or {},
             tenant_id=tenant_id,
-            created_at=datetime.now(UTC),
-            version=1
+            type=memory_type,
+            content=safe_content,
+            metadata_json=safe_metadata,
+            version=1,
+            created_at=datetime.now(UTC)
         )
         
-        self.vault[memory_id] = entry
-        
-        if tenant_id not in self.index:
-            self.index[tenant_id] = []
-        self.index[tenant_id].append(memory_id)
-        
+        session.add(entry)
+        await session.flush()
         logger.info(f"[MEMORY_VAULT] Stored {memory_type} memory {memory_id} for tenant {tenant_id}")
         return memory_id
 
-    async def retrieve_tenant_memory(self, tenant_id: str, memory_type: Optional[MemoryType] = None) -> List[MemoryEntry]:
-        """Retrieves memory entries for a specific tenant, optionally filtered by type."""
-        if tenant_id not in self.index:
-            return []
-            
-        memory_ids = self.index[tenant_id]
-        entries = [self.vault[mid] for mid in memory_ids]
-        
+    async def retrieve_tenant_memory(
+        self, session: AsyncSession, tenant_id: str, memory_type: Optional[str] = None
+    ) -> List[MemoryEntry]:
+        """Retrieves memory entries using SQLAlchemy with RLS context."""
+        query = select(MemoryEntry).where(MemoryEntry.tenant_id == tenant_id)
         if memory_type:
-            entries = [e for e in entries if e.type == memory_type]
-            
-        return sorted(entries, key=lambda x: x.created_at, reverse=True)
-
-    async def search_memory(self, tenant_id: str, query: str) -> List[MemoryEntry]:
-        """Simple keyword-based memory search (mocked for foundation)."""
-        entries = await self.retrieve_tenant_memory(tenant_id)
-        # In a real implementation, this would use vector search or full-text index
-        return [e for e in entries if query.lower() in str(e.content).lower()]
+            query = query.where(MemoryEntry.type == memory_type)
+        
+        query = query.order_by(MemoryEntry.created_at.desc())
+        result = await session.execute(query)
+        return list(result.scalars().all())
 
 # Global instance
 memory_vault = OmniBrainMemoryVault()

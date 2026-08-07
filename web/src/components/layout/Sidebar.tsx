@@ -22,6 +22,7 @@ import {
   GitCompareArrows,
   ClipboardCheck,
   BriefcaseBusiness,
+  Workflow,
 } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import { clsx } from 'clsx';
@@ -54,6 +55,7 @@ const navItems: NavItem[] = [
   { path: '/ai-parliament', label: 'AI Parliament', icon: Brain, badge: 'LIVE', badgeColor: 'green' },
   { path: '/caselaw', label: 'Case Law Search', icon: Search },
   { path: '/operations-floor', label: 'Operations Floor', icon: Monitor, badge: 'OPS', badgeColor: 'blue' },
+  { path: '/orchestration', label: 'Orchestration', icon: Workflow, badge: 'MOCK', badgeColor: 'green' },
   { path: '/voice-concierge', label: 'Voice Concierge', icon: Mic, badge: 'MOCK', badgeColor: 'blue' },
   { path: '/settings', label: 'Settings', icon: Settings },
 ];

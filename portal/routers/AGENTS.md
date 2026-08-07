@@ -6,7 +6,7 @@ Owns all FastAPI route handler modules. These are the API surface: the contract 
 
 ## Ownership
 
-- All files in `portal/routers/` (auth, admin, billing, cases, clients, documents, messages, notifications, recovery, sso, trust_compliance, users, mission_control_commands, voice_commands, jurisdictions)
+- All files in `portal/routers/` (auth, admin, billing, cases, clients, documents, messages, notifications, recovery, sso, trust_compliance, users, mission_control_commands, voice_commands, jurisdictions, orchestration)
 - Router tests in `portal/routers/tests/`
 
 ## Local Contracts
@@ -32,6 +32,10 @@ Owns all FastAPI route handler modules. These are the API surface: the contract 
 ## Child DOX Index
 
 *(None - all router files are leaf modules.)*
+
+## Orchestration Routes
+
+`orchestration.py` owns authenticated `/api/orchestration` mock-orchestration routes, delegates to `services/orchestration/`, enforces `orchestration:create`, `orchestration:read`, `orchestration:cancel`, and `orchestration:approve`, and preserves tenant scope from trusted `CurrentUser` claims. Principal approval identity must never be accepted from request JSON.
 
 ## Persistent Matter Intelligence Routes
 

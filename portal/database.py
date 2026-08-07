@@ -7,6 +7,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import structlog
+from fastapi import Depends, Request
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -16,6 +17,7 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase
 
+from .auth.rbac import CurrentUser, get_current_user
 from .config import get_settings
 
 logger = structlog.get_logger(__name__)
@@ -24,7 +26,6 @@ settings = get_settings()
 
 class Base(DeclarativeBase):
     """Declarative base for all ORM models."""
-
     pass
 
 
@@ -50,14 +51,40 @@ AsyncSessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(
 
 # ── Session dependency ─────────────────────────────────────────────────────────
 
+async def _set_rls_context(
+    session: AsyncSession,
+    tenant_id: str | None,
+    user_id: str | None = None,
+) -> None:
+    if not tenant_id:
+        return
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    tenant_value = str(tenant_id)
+    await session.execute(
+        text("SELECT set_config('app.current_tenant_id', :tid, true), set_config('app.tenant_id', :tid, true)"),
+        {"tid": tenant_value},
+    )
+    if user_id:
+        user_value = str(user_id)
+        await session.execute(
+            text("SELECT set_config('app.current_user_id', :uid, true), set_config('app.user_id', :uid, true)"),
+            {"uid": user_value},
+        )
+
+
+async def get_db(request: Request) -> AsyncGenerator[AsyncSession, None]:
     """
     FastAPI dependency that provides a database session.
     Usage: db: AsyncSession = Depends(get_db)
     """
     async with AsyncSessionLocal() as session:
         try:
+            state = getattr(request, "state", None)
+            await _set_rls_context(
+                session,
+                getattr(state, "tenant_id", None),
+                getattr(state, "user_id", None),
+            )
             yield session
             await session.commit()
         except Exception:
@@ -65,6 +92,14 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             raise
         finally:
             await session.close()
+
+
+async def get_current_tenant_db(
+    current_user: CurrentUser = Depends(get_current_user),
+) -> AsyncGenerator[AsyncSession, None]:
+    """Provide a tenant-scoped DB session derived from the authenticated CurrentUser."""
+    async for session in get_tenant_db(current_user.tenant_id, current_user.user_id):
+        yield session
 
 
 async def get_tenant_db(
@@ -77,16 +112,7 @@ async def get_tenant_db(
     """
     async with AsyncSessionLocal() as session:
         try:
-            # Set RLS context variables
-            await session.execute(
-                text("SELECT set_config('app.current_tenant_id', :tid, true)"),
-                {"tid": str(tenant_id)},
-            )
-            if user_id:
-                await session.execute(
-                    text("SELECT set_config('app.current_user_id', :uid, true)"),
-                    {"uid": str(user_id)},
-                )
+            await _set_rls_context(session, tenant_id, user_id)
             yield session
             await session.commit()
         except Exception:
@@ -104,15 +130,7 @@ async def tenant_session(
     """Context manager version of tenant_db for use outside FastAPI."""
     async with AsyncSessionLocal() as session:
         try:
-            await session.execute(
-                text("SELECT set_config('app.current_tenant_id', :tid, true)"),
-                {"tid": str(tenant_id)},
-            )
-            if user_id:
-                await session.execute(
-                    text("SELECT set_config('app.current_user_id', :uid, true)"),
-                    {"uid": str(user_id)},
-                )
+            await _set_rls_context(session, tenant_id, user_id)
             yield session
             await session.commit()
         except Exception:
@@ -121,7 +139,6 @@ async def tenant_session(
 
 
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
-
 
 async def init_db() -> None:
     """Create all tables (for testing / first run). In prod use Alembic."""

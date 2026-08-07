@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -21,6 +20,7 @@ class GoogleConfig:
             raise ValueError("GoogleConfig: client_secret is required")
         if not self.redirect_uri:
             raise ValueError("GoogleConfig: redirect_uri is required")
+
 
 class GoogleWorkspaceProvider:
     """Google Workspace SSO Provider"""
@@ -62,9 +62,7 @@ class GoogleWorkspaceProvider:
 
     def get_user_info(self, access_token: str) -> dict[str, Any]:
         """Retrieves user information using the access token."""
-        headers = {
-            "Authorization": f"Bearer {access_token}"
-        }
+        headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.get(self.userinfo_url, headers=headers, timeout=10)
         response.raise_for_status()
         return response.json()
@@ -94,7 +92,7 @@ class GoogleWorkspaceProvider:
             algorithms=["RS256"],
             audience=self.config.client_id,
             issuer="https://accounts.google.com",
-            options=options
+            options=options,
         )
 
     def verify_hosted_domain(self, id_token_claims: dict[str, Any]) -> bool:

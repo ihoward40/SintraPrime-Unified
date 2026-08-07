@@ -12,6 +12,7 @@ Example:
     python portal/scripts/verify_runtime_schema_integrity.py \
         "postgresql+asyncpg://sintraprime:***@127.0.0.1:5433/sintraprime_unified"
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -54,17 +55,44 @@ async def verify(conn: asyncpg.Connection) -> dict:
 
     checks = [
         ("ck_agents_status", "SELECT 1 FROM pg_constraint WHERE conname = 'ck_agents_status'"),
-        ("ck_execution_history_status", "SELECT 1 FROM pg_constraint WHERE conname = 'ck_execution_history_status'"),
+        (
+            "ck_execution_history_status",
+            "SELECT 1 FROM pg_constraint WHERE conname = 'ck_execution_history_status'",
+        ),
         ("ck_swarms_status", "SELECT 1 FROM pg_constraint WHERE conname = 'ck_swarms_status'"),
-        ("ck_messages_priority", "SELECT 1 FROM pg_constraint WHERE conname = 'ck_messages_priority'"),
-        ("ck_knowledge_entries_confidence", "SELECT 1 FROM pg_constraint WHERE conname = 'ck_knowledge_entries_confidence'"),
-        ("idx_messages_sender_id", "SELECT 1 FROM pg_indexes WHERE indexname = 'idx_messages_sender_id'"),
-        ("idx_messages_recipient_id", "SELECT 1 FROM pg_indexes WHERE indexname = 'idx_messages_recipient_id'"),
-        ("idx_execution_history_agent_id", "SELECT 1 FROM pg_indexes WHERE indexname = 'idx_execution_history_agent_id'"),
-        ("idx_execution_history_swarm_id", "SELECT 1 FROM pg_indexes WHERE indexname = 'idx_execution_history_swarm_id'"),
-        ("idx_sessions_user_id", "SELECT 1 FROM pg_indexes WHERE indexname = 'idx_sessions_user_id'"),
+        (
+            "ck_messages_priority",
+            "SELECT 1 FROM pg_constraint WHERE conname = 'ck_messages_priority'",
+        ),
+        (
+            "ck_knowledge_entries_confidence",
+            "SELECT 1 FROM pg_constraint WHERE conname = 'ck_knowledge_entries_confidence'",
+        ),
+        (
+            "idx_messages_sender_id",
+            "SELECT 1 FROM pg_indexes WHERE indexname = 'idx_messages_sender_id'",
+        ),
+        (
+            "idx_messages_recipient_id",
+            "SELECT 1 FROM pg_indexes WHERE indexname = 'idx_messages_recipient_id'",
+        ),
+        (
+            "idx_execution_history_agent_id",
+            "SELECT 1 FROM pg_indexes WHERE indexname = 'idx_execution_history_agent_id'",
+        ),
+        (
+            "idx_execution_history_swarm_id",
+            "SELECT 1 FROM pg_indexes WHERE indexname = 'idx_execution_history_swarm_id'",
+        ),
+        (
+            "idx_sessions_user_id",
+            "SELECT 1 FROM pg_indexes WHERE indexname = 'idx_sessions_user_id'",
+        ),
         ("idx_users_is_active", "SELECT 1 FROM pg_indexes WHERE indexname = 'idx_users_is_active'"),
-        ("idx_knowledge_entries_source", "SELECT 1 FROM pg_indexes WHERE indexname = 'idx_knowledge_entries_source'"),
+        (
+            "idx_knowledge_entries_source",
+            "SELECT 1 FROM pg_indexes WHERE indexname = 'idx_knowledge_entries_source'",
+        ),
     ]
 
     for name, query in checks:
@@ -93,7 +121,9 @@ async def verify(conn: asyncpg.Connection) -> dict:
 
     # Verify CHECK rejects invalid value
     try:
-        await conn.execute("INSERT INTO agents (name, type, status) VALUES ('test-agent', 'worker', 'invalid_status')")
+        await conn.execute(
+            "INSERT INTO agents (name, type, status) VALUES ('test-agent', 'worker', 'invalid_status')"
+        )
         results["checks"].append({"name": "agents.status CHECK rejects invalid", "passed": False})
         results["failed"] += 1
     except asyncpg.CheckViolationError:

@@ -82,6 +82,7 @@ class EvidenceManifestEntry:
     This is a presentation-layer summary of an evidence item.
     The full content is also included in the packet body.
     """
+
     item_id: str
     item_type: str
     title: str
@@ -227,12 +228,14 @@ def _categorize_items(
 
     for item in sorted_items:
         category = type_map.get(item.item_type, "exhibits")
-        categories[category].append({
-            "item_id": item.item_id,
-            "title": item.title,
-            "content": item.content,
-            "sequence": item.sequence,
-        })
+        categories[category].append(
+            {
+                "item_id": item.item_id,
+                "title": item.title,
+                "content": item.content,
+                "sequence": item.sequence,
+            }
+        )
 
     return categories
 
@@ -423,11 +426,13 @@ def verify_packet(packet: EvidencePacket, evidence: EvidenceCollection) -> dict:
         "packet_hash_verified": packet_hash_ok,
         "serialization_version_current": version_ok,
         "evidence_count_matches": count_ok,
-        "overall": all([
-            evidence_hash_ok,
-            manifest_hash_ok,
-            packet_hash_ok,
-            version_ok,
-            count_ok,
-        ]),
+        "overall": all(
+            [
+                evidence_hash_ok,
+                manifest_hash_ok,
+                packet_hash_ok,
+                version_ok,
+                count_ok,
+            ]
+        ),
     }

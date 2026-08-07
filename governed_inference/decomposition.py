@@ -5,14 +5,30 @@ from governed_inference.contracts import DecomposedTask, InferenceRequest, Route
 TASK_DECOMPOSITION = {
     "code_complex": [
         ("inspect", "extraction", "Identify only the relevant files, commands, and constraints."),
-        ("plan", "summarization", "Produce a bounded implementation plan with risks and test targets."),
+        (
+            "plan",
+            "summarization",
+            "Produce a bounded implementation plan with risks and test targets.",
+        ),
         ("patch", "coding", "Implement one cohesive change set with minimal blast radius."),
         ("test", "coding", "Run or describe focused verification and fix direct failures."),
     ],
     "draft_legal_restricted": [
-        ("extract", "extraction", "Extract facts, names, dates, monetary figures, and evidence citations."),
-        ("outline", "summarization", "Create a local-only outline preserving controlling legal facts."),
-        ("draft", "drafting", "Draft from the outline without sending restricted data to cloud providers."),
+        (
+            "extract",
+            "extraction",
+            "Extract facts, names, dates, monetary figures, and evidence citations.",
+        ),
+        (
+            "outline",
+            "summarization",
+            "Create a local-only outline preserving controlling legal facts.",
+        ),
+        (
+            "draft",
+            "drafting",
+            "Draft from the outline without sending restricted data to cloud providers.",
+        ),
     ],
 }
 

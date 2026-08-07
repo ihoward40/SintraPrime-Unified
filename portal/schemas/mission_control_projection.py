@@ -441,6 +441,4 @@ class CancellationControlStatus(BaseModel):
     tenant_scoped: Literal["DISABLED", "ENABLED"] = "DISABLED"
     platform_break_glass: Literal["DISABLED", "ENABLED"] = "DISABLED"
     gate: SigmaGateStatus
-    reason: str = (
-        "SIGMA_LEASE_EXPIRY_CONTINUATION_GATE is BLOCKED. Cancellation controls are disabled until the gate is SATISFIED."
-    )
+    reason: str = "SIGMA_LEASE_EXPIRY_CONTINUATION_GATE is BLOCKED. Cancellation controls are disabled until the gate is SATISFIED."

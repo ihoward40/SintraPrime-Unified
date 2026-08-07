@@ -189,9 +189,9 @@ async def test_causation_chain_excludes_cross_tenant_run_control_events(
     assert chain is not None
     # The chain should have 0 run_control_event links from tenant B
     rc_links = [link for link in chain.links if link.source_type == "run_control_event"]
-    assert (
-        len(rc_links) == 0
-    ), f"Cross-tenant run-control event leaked into chain: {len(rc_links)} links"
+    assert len(rc_links) == 0, (
+        f"Cross-tenant run-control event leaked into chain: {len(rc_links)} links"
+    )
 
     # Tenant B's chain (if queried for tenant B's own command would be different)
     # but tenant B cannot access tenant A's command at all
@@ -890,7 +890,7 @@ async def test_causation_chain_deterministic_ordering(db: AsyncSession):
             right.source_id,
         )
         assert left_key <= right_key, (
-            f"Links not deterministically ordered at index {i}: " f"{left_key} > {right_key}"
+            f"Links not deterministically ordered at index {i}: {left_key} > {right_key}"
         )
 
 

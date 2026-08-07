@@ -144,12 +144,14 @@ async def verify_audit_chain(
 
     for entry in entries:
         if entry.previous_hash != prev_hash:
-            broken_links.append({
-                "id": str(entry.id),
-                "action": entry.action,
-                "expected_prev": prev_hash,
-                "actual_prev": entry.previous_hash,
-            })
+            broken_links.append(
+                {
+                    "id": str(entry.id),
+                    "action": entry.action,
+                    "expected_prev": prev_hash,
+                    "actual_prev": entry.previous_hash,
+                }
+            )
         prev_hash = entry.entry_hash
 
     return {

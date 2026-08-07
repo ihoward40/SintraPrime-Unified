@@ -1,6 +1,7 @@
 """
 Okta OAuth 2.0 response models.
 """
+
 from dataclasses import dataclass, field
 
 

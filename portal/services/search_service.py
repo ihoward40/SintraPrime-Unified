@@ -27,29 +27,37 @@ async def full_text_search(
     types = resource_types or ["documents", "cases", "clients"]
 
     if "documents" in types:
-        stmt = select(Document).where(
-            Document.tenant_id == uuid.UUID(str(tenant_id)),
-            Document.deleted_at.is_(None),
-        ).where(
-            Document.name.ilike(f"%{query}%") |
-            Document.description.ilike(f"%{query}%") |
-            Document.ocr_text.ilike(f"%{query}%")
-        ).limit(limit)
+        stmt = (
+            select(Document)
+            .where(
+                Document.tenant_id == uuid.UUID(str(tenant_id)),
+                Document.deleted_at.is_(None),
+            )
+            .where(
+                Document.name.ilike(f"%{query}%")
+                | Document.description.ilike(f"%{query}%")
+                | Document.ocr_text.ilike(f"%{query}%")
+            )
+            .limit(limit)
+        )
         res = await db.execute(stmt)
         docs = res.scalars().all()
-        results["documents"] = [
-            {"id": str(d.id), "name": d.name, "type": "document"} for d in docs
-        ]
+        results["documents"] = [{"id": str(d.id), "name": d.name, "type": "document"} for d in docs]
 
     if "cases" in types:
-        stmt = select(Case).where(
-            Case.tenant_id == uuid.UUID(str(tenant_id)),
-            Case.deleted_at.is_(None),
-        ).where(
-            Case.title.ilike(f"%{query}%") |
-            Case.case_number.ilike(f"%{query}%") |
-            Case.opposing_party.ilike(f"%{query}%")
-        ).limit(limit)
+        stmt = (
+            select(Case)
+            .where(
+                Case.tenant_id == uuid.UUID(str(tenant_id)),
+                Case.deleted_at.is_(None),
+            )
+            .where(
+                Case.title.ilike(f"%{query}%")
+                | Case.case_number.ilike(f"%{query}%")
+                | Case.opposing_party.ilike(f"%{query}%")
+            )
+            .limit(limit)
+        )
         res = await db.execute(stmt)
         cases = res.scalars().all()
         results["cases"] = [
@@ -58,15 +66,20 @@ async def full_text_search(
         ]
 
     if "clients" in types:
-        stmt = select(Client).where(
-            Client.tenant_id == uuid.UUID(str(tenant_id)),
-            Client.deleted_at.is_(None),
-        ).where(
-            Client.first_name.ilike(f"%{query}%") |
-            Client.last_name.ilike(f"%{query}%") |
-            Client.email.ilike(f"%{query}%") |
-            Client.company_name.ilike(f"%{query}%")
-        ).limit(limit)
+        stmt = (
+            select(Client)
+            .where(
+                Client.tenant_id == uuid.UUID(str(tenant_id)),
+                Client.deleted_at.is_(None),
+            )
+            .where(
+                Client.first_name.ilike(f"%{query}%")
+                | Client.last_name.ilike(f"%{query}%")
+                | Client.email.ilike(f"%{query}%")
+                | Client.company_name.ilike(f"%{query}%")
+            )
+            .limit(limit)
+        )
         res = await db.execute(stmt)
         clients = res.scalars().all()
         results["clients"] = [

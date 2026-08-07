@@ -1,6 +1,7 @@
 """
 Provenance Engine — record chain of custody and lineage for knowledge objects.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -72,7 +73,9 @@ class ProvenanceEngine:
             payload=payload,
             prior_hash=prior_hash,
         )
-        record.record_hash = self._hasher(f"{prior_hash}:{object_id}:{record.timestamp.isoformat()}:{payload!s}")
+        record.record_hash = self._hasher(
+            f"{prior_hash}:{object_id}:{record.timestamp.isoformat()}:{payload!s}"
+        )
         chain.append(record)
         return record
 

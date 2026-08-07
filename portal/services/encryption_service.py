@@ -39,6 +39,7 @@ def _get_key() -> bytes:
 
     # Development fallback — deterministic, NOT for production.
     import hashlib
+
     return hashlib.sha256(b"DEVELOPMENT_ONLY_INSECURE_KEY").digest()
 
 
@@ -93,4 +94,5 @@ def generate_document_key() -> str:
 def hash_file(content: bytes) -> str:
     """SHA-256 checksum for integrity verification."""
     import hashlib
+
     return hashlib.sha256(content).hexdigest()

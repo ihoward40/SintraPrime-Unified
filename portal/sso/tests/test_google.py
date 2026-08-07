@@ -1,4 +1,3 @@
-
 import time
 import unittest
 from unittest.mock import MagicMock, patch
@@ -11,13 +10,12 @@ from portal.sso.providers.google import GoogleConfig, GoogleWorkspaceProvider
 
 
 class TestGoogleWorkspaceProvider(unittest.TestCase):
-
     def setUp(self):
         self.config = GoogleConfig(
             client_id="test_client_id",
             client_secret="test_client_secret",
             redirect_uri="https://test.com/redirect",
-            hosted_domain="test.com"
+            hosted_domain="test.com",
         )
         self.provider = GoogleWorkspaceProvider(self.config)
 
@@ -26,7 +24,7 @@ class TestGoogleWorkspaceProvider(unittest.TestCase):
         config = GoogleConfig(
             client_id="valid_client_id",
             client_secret="valid_client_secret",
-            redirect_uri="https://valid.com/redirect"
+            redirect_uri="https://valid.com/redirect",
         )
         assert isinstance(config, GoogleConfig)
         assert config.client_id == "valid_client_id"
@@ -77,7 +75,7 @@ class TestGoogleWorkspaceProvider(unittest.TestCase):
         mock_response.json.return_value = {
             "access_token": "test_access_token",
             "id_token": "test_id_token",
-            "expires_in": 3600
+            "expires_in": 3600,
         }
         mock_response.raise_for_status.return_value = None
         mock_post.return_value = mock_response
@@ -132,7 +130,7 @@ class TestGoogleWorkspaceProvider(unittest.TestCase):
             "exp": time.time() + 3600,
             "iat": time.time(),
             "nbf": time.time(),
-            "hd": "test.com"
+            "hd": "test.com",
         }
 
         claims = self.provider.validate_id_token("test_id_token")
@@ -201,20 +199,13 @@ class TestGoogleWorkspaceProvider(unittest.TestCase):
 
     def test_google_config_default_scopes(self):
         """Test that default scopes are correctly set if not provided."""
-        config = GoogleConfig(
-            client_id="id",
-            client_secret="secret",
-            redirect_uri="uri"
-        )
+        config = GoogleConfig(client_id="id", client_secret="secret", redirect_uri="uri")
         assert config.scopes == ["openid", "email", "profile"]
 
     def test_google_config_custom_scopes(self):
         """Test that custom scopes are correctly set."""
         config = GoogleConfig(
-            client_id="id",
-            client_secret="secret",
-            redirect_uri="uri",
-            scopes=["custom_scope"]
+            client_id="id", client_secret="secret", redirect_uri="uri", scopes=["custom_scope"]
         )
         assert config.scopes == ["custom_scope"]
 
@@ -250,9 +241,7 @@ class TestGoogleWorkspaceProvider(unittest.TestCase):
         self.provider.get_user_info("test_access_token")
         mock_get.assert_called_with(
             self.provider.userinfo_url,
-            headers={
-                "Authorization": "Bearer test_access_token"
-            },
+            headers={"Authorization": "Bearer test_access_token"},
             timeout=10,
         )
 
@@ -270,7 +259,7 @@ class TestGoogleWorkspaceProvider(unittest.TestCase):
             "exp": time.time() + 3600,
             "iat": time.time(),
             "nbf": time.time(),
-            "hd": "test.com"
+            "hd": "test.com",
         }
 
         self.provider.validate_id_token("test_id_token")
@@ -292,7 +281,7 @@ class TestGoogleWorkspaceProvider(unittest.TestCase):
                 "require_iat": True,
                 "require_nbf": True,
                 "require_iss": True,
-            }
+            },
         )
 
     def test_google_config_scopes_default_value(self):
@@ -300,7 +289,7 @@ class TestGoogleWorkspaceProvider(unittest.TestCase):
         config = GoogleConfig(
             client_id="test_client_id",
             client_secret="test_client_secret",
-            redirect_uri="https://test.com/redirect"
+            redirect_uri="https://test.com/redirect",
         )
         assert config.scopes == ["openid", "email", "profile"]
 
@@ -311,7 +300,7 @@ class TestGoogleWorkspaceProvider(unittest.TestCase):
             client_id="test_client_id",
             client_secret="test_client_secret",
             redirect_uri="https://test.com/redirect",
-            scopes=custom_scopes
+            scopes=custom_scopes,
         )
         assert config.scopes == custom_scopes
 
@@ -320,7 +309,7 @@ class TestGoogleWorkspaceProvider(unittest.TestCase):
         config = GoogleConfig(
             client_id="test_client_id",
             client_secret="test_client_secret",
-            redirect_uri="https://test.com/redirect"
+            redirect_uri="https://test.com/redirect",
         )
         assert config.hosted_domain is None
 
@@ -330,7 +319,7 @@ class TestGoogleWorkspaceProvider(unittest.TestCase):
             client_id="test_client_id",
             client_secret="test_client_secret",
             redirect_uri="https://test.com/redirect",
-            hosted_domain="custom.com"
+            hosted_domain="custom.com",
         )
         assert config.hosted_domain == "custom.com"
 
@@ -379,6 +368,3 @@ class TestGoogleWorkspaceProvider(unittest.TestCase):
         """Test that 'access_type=offline' is included in the authorization URL."""
         url = self.provider.get_authorization_url("test_state")
         assert "access_type=offline" in url
-
-
-

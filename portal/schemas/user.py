@@ -9,6 +9,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 
 # ── Tenant ────────────────────────────────────────────────────────────────────
 
+
 class TenantBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
     slug: str = Field(..., min_length=2, max_length=100, pattern=r"^[a-z0-9\-]+$")
@@ -50,6 +51,7 @@ class TenantResponse(TenantBase):
 
 # ── User ──────────────────────────────────────────────────────────────────────
 
+
 class UserBase(BaseModel):
     email: EmailStr
     first_name: str = Field(..., min_length=1, max_length=100)
@@ -68,6 +70,7 @@ class UserCreate(UserBase):
     @classmethod
     def validate_password(cls, v: str) -> str:
         from ..auth.password_handler import PasswordError, validate_password_strength
+
         try:
             validate_password_strength(v)
         except PasswordError as exc:
@@ -101,6 +104,7 @@ class UserPasswordChange(BaseModel):
     @classmethod
     def validate_password(cls, v: str) -> str:
         from ..auth.password_handler import PasswordError, validate_password_strength
+
         try:
             validate_password_strength(v)
         except PasswordError as exc:
@@ -152,6 +156,7 @@ class UserListResponse(BaseModel):
 
 
 # ── Session ───────────────────────────────────────────────────────────────────
+
 
 class SessionResponse(BaseModel):
     session_id: str

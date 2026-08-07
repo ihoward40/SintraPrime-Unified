@@ -62,7 +62,8 @@ interface AppState {
   unreadCount: number;
 
   // Integrations
-  integrations: IntegrationStatus[];
+    integrations: IntegrationStatus[];
+  godModeEnabled: boolean;
 
   // Actions
   setUser: (user: User | null) => void;
@@ -78,6 +79,7 @@ interface AppState {
   markAllNotificationsRead: () => void;
   clearNotifications: () => void;
   updateIntegration: (id: string, status: Partial<IntegrationStatus>) => void;
+  setGodMode: (enabled: boolean) => void;
   logout: () => void;
 }
 
@@ -163,6 +165,7 @@ export const useAppStore = create<AppState>()(
         notifications: [],
         unreadCount: 0,
         integrations: [],
+        godModeEnabled: true, // Default to true for Principal Command initialization
 
         // Actions
         setUser: (user) => set({ user, isAuthenticated: !!user }),
@@ -217,13 +220,13 @@ export const useAppStore = create<AppState>()(
 
         clearNotifications: () => set({ notifications: [], unreadCount: 0 }),
 
-        updateIntegration: (id, status) =>
+                updateIntegration: (id, status) =>
           set((state) => ({
             integrations: state.integrations.map((i) =>
               i.id === id ? { ...i, ...status } : i
             ),
           })),
-
+        setGodMode: (enabled: boolean) => set({ godModeEnabled: enabled }),
         logout: () => {
           localStorage.removeItem('sintraprime_token');
           localStorage.removeItem('sintraprime_refresh_token');

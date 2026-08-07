@@ -47,6 +47,7 @@ def _translate_ollama_error(exc: Exception) -> InferenceError:
         return InferenceError(str(exc), ProviderErrorKind.INVALID_REQUEST)
     return InferenceError(str(exc), ProviderErrorKind.UNKNOWN)
 
+
 # ---------------------------------------------------------------------------
 # Error translation helpers
 # ---------------------------------------------------------------------------
@@ -290,6 +291,7 @@ class OpenAIProvider(_BaseRealProvider):
 
     def _create_client(self, **kwargs: Any) -> Any:
         import openai
+
         return openai.OpenAI(**kwargs)
 
     def invoke(self, request: InferenceRequest) -> InferenceResult:
@@ -467,6 +469,7 @@ class AnthropicProvider(_BaseRealProvider):
 
     def _create_client(self, **kwargs: Any) -> Any:
         import anthropic
+
         return anthropic.Anthropic(**kwargs)
 
     def invoke(self, request: InferenceRequest) -> InferenceResult:
@@ -659,7 +662,8 @@ class OllamaProvider(_BaseRealProvider):
             usage = {
                 "input_tokens": resp.get("prompt_eval_count", 0) or 0,
                 "output_tokens": resp.get("eval_count", 0) or 0,
-                "total_tokens": (resp.get("prompt_eval_count", 0) or 0) + (resp.get("eval_count", 0) or 0),
+                "total_tokens": (resp.get("prompt_eval_count", 0) or 0)
+                + (resp.get("eval_count", 0) or 0),
                 "cached_tokens": 0,
             }
 

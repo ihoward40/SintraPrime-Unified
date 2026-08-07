@@ -45,7 +45,7 @@ from voice_concierge.governed.confirmation import CONFIRMATION_TTL
 
 
 def test_import_governed_does_not_load_legacy_voice_engine():
-    assert 'voice.voice_engine' not in sys.modules
+    assert "voice.voice_engine" not in sys.modules
 
 
 def make_envelope(**overrides):

@@ -6,6 +6,7 @@ The letter lacks the validation notice required by 15 U.S.C. § 1692g.
 This case evaluates whether to demand validation, dispute the debt, and
 preserve claims for FDCPA and state consumer-protection violations.
 """
+
 from __future__ import annotations
 
 from blackstone.engines import BlackstoneOrchestrator
@@ -21,12 +22,8 @@ from blackstone.models import (
 
 
 def build_case():
-    orchestrator = BlackstoneOrchestrator(
-        agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"]
-    )
-    orchestrator.register_jurisdiction(
-        Jurisdiction(name="United States", level="federal")
-    )
+    orchestrator = BlackstoneOrchestrator(agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"])
+    orchestrator.register_jurisdiction(Jurisdiction(name="United States", level="federal"))
     orchestrator.register_jurisdiction(
         Jurisdiction(name="New Jersey", level="state", parent="United States")
     )

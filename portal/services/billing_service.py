@@ -17,11 +17,10 @@ log = structlog.get_logger()
 async def generate_invoice_number(db: AsyncSession, tenant_id: uuid.UUID | str) -> str:
     """Generate a sequential invoice number: INV-2026-0001."""
     from ..models.billing import Invoice
+
     year = date.today().year
     count_result = await db.execute(
-        select(func.count(Invoice.id)).where(
-            Invoice.tenant_id == uuid.UUID(str(tenant_id))
-        )
+        select(func.count(Invoice.id)).where(Invoice.tenant_id == uuid.UUID(str(tenant_id)))
     )
     count = (count_result.scalar() or 0) + 1
     return f"INV-{year}-{count:04d}"
@@ -74,21 +73,21 @@ async def generate_invoice_pdf(invoice: object) -> bytes:
         doc = SimpleDocTemplate(
             buffer,
             pagesize=A4,
-            rightMargin=2*cm,
-            leftMargin=2*cm,
-            topMargin=2*cm,
-            bottomMargin=2*cm,
+            rightMargin=2 * cm,
+            leftMargin=2 * cm,
+            topMargin=2 * cm,
+            bottomMargin=2 * cm,
         )
         styles = getSampleStyleSheet()
         story = []
 
         # Header
         story.append(Paragraph("INVOICE", styles["Title"]))
-        story.append(Spacer(1, 0.5*cm))
+        story.append(Spacer(1, 0.5 * cm))
         story.append(Paragraph(f"Invoice #: {invoice.invoice_number}", styles["Normal"]))
         story.append(Paragraph(f"Date: {invoice.invoice_date}", styles["Normal"]))
         story.append(Paragraph(f"Due Date: {invoice.due_date}", styles["Normal"]))
-        story.append(Spacer(1, 0.5*cm))
+        story.append(Spacer(1, 0.5 * cm))
 
         # Totals
         data = [
@@ -97,15 +96,19 @@ async def generate_invoice_pdf(invoice: object) -> bytes:
             ["Total", f"${invoice.total:,.2f}"],
             ["Amount Due", f"${invoice.amount_due:,.2f}"],
         ]
-        table = Table(data, colWidths=[10*cm, 5*cm])
-        table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 3), (-1, 3), colors.lightgrey),
-            ("FONTNAME", (0, 3), (-1, 3), "Helvetica-Bold"),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-            ("ALIGN", (1, 0), (1, -1), "RIGHT"),
-        ]))
+        table = Table(data, colWidths=[10 * cm, 5 * cm])
+        table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 3), (-1, 3), colors.lightgrey),
+                    ("FONTNAME", (0, 3), (-1, 3), "Helvetica-Bold"),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                    ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+                ]
+            )
+        )
         story.append(table)
-        story.append(Spacer(1, 0.5*cm))
+        story.append(Spacer(1, 0.5 * cm))
 
         if invoice.notes:
             story.append(Paragraph(f"Notes: {invoice.notes}", styles["Normal"]))
@@ -122,9 +125,9 @@ async def generate_invoice_pdf(invoice: object) -> bytes:
 
 def _minimal_pdf_placeholder(invoice: object) -> bytes:
     """Minimal valid PDF if reportlab is not installed."""
-    content = f"""Invoice #{getattr(invoice, 'invoice_number', 'N/A')}
-Total: ${getattr(invoice, 'total', 0):,.2f}
-Amount Due: ${getattr(invoice, 'amount_due', 0):,.2f}
+    content = f"""Invoice #{getattr(invoice, "invoice_number", "N/A")}
+Total: ${getattr(invoice, "total", 0):,.2f}
+Amount Due: ${getattr(invoice, "amount_due", 0):,.2f}
 """
     return content.encode()
 
@@ -170,6 +173,7 @@ def statute_of_limitations_deadline(
 def calculate_invoice_total(line_items: list, tax_rate: float = 0.0) -> dict:
     """Alias for calculate_invoice_totals with simplified signature."""
     from decimal import Decimal
-    subtotal = sum(Decimal(str(item.get('amount', 0))) for item in line_items)
+
+    subtotal = sum(Decimal(str(item.get("amount", 0))) for item in line_items)
     tax = round(subtotal * Decimal(str(tax_rate)), 2)
-    return {'subtotal': float(subtotal), 'tax': float(tax), 'total': float(subtotal + tax)}
+    return {"subtotal": float(subtotal), "tax": float(tax), "total": float(subtotal + tax)}

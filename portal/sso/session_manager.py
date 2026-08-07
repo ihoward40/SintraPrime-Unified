@@ -90,9 +90,10 @@ class SessionManager:
             additional_claims={
                 "identity_provider": identity_provider,
                 "auth_method": auth_method,
-            } if identity_provider or auth_method else None,
+            }
+            if identity_provider or auth_method
+            else None,
         )
-
 
     async def validate_session(self, access_token: str) -> SessionData | None:
         """
@@ -151,7 +152,9 @@ class SessionManager:
             )
 
             # Save new refresh token
-            await self.store.save_refresh_token(new_refresh_token, self.config.refresh_token_ttl_seconds)
+            await self.store.save_refresh_token(
+                new_refresh_token, self.config.refresh_token_ttl_seconds
+            )
 
             # Generate new token pair
             return self.jwt_service.generate_token_pair(
@@ -160,7 +163,6 @@ class SessionManager:
                 email=session.email,
                 refresh_token_id=new_refresh_token.token_id,
             )
-
 
         except Exception:
             return None

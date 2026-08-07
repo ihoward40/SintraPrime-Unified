@@ -16,6 +16,7 @@ from ..database import Base
 
 class CaseStage(_enum.StrEnum):
     """Lifecycle stages for a legal case."""
+
     INTAKE = "intake"
     ACTIVE = "active"
     DISCOVERY = "discovery"
@@ -26,190 +27,259 @@ class CaseStage(_enum.StrEnum):
     ARCHIVED = "archived"
 
 
-
-
 class Case(Base):
     __tablename__ = "cases"
 
-    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
-    client_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("clients.id"), nullable=False)
-    matter_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("matters.id"), nullable=True)
+    id: Mapped[uuid.UUID] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    client_id: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("clients.id"), nullable=False
+    )
+    matter_id: Mapped[uuid.UUID | None] = mapped_column(
+        String(36), ForeignKey("matters.id"), nullable=True
+    )
 
-    case_number: Mapped[str]        = mapped_column(String(50), nullable=False)
-    title: Mapped[str]              = mapped_column(String(500), nullable=False)
+    case_number: Mapped[str] = mapped_column(String(50), nullable=False)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Classification
     practice_area: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    case_type: Mapped[str | None]     = mapped_column(String(100), nullable=True)  # litigation | transactional | advisory
-    jurisdiction: Mapped[str | None]  = mapped_column(String(200), nullable=True)
-    court_name: Mapped[str | None]    = mapped_column(String(300), nullable=True)
+    case_type: Mapped[str | None] = mapped_column(
+        String(100), nullable=True
+    )  # litigation | transactional | advisory
+    jurisdiction: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    court_name: Mapped[str | None] = mapped_column(String(300), nullable=True)
     docket_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     # Stage tracking
-    stage: Mapped[str]              = mapped_column(String(30), default="intake")
+    stage: Mapped[str] = mapped_column(String(30), default="intake")
     # intake | active | discovery | trial | pending | appeal | closed | archived
 
     # Staff assignments
-    lead_attorney_id: Mapped[uuid.UUID | None]   = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
-    assigned_staff: Mapped[list | None]          = mapped_column(JSON, nullable=True, default=list)  # list of user_ids
+    lead_attorney_id: Mapped[uuid.UUID | None] = mapped_column(
+        String(36), ForeignKey("users.id"), nullable=True
+    )
+    assigned_staff: Mapped[list | None] = mapped_column(
+        JSON, nullable=True, default=list
+    )  # list of user_ids
 
     # Opposing party (conflict check)
-    opposing_party: Mapped[str | None]           = mapped_column(String(500), nullable=True)
-    opposing_counsel: Mapped[str | None]         = mapped_column(String(500), nullable=True)
+    opposing_party: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    opposing_counsel: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # Dates
-    opened_at: Mapped[datetime | None]           = mapped_column(DateTime(timezone=True), nullable=True)
-    closed_at: Mapped[datetime | None]           = mapped_column(DateTime(timezone=True), nullable=True)
-    statute_of_limitations: Mapped[date | None]  = mapped_column(Date, nullable=True)
-    next_court_date: Mapped[date | None]         = mapped_column(Date, nullable=True)
+    opened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    statute_of_limitations: Mapped[date | None] = mapped_column(Date, nullable=True)
+    next_court_date: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     # Flags
-    is_urgent: Mapped[bool]         = mapped_column(Boolean, default=False)
-    is_confidential: Mapped[bool]   = mapped_column(Boolean, default=False)
-    conflict_checked: Mapped[bool]  = mapped_column(Boolean, default=False)
-    conflict_cleared: Mapped[bool]  = mapped_column(Boolean, default=False)
+    is_urgent: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_confidential: Mapped[bool] = mapped_column(Boolean, default=False)
+    conflict_checked: Mapped[bool] = mapped_column(Boolean, default=False)
+    conflict_cleared: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Outcome (when closed)
-    outcome: Mapped[str | None]  = mapped_column(String(50), nullable=True)  # won | lost | settled | dismissed
+    outcome: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # won | lost | settled | dismissed
     outcome_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     settlement_amount: Mapped[float | None] = mapped_column(nullable=True)
 
     # Custom intake form data
     intake_data: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=dict)
     custom_fields: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=dict)
-    tags: Mapped[list | None]        = mapped_column(JSON, nullable=True, default=list)
+    tags: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
 
     # Full-text search
 
     # Timestamps
-    created_at: Mapped[datetime]           = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime]           = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    client: Mapped[Client]             = relationship("Client", foreign_keys=[client_id])
+    client: Mapped[Client] = relationship("Client", foreign_keys=[client_id])
     lead_attorney: Mapped[User | None] = relationship("User", foreign_keys=[lead_attorney_id])
-    events: Mapped[list[CaseEvent]]    = relationship("CaseEvent", back_populates="case", order_by="CaseEvent.event_date.desc()", lazy="select")
-    deadlines: Mapped[list[CaseDeadline]] = relationship("CaseDeadline", back_populates="case", lazy="select")
-    notes: Mapped[list[CaseNote]]      = relationship("CaseNote", back_populates="case", lazy="select")
-    tasks: Mapped[list[CaseTask]]      = relationship("CaseTask", back_populates="case", lazy="select")
-
-    __table_args__ = (
+    events: Mapped[list[CaseEvent]] = relationship(
+        "CaseEvent", back_populates="case", order_by="CaseEvent.event_date.desc()", lazy="select"
     )
+    deadlines: Mapped[list[CaseDeadline]] = relationship(
+        "CaseDeadline", back_populates="case", lazy="select"
+    )
+    notes: Mapped[list[CaseNote]] = relationship("CaseNote", back_populates="case", lazy="select")
+    tasks: Mapped[list[CaseTask]] = relationship("CaseTask", back_populates="case", lazy="select")
+
+    __table_args__ = ()
 
 
 class CaseEvent(Base):
     """Timeline events for a case (hearings, filings, communications, etc.)."""
+
     __tablename__ = "case_events"
 
-    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
-    case_id: Mapped[uuid.UUID]      = mapped_column(String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    created_by: Mapped[uuid.UUID]   = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+    )
+    case_id: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("users.id"), nullable=False
+    )
 
-    event_type: Mapped[str]         = mapped_column(String(50), nullable=False)
+    event_type: Mapped[str] = mapped_column(String(50), nullable=False)
     # hearing | filing | correspondence | note | stage_change | assignment | deadline
 
-    title: Mapped[str]              = mapped_column(String(500), nullable=False)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    event_date: Mapped[datetime]    = mapped_column(DateTime(timezone=True), nullable=False)
+    event_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     location: Mapped[str | None] = mapped_column(String(300), nullable=True)
 
     is_client_visible: Mapped[bool] = mapped_column(Boolean, default=False)
     # Renamed from metadata to avoid SQLAlchemy Declarative API collision. Phase 21E.
     event_metadata: Mapped[dict | None] = mapped_column("metadata", JSON, nullable=True)
 
-    created_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    case: Mapped[Case]            = relationship("Case", back_populates="events")
-    creator: Mapped[User]         = relationship("User", foreign_keys=[created_by])
+    case: Mapped[Case] = relationship("Case", back_populates="events")
+    creator: Mapped[User] = relationship("User", foreign_keys=[created_by])
 
-    __table_args__ = (
-    )
+    __table_args__ = ()
 
 
 class CaseDeadline(Base):
     """Important deadlines with reminder configuration."""
+
     __tablename__ = "case_deadlines"
 
-    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
-    case_id: Mapped[uuid.UUID]      = mapped_column(String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    assigned_to: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
-    created_by: Mapped[uuid.UUID]   = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+    )
+    case_id: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    assigned_to: Mapped[uuid.UUID | None] = mapped_column(
+        String(36), ForeignKey("users.id"), nullable=True
+    )
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("users.id"), nullable=False
+    )
 
-    title: Mapped[str]              = mapped_column(String(500), nullable=False)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    deadline_type: Mapped[str]      = mapped_column(String(50), nullable=False)
+    deadline_type: Mapped[str] = mapped_column(String(50), nullable=False)
     # court | filing | statute | response | discovery | hearing | custom
 
-    due_date: Mapped[datetime]      = mapped_column(DateTime(timezone=True), nullable=False)
-    reminder_days: Mapped[list]     = mapped_column(JSON, default=lambda: [7, 1])  # remind N days before
+    due_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    reminder_days: Mapped[list] = mapped_column(
+        JSON, default=lambda: [7, 1]
+    )  # remind N days before
 
-    is_completed: Mapped[bool]      = mapped_column(Boolean, default=False)
+    is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    is_critical: Mapped[bool]       = mapped_column(Boolean, default=False)
+    is_critical: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    created_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-
-    case: Mapped[Case]            = relationship("Case", back_populates="deadlines")
-
-    __table_args__ = (
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+    case: Mapped[Case] = relationship("Case", back_populates="deadlines")
+
+    __table_args__ = ()
 
 
 class CaseNote(Base):
     """Private staff notes and client-visible notes on a case."""
+
     __tablename__ = "case_notes"
 
-    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
-    case_id: Mapped[uuid.UUID]      = mapped_column(String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    created_by: Mapped[uuid.UUID]   = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+    )
+    case_id: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("users.id"), nullable=False
+    )
 
-    title: Mapped[str | None]    = mapped_column(String(500), nullable=True)
-    content: Mapped[str]            = mapped_column(Text, nullable=False)
-    note_type: Mapped[str]          = mapped_column(String(20), default="private")  # private | client_visible
-    pinned: Mapped[bool]            = mapped_column(Boolean, default=False)
+    title: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    note_type: Mapped[str] = mapped_column(
+        String(20), default="private"
+    )  # private | client_visible
+    pinned: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    created_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    case: Mapped[Case]            = relationship("Case", back_populates="notes")
-    author: Mapped[User]          = relationship("User", foreign_keys=[created_by])
-
+    case: Mapped[Case] = relationship("Case", back_populates="notes")
+    author: Mapped[User] = relationship("User", foreign_keys=[created_by])
 
 
 class CaseTask(Base):
     """Actionable tasks assigned to staff members on a case."""
+
     __tablename__ = "case_tasks"
 
-    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
-    case_id: Mapped[uuid.UUID]      = mapped_column(String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    assigned_to: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
-    created_by: Mapped[uuid.UUID]   = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+    )
+    case_id: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    assigned_to: Mapped[uuid.UUID | None] = mapped_column(
+        String(36), ForeignKey("users.id"), nullable=True
+    )
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("users.id"), nullable=False
+    )
 
-    title: Mapped[str]              = mapped_column(String(500), nullable=False)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    priority: Mapped[str]           = mapped_column(String(10), default="medium")  # low | medium | high | critical
-    status: Mapped[str]             = mapped_column(String(20), default="todo")    # todo | in_progress | review | done
+    priority: Mapped[str] = mapped_column(
+        String(10), default="medium"
+    )  # low | medium | high | critical
+    status: Mapped[str] = mapped_column(
+        String(20), default="todo"
+    )  # todo | in_progress | review | done
 
     due_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     estimated_hours: Mapped[float | None] = mapped_column(nullable=True)
-    actual_hours: Mapped[float | None]    = mapped_column(nullable=True)
+    actual_hours: Mapped[float | None] = mapped_column(nullable=True)
 
-    created_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    case: Mapped[Case]            = relationship("Case", back_populates="tasks")
+    case: Mapped[Case] = relationship("Case", back_populates="tasks")
     assignee: Mapped[User | None] = relationship("User", foreign_keys=[assigned_to])
 
-    __table_args__ = (
-    )
+    __table_args__ = ()

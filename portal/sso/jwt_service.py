@@ -2,6 +2,7 @@
 JWT Token Generation and Validation Service
 Fail-closed: invalid tokens raise explicit errors.
 """
+
 from datetime import datetime, timedelta
 
 import jwt

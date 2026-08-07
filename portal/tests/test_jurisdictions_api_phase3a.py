@@ -159,31 +159,31 @@ def test_ct_rules_have_required_fields():
 def test_de_rules_have_valid_status_enum():
     rules = _load_json(_pkg_root() / "delaware" / "rules.json")
     for rule in rules:
-        assert (
-            rule["status"] in RULE_STATUSES
-        ), f"Rule {rule['id']} has invalid status {rule['status']}"
+        assert rule["status"] in RULE_STATUSES, (
+            f"Rule {rule['id']} has invalid status {rule['status']}"
+        )
 
 
 def test_ct_rules_have_valid_status_enum():
     rules = _load_json(_pkg_root() / "connecticut" / "rules.json")
     for rule in rules:
-        assert (
-            rule["status"] in RULE_STATUSES
-        ), f"Rule {rule['id']} has invalid status {rule['status']}"
+        assert rule["status"] in RULE_STATUSES, (
+            f"Rule {rule['id']} has invalid status {rule['status']}"
+        )
 
 
 def test_de_rules_human_review_flag_set():
     rules = _load_json(_pkg_root() / "delaware" / "rules.json")
-    assert all(
-        r["requires_human_review"] is True for r in rules
-    ), "All DE rules must require human review"
+    assert all(r["requires_human_review"] is True for r in rules), (
+        "All DE rules must require human review"
+    )
 
 
 def test_ct_rules_human_review_flag_set():
     rules = _load_json(_pkg_root() / "connecticut" / "rules.json")
-    assert all(
-        r["requires_human_review"] is True for r in rules
-    ), "All CT rules must require human review"
+    assert all(r["requires_human_review"] is True for r in rules), (
+        "All CT rules must require human review"
+    )
 
 
 def test_de_conflict_rules_reference_valid_ids():
@@ -214,17 +214,17 @@ def test_ct_conflict_rules_reference_valid_ids():
 def test_de_jurisdiction_in_list():
     response = client().get("/jurisdictions")
     assert response.status_code == 200
-    assert any(
-        item["code"] == "DE" for item in response.json()
-    ), "DE missing from jurisdiction list"
+    assert any(item["code"] == "DE" for item in response.json()), (
+        "DE missing from jurisdiction list"
+    )
 
 
 def test_ct_jurisdiction_in_list():
     response = client().get("/jurisdictions")
     assert response.status_code == 200
-    assert any(
-        item["code"] == "CT" for item in response.json()
-    ), "CT missing from jurisdiction list"
+    assert any(item["code"] == "CT" for item in response.json()), (
+        "CT missing from jurisdiction list"
+    )
 
 
 def test_de_jurisdiction_detail():
@@ -432,9 +432,9 @@ def test_comparison_shows_missing_rule_as_null():
     body = response.json()
     for row in body["rows"]:
         if row["jurisdiction"] in ("DE", "CT"):
-            assert (
-                row["rule"] is None or row["missing_data"]
-            ), "Should show missing data for nonexistent topic"
+            assert row["rule"] is None or row["missing_data"], (
+                "Should show missing data for nonexistent topic"
+            )
 
 
 def test_comparison_includes_conflict_warning():
@@ -565,9 +565,9 @@ def test_de_distinguishes_statutory_vs_common_law():
         for r in rules
         if "express trust" in r["topic"].lower() or "common law" in r["topic"].lower()
     ]
-    assert (
-        len(statutory_trust_ids) > 0 or len(common_law_ids) > 0
-    ), "DE should distinguish statutory vs common-law trust types"
+    assert len(statutory_trust_ids) > 0 or len(common_law_ids) > 0, (
+        "DE should distinguish statutory vs common-law trust types"
+    )
 
 
 def test_de_dapt_rule_has_fraudulent_transfer_exception():

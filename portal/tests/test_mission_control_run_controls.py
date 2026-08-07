@@ -215,7 +215,9 @@ async def test_run_control_rejects_stale_version(db: AsyncSession):
         )
 
     event_result = await db.execute(
-        select(MissionControlRunControlEvent).where(MissionControlRunControlEvent.run_control_id == control.id)
+        select(MissionControlRunControlEvent).where(
+            MissionControlRunControlEvent.run_control_id == control.id
+        )
     )
     assert len(event_result.scalars().all()) == 2
 
@@ -302,7 +304,9 @@ async def test_run_control_superseded_transition_is_supported(db: AsyncSession):
     assert updated.superseded_at is not None
 
     event_result = await db.execute(
-        select(MissionControlRunControlEvent).where(MissionControlRunControlEvent.run_control_id == control.id)
+        select(MissionControlRunControlEvent).where(
+            MissionControlRunControlEvent.run_control_id == control.id
+        )
     )
     events = event_result.scalars().all()
     assert len(events) == 2
@@ -312,7 +316,9 @@ async def test_run_control_superseded_transition_is_supported(db: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_run_control_transition_requires_tenant_scope_and_blocks_cross_tenant_access(db: AsyncSession):
+async def test_run_control_transition_requires_tenant_scope_and_blocks_cross_tenant_access(
+    db: AsyncSession,
+):
     tenant_id, user_id, command_id = await _seed_refs(db, tenant_id="tenant-1")
     other_tenant_id, _, _ = await _seed_refs(db, tenant_id="tenant-2")
 
@@ -355,7 +361,9 @@ async def test_run_control_transition_requires_tenant_scope_and_blocks_cross_ten
         )
 
     event_result = await db.execute(
-        select(MissionControlRunControlEvent).where(MissionControlRunControlEvent.run_control_id == control.id)
+        select(MissionControlRunControlEvent).where(
+            MissionControlRunControlEvent.run_control_id == control.id
+        )
     )
     assert len(event_result.scalars().all()) == 2
 
@@ -417,7 +425,9 @@ async def test_run_control_transition_update_includes_tenant_predicate(db: Async
         (RunControlState.PAUSING, RunControlState.FAILED),
     ],
 )
-async def test_terminal_precedence_over_pause_intent(db: AsyncSession, starting_state: RunControlState, terminal_state: RunControlState):
+async def test_terminal_precedence_over_pause_intent(
+    db: AsyncSession, starting_state: RunControlState, terminal_state: RunControlState
+):
     tenant_id, user_id, command_id = await _seed_refs(db)
     control = await create_run_control(
         db,
@@ -459,7 +469,9 @@ async def test_terminal_precedence_over_pause_intent(db: AsyncSession, starting_
         )
 
     event_result = await db.execute(
-        select(MissionControlRunControlEvent).where(MissionControlRunControlEvent.run_control_id == control.id)
+        select(MissionControlRunControlEvent).where(
+            MissionControlRunControlEvent.run_control_id == control.id
+        )
     )
     events = event_result.scalars().all()
     assert len(events) == 2
@@ -476,7 +488,9 @@ async def test_terminal_precedence_over_pause_intent(db: AsyncSession, starting_
         RunControlState.COMPENSATED,
     ],
 )
-async def test_terminal_states_reject_follow_up_transitions(db: AsyncSession, terminal_state: RunControlState):
+async def test_terminal_states_reject_follow_up_transitions(
+    db: AsyncSession, terminal_state: RunControlState
+):
     tenant_id, user_id, command_id = await _seed_refs(db)
     control = await create_run_control(
         db,
@@ -503,7 +517,9 @@ async def test_terminal_states_reject_follow_up_transitions(db: AsyncSession, te
         )
 
     event_result = await db.execute(
-        select(MissionControlRunControlEvent).where(MissionControlRunControlEvent.run_control_id == control.id)
+        select(MissionControlRunControlEvent).where(
+            MissionControlRunControlEvent.run_control_id == control.id
+        )
     )
     assert len(event_result.scalars().all()) == 1
 
@@ -574,12 +590,16 @@ async def test_parallel_pg_transition_race_appends_exactly_one_event():
         # Pre-race event baseline (fresh session, after create_run_control committed).
         async with session_maker() as session:
             before_events = (
-                await session.execute(
-                    select(MissionControlRunControlEvent)
-                    .where(MissionControlRunControlEvent.run_control_id == run_control_id)
-                    .order_by(MissionControlRunControlEvent.sequence.asc())
+                (
+                    await session.execute(
+                        select(MissionControlRunControlEvent)
+                        .where(MissionControlRunControlEvent.run_control_id == run_control_id)
+                        .order_by(MissionControlRunControlEvent.sequence.asc())
+                    )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             before_event_count = len(before_events)
             print(
                 f"RACE EVENTS before={before_event_count} types={[e.event_type for e in before_events]}"
@@ -623,7 +643,9 @@ async def test_parallel_pg_transition_race_appends_exactly_one_event():
         committed = [r for r in results if r == RACE_COMMITTED_SUCCESS]
         conflicts = [r for r in results if r == RACE_VERSION_CONFLICT]
         errors = [r for r in results if r == RACE_UNEXPECTED_ERROR]
-        print(f"RACE RESULT: results={results} committed={len(committed)} conflicts={len(conflicts)} errors={len(errors)}")
+        print(
+            f"RACE RESULT: results={results} committed={len(committed)} conflicts={len(conflicts)} errors={len(errors)}"
+        )
 
         assert len(committed) == 1, f"expected exactly one committed winner, got {results}"
         assert len(conflicts) == 1, f"expected exactly one version conflict, got {results}"
@@ -641,12 +663,16 @@ async def test_parallel_pg_transition_race_appends_exactly_one_event():
             # Pre-race baseline was captured above (before_event_count). Compare
             # by delta so the assertion does not depend on a hard-coded total.
             after_events = (
-                await session.execute(
-                    select(MissionControlRunControlEvent)
-                    .where(MissionControlRunControlEvent.run_control_id == run_control_id)
-                    .order_by(MissionControlRunControlEvent.sequence.asc())
+                (
+                    await session.execute(
+                        select(MissionControlRunControlEvent)
+                        .where(MissionControlRunControlEvent.run_control_id == run_control_id)
+                        .order_by(MissionControlRunControlEvent.sequence.asc())
+                    )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             after_event_count = len(after_events)
             delta_count = after_event_count - before_event_count
             print(
@@ -799,11 +825,16 @@ async def test_pg_flushed_transition_rollback_does_not_persist():
             assert final.state_version == 2
             assert final.state == RunControlState.PAUSE_REQUESTED.value
             events = (
-                await session.execute(
-                    select(MissionControlRunControlEvent)
-                    .where(MissionControlRunControlEvent.run_control_id == run_control_id)
+                (
+                    await session.execute(
+                        select(MissionControlRunControlEvent).where(
+                            MissionControlRunControlEvent.run_control_id == run_control_id
+                        )
+                    )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             assert len(events) == 2
     except Exception as exc:
         if required_in_ci:
@@ -849,7 +880,9 @@ async def test_seed_refs_is_idempotent_and_reuses_canonical_role(db: AsyncSessio
 
     # 4. No grant rows were created (and therefore no duplicates).
     assert (await db.execute(select(func.count()).select_from(RolePermission))).scalar_one() == 0
-    assert (await db.execute(select(func.count()).select_from(UserPermissionAssoc))).scalar_one() == 0
+    assert (
+        await db.execute(select(func.count()).select_from(UserPermissionAssoc))
+    ).scalar_one() == 0
 
     # 5. Second tenant preserved the correct data model: tenant-2 user exists
     #    and points at the same global role; tenant-1 remains intact.

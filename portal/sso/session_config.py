@@ -2,6 +2,7 @@
 Session Configuration Model
 Fail-closed: all required config must be present
 """
+
 import os
 from dataclasses import dataclass
 
@@ -57,7 +58,9 @@ class SessionConfig:
             jwt_secret_key=jwt_secret,
             jwt_algorithm=os.getenv("SSO_JWT_ALGORITHM", "HS256"),
             jwt_expiration_seconds=int(os.getenv("SSO_JWT_EXPIRATION_SECONDS", "3600")),
-            jwt_refresh_expiration_seconds=int(os.getenv("SSO_JWT_REFRESH_EXPIRATION_SECONDS", "604800")),
+            jwt_refresh_expiration_seconds=int(
+                os.getenv("SSO_JWT_REFRESH_EXPIRATION_SECONDS", "604800")
+            ),
             redis_url=os.getenv("REDIS_URL"),
             session_store_type=os.getenv("SSO_SESSION_STORE_TYPE", "redis"),
             session_ttl_seconds=int(os.getenv("SSO_SESSION_TTL_SECONDS", "3600")),

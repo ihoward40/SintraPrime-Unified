@@ -1,4 +1,5 @@
 """Admin service for dashboard operations."""
+
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func
@@ -16,16 +17,17 @@ class AdminService:
     def get_user_stats(self):
         """Get user statistics."""
         total_users = self.db.query(func.count(User.id)).scalar() or 0
-        active_today = self.db.query(func.count(User.id)).filter(
-            User.last_login >= datetime.now(UTC) - timedelta(days=1)
-        ).scalar() or 0
+        active_today = (
+            self.db.query(func.count(User.id))
+            .filter(User.last_login >= datetime.now(UTC) - timedelta(days=1))
+            .scalar()
+            or 0
+        )
         return {"total": total_users, "active_today": active_today}
 
     def get_audit_logs(self, limit: int = 100):
         """Retrieve recent audit logs."""
-        logs = self.db.query(AuditLog).order_by(
-            AuditLog.created_at.desc()
-        ).limit(limit).all()
+        logs = self.db.query(AuditLog).order_by(AuditLog.created_at.desc()).limit(limit).all()
         return [
             {
                 "id": log.id,

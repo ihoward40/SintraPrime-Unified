@@ -10,6 +10,7 @@ Design decisions:
   revoked at Okta's /oauth2/v1/revoke endpoint before issuing a new one.
 - Dependency injection: pass `client=` in tests to avoid real network calls.
 """
+
 import logging
 import secrets
 import urllib.parse
@@ -52,9 +53,8 @@ class OktaProvider:
             "redirect_uri": self.config.redirect_uri,
             "state": state,
         }
-        auth_url = (
-            f"{self.config.okta_domain}/oauth2/v1/authorize?"
-            + urllib.parse.urlencode(params)
+        auth_url = f"{self.config.okta_domain}/oauth2/v1/authorize?" + urllib.parse.urlencode(
+            params
         )
         return auth_url, state
 
@@ -130,9 +130,7 @@ class OktaProvider:
                 "Okta userinfo failed: HTTP %s",
                 exc.response.status_code,
             )
-            raise ValueError(
-                f"Okta userinfo failed with HTTP {exc.response.status_code}"
-            ) from exc
+            raise ValueError(f"Okta userinfo failed with HTTP {exc.response.status_code}") from exc
         except httpx.HTTPError as exc:
             logger.error("Okta userinfo network error: %s", exc)
             raise ValueError(f"Okta userinfo network error: {exc}") from exc
@@ -202,9 +200,7 @@ class OktaProvider:
             refresh_token=token_data.get("refresh_token"),
         )
 
-    async def _revoke_token(
-        self, token: str, token_type_hint: str = "access_token"
-    ) -> None:
+    async def _revoke_token(self, token: str, token_type_hint: str = "access_token") -> None:
         """Revoke a token at /oauth2/v1/revoke (fail-open)."""
         revoke_url = f"{self.config.okta_domain}/oauth2/v1/revoke"
         try:

@@ -260,6 +260,7 @@ class TestQueueThreadSafety:
         t.start()
         # Give waiter time to block
         import time
+
         time.sleep(0.1)
         q.enqueue(_make_task("wake"))
         t.join(timeout=5)

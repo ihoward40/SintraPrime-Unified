@@ -1,6 +1,7 @@
 """
 Reasoning Engine — build traceable recommendations from evidence and authority.
 """
+
 from __future__ import annotations
 
 from blackstone.engines.authority_engine import AuthorityEngine
@@ -69,7 +70,9 @@ class ReasoningEngine:
 
         controlling = authority_summary.get("controlling_authority")
         if controlling:
-            parts.append(f"Controlling authority: {controlling['citation']} ({controlling.get('jurisdiction')}).")
+            parts.append(
+                f"Controlling authority: {controlling['citation']} ({controlling.get('jurisdiction')})."
+            )
 
         persuasive = authority_summary.get("persuasive_authorities", [])
         if persuasive:
@@ -96,7 +99,9 @@ class ReasoningEngine:
         if claim.status.value == "persuasive":
             return "Adopt the claim as persuasive, subject to controlling authority review."
         if claim.status.value == "disputed":
-            return "Do not adopt without further review; document conflict and seek specialist input."
+            return (
+                "Do not adopt without further review; document conflict and seek specialist input."
+            )
         if claim.status.value == "emerging":
             return "Track as emerging position; gather additional corroboration before adoption."
         if claim.status.value == "educational":

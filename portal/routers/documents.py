@@ -80,6 +80,7 @@ def get_share_by_token(token: str, db=None):
 
 # ── Upload ────────────────────────────────────────────────────────────────────
 
+
 @router.post("/upload", response_model=DocumentUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document(
     request: Request,
@@ -100,16 +101,12 @@ async def upload_document(
     file_content = await file.read()
     if len(file_content) > settings.max_file_size_bytes:
         raise HTTPException(
-            status_code=413,
-            detail=f"File too large. Max {settings.MAX_FILE_SIZE_MB}MB"
+            status_code=413, detail=f"File too large. Max {settings.MAX_FILE_SIZE_MB}MB"
         )
 
     # Validate MIME type allowlist
     if file.content_type not in settings.ALLOWED_FILE_TYPES:
-        raise HTTPException(
-            status_code=415,
-            detail=f"File type '{file.content_type}' not allowed"
-        )
+        raise HTTPException(status_code=415, detail=f"File type '{file.content_type}' not allowed")
 
     # Calculate checksum
     checksum = hashlib.sha256(file_content).hexdigest()
@@ -173,12 +170,17 @@ async def upload_document(
 
     # Background tasks: virus scan + OCR (fire-and-forget)
     from ..services.document_processor import schedule_processing
+
     await schedule_processing(str(doc.id))
 
     await audit(
-        db, action="doc_upload", user_id=current_user.user_id,
+        db,
+        action="doc_upload",
+        user_id=current_user.user_id,
         tenant_id=current_user.tenant_id,
-        resource_type="document", resource_id=str(doc.id), resource_name=doc.name,
+        resource_type="document",
+        resource_id=str(doc.id),
+        resource_name=doc.name,
         status="success",
     )
 
@@ -224,9 +226,11 @@ async def list_documents(
 
     # CLIENT role: only see their own documents
     if current_user.is_client():
-        stmt = stmt.where(Document.client_id.in_(
-            select(Document.client_id).where(Document.tenant_id == current_user.tenant_id)
-        ))
+        stmt = stmt.where(
+            Document.client_id.in_(
+                select(Document.client_id).where(Document.tenant_id == current_user.tenant_id)
+            )
+        )
 
     total_result = await db.execute(select(func.count()).select_from(stmt.subquery()))
     total = total_result.scalar() or 0
@@ -259,9 +263,15 @@ async def get_document(
     doc = result.scalar_one_or_none()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    await audit(db, action="doc_view", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id,
-                resource_type="document", resource_id=str(doc.id), resource_name=doc.name)
+    await audit(
+        db,
+        action="doc_view",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="document",
+        resource_id=str(doc.id),
+        resource_name=doc.name,
+    )
     return DocumentResponse.model_validate(doc)
 
 
@@ -311,9 +321,13 @@ async def download_document(
         decrypted = encrypted
 
     await audit(
-        db, action="doc_download", user_id=current_user.user_id,
+        db,
+        action="doc_download",
+        user_id=current_user.user_id,
         tenant_id=current_user.tenant_id,
-        resource_type="document", resource_id=str(doc.id), resource_name=doc.name,
+        resource_type="document",
+        resource_id=str(doc.id),
+        resource_name=doc.name,
         status="success",
     )
 
@@ -346,9 +360,14 @@ async def update_document(
         setattr(doc, field, value)
     await db.commit()
     await db.refresh(doc)
-    await audit(db, action="doc_update", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id,
-                resource_type="document", resource_id=str(doc.id))
+    await audit(
+        db,
+        action="doc_update",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="document",
+        resource_id=str(doc.id),
+    )
     return DocumentResponse.model_validate(doc)
 
 
@@ -359,6 +378,7 @@ async def delete_document(
     db: AsyncSession = Depends(get_db),
 ):
     from datetime import datetime
+
     result = await db.execute(
         select(Document).where(
             Document.id == document_id,
@@ -371,9 +391,14 @@ async def delete_document(
     doc.deleted_at = datetime.now(UTC)
     doc.status = "deleted"
     await db.commit()
-    await audit(db, action="doc_delete", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id,
-                resource_type="document", resource_id=str(doc.id))
+    await audit(
+        db,
+        action="doc_delete",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="document",
+        resource_id=str(doc.id),
+    )
 
 
 @router.get("/{document_id}/versions", response_model=list[DocumentVersionResponse])
@@ -447,10 +472,15 @@ async def upload_new_version(
 
     await db.commit()
     await db.refresh(version)
-    await audit(db, action="doc_version_upload", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id,
-                resource_type="document", resource_id=str(doc.id),
-                details={"version": new_version_num})
+    await audit(
+        db,
+        action="doc_version_upload",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="document",
+        resource_id=str(doc.id),
+        details={"version": new_version_num},
+    )
     return version
 
 
@@ -473,10 +503,15 @@ async def share_document(
         raise HTTPException(status_code=404)
 
     share = await create_share_link(db, doc, body, current_user)
-    await audit(db, action="doc_share", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id,
-                resource_type="document", resource_id=str(doc.id),
-                details={"share_token": share.share_token})
+    await audit(
+        db,
+        action="doc_share",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="document",
+        resource_id=str(doc.id),
+        details={"share_token": share.share_token},
+    )
     return share
 
 
@@ -487,9 +522,7 @@ async def access_shared_document(
     db: AsyncSession = Depends(get_db),
 ):
     """Public endpoint: access a shared document via token."""
-    result = await db.execute(
-        select(DocumentShare).where(DocumentShare.share_token == share_token)
-    )
+    result = await db.execute(select(DocumentShare).where(DocumentShare.share_token == share_token))
     share = result.scalar_one_or_none()
     if not share:
         raise HTTPException(status_code=404, detail="Share link not found")
@@ -499,6 +532,7 @@ async def access_shared_document(
     # Increment view count
     share.view_count += 1
     from datetime import datetime
+
     share.last_accessed_at = datetime.now(UTC)
     await db.commit()
 
@@ -519,7 +553,7 @@ async def search_documents(
             Document.name.ilike(f"%{body.query}%"),
             Document.description.ilike(f"%{body.query}%"),
             Document.ocr_text.ilike(f"%{body.query}%"),
-        )
+        ),
     )
     if body.client_id:
         stmt = stmt.where(Document.client_id == body.client_id)
@@ -568,6 +602,7 @@ async def bulk_operation(
 
     if body.operation == "delete":
         from datetime import datetime
+
         for doc in docs:
             doc.deleted_at = datetime.now(UTC)
             doc.status = "deleted"
@@ -591,12 +626,16 @@ async def bulk_operation(
     if body.operation == "download_zip":
         # Return a task_id — actual ZIP creation is async
         task_id = str(uuid.uuid4())
-        return {"task_id": task_id, "message": "ZIP creation started. Poll /tasks/{task_id} for status."}
+        return {
+            "task_id": task_id,
+            "message": "ZIP creation started. Poll /tasks/{task_id} for status.",
+        }
 
     raise HTTPException(status_code=400, detail="Unknown operation")
 
 
 # ── Export to Evidence Packet ─────────────────────────────────────────────────
+
 
 @router.post(
     "/cases/{case_id}/export-packet",
@@ -669,6 +708,7 @@ async def export_documents_packet(
 
 
 # ── Folders ───────────────────────────────────────────────────────────────────
+
 
 @router.post("/folders", response_model=FolderResponse, status_code=status.HTTP_201_CREATED)
 async def create_folder(

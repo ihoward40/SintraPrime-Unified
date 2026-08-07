@@ -36,6 +36,7 @@ from observability.tracer import Tracer
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _req(**kwargs: Any) -> InferenceRequest:
     defaults = {
         "request_id": "adapter-test",
@@ -53,6 +54,7 @@ def _req(**kwargs: Any) -> InferenceRequest:
 # ---------------------------------------------------------------------------
 # Mock OpenAI response objects
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class _MockUsage:
@@ -93,6 +95,7 @@ class _MockStreamChunk:
 # ---------------------------------------------------------------------------
 # OpenAI adapter tests
 # ---------------------------------------------------------------------------
+
 
 class TestOpenAIProvider:
     def test_unconfigured_provider_raises_on_invoke(self):
@@ -189,7 +192,10 @@ class TestOpenAIProvider:
         mock_client.chat.completions.create.side_effect = exc
         provider._client = mock_client
 
-        with caplog.at_level(logging.WARNING, logger="governed_inference.adapters"), pytest.raises(InferenceError):
+        with (
+            caplog.at_level(logging.WARNING, logger="governed_inference.adapters"),
+            pytest.raises(InferenceError),
+        ):
             provider.invoke(_req())
 
         assert any("openai.invoke.error" in r.message for r in caplog.records)
@@ -207,6 +213,7 @@ class TestOpenAIProvider:
 # ---------------------------------------------------------------------------
 # Anthropic adapter tests
 # ---------------------------------------------------------------------------
+
 
 class TestAnthropicProvider:
     def test_unconfigured_provider_raises_on_invoke(self):
@@ -259,10 +266,12 @@ class TestAnthropicProvider:
         mock_client.messages.create.return_value = mock_response
         provider._client = mock_client
 
-        req = _req(messages=[
-            {"role": "system", "content": "You are a legal assistant."},
-            {"role": "user", "content": "Analyze this case."},
-        ])
+        req = _req(
+            messages=[
+                {"role": "system", "content": "You are a legal assistant."},
+                {"role": "user", "content": "Analyze this case."},
+            ]
+        )
         provider.invoke(req)
 
         # Verify system was extracted and passed separately
@@ -317,6 +326,7 @@ class TestAnthropicProvider:
 # Timeout enforcement tests
 # ---------------------------------------------------------------------------
 
+
 class TestTimeoutEnforcement:
     def test_timeout_policy_value_is_read_from_config(self):
         policy = InferencePolicy(per_request=PerRequestPolicy(timeout_seconds=30))
@@ -362,6 +372,7 @@ class TestTimeoutEnforcement:
 #
 # Structured logging tests
 
+
 class TestStructuredLogging:
     def test_router_logs_request_lifecycle(self, caplog):
         provider = MockProvider(name="logged")
@@ -378,10 +389,14 @@ class TestStructuredLogging:
     def test_router_logs_denied_request(self, caplog):
         # Use a provider that will be rejected (not configured, no cost)
         from governed_inference import GroqProvider
+
         provider = GroqProvider(configured=True)  # no estimated_cost_usd -> unknown_cloud_cost
         router = GovernedInferenceRouter([provider])
 
-        with caplog.at_level(logging.WARNING, logger="governed_inference.router"), pytest.raises(InferenceError):
+        with (
+            caplog.at_level(logging.WARNING, logger="governed_inference.router"),
+            pytest.raises(InferenceError),
+        ):
             router.invoke(_req())
 
         assert any("inference.denied" in r.message for r in caplog.records)
@@ -403,9 +418,11 @@ class TestStructuredLogging:
         sensitive_prompt = "My SSN is 123-45-6789"
 
         with caplog.at_level(logging.DEBUG):
-            router.invoke(_req(
-                messages=[{"role": "user", "content": sensitive_prompt}],
-            ))
+            router.invoke(
+                _req(
+                    messages=[{"role": "user", "content": sensitive_prompt}],
+                )
+            )
 
         for record in caplog.records:
             assert "123-45-6789" not in record.getMessage()
@@ -418,6 +435,7 @@ class TestStructuredLogging:
 # ---------------------------------------------------------------------------
 # Trace integration tests
 # ---------------------------------------------------------------------------
+
 
 class TestTraceIntegration:
     def test_tracer_creates_span_on_invoke(self):
@@ -443,6 +461,7 @@ class TestTraceIntegration:
     def test_tracer_records_error_on_denied_request(self):
         tracer = Tracer(service_name="test")
         from governed_inference import GroqProvider
+
         provider = GroqProvider(configured=True)
         router = GovernedInferenceRouter([provider], tracer=tracer)
 
@@ -493,6 +512,7 @@ class TestTraceIntegration:
 # ---------------------------------------------------------------------------
 # Ollama adapter tests
 # ---------------------------------------------------------------------------
+
 
 class TestOllamaProvider:
     def test_provider_is_configured_and_local(self):
@@ -595,6 +615,7 @@ class TestOllamaProvider:
 # ---------------------------------------------------------------------------
 # DeepSeek adapter tests
 # ---------------------------------------------------------------------------
+
 
 class TestDeepSeekProvider:
     def test_unconfigured_provider_raises_on_invoke(self):

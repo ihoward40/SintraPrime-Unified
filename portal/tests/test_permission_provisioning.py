@@ -53,7 +53,9 @@ async def _seed_roles(session: AsyncSession) -> None:
             Role(id="role-firm", name="FIRM_ADMIN", display_name="Firm Admin", is_system=True),
             Role(id="role-attorney", name="ATTORNEY", display_name="Attorney", is_system=True),
             Role(id="role-paralegal", name="PARALEGAL", display_name="Paralegal", is_system=True),
-            Role(id="role-accountant", name="ACCOUNTANT", display_name="Accountant", is_system=True),
+            Role(
+                id="role-accountant", name="ACCOUNTANT", display_name="Accountant", is_system=True
+            ),
             Role(id="role-client", name="CLIENT", display_name="Client", is_system=True),
             Role(id="role-viewer", name="VIEWER", display_name="Viewer", is_system=True),
             Role(id="role-custom", name="CUSTOM", display_name="Custom", is_system=False),
@@ -133,7 +135,11 @@ async def test_synced_role_permissions_feed_login_and_refresh_access_tokens(db: 
     assert "mission_control:command_create" in access_payload["permissions"]
     assert "mission_control:run_pause" in access_payload["permissions"]
 
-    attorney_permissions = [permission for permission in user.role_ref.permissions if permission.name != "mission_control:run_pause"]
+    attorney_permissions = [
+        permission
+        for permission in user.role_ref.permissions
+        if permission.name != "mission_control:run_pause"
+    ]
     user.role_ref.permissions = attorney_permissions
     await db.commit()
 
@@ -143,7 +149,9 @@ async def test_synced_role_permissions_feed_login_and_refresh_access_tokens(db: 
         .where(User.id == "user-1")
     )
     refreshed_user = refreshed_user_result.scalar_one()
-    refreshed_login_response, _refresh_token_2, _family_id_2 = _build_login_response(refreshed_user, Response())
+    refreshed_login_response, _refresh_token_2, _family_id_2 = _build_login_response(
+        refreshed_user, Response()
+    )
     refreshed_payload = decode_access_token(refreshed_login_response.access_token)
     assert "mission_control:command_create" in refreshed_payload["permissions"]
     assert "mission_control:run_pause" not in refreshed_payload["permissions"]
@@ -200,7 +208,12 @@ async def test_permission_dry_run_returns_same_manifest_hash_without_writes(db: 
 @pytest.mark.asyncio
 async def test_permission_sync_flags_ambiguous_system_role_identity(db: AsyncSession):
     db.add(
-        Role(id="role-firm-custom", name="FIRM_ADMIN", display_name="Firm Admin Custom", is_system=False)
+        Role(
+            id="role-firm-custom",
+            name="FIRM_ADMIN",
+            display_name="Firm Admin Custom",
+            is_system=False,
+        )
     )
     await db.commit()
 

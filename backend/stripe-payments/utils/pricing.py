@@ -17,20 +17,17 @@ class PricingCalculator:
 
     @staticmethod
     def calculate_prorated_amount(
-        old_price: int,
-        new_price: int,
-        current_period_end: datetime,
-        days_in_period: int = 30
+        old_price: int, new_price: int, current_period_end: datetime, days_in_period: int = 30
     ) -> Dict[str, int]:
         """
         Calculate prorated amount for mid-cycle upgrades/downgrades
-        
+
         Args:
             old_price: Original price in cents
             new_price: New price in cents
             current_period_end: End of current billing period
             days_in_period: Days in billing period (default 30)
-            
+
         Returns:
             Dict with 'credit' (negative) or 'charge' (positive) amount in cents
         """
@@ -62,17 +59,14 @@ class PricingCalculator:
             return {"amount": 0, "type": "none"}
 
     @staticmethod
-    def apply_discount(
-        price: int,
-        discount_percent: float
-    ) -> Dict[str, int]:
+    def apply_discount(price: int, discount_percent: float) -> Dict[str, int]:
         """
         Apply percentage discount
-        
+
         Args:
             price: Original price in cents
             discount_percent: Discount percentage (0-100)
-            
+
         Returns:
             Dict with 'original', 'discount', and 'final' amounts
         """
@@ -86,21 +80,18 @@ class PricingCalculator:
             "original": price,
             "discount": discount_amount,
             "final": final_price,
-            "percentage": discount_percent
+            "percentage": discount_percent,
         }
 
     @staticmethod
-    def apply_promotional_code(
-        price: int,
-        code: str
-    ) -> Dict[str, int]:
+    def apply_promotional_code(price: int, code: str) -> Dict[str, int]:
         """
         Apply promotional code discount
-        
+
         Args:
             price: Original price in cents
             code: Promotional code
-            
+
         Returns:
             Dict with discount details or error
         """
@@ -118,23 +109,17 @@ class PricingCalculator:
             raise ValueError(f"Invalid promotional code: {code}")
 
         promo = promo_codes[code_upper]
-        return PricingCalculator.apply_discount(
-            price,
-            promo["discount_percent"]
-        )
+        return PricingCalculator.apply_discount(price, promo["discount_percent"])
 
     @staticmethod
-    def calculate_annual_savings(
-        monthly_price: int,
-        annual_price: int
-    ) -> Dict[str, int]:
+    def calculate_annual_savings(monthly_price: int, annual_price: int) -> Dict[str, int]:
         """
         Calculate savings for annual billing
-        
+
         Args:
             monthly_price: Monthly price in cents
             annual_price: Annual price in cents
-            
+
         Returns:
             Dict with monthly equivalent, annual price, and savings
         """
@@ -146,17 +131,19 @@ class PricingCalculator:
             "monthly_equivalent_annual": annual_equivalent,
             "annual_price": annual_price,
             "savings": savings,
-            "savings_percent": int((savings / annual_equivalent) * 100) if annual_equivalent > 0 else 0
+            "savings_percent": int((savings / annual_equivalent) * 100)
+            if annual_equivalent > 0
+            else 0,
         }
 
     @staticmethod
     def get_tier_pricing(tier: str) -> Dict[str, int]:
         """
         Get pricing information for a tier
-        
+
         Args:
             tier: Subscription tier (starter, pro, enterprise)
-            
+
         Returns:
             Dict with monthly and annual pricing
         """
@@ -166,35 +153,26 @@ class PricingCalculator:
             return {"error": f"Unknown tier: {tier}"}
 
         if tier == "enterprise":
-            return {
-                "tier": tier,
-                "monthly": None,
-                "annual": None,
-                "billing": "custom"
-            }
+            return {"tier": tier, "monthly": None, "annual": None, "billing": "custom"}
 
         annual_price = int(monthly_price * 11)  # 2 months free for annual
 
         return {
             "tier": tier,
-            "monthly": {
-                "price": monthly_price,
-                "currency": "usd",
-                "billing_period": "month"
-            },
+            "monthly": {"price": monthly_price, "currency": "usd", "billing_period": "month"},
             "annual": {
                 "price": annual_price,
                 "currency": "usd",
                 "billing_period": "year",
-                "savings": (monthly_price * 12) - annual_price
-            }
+                "savings": (monthly_price * 12) - annual_price,
+            },
         }
 
     @staticmethod
     def compare_tiers() -> Dict[str, Dict]:
         """
         Get pricing comparison for all tiers
-        
+
         Returns:
             Dict with pricing for all tiers
         """

@@ -1,6 +1,7 @@
 """
 Tests for BRA Standard Disclaimer Library — BKR-14 and BKR-15.
 """
+
 import pytest
 
 from blackstone.bra.disclaimers import (

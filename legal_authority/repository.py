@@ -140,9 +140,9 @@ class LegalAuthorityRepository:
     def reviews_for_rule(self, rule_id: str) -> list[ProfessionalReview]:
         return sorted(
             [review for review in self.reviews.values() if review.object_id == rule_id],
-            key=lambda review: review.reviewed_at
-            or review.expires_at
-            or datetime.min.replace(tzinfo=UTC),
+            key=lambda review: (
+                review.reviewed_at or review.expires_at or datetime.min.replace(tzinfo=UTC)
+            ),
         )
 
     def challenges_for_rule(self, rule_id: str) -> list[LegalChallenge]:

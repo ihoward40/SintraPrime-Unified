@@ -50,16 +50,22 @@ async def push_to_users(
 
 async def push_case_update(tenant_id: str, case_id: str, update: dict) -> None:
     """Broadcast a case update to all connected users in the tenant."""
-    await ws_manager.broadcast_to_tenant(tenant_id, {
-        "type": "case_update",
-        "case_id": case_id,
-        **update,
-    })
+    await ws_manager.broadcast_to_tenant(
+        tenant_id,
+        {
+            "type": "case_update",
+            "case_id": case_id,
+            **update,
+        },
+    )
 
 
 async def push_document_event(user_id: str, document_id: str, event_type: str) -> None:
-    await ws_manager.send_to_user(user_id, {
-        "type": "document_event",
-        "event_type": event_type,
-        "document_id": document_id,
-    })
+    await ws_manager.send_to_user(
+        user_id,
+        {
+            "type": "document_event",
+            "event_type": event_type,
+            "document_id": document_id,
+        },
+    )

@@ -5,6 +5,7 @@ Scenario: the consumer settled or paid an Affirm/AFR point-of-sale loan, but the
 account still reports as delinquent or with a balance on one or more credit
 reports.
 """
+
 from __future__ import annotations
 
 from blackstone.engines import BlackstoneOrchestrator
@@ -20,12 +21,8 @@ from blackstone.models import (
 
 
 def build_case():
-    orchestrator = BlackstoneOrchestrator(
-        agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"]
-    )
-    orchestrator.register_jurisdiction(
-        Jurisdiction(name="United States", level="federal")
-    )
+    orchestrator = BlackstoneOrchestrator(agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"])
+    orchestrator.register_jurisdiction(Jurisdiction(name="United States", level="federal"))
 
     sources = [
         Source(

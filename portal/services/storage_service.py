@@ -18,6 +18,7 @@ class StorageService:
     def __init__(self) -> None:
         try:
             from minio import Minio  # type: ignore
+
             self._client = Minio(
                 endpoint=settings.MINIO_ENDPOINT,
                 access_key=settings.MINIO_ACCESS_KEY,
@@ -29,6 +30,7 @@ class StorageService:
 
     async def ensure_bucket_exists(self, bucket: str) -> None:
         import asyncio
+
         loop = asyncio.get_event_loop()
         found = await loop.run_in_executor(None, self._client.bucket_exists, bucket)
         if not found:
@@ -43,6 +45,7 @@ class StorageService:
         metadata: dict | None = None,
     ) -> None:
         import asyncio
+
         await self.ensure_bucket_exists(bucket)
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(
@@ -59,6 +62,7 @@ class StorageService:
 
     async def get_object(self, bucket: str, key: str) -> bytes:
         import asyncio
+
         loop = asyncio.get_event_loop()
 
         def _get():
@@ -73,14 +77,14 @@ class StorageService:
 
     async def delete_object(self, bucket: str, key: str) -> None:
         import asyncio
+
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, self._client.remove_object, bucket, key)
 
-    async def presigned_get_url(
-        self, bucket: str, key: str, expires_seconds: int = 3600
-    ) -> str:
+    async def presigned_get_url(self, bucket: str, key: str, expires_seconds: int = 3600) -> str:
         import asyncio
         from datetime import timedelta
+
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(
             None,
@@ -93,6 +97,7 @@ class StorageService:
 
     async def object_exists(self, bucket: str, key: str) -> bool:
         import asyncio
+
         loop = asyncio.get_event_loop()
         try:
             await loop.run_in_executor(None, self._client.stat_object, bucket, key)
@@ -106,6 +111,7 @@ class StorageService:
         import asyncio
 
         from minio.commonconfig import CopySource  # type: ignore
+
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(
             None,
@@ -116,17 +122,28 @@ class StorageService:
             ),
         )
 
-
     # ── Test-compatibility aliases ────────────────────────────────────────────
-    async def upload_file(self, file_content: bytes, key: str, content_type: str = 'application/octet-stream', **kwargs) -> str:
+    async def upload_file(
+        self,
+        file_content: bytes,
+        key: str,
+        content_type: str = "application/octet-stream",
+        **kwargs,
+    ) -> str:
         """Alias for put_object with simplified signature."""
         from ..config import get_settings
+
         settings = get_settings()
-        await self.put_object(bucket=settings.MINIO_BUCKET, key=key, data=file_content, content_type=content_type)
+        await self.put_object(
+            bucket=settings.MINIO_BUCKET, key=key, data=file_content, content_type=content_type
+        )
         return key
 
     async def generate_presigned_url(self, key: str, expires_in: int = 3600, **kwargs) -> str:
         """Alias for presigned_get_url with simplified signature."""
         from ..config import get_settings
+
         settings = get_settings()
-        return await self.presigned_get_url(bucket=settings.MINIO_BUCKET, key=key, expires_seconds=expires_in)
+        return await self.presigned_get_url(
+            bucket=settings.MINIO_BUCKET, key=key, expires_seconds=expires_in
+        )

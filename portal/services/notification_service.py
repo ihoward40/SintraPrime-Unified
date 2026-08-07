@@ -102,11 +102,14 @@ async def _resolve_recipients(
     """Auto-resolve who should receive a notification based on event context."""
     # For now: return all staff in tenant
     from ..models.user import User
+
     result = await db.execute(
-        select(User.id).where(
+        select(User.id)
+        .where(
             User.tenant_id == uuid.UUID(str(tenant_id)),
             User.is_active,
-        ).limit(50)
+        )
+        .limit(50)
     )
     return [str(r[0]) for r in result.all()]
 
@@ -143,6 +146,7 @@ async def send_sms(to: str, message: str) -> None:
         return
     try:
         from twilio.rest import Client  # type: ignore
+
         client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
         client.messages.create(body=message, from_=settings.TWILIO_FROM_NUMBER, to=to)
         log.info("sms.sent", to=to)

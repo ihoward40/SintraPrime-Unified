@@ -27,15 +27,18 @@ REFRESH_TOKEN_TYPE = "refresh"
 
 class TokenError(Exception):
     """Raised for any JWT validation failure."""
+
     pass
 
 
 class TokenExpiredError(TokenError):
     """Raised specifically when a token has expired."""
+
     pass
 
 
 # ── Creation ──────────────────────────────────────────────────────────────────
+
 
 def create_access_token(
     *,
@@ -86,14 +89,13 @@ def create_refresh_token(
         "iat": now,
         "exp": expire,
     }
-    token = jwt.encode(
-        payload, settings.JWT_REFRESH_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
-    )
+    token = jwt.encode(payload, settings.JWT_REFRESH_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
     logger.debug("jwt.refresh_token_created", user_id=user_id, family=family_id)
     return token, family_id
 
 
 # ── Verification ──────────────────────────────────────────────────────────────
+
 
 def decode_access_token(token: str) -> dict[str, Any]:
     """Decode and validate an access token. Raises TokenError on failure."""

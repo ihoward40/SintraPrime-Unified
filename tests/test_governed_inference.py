@@ -101,7 +101,9 @@ def test_unknown_cloud_cost_fails_closed_not_zero():
 
 
 def test_omniroute_and_openrouter_are_ineligible_until_cost_is_known():
-    router = GovernedInferenceRouter([OmniRouteProvider(configured=True), OpenRouterProvider(configured=True)])
+    router = GovernedInferenceRouter(
+        [OmniRouteProvider(configured=True), OpenRouterProvider(configured=True)]
+    )
 
     with pytest.raises(InferenceError):
         router.invoke(request(data_classification=DataClassification.PUBLIC, capability="coding"))
@@ -216,7 +218,9 @@ def test_reliability_floor_blocks_bad_free_provider():
         cloud=True,
         estimated_cost_usd=0.0,
     )
-    router = GovernedInferenceRouter([provider], policy=InferencePolicy(daily_budget_usd=1.0), ledger=ledger)
+    router = GovernedInferenceRouter(
+        [provider], policy=InferencePolicy(daily_budget_usd=1.0), ledger=ledger
+    )
 
     with pytest.raises(InferenceError):
         router.invoke(request(data_classification=DataClassification.PUBLIC))

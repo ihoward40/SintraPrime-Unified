@@ -3,6 +3,7 @@ Portal SSO module — Session management and OAuth 2.0 providers.
 Provides session management, JWT generation/validation, and SAML provider integration.
 Fail-closed behavior enforced: missing config raises explicit errors.
 """
+
 __version__ = "0.2.0"
 
 # Sessions

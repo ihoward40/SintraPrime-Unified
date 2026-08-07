@@ -86,6 +86,7 @@ When the user requests a durable behavior change, record it here or in the relev
 | `portal/routers/AGENTS.md` | API route handlers | Router modules and their tests; delegates business logic to `services/` |
 | `agents/AGENTS.md` | Autonomous agent system | Nova, Sigma, Zero, Chat, Howard agents (Howard is approval-gated — evidence-intake only) |
 | `parl/AGENTS.md` | Parallel agent orchestration and Principal Command | PARL swarm execution, agent adapters, replay/policy learning, governed orchestrator, God Mode admission policy, tests |
+| `memory/AGENTS.md` | OmniBrain memory boundary | Scoped context packages, provenance graph, existing memory engine integration, one-way Obsidian projection, memory tests |
 | `intake_templates/AGENTS.md` | Evidence intake template library | JSON template definitions and usage guide |
 | `tests/AGENTS.md` | Root-level tests | Scheduler tests, agent unit tests, security tests (not portal-level tests)
 | `legal_authority/AGENTS.md` | Legal authority and jurisdiction rules | Normalized legal authority records, jurisdiction rules, conflicts, effective-date evaluation, provenance |

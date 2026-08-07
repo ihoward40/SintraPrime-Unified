@@ -27,12 +27,14 @@ router = APIRouter(prefix="", tags=["SSO"])
 
 class AuthorizeRequest(BaseModel):
     """SSO authorize request."""
+
     provider: str  # okta, azure, google
     redirect_uri: str
 
 
 class UserProfile(BaseModel):
     """Current user profile from session."""
+
     user_id: str
     email: EmailStr
     name: str
@@ -42,6 +44,7 @@ class UserProfile(BaseModel):
 
 class TokenResponse(BaseModel):
     """Token response."""
+
     access_token: str
     token_type: str = "Bearer"
     expires_in: int
@@ -155,7 +158,7 @@ async def logout(
         await session_manager.destroy_session(session_id)
 
     # Clear cookies
-    response = Response(content="{\"message\": \"Logged out\"}")
+    response = Response(content='{"message": "Logged out"}')
     response.delete_cookie("session_id")
     response.delete_cookie("refresh_token")
 

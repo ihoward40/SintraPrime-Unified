@@ -73,10 +73,30 @@ class TestDocumentExportService:
     @pytest.mark.asyncio
     async def test_export_multiple_documents_maps_evidence_types(self):
         docs = [
-            FakeDocument(name="Bank Statement.pdf", mime_type="application/pdf", size_bytes=512, checksum_sha256="a" * 64),
-            FakeDocument(name="Motion to Dismiss.pdf", mime_type="application/pdf", size_bytes=1024, checksum_sha256="b" * 64),
-            FakeDocument(name="Settlement Agreement.pdf", mime_type="application/pdf", size_bytes=2048, checksum_sha256="c" * 64),
-            FakeDocument(name="Residence Note.txt", mime_type="text/plain", size_bytes=128, checksum_sha256="d" * 64),
+            FakeDocument(
+                name="Bank Statement.pdf",
+                mime_type="application/pdf",
+                size_bytes=512,
+                checksum_sha256="a" * 64,
+            ),
+            FakeDocument(
+                name="Motion to Dismiss.pdf",
+                mime_type="application/pdf",
+                size_bytes=1024,
+                checksum_sha256="b" * 64,
+            ),
+            FakeDocument(
+                name="Settlement Agreement.pdf",
+                mime_type="application/pdf",
+                size_bytes=2048,
+                checksum_sha256="c" * 64,
+            ),
+            FakeDocument(
+                name="Residence Note.txt",
+                mime_type="text/plain",
+                size_bytes=128,
+                checksum_sha256="d" * 64,
+            ),
         ]
 
         result = await export_documents_to_packet(

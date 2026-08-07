@@ -1,6 +1,7 @@
 """
 Tests for the Blackstone Reference Architecture (BRA) engines.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -52,7 +53,12 @@ def private_blog_source():
 
 def test_evidence_engine_scores_primary_legal_high(federal_us, irs_pub_source):
     engine = EvidenceEngine()
-    claim = Claim(id="CLAIM-1", text="IRS can file a Notice of Federal Tax Lien.", subject="tax_collection", jurisdiction=federal_us)
+    claim = Claim(
+        id="CLAIM-1",
+        text="IRS can file a Notice of Federal Tax Lien.",
+        subject="tax_collection",
+        jurisdiction=federal_us,
+    )
     evidence = EvidenceItem(
         id="EV-1",
         source=irs_pub_source,
@@ -69,7 +75,12 @@ def test_evidence_engine_scores_primary_legal_high(federal_us, irs_pub_source):
 
 def test_evidence_engine_private_source_is_emerging(federal_us, private_blog_source):
     engine = EvidenceEngine()
-    claim = Claim(id="CLAIM-2", text="You can discharge tax debt in bankruptcy.", subject="bankruptcy_tax", jurisdiction=federal_us)
+    claim = Claim(
+        id="CLAIM-2",
+        text="You can discharge tax debt in bankruptcy.",
+        subject="bankruptcy_tax",
+        jurisdiction=federal_us,
+    )
     evidence = EvidenceItem(
         id="EV-2",
         source=private_blog_source,
@@ -86,7 +97,9 @@ def test_evidence_engine_private_source_is_emerging(federal_us, private_blog_sou
 
 def test_authority_engine_finds_controlling(federal_us, irs_pub_source):
     engine = AuthorityEngine(default_jurisdiction=federal_us)
-    claim = Claim(id="CLAIM-3", text="IRS may levy.", subject="tax_collection", jurisdiction=federal_us)
+    claim = Claim(
+        id="CLAIM-3", text="IRS may levy.", subject="tax_collection", jurisdiction=federal_us
+    )
     claim.evidence.append(
         EvidenceItem(
             id="EV-3",
@@ -102,7 +115,9 @@ def test_authority_engine_finds_controlling(federal_us, irs_pub_source):
 
 def test_authority_engine_conflict_detection(federal_us):
     engine = AuthorityEngine(default_jurisdiction=federal_us)
-    claim = Claim(id="CLAIM-4", text="X is prohibited.", subject="conflict_demo", jurisdiction=federal_us)
+    claim = Claim(
+        id="CLAIM-4", text="X is prohibited.", subject="conflict_demo", jurisdiction=federal_us
+    )
     claim.evidence.append(
         EvidenceItem(
             id="EV-4A",
@@ -137,9 +152,13 @@ def test_authority_engine_conflict_detection(federal_us):
 def test_reasoning_engine_produces_recommendation(federal_us, irs_pub_source):
     evidence_engine = EvidenceEngine()
     authority_engine = AuthorityEngine(default_jurisdiction=federal_us)
-    reasoning_engine = ReasoningEngine(evidence_engine, authority_engine, agents=["AGENT-HERMES-2-0"])
+    reasoning_engine = ReasoningEngine(
+        evidence_engine, authority_engine, agents=["AGENT-HERMES-2-0"]
+    )
 
-    claim = Claim(id="CLAIM-5", text="IRS can file a lien.", subject="tax_collection", jurisdiction=federal_us)
+    claim = Claim(
+        id="CLAIM-5", text="IRS can file a lien.", subject="tax_collection", jurisdiction=federal_us
+    )
     claim.evidence.append(
         EvidenceItem(
             id="EV-5",
@@ -183,7 +202,9 @@ def test_orchestrator_evaluates_claim(federal_us, irs_pub_source):
     orch.register_jurisdiction(federal_us)
     orch.register_source(irs_pub_source)
 
-    claim = Claim(id="CLAIM-6", text="IRS can file a lien.", subject="tax_collection", jurisdiction=federal_us)
+    claim = Claim(
+        id="CLAIM-6", text="IRS can file a lien.", subject="tax_collection", jurisdiction=federal_us
+    )
     evidence = EvidenceItem(
         id="EV-6",
         source=irs_pub_source,
@@ -205,7 +226,12 @@ def test_orchestrator_private_source_is_not_adopted(federal_us, private_blog_sou
     orch.register_jurisdiction(federal_us)
     orch.register_source(private_blog_source)
 
-    claim = Claim(id="CLAIM-7", text="Discharge tax debt in bankruptcy.", subject="bankruptcy_tax", jurisdiction=federal_us)
+    claim = Claim(
+        id="CLAIM-7",
+        text="Discharge tax debt in bankruptcy.",
+        subject="bankruptcy_tax",
+        jurisdiction=federal_us,
+    )
     evidence = EvidenceItem(
         id="EV-7",
         source=private_blog_source,
@@ -216,7 +242,9 @@ def test_orchestrator_private_source_is_not_adopted(federal_us, private_blog_sou
     orch.add_claim(claim)
     claim.evidence.append(evidence)
 
-    result = orch.evaluate("CLAIM-7", question="Should we tell the user to file bankruptcy to discharge tax debt?")
+    result = orch.evaluate(
+        "CLAIM-7", question="Should we tell the user to file bankruptcy to discharge tax debt?"
+    )
     assert result["claim"]["status"] == "emerging"
     assert result["recommendation"]["recommendation"].startswith("Track")
     assert result["recommendation"]["confidence"] != "high"

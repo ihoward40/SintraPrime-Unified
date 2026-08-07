@@ -26,181 +26,247 @@ from ..database import Base
 
 class DocumentFolder(Base):
     """Hierarchical folder structure for organizing documents."""
+
     __tablename__ = "document_folders"
 
-    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    parent_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("document_folders.id", ondelete="SET NULL"), nullable=True)
+    id: Mapped[uuid.UUID] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    parent_id: Mapped[uuid.UUID | None] = mapped_column(
+        String(36), ForeignKey("document_folders.id", ondelete="SET NULL"), nullable=True
+    )
 
-    name: Mapped[str]               = mapped_column(String(255), nullable=False)
-    path: Mapped[str]               = mapped_column(Text, nullable=False)  # materialized path: /root/parent/folder
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    path: Mapped[str] = mapped_column(
+        Text, nullable=False
+    )  # materialized path: /root/parent/folder
 
     # Context: can belong to a client, case, or be global
-    client_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("clients.id"), nullable=True)
-    case_id: Mapped[uuid.UUID | None]   = mapped_column(String(36), ForeignKey("cases.id"), nullable=True)
+    client_id: Mapped[uuid.UUID | None] = mapped_column(
+        String(36), ForeignKey("clients.id"), nullable=True
+    )
+    case_id: Mapped[uuid.UUID | None] = mapped_column(
+        String(36), ForeignKey("cases.id"), nullable=True
+    )
 
-    created_by: Mapped[uuid.UUID]   = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
-    color: Mapped[str | None]    = mapped_column(String(7), nullable=True)  # hex color
-    icon: Mapped[str | None]     = mapped_column(String(50), nullable=True)
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("users.id"), nullable=False
+    )
+    color: Mapped[str | None] = mapped_column(String(7), nullable=True)  # hex color
+    icon: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
-    created_at: Mapped[datetime]           = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime]           = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     children: Mapped[list[DocumentFolder]] = relationship("DocumentFolder", lazy="select")
-    documents: Mapped[list[Document]]      = relationship("Document", back_populates="folder", lazy="select")
-
-    __table_args__ = (
+    documents: Mapped[list[Document]] = relationship(
+        "Document", back_populates="folder", lazy="select"
     )
+
+    __table_args__ = ()
 
 
 class Document(Base):
     __tablename__ = "documents"
 
-    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
 
     # Ownership context
-    client_id: Mapped[uuid.UUID | None]  = mapped_column(String(36), ForeignKey("clients.id"), nullable=True)
-    case_id: Mapped[uuid.UUID | None]    = mapped_column(String(36), ForeignKey("cases.id"), nullable=True)
-    matter_id: Mapped[uuid.UUID | None]  = mapped_column(String(36), ForeignKey("matters.id"), nullable=True)
-    folder_id: Mapped[uuid.UUID | None]  = mapped_column(String(36), ForeignKey("document_folders.id"), nullable=True)
-    uploaded_by: Mapped[uuid.UUID]          = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    client_id: Mapped[uuid.UUID | None] = mapped_column(
+        String(36), ForeignKey("clients.id"), nullable=True
+    )
+    case_id: Mapped[uuid.UUID | None] = mapped_column(
+        String(36), ForeignKey("cases.id"), nullable=True
+    )
+    matter_id: Mapped[uuid.UUID | None] = mapped_column(
+        String(36), ForeignKey("matters.id"), nullable=True
+    )
+    folder_id: Mapped[uuid.UUID | None] = mapped_column(
+        String(36), ForeignKey("document_folders.id"), nullable=True
+    )
+    uploaded_by: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("users.id"), nullable=False
+    )
 
     # File metadata
-    name: Mapped[str]               = mapped_column(String(512), nullable=False)
+    name: Mapped[str] = mapped_column(String(512), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    mime_type: Mapped[str]          = mapped_column(String(255), nullable=False)
-    file_extension: Mapped[str]     = mapped_column(String(20), nullable=False)
-    size_bytes: Mapped[int]         = mapped_column(BigInteger, nullable=False)
-    checksum_sha256: Mapped[str]    = mapped_column(String(64), nullable=False)
+    mime_type: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_extension: Mapped[str] = mapped_column(String(20), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    checksum_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
 
     # Storage
-    storage_key: Mapped[str]        = mapped_column(String(1024), nullable=False, unique=True)
-    storage_bucket: Mapped[str]     = mapped_column(String(255), nullable=False)
-    is_encrypted: Mapped[bool]      = mapped_column(Boolean, default=True)
+    storage_key: Mapped[str] = mapped_column(String(1024), nullable=False, unique=True)
+    storage_bucket: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_encrypted: Mapped[bool] = mapped_column(Boolean, default=True)
     encryption_iv: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     # Virus scan
-    virus_scanned: Mapped[bool]     = mapped_column(Boolean, default=False)
-    virus_scan_result: Mapped[str | None] = mapped_column(String(20), nullable=True)  # clean | infected | failed
-    virus_scanned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    virus_scanned: Mapped[bool] = mapped_column(Boolean, default=False)
+    virus_scan_result: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )  # clean | infected | failed
+    virus_scanned_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # OCR / AI processing
-    ocr_completed: Mapped[bool]     = mapped_column(Boolean, default=False)
+    ocr_completed: Mapped[bool] = mapped_column(Boolean, default=False)
     ocr_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     ai_category: Mapped[str | None] = mapped_column(String(100), nullable=True)
     ai_tags: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
 
     # Document state
-    status: Mapped[str]             = mapped_column(String(20), default="active")  # active | archived | deleted
-    is_template: Mapped[bool]       = mapped_column(Boolean, default=False)
-    is_confidential: Mapped[bool]   = mapped_column(Boolean, default=False)
+    status: Mapped[str] = mapped_column(String(20), default="active")  # active | archived | deleted
+    is_template: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_confidential: Mapped[bool] = mapped_column(Boolean, default=False)
     requires_signature: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Digital signature
-    signed_at: Mapped[datetime | None]       = mapped_column(DateTime(timezone=True), nullable=True)
-    signed_by: Mapped[uuid.UUID | None]      = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
-    signature_data: Mapped[dict | None]      = mapped_column(JSON, nullable=True)
+    signed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    signed_by: Mapped[uuid.UUID | None] = mapped_column(
+        String(36), ForeignKey("users.id"), nullable=True
+    )
+    signature_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     # Full-text search
 
     # Version tracking
-    current_version: Mapped[int]    = mapped_column(Integer, default=1)
+    current_version: Mapped[int] = mapped_column(Integer, default=1)
 
     # Custom metadata
     custom_fields: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=dict)
-    tags: Mapped[list | None]    = mapped_column(JSON, nullable=True, default=list)
+    tags: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
 
     # Watermark
     watermark_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     watermark_text: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Timestamps
-    created_at: Mapped[datetime]           = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime]           = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    versions: Mapped[list[DocumentVersion]] = relationship("DocumentVersion", back_populates="document", order_by="DocumentVersion.version_number.desc()", lazy="select")
-    shares: Mapped[list[DocumentShare]]     = relationship("DocumentShare", back_populates="document", lazy="select")
-    folder: Mapped[DocumentFolder | None] = relationship("DocumentFolder", back_populates="documents")
-    uploader: Mapped[User]                  = relationship("User", foreign_keys=[uploaded_by])
-
-    __table_args__ = (
+    versions: Mapped[list[DocumentVersion]] = relationship(
+        "DocumentVersion",
+        back_populates="document",
+        order_by="DocumentVersion.version_number.desc()",
+        lazy="select",
     )
+    shares: Mapped[list[DocumentShare]] = relationship(
+        "DocumentShare", back_populates="document", lazy="select"
+    )
+    folder: Mapped[DocumentFolder | None] = relationship(
+        "DocumentFolder", back_populates="documents"
+    )
+    uploader: Mapped[User] = relationship("User", foreign_keys=[uploaded_by])
+
+    __table_args__ = ()
 
 
 class DocumentVersion(Base):
     """Immutable version history for documents."""
+
     __tablename__ = "document_versions"
 
-    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
-    document_id: Mapped[uuid.UUID]  = mapped_column(String(36), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
-    version_number: Mapped[int]     = mapped_column(Integer, nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+    )
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False
+    )
+    version_number: Mapped[int] = mapped_column(Integer, nullable=False)
 
     # File details for this version
-    storage_key: Mapped[str]        = mapped_column(String(1024), nullable=False)
-    size_bytes: Mapped[int]         = mapped_column(BigInteger, nullable=False)
-    checksum_sha256: Mapped[str]    = mapped_column(String(64), nullable=False)
-    mime_type: Mapped[str]          = mapped_column(String(255), nullable=False)
+    storage_key: Mapped[str] = mapped_column(String(1024), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    checksum_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    mime_type: Mapped[str] = mapped_column(String(255), nullable=False)
 
     change_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
-    uploaded_by: Mapped[uuid.UUID]  = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    uploaded_by: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("users.id"), nullable=False
+    )
 
-    is_encrypted: Mapped[bool]      = mapped_column(Boolean, default=True)
+    is_encrypted: Mapped[bool] = mapped_column(Boolean, default=True)
     encryption_iv: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
-    created_at: Mapped[datetime]    = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    document: Mapped[Document]    = relationship("Document", back_populates="versions")
-    uploader: Mapped[User]        = relationship("User", foreign_keys=[uploaded_by])
+    document: Mapped[Document] = relationship("Document", back_populates="versions")
+    uploader: Mapped[User] = relationship("User", foreign_keys=[uploaded_by])
 
-    __table_args__ = (
-    )
+    __table_args__ = ()
 
 
 class DocumentShare(Base):
     """Secure share links for documents (internal or external)."""
+
     __tablename__ = "document_shares"
 
-    id: Mapped[uuid.UUID]           = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4))
-    document_id: Mapped[uuid.UUID]  = mapped_column(String(36), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
-    tenant_id: Mapped[uuid.UUID]    = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+    )
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
 
-    share_token: Mapped[str]        = mapped_column(String(64), unique=True, nullable=False, index=True)
-    created_by: Mapped[uuid.UUID]   = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    share_token: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        String(36), ForeignKey("users.id"), nullable=False
+    )
 
     # Share target (optional — if None, it's a public link)
-    shared_with_user_id: Mapped[uuid.UUID | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
-    shared_with_email: Mapped[str | None]         = mapped_column(String(255), nullable=True)
+    shared_with_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        String(36), ForeignKey("users.id"), nullable=True
+    )
+    shared_with_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Access controls
-    can_download: Mapped[bool]      = mapped_column(Boolean, default=True)
-    can_print: Mapped[bool]         = mapped_column(Boolean, default=True)
+    can_download: Mapped[bool] = mapped_column(Boolean, default=True)
+    can_print: Mapped[bool] = mapped_column(Boolean, default=True)
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     max_downloads: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    download_count: Mapped[int]     = mapped_column(Integer, default=0)
-    view_count: Mapped[int]         = mapped_column(Integer, default=0)
-    is_active: Mapped[bool]         = mapped_column(Boolean, default=True)
+    download_count: Mapped[int] = mapped_column(Integer, default=0)
+    view_count: Mapped[int] = mapped_column(Integer, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # Expiry
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Watermark override
-    apply_watermark: Mapped[bool]   = mapped_column(Boolean, default=False)
+    apply_watermark: Mapped[bool] = mapped_column(Boolean, default=False)
     watermark_text: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Timestamps
-    created_at: Mapped[datetime]           = mapped_column(DateTime(timezone=True), server_default=func.now())
-    last_accessed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    revoked_at: Mapped[datetime | None]       = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    last_accessed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Access log (stored as JSON list)
     access_log: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
 
-    document: Mapped[Document]    = relationship("Document", back_populates="shares")
-    creator: Mapped[User]         = relationship("User", foreign_keys=[created_by])
+    document: Mapped[Document] = relationship("Document", back_populates="shares")
+    creator: Mapped[User] = relationship("User", foreign_keys=[created_by])
 
-    __table_args__ = (
-    )
+    __table_args__ = ()

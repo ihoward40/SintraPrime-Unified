@@ -7,6 +7,7 @@ Coverage:
     userinfo (success + HTTP errors), refresh with revocation, state validation
   - OktaTokenResponse / OktaUserInfo: model fields including new fields
 """
+
 import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -35,9 +36,7 @@ def _make_http_status_error(status_code: int) -> httpx.HTTPStatusError:
     """Build a realistic HTTPStatusError for testing."""
     request = httpx.Request("GET", "https://dev-12345.okta.com/oauth2/v1/token")
     response = httpx.Response(status_code, request=request)
-    return httpx.HTTPStatusError(
-        f"HTTP {status_code}", request=request, response=response
-    )
+    return httpx.HTTPStatusError(f"HTTP {status_code}", request=request, response=response)
 
 
 # ---------------------------------------------------------------------------

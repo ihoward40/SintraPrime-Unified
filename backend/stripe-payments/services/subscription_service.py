@@ -35,7 +35,7 @@ class SubscriptionService:
         tier: str,
         trial_days: Optional[int] = None,
         name: Optional[str] = None,
-        payment_method_id: Optional[str] = None
+        payment_method_id: Optional[str] = None,
     ) -> Subscription:
         """Create a new subscription"""
         try:
@@ -43,9 +43,7 @@ class SubscriptionService:
 
             # Get or create customer
             customer = await stripe_client.get_or_create_customer(
-                email=email,
-                name=name,
-                metadata={"tier": tier}
+                email=email, name=name, metadata={"tier": tier}
             )
 
             # Use provided trial days or default for tier
@@ -57,14 +55,11 @@ class SubscriptionService:
                 customer_id=customer.stripe_customer_id,
                 tier=tier,
                 trial_days=trial_days,
-                payment_method_id=payment_method_id
+                payment_method_id=payment_method_id,
             )
 
             # Sync to Airtable
-            await self.airtable_sync.create_payment_record(
-                subscription=subscription,
-                email=email
-            )
+            await self.airtable_sync.create_payment_record(subscription=subscription, email=email)
 
             logger.info(f"Subscription created: {subscription.subscription_id}")
             return subscription
@@ -83,11 +78,7 @@ class SubscriptionService:
             logger.error(f"Error retrieving subscription: {e}")
             raise
 
-    async def upgrade_subscription(
-        self,
-        subscription_id: str,
-        new_tier: str
-    ) -> dict:
+    async def upgrade_subscription(self, subscription_id: str, new_tier: str) -> dict:
         """Upgrade subscription to higher tier"""
         try:
             logger.info(f"Upgrading subscription {subscription_id} to {new_tier}")
@@ -97,15 +88,12 @@ class SubscriptionService:
 
             # Calculate proration credit
             prorated_credit = self._calculate_prorated_credit(
-                current_sub.tier,
-                new_tier,
-                current_sub.current_period_end
+                current_sub.tier, new_tier, current_sub.current_period_end
             )
 
             # Upgrade subscription
             upgraded = await stripe_client.upgrade_subscription(
-                subscription_id=subscription_id,
-                new_tier=new_tier
+                subscription_id=subscription_id, new_tier=new_tier
             )
 
             # Sync to Airtable
@@ -118,7 +106,7 @@ class SubscriptionService:
                 "new_tier": new_tier,
                 "prorated_credit": prorated_credit,
                 "new_price": new_price,
-                "next_charge_date": upgraded.current_period_end.isoformat()
+                "next_charge_date": upgraded.current_period_end.isoformat(),
             }
 
             logger.info(f"Subscription upgraded: {subscription_id}")
@@ -128,11 +116,7 @@ class SubscriptionService:
             logger.error(f"Error upgrading subscription: {e}")
             raise
 
-    async def cancel_subscription(
-        self,
-        subscription_id: str,
-        at_period_end: bool = False
-    ) -> dict:
+    async def cancel_subscription(self, subscription_id: str, at_period_end: bool = False) -> dict:
         """Cancel a subscription"""
         try:
             logger.info(f"Canceling subscription {subscription_id}, at_period_end={at_period_end}")
@@ -146,15 +130,11 @@ class SubscriptionService:
             # Calculate refund amount
             refund_amount = None
             if refund_eligible:
-                refund_amount = self._calculate_refund_amount(
-                    subscription_id,
-                    current_sub.tier
-                )
+                refund_amount = self._calculate_refund_amount(subscription_id, current_sub.tier)
 
             # Cancel subscription
             canceled = await stripe_client.cancel_subscription(
-                subscription_id=subscription_id,
-                at_period_end=at_period_end
+                subscription_id=subscription_id, at_period_end=at_period_end
             )
 
             # Sync to Airtable
@@ -165,7 +145,7 @@ class SubscriptionService:
                 "status": canceled.status,
                 "canceled_at": canceled.canceled_at.isoformat() if canceled.canceled_at else None,
                 "refund_eligible": refund_eligible,
-                "refund_amount": refund_amount
+                "refund_amount": refund_amount,
             }
 
             logger.info(f"Subscription canceled: {subscription_id}")
@@ -179,7 +159,7 @@ class SubscriptionService:
         self,
         subscription_id: str,
         reason: str = "requested_by_customer",
-        amount: Optional[int] = None
+        amount: Optional[int] = None,
     ) -> dict:
         """Process a refund for a subscription"""
         try:
@@ -196,6 +176,7 @@ class SubscriptionService:
 
             # Get payment intent from latest invoice
             import stripe
+
             invoices = stripe.Invoice.list(subscription=subscription_id, limit=1)
 
             if not invoices.data:
@@ -213,10 +194,9 @@ class SubscriptionService:
 
             # Process refund via Stripe
             from stripe_client import stripe_client as client
+
             refund_result = await client.refund_payment(
-                payment_intent_id=payment_intent_id,
-                amount=amount,
-                reason=reason
+                payment_intent_id=payment_intent_id, amount=amount, reason=reason
             )
 
             # Update Airtable
@@ -226,7 +206,7 @@ class SubscriptionService:
                 "subscription_id": subscription_id,
                 "refund_id": refund_result.payment_id,
                 "amount": amount,
-                "status": "processed"
+                "status": "processed",
             }
 
             logger.info(f"Refund processed for subscription: {subscription_id}")
@@ -237,10 +217,7 @@ class SubscriptionService:
             raise
 
     def _calculate_prorated_credit(
-        self,
-        current_tier: str,
-        new_tier: str,
-        period_end: datetime
+        self, current_tier: str, new_tier: str, period_end: datetime
     ) -> int:
         """Calculate prorated credit when upgrading"""
         current_amount = TIER_AMOUNTS.get(current_tier, 0)
@@ -265,17 +242,11 @@ class SubscriptionService:
     def _check_refund_eligibility(self, subscription: Subscription) -> bool:
         """Check if subscription is eligible for refund"""
         # Check if within refund window
-        days_since_start = (
-            datetime.utcnow() - subscription.created_at
-        ).days
+        days_since_start = (datetime.utcnow() - subscription.created_at).days
 
         return days_since_start <= REFUND_WINDOW_DAYS
 
-    def _calculate_refund_amount(
-        self,
-        subscription_id: str,
-        tier: str
-    ) -> int:
+    def _calculate_refund_amount(self, subscription_id: str, tier: str) -> int:
         """Calculate refund amount based on tier and time used"""
         amount = TIER_AMOUNTS.get(tier, 0)
         return int(amount * REFUND_PERCENTAGE / 100)

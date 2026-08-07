@@ -49,13 +49,19 @@ def merge_policy_strictest(base: InferencePolicy, override: InferencePolicy) -> 
         monthly_budget_usd=min(base.monthly_budget_usd, override.monthly_budget_usd),
         min_success_rate=max(base.min_success_rate, override.min_success_rate),
         per_request=PerRequestPolicy(
-            max_input_tokens=min(base.per_request.max_input_tokens, override.per_request.max_input_tokens),
-            max_output_tokens=min(base.per_request.max_output_tokens, override.per_request.max_output_tokens),
+            max_input_tokens=min(
+                base.per_request.max_input_tokens, override.per_request.max_input_tokens
+            ),
+            max_output_tokens=min(
+                base.per_request.max_output_tokens, override.per_request.max_output_tokens
+            ),
             max_estimated_cost_usd=min(
                 base.per_request.max_estimated_cost_usd,
                 override.per_request.max_estimated_cost_usd,
             ),
-            timeout_seconds=min(base.per_request.timeout_seconds, override.per_request.timeout_seconds),
+            timeout_seconds=min(
+                base.per_request.timeout_seconds, override.per_request.timeout_seconds
+            ),
             max_attempts=min(base.per_request.max_attempts, override.per_request.max_attempts),
         ),
     )

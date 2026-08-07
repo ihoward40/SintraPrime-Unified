@@ -38,32 +38,41 @@ class AuditRecord(Base):
       - Maintain audit trail for ED-007 regression verification
       - Support Test 4: packet↔snapshot consistency verification
     """
+
     __tablename__ = "audit_records"
 
     # ── Identity ──────────────────────────────────────────────────────
     audit_id: Mapped[uuid.UUID] = mapped_column(
-        PortableUUID, primary_key=True, default=uuid.uuid4,
+        PortableUUID,
+        primary_key=True,
+        default=uuid.uuid4,
         doc="Unique audit record identifier.",
     )
 
     # ── Evidence chain ────────────────────────────────────────────────
     snapshot_id: Mapped[uuid.UUID] = mapped_column(
-        PortableUUID, ForeignKey("evidence_snapshots.snapshot_id"),
-        nullable=False, index=True,
+        PortableUUID,
+        ForeignKey("evidence_snapshots.snapshot_id"),
+        nullable=False,
+        index=True,
         doc="Source EvidenceSnapshot this audit record references.",
     )
     evidence_hash: Mapped[str] = mapped_column(
-        String(64), nullable=False,
+        String(64),
+        nullable=False,
         doc="SHA-256 hex digest of the source snapshot evidence (immutable copy).",
     )
 
     # ── Packet identity ───────────────────────────────────────────────
     packet_id: Mapped[uuid.UUID] = mapped_column(
-        PortableUUID, nullable=False, index=True,
+        PortableUUID,
+        nullable=False,
+        index=True,
         doc="Identifier of the rendered EvidencePacket.",
     )
     packet_hash: Mapped[str] = mapped_column(
-        String(64), nullable=False,
+        String(64),
+        nullable=False,
         doc="SHA-256 hex digest of the rendered packet content.",
     )
 
@@ -73,7 +82,8 @@ class AuditRecord(Base):
         doc="Version of the packet renderer that produced this packet.",
     )
     serialization_version: Mapped[int] = mapped_column(
-        nullable=False, default=1,
+        nullable=False,
+        default=1,
         doc="Version of the canonical serialization format (Step 2).",
     )
 
@@ -85,17 +95,22 @@ class AuditRecord(Base):
         doc="Server-set creation timestamp. Never modified.",
     )
     created_by: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=False,
+        String(36),
+        ForeignKey("users.id"),
+        nullable=False,
         doc="User/system that created this audit record.",
     )
 
     # ── Verification metadata ────────────────────────────────────────
     verification_status: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="verified",
+        String(20),
+        nullable=False,
+        default="verified",
         doc="'verified' (packet hash matches snapshot content), or 'failed' if mismatch detected.",
     )
     verification_details: Mapped[str | None] = mapped_column(
-        String(512), nullable=True,
+        String(512),
+        nullable=True,
         doc="Optional error details if verification failed.",
     )
 
@@ -114,9 +129,7 @@ class AuditRecord(Base):
         """
         return {
             "audit_id": str(self.audit_id),
-            "created_at": (
-                self.created_at.isoformat() if self.created_at else None
-            ),
+            "created_at": (self.created_at.isoformat() if self.created_at else None),
             "created_by": str(self.created_by),
             "evidence_hash": self.evidence_hash,
             "packet_hash": self.packet_hash,

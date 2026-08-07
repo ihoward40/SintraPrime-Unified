@@ -32,15 +32,19 @@ _DEFAULT_MAX_LENGTH = 128
 _HEADER_NAME = "X-Request-ID"
 
 # Client-supplied identity headers that must NEVER be trusted.
-_UNTRUSTED_IDENTITY_HEADERS = frozenset({
-    "x-actor-id",
-    "x-user-id",
-    "x-tenant-id",
-    "x-role",
-})
+_UNTRUSTED_IDENTITY_HEADERS = frozenset(
+    {
+        "x-actor-id",
+        "x-user-id",
+        "x-tenant-id",
+        "x-role",
+    }
+)
 
 
-def validate_inbound_request_id(value: str | None, max_length: int = _DEFAULT_MAX_LENGTH) -> tuple[str, str | None]:
+def validate_inbound_request_id(
+    value: str | None, max_length: int = _DEFAULT_MAX_LENGTH
+) -> tuple[str, str | None]:
     """Validate an inbound request ID.
 
     Returns (authoritative_id, rejection_reason).
@@ -98,7 +102,9 @@ class CorrelationMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Extract and validate inbound request ID via the single authoritative validator
         inbound_id = request.headers.get(_HEADER_NAME)
-        authoritative_id, rejection_reason = validate_inbound_request_id(inbound_id, self._max_length)
+        authoritative_id, rejection_reason = validate_inbound_request_id(
+            inbound_id, self._max_length
+        )
 
         # Validate X-Correlation-ID through the same authoritative validator.
         # Whitespace-only and empty values are treated as missing (no double validation).

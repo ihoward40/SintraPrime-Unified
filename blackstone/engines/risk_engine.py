@@ -1,6 +1,7 @@
 """
 Risk Engine — identify, score, and track operational and legal risks.
 """
+
 from __future__ import annotations
 
 from blackstone.models import Claim, Confidence, Risk

@@ -15,7 +15,7 @@ Foundation phase additions:
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Literal
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
@@ -46,6 +46,8 @@ from .system_health import (
     _check_recovery_api,
     _check_scheduler,
 )
+from ..services.parliament_scaling import scaling_service
+from ..services.cancellation_bus import bus
 
 router = APIRouter(prefix="/api/v1/mission-control", tags=["mission-control"])
 
@@ -253,3 +255,24 @@ async def get_sigma_gate(
     read-only — no mutation surface exists.
     """
     return get_cancellation_status()
+
+
+class RealTimeMetrics(BaseModel):
+    parliament: dict[str, Any]
+    cancellation_bus: dict[str, Any]
+    timestamp: datetime
+
+
+@router.get("/real-time-metrics", response_model=RealTimeMetrics)
+async def get_real_time_metrics(
+    _: CurrentUser = Depends(require_permissions(Permission.MISSION_COMMAND_READ)),
+) -> RealTimeMetrics:
+    """Return real-time metrics for the Agent Parliament and Cancellation Bus."""
+    return RealTimeMetrics(
+        parliament=scaling_service.get_parliament_status(),
+        cancellation_bus={
+            "active_signals": len(bus._active_cancellations),
+            "queued_signals": bus._priority_queue.qsize(),
+        },
+        timestamp=datetime.now(UTC),
+    )

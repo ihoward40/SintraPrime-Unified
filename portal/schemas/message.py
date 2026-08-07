@@ -10,7 +10,9 @@ from pydantic import BaseModel, Field
 
 class ThreadCreate(BaseModel):
     subject: str = Field(..., min_length=1, max_length=500)
-    category: str = Field("general", pattern=r"^(general|case_discussion|document_review|billing|urgent)$")
+    category: str = Field(
+        "general", pattern=r"^(general|case_discussion|document_review|billing|urgent)$"
+    )
     client_id: uuid.UUID | None = None
     case_id: uuid.UUID | None = None
     participant_ids: list[uuid.UUID] = Field(..., min_length=1)

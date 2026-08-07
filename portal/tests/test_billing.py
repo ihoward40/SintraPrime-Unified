@@ -16,6 +16,7 @@ import pytest
 
 # ── Time entries ──────────────────────────────────────────────────────────────
 
+
 class TestTimeEntries:
     @pytest.mark.asyncio
     async def test_create_time_entry(self, async_client, auth_headers_attorney):
@@ -62,7 +63,11 @@ class TestTimeEntries:
     @pytest.mark.asyncio
     async def test_list_unbilled_entries(self, async_client, auth_headers_attorney):
         """List unbilled time entries for a case."""
-        with patch("portal.routers.billing.list_unbilled_time_entries", new_callable=AsyncMock, return_value=[]):
+        with patch(
+            "portal.routers.billing.list_unbilled_time_entries",
+            new_callable=AsyncMock,
+            return_value=[],
+        ):
             response = await async_client.get(
                 "/billing/time-entries?is_billed=false",
                 headers=auth_headers_attorney,
@@ -82,14 +87,15 @@ class TestTimeEntries:
 
 # ── Invoice generation ────────────────────────────────────────────────────────
 
+
 class TestInvoiceGeneration:
     def test_hourly_invoice_total(self):
         """Invoice total = sum of time entries + expenses - discounts + tax."""
 
         time_entries_amount = Decimal("1750.00")  # 5 hours @ $350
-        expenses_amount = Decimal("125.50")        # Filing fee
+        expenses_amount = Decimal("125.50")  # Filing fee
         discount = Decimal("0.00")
-        tax_rate = Decimal("0.00")                 # Law firms typically 0% tax
+        tax_rate = Decimal("0.00")  # Law firms typically 0% tax
 
         subtotal = time_entries_amount + expenses_amount - discount
         tax_amount = subtotal * tax_rate
@@ -141,13 +147,19 @@ class TestInvoiceGeneration:
         # Second create should fail
         with patch("portal.routers.billing.create_invoice") as mock_create:
             mock_create.side_effect = [MagicMock(), Exception("Unique constraint")]
-            r1 = await async_client.post("/billing/invoices", json=payload_1, headers=auth_headers_attorney)
-            await async_client.post("/billing/invoices", json=payload_2, headers=auth_headers_attorney)
+            r1 = await async_client.post(
+                "/billing/invoices", json=payload_1, headers=auth_headers_attorney
+            )
+            await async_client.post(
+                "/billing/invoices", json=payload_2, headers=auth_headers_attorney
+            )
         # At least one should succeed; second might conflict
         assert r1.status_code in (200, 201, 500)
 
     @pytest.mark.asyncio
-    async def test_invoice_status_transitions(self, async_client, auth_headers_attorney, mock_invoice):
+    async def test_invoice_status_transitions(
+        self, async_client, auth_headers_attorney, mock_invoice
+    ):
         """Invoice can transition: draft → sent → paid."""
         valid_transitions = [
             ("draft", "sent"),
@@ -157,7 +169,11 @@ class TestInvoiceGeneration:
         ]
         for from_status, to_status in valid_transitions:
             mock_invoice.status = from_status
-            with patch("portal.routers.billing.get_invoice_or_404", new_callable=AsyncMock, return_value=mock_invoice):
+            with patch(
+                "portal.routers.billing.get_invoice_or_404",
+                new_callable=AsyncMock,
+                return_value=mock_invoice,
+            ):
                 response = await async_client.put(
                     f"/billing/invoices/{mock_invoice.id}",
                     json={"status": to_status},
@@ -168,7 +184,9 @@ class TestInvoiceGeneration:
     @pytest.mark.asyncio
     async def test_client_can_view_own_invoices(self, async_client, auth_headers_client):
         """CLIENT can view their own invoices."""
-        with patch("portal.routers.billing.list_client_invoices", new_callable=AsyncMock, return_value=[]):
+        with patch(
+            "portal.routers.billing.list_client_invoices", new_callable=AsyncMock, return_value=[]
+        ):
             response = await async_client.get(
                 "/billing/invoices",
                 headers=auth_headers_client,
@@ -188,6 +206,7 @@ class TestInvoiceGeneration:
 
 # ── Payments ──────────────────────────────────────────────────────────────────
 
+
 class TestPayments:
     @pytest.mark.asyncio
     async def test_record_payment(self, async_client, auth_headers_attorney, mock_invoice):
@@ -199,7 +218,11 @@ class TestPayments:
             "payment_date": str(date.today()),
             "reference_number": "CHK-1001",
         }
-        with patch("portal.routers.billing.get_invoice_or_404", new_callable=AsyncMock, return_value=mock_invoice):
+        with patch(
+            "portal.routers.billing.get_invoice_or_404",
+            new_callable=AsyncMock,
+            return_value=mock_invoice,
+        ):
             response = await async_client.post(
                 "/billing/payments",
                 json=payload,
@@ -226,6 +249,7 @@ class TestPayments:
 
 
 # ── Trust accounting ──────────────────────────────────────────────────────────
+
 
 class TestTrustAccounting:
     def test_trust_deposit_increases_balance(self):
@@ -268,6 +292,7 @@ class TestTrustAccounting:
 
 # ── Financial reports ─────────────────────────────────────────────────────────
 
+
 class TestFinancialReports:
     @pytest.mark.asyncio
     async def test_monthly_revenue_report(self, async_client, auth_headers_accountant):
@@ -290,6 +315,7 @@ class TestFinancialReports:
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def mock_invoice():
@@ -322,6 +348,7 @@ def async_client():
     from unittest.mock import MagicMock
 
     from httpx import AsyncClient
+
     client = AsyncMock(spec=AsyncClient)
     _default = MagicMock(status_code=200)
     _default.json.return_value = {}

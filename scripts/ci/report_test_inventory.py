@@ -18,6 +18,7 @@ Usage:
     python scripts/ci/report_test_inventory.py [--pytest-args ...] [--out FILE]
                                                 [--commit X] [--tree Y]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -57,7 +58,9 @@ def parse_collect_output(text: str) -> dict:
         stripped = line.strip()
         if _ERROR_RE.search(stripped) and (
             "error" in stripped.lower()
-            and ("collect" in stripped.lower() or "import" in stripped.lower() or "ERROR" in stripped)
+            and (
+                "collect" in stripped.lower() or "import" in stripped.lower() or "ERROR" in stripped
+            )
         ):
             errors.append(stripped)
         m = _SUMMARY_RE.search(stripped)
@@ -132,10 +135,12 @@ def _git(*parts: str) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--pytest-args", default=None,
-                    help="Extra args passed to pytest collect (comma-separated)")
-    ap.add_argument("--out",
-                    default=os.path.join(REPO_ROOT, "artifacts", "ci", "test-inventory.json"))
+    ap.add_argument(
+        "--pytest-args", default=None, help="Extra args passed to pytest collect (comma-separated)"
+    )
+    ap.add_argument(
+        "--out", default=os.path.join(REPO_ROOT, "artifacts", "ci", "test-inventory.json")
+    )
     ap.add_argument("--commit", default=None)
     ap.add_argument("--tree", default=None)
     args = ap.parse_args()

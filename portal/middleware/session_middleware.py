@@ -1,4 +1,5 @@
 """Session middleware for portal."""
+
 import logging
 from typing import Callable
 

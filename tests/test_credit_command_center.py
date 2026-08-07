@@ -30,7 +30,9 @@ from packages.credit_command_center import (
     rate_scorecard,
 )
 
-FIXTURE_DIR = Path(__file__).resolve().parent.parent / "packages" / "credit_command_center" / "fixtures"
+FIXTURE_DIR = (
+    Path(__file__).resolve().parent.parent / "packages" / "credit_command_center" / "fixtures"
+)
 
 
 # ── Model Creation ───────────────────────────────────────────────────────────
@@ -189,37 +191,93 @@ class TestScorecard:
         assert sc.total == 42
 
     def test_rating_strong(self):
-        sc = Scorecard(credit=9, collection_defense=9, housing=9, employment=9, documentation=8, evidence=8, follow_up=8)
+        sc = Scorecard(
+            credit=9,
+            collection_defense=9,
+            housing=9,
+            employment=9,
+            documentation=8,
+            evidence=8,
+            follow_up=8,
+        )
         assert sc.total == 60
         assert sc.rating == ScorecardRating.STRONG
 
     def test_rating_moderate(self):
-        sc = Scorecard(credit=6, collection_defense=6, housing=6, employment=6, documentation=6, evidence=5, follow_up=5)
+        sc = Scorecard(
+            credit=6,
+            collection_defense=6,
+            housing=6,
+            employment=6,
+            documentation=6,
+            evidence=5,
+            follow_up=5,
+        )
         assert sc.total == 40
         assert sc.rating == ScorecardRating.MODERATE
 
     def test_rating_weak(self):
-        sc = Scorecard(credit=3, collection_defense=3, housing=3, employment=3, documentation=3, evidence=3, follow_up=2)
+        sc = Scorecard(
+            credit=3,
+            collection_defense=3,
+            housing=3,
+            employment=3,
+            documentation=3,
+            evidence=3,
+            follow_up=2,
+        )
         assert sc.total == 20
         assert sc.rating == ScorecardRating.WEAK
 
     def test_rating_high_risk(self):
-        sc = Scorecard(credit=2, collection_defense=2, housing=2, employment=2, documentation=2, evidence=2, follow_up=2)
+        sc = Scorecard(
+            credit=2,
+            collection_defense=2,
+            housing=2,
+            employment=2,
+            documentation=2,
+            evidence=2,
+            follow_up=2,
+        )
         assert sc.total == 14
         assert sc.rating == ScorecardRating.HIGH_RISK
 
     def test_all_zero(self):
-        sc = Scorecard(credit=0, collection_defense=0, housing=0, employment=0, documentation=0, evidence=0, follow_up=0)
+        sc = Scorecard(
+            credit=0,
+            collection_defense=0,
+            housing=0,
+            employment=0,
+            documentation=0,
+            evidence=0,
+            follow_up=0,
+        )
         assert sc.total == 0
         assert sc.rating == ScorecardRating.HIGH_RISK
 
     def test_all_max(self):
-        sc = Scorecard(credit=10, collection_defense=10, housing=10, employment=10, documentation=10, evidence=10, follow_up=10)
+        sc = Scorecard(
+            credit=10,
+            collection_defense=10,
+            housing=10,
+            employment=10,
+            documentation=10,
+            evidence=10,
+            follow_up=10,
+        )
         assert sc.total == 70
         assert sc.rating == ScorecardRating.STRONG
 
     def test_category_scores(self):
-        sc = Scorecard(credit=5, collection_defense=4, housing=7, employment=8, documentation=6, evidence=5, follow_up=3)
+        sc = Scorecard(
+            credit=5,
+            collection_defense=4,
+            housing=7,
+            employment=8,
+            documentation=6,
+            evidence=5,
+            follow_up=3,
+        )
         cats = sc.category_scores()
         assert cats["credit"] == 5
         assert cats["follow_up"] == 3
@@ -227,11 +285,27 @@ class TestScorecard:
 
     def test_invalid_score_too_low(self):
         with pytest.raises(ValueError):
-            Scorecard(credit=-1, collection_defense=5, housing=5, employment=5, documentation=5, evidence=5, follow_up=5)
+            Scorecard(
+                credit=-1,
+                collection_defense=5,
+                housing=5,
+                employment=5,
+                documentation=5,
+                evidence=5,
+                follow_up=5,
+            )
 
     def test_invalid_score_too_high(self):
         with pytest.raises(ValueError):
-            Scorecard(credit=11, collection_defense=5, housing=5, employment=5, documentation=5, evidence=5, follow_up=5)
+            Scorecard(
+                credit=11,
+                collection_defense=5,
+                housing=5,
+                employment=5,
+                documentation=5,
+                evidence=5,
+                follow_up=5,
+            )
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -280,11 +354,27 @@ class TestBuildEvidenceFolderPath:
 
 class TestRateScorecard:
     def test_delegates_to_model(self):
-        sc = Scorecard(credit=9, collection_defense=9, housing=9, employment=9, documentation=8, evidence=8, follow_up=8)
+        sc = Scorecard(
+            credit=9,
+            collection_defense=9,
+            housing=9,
+            employment=9,
+            documentation=8,
+            evidence=8,
+            follow_up=8,
+        )
         assert rate_scorecard(sc) == ScorecardRating.STRONG
 
     def test_high_risk(self):
-        sc = Scorecard(credit=2, collection_defense=2, housing=2, employment=2, documentation=2, evidence=2, follow_up=2)
+        sc = Scorecard(
+            credit=2,
+            collection_defense=2,
+            housing=2,
+            employment=2,
+            documentation=2,
+            evidence=2,
+            follow_up=2,
+        )
         assert rate_scorecard(sc) == ScorecardRating.HIGH_RISK
 
 

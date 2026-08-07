@@ -41,10 +41,11 @@ class CDRRecord:
     An immutable CDR record. frozen=True enforces immutability at the Python level.
     Any attempt to modify a field after creation raises FrozenInstanceError.
     """
+
     cdr_number: str
     title: str
-    status: str                    # Approved | Superseded | Withdrawn
-    filed_at: str                  # ISO 8601 date
+    status: str  # Approved | Superseded | Withdrawn
+    filed_at: str  # ISO 8601 date
     filed_by: str
     trigger: str
     decision: str
@@ -140,7 +141,9 @@ class CDRFiler:
         # Mark the superseded CDR
         if supersedes_cdr:
             if supersedes_cdr not in self._records:
-                raise CDRFilingError(f"Cannot supersede {supersedes_cdr!r} — not found in register.")
+                raise CDRFilingError(
+                    f"Cannot supersede {supersedes_cdr!r} — not found in register."
+                )
             old = self._records[supersedes_cdr]
             # CDRs are frozen — we must replace the record with an updated one
             updated = CDRRecord(

@@ -28,7 +28,13 @@ class _BaseMockProvider:
     _noun: str
 
     def execute(self, envelope: VoiceCommandEnvelope, *, risk_class: RiskClass) -> ProviderResult:
-        action = "draft" if risk_class == RiskClass.DRAFT else "read" if risk_class == RiskClass.READ else "simulate"
+        action = (
+            "draft"
+            if risk_class == RiskClass.DRAFT
+            else "read"
+            if risk_class == RiskClass.READ
+            else "simulate"
+        )
         resource_id = _mock_id(self._noun)
         return ProviderResult(
             capability=self.capability,

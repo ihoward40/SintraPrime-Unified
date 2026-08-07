@@ -146,8 +146,10 @@ class TestPatchOperations:
         f = tmp_path / "target.py"
         f.write_text("old content")
         patch = Patch(
-            patch_id="test-1", file_path=str(f),
-            original_content="old content", patched_content="new content",
+            patch_id="test-1",
+            file_path=str(f),
+            original_content="old content",
+            patched_content="new content",
             description="test patch",
         )
         agent = ZeroAgent(repo_root=str(tmp_path))
@@ -159,9 +161,12 @@ class TestPatchOperations:
         f = tmp_path / "target.py"
         f.write_text("new content")
         patch = Patch(
-            patch_id="test-2", file_path=str(f),
-            original_content="old content", patched_content="new content",
-            description="test patch", applied=True,
+            patch_id="test-2",
+            file_path=str(f),
+            original_content="old content",
+            patched_content="new content",
+            description="test patch",
+            applied=True,
         )
         agent = ZeroAgent(repo_root=str(tmp_path))
         assert agent.rollback_patch(patch) is True
@@ -171,8 +176,11 @@ class TestPatchOperations:
     def test_generate_fix_patch_missing_file(self, tmp_path):
         agent = ZeroAgent(repo_root=str(tmp_path))
         failure = TestFailure(
-            test_id="test::missing", file_path="/nonexistent.py",
-            error_type="FileNotFoundError", error_message="not found", traceback="",
+            test_id="test::missing",
+            file_path="/nonexistent.py",
+            error_type="FileNotFoundError",
+            error_message="not found",
+            traceback="",
         )
         assert agent.generate_fix_patch(failure) is None
 

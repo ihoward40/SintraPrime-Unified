@@ -77,9 +77,9 @@ class Settings(BaseSettings):
     REDIS_SESSION_DB: int = 1
 
     # ── Rate Limiting ────────────────────────────────────────────────────
-    RATE_LIMIT_DEFAULT: int = 100       # requests per minute per user
-    RATE_LIMIT_AUTH: int = 10           # requests per minute on auth endpoints
-    RATE_LIMIT_UPLOAD: int = 20         # file uploads per minute
+    RATE_LIMIT_DEFAULT: int = 100  # requests per minute per user
+    RATE_LIMIT_AUTH: int = 10  # requests per minute on auth endpoints
+    RATE_LIMIT_UPLOAD: int = 20  # file uploads per minute
 
     # ── CORS ─────────────────────────────────────────────────────────────
     CORS_ORIGINS: list[str] = [
@@ -143,11 +143,11 @@ class Settings(BaseSettings):
     SSO_SESSION_SECRET: str = "CHANGE-ME-SSO-SESSION-SECRET-256-BIT"
     SSO_ISSUER: str = "https://portal.sintraprime.ai"
     SSO_AUDIENCE: str = "sintraprime-portal"
-    SSO_SESSION_TTL_SECONDS: int = 3600          # 1 hour
-    SSO_REFRESH_TTL_SECONDS: int = 2592000       # 30 days
+    SSO_SESSION_TTL_SECONDS: int = 3600  # 1 hour
+    SSO_REFRESH_TTL_SECONDS: int = 2592000  # 30 days
 
     # Okta
-    OKTA_DOMAIN: str = ""                        # e.g. dev-123456.okta.com
+    OKTA_DOMAIN: str = ""  # e.g. dev-123456.okta.com
     OKTA_CLIENT_ID: str = ""
     OKTA_CLIENT_SECRET: str = ""
     OKTA_REDIRECT_URI: str = "https://portal.sintraprime.ai/api/v1/sso/okta/callback"
@@ -163,7 +163,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = "https://portal.sintraprime.ai/api/v1/sso/google/callback"
-    GOOGLE_HOSTED_DOMAIN: str = ""              # e.g. yourdomain.com; empty = any Google account
+    GOOGLE_HOSTED_DOMAIN: str = ""  # e.g. yourdomain.com; empty = any Google account
 
     @field_validator("ENCRYPTION_KEY")
     @classmethod

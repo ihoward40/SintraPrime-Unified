@@ -2,6 +2,7 @@
 Phase 21C: Comprehensive unit tests for portal/sso/middleware.py
 Covers SessionMiddlewareManager, TokenRefreshManager, IdPErrorHandler, SessionMiddleware.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -25,6 +26,7 @@ from portal.sso.middleware import (
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def _make_token(
     *,
@@ -51,9 +53,12 @@ def _expired_token() -> SessionToken:
 # SessionMiddlewareManager (7 tests)
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestSessionMiddlewareManager:
     def setup_method(self):
-        self.mgr = SessionMiddlewareManager(session_secret="test-secret-key", session_ttl_seconds=3600)
+        self.mgr = SessionMiddlewareManager(
+            session_secret="test-secret-key", session_ttl_seconds=3600
+        )
 
     def test_create_session(self):
         token = _make_token()
@@ -106,6 +111,7 @@ class TestSessionMiddlewareManager:
 # ─────────────────────────────────────────────────────────────────────────────
 # TokenRefreshManager (5 tests)
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestTokenRefreshManager:
     def setup_method(self):
@@ -179,6 +185,7 @@ class TestTokenRefreshManager:
 # IdPErrorHandler (6 tests)
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestIdPErrorHandler:
     def setup_method(self):
         self.handler = IdPErrorHandler()
@@ -225,6 +232,7 @@ class TestIdPErrorHandler:
 # ─────────────────────────────────────────────────────────────────────────────
 # SessionMiddleware ASGI (4 tests)
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def _build_app(mgr: SessionMiddlewareManager) -> FastAPI:
     app = FastAPI()

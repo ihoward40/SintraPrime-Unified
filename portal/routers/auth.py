@@ -63,6 +63,7 @@ _FIRST_RUN_SETUP_LOCAL_LOCK = asyncio.Lock()
 
 # ── Request / Response schemas ────────────────────────────────────────────────
 
+
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
@@ -129,7 +130,10 @@ class FirstRunSetupRequest(BaseModel):
 
 # ── Helper ────────────────────────────────────────────────────────────────────
 
-async def _get_user_by_email(db: AsyncSession, email: str, tenant_id: str | None = None) -> User | None:
+
+async def _get_user_by_email(
+    db: AsyncSession, email: str, tenant_id: str | None = None
+) -> User | None:
     stmt = select(User).where(User.email == email.lower(), User.deleted_at.is_(None))
     if tenant_id:
         stmt = stmt.where(User.tenant_id == tenant_id)
@@ -159,7 +163,9 @@ async def _acquire_first_run_setup_guard(db: AsyncSession) -> asyncio.Lock | Non
 def _split_owner_name(owner_name: str) -> tuple[str, str]:
     parts = owner_name.strip().split()
     if not parts:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Owner name is required")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Owner name is required"
+        )
     if len(parts) == 1:
         return parts[0], "Owner"
     return parts[0], " ".join(parts[1:])
@@ -170,9 +176,7 @@ def _tenant_slug(name: str) -> str:
     return slug or "first-run-tenant"
 
 
-def _build_login_response(
-    user: User, response: Response
-) -> tuple[LoginResponse, str, str]:
+def _build_login_response(user: User, response: Response) -> tuple[LoginResponse, str, str]:
     """Create tokens, set refresh cookie, return LoginResponse."""
     role_name = user.role_ref.name if user.role_ref else "VIEWER"
     permissions = [p.name for p in (user.role_ref.permissions if user.role_ref else [])]
@@ -216,6 +220,7 @@ def _build_login_response(
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
+
 @router.get("/setup/status", response_model=FirstRunSetupStatus)
 async def first_run_setup_status(db: AsyncSession = Depends(get_db)) -> FirstRunSetupStatus:
     """Return whether first-run owner setup is still available."""
@@ -233,12 +238,16 @@ async def first_run_setup(
     local_guard = await _acquire_first_run_setup_guard(db)
     try:
         if await _has_any_user(db):
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="First-run setup is already complete")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="First-run setup is already complete"
+            )
 
         try:
             validate_password_strength(body.password)
         except PasswordError as exc:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
 
         try:
             await sync_permission_manifest(db)
@@ -251,7 +260,9 @@ async def first_run_setup(
             .where(RoleModel.name == RbacRole.FIRM_ADMIN.value, RoleModel.is_system.is_(True))
         )
         if role is None:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Owner role unavailable")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Owner role unavailable"
+            )
 
         first_name, last_name = _split_owner_name(body.owner_name)
         tenant = Tenant(
@@ -316,15 +327,22 @@ async def login(
 
     user = await _get_user_by_email(db, body.email)
     if not user:
-        await audit(db, action="login_failed", status="failure",
-                    details={"email": body.email, "reason": "user_not_found"}, actor_ip=ip)
+        await audit(
+            db,
+            action="login_failed",
+            status="failure",
+            details={"email": body.email, "reason": "user_not_found"},
+            actor_ip=ip,
+        )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     # Account checks
     if user.is_locked:
         if user.locked_until and user.locked_until > datetime.now(UTC):
-            raise HTTPException(status_code=status.HTTP_423_LOCKED,
-                                detail=f"Account locked until {user.locked_until.isoformat()}")
+            raise HTTPException(
+                status_code=status.HTTP_423_LOCKED,
+                detail=f"Account locked until {user.locked_until.isoformat()}",
+            )
         # Auto-unlock
         user.is_locked = False
         user.failed_login_attempts = 0
@@ -339,9 +357,14 @@ async def login(
             user.is_locked = True
             user.locked_until = datetime.now(UTC) + timedelta(minutes=30)
         await db.commit()
-        await audit(db, action="login_failed", user_id=str(user.id), status="failure",
-                    details={"reason": "invalid_password", "attempts": user.failed_login_attempts},
-                    actor_ip=ip)
+        await audit(
+            db,
+            action="login_failed",
+            user_id=str(user.id),
+            status="failure",
+            details={"reason": "invalid_password", "attempts": user.failed_login_attempts},
+            actor_ip=ip,
+        )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     # MFA check
@@ -367,9 +390,12 @@ async def login(
                         backup_used = True
                         break
             if not backup_used:
-                await audit(db, action="mfa_failed", user_id=str(user.id), status="failure",
-                            actor_ip=ip)
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid MFA code")
+                await audit(
+                    db, action="mfa_failed", user_id=str(user.id), status="failure", actor_ip=ip
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid MFA code"
+                )
 
     # Success — reset failures
     user.failed_login_attempts = 0
@@ -388,8 +414,15 @@ async def login(
         user_agent=user_agent,
     )
 
-    await audit(db, action="login", user_id=str(user.id), tenant_id=str(user.tenant_id),
-                status="success", actor_ip=ip, actor_email=user.email)
+    await audit(
+        db,
+        action="login",
+        user_id=str(user.id),
+        tenant_id=str(user.tenant_id),
+        status="success",
+        actor_ip=ip,
+        actor_email=user.email,
+    )
     return login_response
 
 
@@ -406,7 +439,9 @@ async def refresh_token(
         payload = decode_refresh_token(refresh_token)
     except TokenError:
         response.delete_cookie(REFRESH_COOKIE_NAME)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+        )
 
     family_id = payload.get("family", "")
     jti = payload.get("jti", "")
@@ -416,13 +451,17 @@ async def refresh_token(
     if not valid:
         response.delete_cookie(REFRESH_COOKIE_NAME)
         await revoke_all_user_sessions(payload["sub"])
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail="Refresh token reuse detected — all sessions terminated")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token reuse detected — all sessions terminated",
+        )
 
     # Check blocklist
     if await is_jti_blocklisted(jti):
         response.delete_cookie(REFRESH_COOKIE_NAME)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has been revoked")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has been revoked"
+        )
 
     # Load user
     result = await db.execute(select(User).where(User.id == payload["sub"]))
@@ -483,7 +522,9 @@ async def logout(
     if auth_header.startswith("Bearer "):
         access_jti = get_token_jti(auth_header[7:])
         if access_jti:
-            await blocklist_jti(access_jti, ttl_seconds=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+            await blocklist_jti(
+                access_jti, ttl_seconds=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60
+            )
 
     # Blocklist refresh token
     if refresh_token:
@@ -492,9 +533,14 @@ async def logout(
             await blocklist_jti(rt_jti, ttl_seconds=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 86400)
 
     response.delete_cookie(REFRESH_COOKIE_NAME)
-    await audit(db, action="logout", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id, status="success",
-                actor_ip=request.client.host if request.client else "unknown")
+    await audit(
+        db,
+        action="logout",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        status="success",
+        actor_ip=request.client.host if request.client else "unknown",
+    )
 
 
 @router.post("/logout-all", status_code=status.HTTP_204_NO_CONTENT)
@@ -506,9 +552,14 @@ async def logout_all_sessions(
     """Logout from all active sessions across all devices."""
     count = await revoke_all_user_sessions(current_user.user_id)
     response.delete_cookie(REFRESH_COOKIE_NAME)
-    await audit(db, action="logout_all", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id, status="success",
-                details={"sessions_revoked": count})
+    await audit(
+        db,
+        action="logout_all",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        status="success",
+        details={"sessions_revoked": count},
+    )
 
 
 @router.post("/mfa/setup", response_model=MFASetupResponse)
@@ -558,8 +609,13 @@ async def verify_mfa_setup(
 
     user.mfa_enabled = True
     await db.commit()
-    await audit(db, action="mfa_enabled", user_id=str(user.id),
-                tenant_id=str(user.tenant_id), status="success")
+    await audit(
+        db,
+        action="mfa_enabled",
+        user_id=str(user.id),
+        tenant_id=str(user.tenant_id),
+        status="success",
+    )
     return {"message": "MFA enabled successfully"}
 
 
@@ -585,8 +641,13 @@ async def disable_mfa(
     user.mfa_secret = None
     user.mfa_backup_codes = None
     await db.commit()
-    await audit(db, action="mfa_disabled", user_id=str(user.id),
-                tenant_id=str(user.tenant_id), status="success")
+    await audit(
+        db,
+        action="mfa_disabled",
+        user_id=str(user.id),
+        tenant_id=str(user.tenant_id),
+        status="success",
+    )
     return {"message": "MFA disabled"}
 
 
@@ -670,6 +731,7 @@ async def get_me(
 # These module-level names allow tests to patch specific functions via
 # patch("portal.routers.auth.<name>") without modifying the real implementation.
 
+
 async def authenticate_user(email: str, password: str, db=None):
     """Stub: authenticate a user by email and password."""
     return
@@ -688,6 +750,7 @@ async def revoke_user_session(session_id: str, db=None):
 def generate_totp_secret() -> str:
     """Stub: generate a new TOTP secret."""
     import secrets as _secrets
+
     return _secrets.token_hex(20).upper()
 
 
@@ -710,6 +773,7 @@ async def get_user_by_email(email: str, db=None):
 # These module-level names allow tests to patch specific functions via
 # patch("portal.routers.auth.<name>") without modifying the real implementation.
 
+
 async def authenticate_user(email: str, password: str, db=None):
     """Stub: authenticate a user by email and password."""
     return
@@ -728,6 +792,7 @@ async def revoke_user_session(session_id: str, db=None):
 def generate_totp_secret() -> str:
     """Stub: generate a new TOTP secret."""
     import secrets as _secrets
+
     return _secrets.token_hex(20).upper()
 
 

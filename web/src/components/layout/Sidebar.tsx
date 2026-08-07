@@ -35,7 +35,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { path: '/mission-control', label: 'Mission Control', icon: RadioTower, badge: 'LIVE', badgeColor: 'green' },
+  { path: '/mission-control', label: 'Principal Command', icon: RadioTower, badge: 'GOD_MODE', badgeColor: 'gold' },
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/legal', label: 'Legal Hub', icon: Scale, badge: '5', badgeColor: 'gold' },
   { path: '/financial', label: 'Financial Empire', icon: TrendingUp },

@@ -107,7 +107,9 @@ class GovernanceEngine:
         if self.intervention_controller.is_emergency_stopped:
             logger.warning("before_action: emergency stop active — blocking '%s'", action)
             self.audit_trail.log(
-                actor=agent_id, action=action, outcome="blocked_emergency_stop",
+                actor=agent_id,
+                action=action,
+                outcome="blocked_emergency_stop",
                 risk_level=RiskLevel.CRITICAL,
                 metadata={"reason": "Emergency stop is active"},
             )
@@ -116,7 +118,9 @@ class GovernanceEngine:
         # 2. Check guardrails
         if not self.intervention_controller.check_guardrail(action):
             self.audit_trail.log(
-                actor=agent_id, action=action, outcome="blocked_guardrail",
+                actor=agent_id,
+                action=action,
+                outcome="blocked_guardrail",
                 risk_level=RiskLevel.HIGH,
                 metadata={"reason": "Guardrail violation"},
             )
@@ -130,10 +134,13 @@ class GovernanceEngine:
             action, domain=domain, payload=payload, jurisdiction=jurisdiction
         )
         if not compliance.compliant:
-            logger.warning("before_action: compliance violation for '%s': %s",
-                           action, compliance.violations)
+            logger.warning(
+                "before_action: compliance violation for '%s': %s", action, compliance.violations
+            )
             self.audit_trail.log(
-                actor=agent_id, action=action, outcome="blocked_compliance",
+                actor=agent_id,
+                action=action,
+                outcome="blocked_compliance",
                 risk_level=risk.risk_level,
                 metadata={"violations": compliance.violations},
             )
@@ -150,7 +157,9 @@ class GovernanceEngine:
 
             if approval_req.status == ApprovalStatus.AUTO_APPROVED:
                 self.audit_trail.log(
-                    actor=agent_id, action=action, outcome="auto_approved",
+                    actor=agent_id,
+                    action=action,
+                    outcome="auto_approved",
                     risk_level=risk.risk_level,
                     approval_id=approval_req.id,
                     metadata={"reason": approval_req.notes},
@@ -160,7 +169,9 @@ class GovernanceEngine:
             # Wait for human decision
             logger.info(
                 "Waiting for human approval of '%s' (request_id=%s, link=%s)",
-                action, approval_req.id, approval_req.approval_link
+                action,
+                approval_req.id,
+                approval_req.approval_link,
             )
             status = self.approval_gate.wait_for_approval(
                 approval_req.id, timeout_seconds=self._approval_timeout
@@ -168,7 +179,9 @@ class GovernanceEngine:
 
             if status == ApprovalStatus.APPROVED:
                 self.audit_trail.log(
-                    actor=agent_id, action=action, outcome="approved",
+                    actor=agent_id,
+                    action=action,
+                    outcome="approved",
                     risk_level=risk.risk_level,
                     approval_id=approval_req.id,
                     metadata={"approver": approval_req.approver},
@@ -176,7 +189,9 @@ class GovernanceEngine:
                 return True
             else:
                 self.audit_trail.log(
-                    actor=agent_id, action=action, outcome=f"not_approved_{status.value.lower()}",
+                    actor=agent_id,
+                    action=action,
+                    outcome=f"not_approved_{status.value.lower()}",
                     risk_level=risk.risk_level,
                     approval_id=approval_req.id,
                 )
@@ -185,7 +200,9 @@ class GovernanceEngine:
 
         # Low risk: no approval required — log and allow
         self.audit_trail.log(
-            actor=agent_id, action=action, outcome="auto_allowed",
+            actor=agent_id,
+            action=action,
+            outcome="auto_allowed",
             risk_level=risk.risk_level,
             metadata={"domain": domain},
         )
@@ -267,6 +284,7 @@ class GovernanceEngine:
             def send_payment(amount: float):
                 ...
         """
+
         def decorator(func: Callable) -> Callable:
             @functools.wraps(func)
             def wrapper(*args, **kwargs):
@@ -280,9 +298,7 @@ class GovernanceEngine:
                     domain=domain,
                 )
                 if not allowed:
-                    raise PermissionError(
-                        f"Governance: action '{action}' was not approved."
-                    )
+                    raise PermissionError(f"Governance: action '{action}' was not approved.")
 
                 try:
                     result = func(*args, **kwargs)
@@ -293,6 +309,7 @@ class GovernanceEngine:
                     raise
 
             return wrapper
+
         return decorator
 
     # ------------------------------------------------------------------

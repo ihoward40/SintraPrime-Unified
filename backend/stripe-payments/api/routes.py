@@ -32,19 +32,19 @@ router = APIRouter(prefix="/api", tags=["payments"])
     responses={
         200: {"description": "Checkout session created successfully"},
         400: {"description": "Invalid request"},
-        500: {"description": "Internal server error"}
-    }
+        500: {"description": "Internal server error"},
+    },
 )
 async def create_checkout(request: CheckoutRequest):
     """
     Create a Stripe checkout session for subscription signup
-    
+
     Args:
         request: CheckoutRequest with email, tier, and optional URLs
-        
+
     Returns:
         CheckoutResponse with session_id and checkout_url
-        
+
     Raises:
         HTTPException: If checkout creation fails
     """
@@ -55,13 +55,13 @@ async def create_checkout(request: CheckoutRequest):
             customer_email=request.email,
             tier=request.tier.value,
             success_url=request.success_url,
-            cancel_url=request.cancel_url
+            cancel_url=request.cancel_url,
         )
 
         return CheckoutResponse(
             session_id=result["session_id"],
             checkout_url=result["checkout_url"],
-            expires_at=result["expires_at"]
+            expires_at=result["expires_at"],
         )
 
     except ValueError as e:
@@ -79,19 +79,19 @@ async def create_checkout(request: CheckoutRequest):
     responses={
         200: {"description": "Subscription created successfully"},
         400: {"description": "Invalid request"},
-        500: {"description": "Internal server error"}
-    }
+        500: {"description": "Internal server error"},
+    },
 )
 async def create_subscription(request: SubscriptionRequest):
     """
     Create a new subscription for a customer
-    
+
     Args:
         request: SubscriptionRequest with email or customer_id, tier, and optional trial days
-        
+
     Returns:
         SubscriptionResponse with subscription details
-        
+
     Raises:
         HTTPException: If subscription creation fails
     """
@@ -105,7 +105,7 @@ async def create_subscription(request: SubscriptionRequest):
             email=request.email,
             tier=request.tier.value,
             trial_days=request.trial_days,
-            payment_method_id=request.payment_method_id
+            payment_method_id=request.payment_method_id,
         )
 
         return SubscriptionResponse(
@@ -114,7 +114,7 @@ async def create_subscription(request: SubscriptionRequest):
             tier=subscription.tier,
             current_period_end=subscription.current_period_end,
             trial_end=subscription.trial_end,
-            next_billing_date=subscription.current_period_end
+            next_billing_date=subscription.current_period_end,
         )
 
     except ValueError as e:
@@ -132,19 +132,19 @@ async def create_subscription(request: SubscriptionRequest):
     responses={
         200: {"description": "Subscription retrieved successfully"},
         404: {"description": "Subscription not found"},
-        500: {"description": "Internal server error"}
-    }
+        500: {"description": "Internal server error"},
+    },
 )
 async def get_subscription(subscription_id: str):
     """
     Retrieve subscription details
-    
+
     Args:
         subscription_id: Stripe subscription ID
-        
+
     Returns:
         SubscriptionResponse with subscription details
-        
+
     Raises:
         HTTPException: If subscription not found or retrieval fails
     """
@@ -159,7 +159,7 @@ async def get_subscription(subscription_id: str):
             tier=subscription.tier,
             current_period_end=subscription.current_period_end,
             trial_end=subscription.trial_end,
-            next_billing_date=subscription.current_period_end
+            next_billing_date=subscription.current_period_end,
         )
 
     except Exception as e:
@@ -177,23 +177,20 @@ async def get_subscription(subscription_id: str):
         200: {"description": "Subscription upgraded successfully"},
         400: {"description": "Invalid tier or downgrade attempt"},
         404: {"description": "Subscription not found"},
-        500: {"description": "Internal server error"}
-    }
+        500: {"description": "Internal server error"},
+    },
 )
-async def upgrade_subscription(
-    subscription_id: str,
-    request: UpgradeRequest
-):
+async def upgrade_subscription(subscription_id: str, request: UpgradeRequest):
     """
     Upgrade subscription to higher tier
-    
+
     Args:
         subscription_id: Stripe subscription ID
         request: UpgradeRequest with new tier
-        
+
     Returns:
         UpgradeResponse with upgrade details
-        
+
     Raises:
         HTTPException: If upgrade fails
     """
@@ -201,8 +198,7 @@ async def upgrade_subscription(
         logger.info(f"Upgrading subscription {subscription_id} to {request.new_tier.value}")
 
         result = await subscription_service.upgrade_subscription(
-            subscription_id=subscription_id,
-            new_tier=request.new_tier.value
+            subscription_id=subscription_id, new_tier=request.new_tier.value
         )
 
         return UpgradeResponse(
@@ -210,7 +206,7 @@ async def upgrade_subscription(
             new_tier=request.new_tier,
             prorated_credit=result["prorated_credit"],
             new_price=result["new_price"],
-            next_charge_date=result["next_charge_date"]
+            next_charge_date=result["next_charge_date"],
         )
 
     except ValueError as e:
@@ -230,23 +226,20 @@ async def upgrade_subscription(
     responses={
         200: {"description": "Subscription canceled successfully"},
         404: {"description": "Subscription not found"},
-        500: {"description": "Internal server error"}
-    }
+        500: {"description": "Internal server error"},
+    },
 )
-async def cancel_subscription(
-    subscription_id: str,
-    at_period_end: bool = False
-):
+async def cancel_subscription(subscription_id: str, at_period_end: bool = False):
     """
     Cancel a subscription
-    
+
     Args:
         subscription_id: Stripe subscription ID
         at_period_end: If True, cancel at end of billing period
-        
+
     Returns:
         CancelResponse with cancellation details
-        
+
     Raises:
         HTTPException: If cancellation fails
     """
@@ -254,8 +247,7 @@ async def cancel_subscription(
         logger.info(f"Canceling subscription {subscription_id}")
 
         result = await subscription_service.cancel_subscription(
-            subscription_id=subscription_id,
-            at_period_end=at_period_end
+            subscription_id=subscription_id, at_period_end=at_period_end
         )
 
         return CancelResponse(
@@ -263,7 +255,7 @@ async def cancel_subscription(
             status=result["status"],
             canceled_at=result["canceled_at"],
             refund_eligible=result["refund_eligible"],
-            refund_amount=result["refund_amount"]
+            refund_amount=result["refund_amount"],
         )
 
     except Exception as e:
@@ -280,23 +272,20 @@ async def cancel_subscription(
         200: {"description": "Refund processed successfully"},
         400: {"description": "Refund not eligible"},
         404: {"description": "Subscription not found"},
-        500: {"description": "Internal server error"}
-    }
+        500: {"description": "Internal server error"},
+    },
 )
-async def refund_subscription(
-    subscription_id: str,
-    request: RefundRequest
-):
+async def refund_subscription(subscription_id: str, request: RefundRequest):
     """
     Request a refund for a subscription
-    
+
     Args:
         subscription_id: Stripe subscription ID
         request: RefundRequest with reason and optional amount
-        
+
     Returns:
         Refund details
-        
+
     Raises:
         HTTPException: If refund fails or not eligible
     """
@@ -304,15 +293,10 @@ async def refund_subscription(
         logger.info(f"Processing refund for subscription {subscription_id}")
 
         result = await subscription_service.process_refund(
-            subscription_id=subscription_id,
-            reason=request.reason,
-            amount=request.amount
+            subscription_id=subscription_id, reason=request.reason, amount=request.amount
         )
 
-        return {
-            "status": "success",
-            "data": result
-        }
+        return {"status": "success", "data": result}
 
     except ValueError as e:
         logger.error(f"Refund not eligible: {e}")
@@ -325,9 +309,7 @@ async def refund_subscription(
 
 
 @router.get(
-    "/health",
-    summary="Health check",
-    responses={200: {"description": "Service is healthy"}}
+    "/health", summary="Health check", responses={200: {"description": "Service is healthy"}}
 )
 async def health_check():
     """Health check endpoint"""

@@ -51,9 +51,15 @@ async def create_thread(
     db.add(thread)
     await db.commit()
     await db.refresh(thread)
-    await audit(db, action="thread_create", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id,
-                resource_type="thread", resource_id=str(thread.id), resource_name=thread.subject)
+    await audit(
+        db,
+        action="thread_create",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="thread",
+        resource_id=str(thread.id),
+        resource_name=thread.subject,
+    )
     return ThreadResponse.model_validate(thread)
 
 
@@ -84,8 +90,10 @@ async def list_threads(
     total_q = await db.execute(select(func.count()).select_from(stmt.subquery()))
     total = total_q.scalar() or 0
 
-    stmt = stmt.offset((page - 1) * page_size).limit(page_size).order_by(
-        MessageThread.last_message_at.desc().nullslast()
+    stmt = (
+        stmt.offset((page - 1) * page_size)
+        .limit(page_size)
+        .order_by(MessageThread.last_message_at.desc().nullslast())
     )
     result = await db.execute(stmt)
     threads = result.scalars().all()
@@ -178,7 +186,7 @@ async def send_message(
         if "ix_messages_idempotency_key" in str(exc):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Message with this idempotency key already exists"
+                detail="Message with this idempotency key already exists",
             )
         raise
     await db.refresh(msg)
@@ -194,7 +202,7 @@ async def send_message(
         "sender_id": str(current_user.user_id),
         "preview": "[message]",
     }
-    for participant_id in (thread.participants or []):
+    for participant_id in thread.participants or []:
         if participant_id != str(current_user.user_id):
             await ws_manager.send_to_user(participant_id, event)
 
@@ -209,9 +217,14 @@ async def send_message(
         recipient_ids=[p for p in (thread.participants or []) if p != str(current_user.user_id)],
     )
 
-    await audit(db, action="message_send", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id,
-                resource_type="message", resource_id=str(msg.id))
+    await audit(
+        db,
+        action="message_send",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="message",
+        resource_id=str(msg.id),
+    )
 
     # Build response with decrypted content
     resp_data = MessageResponse.model_validate(msg)
@@ -229,9 +242,7 @@ async def list_messages(
     db: AsyncSession = Depends(get_db),
 ):
     # Verify membership
-    thread_result = await db.execute(
-        select(MessageThread).where(MessageThread.id == thread_id)
-    )
+    thread_result = await db.execute(select(MessageThread).where(MessageThread.id == thread_id))
     thread = thread_result.scalar_one_or_none()
     if not thread or str(current_user.user_id) not in (thread.participants or []):
         raise HTTPException(status_code=403)
@@ -250,7 +261,7 @@ async def list_messages(
     total_q = await db.execute(select(func.count()).select_from(stmt.subquery()))
     total = total_q.scalar() or 0
 
-    stmt = stmt.order_by(Message.created_at.desc()).offset((page-1)*page_size).limit(page_size)
+    stmt = stmt.order_by(Message.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
     result = await db.execute(stmt)
     messages = result.scalars().all()
 

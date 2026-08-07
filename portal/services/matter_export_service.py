@@ -322,7 +322,7 @@ def render_pdf(packet_json: str, title: str) -> bytes:
     objects.append(b"<< /Type /Catalog /Pages 2 0 R >>")
     page_ids = [4 + index * 2 for index in range(len(page_lines))]
     objects.append(
-        f"<< /Type /Pages /Kids [{ ' '.join(f'{page_id} 0 R' for page_id in page_ids) }] /Count {len(page_ids)} >>".encode()
+        f"<< /Type /Pages /Kids [{' '.join(f'{page_id} 0 R' for page_id in page_ids)}] /Count {len(page_ids)} >>".encode()
     )
     objects.append(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
     for index, page in enumerate(page_lines):

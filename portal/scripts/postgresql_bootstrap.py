@@ -3,6 +3,7 @@
 This is a CI verifier/runner for disposable or empty PostgreSQL databases. It is
 not an Alembic replacement and does not certify upgrades from unknown schemas.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -43,9 +44,7 @@ def psycopg2_url(raw_url: str) -> str:
         raw_url = "postgresql://" + raw_url.removeprefix("postgresql+asyncpg://")
     if "ssl=disable" in raw_url:
         parts = urlsplit(raw_url)
-        query = "&".join(
-            part for part in parts.query.split("&") if part and part != "ssl=disable"
-        )
+        query = "&".join(part for part in parts.query.split("&") if part and part != "ssl=disable")
         raw_url = urlunsplit((parts.scheme, parts.netloc, parts.path, query, parts.fragment))
     return raw_url
 

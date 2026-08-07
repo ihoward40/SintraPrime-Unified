@@ -26,6 +26,7 @@ class RedisSessionStore:
         """Connect to Redis. Returns True if successful."""
         try:
             import redis.asyncio as aioredis
+
             self._client = aioredis.from_url(
                 self.redis_url,
                 encoding="utf-8",

@@ -58,17 +58,23 @@ class MissionControlRunControl(Base):
 
     state: Mapped[str] = mapped_column(String(40), nullable=False)
     workflow_status_snapshot: Mapped[str] = mapped_column(String(40), nullable=False)
-    workflow_status_observed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    workflow_status_observed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     workflow_source: Mapped[str | None] = mapped_column(String(80), nullable=True)
     workflow_version_snapshot: Mapped[int | None] = mapped_column(Integer, nullable=True)
     state_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     projection_schema_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
     pause_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
-    requested_by: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    requested_by: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id"), nullable=True
+    )
     requested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     confirmation_ref: Mapped[str | None] = mapped_column(String(128), nullable=True)
-    acknowledged_by: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    acknowledged_by: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id"), nullable=True
+    )
     acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     paused_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     failed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -79,7 +85,9 @@ class MissionControlRunControl(Base):
     terminal_reason_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     events: Mapped[list[MissionControlRunControlEvent]] = relationship(
         "MissionControlRunControlEvent",
@@ -89,7 +97,9 @@ class MissionControlRunControl(Base):
     )
 
     __table_args__ = (
-        UniqueConstraint("tenant_id", "workflow_id", name="uq_mission_control_run_controls_tenant_workflow"),
+        UniqueConstraint(
+            "tenant_id", "workflow_id", name="uq_mission_control_run_controls_tenant_workflow"
+        ),
         Index("ix_mission_control_run_controls_tenant_state", "tenant_id", "state"),
         Index("ix_mission_control_run_controls_tenant_workflow", "tenant_id", "workflow_id"),
         Index("ix_mission_control_run_controls_command", "command_id"),
@@ -114,11 +124,17 @@ class MissionControlRunControlEvent(Base):
     new_state: Mapped[str] = mapped_column(String(40), nullable=False)
     previous_version: Mapped[int] = mapped_column(Integer, nullable=False)
     new_version: Mapped[int] = mapped_column(Integer, nullable=False)
-    principal_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
-    command_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("mission_control_commands.id", ondelete="SET NULL"), nullable=True)
+    principal_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id"), nullable=True
+    )
+    command_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("mission_control_commands.id", ondelete="SET NULL"), nullable=True
+    )
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     payload: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
-    workflow_status_observed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    workflow_status_observed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     previous_event_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     event_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     event_schema_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
@@ -130,6 +146,8 @@ class MissionControlRunControlEvent(Base):
     )
 
     __table_args__ = (
-        UniqueConstraint("run_control_id", "sequence", name="uq_mission_control_run_control_event_seq"),
+        UniqueConstraint(
+            "run_control_id", "sequence", name="uq_mission_control_run_control_event_seq"
+        ),
         Index("ix_mission_control_run_control_events_control", "run_control_id"),
     )

@@ -252,18 +252,30 @@ async def transition_run_control(
         )
 
     if not _transition_allowed(current_state, new_state):
-        raise RunControlInvalidTransitionError(f"transition {current_state.value} -> {new_state.value} is not allowed")
+        raise RunControlInvalidTransitionError(
+            f"transition {current_state.value} -> {new_state.value} is not allowed"
+        )
 
     if current_state in TERMINAL_STATES:
-        raise RunControlInvalidTransitionError(f"terminal state {current_state.value} cannot be changed")
+        raise RunControlInvalidTransitionError(
+            f"terminal state {current_state.value} cannot be changed"
+        )
 
     now = datetime.now(UTC)
     observed_at = workflow_status_observed_at or now
     next_version = expected_version + 1
-    effective_paused_at = paused_at or (now if new_state == RunControlState.PAUSED else control.paused_at)
-    effective_failed_at = failed_at or (now if new_state == RunControlState.PAUSE_FAILED else control.failed_at)
-    effective_timed_out_at = timed_out_at or (now if new_state == RunControlState.PAUSE_TIMED_OUT else control.timed_out_at)
-    effective_superseded_at = superseded_at or (now if new_state == RunControlState.SUPERSEDED else control.superseded_at)
+    effective_paused_at = paused_at or (
+        now if new_state == RunControlState.PAUSED else control.paused_at
+    )
+    effective_failed_at = failed_at or (
+        now if new_state == RunControlState.PAUSE_FAILED else control.failed_at
+    )
+    effective_timed_out_at = timed_out_at or (
+        now if new_state == RunControlState.PAUSE_TIMED_OUT else control.timed_out_at
+    )
+    effective_superseded_at = superseded_at or (
+        now if new_state == RunControlState.SUPERSEDED else control.superseded_at
+    )
     effective_terminal_reason_code = terminal_reason_code or control.terminal_reason_code
     if new_state in TERMINAL_STATES and effective_terminal_reason_code is None:
         effective_terminal_reason_code = reason
@@ -272,20 +284,32 @@ async def transition_run_control(
         "state": new_state.value,
         "workflow_status_snapshot": workflow_status_snapshot,
         "workflow_status_observed_at": observed_at,
-        "workflow_source": workflow_source if workflow_source is not None else control.workflow_source,
+        "workflow_source": workflow_source
+        if workflow_source is not None
+        else control.workflow_source,
         "workflow_version_snapshot": (
-            workflow_version_snapshot if workflow_version_snapshot is not None else control.workflow_version_snapshot
+            workflow_version_snapshot
+            if workflow_version_snapshot is not None
+            else control.workflow_version_snapshot
         ),
         "state_version": next_version,
         "projection_schema_version": projection_schema_version,
         "updated_at": now,
         "command_id": command_id if command_id is not None else control.command_id,
         "requested_by": requested_by if requested_by is not None else control.requested_by,
-        "requested_at": now if new_state == RunControlState.PAUSE_REQUESTED and requested_by else control.requested_at,
+        "requested_at": now
+        if new_state == RunControlState.PAUSE_REQUESTED and requested_by
+        else control.requested_at,
         "pause_reason": reason if reason is not None else control.pause_reason,
-        "confirmation_ref": confirmation_ref if confirmation_ref is not None else control.confirmation_ref,
-        "acknowledged_by": acknowledged_by if acknowledged_by is not None else control.acknowledged_by,
-        "acknowledged_at": acknowledged_at if acknowledged_at is not None else control.acknowledged_at,
+        "confirmation_ref": confirmation_ref
+        if confirmation_ref is not None
+        else control.confirmation_ref,
+        "acknowledged_by": acknowledged_by
+        if acknowledged_by is not None
+        else control.acknowledged_by,
+        "acknowledged_at": acknowledged_at
+        if acknowledged_at is not None
+        else control.acknowledged_at,
         "paused_at": effective_paused_at,
         "failed_at": effective_failed_at,
         "timed_out_at": effective_timed_out_at,
@@ -314,14 +338,20 @@ async def transition_run_control(
     await db.flush()
     updated = await _load_run_control(db, tenant_id=tenant_id, run_control_id=run_control_id)
     if updated is None:
-        raise RunControlInvalidTransitionError(f"run control missing after update: {run_control_id}")
+        raise RunControlInvalidTransitionError(
+            f"run control missing after update: {run_control_id}"
+        )
 
     previous_event_hash = await _last_event_hash(db, run_control_id)
     event_payload = {
         "workflow_status_snapshot": workflow_status_snapshot,
         "workflow_status_observed_at": _isoformat(observed_at),
-        "workflow_source": workflow_source if workflow_source is not None else control.workflow_source,
-        "workflow_version_snapshot": workflow_version_snapshot if workflow_version_snapshot is not None else control.workflow_version_snapshot,
+        "workflow_source": workflow_source
+        if workflow_source is not None
+        else control.workflow_source,
+        "workflow_version_snapshot": workflow_version_snapshot
+        if workflow_version_snapshot is not None
+        else control.workflow_version_snapshot,
         "projection_schema_version": projection_schema_version,
         "confirmation_ref": confirmation_ref,
         "acknowledged_by": acknowledged_by,
@@ -453,7 +483,9 @@ def _compute_event_hash(
         "workflow_status_observed_at": _isoformat(workflow_status_observed_at),
         "event_schema_version": event_schema_version,
     }
-    serialized = json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str)
+    serialized = json.dumps(
+        data, sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str
+    )
     return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 

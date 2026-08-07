@@ -17,8 +17,10 @@ from typing import Any, Dict, List, Optional
 # Enums
 # ---------------------------------------------------------------------------
 
+
 class RiskLevel(str, Enum):
     """Risk classification levels for agent actions."""
+
     LOW = "LOW"
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"
@@ -49,6 +51,7 @@ class RiskLevel(str, Enum):
 
 class ApprovalStatus(str, Enum):
     """Lifecycle states for an approval request."""
+
     PENDING = "PENDING"
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
@@ -60,9 +63,11 @@ class ApprovalStatus(str, Enum):
 # Data Models
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class ActionRisk:
     """Risk assessment result for a single agent action."""
+
     action_type: str
     risk_level: RiskLevel
     reason: str
@@ -88,6 +93,7 @@ class ActionRisk:
 @dataclass
 class ApprovalRequest:
     """A request for human approval before executing a high-risk action."""
+
     action: str
     risk: ActionRisk
     requestor: str
@@ -103,7 +109,11 @@ class ApprovalRequest:
 
     @property
     def is_expired(self) -> bool:
-        return datetime.now(timezone.utc) > self.expires_at.replace(tzinfo=timezone.utc) if self.expires_at.tzinfo is None else datetime.now(timezone.utc) > self.expires_at
+        return (
+            datetime.now(timezone.utc) > self.expires_at.replace(tzinfo=timezone.utc)
+            if self.expires_at.tzinfo is None
+            else datetime.now(timezone.utc) > self.expires_at
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -125,12 +135,13 @@ class ApprovalRequest:
 @dataclass
 class Rule:
     """A single governance policy rule."""
+
     name: str
     description: str
-    action_pattern: str          # glob or regex pattern matching action names
-    risk_threshold: RiskLevel    # minimum risk level triggering this rule
+    action_pattern: str  # glob or regex pattern matching action names
+    risk_threshold: RiskLevel  # minimum risk level triggering this rule
     requires_approval: bool = True
-    auto_reject: bool = False    # immediately reject without asking
+    auto_reject: bool = False  # immediately reject without asking
     notify_roles: List[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -138,9 +149,10 @@ class Rule:
 @dataclass
 class GovernancePolicy:
     """A collection of rules applied to a set of actions/domains."""
+
     name: str
     rules: List[Rule]
-    applies_to: List[str]        # list of action prefixes or domains
+    applies_to: List[str]  # list of action prefixes or domains
     description: str = ""
     enabled: bool = True
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
@@ -149,15 +161,14 @@ class GovernancePolicy:
     def get_applicable_rules(self, action_type: str) -> List[Rule]:
         """Return rules that match the given action type."""
         import fnmatch
-        return [
-            r for r in self.rules
-            if fnmatch.fnmatch(action_type, r.action_pattern)
-        ]
+
+        return [r for r in self.rules if fnmatch.fnmatch(action_type, r.action_pattern)]
 
 
 @dataclass
 class AuditEntry:
     """A single immutable audit log record."""
+
     timestamp: datetime
     actor: str
     action: str
@@ -172,6 +183,7 @@ class AuditEntry:
         """Compute a SHA-256 checksum for tamper detection."""
         import hashlib
         import json
+
         payload = f"{self.id}{self.timestamp.isoformat()}{self.actor}{self.action}{self.outcome}{self.risk_level.value}{self.approval_id}"
         return hashlib.sha256(payload.encode()).hexdigest()
 
@@ -192,8 +204,9 @@ class AuditEntry:
 @dataclass
 class AgentStatus:
     """Current status of a running agent."""
+
     agent_id: str
-    status: str          # running, paused, terminated
+    status: str  # running, paused, terminated
     current_task: Optional[str] = None
     started_at: Optional[datetime] = None
     paused_at: Optional[datetime] = None
@@ -204,6 +217,7 @@ class AgentStatus:
 @dataclass
 class ComplianceResult:
     """Result of a compliance check for an action."""
+
     compliant: bool
     standard: str
     action: str
@@ -216,6 +230,7 @@ class ComplianceResult:
 @dataclass
 class EthicsResult:
     """Result of an ethical/legal check."""
+
     passes: bool
     flags: List[str] = field(default_factory=list)
     unauthorized_practice: bool = False
@@ -226,6 +241,7 @@ class EthicsResult:
 @dataclass
 class Violation:
     """A recorded compliance or ethical violation."""
+
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     action: str = ""
     rule: str = ""
@@ -239,6 +255,7 @@ class Violation:
 @dataclass
 class ComplianceReport:
     """A full compliance audit report for a specific standard."""
+
     standard: str
     generated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     compliant: bool = True
@@ -253,6 +270,7 @@ class ComplianceReport:
 @dataclass
 class GovernanceReport:
     """Weekly governance summary report."""
+
     generated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     period_start: Optional[datetime] = None
     period_end: Optional[datetime] = None

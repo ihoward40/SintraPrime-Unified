@@ -2,6 +2,7 @@
 Tests for Portal Message Persistence.
 Covers: CRUD operations, validation, encryption round-trip, idempotency, duplicate prevention.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -205,7 +206,9 @@ class TestMessageCRUD:
     @pytest.mark.asyncio
     async def test_create_thread_success(self, mock_db, mock_current_user, mock_thread):
         with patch("portal.routers.messages.audit", new_callable=AsyncMock):
-            with patch("portal.routers.messages.MessageThread", return_value=mock_thread) as mock_thread_class:
+            with patch(
+                "portal.routers.messages.MessageThread", return_value=mock_thread
+            ) as mock_thread_class:
                 thread_data = ThreadCreate(
                     subject="New Thread",
                     category="general",
@@ -224,21 +227,27 @@ class TestMessageCRUD:
                 mock_db.refresh.assert_awaited()
 
     @pytest.mark.asyncio
-    async def test_send_message_success(self, mock_db, mock_current_user, mock_thread, mock_message):
+    async def test_send_message_success(
+        self, mock_db, mock_current_user, mock_thread, mock_message
+    ):
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_thread
         mock_db.execute.return_value = mock_result
 
         with patch("portal.routers.messages.encrypt_text", return_value=("encrypted", b"iv123")):
             with patch("portal.routers.messages.Message", return_value=mock_message):
-                with patch("portal.routers.messages.ws_manager.send_to_user", new_callable=AsyncMock):
+                with patch(
+                    "portal.routers.messages.ws_manager.send_to_user", new_callable=AsyncMock
+                ):
                     with patch("portal.routers.messages.notify_users", new_callable=AsyncMock):
                         with patch("portal.routers.messages.audit", new_callable=AsyncMock):
                             msg_data = MessageSend(
                                 content="Hello world",
                                 idempotency_key="idem-test-1",
                             )
-                            result = await send_message(mock_thread.id, msg_data, mock_current_user, mock_db)
+                            result = await send_message(
+                                mock_thread.id, msg_data, mock_current_user, mock_db
+                            )
 
                             assert result.content == "Hello world"
                             mock_db.add.assert_called()
@@ -271,8 +280,11 @@ class TestMessageCRUD:
         msg_data = MessageSend(content="Hello")
         with pytest.raises(HTTPException):
             await send_message(thread_id, msg_data, mock_current_user, mock_db)
+
         @pytest.mark.asyncio
-        async def test_send_message_duplicate_idempotency_key(self, mock_db, mock_current_user, mock_thread):
+        async def test_send_message_duplicate_idempotency_key(
+            self, mock_db, mock_current_user, mock_thread
+        ):
             mock_result = MagicMock()
             mock_result.scalar_one_or_none.return_value = mock_thread
             mock_db.execute.return_value = mock_result
@@ -285,7 +297,9 @@ class TestMessageCRUD:
             )
             mock_db.commit.side_effect = integrity_error
 
-            with patch("portal.routers.messages.encrypt_text", return_value=("encrypted", b"iv123")):
+            with patch(
+                "portal.routers.messages.encrypt_text", return_value=("encrypted", b"iv123")
+            ):
                 with patch("portal.routers.messages.Message"):
                     msg_data = MessageSend(content="Hello", idempotency_key="duplicate-key")
                     with pytest.raises(HTTPException) as exc:
@@ -294,7 +308,9 @@ class TestMessageCRUD:
                     assert "idempotency key already exists" in exc.value.detail
 
     @pytest.mark.asyncio
-    async def test_list_messages_success(self, mock_db, mock_current_user, mock_thread, mock_message):
+    async def test_list_messages_success(
+        self, mock_db, mock_current_user, mock_thread, mock_message
+    ):
         thread_id = mock_thread.id
         thread_result = MagicMock()
         thread_result.scalar_one_or_none.return_value = mock_thread
@@ -309,13 +325,18 @@ class TestMessageCRUD:
 
         # Patch the function where it's used (router module)
         import portal.routers.messages as router_module
-        with patch.object(router_module, 'decrypt_text', return_value="decrypted content") as mock_decrypt:
+
+        with patch.object(
+            router_module, "decrypt_text", return_value="decrypted content"
+        ) as mock_decrypt:
             result = await list_messages(thread_id, None, 1, 50, mock_current_user, mock_db)
 
             assert result.total == 1
             assert len(result.items) == 1
             assert result.items[0].content == "decrypted content"
-            mock_decrypt.assert_called_once_with("encrypted_content", bytes.fromhex("aabbccddeeff001122334455"))
+            mock_decrypt.assert_called_once_with(
+                "encrypted_content", bytes.fromhex("aabbccddeeff001122334455")
+            )
 
     @pytest.mark.asyncio
     async def test_list_messages_not_participant(self, mock_db, mock_current_user):

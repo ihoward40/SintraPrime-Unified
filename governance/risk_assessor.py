@@ -23,46 +23,226 @@ from governance.risk_types import (
 
 _DEFAULT_RISK_RULES: List[Tuple[str, RiskLevel, str, bool, bool, str, str]] = [
     # (action_pattern, risk_level, reason, requires_approval, reversible, estimated_impact, domain)
-
     # CRITICAL
-    ("send_payment",          RiskLevel.CRITICAL, "Irreversible financial transaction",       True,  False, "Potential financial loss",          "financial"),
-    ("wire_transfer",         RiskLevel.CRITICAL, "Irreversible high-value transfer",          True,  False, "Major financial exposure",          "financial"),
-    ("delete_all_data",       RiskLevel.CRITICAL, "Permanent data destruction",                True,  False, "Complete data loss",                "data"),
-    ("file_legal_document",   RiskLevel.CRITICAL, "Legally binding filing",                   True,  False, "Legal liability / deadlines",       "legal"),
-    ("sign_contract",         RiskLevel.CRITICAL, "Binding contractual obligation",           True,  False, "Legal and financial commitment",    "legal"),
-    ("execute_*_contract",    RiskLevel.CRITICAL, "Contract execution",                       True,  False, "Legal and financial commitment",    "legal"),
-    ("initiate_bankruptcy",   RiskLevel.CRITICAL, "Major legal proceeding",                   True,  False, "Corporate insolvency filing",       "legal"),
-
+    (
+        "send_payment",
+        RiskLevel.CRITICAL,
+        "Irreversible financial transaction",
+        True,
+        False,
+        "Potential financial loss",
+        "financial",
+    ),
+    (
+        "wire_transfer",
+        RiskLevel.CRITICAL,
+        "Irreversible high-value transfer",
+        True,
+        False,
+        "Major financial exposure",
+        "financial",
+    ),
+    (
+        "delete_all_data",
+        RiskLevel.CRITICAL,
+        "Permanent data destruction",
+        True,
+        False,
+        "Complete data loss",
+        "data",
+    ),
+    (
+        "file_legal_document",
+        RiskLevel.CRITICAL,
+        "Legally binding filing",
+        True,
+        False,
+        "Legal liability / deadlines",
+        "legal",
+    ),
+    (
+        "sign_contract",
+        RiskLevel.CRITICAL,
+        "Binding contractual obligation",
+        True,
+        False,
+        "Legal and financial commitment",
+        "legal",
+    ),
+    (
+        "execute_*_contract",
+        RiskLevel.CRITICAL,
+        "Contract execution",
+        True,
+        False,
+        "Legal and financial commitment",
+        "legal",
+    ),
+    (
+        "initiate_bankruptcy",
+        RiskLevel.CRITICAL,
+        "Major legal proceeding",
+        True,
+        False,
+        "Corporate insolvency filing",
+        "legal",
+    ),
     # HIGH
-    ("send_email_to_client",      RiskLevel.HIGH, "Client-facing communication",              True,  True,  "Reputational / legal exposure",     "communication"),
-    ("update_financial_record",   RiskLevel.HIGH, "Modifies financial data",                  True,  True,  "Financial record integrity",        "financial"),
-    ("publish_document",          RiskLevel.HIGH, "Public-facing content",                    True,  True,  "Reputational / regulatory risk",    "communication"),
-    ("schedule_court_filing",     RiskLevel.HIGH, "Legal deadline scheduling",               True,  True,  "Missed deadline = malpractice",     "legal"),
-    ("send_bulk_email",           RiskLevel.HIGH, "Mass communication",                       True,  True,  "Reputational / GDPR risk",          "communication"),
-    ("delete_records",            RiskLevel.HIGH, "Data deletion",                            True,  False, "Potential data loss",               "data"),
-    ("modify_permissions",        RiskLevel.HIGH, "Access control change",                    True,  True,  "Security risk",                     "security"),
-    ("create_invoice",            RiskLevel.HIGH, "Financial document creation",              True,  True,  "Financial exposure",                "financial"),
-    ("access_pii_data",           RiskLevel.HIGH, "Personal data access",                    True,  True,  "Privacy / GDPR risk",               "compliance"),
-
+    (
+        "send_email_to_client",
+        RiskLevel.HIGH,
+        "Client-facing communication",
+        True,
+        True,
+        "Reputational / legal exposure",
+        "communication",
+    ),
+    (
+        "update_financial_record",
+        RiskLevel.HIGH,
+        "Modifies financial data",
+        True,
+        True,
+        "Financial record integrity",
+        "financial",
+    ),
+    (
+        "publish_document",
+        RiskLevel.HIGH,
+        "Public-facing content",
+        True,
+        True,
+        "Reputational / regulatory risk",
+        "communication",
+    ),
+    (
+        "schedule_court_filing",
+        RiskLevel.HIGH,
+        "Legal deadline scheduling",
+        True,
+        True,
+        "Missed deadline = malpractice",
+        "legal",
+    ),
+    (
+        "send_bulk_email",
+        RiskLevel.HIGH,
+        "Mass communication",
+        True,
+        True,
+        "Reputational / GDPR risk",
+        "communication",
+    ),
+    ("delete_records", RiskLevel.HIGH, "Data deletion", True, False, "Potential data loss", "data"),
+    (
+        "modify_permissions",
+        RiskLevel.HIGH,
+        "Access control change",
+        True,
+        True,
+        "Security risk",
+        "security",
+    ),
+    (
+        "create_invoice",
+        RiskLevel.HIGH,
+        "Financial document creation",
+        True,
+        True,
+        "Financial exposure",
+        "financial",
+    ),
+    (
+        "access_pii_data",
+        RiskLevel.HIGH,
+        "Personal data access",
+        True,
+        True,
+        "Privacy / GDPR risk",
+        "compliance",
+    ),
     # MEDIUM
-    ("draft_document",        RiskLevel.MEDIUM, "Document creation (not published)",         False, True,  "Low – internal draft",              "document"),
-    ("search_external_api",   RiskLevel.MEDIUM, "External API call",                        False, True,  "Data exposure / rate limits",       "data"),
-    ("update_case_notes",     RiskLevel.MEDIUM, "Case record modification",                 False, True,  "Case management accuracy",          "legal"),
-    ("generate_report",       RiskLevel.MEDIUM, "Report generation",                        False, True,  "Information accuracy",              "document"),
-    ("send_internal_email",   RiskLevel.MEDIUM, "Internal communication",                   False, True,  "Internal only",                     "communication"),
-    ("schedule_meeting",      RiskLevel.MEDIUM, "Calendar scheduling",                      False, True,  "Scheduling conflict risk",          "general"),
-    ("export_data",           RiskLevel.MEDIUM, "Data export",                              False, True,  "Data portability risk",             "data"),
-    ("update_contact_info",   RiskLevel.MEDIUM, "Contact record update",                    False, True,  "Data accuracy",                     "data"),
-
+    (
+        "draft_document",
+        RiskLevel.MEDIUM,
+        "Document creation (not published)",
+        False,
+        True,
+        "Low – internal draft",
+        "document",
+    ),
+    (
+        "search_external_api",
+        RiskLevel.MEDIUM,
+        "External API call",
+        False,
+        True,
+        "Data exposure / rate limits",
+        "data",
+    ),
+    (
+        "update_case_notes",
+        RiskLevel.MEDIUM,
+        "Case record modification",
+        False,
+        True,
+        "Case management accuracy",
+        "legal",
+    ),
+    (
+        "generate_report",
+        RiskLevel.MEDIUM,
+        "Report generation",
+        False,
+        True,
+        "Information accuracy",
+        "document",
+    ),
+    (
+        "send_internal_email",
+        RiskLevel.MEDIUM,
+        "Internal communication",
+        False,
+        True,
+        "Internal only",
+        "communication",
+    ),
+    (
+        "schedule_meeting",
+        RiskLevel.MEDIUM,
+        "Calendar scheduling",
+        False,
+        True,
+        "Scheduling conflict risk",
+        "general",
+    ),
+    ("export_data", RiskLevel.MEDIUM, "Data export", False, True, "Data portability risk", "data"),
+    (
+        "update_contact_info",
+        RiskLevel.MEDIUM,
+        "Contact record update",
+        False,
+        True,
+        "Data accuracy",
+        "data",
+    ),
     # LOW
-    ("read_data",             RiskLevel.LOW,    "Read-only data access",                    False, True,  "Minimal – read only",               "data"),
-    ("internal_calculation",  RiskLevel.LOW,    "Internal computation",                     False, True,  "None",                              "general"),
-    ("search_database",       RiskLevel.LOW,    "Database query (read-only)",               False, True,  "None",                              "data"),
-    ("format_document",       RiskLevel.LOW,    "Document formatting",                      False, True,  "None",                              "document"),
-    ("list_records",          RiskLevel.LOW,    "Listing records",                          False, True,  "None",                              "data"),
-    ("get_status",            RiskLevel.LOW,    "Status check",                             False, True,  "None",                              "general"),
-    ("validate_data",         RiskLevel.LOW,    "Data validation",                          False, True,  "None",                              "data"),
-    ("log_event",             RiskLevel.LOW,    "Audit logging",                            False, True,  "None",                              "general"),
+    (
+        "read_data",
+        RiskLevel.LOW,
+        "Read-only data access",
+        False,
+        True,
+        "Minimal – read only",
+        "data",
+    ),
+    ("internal_calculation", RiskLevel.LOW, "Internal computation", False, True, "None", "general"),
+    ("search_database", RiskLevel.LOW, "Database query (read-only)", False, True, "None", "data"),
+    ("format_document", RiskLevel.LOW, "Document formatting", False, True, "None", "document"),
+    ("list_records", RiskLevel.LOW, "Listing records", False, True, "None", "data"),
+    ("get_status", RiskLevel.LOW, "Status check", False, True, "None", "general"),
+    ("validate_data", RiskLevel.LOW, "Data validation", False, True, "None", "data"),
+    ("log_event", RiskLevel.LOW, "Audit logging", False, True, "None", "general"),
 ]
 
 
@@ -105,9 +285,7 @@ class RiskAssessor:
         for pattern, risk_level, reason, req_approval, reversible, impact, domain in all_rules:
             if fnmatch.fnmatch(action_type, pattern) or action_type == pattern:
                 # Allow org threshold to override requires_approval
-                effective_requires_approval = (
-                    req_approval or risk_level >= self.org_risk_threshold
-                )
+                effective_requires_approval = req_approval or risk_level >= self.org_risk_threshold
                 return ActionRisk(
                     action_type=action_type,
                     risk_level=risk_level,
@@ -177,10 +355,10 @@ class RiskAssessor:
         domain: str = "custom",
     ) -> None:
         """Register a custom risk rule (prepended, so it takes priority)."""
-        self._custom_rules.insert(0, (
-            pattern, risk_level, reason,
-            requires_approval, reversible, estimated_impact, domain
-        ))
+        self._custom_rules.insert(
+            0,
+            (pattern, risk_level, reason, requires_approval, reversible, estimated_impact, domain),
+        )
 
     def set_org_threshold(self, threshold: RiskLevel) -> None:
         """Update the organization-wide risk threshold for approval requirements."""
@@ -242,7 +420,12 @@ class RiskAssessor:
             "financial": GovernancePolicy(
                 name="Financial Domain Policy",
                 description="Governs payments, transfers, and financial record modifications",
-                applies_to=["send_payment", "wire_transfer", "update_financial_*", "create_invoice"],
+                applies_to=[
+                    "send_payment",
+                    "wire_transfer",
+                    "update_financial_*",
+                    "create_invoice",
+                ],
                 rules=[
                     Rule(
                         name="Payment Approval",

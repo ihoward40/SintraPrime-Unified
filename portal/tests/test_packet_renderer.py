@@ -51,36 +51,42 @@ from portal.services.packet_renderer import (
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def sample_items():
     """Standard evidence items for testing."""
     return (
         EvidenceItem(
-            item_id="EX-001", item_type="exhibit",
+            item_id="EX-001",
+            item_type="exhibit",
             title="Device Purchase Receipt",
             content="Receipt showing purchase of iPhone 15 Pro on 2025-01-15 for $1,199.00",
             sequence=1,
         ),
         EvidenceItem(
-            item_id="FACT-001", item_type="fact",
+            item_id="FACT-001",
+            item_type="fact",
             title="Device Conversion Date",
             content="On 2025-03-20, defendant refused to return device despite written demand.",
             sequence=2,
         ),
         EvidenceItem(
-            item_id="AUTH-001", item_type="authority",
+            item_id="AUTH-001",
+            item_type="authority",
             title="NJ Conversion Statute",
             content="N.J.S.A. 2C:20-3 defines conversion as unauthorized exercise of control.",
             sequence=3,
         ),
         EvidenceItem(
-            item_id="ANALYSIS-001", item_type="analysis",
+            item_id="ANALYSIS-001",
+            item_type="analysis",
             title="Damages Calculation",
             content="FMV at conversion: $1,050. Consequential damages: $200. Total: $1,250.",
             sequence=4,
         ),
         EvidenceItem(
-            item_id="REQ-001", item_type="request",
+            item_id="REQ-001",
+            item_type="request",
             title="Prayer for Relief",
             content="Plaintiff requests return of device or FMV plus consequential damages.",
             sequence=5,
@@ -129,6 +135,7 @@ def rendered_packet(snapshot_with_evidence):
 # ══════════════════════════════════════════════════════════════════════════════
 # TEST A: Render packet from immutable EvidenceSnapshot
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestPacketRendering:
     """Verify that packets can be rendered from snapshots."""
@@ -189,6 +196,7 @@ class TestPacketRendering:
 # TEST B: Packet embeds Snapshot ID, Evidence Hash, Serialization Version
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestPacketEmbedding:
     """Verify that the packet correctly embeds snapshot references."""
 
@@ -220,6 +228,7 @@ class TestPacketEmbedding:
 # TEST C: Packet Hash may differ; Evidence Hash UNCHANGED (ED-003)
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestEvidenceHashImmutableAcrossRenderings:
     """THE KEY ARCHITECTURAL PROPERTY.
 
@@ -231,7 +240,8 @@ class TestEvidenceHashImmutableAcrossRenderings:
     """
 
     def test_evidence_hash_identical_across_two_renderings(
-        self, snapshot_with_evidence,
+        self,
+        snapshot_with_evidence,
     ):
         """Render twice → Evidence Hash identical in both packets."""
         snapshot, evidence = snapshot_with_evidence
@@ -265,7 +275,8 @@ class TestEvidenceHashImmutableAcrossRenderings:
         assert packet_1.manifest_hash == packet_2.manifest_hash
 
     def test_packet_hash_may_differ_across_renderings(
-        self, snapshot_with_evidence,
+        self,
+        snapshot_with_evidence,
     ):
         """Render twice with time gap → Packet Hash may differ.
 
@@ -332,17 +343,30 @@ class TestEvidenceHashImmutableAcrossRenderings:
 # TEST D: Deterministic packet structure
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestDeterministicPacketStructure:
     """Same rendering inputs → same packet structure."""
 
     def test_packet_to_dict_has_all_required_keys(self, rendered_packet):
         d = rendered_packet.to_dict()
         required_keys = {
-            "analyses", "audit_receipt", "authorities", "case_id",
-            "evidence_count", "evidence_hash", "exhibits", "facts",
-            "manifest", "manifest_hash", "packet_hash", "packet_rendered",
-            "packet_version", "requests", "serialization_version",
-            "snapshot_created", "snapshot_id",
+            "analyses",
+            "audit_receipt",
+            "authorities",
+            "case_id",
+            "evidence_count",
+            "evidence_hash",
+            "exhibits",
+            "facts",
+            "manifest",
+            "manifest_hash",
+            "packet_hash",
+            "packet_rendered",
+            "packet_version",
+            "requests",
+            "serialization_version",
+            "snapshot_created",
+            "snapshot_id",
         }
         assert set(d.keys()) == required_keys
 
@@ -372,6 +396,7 @@ class TestDeterministicPacketStructure:
 # TEST E: Packet verification against evidence
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestPacketVerification:
     """Verify rendered packets against their evidence."""
 
@@ -392,15 +417,21 @@ class TestPacketVerification:
             assert result["overall"] is True
 
     def test_verify_against_different_evidence_fails(
-        self, rendered_packet,
+        self,
+        rendered_packet,
     ):
         """Verification against different evidence fails."""
         different = EvidenceCollection(
             case_id="CASE-001",
-            items=(EvidenceItem(
-                item_id="DIFF-001", item_type="exhibit",
-                title="Different", content="Different content", sequence=1,
-            ),),
+            items=(
+                EvidenceItem(
+                    item_id="DIFF-001",
+                    item_type="exhibit",
+                    title="Different",
+                    content="Different content",
+                    sequence=1,
+                ),
+            ),
         )
         result = verify_packet(rendered_packet, different)
         assert result["evidence_hash_verified"] is False
@@ -410,6 +441,7 @@ class TestPacketVerification:
 # ══════════════════════════════════════════════════════════════════════════════
 # TEST F: Tampered evidence fails rendering
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestTamperedEvidencePrevented:
     """ED-001: No capability depends on unverified trust primitive."""
@@ -450,6 +482,7 @@ class TestTamperedEvidencePrevented:
 # ══════════════════════════════════════════════════════════════════════════════
 # Integration: Full flow (Snapshot → Hash → Render → Verify)
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestFullRenderFlow:
     """End-to-end: create snapshot → compute hashes → render packet → verify."""
@@ -534,6 +567,7 @@ class TestFullRenderFlow:
 # Edge Cases
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestPacketEdgeCases:
     def test_empty_evidence_renders(self):
         """Empty evidence collection produces a valid packet."""
@@ -564,10 +598,15 @@ class TestPacketEdgeCases:
 
         single = EvidenceCollection(
             case_id="CASE-SINGLE",
-            items=(EvidenceItem(
-                item_id="ITEM-1", item_type="exhibit",
-                title="Sole Exhibit", content="Only evidence.", sequence=1,
-            ),),
+            items=(
+                EvidenceItem(
+                    item_id="ITEM-1",
+                    item_type="exhibit",
+                    title="Sole Exhibit",
+                    content="Only evidence.",
+                    sequence=1,
+                ),
+            ),
         )
         eh = compute_evidence_hash(single)
         mh = compute_manifest_hash(single)

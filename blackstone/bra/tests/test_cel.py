@@ -1,6 +1,7 @@
 """
 Tests for BRA Constitutional Evidence Ledger — BKGC Art. XIII-XIV compliance.
 """
+
 import pytest
 
 from blackstone.bra.cel import (
@@ -33,6 +34,7 @@ class TestAdd:
 
     def test_ev_id_format(self, cel):
         import re
+
         ev_id = cel.add("Test", source_class="SC-03", collected_by="hermes")
         assert re.match(r"^EV-\d{8}-\d{4}$", ev_id)
 
@@ -41,7 +43,9 @@ class TestAdd:
             cel.add("AI Summary", source_class="SC-01", collected_by="viktor", is_ai_generated=True)
 
     def test_ai_generated_sc06_ok(self, cel):
-        ev_id = cel.add("AI Summary", source_class="SC-06", collected_by="viktor", is_ai_generated=True)
+        ev_id = cel.add(
+            "AI Summary", source_class="SC-06", collected_by="viktor", is_ai_generated=True
+        )
         item = cel.get(ev_id)
         assert item.is_ai_generated is True
 

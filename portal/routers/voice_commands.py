@@ -139,7 +139,9 @@ async def get_command(
     try:
         command = await get_voice_command(db, command_id, current_user)
     except VoiceCommandNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="voice command not found") from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="voice command not found"
+        ) from exc
     return VoiceCommandResponse.from_model(command)
 
 
@@ -169,7 +171,9 @@ async def confirm_command(
             current_target=body.current_target,
         )
     except VoiceCommandNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="voice command not found") from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="voice command not found"
+        ) from exc
     except VoiceCommandStateError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     return VoiceCommandResponse.from_model(result.command)
@@ -185,7 +189,9 @@ async def cancel_command(
     try:
         result = await cancel_voice_command(db, command_id, current_user, reason=body.reason)
     except VoiceCommandNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="voice command not found") from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="voice command not found"
+        ) from exc
     except VoiceCommandStateError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     return VoiceCommandResponse.from_model(result.command)

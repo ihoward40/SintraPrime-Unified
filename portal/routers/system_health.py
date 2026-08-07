@@ -20,6 +20,7 @@ def _check_database() -> dict:
     """Check SQLite database connectivity and table count."""
     try:
         from sqlalchemy import create_engine, inspect, text
+
         db_path = Path(__file__).parent.parent.parent / "data" / "portal.db"
         if not db_path.exists():
             return {"status": "degraded", "message": "Database file not found"}
@@ -42,8 +43,10 @@ def _check_recovery_api() -> dict:
     try:
         # Import the recovery router's state directly
         import sys
+
         sys.path.insert(0, str(Path(__file__).parent.parent.parent))
         from portal.routers.recovery import CASES, EVIDENCE, RECEIPTS
+
         return {
             "status": "healthy",
             "cases": len(CASES),
@@ -78,11 +81,13 @@ def _check_evidence_platform() -> dict:
                         "overall": r.get("overall_readiness", 0),
                         "grade": r.get("grade", "F"),
                     }
-                cases.append({
-                    "case_id": case_dir.name,
-                    "evidence_items": ev_count,
-                    "readiness": readiness,
-                })
+                cases.append(
+                    {
+                        "case_id": case_dir.name,
+                        "evidence_items": ev_count,
+                        "readiness": readiness,
+                    }
+                )
 
         kernel_version = "2.1.0"
         # Check if case_template.py exists
@@ -127,7 +132,9 @@ def _check_scheduler() -> dict:
     try:
         result = subprocess.run(
             ["hermes", "cron", "list"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         if result.returncode != 0:
             return {"status": "degraded", "message": "hermes cron list failed"}

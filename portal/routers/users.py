@@ -45,11 +45,14 @@ async def list_users(
     )
     if search:
         from sqlalchemy import or_
-        stmt = stmt.where(or_(
-            User.email.ilike(f"%{search}%"),
-            User.first_name.ilike(f"%{search}%"),
-            User.last_name.ilike(f"%{search}%"),
-        ))
+
+        stmt = stmt.where(
+            or_(
+                User.email.ilike(f"%{search}%"),
+                User.first_name.ilike(f"%{search}%"),
+                User.last_name.ilike(f"%{search}%"),
+            )
+        )
     if is_active is not None:
         stmt = stmt.where(User.is_active == is_active)
 
@@ -57,7 +60,7 @@ async def list_users(
     total = total_q.scalar() or 0
     pages = (total + page_size - 1) // page_size
 
-    stmt = stmt.offset((page-1)*page_size).limit(page_size).order_by(User.created_at.desc())
+    stmt = stmt.offset((page - 1) * page_size).limit(page_size).order_by(User.created_at.desc())
     result = await db.execute(stmt)
     users = result.scalars().all()
 
@@ -88,6 +91,7 @@ async def invite_user(
 
     # Find role
     from ..models.user import Role as RoleModel
+
     role_result = await db.execute(select(RoleModel).where(RoleModel.name == body.role))
     role_obj = role_result.scalar_one_or_none()
     if not role_obj:
@@ -119,9 +123,15 @@ async def invite_user(
             body=f"Hello {user.full_name},\n\nYou've been invited to join the portal.\n\nClick here to set your password: {invite_url}\n\nLink expires in 7 days.",
         )
 
-    await audit(db, action="user_invite", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id,
-                resource_type="user", resource_id=str(user.id), resource_name=user.email)
+    await audit(
+        db,
+        action="user_invite",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="user",
+        resource_id=str(user.id),
+        resource_name=user.email,
+    )
     return UserResponse.from_orm_with_role(user)
 
 
@@ -162,8 +172,14 @@ async def update_user(
         setattr(user, field, value)
     await db.commit()
     await db.refresh(user)
-    await audit(db, action="user_update", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id, resource_type="user", resource_id=str(user_id))
+    await audit(
+        db,
+        action="user_update",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="user",
+        resource_id=str(user_id),
+    )
     return UserResponse.from_orm_with_role(user)
 
 
@@ -186,8 +202,14 @@ async def deactivate_user(
     user.is_active = False
     await db.commit()
     await revoke_all_user_sessions(str(user_id))
-    await audit(db, action="user_deactivate", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id, resource_type="user", resource_id=str(user_id))
+    await audit(
+        db,
+        action="user_deactivate",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="user",
+        resource_id=str(user_id),
+    )
 
 
 @router.post("/{user_id}/change-role", response_model=UserResponse)
@@ -208,6 +230,7 @@ async def change_user_role(
         raise HTTPException(status_code=404)
 
     from ..models.user import Role as RoleModel
+
     role_result = await db.execute(select(RoleModel).where(RoleModel.name == role))
     role_obj = role_result.scalar_one_or_none()
     if not role_obj:
@@ -218,10 +241,15 @@ async def change_user_role(
 
     # Revoke sessions to force re-login with new role
     await revoke_all_user_sessions(str(user_id))
-    await audit(db, action="role_change", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id,
-                resource_type="user", resource_id=str(user_id),
-                details={"new_role": role})
+    await audit(
+        db,
+        action="role_change",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="user",
+        resource_id=str(user_id),
+        details={"new_role": role},
+    )
     await db.refresh(user)
     return UserResponse.from_orm_with_role(user)
 
@@ -233,5 +261,6 @@ async def get_user_sessions(
     db: AsyncSession = Depends(get_db),
 ):
     from ..auth.session_manager import get_user_sessions
+
     sessions = await get_user_sessions(str(user_id))
     return [SessionResponse(**s) for s in sessions]

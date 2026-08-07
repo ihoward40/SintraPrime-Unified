@@ -12,6 +12,7 @@ This suite verifies:
 - deterministic non-HTTP inventory
 - fail-closed behavior
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -218,9 +219,18 @@ class TestAuditEnvelope:
             )
 
         required = {
-            "schema_version", "event_id", "request_id", "correlation_id",
-            "causation_id", "occurred_at", "actor_id", "actor_type",
-            "tenant_id", "action", "source_transport", "outcome",
+            "schema_version",
+            "event_id",
+            "request_id",
+            "correlation_id",
+            "causation_id",
+            "occurred_at",
+            "actor_id",
+            "actor_type",
+            "tenant_id",
+            "action",
+            "source_transport",
+            "outcome",
             "integrity_hash",
         }
         event_dict = event.as_dict()
@@ -319,7 +329,9 @@ class TestSecretRedaction:
 
 
 class TestWebSocketAuth:
-    def _make_token(self, role: str = Role.VIEWER.value, permissions: list[str] | None = None) -> str:
+    def _make_token(
+        self, role: str = Role.VIEWER.value, permissions: list[str] | None = None
+    ) -> str:
         if permissions is None:
             permissions = [Permission.CLIENT_READ.value]
         return create_access_token(
@@ -422,6 +434,7 @@ class TestWebSocketTenantIsolation:
         with client.websocket_connect(f"/api/v1/admin/ws?token={token}") as ws:
             # The connection should be registered under the authenticated tenant
             from portal.websocket.connection_manager import ws_manager
+
             # The connection is registered during the lifecycle
             ws.receive_json()  # consume first message
 
@@ -460,18 +473,16 @@ def collect_websocket_routes(app: FastAPI | None = None) -> list[dict[str, str]]
         if "websocket" not in text.lower():
             continue
         module = f"portal.{path.relative_to(root).with_suffix('').as_posix().replace('/', '.')}"
-        prefix_match = re.search(
-            r"APIRouter\([^\)]*prefix\s*=\s*['\"]([^'\"]+)['\"]", text
-        )
+        prefix_match = re.search(r"APIRouter\([^\)]*prefix\s*=\s*['\"]([^'\"]+)['\"]", text)
         prefix = prefix_match.group(1) if prefix_match else ""
-        for match in re.finditer(
-            r"@(?:router|app)\.websocket\(\s*['\"]([^'\"]+)['\"]\s*\)", text
-        ):
-            routes.append({
-                "path": f"{prefix}{match.group(1)}",
-                "module": module,
-                "name": path.stem,
-            })
+        for match in re.finditer(r"@(?:router|app)\.websocket\(\s*['\"]([^'\"]+)['\"]\s*\)", text):
+            routes.append(
+                {
+                    "path": f"{prefix}{match.group(1)}",
+                    "module": module,
+                    "name": path.stem,
+                }
+            )
     return sorted(
         {item["path"]: item for item in routes}.values(),
         key=lambda item: item["path"],
@@ -498,29 +509,39 @@ def collect_non_http_entrypoints(root: Path | None = None) -> dict[str, list[dic
         text = path.read_text(encoding="utf-8", errors="ignore")
         rel = str(path.relative_to(root))
         if re.search(r"\bBackgroundTasks\b|\.add_task\(", text):
-            results["background_tasks"].append({
-                "path": rel,
-                "classification": "ISOLATED NON-PRODUCTION",
-            })
-        if re.search(r"\b(APScheduler|BackgroundScheduler|add_job\(|schedule\()\b|cron", text, re.IGNORECASE):
-            results["scheduler_jobs"].append({
-                "path": rel,
-                "classification": "ISOLATED NON-PRODUCTION",
-            })
+            results["background_tasks"].append(
+                {
+                    "path": rel,
+                    "classification": "ISOLATED NON-PRODUCTION",
+                }
+            )
+        if re.search(
+            r"\b(APScheduler|BackgroundScheduler|add_job\(|schedule\()\b|cron", text, re.IGNORECASE
+        ):
+            results["scheduler_jobs"].append(
+                {
+                    "path": rel,
+                    "classification": "ISOLATED NON-PRODUCTION",
+                }
+            )
         if rel.startswith("scripts/") or rel.startswith("scripts\\"):
-            results["cli_admin_scripts"].append({
-                "path": rel,
-                "classification": "OUT OF SUPPORTED SCOPE",
-            })
+            results["cli_admin_scripts"].append(
+                {
+                    "path": rel,
+                    "classification": "OUT OF SUPPORTED SCOPE",
+                }
+            )
         if re.search(
             r"\b(subprocess\.(run|Popen)|requests\.(get|post|put|patch|delete)|"
             r"httpx\.(get|post|put|patch|delete)|urllib\.request)\b",
             text,
         ):
-            results["service_to_service_invocations"].append({
-                "path": rel,
-                "classification": "OUT OF SUPPORTED SCOPE",
-            })
+            results["service_to_service_invocations"].append(
+                {
+                    "path": rel,
+                    "classification": "OUT OF SUPPORTED SCOPE",
+                }
+            )
     return results
 
 

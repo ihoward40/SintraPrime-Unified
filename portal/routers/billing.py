@@ -39,6 +39,7 @@ router = APIRouter()
 
 # ── Time Entries ──────────────────────────────────────────────────────────────
 
+
 @router.post("/time-entries", response_model=TimeEntryResponse, status_code=201)
 async def create_time_entry(
     body: TimeEntryCreate,
@@ -149,12 +150,13 @@ async def list_time_entries(
     if is_billed is not None:
         stmt = stmt.where(TimeEntry.is_billed == is_billed)
 
-    stmt = stmt.offset((page-1)*page_size).limit(page_size).order_by(TimeEntry.work_date.desc())
+    stmt = stmt.offset((page - 1) * page_size).limit(page_size).order_by(TimeEntry.work_date.desc())
     result = await db.execute(stmt)
     return [TimeEntryResponse.model_validate(e) for e in result.scalars().all()]
 
 
 # ── Expenses ──────────────────────────────────────────────────────────────────
+
 
 @router.post("/expenses", response_model=ExpenseResponse, status_code=201)
 async def create_expense(
@@ -174,6 +176,7 @@ async def create_expense(
 
 
 # ── Invoices ──────────────────────────────────────────────────────────────────
+
 
 @router.post("/invoices", response_model=InvoiceResponse, status_code=201)
 async def create_invoice(
@@ -221,10 +224,15 @@ async def create_invoice(
     await db.commit()
     await db.refresh(invoice)
 
-    await audit(db, action="invoice_create", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id,
-                resource_type="invoice", resource_id=str(invoice.id),
-                resource_name=invoice.invoice_number)
+    await audit(
+        db,
+        action="invoice_create",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="invoice",
+        resource_id=str(invoice.id),
+        resource_name=invoice.invoice_number,
+    )
     return InvoiceResponse.model_validate(invoice)
 
 
@@ -255,6 +263,7 @@ async def list_invoices(
     # CLIENT: only their invoices
     if current_user.is_client():
         from ..models.client import Client
+
         cl_result = await db.execute(
             select(Client.id).where(Client.portal_user_id == current_user.user_id)
         )
@@ -269,7 +278,9 @@ async def list_invoices(
     )
     total_outstanding = float(outstanding_q.scalar() or 0)
 
-    stmt = stmt.offset((page-1)*page_size).limit(page_size).order_by(Invoice.invoice_date.desc())
+    stmt = (
+        stmt.offset((page - 1) * page_size).limit(page_size).order_by(Invoice.invoice_date.desc())
+    )
     result = await db.execute(stmt)
     invoices = result.scalars().all()
 
@@ -333,9 +344,14 @@ async def send_invoice(
         actor_id=current_user.user_id,
         related_client_id=str(inv.client_id),
     )
-    await audit(db, action="invoice_send", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id,
-                resource_type="invoice", resource_id=str(inv.id))
+    await audit(
+        db,
+        action="invoice_send",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="invoice",
+        resource_id=str(inv.id),
+    )
     return InvoiceResponse.model_validate(inv)
 
 
@@ -359,6 +375,7 @@ async def download_invoice_pdf(
     import io
 
     from fastapi.responses import StreamingResponse
+
     pdf_bytes = await generate_invoice_pdf(inv)
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
@@ -368,6 +385,7 @@ async def download_invoice_pdf(
 
 
 # ── Payments ──────────────────────────────────────────────────────────────────
+
 
 @router.post("/payments", response_model=PaymentResponse, status_code=201)
 async def record_payment(
@@ -406,14 +424,20 @@ async def record_payment(
     db.add(payment)
     await db.commit()
     await db.refresh(payment)
-    await audit(db, action="payment_received", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id,
-                resource_type="payment", resource_id=str(payment.id),
-                details={"amount": body.amount})
+    await audit(
+        db,
+        action="payment_received",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="payment",
+        resource_id=str(payment.id),
+        details={"amount": body.amount},
+    )
     return PaymentResponse.model_validate(payment)
 
 
 # ── Trust Accounting ──────────────────────────────────────────────────────────
+
 
 @router.post("/trust-transactions", response_model=TrustTransactionResponse, status_code=201)
 async def record_trust_transaction(
@@ -445,9 +469,17 @@ async def record_trust_transaction(
     db.add(tx)
     await db.commit()
     await db.refresh(tx)
-    await audit(db, action="trust_transaction", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id,
-                details={"type": body.transaction_type, "amount": body.amount, "balance_after": new_balance})
+    await audit(
+        db,
+        action="trust_transaction",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        details={
+            "type": body.transaction_type,
+            "amount": body.amount,
+            "balance_after": new_balance,
+        },
+    )
     return TrustTransactionResponse.model_validate(tx)
 
 
@@ -474,9 +506,12 @@ async def get_trust_ledger(
 # ── Test-compatibility aliases ──────────────────────────────────────────────
 list_unbilled_time_entries = list_time_entries
 
+
 async def get_invoice_or_404(invoice_id, db=None):
     """Test-compatibility stub: fetch invoice by ID or raise 404."""
     from fastapi import HTTPException
+
     raise HTTPException(status_code=404, detail="Invoice not found")
+
 
 list_client_invoices = list_invoices

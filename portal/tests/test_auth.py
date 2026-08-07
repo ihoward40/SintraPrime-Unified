@@ -17,6 +17,7 @@ from httpx import AsyncClient
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def valid_credentials():
     return {"email": "attorney@testfirm.com", "password": "SecureP@ss1!"}
@@ -28,6 +29,7 @@ def invalid_credentials():
 
 
 # ── Login ─────────────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_login_success(async_client: AsyncClient, valid_credentials, mock_user):
@@ -117,11 +119,16 @@ async def test_login_rate_limit(async_client: AsyncClient, invalid_credentials):
 
 # ── Token refresh ─────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_refresh_token_success(async_client: AsyncClient, valid_refresh_token):
     """Valid refresh token should return new access token."""
     _resp = MagicMock(status_code=200)
-    _resp.json.return_value = {"access_token": "new.access.token", "token_type": "bearer", "expires_in": 900}
+    _resp.json.return_value = {
+        "access_token": "new.access.token",
+        "token_type": "bearer",
+        "expires_in": 900,
+    }
     async_client.post.return_value = _resp
     with patch("portal.routers.auth.verify_refresh_token") as mock_verify:
         mock_verify.return_value = {"sub": str(uuid.uuid4()), "tenant_id": str(uuid.uuid4())}
@@ -158,6 +165,7 @@ async def test_refresh_token_missing(async_client: AsyncClient):
 
 # ── Logout ────────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_logout_success(async_client: AsyncClient, auth_headers):
     """Logout should invalidate the session."""
@@ -180,6 +188,7 @@ async def test_logout_without_auth(async_client: AsyncClient):
 
 
 # ── MFA ───────────────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_mfa_enable_success(async_client: AsyncClient, auth_headers):
@@ -241,6 +250,7 @@ async def test_mfa_backup_code_login(async_client: AsyncClient):
 
 # ── JWT validation ────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_invalid_jwt_returns_401(async_client: AsyncClient):
     """Tampered JWT should be rejected."""
@@ -284,6 +294,7 @@ async def test_malformed_authorization_header(async_client: AsyncClient):
 
 # ── Account lockout ───────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_account_locked_after_failures(async_client: AsyncClient, mock_locked_user):
     """Locked account should return 423 with lockout duration."""
@@ -297,6 +308,7 @@ async def test_account_locked_after_failures(async_client: AsyncClient, mock_loc
 
 
 # ── Fixtures (would be in conftest.py in real project) ───────────────────────
+
 
 @pytest.fixture
 def mock_user():
@@ -314,6 +326,7 @@ def mock_user():
 @pytest.fixture
 def mock_locked_user(mock_user):
     from datetime import datetime, timedelta
+
     mock_user.locked_until = datetime.now(UTC) + timedelta(minutes=15)
     mock_user.failed_login_attempts = 5
     return mock_user
@@ -330,6 +343,7 @@ def expired_jwt():
     from datetime import datetime, timedelta
 
     import jwt as pyjwt
+
     payload = {
         "sub": str(uuid.uuid4()),
         "exp": datetime.now(UTC) - timedelta(hours=1),

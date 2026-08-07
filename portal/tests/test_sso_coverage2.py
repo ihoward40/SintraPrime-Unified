@@ -5,6 +5,7 @@ Additional SSO coverage tests targeting the 4 low-coverage modules:
 - sso/sso.py (72%)
 - sso/session_manager.py (77%)
 """
+
 import json
 import uuid
 from datetime import datetime, timedelta
@@ -14,8 +15,10 @@ import pytest
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
+
 def _make_session_data(**kwargs):
     from portal.sso.session_models import SessionData
+
     defaults = {
         "session_id": str(uuid.uuid4()),
         "user_id": str(uuid.uuid4()),
@@ -31,6 +34,7 @@ def _make_session_data(**kwargs):
 
 def _make_refresh_token(**kwargs):
     from portal.sso.session_models import RefreshToken
+
     defaults = {
         "token_id": str(uuid.uuid4()),
         "session_id": str(uuid.uuid4()),
@@ -44,6 +48,7 @@ def _make_refresh_token(**kwargs):
 
 def _make_session_config():
     from portal.sso.session_config import SessionConfig
+
     return SessionConfig(
         jwt_secret_key="test-secret-key-at-least-32-chars-long!",
         jwt_algorithm="HS256",
@@ -55,11 +60,13 @@ def _make_session_config():
 
 # ─── RedisSessionStore ────────────────────────────────────────────────────────
 
+
 class TestRedisSessionStoreCoverage:
     """Additional coverage for portal.sso.session_store.RedisSessionStore."""
 
     def _make_store(self):
         from portal.sso.session_store import RedisSessionStore
+
         mock_redis = AsyncMock()
         store = RedisSessionStore.__new__(RedisSessionStore)
         store.redis = mock_redis
@@ -202,11 +209,13 @@ class TestRedisSessionStoreCoverage:
 
 # ─── InMemorySessionStore ─────────────────────────────────────────────────────
 
+
 class TestInMemorySessionStoreCoverage:
     """Coverage for portal.sso.session_store.InMemorySessionStore."""
 
     def _make_store(self):
         from portal.sso.session_store import InMemorySessionStore
+
         return InMemorySessionStore()
 
     @pytest.mark.asyncio
@@ -221,9 +230,7 @@ class TestInMemorySessionStoreCoverage:
     @pytest.mark.asyncio
     async def test_get_session_returns_none_for_expired(self):
         store = self._make_store()
-        session = _make_session_data(
-            expires_at=datetime.utcnow() - timedelta(hours=1)
-        )
+        session = _make_session_data(expires_at=datetime.utcnow() - timedelta(hours=1))
         # Force-insert with a past expiry timestamp
         store._sessions[session.session_id] = (session, datetime.utcnow().timestamp() - 3600)
         result = await store.get_session(session.session_id)
@@ -261,9 +268,7 @@ class TestInMemorySessionStoreCoverage:
     @pytest.mark.asyncio
     async def test_get_refresh_token_returns_none_for_expired(self):
         store = self._make_store()
-        token = _make_refresh_token(
-            expires_at=datetime.utcnow() - timedelta(days=1)
-        )
+        token = _make_refresh_token(expires_at=datetime.utcnow() - timedelta(days=1))
         # Force-insert with a past expiry timestamp
         store._refresh_tokens[token.token_id] = (token, datetime.utcnow().timestamp() - 86400)
         result = await store.get_refresh_token(token.token_id)
@@ -317,11 +322,13 @@ class TestInMemorySessionStoreCoverage:
 
 # ─── SessionManager additional coverage ──────────────────────────────────────
 
+
 class TestSessionManagerCoverage:
     """Additional coverage for portal.sso.session_manager.SessionManager."""
 
     def _make_manager(self):
         from portal.sso.session_manager import SessionManager
+
         config = _make_session_config()
         return SessionManager(config=config)
 
@@ -396,6 +403,7 @@ class TestSessionManagerCoverage:
 
 # ─── SSO Router additional coverage ──────────────────────────────────────────
 
+
 class TestSSORouterCoverage:
     """Additional coverage for portal.sso.sso.py endpoints."""
 
@@ -403,6 +411,7 @@ class TestSSORouterCoverage:
         from fastapi import FastAPI
 
         from portal.sso import sso
+
         app = FastAPI()
         app.include_router(sso.router, prefix="/sso")
         return app
@@ -410,6 +419,7 @@ class TestSSORouterCoverage:
     def test_sso_callback_with_missing_code_returns_422(self):
         app = self._make_sso_app()
         from fastapi.testclient import TestClient
+
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.get("/sso/callback")
         assert resp.status_code in (400, 401, 422, 500)
@@ -417,6 +427,7 @@ class TestSSORouterCoverage:
     def test_sso_refresh_without_cookie_returns_error(self):
         app = self._make_sso_app()
         from fastapi.testclient import TestClient
+
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.get("/sso/refresh")
         assert resp.status_code in (400, 401, 422, 500)
@@ -424,6 +435,7 @@ class TestSSORouterCoverage:
     def test_sso_login_okta_redirect_reachable(self):
         app = self._make_sso_app()
         from fastapi.testclient import TestClient
+
         with TestClient(app, raise_server_exceptions=False, follow_redirects=False) as client:
             resp = client.get("/sso/login/okta")
         assert resp.status_code in (200, 302, 307, 404, 422, 500)
@@ -431,6 +443,7 @@ class TestSSORouterCoverage:
     def test_sso_login_azure_redirect_reachable(self):
         app = self._make_sso_app()
         from fastapi.testclient import TestClient
+
         with TestClient(app, raise_server_exceptions=False, follow_redirects=False) as client:
             resp = client.get("/sso/login/azure")
         assert resp.status_code in (200, 302, 307, 404, 422, 500)
@@ -438,6 +451,7 @@ class TestSSORouterCoverage:
     def test_sso_login_google_redirect_reachable(self):
         app = self._make_sso_app()
         from fastapi.testclient import TestClient
+
         with TestClient(app, raise_server_exceptions=False, follow_redirects=False) as client:
             resp = client.get("/sso/login/google")
         assert resp.status_code in (200, 302, 307, 404, 422, 500)
@@ -445,6 +459,7 @@ class TestSSORouterCoverage:
     def test_sso_logout_without_session_returns_error(self):
         app = self._make_sso_app()
         from fastapi.testclient import TestClient
+
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.post("/sso/logout")
         assert resp.status_code in (200, 400, 401, 422, 500)
@@ -452,12 +467,14 @@ class TestSSORouterCoverage:
     def test_sso_me_without_auth_returns_error(self):
         app = self._make_sso_app()
         from fastapi.testclient import TestClient
+
         with TestClient(app, raise_server_exceptions=False) as client:
             resp = client.get("/sso/me")
         assert resp.status_code in (400, 401, 403, 422, 500)
 
 
 # ─── RedisSessionStore connected-path coverage ───────────────────────────────
+
 
 class TestRedisSessionStoreConnectedPaths:
     """Cover the store/retrieve/delete/exists/refresh_ttl/get_active_count
@@ -467,6 +484,7 @@ class TestRedisSessionStoreConnectedPaths:
         from unittest.mock import AsyncMock
 
         from portal.sso.redis_session import RedisSessionStore
+
         store = RedisSessionStore.__new__(RedisSessionStore)
         store.redis_url = "redis://localhost:6379/0"
         store.prefix = "sso:session:"
@@ -505,6 +523,7 @@ class TestRedisSessionStoreConnectedPaths:
     @pytest.mark.asyncio
     async def test_retrieve_returns_dict_when_found(self):
         import json
+
         store, mock_client = self._make_store()
         mock_client.get.return_value = json.dumps({"user_id": "u1", "email": "u@x.com"}).encode()
         result = await store.retrieve("session-1")
@@ -582,6 +601,7 @@ class TestRedisSessionStoreConnectedPaths:
 
 # ─── SSO OAuth callback and refresh endpoint coverage ────────────────────────
 
+
 class TestSSOCallbackAndRefreshEndpoints:
     """Cover the OAuth callback and token refresh endpoints in sso/sso.py."""
 
@@ -601,7 +621,9 @@ class TestSSOCallbackAndRefreshEndpoints:
         mock_session_mgr.create_session = AsyncMock(return_value="test-session-id")
 
         mock_token_mgr = MagicMock(spec=TokenRefreshManager)
-        mock_token_mgr.start_refresh_loop = AsyncMock(return_value={"access_token": "new-token", "token_type": "bearer"})
+        mock_token_mgr.start_refresh_loop = AsyncMock(
+            return_value={"access_token": "new-token", "token_type": "bearer"}
+        )
 
         app.dependency_overrides[SessionMiddlewareManager] = lambda: mock_session_mgr
         app.dependency_overrides[TokenRefreshManager] = lambda: mock_token_mgr
@@ -617,16 +639,22 @@ class TestSSOCallbackAndRefreshEndpoints:
 
     def test_callback_with_bad_provider_param_returns_400_or_401(self):
         client, _, _ = self._make_app()
-        with patch("portal.sso.sso.okta"),              patch("portal.sso.sso.azure"),              patch("portal.sso.sso.google"):
+        with (
+            patch("portal.sso.sso.okta"),
+            patch("portal.sso.sso.azure"),
+            patch("portal.sso.sso.google"),
+        ):
             resp = client.get("/sso/callback?code=abc&state=xyz&provider=unknown_idp")
         assert resp.status_code in (400, 401)
 
     def test_callback_with_valid_okta_exchange_returns_redirect(self):
         from unittest.mock import AsyncMock
+
         client, mock_session_mgr, _ = self._make_app()
         mock_session_mgr.create_session = AsyncMock(return_value="sess-123")
         with patch("portal.sso.sso.okta") as mock_okta:
             mock_okta.exchange_code = AsyncMock(return_value={"sub": "u1", "email": "u@x.com"})
-            resp = client.get("/sso/callback?code=abc&state=xyz&provider=okta",
-                              follow_redirects=False)
+            resp = client.get(
+                "/sso/callback?code=abc&state=xyz&provider=okta", follow_redirects=False
+            )
         assert resp.status_code in (302, 401)

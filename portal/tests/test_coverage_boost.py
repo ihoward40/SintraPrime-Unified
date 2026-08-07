@@ -11,6 +11,7 @@ Covers zero-coverage modules:
   - portal.sso.dependencies
   - portal.sso.sso (import smoke test)
 """
+
 from __future__ import annotations
 
 import uuid
@@ -21,18 +22,26 @@ import pytest
 
 # ─── portal.schemas.client ────────────────────────────────────────────────────
 
+
 class TestClientSchemas:
     """Unit tests for portal.schemas.client Pydantic models."""
 
     def test_client_base_individual_defaults(self):
         from portal.schemas.client import ClientBase
-        c = ClientBase(client_type="individual", first_name="Alice", last_name="Smith", email="alice@example.com")
+
+        c = ClientBase(
+            client_type="individual",
+            first_name="Alice",
+            last_name="Smith",
+            email="alice@example.com",
+        )
         assert c.client_type == "individual"
         assert c.first_name == "Alice"
         assert c.country == "US"
 
     def test_client_base_organization_type(self):
         from portal.schemas.client import ClientBase
+
         c = ClientBase(client_type="organization", company_name="Acme Corp")
         assert c.client_type == "organization"
         assert c.company_name == "Acme Corp"
@@ -41,11 +50,13 @@ class TestClientSchemas:
         from pydantic import ValidationError
 
         from portal.schemas.client import ClientBase
+
         with pytest.raises(ValidationError):
             ClientBase(client_type="invalid_type")
 
     def test_client_create_with_attorney(self):
         from portal.schemas.client import ClientCreate
+
         attorney_id = uuid.uuid4()
         c = ClientCreate(
             client_type="individual",
@@ -56,12 +67,14 @@ class TestClientSchemas:
 
     def test_client_update_partial(self):
         from portal.schemas.client import ClientUpdate
+
         u = ClientUpdate(first_name="Updated", email="new@example.com")
         assert u.first_name == "Updated"
         assert u.last_name is None
 
     def test_client_response_from_attributes(self):
         from portal.schemas.client import ClientResponse
+
         mock_obj = MagicMock()
         mock_obj.id = uuid.uuid4()
         mock_obj.tenant_id = uuid.uuid4()
@@ -94,6 +107,7 @@ class TestClientSchemas:
 
     def test_client_list_response_structure(self):
         from portal.schemas.client import ClientListResponse
+
         resp = ClientListResponse(items=[], total=0, page=1, page_size=20)
         assert resp.total == 0
         assert resp.page == 1
@@ -101,11 +115,13 @@ class TestClientSchemas:
 
 # ─── portal.schemas.user ─────────────────────────────────────────────────────
 
+
 class TestUserSchemas:
     """Unit tests for portal.schemas.user Pydantic models."""
 
     def test_tenant_base_valid(self):
         from portal.schemas.user import TenantBase
+
         t = TenantBase(name="Acme Law", slug="acme-law")
         assert t.name == "Acme Law"
         assert t.slug == "acme-law"
@@ -115,22 +131,26 @@ class TestUserSchemas:
         from pydantic import ValidationError
 
         from portal.schemas.user import TenantBase
+
         with pytest.raises(ValidationError):
             TenantBase(name="Acme", slug="INVALID SLUG!")
 
     def test_tenant_create_inherits_base(self):
         from portal.schemas.user import TenantCreate
+
         t = TenantCreate(name="Test Firm", slug="test-firm")
         assert t.slug == "test-firm"
 
     def test_tenant_update_partial(self):
         from portal.schemas.user import TenantUpdate
+
         u = TenantUpdate(name="Updated Firm")
         assert u.name == "Updated Firm"
         assert u.domain is None
 
     def test_tenant_response_from_attributes(self):
         from portal.schemas.user import TenantResponse
+
         mock_obj = MagicMock()
         mock_obj.id = uuid.uuid4()
         mock_obj.name = "Test Firm"
@@ -152,6 +172,7 @@ class TestUserSchemas:
 
     def test_user_create_valid(self):
         from portal.schemas.user import UserCreate
+
         u = UserCreate(
             email="attorney@firm.com",
             password="SecureP@ssword1!",
@@ -166,6 +187,7 @@ class TestUserSchemas:
         from pydantic import ValidationError
 
         from portal.schemas.user import UserCreate
+
         with pytest.raises((ValidationError, Exception)):
             UserCreate(
                 email="bad@firm.com",
@@ -177,12 +199,14 @@ class TestUserSchemas:
 
     def test_user_update_partial(self):
         from portal.schemas.user import UserUpdate
+
         u = UserUpdate(first_name="Updated")
         assert u.first_name == "Updated"
         assert u.last_name is None
 
     def test_user_response_from_attributes(self):
         from portal.schemas.user import UserResponse
+
         mock_obj = MagicMock()
         mock_obj.id = uuid.uuid4()
         mock_obj.tenant_id = uuid.uuid4()
@@ -205,6 +229,7 @@ class TestUserSchemas:
 
     def test_user_update_email(self):
         from portal.schemas.user import UserUpdate
+
         u = UserUpdate(first_name="Jane", last_name="Smith")
         assert u.first_name == "Jane"
         assert u.last_name == "Smith"
@@ -212,11 +237,13 @@ class TestUserSchemas:
 
 # ─── portal.schemas.message ──────────────────────────────────────────────────
 
+
 class TestMessageSchemas:
     """Unit tests for portal.schemas.message Pydantic models."""
 
     def test_thread_create_valid(self):
         from portal.schemas.message import ThreadCreate
+
         t = ThreadCreate(
             subject="Case Discussion",
             category="case_discussion",
@@ -229,6 +256,7 @@ class TestMessageSchemas:
         from pydantic import ValidationError
 
         from portal.schemas.message import ThreadCreate
+
         with pytest.raises(ValidationError):
             ThreadCreate(
                 subject="Test",
@@ -240,6 +268,7 @@ class TestMessageSchemas:
         from pydantic import ValidationError
 
         from portal.schemas.message import ThreadCreate
+
         with pytest.raises(ValidationError):
             ThreadCreate(
                 subject="Test",
@@ -249,6 +278,7 @@ class TestMessageSchemas:
 
     def test_thread_response_from_attributes(self):
         from portal.schemas.message import ThreadResponse
+
         mock_obj = MagicMock()
         mock_obj.id = uuid.uuid4()
         mock_obj.tenant_id = uuid.uuid4()
@@ -269,6 +299,7 @@ class TestMessageSchemas:
 
     def test_message_send_valid(self):
         from portal.schemas.message import MessageSend
+
         m = MessageSend(content="Hello, this is a test message.")
         assert m.content == "Hello, this is a test message."
 
@@ -276,16 +307,19 @@ class TestMessageSchemas:
         from pydantic import ValidationError
 
         from portal.schemas.message import MessageSend
+
         with pytest.raises(ValidationError):
             MessageSend(content="")
 
     def test_read_receipt_update_valid(self):
         from portal.schemas.message import ReadReceiptUpdate
+
         r = ReadReceiptUpdate(message_ids=[uuid.uuid4(), uuid.uuid4()])
         assert len(r.message_ids) == 2
 
 
 # ─── portal.services.search_service ──────────────────────────────────────────
+
 
 class TestSearchService:
     """Unit tests for portal.services.search_service."""
@@ -293,6 +327,7 @@ class TestSearchService:
     @pytest.mark.asyncio
     async def test_search_returns_dict_with_three_keys(self):
         from portal.services.search_service import full_text_search as search
+
         mock_db = AsyncMock()
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = []
@@ -309,6 +344,7 @@ class TestSearchService:
     @pytest.mark.asyncio
     async def test_search_filters_by_resource_type(self):
         from portal.services.search_service import full_text_search as search
+
         mock_db = AsyncMock()
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = []
@@ -326,6 +362,7 @@ class TestSearchService:
     @pytest.mark.asyncio
     async def test_search_returns_empty_lists_when_no_results(self):
         from portal.services.search_service import full_text_search as search
+
         mock_db = AsyncMock()
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = []
@@ -342,6 +379,7 @@ class TestSearchService:
     @pytest.mark.asyncio
     async def test_search_maps_document_fields(self):
         from portal.services.search_service import full_text_search as search
+
         mock_doc = MagicMock()
         mock_doc.id = uuid.uuid4()
         mock_doc.name = "Contract.pdf"
@@ -362,6 +400,7 @@ class TestSearchService:
     @pytest.mark.asyncio
     async def test_search_respects_limit(self):
         from portal.services.search_service import full_text_search as search
+
         mock_db = AsyncMock()
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = []
@@ -378,12 +417,14 @@ class TestSearchService:
 
 # ─── portal.websocket.notification_pusher ────────────────────────────────────
 
+
 class TestNotificationPusher:
     """Unit tests for portal.websocket.notification_pusher."""
 
     @pytest.mark.asyncio
     async def test_push_notification_calls_send_to_user(self):
         from portal.websocket.notification_pusher import push_notification
+
         with patch("portal.websocket.notification_pusher.ws_manager") as mock_mgr:
             mock_mgr.send_to_user = AsyncMock()
             await push_notification(
@@ -403,6 +444,7 @@ class TestNotificationPusher:
     @pytest.mark.asyncio
     async def test_push_notification_includes_resource_fields(self):
         from portal.websocket.notification_pusher import push_notification
+
         with patch("portal.websocket.notification_pusher.ws_manager") as mock_mgr:
             mock_mgr.send_to_user = AsyncMock()
             resource_id = str(uuid.uuid4())
@@ -420,6 +462,7 @@ class TestNotificationPusher:
     @pytest.mark.asyncio
     async def test_push_to_users_calls_send_for_each_user(self):
         from portal.websocket.notification_pusher import push_to_users
+
         with patch("portal.websocket.notification_pusher.ws_manager") as mock_mgr:
             mock_mgr.send_to_user = AsyncMock()
             await push_to_users(
@@ -432,6 +475,7 @@ class TestNotificationPusher:
     @pytest.mark.asyncio
     async def test_push_to_users_empty_list_does_not_raise(self):
         from portal.websocket.notification_pusher import push_to_users
+
         with patch("portal.websocket.notification_pusher.ws_manager") as mock_mgr:
             mock_mgr.send_to_user = AsyncMock()
             await push_to_users(
@@ -444,6 +488,7 @@ class TestNotificationPusher:
     @pytest.mark.asyncio
     async def test_push_case_update_broadcasts_to_tenant(self):
         from portal.websocket.notification_pusher import push_case_update
+
         with patch("portal.websocket.notification_pusher.ws_manager") as mock_mgr:
             mock_mgr.broadcast_to_tenant = AsyncMock()
             tenant_id = str(uuid.uuid4())
@@ -460,6 +505,7 @@ class TestNotificationPusher:
     @pytest.mark.asyncio
     async def test_push_document_event_sends_to_user(self):
         from portal.websocket.notification_pusher import push_document_event
+
         with patch("portal.websocket.notification_pusher.ws_manager") as mock_mgr:
             mock_mgr.send_to_user = AsyncMock()
             doc_id = str(uuid.uuid4())
@@ -473,22 +519,26 @@ class TestNotificationPusher:
 
 # ─── portal.sso.schemas ──────────────────────────────────────────────────────
 
+
 class TestSSOSchemas:
     """Unit tests for portal.sso.schemas Pydantic models."""
 
     def test_authorize_request_valid(self):
         from portal.sso.schemas import AuthorizeRequest
+
         req = AuthorizeRequest(provider="okta")
         assert req.provider == "okta"
         assert req.redirect_after_auth is None
 
     def test_authorize_request_with_redirect(self):
         from portal.sso.schemas import AuthorizeRequest
+
         req = AuthorizeRequest(provider="azure", redirect_after_auth="/dashboard")
         assert req.redirect_after_auth == "/dashboard"
 
     def test_authorize_response_valid(self):
         from portal.sso.schemas import AuthorizeResponse
+
         resp = AuthorizeResponse(
             auth_url="https://login.microsoftonline.com/authorize",
             state="abc123",
@@ -502,11 +552,13 @@ class TestSSOSchemas:
         from pydantic import ValidationError
 
         from portal.sso.schemas import AuthorizeRequest
+
         with pytest.raises(ValidationError):
             AuthorizeRequest()
 
 
 # ─── portal.sso.dependencies ─────────────────────────────────────────────────
+
 
 class TestSSODependencies:
     """Unit tests for portal.sso.dependencies."""
@@ -516,6 +568,7 @@ class TestSSODependencies:
         from fastapi import HTTPException
 
         from portal.sso.dependencies import get_session_manager
+
         mock_request = MagicMock()
         del mock_request.app.state.session_manager  # ensure attribute missing
         mock_request.app.state = MagicMock(spec=[])  # spec=[] means no attributes
@@ -526,6 +579,7 @@ class TestSSODependencies:
     @pytest.mark.asyncio
     async def test_get_session_manager_returns_manager_when_initialized(self):
         from portal.sso.dependencies import get_session_manager
+
         mock_session_manager = MagicMock()
         mock_request = MagicMock()
         mock_request.app.state.session_manager = mock_session_manager
@@ -535,44 +589,54 @@ class TestSSODependencies:
 
 # ─── portal.sso.sso (smoke test) ─────────────────────────────────────────────
 
+
 class TestSSOModule:
     """Smoke tests for portal.sso.sso router module."""
 
     def test_sso_module_importable(self):
         """Ensure the SSO router module can be imported without errors."""
         import portal.sso.sso as sso_mod
+
         assert sso_mod is not None
 
     def test_sso_router_exists(self):
         """Ensure the SSO router is defined."""
         from portal.sso.sso import router
+
         assert router is not None
 
     def test_sso_router_has_routes(self):
         """Ensure the SSO router has at least one route registered."""
         from portal.sso.sso import router
+
         assert len(router.routes) > 0
 
 
 # ─── portal.services.document_processor (smoke tests) ────────────────────────
+
 
 class TestDocumentProcessor:
     """Smoke tests for portal.services.document_processor."""
 
     def test_document_processor_importable(self):
         import portal.services.document_processor as dp
+
         assert dp is not None
 
     def test_document_processor_has_process_function(self):
         from portal.services import document_processor as dp
+
         # Check that key functions/classes are defined
-        assert hasattr(dp, "process_document") or hasattr(dp, "DocumentProcessor") or len(dir(dp)) > 5
+        assert (
+            hasattr(dp, "process_document") or hasattr(dp, "DocumentProcessor") or len(dir(dp)) > 5
+        )
 
     @pytest.mark.asyncio
     async def test_extract_text_from_pdf_mock(self):
         """Smoke test: extract_text_from_pdf should handle mock bytes without crashing."""
         try:
             from portal.services.document_processor import extract_text_from_pdf
+
             # Pass invalid bytes — should return empty string or raise gracefully
             result = extract_text_from_pdf(b"not a real pdf")
             assert isinstance(result, str)

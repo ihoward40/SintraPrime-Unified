@@ -9,6 +9,7 @@ badge in README.md.
 Usage:
     python scripts/smoke/write_smoke_badge.py
 """
+
 from __future__ import annotations
 
 import json
@@ -21,9 +22,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 README = ROOT / "README.md"
 SUMMARY = ROOT / "artifacts" / "last_smoke_summary.json"
 
-BADGE_RE = re.compile(
-    r"\[!\[Smoke: [^\]]*\]\([^\)]*\)\]\([^\)]*\)"
-)
+BADGE_RE = re.compile(r"\[!\[Smoke: [^\]]*\]\([^\)]*\)\]\([^\)]*\)")
 
 
 def _insert_after_first_badge_block(lines: list[str], badge_line: str) -> list[str]:
@@ -47,7 +46,10 @@ class Badge:
     message: str
     color: str
 
-    def markdown(self, link: str = "https://github.com/ihoward40/SintraPrime-Unified/actions/workflows/smoke.yml") -> str:
+    def markdown(
+        self,
+        link: str = "https://github.com/ihoward40/SintraPrime-Unified/actions/workflows/smoke.yml",
+    ) -> str:
         shield = f"https://img.shields.io/badge/{self.label}-{self.message}-{self.color}?style=for-the-badge"
         return f"[![Smoke: {self.message}]({shield})]({link})"
 
@@ -61,7 +63,10 @@ def _choose_badge(summary: dict) -> Badge:
 
 def main() -> int:
     if not SUMMARY.exists():
-        print(f"ERROR: {SUMMARY} not found — run scripts/smoke/e2e_skills_smoke.py first", file=sys.stderr)
+        print(
+            f"ERROR: {SUMMARY} not found — run scripts/smoke/e2e_skills_smoke.py first",
+            file=sys.stderr,
+        )
         return 1
 
     summary = json.loads(SUMMARY.read_text(encoding="utf-8"))

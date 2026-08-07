@@ -13,6 +13,7 @@ Fails (exit 1) when:
 
 Deterministic and documented. Safe to run in CI.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -141,4 +142,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

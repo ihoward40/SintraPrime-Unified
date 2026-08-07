@@ -23,21 +23,25 @@ from typing import ClassVar
 
 class ImmutableSnapshotError(Exception):
     """Raised when attempting to modify or delete an EvidenceSnapshot."""
+
     pass
 
 
 class SnapshotNotFoundError(Exception):
     """Raised when a requested snapshot does not exist."""
+
     pass
 
 
 class SnapshotVersionConflictError(Exception):
     """Raised when version assignment detects a conflict."""
+
     pass
 
 
 class InvalidStateTransitionError(Exception):
     """Raised when an invalid status transition is attempted."""
+
     pass
 
 
@@ -51,6 +55,7 @@ class SnapshotStatus:
 
     No reverse transitions. No deletion.
     """
+
     ACTIVE = "active"
     SUPERSEDED = "superseded"
     ARCHIVED = "archived"
@@ -76,6 +81,7 @@ class SnapshotRecord:
     Using frozen=True ensures the Python object cannot be mutated after creation.
     This is the in-memory representation; the database row is also immutable.
     """
+
     snapshot_id: str
     case_id: str
     evidence_hash: str
@@ -282,5 +288,3 @@ class EvidenceSnapshotService:
     def count(self) -> int:
         """Total number of snapshots in the store."""
         return len(self._store)
-
-

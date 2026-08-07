@@ -4,6 +4,7 @@ Wires Okta, Azure AD, and Google Workspace OIDC providers.
 
 Boot-safe: must never break portal import/startup smoke checks.
 """
+
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 

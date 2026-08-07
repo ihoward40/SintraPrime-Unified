@@ -193,7 +193,10 @@ class TestDocumentExportEndpoint:
             _remove_override(client.app)
 
         assert response.status_code == 403
-        assert "DOC_READ" in response.json()["detail"] or "Missing permissions" in response.json()["detail"]
+        assert (
+            "DOC_READ" in response.json()["detail"]
+            or "Missing permissions" in response.json()["detail"]
+        )
 
     def test_export_packet_missing_document_returns_404(self, client, auth_headers_attorney):
         """Requesting a document that does not exist or is not accessible returns 404."""
@@ -212,7 +215,9 @@ class TestDocumentExportEndpoint:
 
         assert response.status_code == 404
 
-    def test_export_packet_cross_tenant_document_not_accessible(self, client, auth_headers_attorney):
+    def test_export_packet_cross_tenant_document_not_accessible(
+        self, client, auth_headers_attorney
+    ):
         """A document from another tenant must not be exported."""
         doc_id = str(uuid.uuid4())
         case_id = str(uuid.uuid4())

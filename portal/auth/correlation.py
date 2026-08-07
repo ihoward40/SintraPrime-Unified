@@ -200,7 +200,9 @@ def clear_context() -> None:
     _correlation_context.set(None)
 
 
-def propagate_to_child(parent: CorrelationContext, invocation_type: str = "service") -> CorrelationContext:
+def propagate_to_child(
+    parent: CorrelationContext, invocation_type: str = "service"
+) -> CorrelationContext:
     """Create a child context for nested service calls.
 
     The child gets a new request_id but preserves the correlation_id.
@@ -233,7 +235,9 @@ def create_context(
     return CorrelationContext(
         request_id=accept_inbound_identifier(inbound_request_id),
         correlation_id=accept_inbound_identifier(inbound_correlation_id),
-        causation_id=causation_id.strip() if isinstance(causation_id, str) and causation_id.strip() else None,
+        causation_id=causation_id.strip()
+        if isinstance(causation_id, str) and causation_id.strip()
+        else None,
         actor_id=actor_id,
         tenant_id=tenant_id,
         invocation_type=invocation_type,

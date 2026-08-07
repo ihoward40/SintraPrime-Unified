@@ -1,6 +1,7 @@
 """
 Authority Engine — determine controlling vs persuasive authority per jurisdiction.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -29,7 +30,9 @@ class AuthorityEngine:
     def register_source(self, source: Source) -> None:
         self._sources[source.id] = source
 
-    def controlling_authority(self, claim: Claim, target_date: datetime | None = None) -> Source | None:
+    def controlling_authority(
+        self, claim: Claim, target_date: datetime | None = None
+    ) -> Source | None:
         """
         Return the highest-ranked controlling source for a claim in its jurisdiction.
         """
@@ -54,7 +57,10 @@ class AuthorityEngine:
         sentinel = datetime.min.replace(tzinfo=UTC)
         return max(
             candidates,
-            key=lambda s: (self._specificity_score(s.jurisdiction) if s.jurisdiction else 0, s.effective_date or sentinel),
+            key=lambda s: (
+                self._specificity_score(s.jurisdiction) if s.jurisdiction else 0,
+                s.effective_date or sentinel,
+            ),
         )
 
     def find_conflicts(self, claim: Claim) -> list[dict[str, str]]:
@@ -63,7 +69,9 @@ class AuthorityEngine:
         """
         conflicts: list[dict[str, str]] = []
         sources = [e.source for e in claim.evidence]
-        primary_sources = [s for s in sources if s.classification == SourceClassification.PRIMARY_LEGAL]
+        primary_sources = [
+            s for s in sources if s.classification == SourceClassification.PRIMARY_LEGAL
+        ]
 
         for i, a in enumerate(primary_sources):
             for b in primary_sources[i + 1 :]:
@@ -80,13 +88,16 @@ class AuthorityEngine:
 
         return conflicts
 
-    def authority_summary(self, claim: Claim, target_date: datetime | None = None) -> dict[str, object]:
+    def authority_summary(
+        self, claim: Claim, target_date: datetime | None = None
+    ) -> dict[str, object]:
         controlling = self.controlling_authority(claim, target_date)
         conflicts = self.find_conflicts(claim)
         persuasive = [
             e.source.id
             for e in claim.evidence
-            if e.source.classification in (SourceClassification.SECONDARY_LEGAL, SourceClassification.SCHOLARLY)
+            if e.source.classification
+            in (SourceClassification.SECONDARY_LEGAL, SourceClassification.SCHOLARLY)
         ]
         return {
             "claim_id": claim.id,
@@ -121,4 +132,7 @@ class AuthorityEngine:
         if a.jurisdiction is None or b.jurisdiction is None:
             return False
         # Same jurisdiction at same level is a direct conflict.
-        return a.jurisdiction.name == b.jurisdiction.name and a.jurisdiction.level == b.jurisdiction.level
+        return (
+            a.jurisdiction.name == b.jurisdiction.name
+            and a.jurisdiction.level == b.jurisdiction.level
+        )

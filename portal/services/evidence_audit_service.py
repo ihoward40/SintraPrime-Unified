@@ -23,16 +23,19 @@ from typing import Literal
 
 class ImmutableAuditError(Exception):
     """Raised when attempting to modify or delete an AuditRecord."""
+
     pass
 
 
 class AuditRecordNotFoundError(Exception):
     """Raised when a requested audit record does not exist."""
+
     pass
 
 
 class AuditVerificationError(Exception):
     """Raised when packet verification fails."""
+
     pass
 
 
@@ -46,6 +49,7 @@ class AuditRecordValue:
     Using frozen=True ensures the Python object cannot be mutated after creation.
     This is the in-memory representation; the database row is also immutable.
     """
+
     audit_id: str
     snapshot_id: str
     evidence_hash: str
@@ -212,9 +216,7 @@ class AuditService:
         records = [self._store[aid] for aid in audit_ids if aid in self._store]
         return sorted(records, key=lambda r: r.created_at)
 
-    def verify_packet_against_evidence(
-        self, packet_hash: str, evidence_hash: str
-    ) -> bool:
+    def verify_packet_against_evidence(self, packet_hash: str, evidence_hash: str) -> bool:
         """Verify that a packet hash matches evidence hash. Test 4.
 
         This is the fundamental verification operation for ED-003 and ED-007:

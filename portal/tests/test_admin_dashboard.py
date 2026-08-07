@@ -13,6 +13,7 @@ def client():
     app.include_router(dashboard_router, prefix="/admin")
     return TestClient(app)
 
+
 class TestAdminDashboard:
     def test_dashboard_overview(self, client):
         """Test dashboard overview endpoint returns metrics"""
@@ -25,7 +26,9 @@ class TestAdminDashboard:
     def test_session_list(self, client):
         """Test session listing endpoint"""
         with patch("portal.services.admin_service.AdminService.get_sessions") as mock:
-            mock.return_value = [{"session_id": "s1", "user_id": "u1", "created_at": "2026-05-01T12:00:00Z"}]
+            mock.return_value = [
+                {"session_id": "s1", "user_id": "u1", "created_at": "2026-05-01T12:00:00Z"}
+            ]
             response = client.get("/admin/dashboard/sessions")
             assert response.status_code == 200
             assert len(response.json()) == 1
@@ -33,7 +36,9 @@ class TestAdminDashboard:
     def test_audit_log(self, client):
         """Test audit log retrieval"""
         with patch("portal.services.admin_service.AdminService.get_audit_log") as mock:
-            mock.return_value = [{"action": "login", "user": "test@example.com", "timestamp": "2026-05-01T11:30:00Z"}]
+            mock.return_value = [
+                {"action": "login", "user": "test@example.com", "timestamp": "2026-05-01T11:30:00Z"}
+            ]
             response = client.get("/admin/dashboard/audit")
             assert response.status_code == 200
             assert response.json()[0]["action"] == "login"

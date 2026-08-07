@@ -211,11 +211,13 @@ class InterventionController:
         Should be called BEFORE executing a reversible action.
         """
         with self._lock:
-            self._rollback_log.setdefault(task_id, []).append({
-                "action": action,
-                "undo_payload": undo_payload,
-                "recorded_at": datetime.now(timezone.utc).isoformat(),
-            })
+            self._rollback_log.setdefault(task_id, []).append(
+                {
+                    "action": action,
+                    "undo_payload": undo_payload,
+                    "recorded_at": datetime.now(timezone.utc).isoformat(),
+                }
+            )
 
     def rollback(self, task_id: str) -> bool:
         """
@@ -233,7 +235,9 @@ class InterventionController:
 
         logger.info(
             "ROLLBACK: task '%s', action='%s', payload=%s",
-            task_id, last["action"], last["undo_payload"]
+            task_id,
+            last["action"],
+            last["undo_payload"],
         )
         # In production: dispatch the undo_payload to the relevant service
         return True
@@ -280,8 +284,15 @@ class InterventionController:
             guardrails = list(self._guardrails)
 
         for rule in guardrails:
-            if rule == "read_only_mode" and action not in ("read_data", "search_database", "list_records", "get_status"):
-                if action.startswith(("send_", "update_", "delete_", "publish_", "sign_", "file_", "create_")):
+            if rule == "read_only_mode" and action not in (
+                "read_data",
+                "search_database",
+                "list_records",
+                "get_status",
+            ):
+                if action.startswith(
+                    ("send_", "update_", "delete_", "publish_", "sign_", "file_", "create_")
+                ):
                     logger.warning("Guardrail 'read_only_mode' blocked action '%s'", action)
                     return False
             if rule == "no_external_api_calls" and "external" in action:
@@ -314,7 +325,7 @@ class InterventionController:
         logger.critical(
             "🚨 EMERGENCY STOP ACTIVATED — %d agents halted. "
             "No agent actions will proceed until cleared.",
-            count
+            count,
         )
 
         if self._on_emergency_stop:
@@ -364,7 +375,7 @@ class InterventionController:
         self._watchdog_thread.start()
         logger.info(
             "Dead man's switch active: auto-pause after %.1f hours of inactivity",
-            self._dead_mans_hours
+            self._dead_mans_hours,
         )
 
     def stop_dead_mans_switch(self) -> None:

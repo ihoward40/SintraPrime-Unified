@@ -20,11 +20,7 @@ def now_iso() -> str:
 
 
 def default_store() -> Dict[str, Dict[str, Any]]:
-    return {
-        "cases": {},
-        "evidence": {},
-        "receipts": {}
-    }
+    return {"cases": {}, "evidence": {}, "receipts": {}}
 
 
 def load_store() -> Dict[str, Dict[str, Any]]:
@@ -45,12 +41,7 @@ def load_store() -> Dict[str, Dict[str, Any]]:
 
 
 def save_store() -> None:
-    payload = {
-        "cases": CASES,
-        "evidence": EVIDENCE,
-        "receipts": RECEIPTS,
-        "updated_at": now_iso()
-    }
+    payload = {"cases": CASES, "evidence": EVIDENCE, "receipts": RECEIPTS, "updated_at": now_iso()}
 
     with STORE_PATH.open("w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2)
@@ -74,7 +65,7 @@ ACTIVE_CASE_DEFAULTS = [
     "SAP / FMCSA",
     "Expungement",
     "Funding / Grants",
-    "TikTok Shop"
+    "TikTok Shop",
 ]
 
 
@@ -90,7 +81,10 @@ class CaseCreateRequest(BaseModel):
 
 class EvidenceAddRequest(BaseModel):
     case_id: str
-    evidence_type: str = Field(..., description="email, screenshot, PDF, credit report, statement, contract, notice, court record, receipt")
+    evidence_type: str = Field(
+        ...,
+        description="email, screenshot, PDF, credit report, statement, contract, notice, court record, receipt",
+    )
     title: str
     source: str
     date_found: str | None = None
@@ -147,9 +141,18 @@ async def list_cases():
         "cases": list(CASES.values()),
         "external_action": "locked",
         "approval_required_before": [
-            "send", "file", "contact", "submit", "delete",
-            "modify", "email", "call", "mail", "serve", "post"
-        ]
+            "send",
+            "file",
+            "contact",
+            "submit",
+            "delete",
+            "modify",
+            "email",
+            "call",
+            "mail",
+            "serve",
+            "post",
+        ],
     }
 
 
@@ -189,7 +192,7 @@ async def initialize_default_cases():
         "created_count": len(created),
         "created_cases": created,
         "total_cases": len(CASES),
-        "store_path": str(STORE_PATH)
+        "store_path": str(STORE_PATH),
     }
 
 
@@ -259,7 +262,7 @@ async def add_evidence_batch(request: EvidenceBatchRequest):
         "created_count": len(created),
         "evidence": created,
         "receipt": receipt,
-        "store_path": str(STORE_PATH)
+        "store_path": str(STORE_PATH),
     }
 
 
@@ -270,10 +273,7 @@ async def list_evidence(case_id: str | None = None):
     if case_id:
         evidence_items = [item for item in evidence_items if item["case_id"] == case_id]
 
-    return {
-        "count": len(evidence_items),
-        "evidence": evidence_items
-    }
+    return {"count": len(evidence_items), "evidence": evidence_items}
 
 
 @router.post("/api/recovery/receipts/create")
@@ -314,10 +314,7 @@ async def list_receipts(case_id: str | None = None):
     if case_id:
         receipt_items = [item for item in receipt_items if item["case_id"] == case_id]
 
-    return {
-        "count": len(receipt_items),
-        "receipts": receipt_items
-    }
+    return {"count": len(receipt_items), "receipts": receipt_items}
 
 
 @router.get("/api/recovery/store")
@@ -327,12 +324,9 @@ async def recovery_store():
         "case_count": len(CASES),
         "evidence_count": len(EVIDENCE),
         "receipt_count": len(RECEIPTS),
-        "data": {
-            "cases": CASES,
-            "evidence": EVIDENCE,
-            "receipts": RECEIPTS
-        }
+        "data": {"cases": CASES, "evidence": EVIDENCE, "receipts": RECEIPTS},
     }
+
 
 @router.get("/api/recovery/case-packet/{case_id}")
 async def get_case_packet(case_id: str):
@@ -340,15 +334,16 @@ async def get_case_packet(case_id: str):
         raise HTTPException(status_code=404, detail=f"case_id not found: {case_id}")
 
     case = CASES[case_id]
-    evidence_items = [
-        item for item in EVIDENCE.values()
-        if item["case_id"] == case_id
-    ]
+    evidence_items = [item for item in EVIDENCE.values() if item["case_id"] == case_id]
 
     receipt_items = [
-        item for item in RECEIPTS.values()
+        item
+        for item in RECEIPTS.values()
         if item.get("case_id") == case_id
-        or any(eid in [ev["evidence_id"] for ev in evidence_items] for eid in item.get("evidence_used", []))
+        or any(
+            eid in [ev["evidence_id"] for ev in evidence_items]
+            for eid in item.get("evidence_used", [])
+        )
     ]
 
     return {
@@ -363,20 +358,27 @@ async def get_case_packet(case_id: str):
             "mode": "evidence_intake_only",
             "external_action": "locked",
             "approval_required_before": [
-                "send", "file", "contact", "submit", "delete",
-                "modify", "email", "call", "mail", "serve", "post"
+                "send",
+                "file",
+                "contact",
+                "submit",
+                "delete",
+                "modify",
+                "email",
+                "call",
+                "mail",
+                "serve",
+                "post",
             ],
-            "evidence_rule": "Every claim must be tied to email, screenshot, PDF, credit report, statement, contract, notice, court record, or payment receipt."
+            "evidence_rule": "Every claim must be tied to email, screenshot, PDF, credit report, statement, contract, notice, court record, or payment receipt.",
         },
         "recommended_next_steps": [
             "Verify each evidence item has a source file, email link, screenshot, or record reference.",
             "Separate public-facing claims from private strategy notes.",
             "Draft only after evidence review is complete.",
-            "Do not send, file, contact, serve, mail, email, or call without explicit approval."
-        ]
+            "Do not send, file, contact, serve, mail, email, or call without explicit approval.",
+        ],
     }
-
-
 
 
 @router.get("/api/recovery/export/json")
@@ -385,21 +387,13 @@ async def export_recovery_json():
         "export_type": "HOWARD_RECOVERY_FULL_JSON_EXPORT",
         "generated_at": now_iso(),
         "store_path": str(STORE_PATH),
-        "counts": {
-            "cases": len(CASES),
-            "evidence": len(EVIDENCE),
-            "receipts": len(RECEIPTS)
-        },
-        "data": {
-            "cases": CASES,
-            "evidence": EVIDENCE,
-            "receipts": RECEIPTS
-        },
+        "counts": {"cases": len(CASES), "evidence": len(EVIDENCE), "receipts": len(RECEIPTS)},
+        "data": {"cases": CASES, "evidence": EVIDENCE, "receipts": RECEIPTS},
         "controls": {
             "mode": "evidence_intake_only",
             "external_action": "locked",
-            "approval_required": True
-        }
+            "approval_required": True,
+        },
     }
 
 
@@ -408,64 +402,72 @@ async def export_recovery_summary():
     case_summaries = []
 
     for case_id, case in CASES.items():
-        evidence_items = [
-            item for item in EVIDENCE.values()
-            if item["case_id"] == case_id
-        ]
+        evidence_items = [item for item in EVIDENCE.values() if item["case_id"] == case_id]
 
         receipt_items = [
-            item for item in RECEIPTS.values()
+            item
+            for item in RECEIPTS.values()
             if item.get("case_id") == case_id
-            or any(eid in [ev["evidence_id"] for ev in evidence_items] for eid in item.get("evidence_used", []))
+            or any(
+                eid in [ev["evidence_id"] for ev in evidence_items]
+                for eid in item.get("evidence_used", [])
+            )
         ]
 
         evidence_types = sorted({item["evidence_type"] for item in evidence_items})
 
-        case_summaries.append({
-            "case_id": case_id,
-            "case_name": case["case_name"],
-            "priority": case["priority"],
-            "status": case["status"],
-            "external_action": case["external_action"],
-            "approval_required": case["approval_required"],
-            "evidence_count": len(evidence_items),
-            "receipt_count": len(receipt_items),
-            "evidence_types": evidence_types,
-            "last_updated": case["updated_at"]
-        })
+        case_summaries.append(
+            {
+                "case_id": case_id,
+                "case_name": case["case_name"],
+                "priority": case["priority"],
+                "status": case["status"],
+                "external_action": case["external_action"],
+                "approval_required": case["approval_required"],
+                "evidence_count": len(evidence_items),
+                "receipt_count": len(receipt_items),
+                "evidence_types": evidence_types,
+                "last_updated": case["updated_at"],
+            }
+        )
 
     return {
         "export_type": "HOWARD_RECOVERY_SUMMARY_EXPORT",
         "generated_at": now_iso(),
-        "counts": {
-            "cases": len(CASES),
-            "evidence": len(EVIDENCE),
-            "receipts": len(RECEIPTS)
-        },
+        "counts": {"cases": len(CASES), "evidence": len(EVIDENCE), "receipts": len(RECEIPTS)},
         "case_summaries": case_summaries,
         "system_controls": {
             "mode": "evidence_intake_only",
             "external_action": "locked",
             "approval_required_before": [
-                "send", "file", "contact", "submit", "delete",
-                "modify", "email", "call", "mail", "serve", "post"
-            ]
+                "send",
+                "file",
+                "contact",
+                "submit",
+                "delete",
+                "modify",
+                "email",
+                "call",
+                "mail",
+                "serve",
+                "post",
+            ],
         },
-        "next_recommended_upgrade": "Phase 2C: Markdown/PDF packet generation"
+        "next_recommended_upgrade": "Phase 2C: Markdown/PDF packet generation",
     }
+
+
 def render_case_packet_markdown(case_id: str) -> str:
     if case_id not in CASES:
         raise HTTPException(status_code=404, detail=f"case_id not found: {case_id}")
 
     case = CASES[case_id]
 
-    evidence_items = [
-        item for item in EVIDENCE.values()
-        if item["case_id"] == case_id
-    ]
+    evidence_items = [item for item in EVIDENCE.values() if item["case_id"] == case_id]
 
     receipt_items = [
-        item for item in RECEIPTS.values()
+        item
+        for item in RECEIPTS.values()
         if item.get("case_id") == case_id
         or any(
             eid in [ev["evidence_id"] for ev in evidence_items]
@@ -535,16 +537,24 @@ def render_case_packet_markdown(case_id: str) -> str:
     lines.append("")
     lines.append("- **Mode:** evidence_intake_only")
     lines.append("- **External Action:** locked")
-    lines.append("- **Evidence Rule:** Every claim must be tied to email, screenshot, PDF, credit report, statement, contract, notice, court record, or payment receipt.")
-    lines.append("- **Approval Required Before:** send, file, contact, submit, delete, modify, email, call, mail, serve, post")
+    lines.append(
+        "- **Evidence Rule:** Every claim must be tied to email, screenshot, PDF, credit report, statement, contract, notice, court record, or payment receipt."
+    )
+    lines.append(
+        "- **Approval Required Before:** send, file, contact, submit, delete, modify, email, call, mail, serve, post"
+    )
     lines.append("")
 
     lines.append("## Recommended Next Steps")
     lines.append("")
-    lines.append("1. Verify each evidence item has a source file, email link, screenshot, or record reference.")
+    lines.append(
+        "1. Verify each evidence item has a source file, email link, screenshot, or record reference."
+    )
     lines.append("2. Separate public-facing claims from private strategy notes.")
     lines.append("3. Draft only after evidence review is complete.")
-    lines.append("4. Do not send, file, contact, serve, mail, email, or call without explicit approval.")
+    lines.append(
+        "4. Do not send, file, contact, serve, mail, email, or call without explicit approval."
+    )
     lines.append("")
 
     return "\n".join(lines)
@@ -556,7 +566,7 @@ async def get_case_packet_markdown(case_id: str):
         "format": "markdown",
         "case_id": case_id,
         "generated_at": now_iso(),
-        "markdown": render_case_packet_markdown(case_id)
+        "markdown": render_case_packet_markdown(case_id),
     }
 
 
@@ -578,14 +588,9 @@ async def export_all_cases_markdown():
     sections.append("")
 
     for case_id, case in CASES.items():
-        evidence_count = len([
-            item for item in EVIDENCE.values()
-            if item["case_id"] == case_id
-        ])
+        evidence_count = len([item for item in EVIDENCE.values() if item["case_id"] == case_id])
 
-        sections.append(
-            f"- **{case['case_name']}** — `{case_id}` — Evidence: {evidence_count}"
-        )
+        sections.append(f"- **{case['case_name']}** — `{case_id}` — Evidence: {evidence_count}")
 
     sections.append("")
     sections.append("---")
@@ -603,8 +608,10 @@ async def export_all_cases_markdown():
         "case_count": len(CASES),
         "evidence_count": len(EVIDENCE),
         "receipt_count": len(RECEIPTS),
-        "markdown": "\n".join(sections)
+        "markdown": "\n".join(sections),
     }
+
+
 @router.get("/api/recovery/health")
 async def recovery_health():
     return {
@@ -616,7 +623,7 @@ async def recovery_health():
         "case_count": len(CASES),
         "evidence_count": len(EVIDENCE),
         "receipt_count": len(RECEIPTS),
-        "store_path": str(STORE_PATH)
+        "store_path": str(STORE_PATH),
     }
 
 
@@ -637,15 +644,25 @@ async def recovery_dashboard():
                 try:
                     with readiness_file.open("r", encoding="utf-8") as f:
                         r = json.load(f)
-                    case_readiness.append({
-                        "case_id": r.get("case_id", case_dir.name),
-                        "overall": r.get("overall_readiness", 0),
-                        "grade": r.get("grade", "F"),
-                        "repository": r.get("dimensions", {}).get("repository_completeness", {}).get("score", 0),
-                        "evidence": r.get("dimensions", {}).get("evidence_strength", {}).get("score", 0),
-                        "legal": r.get("dimensions", {}).get("legal_readiness", {}).get("score", 0),
-                        "procedural": r.get("dimensions", {}).get("procedural_readiness", {}).get("score", 0),
-                    })
+                    case_readiness.append(
+                        {
+                            "case_id": r.get("case_id", case_dir.name),
+                            "overall": r.get("overall_readiness", 0),
+                            "grade": r.get("grade", "F"),
+                            "repository": r.get("dimensions", {})
+                            .get("repository_completeness", {})
+                            .get("score", 0),
+                            "evidence": r.get("dimensions", {})
+                            .get("evidence_strength", {})
+                            .get("score", 0),
+                            "legal": r.get("dimensions", {})
+                            .get("legal_readiness", {})
+                            .get("score", 0),
+                            "procedural": r.get("dimensions", {})
+                            .get("procedural_readiness", {})
+                            .get("score", 0),
+                        }
+                    )
                 except Exception:
                     pass
 
@@ -672,4 +689,3 @@ async def recovery_dashboard():
         "evidence_kernel": "CaseTemplate v2.1.0",
         "timestamp": now_iso(),
     }
-

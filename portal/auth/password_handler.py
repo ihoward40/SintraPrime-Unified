@@ -26,6 +26,7 @@ SPECIAL_CHARS = r"!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?`~"
 
 class PasswordError(Exception):
     """Raised when password does not meet policy."""
+
     pass
 
 
@@ -77,7 +78,7 @@ def validate_password_strength(password: str) -> None:
 
     # Common patterns check
     common_patterns = [
-        r"(.)\1{3,}",          # 4+ repeated characters
+        r"(.)\1{3,}",  # 4+ repeated characters
         r"(012|123|234|345|456|567|678|789|890)",  # sequential numbers
         r"(abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz)",
     ]

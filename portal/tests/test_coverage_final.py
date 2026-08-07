@@ -3,6 +3,7 @@ Final coverage boost tests for document_processor.py, session_store.py,
 session_manager.py, and notification_service.py.
 Target: push total coverage from 75% to 80%+.
 """
+
 import asyncio
 import uuid
 from datetime import datetime, timedelta
@@ -12,6 +13,7 @@ import pytest
 
 # ─── document_processor.py ────────────────────────────────────────────────────
 
+
 class TestDocumentProcessor:
     """Tests for portal.services.document_processor."""
 
@@ -19,6 +21,7 @@ class TestDocumentProcessor:
     async def test_schedule_processing_creates_task(self):
         """schedule_processing should log and create an asyncio task."""
         from portal.services.document_processor import schedule_processing
+
         doc_id = str(uuid.uuid4())
         await schedule_processing(doc_id)
         await asyncio.sleep(0.05)
@@ -27,10 +30,13 @@ class TestDocumentProcessor:
     async def test_process_document_runs_all_steps(self):
         """_process_document should run virus scan, OCR, and categorisation."""
         from portal.services import document_processor as dp
+
         doc_id = str(uuid.uuid4())
-        with patch.object(dp, '_run_virus_scan', new_callable=AsyncMock) as mock_scan, \
-             patch.object(dp, '_run_ocr', new_callable=AsyncMock) as mock_ocr, \
-             patch.object(dp, '_auto_categorize', new_callable=AsyncMock) as mock_cat:
+        with (
+            patch.object(dp, "_run_virus_scan", new_callable=AsyncMock) as mock_scan,
+            patch.object(dp, "_run_ocr", new_callable=AsyncMock) as mock_ocr,
+            patch.object(dp, "_auto_categorize", new_callable=AsyncMock) as mock_cat,
+        ):
             await dp._process_document(doc_id)
         mock_scan.assert_awaited_once_with(doc_id)
         mock_ocr.assert_awaited_once_with(doc_id)
@@ -40,35 +46,40 @@ class TestDocumentProcessor:
     async def test_process_document_handles_exception(self):
         """_process_document should catch and log exceptions without re-raising."""
         from portal.services import document_processor as dp
+
         doc_id = str(uuid.uuid4())
-        with patch.object(dp, '_run_virus_scan', new_callable=AsyncMock,
-                          side_effect=RuntimeError("scan failed")):
+        with patch.object(
+            dp, "_run_virus_scan", new_callable=AsyncMock, side_effect=RuntimeError("scan failed")
+        ):
             await dp._process_document(doc_id)
 
     @pytest.mark.asyncio
     async def test_run_virus_scan_with_pyclamd_missing(self):
         """_run_virus_scan should handle missing pyclamd gracefully."""
         from portal.services import document_processor as dp
+
         doc_id = str(uuid.uuid4())
         import sys
-        original = sys.modules.get('pyclamd')
-        sys.modules['pyclamd'] = None  # type: ignore
+
+        original = sys.modules.get("pyclamd")
+        sys.modules["pyclamd"] = None  # type: ignore
         try:
             await dp._run_virus_scan(doc_id)
         finally:
             if original is None:
-                sys.modules.pop('pyclamd', None)
+                sys.modules.pop("pyclamd", None)
             else:
-                sys.modules['pyclamd'] = original
+                sys.modules["pyclamd"] = original
 
     @pytest.mark.asyncio
     async def test_run_virus_scan_with_pyclamd_available(self):
         """_run_virus_scan should call ClamdUnixSocket when pyclamd is available."""
         from portal.services import document_processor as dp
+
         doc_id = str(uuid.uuid4())
         mock_pyclamd = MagicMock()
         mock_pyclamd.ClamdUnixSocket.return_value = MagicMock()
-        with patch.dict('sys.modules', {'pyclamd': mock_pyclamd}):
+        with patch.dict("sys.modules", {"pyclamd": mock_pyclamd}):
             await dp._run_virus_scan(doc_id)
         mock_pyclamd.ClamdUnixSocket.assert_called_once()
 
@@ -76,56 +87,64 @@ class TestDocumentProcessor:
     async def test_run_virus_scan_handles_exception(self):
         """_run_virus_scan should catch and log ClamAV errors."""
         from portal.services import document_processor as dp
+
         doc_id = str(uuid.uuid4())
         mock_pyclamd = MagicMock()
         mock_pyclamd.ClamdUnixSocket.side_effect = ConnectionError("ClamAV unavailable")
-        with patch.dict('sys.modules', {'pyclamd': mock_pyclamd}):
+        with patch.dict("sys.modules", {"pyclamd": mock_pyclamd}):
             await dp._run_virus_scan(doc_id)
 
     @pytest.mark.asyncio
     async def test_run_ocr_with_pytesseract_missing(self):
         """_run_ocr should handle missing pytesseract gracefully."""
         from portal.services import document_processor as dp
+
         doc_id = str(uuid.uuid4())
         import sys
-        original = sys.modules.get('pytesseract')
-        sys.modules['pytesseract'] = None  # type: ignore
+
+        original = sys.modules.get("pytesseract")
+        sys.modules["pytesseract"] = None  # type: ignore
         try:
             await dp._run_ocr(doc_id)
         finally:
             if original is None:
-                sys.modules.pop('pytesseract', None)
+                sys.modules.pop("pytesseract", None)
             else:
-                sys.modules['pytesseract'] = original
+                sys.modules["pytesseract"] = original
 
     @pytest.mark.asyncio
     async def test_run_ocr_with_pytesseract_available(self):
         """_run_ocr should call pytesseract when available."""
         from portal.services import document_processor as dp
+
         doc_id = str(uuid.uuid4())
         mock_tesseract = MagicMock()
-        with patch.dict('sys.modules', {'pytesseract': mock_tesseract}):
+        with patch.dict("sys.modules", {"pytesseract": mock_tesseract}):
             await dp._run_ocr(doc_id)
 
     @pytest.mark.asyncio
     async def test_auto_categorize_logs_completion(self):
         """_auto_categorize should complete without error."""
         from portal.services.document_processor import _auto_categorize
+
         doc_id = str(uuid.uuid4())
         await _auto_categorize(doc_id)
 
 
 # ─── session_store.py — InMemorySessionStore ──────────────────────────────────
 
+
 class TestInMemorySessionStore:
     """Tests for portal.sso.session_store.InMemorySessionStore."""
 
     def _make_store(self):
         from portal.sso.session_store import InMemorySessionStore
+
         return InMemorySessionStore()
 
     def _make_session(self, user_id=None):
         from portal.sso.session_models import SessionData
+
         return SessionData(
             session_id=str(uuid.uuid4()),
             user_id=str(user_id or uuid.uuid4()),
@@ -138,6 +157,7 @@ class TestInMemorySessionStore:
 
     def _make_refresh_token(self, session_id=None):
         from portal.sso.session_models import RefreshToken
+
         return RefreshToken.create(
             session_id=session_id or str(uuid.uuid4()),
             user_id=str(uuid.uuid4()),
@@ -255,11 +275,13 @@ class TestInMemorySessionStore:
 
 # ─── sso/session_manager.py additional coverage ───────────────────────────────
 
+
 class TestSSOSessionManagerAdditional:
     """Additional tests for portal.sso.session_manager."""
 
     def _make_config(self):
         from portal.sso.session_config import SessionConfig
+
         return SessionConfig(
             jwt_secret_key="test-secret-key-for-testing-only-32chars",
             issuer="https://test.example.com",
@@ -271,6 +293,7 @@ class TestSSOSessionManagerAdditional:
         """create_session should return a TokenPair with access and refresh tokens."""
         from portal.sso.session_manager import SessionManager
         from portal.sso.session_store import InMemorySessionStore
+
         store = InMemorySessionStore()
         config = self._make_config()
         manager = SessionManager(config=config, store=store)
@@ -280,14 +303,15 @@ class TestSSOSessionManagerAdditional:
             identity_provider="google",
         )
         assert token_pair is not None
-        assert hasattr(token_pair, 'access_token')
-        assert hasattr(token_pair, 'refresh_token')
+        assert hasattr(token_pair, "access_token")
+        assert hasattr(token_pair, "refresh_token")
 
     @pytest.mark.asyncio
     async def test_validate_session_returns_none_for_invalid(self):
         """validate_session should return None for invalid/unknown token."""
         from portal.sso.session_manager import SessionManager
         from portal.sso.session_store import InMemorySessionStore
+
         store = InMemorySessionStore()
         config = self._make_config()
         manager = SessionManager(config=config, store=store)
@@ -299,6 +323,7 @@ class TestSSOSessionManagerAdditional:
         """revoke_session should mark the session as revoked in the store."""
         from portal.sso.session_manager import SessionManager
         from portal.sso.session_store import InMemorySessionStore
+
         store = InMemorySessionStore()
         config = self._make_config()
         manager = SessionManager(config=config, store=store)
@@ -308,6 +333,7 @@ class TestSSOSessionManagerAdditional:
         )
         # Extract session_id from the access token
         import jwt as pyjwt
+
         payload = pyjwt.decode(
             token_pair.access_token,
             config.jwt_secret_key,
@@ -323,6 +349,7 @@ class TestSSOSessionManagerAdditional:
 
 # ─── notification_service.py additional coverage ──────────────────────────────
 
+
 class TestNotificationServiceAdditional:
     """Additional tests for portal.services.notification_service."""
 
@@ -332,6 +359,7 @@ class TestNotificationServiceAdditional:
         import uuid as _uuid
 
         from portal.services.notification_service import notify_users
+
         mock_db = AsyncMock()
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = []
@@ -352,18 +380,21 @@ class TestNotificationServiceAdditional:
     async def test_send_email_logs_call(self):
         """send_email should complete without raising."""
         from portal.services.notification_service import send_email
+
         await send_email(to="test@example.com", subject="Test", body="Hello")
 
     @pytest.mark.asyncio
     async def test_send_sms_logs_call(self):
         """send_sms should complete without raising."""
         from portal.services.notification_service import send_sms
+
         await send_sms(to="+15551234567", message="Test SMS")
 
     @pytest.mark.asyncio
     async def test_notify_users_with_explicit_recipients(self):
         """notify_users should create notifications for each explicit recipient."""
         from portal.services.notification_service import notify_users
+
         mock_db = AsyncMock()
         user_id1 = str(uuid.uuid4())
         user_id2 = str(uuid.uuid4())
@@ -372,7 +403,7 @@ class TestNotificationServiceAdditional:
         mock_db.execute = AsyncMock(return_value=mock_result)
         mock_db.add = MagicMock()
         mock_db.commit = AsyncMock()
-        with patch('portal.routers.notifications.Notification', MagicMock()):
+        with patch("portal.routers.notifications.Notification", MagicMock()):
             await notify_users(
                 mock_db,
                 tenant_id=str(uuid.uuid4()),
@@ -388,6 +419,7 @@ class TestNotificationServiceAdditional:
 
 # ─── Additional document_processor coverage ──────────────────────────────────
 
+
 class TestDocumentProcessorWatermark:
     """Additional coverage for document_processor watermark and digital signature."""
 
@@ -396,31 +428,42 @@ class TestDocumentProcessorWatermark:
         from unittest.mock import patch
 
         from portal.services.document_processor import add_watermark
+
         with patch.dict(sys.modules, {"PyPDF2": None}):
             result = add_watermark(b"fake-pdf-bytes", "CONFIDENTIAL")
         assert result == b"fake-pdf-bytes"
 
     def test_create_digital_signature_returns_expected_keys(self):
         from portal.services.document_processor import create_digital_signature
+
         result = create_digital_signature(
             content=b"test document content",
             signer_id="user-123",
             signer_email="signer@example.com",
             ip_address="192.168.1.1",
         )
-        for key in ("signature_token", "content_hash", "signer_id", "signer_email", "signed_at", "ip_address"):
+        for key in (
+            "signature_token",
+            "content_hash",
+            "signer_id",
+            "signer_email",
+            "signed_at",
+            "ip_address",
+        ):
             assert key in result
 
     def test_create_digital_signature_content_hash_is_sha256(self):
         import hashlib
 
         from portal.services.document_processor import create_digital_signature
+
         content = b"document bytes"
         result = create_digital_signature(content, "u1", "u@x.com", "10.0.0.1")
         assert result["content_hash"] == hashlib.sha256(content).hexdigest()
 
 
 # ─── Additional sso/session_config coverage ───────────────────────────────────
+
 
 class TestSessionConfigCoverage:
     """Additional coverage for portal.sso.session_config.SessionConfig."""
@@ -429,7 +472,10 @@ class TestSessionConfigCoverage:
         import pytest
 
         from portal.sso.session_config import SessionConfig
-        config = SessionConfig(jwt_secret_key="", issuer="https://sso.example.com", audience="sintra-prime")
+
+        config = SessionConfig(
+            jwt_secret_key="", issuer="https://sso.example.com", audience="sintra-prime"
+        )
         with pytest.raises(ValueError, match="jwt_secret_key"):
             config.validate()
 
@@ -437,7 +483,10 @@ class TestSessionConfigCoverage:
         import pytest
 
         from portal.sso.session_config import SessionConfig
-        config = SessionConfig(jwt_secret_key="short", issuer="https://sso.example.com", audience="sintra-prime")
+
+        config = SessionConfig(
+            jwt_secret_key="short", issuer="https://sso.example.com", audience="sintra-prime"
+        )
         with pytest.raises(ValueError, match="32 characters"):
             config.validate()
 
@@ -445,6 +494,7 @@ class TestSessionConfigCoverage:
         import pytest
 
         from portal.sso.session_config import SessionConfig
+
         config = SessionConfig(jwt_secret_key="a" * 32, issuer="", audience="sintra-prime")
         with pytest.raises(ValueError, match="issuer"):
             config.validate()
@@ -453,18 +503,24 @@ class TestSessionConfigCoverage:
         import pytest
 
         from portal.sso.session_config import SessionConfig
-        config = SessionConfig(jwt_secret_key="a" * 32, issuer="https://sso.example.com", audience="")
+
+        config = SessionConfig(
+            jwt_secret_key="a" * 32, issuer="https://sso.example.com", audience=""
+        )
         with pytest.raises(ValueError, match="audience"):
             config.validate()
 
     def test_validate_passes_for_valid_config(self):
         from portal.sso.session_config import SessionConfig
-        config = SessionConfig(jwt_secret_key="a" * 32, issuer="https://sso.example.com", audience="sintra-prime")
+
+        config = SessionConfig(
+            jwt_secret_key="a" * 32, issuer="https://sso.example.com", audience="sintra-prime"
+        )
         config.validate()  # Should not raise
 
 
-
 # ─── Final 9-line coverage push ──────────────────────────────────────────────
+
 
 class TestFinalCoveragePush:
     """Cover the last few missing lines across multiple modules to reach 80%."""
@@ -493,13 +549,17 @@ class TestFinalCoveragePush:
         from types import SimpleNamespace
 
         from portal.models.client import Client
-        c = SimpleNamespace(client_type="individual", first_name="Jane", last_name="Doe", company_name=None)
+
+        c = SimpleNamespace(
+            client_type="individual", first_name="Jane", last_name="Doe", company_name=None
+        )
         assert Client.display_name.fget(c) == "Jane Doe"
 
     def test_client_display_name_organization(self):
         from types import SimpleNamespace
 
         from portal.models.client import Client
+
         c = SimpleNamespace(client_type="organization", company_name="Acme Corp")
         assert Client.display_name.fget(c) == "Acme Corp"
 
@@ -508,12 +568,14 @@ class TestFinalCoveragePush:
         from types import SimpleNamespace
 
         from portal.models.user import User
+
         u = SimpleNamespace(first_name="Alice", last_name="Smith")
         assert User.full_name.fget(u) == "Alice Smith"
 
     # sso/session_models.py:142 — TokenPair.to_dict() (line 142 is in TokenPair, not TokenResponse)
     def test_token_pair_to_dict(self):
         from portal.sso.session_models import TokenPair
+
         tp = TokenPair(
             access_token="acc-tok",
             refresh_token="ref-tok",
@@ -532,6 +594,7 @@ class TestFinalCoveragePush:
         from unittest.mock import patch
 
         from portal.services.encryption_service import _get_key
+
         # Set ENCRYPTION_KEY to invalid base64 — triggers lines 24-29 (try/except)
         with patch.dict(os.environ, {"ENCRYPTION_KEY": "not-valid-base64!!!"}):
             key = _get_key()
@@ -543,6 +606,7 @@ class TestFinalCoveragePush:
         from unittest.mock import patch
 
         from portal.services.encryption_service import _get_key
+
         # Remove ENCRYPTION_KEY to trigger the fallback path (lines 31-32)
         with patch.dict(os.environ, {}, clear=True):
             key = _get_key()
@@ -557,6 +621,7 @@ class TestFinalCoveragePush:
         from fastapi import HTTPException
 
         from portal.auth.rbac import CurrentUser, Permission, require_permissions
+
         mock_user = MagicMock(spec=CurrentUser)
         mock_user.has_permission.return_value = False
         dep_fn = require_permissions(Permission.CASE_READ)
@@ -571,6 +636,7 @@ class TestFinalCoveragePush:
         from fastapi import HTTPException
 
         from portal.auth.rbac import CurrentUser, Role, require_role
+
         mock_user = MagicMock(spec=CurrentUser)
         mock_user.has_role.return_value = False
         dep_fn = require_role(Role.ATTORNEY)
@@ -581,11 +647,13 @@ class TestFinalCoveragePush:
 
 # ─── Okta models coverage (lines 22, 49) ─────────────────────────────────────
 
+
 class TestOktaModelsCoverage:
     """Cover OktaTokenResponse.from_dict and OktaUserInfo.from_dict."""
 
     def test_okta_token_response_from_dict(self):
         from portal.sso.okta_models import OktaTokenResponse
+
         data = {
             "access_token": "eyJhbGciOiJSUzI1NiJ9.test",
             "token_type": "Bearer",
@@ -604,6 +672,7 @@ class TestOktaModelsCoverage:
 
     def test_okta_user_info_from_dict(self):
         from portal.sso.okta_models import OktaUserInfo
+
         data = {
             "sub": "00u1a2b3c4d5e6f7g8h9",
             "name": "Jane Doe",

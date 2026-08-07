@@ -78,6 +78,7 @@ class ClientListResponse(BaseModel):
 
 # ── Matter ────────────────────────────────────────────────────────────────────
 
+
 class MatterBase(BaseModel):
     title: str = Field(..., min_length=2, max_length=255)
     description: str | None = None

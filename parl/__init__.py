@@ -11,12 +11,13 @@ Key components:
 - SharedReplayBuffer  : Multi-agent shared experience replay
 - PolicyStore         : Centralised parameter server (CTDE pattern)
 - PARLOrchestrator    : Task decomposition + parallel subagent execution
+- GovernedPARLOrchestrator: Principal Command admission control for all spawned subtasks
 
 Quick start::
 
-    from parl import PARLOrchestrator, AgentType
+    from parl import GovernedPARLOrchestrator, AgentType
 
-    orch = PARLOrchestrator(max_workers=4)
+    orch = GovernedPARLOrchestrator(max_workers=4)
     orch.register_agent(AgentType.ZERO, my_zero_fn)
     orch.register_agent(AgentType.SIGMA, my_sigma_fn)
 
@@ -59,8 +60,16 @@ from parl.orchestrator import (
     SubtaskStatus,
     SubagentRunner,
 )
+from parl.god_mode import (
+    ActionRisk,
+    GodModeTier,
+    PolicyDecision,
+    PrincipalCommandPolicy,
+    PrincipalSession,
+)
+from parl.governed_orchestrator import GovernedPARLOrchestrator
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "SintraPrime"
 __license__ = "Apache-2.0"
 
@@ -85,9 +94,16 @@ __all__ = [
     "GradientAccumulator",
     # Orchestrator
     "PARLOrchestrator",
+    "GovernedPARLOrchestrator",
     "AgentType",
     "Task",
     "Subtask",
     "SubtaskStatus",
     "SubagentRunner",
+    # Principal Command / God Mode
+    "ActionRisk",
+    "GodModeTier",
+    "PolicyDecision",
+    "PrincipalCommandPolicy",
+    "PrincipalSession",
 ]

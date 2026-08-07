@@ -65,7 +65,7 @@ async def run_full_simulation():
     # --- PHASE 9: OMNIBRAIN & BRIEF ---
     logger.info("\n[PHASE 9] Verifying OmniBrain Memory & Principal Brief...")
     await memory_vault.store_memory(tenant_id, "E2E Simulation Passed.", MemoryType.LESSON_LEARNED)
-    brief = await brief_service.create_brief(tenant_id)
+    brief = await brief_service.create_brief(tenant_id, principal_id)
     logger.info(f"Status: OMNIBRAIN VERIFIED (Lessons: {brief['sections']['memory_summary']['total_lessons']})")
 
     # --- PHASE 10: HARDENING & GOD MODE ---

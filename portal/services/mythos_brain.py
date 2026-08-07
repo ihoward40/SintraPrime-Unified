@@ -22,7 +22,7 @@ class MythosBrainCoordinator:
         Ingests a new intent, applies remediation, and persists to outbox.
         """
         # 1. REMEDIATION: Scoped Approval Validation
-        if intent_type == "PRINCIPAL_COMMAND" and not remediation.validate_principal_approval(actor_id, intent_type):
+        if intent_type == "PRINCIPAL_COMMAND" and not await remediation.validate_principal_approval(self.session, tenant_id, actor_id, intent_type):
             raise PermissionError("Unauthorized principal command attempt.")
 
         # 2. REMEDIATION: Redaction and Metadata

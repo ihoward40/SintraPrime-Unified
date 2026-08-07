@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-08-07T12:34:32.983462+00:00",
+  "environment": "PostgreSQL 16 / Ubuntu 24.04",
+  "results": [
+    {
+      "gate": "PostgreSQL RLS Isolation",
+      "status": "PASS"
+    },
+    {
+      "gate": "Append-Only Audit (No Deletion)",
+      "status": "PASS"
+    },
+    {
+      "gate": "Boundary Redaction (Keys/Values)",
+      "status": "PASS"
+    },
+    {
+      "gate": "Concurrent Approval Safety",
+      "status": "PASS"
+    },
+    {
+      "gate": "Durable Event-Node Linkage",
+      "status": "PASS"
+    }
+  ]
+}

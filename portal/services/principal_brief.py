@@ -4,6 +4,9 @@ from typing import Dict, List, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from .memory_vault import memory_vault
 from .remediation_service import remediation
+from .auditable_trails import auditable_trails
+from ..models.orchestration import OrchestrationRun
+from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +24,7 @@ class PrincipalBrief:
     async def synthesize(self, actor_id: str):
         """Synthesizes the brief using real database retrieval."""
         # 1. REMEDIATION: Actor Validation
-        if not remediation.validate_principal_approval(actor_id, "BRIEF_SYNTHESIS"):
+        if not await remediation.validate_principal_approval(self.session, self.tenant_id, actor_id, "BRIEF_SYNTHESIS"):
             raise PermissionError("Unauthorized access to Principal Brief.")
 
         logger.info(f"[PRINCIPAL_BRIEF] Synthesizing brief for tenant {self.tenant_id}")
@@ -40,8 +43,22 @@ class PrincipalBrief:
             "strategic_milestones": [k.content for k in knowledge[:3]]
         })
         
-        # 4. Mocking other sections for now as they depend on other services
-        self.sections["operations"] = {"status": "HARDENED", "active_orchestrations": 0}
+        # 4. Real Orchestration Health
+        stmt = select(OrchestrationRun).where(OrchestrationRun.tenant_id == self.tenant_id)
+        res = await self.session.execute(stmt)
+        active_runs = res.scalars().all()
+        
+        # 5. REMEDIATION: Auditable Trails for active runs
+        trails = []
+        for run in active_runs[:5]: # Limit to recent 5
+            trail = await auditable_trails.generate_execution_trail(self.session, str(run.id), self.tenant_id)
+            trails.append(trail)
+
+        self.sections["operations"] = {
+            "status": "HARDENED", 
+            "active_orchestrations": len(active_runs),
+            "verified_audit_trails": len(trails)
+        }
         self.sections["parliament"] = {"load": "0.00%", "instances": 0}
 
     def generate_report(self) -> Dict[str, Any]:

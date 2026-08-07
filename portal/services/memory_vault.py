@@ -4,7 +4,7 @@ from datetime import datetime, UTC
 from typing import Dict, List, Any, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from ..models.mission_control_outbox import MemoryEntry
+from ..models.orchestration import MemoryEntry
 from .remediation_service import remediation
 
 logger = logging.getLogger(__name__)

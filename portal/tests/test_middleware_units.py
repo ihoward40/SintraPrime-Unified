@@ -3,6 +3,7 @@ Phase 23B — Middleware and WebSocket unit tests.
 Covers: rate_limiter, auth_middleware, audit_middleware, cors_middleware,
         websocket/connection_manager, websocket/message_handler
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -11,15 +12,18 @@ import pytest
 
 # ─── rate_limiter ─────────────────────────────────────────────────────────────
 
+
 class TestRateLimiter:
     """Unit tests for portal.middleware.rate_limiter."""
 
     def setup_method(self):
         from portal.middleware.rate_limiter import _rate_store
+
         _rate_store.clear()
 
     def test_sliding_window_check_allows_first_request(self):
         from portal.middleware.rate_limiter import _sliding_window_check
+
         allowed, remaining, reset_in = _sliding_window_check(
             "test-key-1", limit=10, window_seconds=60, use_redis=False
         )
@@ -31,15 +35,19 @@ class TestRateLimiter:
         import time
 
         from portal.middleware.rate_limiter import _rate_store, _sliding_window_check
+
         key = "test-key-block"
         now = int(time.time())
         _rate_store[key] = [now] * 11
-        allowed, remaining, _ = _sliding_window_check(key, limit=10, window_seconds=60, use_redis=False)
+        allowed, remaining, _ = _sliding_window_check(
+            key, limit=10, window_seconds=60, use_redis=False
+        )
         assert allowed is False
         assert remaining == 0
 
     def test_sliding_window_check_remaining_decrements(self):
         from portal.middleware.rate_limiter import _sliding_window_check
+
         key = "test-key-decrement"
         _, r1, _ = _sliding_window_check(key, limit=5, window_seconds=60, use_redis=False)
         _, r2, _ = _sliding_window_check(key, limit=5, window_seconds=60, use_redis=False)
@@ -48,6 +56,7 @@ class TestRateLimiter:
     @pytest.mark.asyncio
     async def test_rate_limiter_middleware_passes_unauthenticated_non_auth_path(self):
         from portal.middleware.rate_limiter import RateLimiterMiddleware
+
         app = MagicMock()
         middleware = RateLimiterMiddleware(app)
         mock_request = MagicMock()
@@ -64,6 +73,7 @@ class TestRateLimiter:
         import time
 
         from portal.middleware.rate_limiter import AUTH_LIMIT, RateLimiterMiddleware, _rate_store
+
         _rate_store.clear()
         app = MagicMock()
         middleware = RateLimiterMiddleware(app)
@@ -82,6 +92,7 @@ class TestRateLimiter:
     @pytest.mark.asyncio
     async def test_rate_limiter_adds_headers_to_authenticated_response(self):
         from portal.middleware.rate_limiter import RateLimiterMiddleware, _rate_store
+
         _rate_store.clear()
         app = MagicMock()
         middleware = RateLimiterMiddleware(app)
@@ -98,12 +109,14 @@ class TestRateLimiter:
 
 # ─── auth_middleware ──────────────────────────────────────────────────────────
 
+
 class TestAuthMiddleware:
     """Unit tests for portal.middleware.auth_middleware."""
 
     @pytest.mark.asyncio
     async def test_auth_middleware_passes_health_path(self):
         from portal.middleware.auth_middleware import AuthMiddleware
+
         app = MagicMock()
         middleware = AuthMiddleware(app)
         mock_request = MagicMock()
@@ -117,6 +130,7 @@ class TestAuthMiddleware:
     @pytest.mark.asyncio
     async def test_auth_middleware_passes_docs_path(self):
         from portal.middleware.auth_middleware import AuthMiddleware
+
         app = MagicMock()
         middleware = AuthMiddleware(app)
         mock_request = MagicMock()
@@ -130,6 +144,7 @@ class TestAuthMiddleware:
     @pytest.mark.asyncio
     async def test_auth_middleware_passes_login_path(self):
         from portal.middleware.auth_middleware import AuthMiddleware
+
         app = MagicMock()
         middleware = AuthMiddleware(app)
         mock_request = MagicMock()
@@ -143,6 +158,7 @@ class TestAuthMiddleware:
     @pytest.mark.asyncio
     async def test_auth_middleware_rejects_missing_token_on_protected_path(self):
         from portal.middleware.auth_middleware import AuthMiddleware
+
         app = MagicMock()
         middleware = AuthMiddleware(app)
         mock_request = MagicMock()
@@ -158,6 +174,7 @@ class TestAuthMiddleware:
     async def test_auth_middleware_sets_state_on_valid_token(self):
         from portal.auth.jwt_handler import create_access_token
         from portal.middleware.auth_middleware import AuthMiddleware
+
         token = create_access_token(
             user_id="user-99",
             tenant_id="tenant-1",
@@ -179,12 +196,14 @@ class TestAuthMiddleware:
 
 # ─── audit_middleware ─────────────────────────────────────────────────────────
 
+
 class TestAuditMiddleware:
     """Unit tests for portal.middleware.audit_middleware."""
 
     @pytest.mark.asyncio
     async def test_audit_middleware_calls_next(self):
         from portal.middleware.audit_middleware import AuditMiddleware
+
         app = MagicMock()
         middleware = AuditMiddleware(app)
         mock_request = MagicMock()
@@ -203,6 +222,7 @@ class TestAuditMiddleware:
     @pytest.mark.asyncio
     async def test_audit_middleware_skips_health_path(self):
         from portal.middleware.audit_middleware import AuditMiddleware
+
         app = MagicMock()
         middleware = AuditMiddleware(app)
         mock_request = MagicMock()
@@ -219,6 +239,7 @@ class TestAuditMiddleware:
     @pytest.mark.asyncio
     async def test_audit_middleware_passes_through_response(self):
         from portal.middleware.audit_middleware import AuditMiddleware
+
         app = MagicMock()
         middleware = AuditMiddleware(app)
         mock_request = MagicMock()
@@ -237,19 +258,23 @@ class TestAuditMiddleware:
 
 # ─── cors_middleware ──────────────────────────────────────────────────────────
 
+
 class TestCorsMiddleware:
     """Unit tests for portal.middleware.cors_middleware."""
 
     def test_cors_module_importable(self):
         import portal.middleware.cors_middleware as cors_mod
+
         assert cors_mod is not None
 
     def test_setup_cors_function_exists(self):
         from portal.middleware.cors_middleware import setup_cors
+
         assert callable(setup_cors)
 
     def test_setup_cors_adds_middleware_to_app(self):
         from portal.middleware.cors_middleware import setup_cors
+
         mock_app = MagicMock()
         mock_app.add_middleware = MagicMock()
         # Should not raise
@@ -261,18 +286,21 @@ class TestCorsMiddleware:
         import inspect
 
         import portal.middleware.cors_middleware as cors_mod
+
         source = inspect.getsource(cors_mod)
         # The production block should use regex, not wildcard
-        assert 'allow_origin_regex' in source or 'ALLOWED_ORIGINS' in source
+        assert "allow_origin_regex" in source or "ALLOWED_ORIGINS" in source
 
 
 # ─── websocket/connection_manager ─────────────────────────────────────────────
+
 
 class TestConnectionManager:
     """Unit tests for portal.websocket.connection_manager."""
 
     def _make_manager(self):
         from portal.websocket.connection_manager import ConnectionManager
+
         return ConnectionManager()
 
     def _make_mock_ws(self):
@@ -359,11 +387,13 @@ class TestConnectionManager:
 
 # ─── websocket/message_handler ────────────────────────────────────────────────
 
+
 class TestMessageHandler:
     """Unit tests for portal.websocket.message_handler.MessageHandler."""
 
     def _make_handler(self):
         from portal.websocket.message_handler import MessageHandler
+
         return MessageHandler()
 
     @pytest.mark.asyncio
@@ -406,10 +436,12 @@ class TestMessageHandler:
 
     def test_supported_events_contains_ping(self):
         from portal.websocket.message_handler import MessageHandler
+
         assert "ping" in MessageHandler.SUPPORTED_EVENTS
 
     def test_supported_events_contains_typing_events(self):
         from portal.websocket.message_handler import MessageHandler
+
         assert "typing_start" in MessageHandler.SUPPORTED_EVENTS
         assert "typing_stop" in MessageHandler.SUPPORTED_EVENTS
 

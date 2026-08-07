@@ -1,4 +1,5 @@
 """SSO Router with timezone-aware session management (DTZ011 compliant)."""
+
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -9,6 +10,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 class SessionConfig(BaseModel):
     """Session management configuration."""
+
     jwt_secret_key: str
     session_timeout_minutes: int = 60
     cookie_path: str = "/api/v1/sso"
@@ -37,13 +39,11 @@ class SessionManager:
         self.config = config
         self.sessions = {}
 
-    def create_session(self, user_id: str, username: str,
-                       email: str | None = None) -> SessionData:
+    def create_session(self, user_id: str, username: str, email: str | None = None) -> SessionData:
         """Create a timezone-aware session (UTC only)."""
         now_utc = datetime.now(UTC)
         expires_at = datetime.fromtimestamp(
-            now_utc.timestamp() + self.config.session_timeout_minutes * 60,
-            tz=UTC
+            now_utc.timestamp() + self.config.session_timeout_minutes * 60, tz=UTC
         )
 
         session = SessionData(
@@ -87,7 +87,9 @@ def init_session_manager(config: SessionConfig) -> None:
 
 
 @router.post("/login")
-async def login(request: LoginRequest, session_manager: SessionManager = Depends(get_session_manager)):
+async def login(
+    request: LoginRequest, session_manager: SessionManager = Depends(get_session_manager)
+):
     """Login endpoint."""
     if not request.username or not request.password:
         raise HTTPException(status_code=400, detail="Invalid credentials")
@@ -113,7 +115,9 @@ async def logout(request: Request, session_manager: SessionManager = Depends(get
 
 
 @router.get("/me")
-async def get_current_user(request: Request, session_manager: SessionManager = Depends(get_session_manager)):
+async def get_current_user(
+    request: Request, session_manager: SessionManager = Depends(get_session_manager)
+):
     """Get current user info."""
     user_id = request.session.get("user_id")
     if not user_id or not session_manager.validate_session(user_id):

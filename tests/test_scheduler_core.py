@@ -66,9 +66,10 @@ class TestSchedulerLifecycle:
     def test_init_creates_db_tables(self, db_path):
         TaskScheduler(db_path=db_path)
         conn = sqlite3.connect(db_path)
-        tables = [r[0] for r in conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table'"
-        ).fetchall()]
+        tables = [
+            r[0]
+            for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        ]
         assert "tasks" in tables
         assert "task_results" in tables
         conn.close()
@@ -380,9 +381,7 @@ class TestPersistence:
         scheduler._run_task(task.id)
 
         conn = sqlite3.connect(db_path)
-        rows = conn.execute(
-            "SELECT data FROM task_results WHERE task_id=?", (task.id,)
-        ).fetchall()
+        rows = conn.execute("SELECT data FROM task_results WHERE task_id=?", (task.id,)).fetchall()
         conn.close()
         assert len(rows) >= 1
         result_data = json.loads(rows[0][0])

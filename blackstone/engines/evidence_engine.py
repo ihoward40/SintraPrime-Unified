@@ -1,6 +1,7 @@
 """
 Evidence Engine — ingest, evaluate, and score evidence items.
 """
+
 from __future__ import annotations
 
 from blackstone.models import (
@@ -119,7 +120,8 @@ class EvidenceEngine:
     @staticmethod
     def _has_primary_evidence(evidence: list[EvidenceItem]) -> bool:
         return any(
-            e.source.classification in (SourceClassification.PRIMARY_LEGAL, SourceClassification.SECONDARY_LEGAL)
+            e.source.classification
+            in (SourceClassification.PRIMARY_LEGAL, SourceClassification.SECONDARY_LEGAL)
             for e in evidence
         )
 

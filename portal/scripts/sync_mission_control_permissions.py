@@ -43,8 +43,12 @@ async def _run(mode: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Inspect or reconcile Mission Control permissions")
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("--apply", action="store_true", help="Apply canonical permission reconciliation")
-    group.add_argument("--dry-run", action="store_true", help="Preview canonical permission reconciliation")
+    group.add_argument(
+        "--apply", action="store_true", help="Apply canonical permission reconciliation"
+    )
+    group.add_argument(
+        "--dry-run", action="store_true", help="Preview canonical permission reconciliation"
+    )
     args = parser.parse_args()
     mode = "apply" if args.apply else "dry-run" if args.dry_run else "verify"
     asyncio.run(_run(mode))

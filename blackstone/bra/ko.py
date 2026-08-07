@@ -30,14 +30,14 @@ from blackstone.bra.ccs import MATURITY_MIN_CCS, CCSScorer
 
 # Claim status → minimum maturity stage allowed for assignment
 CLAIM_STATUS_MIN_STAGE: dict[str, str] = {
-    "CTRL":  "STG-2",  # Research
-    "PERS":  "STG-2",  # Research
-    "HIST":  "STG-2",  # Research
+    "CTRL": "STG-2",  # Research
+    "PERS": "STG-2",  # Research
+    "HIST": "STG-2",  # Research
     "SCHOL": "STG-2",  # Research
-    "EDU":   "STG-1",  # Hypothesis
-    "EMRG":  "STG-1",  # Hypothesis
-    "DISP":  "STG-2",  # Research
-    "UNVR":  "STG-1",  # Hypothesis
+    "EDU": "STG-1",  # Hypothesis
+    "EMRG": "STG-1",  # Hypothesis
+    "DISP": "STG-2",  # Research
+    "UNVR": "STG-1",  # Hypothesis
 }
 
 # Confidence codes → minimum CCS
@@ -107,10 +107,19 @@ class KnowledgeObjectValidator:
 
         # 1. Required fields
         required = [
-            "ko_id", "title", "maturity_stage_code", "claim_status_code",
-            "confidence_level_code", "jurisdiction_code", "jurisdiction_confirmed",
-            "ccs_score", "ccs_dimensions", "claims", "evidence_ids",
-            "counter_evidence_assessed", "temporal_current",
+            "ko_id",
+            "title",
+            "maturity_stage_code",
+            "claim_status_code",
+            "confidence_level_code",
+            "jurisdiction_code",
+            "jurisdiction_confirmed",
+            "ccs_score",
+            "ccs_dimensions",
+            "claims",
+            "evidence_ids",
+            "counter_evidence_assessed",
+            "temporal_current",
         ]
         for f in required:
             if f not in ko:
@@ -128,8 +137,11 @@ class KnowledgeObjectValidator:
 
         # 2. KO-ID format
         import re
+
         if not re.match(self.KO_ID_PATTERN, ko.get("ko_id", "")):
-            errors.append(f"ko_id '{ko.get('ko_id')}' does not match format KO-YYYYMMDD-NNNN (BKR-02).")
+            errors.append(
+                f"ko_id '{ko.get('ko_id')}' does not match format KO-YYYYMMDD-NNNN (BKR-02)."
+            )
 
         # 3. CCS recomputation consistency
         if dimensions:
@@ -249,15 +261,18 @@ class KnowledgeObjectValidator:
 
         # 13. Evidence IDs format check
         import re as re2
+
         for ev_id in ko.get("evidence_ids", []):
             if not re2.match(self.EV_ID_PATTERN, ev_id):
-                errors.append(f"evidence_id '{ev_id}' does not match format EV-YYYYMMDD-NNNN. (BKR-02)")
+                errors.append(
+                    f"evidence_id '{ev_id}' does not match format EV-YYYYMMDD-NNNN. (BKR-02)"
+                )
 
         return ValidationResult(
             valid=len(errors) == 0,
             errors=errors,
             warnings=warnings,
-            computed_ccs=computed_ccs if 'computed_ccs' in dir() else None,
+            computed_ccs=computed_ccs if "computed_ccs" in dir() else None,
         )
 
     def check_advancement(self, ko: dict[str, Any], target_stage: str) -> ValidationResult:
@@ -270,9 +285,10 @@ class KnowledgeObjectValidator:
         ccs = ko.get("ccs_score", 0)
 
         if min_ccs is not None and ccs < min_ccs:
-            result.errors.insert(0,
+            result.errors.insert(
+                0,
                 f"Cannot advance to {target_stage}: CCS {ccs} < minimum {min_ccs}. "
-                f"Improve evidence quality to raise CCS. (BGS-02)"
+                f"Improve evidence quality to raise CCS. (BGS-02)",
             )
             result.valid = False
 

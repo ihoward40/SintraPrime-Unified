@@ -1,6 +1,7 @@
 """
 Convenience orchestrator that wires the five BRA engines together.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -55,7 +56,9 @@ class BlackstoneOrchestrator:
     def add_risk(self, risk: Risk) -> str:
         return self.risk.add_risk(risk)
 
-    def evaluate(self, claim_id: str, question: str | None = None, actor: str = "system") -> dict[str, object]:
+    def evaluate(
+        self, claim_id: str, question: str | None = None, actor: str = "system"
+    ) -> dict[str, object]:
         claim = self.evidence.get_claim(claim_id)
         if claim is None:
             raise ValueError(f"Claim {claim_id} not found")
@@ -83,8 +86,6 @@ class BlackstoneOrchestrator:
                 "chain_length": len(self.provenance.chain(claim_id)),
                 "verified": self.provenance.verify(claim_id)["valid"],
             },
-            "risks": [
-                {**risk.to_dict(), "score": self.risk.score(risk)} for risk in risks
-            ],
+            "risks": [{**risk.to_dict(), "score": self.risk.score(risk)} for risk in risks],
             "recommendation": recommendation.to_dict(),
         }

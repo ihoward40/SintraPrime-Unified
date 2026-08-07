@@ -3,6 +3,7 @@ Comprehensive Session Management Test Suite
 Tests configuration, models, JWT, storage, and session manager.
 26 tests covering fail-closed behavior and security properties.
 """
+
 import os
 from datetime import datetime
 
@@ -22,6 +23,7 @@ from portal.sso import (
 # ==============================================================================
 # SessionConfig Tests (Fail-Closed Configuration)
 # ==============================================================================
+
 
 class TestSessionConfig:
     """Test session configuration and fail-closed behavior."""
@@ -80,6 +82,7 @@ class TestSessionConfig:
 # SessionData Tests (Model Validation)
 # ==============================================================================
 
+
 class TestSessionData:
     """Test session data models and expiry logic."""
 
@@ -128,6 +131,7 @@ class TestSessionData:
 # RefreshToken Tests (Model Validation)
 # ==============================================================================
 
+
 class TestRefreshToken:
     """Test refresh token models."""
 
@@ -168,6 +172,7 @@ class TestRefreshToken:
 # ==============================================================================
 # JWTTokenService Tests (Token Generation and Validation)
 # ==============================================================================
+
 
 class TestJWTTokenService:
     """Test JWT token generation and validation."""
@@ -228,6 +233,7 @@ class TestJWTTokenService:
 
         # Wait for token to expire
         import time
+
         time.sleep(2)
 
         with pytest.raises(pyjwt.ExpiredSignatureError):
@@ -304,6 +310,7 @@ class TestJWTTokenService:
 # ==============================================================================
 # SessionManager Tests (Full Session Lifecycle)
 # ==============================================================================
+
 
 class TestSessionManager:
     """Test session manager and complete workflows."""
@@ -401,17 +408,23 @@ class TestSessionManager:
         token_pair2 = await manager.refresh_session(token_pair1.refresh_token)
         assert token_pair2 is not None
         # Verify new refresh token ID is different (proves new token was created)
-        payload1 = manager.jwt_service.validate_token(token_pair1.refresh_token, token_type="refresh")
-        payload2 = manager.jwt_service.validate_token(token_pair2.refresh_token, token_type="refresh")
+        payload1 = manager.jwt_service.validate_token(
+            token_pair1.refresh_token, token_type="refresh"
+        )
+        payload2 = manager.jwt_service.validate_token(
+            token_pair2.refresh_token, token_type="refresh"
+        )
         assert payload1["refresh_token_id"] != payload2["refresh_token_id"]
 
     def test_session_config_from_env_valid(self):
         """Test SessionConfig.from_env() successfully loads valid environment."""
-        os.environ.update({
-            "SSO_JWT_SECRET_KEY": "x" * 32,
-            "SSO_ISSUER": "https://issuer.example.com",
-            "SSO_AUDIENCE": "https://app.example.com",
-        })
+        os.environ.update(
+            {
+                "SSO_JWT_SECRET_KEY": "x" * 32,
+                "SSO_ISSUER": "https://issuer.example.com",
+                "SSO_AUDIENCE": "https://app.example.com",
+            }
+        )
         config = SessionConfig.from_env()
         assert config.jwt_secret_key == "x" * 32
         assert config.issuer == "https://issuer.example.com"
@@ -436,6 +449,7 @@ class TestSessionManager:
 
         # After revocation, is_valid() should return False
         assert token.is_valid() is False, "Revoked token should not be valid"
+
 
 class TestSessionIntegration:
     """Integration tests for complete workflows."""
@@ -480,10 +494,7 @@ class TestSessionIntegration:
         assert session2.user_id == "user123"
 
         # 5. Logout (revoke)
-        payload = manager.jwt_service.validate_token(
-            token_pair2.access_token,
-            token_type="access"
-        )
+        payload = manager.jwt_service.validate_token(token_pair2.access_token, token_type="access")
         session_id = payload["session_id"]
         await manager.revoke_session(session_id)
 

@@ -16,6 +16,7 @@ Tests:
 - Trusted-proxy boundary
 - Process-local limitation accuracy
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -138,7 +139,9 @@ class TestRequestIDValidation:
 
 
 class TestResponseHeaderCoverage:
-    def _make_token(self, role: str = Role.FIRM_ADMIN.value, permissions: list[str] | None = None) -> str:
+    def _make_token(
+        self, role: str = Role.FIRM_ADMIN.value, permissions: list[str] | None = None
+    ) -> str:
         if permissions is None:
             permissions = [Permission.ADMIN_DASHBOARD.value]
         return create_access_token(
@@ -502,7 +505,9 @@ class TestTrustedProxyBoundary:
 
 
 class TestWebSocketTokenTransport:
-    def _make_token(self, role: str = Role.FIRM_ADMIN.value, permissions: list[str] | None = None) -> str:
+    def _make_token(
+        self, role: str = Role.FIRM_ADMIN.value, permissions: list[str] | None = None
+    ) -> str:
         if permissions is None:
             permissions = [Permission.ADMIN_DASHBOARD.value]
         return create_access_token(
@@ -669,8 +674,7 @@ class TestMountedRouteCount:
             if full_path == expected_path
         ]
         assert len(ws_routes) == 1, (
-            f"Expected exactly 1 admin WebSocket route at {expected_path}, "
-            f"found {len(ws_routes)}"
+            f"Expected exactly 1 admin WebSocket route at {expected_path}, found {len(ws_routes)}"
         )
         full_path, route = ws_routes[0]
         assert full_path == expected_path
@@ -744,6 +748,7 @@ class TestContextLifecycle:
         assert current.actor_id == "enriched-actor"
         assert current.tenant_id == "enriched-tenant"
         from portal.auth.correlation import reset_current_context
+
         reset_current_context(token)
 
     def test_concurrent_requests_do_not_cross_contaminate(self):
@@ -768,6 +773,7 @@ class TestContextLifecycle:
 
             assert get_current_context().actor_id == "actor-b"
             from portal.auth.correlation import reset_current_context
+
             reset_current_context(token_b)
             assert get_current_context().actor_id == "actor-a"
             reset_current_context(token_a)
@@ -889,6 +895,7 @@ class TestInboundPayloadPolicy:
     def _drain_initial_data(self, ws) -> None:
         """Drain any initial metrics/pong so the next receive sees the close."""
         import json as _json
+
         try:
             data = ws.receive_text()
             # If it's metrics or pong, that's fine — we just needed to drain it
@@ -1004,6 +1011,7 @@ class TestHeartbeatProtocol:
         # The default idle_timeout is 300s which is too long for tests,
         # so we just verify the mechanism exists in the code
         from portal.admin.dashboard import _inbound_frame_handler
+
         assert callable(_inbound_frame_handler)
 
     def test_server_sends_do_not_reset_client_idle_timeout(self):
@@ -1013,6 +1021,7 @@ class TestHeartbeatProtocol:
         import inspect
 
         from portal.admin import dashboard
+
         source = inspect.getsource(dashboard)
         # last_client_activity is only set on HEARTBEAT event processing
         assert "last_client_activity = event.client_activity_at" in source
@@ -1028,6 +1037,7 @@ class TestMaxLifetimeAndDisconnect:
         import inspect
 
         from portal.admin import dashboard
+
         source = inspect.getsource(dashboard)
         assert "max_connection_lifetime_seconds" in source
         assert "max_lifetime" in source
@@ -1037,8 +1047,9 @@ class TestMaxLifetimeAndDisconnect:
         import inspect
 
         from portal.admin import dashboard
+
         source = inspect.getsource(dashboard)
-        assert 'websocket.disconnect' in source
+        assert "websocket.disconnect" in source
 
     def test_endpoint_is_sole_close_owner(self):
         """Verify _inbound_frame_handler does not call safe_close in its code body."""
@@ -1070,6 +1081,7 @@ class TestMaxLifetimeAndDisconnect:
         import inspect
 
         from portal.admin import dashboard
+
         source = inspect.getsource(dashboard)
         assert "closed = False" in source
         assert "if not closed" in source
@@ -1079,6 +1091,7 @@ class TestMaxLifetimeAndDisconnect:
         import inspect
 
         from portal.admin import dashboard
+
         source = inspect.getsource(dashboard)
         assert "receiver_task.cancel()" in source
         assert "await receiver_task" in source
@@ -1093,7 +1106,7 @@ class TestMaxLifetimeAndDisconnect:
         assert "except asyncio.CancelledError:" in source
         # Find the CancelledError handler and verify it re-raises
         idx = source.index("except asyncio.CancelledError:")
-        after_cancel = source[idx + len("except asyncio.CancelledError:"):]
+        after_cancel = source[idx + len("except asyncio.CancelledError:") :]
         # Find the next "except" after CancelledError (or end of function)
         next_except = after_cancel.find("except")
         cancel_block = after_cancel if next_except == -1 else after_cancel[:next_except]
@@ -1108,6 +1121,7 @@ class TestCloseCodeRegistry:
 
     def test_close_code_4408_reason(self):
         from portal.auth.websocket_auth import WS_CLOSE_CODES
+
         assert 4408 in WS_CLOSE_CODES
         reason = WS_CLOSE_CODES[4408]
         assert "lifetime" in reason.lower() or "timeout" in reason.lower()
@@ -1117,6 +1131,7 @@ class TestCloseCodeRegistry:
 
     def test_close_code_4413_reason(self):
         from portal.auth.websocket_auth import WS_CLOSE_CODES
+
         assert 4413 in WS_CLOSE_CODES
         reason = WS_CLOSE_CODES[4413]
         assert "payload" in reason.lower() or "large" in reason.lower()
@@ -1135,6 +1150,7 @@ class TestDashboardWsUrl:
         import inspect
 
         from portal.admin import dashboard
+
         source = inspect.getsource(dashboard)
         assert '"wss" : "ws"' in source or '"ws" : "wss"' in source
 
@@ -1142,6 +1158,7 @@ class TestDashboardWsUrl:
         import inspect
 
         from portal.admin import dashboard
+
         source = inspect.getsource(dashboard)
         assert '"wss"' in source
 
@@ -1149,6 +1166,7 @@ class TestDashboardWsUrl:
         import inspect
 
         from portal.admin import dashboard
+
         source = inspect.getsource(dashboard)
         assert "window.location.host" in source
 
@@ -1156,6 +1174,7 @@ class TestDashboardWsUrl:
         import inspect
 
         from portal.admin import dashboard
+
         source = inspect.getsource(dashboard)
         assert "/api/v1/admin/ws" in source
 
@@ -1163,6 +1182,7 @@ class TestDashboardWsUrl:
         import inspect
 
         from portal.admin import dashboard
+
         source = inspect.getsource(dashboard)
         assert "localhost" not in source
         assert "127.0.0.1" not in source
@@ -1184,6 +1204,7 @@ class TestCorrelationIdValidation:
 
     def test_invalid_x_correlation_id_replaced_once(self):
         from portal.middleware.correlation_middleware import validate_inbound_request_id
+
         # An invalid correlation ID is replaced exactly once
         result, reason = validate_inbound_request_id("invalid corr/id")
         assert result.startswith("req-")
@@ -1191,6 +1212,7 @@ class TestCorrelationIdValidation:
 
     def test_valid_x_correlation_id_preserved(self):
         from portal.middleware.correlation_middleware import validate_inbound_request_id
+
         result, reason = validate_inbound_request_id("valid-corr-id")
         assert result == "valid-corr-id"
         assert reason is None
@@ -1206,6 +1228,7 @@ class TestRatePolicyCleanup:
         import inspect
 
         from portal.admin import dashboard
+
         source = inspect.getsource(dashboard)
         assert "if False" not in source
 
@@ -1213,6 +1236,7 @@ class TestRatePolicyCleanup:
         import inspect
 
         from portal.admin import dashboard
+
         source = inspect.getsource(dashboard)
         assert "min_send_interval_seconds" in source
         # Verify no burst-related logic remains
@@ -1221,6 +1245,7 @@ class TestRatePolicyCleanup:
     def test_no_unused_burst_limit_setting(self):
         """Verify burst_limit is not in WSHardeningSettings."""
         import dataclasses
+
         fields = {f.name for f in dataclasses.fields(WSHardeningSettings)}
         assert "burst_limit" not in fields
         assert "send_count_in_burst_window" not in fields
@@ -1238,6 +1263,7 @@ class TestAuditSafety:
         import inspect
 
         from portal.admin import dashboard
+
         handler_source = inspect.getsource(dashboard._inbound_frame_handler)
         # Should not contain log calls with payload content
         assert "log.info" not in handler_source
@@ -1249,6 +1275,7 @@ class TestAuditSafety:
         import inspect
 
         from portal.auth import websocket_auth
+
         source = inspect.getsource(websocket_auth)
         # The audit function should use redact_secrets
         assert "redact" in source or "REDACTED" in source or "serialize_for_log" in source
@@ -1263,6 +1290,7 @@ class TestNoPrivateImport:
     def test_no_private_correlation_context_import_outside_correlation_py(self):
         """Source inspection: no module outside correlation.py imports _correlation_context."""
         import os
+
         portal_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
         files_to_check = [
@@ -1289,9 +1317,7 @@ class TestNoPrivateImport:
                     continue
                 # Check for import statements that import _correlation_context
                 if "import" in stripped and "_correlation_context" in stripped:
-                    pytest.fail(
-                        f"Private _correlation_context imported in {rel_path}: {stripped}"
-                    )
+                    pytest.fail(f"Private _correlation_context imported in {rel_path}: {stripped}")
 
 
 # ── Audit Outcome Behavioral Tests ─────────────────────────────────────────────
@@ -1570,12 +1596,8 @@ class TestContextTokenLifecycle:
             set_current_context,
         )
 
-        ctx_a = CorrelationContext(
-            request_id="req-a", correlation_id="corr-a", actor_id="a"
-        )
-        ctx_b = CorrelationContext(
-            request_id="req-b", correlation_id="corr-b", actor_id="b"
-        )
+        ctx_a = CorrelationContext(request_id="req-a", correlation_id="corr-a", actor_id="a")
+        ctx_b = CorrelationContext(request_id="req-b", correlation_id="corr-b", actor_id="b")
 
         token_a = set_current_context(ctx_a)
         token_b = set_current_context(ctx_b)
@@ -1605,9 +1627,7 @@ class TestContextTokenLifecycle:
         initial = get_current_context()
 
         # Middleware binds initial context
-        mw_ctx = CorrelationContext(
-            request_id="req-mw", correlation_id="corr-mw"
-        )
+        mw_ctx = CorrelationContext(request_id="req-mw", correlation_id="corr-mw")
         mw_token = set_current_context(mw_ctx)
 
         # Auth enrichment replaces context
@@ -1640,7 +1660,9 @@ class TestRealEndpointAuditPaths:
     Outcome enums are passed at call time.
     """
 
-    def _make_token(self, role: str = Role.FIRM_ADMIN.value, permissions: list[str] | None = None) -> str:
+    def _make_token(
+        self, role: str = Role.FIRM_ADMIN.value, permissions: list[str] | None = None
+    ) -> str:
         if permissions is None:
             permissions = [Permission.ADMIN_DASHBOARD.value]
         return create_access_token(
@@ -1676,7 +1698,9 @@ class TestRealEndpointAuditPaths:
                 with client.websocket_connect(f"/api/v1/admin/ws?token={token}"):
                     pass
 
-        assert Outcome.DENIED in captured_outcomes, f"Expected Outcome.DENIED in {captured_outcomes}"
+        assert Outcome.DENIED in captured_outcomes, (
+            f"Expected Outcome.DENIED in {captured_outcomes}"
+        )
 
     def test_real_capacity_denial_emits_outcome_denied(self):
         """Requirement 2: real endpoint capacity denial path with audit interception."""
@@ -1712,7 +1736,9 @@ class TestRealEndpointAuditPaths:
                 with client.websocket_connect(f"/api/v1/admin/ws?token={token}"):
                     pass
 
-        assert Outcome.DENIED in captured_outcomes, f"Expected Outcome.DENIED in {captured_outcomes}"
+        assert Outcome.DENIED in captured_outcomes, (
+            f"Expected Outcome.DENIED in {captured_outcomes}"
+        )
 
 
 # ── Real Endpoint Cleanup Path Tests ───────────────────────────────────────────
@@ -2122,10 +2148,7 @@ class TestRealEndpointTimeoutPaths:
         assert ws.close_code == 4408, f"Expected 4408, got {ws.close_code}"
 
         # audit_websocket_event received Outcome.FAILURE with idle_timeout
-        timeout_audits = [
-            c for c in audit_calls
-            if c.get("action") == "websocket_idle_timeout"
-        ]
+        timeout_audits = [c for c in audit_calls if c.get("action") == "websocket_idle_timeout"]
         assert len(timeout_audits) == 1, f"Expected 1 idle timeout audit, got {len(timeout_audits)}"
         assert timeout_audits[0]["outcome"] == Outcome.FAILURE
         assert timeout_audits[0]["denial_reason"] == "idle_timeout"
@@ -2160,18 +2183,16 @@ class TestRealEndpointTimeoutPaths:
 
         # audit_websocket_event received Outcome.FAILURE with max_lifetime
         lifetime_audits = [
-            c for c in audit_calls
-            if c.get("action") == "websocket_lifetime_timeout"
+            c for c in audit_calls if c.get("action") == "websocket_lifetime_timeout"
         ]
-        assert len(lifetime_audits) == 1, f"Expected 1 lifetime timeout audit, got {len(lifetime_audits)}"
+        assert len(lifetime_audits) == 1, (
+            f"Expected 1 lifetime timeout audit, got {len(lifetime_audits)}"
+        )
         assert lifetime_audits[0]["outcome"] == Outcome.FAILURE
         assert lifetime_audits[0]["denial_reason"] == "max_lifetime"
 
         # Distinct from idle_timeout
-        idle_audits = [
-            c for c in audit_calls
-            if c.get("action") == "websocket_idle_timeout"
-        ]
+        idle_audits = [c for c in audit_calls if c.get("action") == "websocket_idle_timeout"]
         assert len(idle_audits) == 0, "Should not emit idle_timeout for max-lifetime path"
 
         # Cleanup
@@ -2203,33 +2224,21 @@ class TestRealEndpointTimeoutPaths:
         audit_calls = result["audit_calls"]
 
         # The idle-timeout branch must have executed.
-        timeout_audits = [
-            c for c in audit_calls
-            if c.get("action") == "websocket_idle_timeout"
-        ]
-        assert len(timeout_audits) == 1, (
-            f"Expected 1 idle timeout audit, got {len(timeout_audits)}"
-        )
+        timeout_audits = [c for c in audit_calls if c.get("action") == "websocket_idle_timeout"]
+        assert len(timeout_audits) == 1, f"Expected 1 idle timeout audit, got {len(timeout_audits)}"
         assert ws.close_code == 4408, f"Expected 4408, got {ws.close_code}"
 
         # Deterministic ordering check: find the close event in the event
         # log and assert no "send" event follows it.
         events = ws.event_log
-        close_indices = [
-            i for i, e in enumerate(events)
-            if e[0] == "close" and e[1] == 4408
-        ]
+        close_indices = [i for i, e in enumerate(events) if e[0] == "close" and e[1] == 4408]
         assert len(close_indices) == 1, (
-            f"Expected exactly one close:4408 event, got {len(close_indices)}. "
-            f"Event log: {events}"
+            f"Expected exactly one close:4408 event, got {len(close_indices)}. Event log: {events}"
         )
         close_idx = close_indices[0]
-        post_close_sends = [
-            e for e in events[close_idx + 1:] if e[0] == "send"
-        ]
+        post_close_sends = [e for e in events[close_idx + 1 :] if e[0] == "send"]
         assert len(post_close_sends) == 0, (
-            f"send_text called after close: {post_close_sends}. "
-            f"Full event log: {events}"
+            f"send_text called after close: {post_close_sends}. Full event log: {events}"
         )
 
 
@@ -2306,8 +2315,7 @@ class TestRealEndpointOversizedOutbound:
 
         # The oversized branch should have executed
         oversized_audits = [
-            c for c in audit_calls
-            if c.get("action") == "websocket_payload_oversized"
+            c for c in audit_calls if c.get("action") == "websocket_payload_oversized"
         ]
         assert len(oversized_audits) >= 1, (
             f"Expected >=1 oversized audit, got {len(oversized_audits)}. "
@@ -2318,19 +2326,14 @@ class TestRealEndpointOversizedOutbound:
 
         # No AttributeError / crash — endpoint ran to completion
         # The oversized payload was NOT sent (no metrics payload in sent_payloads)
-        metrics_payloads = [
-            p for p in ws.sent_payloads
-            if "requests_total" in p
-        ]
+        metrics_payloads = [p for p in ws.sent_payloads if "requests_total" in p]
         assert len(metrics_payloads) == 0, "Oversized payload must not be sent"
 
         # Payload content is not in audit metadata
         for audit_call in oversized_audits:
             metadata = audit_call.get("metadata", {})
             for value in str(metadata).split(","):
-                assert "requests_total" not in value, (
-                    "Payload content leaked into audit metadata"
-                )
+                assert "requests_total" not in value, "Payload content leaked into audit metadata"
 
         # Cleanup executes exactly once
         assert disconnect_calls[0] == 1
@@ -2599,9 +2602,7 @@ class TestTrueConcurrentRequestIsolation:
             assert all(v == "actor-a" for v in actor_observations_a), (
                 f"A saw cross-contamination (actor): {actor_observations_a}"
             )
-            assert "actor-b" not in actor_observations_a, (
-                f"A saw B's actor: {actor_observations_a}"
-            )
+            assert "actor-b" not in actor_observations_a, f"A saw B's actor: {actor_observations_a}"
             # A saw only A tenant values
             assert all(v == "tenant-a" for v in tenant_observations_a), (
                 f"A saw cross-contamination (tenant): {tenant_observations_a}"
@@ -2611,9 +2612,7 @@ class TestTrueConcurrentRequestIsolation:
             assert all(v == "actor-b" for v in actor_observations_b), (
                 f"B saw cross-contamination (actor): {actor_observations_b}"
             )
-            assert "actor-a" not in actor_observations_b, (
-                f"B saw A's actor: {actor_observations_b}"
-            )
+            assert "actor-a" not in actor_observations_b, f"B saw A's actor: {actor_observations_b}"
             assert all(v == "tenant-b" for v in tenant_observations_b), (
                 f"B saw cross-contamination (tenant): {tenant_observations_b}"
             )
@@ -2664,6 +2663,7 @@ class TestTrueConcurrentRequestIsolation:
                 await asyncio.sleep(0.02)
                 # A's context is still A
                 from portal.auth.correlation import get_current_context
+
                 assert get_current_context().actor_id == "actor-a"
                 reset_request_context_tokens(req_a)
                 # A's stack cleared
@@ -2678,6 +2678,7 @@ class TestTrueConcurrentRequestIsolation:
                 stack_b = getattr(req_b.state, _REQUEST_CONTEXT_TOKENS_ATTR)
                 assert len(stack_b) == 1
                 from portal.auth.correlation import get_current_context
+
                 assert get_current_context().actor_id == "actor-b"
                 reset_request_context_tokens(req_b)
                 stack_b_after = getattr(req_b.state, _REQUEST_CONTEXT_TOKENS_ATTR, [])

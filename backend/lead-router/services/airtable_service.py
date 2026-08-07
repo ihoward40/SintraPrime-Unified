@@ -16,11 +16,11 @@ logger = logging.getLogger(__name__)
 
 class AirtableService:
     """Service for managing lead records in Airtable."""
-    
+
     def __init__(self, api_key: Optional[str] = None, base_id: Optional[str] = None):
         """
         Initialize Airtable service.
-        
+
         Args:
             api_key: Airtable API key (defaults to AIRTABLE_API_KEY env var)
             base_id: Airtable base ID (defaults to AIRTABLE_BASE_ID env var)
@@ -33,14 +33,14 @@ class AirtableService:
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
-    
+
     def write_lead(self, lead: Lead) -> Dict[str, Any]:
         """
         Write lead record to Airtable.
-        
+
         Args:
             lead: Lead object to write
-            
+
         Returns:
             Response from Airtable API (including created record ID)
         """
@@ -65,31 +65,31 @@ class AirtableService:
                 "Status": lead.status.value,
                 "SubmittedAt": lead.submitted_at.isoformat(),
             }
-            
+
             # Only include optional datetime fields if set
             if lead.contacted_at:
                 fields["ContactedAt"] = lead.contacted_at.isoformat()
             if lead.demo_scheduled_at:
                 fields["DemoScheduledAt"] = lead.demo_scheduled_at.isoformat()
-            
+
             url = f"{self.base_url}/{self.base_id}/{self.table_name}"
-            
+
             payload = {"fields": fields}
-            
+
             logger.info(f"Writing lead {lead.lead_id} to Airtable")
             response = requests.post(url, json=payload, headers=self.headers, timeout=10)
             response.raise_for_status()
-            
+
             result = response.json()
             airtable_id = result.get("id")
             logger.info(f"Lead {lead.lead_id} written to Airtable with ID {airtable_id}")
-            
+
             return {
                 "success": True,
                 "airtable_id": airtable_id,
                 "response": result,
             }
-        
+
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to write lead to Airtable: {str(e)}")
             return {
@@ -97,7 +97,7 @@ class AirtableService:
                 "error": str(e),
                 "airtable_id": None,
             }
-    
+
     def update_lead_status(
         self,
         airtable_id: str,
@@ -106,12 +106,12 @@ class AirtableService:
     ) -> Dict[str, Any]:
         """
         Update lead status in Airtable.
-        
+
         Args:
             airtable_id: Airtable record ID
             status: New status value
             contacted_at: When agent contacted the lead
-            
+
         Returns:
             Update result
         """
@@ -119,35 +119,35 @@ class AirtableService:
             fields = {"Status": status}
             if contacted_at:
                 fields["ContactedAt"] = contacted_at.isoformat()
-            
+
             url = f"{self.base_url}/{self.base_id}/{self.table_name}/{airtable_id}"
             payload = {"fields": fields}
-            
+
             logger.info(f"Updating Airtable record {airtable_id} status to {status}")
             response = requests.patch(url, json=payload, headers=self.headers, timeout=10)
             response.raise_for_status()
-            
+
             logger.info(f"Successfully updated Airtable record {airtable_id}")
             return {
                 "success": True,
                 "response": response.json(),
             }
-        
+
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to update lead status in Airtable: {str(e)}")
             return {
                 "success": False,
                 "error": str(e),
             }
-    
+
     def schedule_demo(self, airtable_id: str, demo_time: datetime) -> Dict[str, Any]:
         """
         Update lead record with scheduled demo time.
-        
+
         Args:
             airtable_id: Airtable record ID
             demo_time: When the demo is scheduled
-            
+
         Returns:
             Update result
         """
@@ -156,14 +156,14 @@ class AirtableService:
             status="demo-scheduled",
             contacted_at=datetime.utcnow(),
         )
-    
+
     def get_lead_by_id(self, lead_id: str) -> Optional[Dict[str, Any]]:
         """
         Retrieve lead from Airtable by LeadID.
-        
+
         Args:
             lead_id: Lead UUID
-            
+
         Returns:
             Lead record or None if not found
         """
@@ -172,16 +172,16 @@ class AirtableService:
             params = {
                 "filterByFormula": f"{{LeadID}} = '{lead_id}'",
             }
-            
+
             response = requests.get(url, headers=self.headers, params=params, timeout=10)
             response.raise_for_status()
-            
+
             records = response.json().get("records", [])
             if records:
                 return records[0]
-            
+
             return None
-        
+
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to retrieve lead from Airtable: {str(e)}")
             return None

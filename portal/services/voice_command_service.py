@@ -327,7 +327,9 @@ async def submit_voice_command(
     )
 
     session = VoiceSession(envelope.session_id, current_user.user_id)
-    outcome = _handle_voice_command(envelope=envelope, flags=flags, session=session, providers=providers)
+    outcome = _handle_voice_command(
+        envelope=envelope, flags=flags, session=session, providers=providers
+    )
 
     command_row = VoiceCommand(
         id=str(uuid.uuid4()),
@@ -361,7 +363,9 @@ async def submit_voice_command(
     await db.flush()
 
     events = await _append_events(db, command_row, session, start_sequence=1, previous_hash=None)
-    await _finalize(db, current_user, command_row, outcome, events, audit_action="voice_command_submitted")
+    await _finalize(
+        db, current_user, command_row, outcome, events, audit_action="voice_command_submitted"
+    )
 
     return VoiceCommandResult(
         command=command_row,
@@ -390,7 +394,9 @@ async def _load_command(
     return command_row
 
 
-def _rehydrate_envelope(command_row: VoiceCommand, *, confirmation_state: ConfirmationState) -> VoiceCommandEnvelope:
+def _rehydrate_envelope(
+    command_row: VoiceCommand, *, confirmation_state: ConfirmationState
+) -> VoiceCommandEnvelope:
     return create_envelope(
         session_id=command_row.voice_session_id,
         principal_id=command_row.principal_id,
@@ -477,7 +483,9 @@ async def confirm_voice_command(
             command_id=command_row.command_id,
         )
 
-        effective_target = current_target or command_row.target_resource or command_row.normalized_intent
+        effective_target = (
+            current_target or command_row.target_resource or command_row.normalized_intent
+        )
         confirmation_check = pending.evaluate(
             utterance,
             current_target=effective_target,
@@ -508,9 +516,17 @@ async def confirm_voice_command(
         events = await _append_events(
             db, command_row, session, start_sequence=start_sequence, previous_hash=previous_hash
         )
-        await _finalize(db, current_user, command_row, outcome, events, audit_action="voice_command_confirmation")
+        await _finalize(
+            db,
+            current_user,
+            command_row,
+            outcome,
+            events,
+            audit_action="voice_command_confirmation",
+        )
 
         return VoiceCommandResult(command=command_row, outcome=outcome)
+
 
 async def cancel_voice_command(
     db: AsyncSession,
@@ -538,12 +554,16 @@ async def cancel_voice_command(
     events = await _append_events(
         db, command_row, session, start_sequence=start_sequence, previous_hash=previous_hash
     )
-    await _finalize(db, current_user, command_row, outcome, events, audit_action="voice_command_cancelled")
+    await _finalize(
+        db, current_user, command_row, outcome, events, audit_action="voice_command_cancelled"
+    )
 
     return VoiceCommandResult(command=command_row, outcome=outcome)
 
 
-async def get_voice_command(db: AsyncSession, command_id: str, current_user: CurrentUser) -> VoiceCommand:
+async def get_voice_command(
+    db: AsyncSession, command_id: str, current_user: CurrentUser
+) -> VoiceCommand:
     return await _load_command(db, current_user, command_id)
 
 

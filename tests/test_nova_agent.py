@@ -84,31 +84,42 @@ class TestNovaInit:
 
     def test_all_eight_actions(self, nova):
         expected = {
-            "SEND_DISPUTE_LETTER", "FILE_COURT_MOTION", "SUBMIT_CREDIT_DISPUTE",
-            "DRAFT_TRUST_AMENDMENT", "SEND_DEMAND_LETTER", "NOTIFY_CREDITOR",
-            "SCHEDULE_COURT_DATE", "GENERATE_AFFIDAVIT",
+            "SEND_DISPUTE_LETTER",
+            "FILE_COURT_MOTION",
+            "SUBMIT_CREDIT_DISPUTE",
+            "DRAFT_TRUST_AMENDMENT",
+            "SEND_DEMAND_LETTER",
+            "NOTIFY_CREDITOR",
+            "SCHEDULE_COURT_DATE",
+            "GENERATE_AFFIDAVIT",
         }
         assert expected == set(nova._registry.keys())
 
 
 class TestExecuteAction:
     def test_auto_approve_low_risk(self, nova):
-        record = nova.execute_action("NOTIFY_CREDITOR", {
-            "creditor_name": "Acme Corp",
-            "creditor_address": "123 Main St",
-            "notification_type": "dispute",
-            "message": "We dispute this debt.",
-        })
+        record = nova.execute_action(
+            "NOTIFY_CREDITOR",
+            {
+                "creditor_name": "Acme Corp",
+                "creditor_address": "123 Main St",
+                "notification_type": "dispute",
+                "message": "We dispute this debt.",
+            },
+        )
         assert record.status == ActionStatus.COMPLETED.value
         assert record.result is not None
 
     def test_human_approval_required(self, nova):
-        record = nova.execute_action("SEND_DISPUTE_LETTER", {
-            "recipient_name": "Bank",
-            "recipient_address": "456 Wall St",
-            "dispute_reason": "Incorrect balance",
-            "account_number": "12345",
-        })
+        record = nova.execute_action(
+            "SEND_DISPUTE_LETTER",
+            {
+                "recipient_name": "Bank",
+                "recipient_address": "456 Wall St",
+                "dispute_reason": "Incorrect balance",
+                "account_number": "12345",
+            },
+        )
         assert record.status == ActionStatus.AWAITING_APPROVAL.value
 
     def test_missing_params_raises(self, nova):
@@ -120,60 +131,83 @@ class TestExecuteAction:
             nova.execute_action("NONEXISTENT_ACTION", {})
 
     def test_force_no_approval(self, nova):
-        record = nova.execute_action("SEND_DISPUTE_LETTER", {
-            "recipient_name": "Bank",
-            "recipient_address": "456 Wall St",
-            "dispute_reason": "Error",
-            "account_number": "99999",
-        }, approval_required=False)
+        record = nova.execute_action(
+            "SEND_DISPUTE_LETTER",
+            {
+                "recipient_name": "Bank",
+                "recipient_address": "456 Wall St",
+                "dispute_reason": "Error",
+                "account_number": "99999",
+            },
+            approval_required=False,
+        )
         assert record.status == ActionStatus.COMPLETED.value
 
     def test_schedule_court_date(self, nova):
-        record = nova.execute_action("SCHEDULE_COURT_DATE", {
-            "case_number": "CV-2025-001",
-            "court_name": "Superior Court",
-            "date": "2025-06-15",
-            "time": "09:00",
-        })
+        record = nova.execute_action(
+            "SCHEDULE_COURT_DATE",
+            {
+                "case_number": "CV-2025-001",
+                "court_name": "Superior Court",
+                "date": "2025-06-15",
+                "time": "09:00",
+            },
+        )
         assert record.status == ActionStatus.COMPLETED.value
         assert "event_id" in record.result
 
 
 class TestApprovalFlow:
     def test_approve_execution(self, nova):
-        record = nova.execute_action("FILE_COURT_MOTION", {
-            "case_number": "CV-2025-001",
-            "court_name": "Superior Court",
-            "motion_type": "Dismiss",
-            "motion_body": "Motion to dismiss...",
-        })
+        record = nova.execute_action(
+            "FILE_COURT_MOTION",
+            {
+                "case_number": "CV-2025-001",
+                "court_name": "Superior Court",
+                "motion_type": "Dismiss",
+                "motion_body": "Motion to dismiss...",
+            },
+        )
         assert record.status == ActionStatus.AWAITING_APPROVAL.value
         assert nova.approve_execution(record.execution_id, "admin") is True
 
     def test_reject_execution(self, nova):
-        record = nova.execute_action("SEND_DEMAND_LETTER", {
-            "recipient_name": "Debtor",
-            "recipient_email": "debtor@example.com",
-            "demand_amount": "5000",
-            "demand_reason": "Breach of contract",
-        })
+        record = nova.execute_action(
+            "SEND_DEMAND_LETTER",
+            {
+                "recipient_name": "Debtor",
+                "recipient_email": "debtor@example.com",
+                "demand_amount": "5000",
+                "demand_reason": "Breach of contract",
+            },
+        )
         assert nova.reject_execution(record.execution_id, "Not ready") is True
 
     def test_reject_already_rejected(self, nova):
-        record = nova.execute_action("SEND_DEMAND_LETTER", {
-            "recipient_name": "X", "recipient_email": "x@x.com",
-            "demand_amount": "100", "demand_reason": "test",
-        })
+        record = nova.execute_action(
+            "SEND_DEMAND_LETTER",
+            {
+                "recipient_name": "X",
+                "recipient_email": "x@x.com",
+                "demand_amount": "100",
+                "demand_reason": "test",
+            },
+        )
         nova.reject_execution(record.execution_id, "reason")
         assert nova.reject_execution(record.execution_id, "again") is False
 
 
 class TestRollback:
     def test_rollback_completed(self, nova):
-        record = nova.execute_action("NOTIFY_CREDITOR", {
-            "creditor_name": "C", "creditor_address": "A",
-            "notification_type": "t", "message": "m",
-        })
+        record = nova.execute_action(
+            "NOTIFY_CREDITOR",
+            {
+                "creditor_name": "C",
+                "creditor_address": "A",
+                "notification_type": "t",
+                "message": "m",
+            },
+        )
         result = nova.rollback_action(record.execution_id)
         assert result is not None
         assert result["status"] == "rolled_back"
@@ -187,10 +221,15 @@ class TestExecutionHistory:
         assert nova.get_execution_history() == []
 
     def test_history_filter_by_type(self, nova):
-        nova.execute_action("NOTIFY_CREDITOR", {
-            "creditor_name": "C", "creditor_address": "A",
-            "notification_type": "t", "message": "m",
-        })
+        nova.execute_action(
+            "NOTIFY_CREDITOR",
+            {
+                "creditor_name": "C",
+                "creditor_address": "A",
+                "notification_type": "t",
+                "message": "m",
+            },
+        )
         history = nova.get_execution_history(action_type="NOTIFY_CREDITOR")
         assert len(history) == 1
 
@@ -205,16 +244,22 @@ class TestExecutionHistory:
 class TestRegistryBasics:
     def test_register_action(self, registry):
         spec = RegActionSpec(
-            action_type="TEST_ACTION", name="Test", description="Test action",
-            category="test", required_params=["param1"],
+            action_type="TEST_ACTION",
+            name="Test",
+            description="Test action",
+            category="test",
+            required_params=["param1"],
         )
         registry.register_action(spec)
         assert registry.has_action("TEST_ACTION")
 
     def test_duplicate_raises(self, registry):
         spec = RegActionSpec(
-            action_type="DUP", name="Dup", description="d",
-            category="test", required_params=[],
+            action_type="DUP",
+            name="Dup",
+            description="d",
+            category="test",
+            required_params=[],
         )
         registry.register_action(spec)
         with pytest.raises(ActionAlreadyRegisteredError):
@@ -222,13 +267,19 @@ class TestRegistryBasics:
 
     def test_overwrite(self, registry):
         spec = RegActionSpec(
-            action_type="OW", name="OW1", description="d",
-            category="test", required_params=[],
+            action_type="OW",
+            name="OW1",
+            description="d",
+            category="test",
+            required_params=[],
         )
         registry.register_action(spec)
         spec2 = RegActionSpec(
-            action_type="OW", name="OW2", description="d2",
-            category="test", required_params=[],
+            action_type="OW",
+            name="OW2",
+            description="d2",
+            category="test",
+            required_params=[],
         )
         registry.register_action(spec2, overwrite=True)
         assert registry.get_action("OW").name == "OW2"
@@ -239,8 +290,11 @@ class TestRegistryBasics:
 
     def test_list_actions(self, registry):
         spec = RegActionSpec(
-            action_type="LA", name="LA", description="d",
-            category="cat1", required_params=[],
+            action_type="LA",
+            name="LA",
+            description="d",
+            category="cat1",
+            required_params=[],
         )
         registry.register_action(spec)
         actions = registry.list_actions()
@@ -249,8 +303,11 @@ class TestRegistryBasics:
     def test_list_by_category(self, registry):
         for i, cat in enumerate(["legal", "legal", "dispute"]):
             spec = RegActionSpec(
-                action_type=f"ACT_{i}", name=f"A{i}", description="d",
-                category=cat, required_params=[],
+                action_type=f"ACT_{i}",
+                name=f"A{i}",
+                description="d",
+                category=cat,
+                required_params=[],
             )
             registry.register_action(spec)
         assert len(registry.list_actions(category="legal")) == 2
@@ -258,8 +315,11 @@ class TestRegistryBasics:
 
     def test_unregister(self, registry):
         spec = RegActionSpec(
-            action_type="UR", name="UR", description="d",
-            category="test", required_params=[],
+            action_type="UR",
+            name="UR",
+            description="d",
+            category="test",
+            required_params=[],
         )
         registry.register_action(spec)
         assert registry.unregister_action("UR") is True
@@ -267,8 +327,11 @@ class TestRegistryBasics:
 
     def test_validate_params(self, registry):
         spec = RegActionSpec(
-            action_type="VP", name="VP", description="d",
-            category="test", required_params=["a", "b"],
+            action_type="VP",
+            name="VP",
+            description="d",
+            category="test",
+            required_params=["a", "b"],
         )
         registry.register_action(spec)
         errors = registry.validate_params("VP", {"a": "1"})
@@ -276,8 +339,11 @@ class TestRegistryBasics:
 
     def test_enable_disable(self, registry):
         spec = RegActionSpec(
-            action_type="ED", name="ED", description="d",
-            category="test", required_params=[],
+            action_type="ED",
+            name="ED",
+            description="d",
+            category="test",
+            required_params=[],
         )
         registry.register_action(spec)
         registry.disable_action("ED")
@@ -303,9 +369,14 @@ class TestLedgerBasics:
 
     def test_append_entry(self, ledger):
         entry = LedgerEntry(
-            entry_id="e1", action_id="a1", action_type="TEST",
-            params={"x": 1}, result={"ok": True}, status="COMPLETED",
-            user_id="u1", approval_status="APPROVED",
+            entry_id="e1",
+            action_id="a1",
+            action_type="TEST",
+            params={"x": 1},
+            result={"ok": True},
+            status="COMPLETED",
+            user_id="u1",
+            approval_status="APPROVED",
         )
         ledger.append(entry)
         assert ledger.size == 1
@@ -314,39 +385,66 @@ class TestLedgerBasics:
     def test_hash_chain(self, ledger):
         for i in range(5):
             entry = LedgerEntry(
-                entry_id=f"e{i}", action_id=f"a{i}", action_type="TEST",
-                params={}, result={}, status="COMPLETED",
-                user_id="u1", approval_status="OK",
+                entry_id=f"e{i}",
+                action_id=f"a{i}",
+                action_type="TEST",
+                params={},
+                result={},
+                status="COMPLETED",
+                user_id="u1",
+                approval_status="OK",
             )
             ledger.append(entry)
         assert ledger.verify_integrity() is True
 
     def test_get_history(self, ledger):
         for i in range(3):
-            ledger.append(LedgerEntry(
-                entry_id=f"e{i}", action_id=f"a{i}",
-                action_type="TYPE_A" if i < 2 else "TYPE_B",
-                params={}, result={}, status="COMPLETED",
-                user_id="u1", approval_status="OK",
-            ))
+            ledger.append(
+                LedgerEntry(
+                    entry_id=f"e{i}",
+                    action_id=f"a{i}",
+                    action_type="TYPE_A" if i < 2 else "TYPE_B",
+                    params={},
+                    result={},
+                    status="COMPLETED",
+                    user_id="u1",
+                    approval_status="OK",
+                )
+            )
         assert len(ledger.get_history(action_type="TYPE_A")) == 2
         assert len(ledger.get_history(action_type="TYPE_B")) == 1
 
     def test_get_entry(self, ledger):
-        ledger.append(LedgerEntry(
-            entry_id="find-me", action_id="a1", action_type="T",
-            params={}, result={}, status="OK", user_id="u", approval_status="OK",
-        ))
+        ledger.append(
+            LedgerEntry(
+                entry_id="find-me",
+                action_id="a1",
+                action_type="T",
+                params={},
+                result={},
+                status="OK",
+                user_id="u",
+                approval_status="OK",
+            )
+        )
         assert ledger.get_entry("find-me") is not None
         assert ledger.get_entry("missing") is None
 
     def test_export_evidence(self, ledger, tmp_path):
         for i in range(3):
-            ledger.append(LedgerEntry(
-                entry_id=f"e{i}", action_id=f"a{i}", action_type="TEST",
-                params={}, result={}, status="COMPLETED",
-                user_id="u1", approval_status="OK", case_id="CASE-001",
-            ))
+            ledger.append(
+                LedgerEntry(
+                    entry_id=f"e{i}",
+                    action_id=f"a{i}",
+                    action_type="TEST",
+                    params={},
+                    result={},
+                    status="COMPLETED",
+                    user_id="u1",
+                    approval_status="OK",
+                    case_id="CASE-001",
+                )
+            )
         zip_path = ledger.export_evidence_bundle("CASE-001")
         assert os.path.exists(zip_path)
 
@@ -361,10 +459,18 @@ class TestLedgerBasics:
     def test_persistence(self, tmp_path):
         path = str(tmp_path / "persist.jsonl")
         l1 = ExecutionLedger(ledger_path=path)
-        l1.append(LedgerEntry(
-            entry_id="p1", action_id="a1", action_type="T",
-            params={}, result={}, status="OK", user_id="u", approval_status="OK",
-        ))
+        l1.append(
+            LedgerEntry(
+                entry_id="p1",
+                action_id="a1",
+                action_type="T",
+                params={},
+                result={},
+                status="OK",
+                user_id="u",
+                approval_status="OK",
+            )
+        )
         l2 = ExecutionLedger(ledger_path=path)
         assert l2.size == 1
 
@@ -374,15 +480,11 @@ class TestLedgerBasics:
 
 class TestGatewayBasics:
     def test_submit_auto_approve(self, gateway):
-        req = gateway.submit_for_approval("NOTIFY_CREDITOR", {
-            "description": "Notify creditor"
-        })
+        req = gateway.submit_for_approval("NOTIFY_CREDITOR", {"description": "Notify creditor"})
         assert req.status == GWApprovalStatus.AUTO_APPROVED.value
 
     def test_submit_requires_human(self, gateway):
-        req = gateway.submit_for_approval("SEND_DISPUTE_LETTER", {
-            "description": "Send dispute"
-        })
+        req = gateway.submit_for_approval("SEND_DISPUTE_LETTER", {"description": "Send dispute"})
         assert req.status == GWApprovalStatus.PENDING.value
 
     def test_approve(self, gateway):

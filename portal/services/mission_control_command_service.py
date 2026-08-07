@@ -238,11 +238,10 @@ async def submit_refusal_only_command(
 
 def _is_idempotency_collision(exc: IntegrityError) -> bool:
     message = str(exc.orig).lower() if exc.orig else str(exc).lower()
-    return (
-        "uq_mission_control_command_idempotency" in message
-        or ("mission_control_commands.tenant_id" in message
+    return "uq_mission_control_command_idempotency" in message or (
+        "mission_control_commands.tenant_id" in message
         and "mission_control_commands.requested_by" in message
-        and "mission_control_commands.idempotency_key" in message)
+        and "mission_control_commands.idempotency_key" in message
     )
 
 

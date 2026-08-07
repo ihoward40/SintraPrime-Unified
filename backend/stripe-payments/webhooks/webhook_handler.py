@@ -23,13 +23,13 @@ router = APIRouter(prefix="/webhooks", tags=["webhooks"])
     responses={
         200: {"description": "Webhook processed successfully"},
         400: {"description": "Invalid signature"},
-        500: {"description": "Processing error"}
-    }
+        500: {"description": "Processing error"},
+    },
 )
 async def handle_webhook(request: Request):
     """
     Handle Stripe webhook events
-    
+
     Supported events:
     - payment_intent.succeeded: Payment completed
     - customer.subscription.updated: Subscription changed
@@ -37,13 +37,13 @@ async def handle_webhook(request: Request):
     - invoice.paid: Invoice paid
     - invoice.payment_failed: Payment failed
     - invoice.upcoming: Upcoming invoice (for reminders)
-    
+
     Args:
         request: HTTP request containing Stripe webhook event
-        
+
     Returns:
         Response confirming webhook receipt
-        
+
     Raises:
         HTTPException: If signature verification fails
     """
@@ -54,9 +54,7 @@ async def handle_webhook(request: Request):
         # Verify webhook signature
         try:
             event = stripe_client.verify_webhook_signature(
-                payload,
-                sig_header,
-                STRIPE_WEBHOOK_SECRET
+                payload, sig_header, STRIPE_WEBHOOK_SECRET
             )
         except stripe.error.SignatureVerificationError as e:
             logger.error(f"Webhook signature verification failed: {e}")
@@ -145,10 +143,7 @@ async def _handle_subscription_deleted(event: dict):
 
         # The subscription object should have canceled status
         # Update Airtable with cancellation
-        await airtable_sync_service.record_failed_payment(
-            subscription_id,
-            "Subscription canceled"
-        )
+        await airtable_sync_service.record_failed_payment(subscription_id, "Subscription canceled")
 
         logger.info(f"Subscription {subscription_id} marked as canceled in Airtable")
 
@@ -192,8 +187,7 @@ async def _handle_invoice_payment_failed(event: dict):
 
             # Record failure in Airtable
             await airtable_sync_service.record_failed_payment(
-                subscription_id,
-                f"Invoice {invoice_id} payment failed"
+                subscription_id, f"Invoice {invoice_id} payment failed"
             )
 
             logger.info(f"Invoice {invoice_id} failure recorded in Airtable")

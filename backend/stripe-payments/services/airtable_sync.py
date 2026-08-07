@@ -26,6 +26,7 @@ class AirtableSyncService:
         try:
             # Try to import the airtable_client from parent directory
             import airtable_client
+
             self.airtable = airtable_client
             logger.info("Airtable client initialized")
         except ImportError:
@@ -33,9 +34,7 @@ class AirtableSyncService:
             self.airtable = None
 
     async def create_payment_record(
-        self,
-        subscription: Subscription,
-        email: str
+        self, subscription: Subscription, email: str
     ) -> Optional[Dict[str, Any]]:
         """Create a payment record in Airtable"""
         try:
@@ -52,27 +51,26 @@ class AirtableSyncService:
                 "Amount": amount,
                 "Frequency": "Monthly",
                 "Status": "Trialing" if subscription.trial_end else "Active",
-                "NextBillingDate": subscription.current_period_end.isoformat() if subscription.current_period_end else None,
-                "TrialEndsAt": subscription.trial_end.isoformat() if subscription.trial_end else None,
+                "NextBillingDate": subscription.current_period_end.isoformat()
+                if subscription.current_period_end
+                else None,
+                "TrialEndsAt": subscription.trial_end.isoformat()
+                if subscription.trial_end
+                else None,
                 "StripeSubscriptionID": subscription.subscription_id,
                 "StripeCustomerID": subscription.stripe_customer_id,
-                "CreatedAt": datetime.utcnow().isoformat()
+                "CreatedAt": datetime.utcnow().isoformat(),
             }
 
             logger.info(f"Creating Airtable payment record for {email}")
 
             # Use upsert to avoid duplicates
-            if hasattr(self.airtable, 'upsert'):
+            if hasattr(self.airtable, "upsert"):
                 result = self.airtable.upsert(
-                    AIRTABLE_PAYMENTS_TABLE,
-                    records=[record_data],
-                    key_fields=["PaymentID"]
+                    AIRTABLE_PAYMENTS_TABLE, records=[record_data], key_fields=["PaymentID"]
                 )
             else:
-                result = await self.airtable.create_record(
-                    AIRTABLE_PAYMENTS_TABLE,
-                    record_data
-                )
+                result = await self.airtable.create_record(AIRTABLE_PAYMENTS_TABLE, record_data)
 
             logger.info(f"Airtable record created for subscription: {subscription.subscription_id}")
             return result
@@ -83,8 +81,7 @@ class AirtableSyncService:
             return None
 
     async def update_subscription_in_airtable(
-        self,
-        subscription: Subscription
+        self, subscription: Subscription
     ) -> Optional[Dict[str, Any]]:
         """Update subscription status in Airtable"""
         try:
@@ -95,7 +92,7 @@ class AirtableSyncService:
             record_data = {
                 "PaymentID": subscription.subscription_id,
                 "Status": subscription.status.value.capitalize(),
-                "UpdatedAt": datetime.utcnow().isoformat()
+                "UpdatedAt": datetime.utcnow().isoformat(),
             }
 
             if subscription.canceled_at:
@@ -103,18 +100,14 @@ class AirtableSyncService:
 
             logger.info(f"Updating Airtable subscription record: {subscription.subscription_id}")
 
-            if hasattr(self.airtable, 'upsert'):
+            if hasattr(self.airtable, "upsert"):
                 result = self.airtable.upsert(
-                    AIRTABLE_PAYMENTS_TABLE,
-                    records=[record_data],
-                    key_fields=["PaymentID"]
+                    AIRTABLE_PAYMENTS_TABLE, records=[record_data], key_fields=["PaymentID"]
                 )
             else:
                 # Find record and update
                 result = await self.airtable.update_record(
-                    AIRTABLE_PAYMENTS_TABLE,
-                    subscription.subscription_id,
-                    record_data
+                    AIRTABLE_PAYMENTS_TABLE, subscription.subscription_id, record_data
                 )
 
             logger.info(f"Airtable subscription updated: {subscription.subscription_id}")
@@ -125,9 +118,7 @@ class AirtableSyncService:
             return None
 
     async def record_failed_payment(
-        self,
-        subscription_id: str,
-        error_message: str
+        self, subscription_id: str, error_message: str
     ) -> Optional[Dict[str, Any]]:
         """Record a failed payment in Airtable"""
         try:
@@ -140,22 +131,18 @@ class AirtableSyncService:
                 "Status": "Failed",
                 "FailureReason": error_message,
                 "FailedAt": datetime.utcnow().isoformat(),
-                "UpdatedAt": datetime.utcnow().isoformat()
+                "UpdatedAt": datetime.utcnow().isoformat(),
             }
 
             logger.info(f"Recording failed payment for subscription: {subscription_id}")
 
-            if hasattr(self.airtable, 'upsert'):
+            if hasattr(self.airtable, "upsert"):
                 result = self.airtable.upsert(
-                    AIRTABLE_PAYMENTS_TABLE,
-                    records=[record_data],
-                    key_fields=["PaymentID"]
+                    AIRTABLE_PAYMENTS_TABLE, records=[record_data], key_fields=["PaymentID"]
                 )
             else:
                 result = await self.airtable.update_record(
-                    AIRTABLE_PAYMENTS_TABLE,
-                    subscription_id,
-                    record_data
+                    AIRTABLE_PAYMENTS_TABLE, subscription_id, record_data
                 )
 
             logger.info(f"Failed payment recorded: {subscription_id}")
@@ -165,11 +152,7 @@ class AirtableSyncService:
             logger.error(f"Error recording failed payment: {e}")
             return None
 
-    async def record_refund(
-        self,
-        subscription_id: str,
-        amount: int
-    ) -> Optional[Dict[str, Any]]:
+    async def record_refund(self, subscription_id: str, amount: int) -> Optional[Dict[str, Any]]:
         """Record a refund in Airtable"""
         try:
             if not self.airtable:
@@ -181,22 +164,18 @@ class AirtableSyncService:
                 "Status": "Refunded",
                 "RefundAmount": amount / 100,  # Convert cents to dollars
                 "RefundedAt": datetime.utcnow().isoformat(),
-                "UpdatedAt": datetime.utcnow().isoformat()
+                "UpdatedAt": datetime.utcnow().isoformat(),
             }
 
             logger.info(f"Recording refund for subscription: {subscription_id}")
 
-            if hasattr(self.airtable, 'upsert'):
+            if hasattr(self.airtable, "upsert"):
                 result = self.airtable.upsert(
-                    AIRTABLE_PAYMENTS_TABLE,
-                    records=[record_data],
-                    key_fields=["PaymentID"]
+                    AIRTABLE_PAYMENTS_TABLE, records=[record_data], key_fields=["PaymentID"]
                 )
             else:
                 result = await self.airtable.update_record(
-                    AIRTABLE_PAYMENTS_TABLE,
-                    subscription_id,
-                    record_data
+                    AIRTABLE_PAYMENTS_TABLE, subscription_id, record_data
                 )
 
             logger.info(f"Refund recorded: {subscription_id}")
@@ -206,11 +185,7 @@ class AirtableSyncService:
             logger.error(f"Error recording refund: {e}")
             return None
 
-    async def update_deal_stage(
-        self,
-        email: str,
-        stage: str
-    ) -> Optional[Dict[str, Any]]:
+    async def update_deal_stage(self, email: str, stage: str) -> Optional[Dict[str, Any]]:
         """Update deal stage in Deals table when payment is received"""
         try:
             if not self.airtable:
@@ -221,19 +196,14 @@ class AirtableSyncService:
 
             # Find deal by client email and update stage
             # This assumes Airtable has a Deals table with email field
-            if hasattr(self.airtable, 'find_records'):
+            if hasattr(self.airtable, "find_records"):
                 deals = self.airtable.find_records(
-                    "Deals",
-                    filter_by_formula=f"{{ClientEmail}}='{email}'"
+                    "Deals", filter_by_formula=f"{{ClientEmail}}='{email}'"
                 )
 
                 if deals:
                     deal = deals[0]
-                    result = self.airtable.update_record(
-                        "Deals",
-                        deal["id"],
-                        {"Stage": stage}
-                    )
+                    result = self.airtable.update_record("Deals", deal["id"], {"Stage": stage})
                     logger.info(f"Deal stage updated for {email}")
                     return result
 

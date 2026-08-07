@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class EmailService:
     """Service for sending confirmation and follow-up emails."""
-    
+
     def __init__(
         self,
         provider: str = "sendgrid",
@@ -25,7 +25,7 @@ class EmailService:
     ):
         """
         Initialize email service.
-        
+
         Args:
             provider: "sendgrid" or "ses"
             api_key: API key for provider (defaults to env var)
@@ -33,15 +33,9 @@ class EmailService:
         """
         self.provider = provider
         self.api_key = api_key or os.getenv("SENDGRID_API_KEY", "SG.dummy_key")
-        self.from_email = from_email or os.getenv(
-            "FROM_EMAIL",
-            "leads@sintraprime.ai"
-        )
-        self.calendly_url = os.getenv(
-            "CALENDLY_URL",
-            "https://calendly.com/sintraprime/demo"
-        )
-    
+        self.from_email = from_email or os.getenv("FROM_EMAIL", "leads@sintraprime.ai")
+        self.calendly_url = os.getenv("CALENDLY_URL", "https://calendly.com/sintraprime/demo")
+
     def send_confirmation_email(
         self,
         lead: Lead,
@@ -49,30 +43,30 @@ class EmailService:
     ) -> Dict[str, Any]:
         """
         Send confirmation email to lead.
-        
+
         Args:
             lead: Lead object
             agent_name: Display name of assigned agent
-            
+
         Returns:
             Email send result
         """
         try:
             subject = f"Welcome to SintraPrime, {lead.name.split()[0]}!"
-            
+
             # Compose email body
             body_html = self._compose_confirmation_html(
                 lead_name=lead.name,
                 agent_name=agent_name,
                 calendly_url=self.calendly_url,
             )
-            
+
             body_text = self._compose_confirmation_text(
                 lead_name=lead.name,
                 agent_name=agent_name,
                 calendly_url=self.calendly_url,
             )
-            
+
             # Send via provider
             if self.provider == "sendgrid":
                 result = self._send_via_sendgrid(
@@ -88,9 +82,9 @@ class EmailService:
                     body_html=body_html,
                     body_text=body_text,
                 )
-            
+
             return result
-        
+
         except Exception as e:
             logger.error(f"Failed to send confirmation email: {str(e)}")
             return {
@@ -98,7 +92,7 @@ class EmailService:
                 "error": str(e),
                 "email_id": None,
             }
-    
+
     def send_followup_reminder(
         self,
         lead: Lead,
@@ -107,12 +101,12 @@ class EmailService:
     ) -> Dict[str, Any]:
         """
         Send follow-up reminder email.
-        
+
         Args:
             lead: Lead object
             agent_name: Assigned agent name
             reminder_number: 1 for first reminder, 2 for second, etc.
-            
+
         Returns:
             Email send result
         """
@@ -123,21 +117,21 @@ class EmailService:
             else:
                 subject = "Final Reminder: Your Free Consultation Awaits"
                 message = "This is your final reminder to schedule your consultation. We're here to help you achieve your goals."
-            
+
             body_html = self._compose_followup_html(
                 lead_name=lead.name,
                 agent_name=agent_name,
                 message=message,
                 calendly_url=self.calendly_url,
             )
-            
+
             body_text = self._compose_followup_text(
                 lead_name=lead.name,
                 agent_name=agent_name,
                 message=message,
                 calendly_url=self.calendly_url,
             )
-            
+
             if self.provider == "sendgrid":
                 result = self._send_via_sendgrid(
                     to_email=lead.email,
@@ -152,16 +146,16 @@ class EmailService:
                     body_html=body_html,
                     body_text=body_text,
                 )
-            
+
             return result
-        
+
         except Exception as e:
             logger.error(f"Failed to send follow-up email: {str(e)}")
             return {
                 "success": False,
                 "error": str(e),
             }
-    
+
     def _send_via_sendgrid(
         self,
         to_email: str,
@@ -174,13 +168,13 @@ class EmailService:
             # Stub implementation - would use sendgrid library in production
             # from sendgrid import SendGridAPIClient
             # from sendgrid.helpers.mail import Mail
-            
+
             logger.info(f"[STUB] Sending email to {to_email} via SendGrid")
             logger.debug(f"Subject: {subject}")
-            
+
             # Simulate API call
             email_id = f"sendgrid_{datetime.utcnow().timestamp()}"
-            
+
             return {
                 "success": True,
                 "email_id": email_id,
@@ -188,7 +182,7 @@ class EmailService:
                 "to_email": to_email,
                 "subject": subject,
             }
-        
+
         except Exception as e:
             logger.error(f"SendGrid error: {str(e)}")
             return {
@@ -196,7 +190,7 @@ class EmailService:
                 "error": str(e),
                 "email_id": None,
             }
-    
+
     def _send_via_ses(
         self,
         to_email: str,
@@ -209,13 +203,13 @@ class EmailService:
             # Stub implementation - would use boto3 in production
             # import boto3
             # ses_client = boto3.client('ses', region_name='us-east-1')
-            
+
             logger.info(f"[STUB] Sending email to {to_email} via AWS SES")
             logger.debug(f"Subject: {subject}")
-            
+
             # Simulate API call
             email_id = f"ses_{datetime.utcnow().timestamp()}"
-            
+
             return {
                 "success": True,
                 "email_id": email_id,
@@ -223,7 +217,7 @@ class EmailService:
                 "to_email": to_email,
                 "subject": subject,
             }
-        
+
         except Exception as e:
             logger.error(f"SES error: {str(e)}")
             return {
@@ -231,7 +225,7 @@ class EmailService:
                 "error": str(e),
                 "email_id": None,
             }
-    
+
     def _compose_confirmation_html(
         self,
         lead_name: str,
@@ -280,7 +274,7 @@ class EmailService:
             </body>
         </html>
         """
-    
+
     def _compose_confirmation_text(
         self,
         lead_name: str,
@@ -307,7 +301,7 @@ If you have any questions, feel free to reply to this email.
 Best regards,
 The SintraPrime Team
         """
-    
+
     def _compose_followup_html(
         self,
         lead_name: str,
@@ -346,7 +340,7 @@ The SintraPrime Team
             </body>
         </html>
         """
-    
+
     def _compose_followup_text(
         self,
         lead_name: str,

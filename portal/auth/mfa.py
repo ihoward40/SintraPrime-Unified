@@ -24,6 +24,7 @@ TOTP_VALID_WINDOW = 1  # allow ±1 interval for clock drift
 
 class MFAError(Exception):
     """Raised on MFA validation failure."""
+
     pass
 
 

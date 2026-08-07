@@ -18,6 +18,7 @@ from httpx import AsyncClient
 
 # ── Upload ────────────────────────────────────────────────────────────────────
 
+
 class TestDocumentUpload:
     @pytest.mark.asyncio
     async def test_upload_pdf_success(self, async_client, auth_headers_attorney, mock_storage):
@@ -25,7 +26,11 @@ class TestDocumentUpload:
         files = {"file": ("contract.pdf", io.BytesIO(b"%PDF-1.4 ..."), "application/pdf")}
         data = {"client_id": str(uuid.uuid4()), "name": "Contract Draft"}
 
-        with patch("portal.routers.documents.storage_service.upload_file", new_callable=AsyncMock, return_value="doc-key-123"):
+        with patch(
+            "portal.routers.documents.storage_service.upload_file",
+            new_callable=AsyncMock,
+            return_value="doc-key-123",
+        ):
             with patch("portal.routers.documents.get_db"):
                 response = await async_client.post(
                     "/documents/upload",
@@ -83,12 +88,20 @@ class TestDocumentUpload:
 
 # ── Download ──────────────────────────────────────────────────────────────────
 
+
 class TestDocumentDownload:
     @pytest.mark.asyncio
     async def test_download_own_document(self, async_client, auth_headers_attorney, mock_document):
         """Attorney can download a document they have access to."""
-        with patch("portal.routers.documents.get_document_or_404", new_callable=AsyncMock, return_value=mock_document):
-            with patch("portal.routers.documents.storage_service.generate_presigned_url", return_value="https://cdn.example.com/file"):
+        with patch(
+            "portal.routers.documents.get_document_or_404",
+            new_callable=AsyncMock,
+            return_value=mock_document,
+        ):
+            with patch(
+                "portal.routers.documents.storage_service.generate_presigned_url",
+                return_value="https://cdn.example.com/file",
+            ):
                 response = await async_client.get(
                     f"/documents/{mock_document.id}/download",
                     headers=auth_headers_attorney,
@@ -96,10 +109,14 @@ class TestDocumentDownload:
         assert response.status_code in (200, 307)
 
     @pytest.mark.asyncio
-    async def test_download_wrong_tenant_denied(self, async_client, auth_headers_attorney, mock_document_other_tenant):
+    async def test_download_wrong_tenant_denied(
+        self, async_client, auth_headers_attorney, mock_document_other_tenant
+    ):
         """Cannot download document belonging to another tenant."""
         async_client.get.return_value = MagicMock(status_code=404)
-        with patch("portal.routers.documents.get_document_or_404", side_effect=Exception("Not Found")):
+        with patch(
+            "portal.routers.documents.get_document_or_404", side_effect=Exception("Not Found")
+        ):
             response = await async_client.get(
                 f"/documents/{mock_document_other_tenant.id}/download",
                 headers=auth_headers_attorney,
@@ -107,10 +124,19 @@ class TestDocumentDownload:
         assert response.status_code in (403, 404)
 
     @pytest.mark.asyncio
-    async def test_client_can_download_own_doc(self, async_client, auth_headers_client, mock_client_document):
+    async def test_client_can_download_own_doc(
+        self, async_client, auth_headers_client, mock_client_document
+    ):
         """CLIENT can download their own documents."""
-        with patch("portal.routers.documents.get_document_or_404", new_callable=AsyncMock, return_value=mock_client_document):
-            with patch("portal.routers.documents.storage_service.generate_presigned_url", return_value="https://cdn.example.com/file"):
+        with patch(
+            "portal.routers.documents.get_document_or_404",
+            new_callable=AsyncMock,
+            return_value=mock_client_document,
+        ):
+            with patch(
+                "portal.routers.documents.storage_service.generate_presigned_url",
+                return_value="https://cdn.example.com/file",
+            ):
                 response = await async_client.get(
                     f"/documents/{mock_client_document.id}/download",
                     headers=auth_headers_client,
@@ -119,6 +145,7 @@ class TestDocumentDownload:
 
 
 # ── Version history ───────────────────────────────────────────────────────────
+
 
 class TestDocumentVersions:
     @pytest.mark.asyncio
@@ -134,8 +161,16 @@ class TestDocumentVersions:
     async def test_upload_new_version(self, async_client, auth_headers_attorney, mock_document):
         """Uploading a new version increments version number."""
         files = {"file": ("contract_v2.pdf", io.BytesIO(b"%PDF-1.4 v2"), "application/pdf")}
-        with patch("portal.routers.documents.get_document_or_404", new_callable=AsyncMock, return_value=mock_document):
-            with patch("portal.routers.documents.storage_service.upload_file", new_callable=AsyncMock, return_value="doc-key-v2"):
+        with patch(
+            "portal.routers.documents.get_document_or_404",
+            new_callable=AsyncMock,
+            return_value=mock_document,
+        ):
+            with patch(
+                "portal.routers.documents.storage_service.upload_file",
+                new_callable=AsyncMock,
+                return_value="doc-key-v2",
+            ):
                 response = await async_client.post(
                     f"/documents/{mock_document.id}/versions",
                     files=files,
@@ -144,7 +179,9 @@ class TestDocumentVersions:
         assert response.status_code in (200, 201)
 
     @pytest.mark.asyncio
-    async def test_restore_previous_version(self, async_client, auth_headers_attorney, mock_document):
+    async def test_restore_previous_version(
+        self, async_client, auth_headers_attorney, mock_document
+    ):
         """Can restore a previous version as the current version."""
         response = await async_client.post(
             f"/documents/{mock_document.id}/versions/1/restore",
@@ -154,6 +191,7 @@ class TestDocumentVersions:
 
 
 # ── Secure sharing ────────────────────────────────────────────────────────────
+
 
 class TestDocumentSharing:
     @pytest.mark.asyncio
@@ -165,7 +203,11 @@ class TestDocumentSharing:
             "max_downloads": 3,
             "can_download": True,
         }
-        with patch("portal.routers.documents.get_document_or_404", new_callable=AsyncMock, return_value=mock_document):
+        with patch(
+            "portal.routers.documents.get_document_or_404",
+            new_callable=AsyncMock,
+            return_value=mock_document,
+        ):
             response = await async_client.post(
                 f"/documents/{mock_document.id}/share",
                 json=payload,
@@ -174,14 +216,20 @@ class TestDocumentSharing:
         assert response.status_code in (200, 201)
 
     @pytest.mark.asyncio
-    async def test_share_link_with_password(self, async_client, auth_headers_attorney, mock_document):
+    async def test_share_link_with_password(
+        self, async_client, auth_headers_attorney, mock_document
+    ):
         """Share link can be password-protected."""
         payload = {
             "document_id": str(mock_document.id),
             "expires_in_hours": 48,
             "password": "ShareSecure!",
         }
-        with patch("portal.routers.documents.get_document_or_404", new_callable=AsyncMock, return_value=mock_document):
+        with patch(
+            "portal.routers.documents.get_document_or_404",
+            new_callable=AsyncMock,
+            return_value=mock_document,
+        ):
             response = await async_client.post(
                 f"/documents/{mock_document.id}/share",
                 json=payload,
@@ -196,6 +244,7 @@ class TestDocumentSharing:
         async_client.get.return_value = MagicMock(status_code=410)
         with patch("portal.routers.documents.get_share_by_token") as mock_share:
             from datetime import datetime, timedelta
+
             mock_share_obj = MagicMock()
             mock_share_obj.expires_at = datetime.now(UTC) - timedelta(hours=1)
             mock_share_obj.is_revoked = False
@@ -221,11 +270,14 @@ class TestDocumentSharing:
 
 # ── Search ────────────────────────────────────────────────────────────────────
 
+
 class TestDocumentSearch:
     @pytest.mark.asyncio
     async def test_search_returns_results(self, async_client, auth_headers_attorney):
         """Full-text search returns matching documents."""
-        with patch("portal.routers.documents.search_service.full_text_search", new_callable=AsyncMock) as mock_search:
+        with patch(
+            "portal.routers.documents.search_service.full_text_search", new_callable=AsyncMock
+        ) as mock_search:
             mock_search.return_value = {"documents": [{"id": "abc", "name": "Contract"}]}
             response = await async_client.get(
                 "/documents/search?q=contract",
@@ -245,6 +297,7 @@ class TestDocumentSearch:
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def mock_document():

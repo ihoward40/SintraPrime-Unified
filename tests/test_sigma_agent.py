@@ -131,8 +131,12 @@ class TestSecurityScan:
 
     def test_finding_structure(self):
         f = SecurityFinding(
-            finding_id="f1", severity="HIGH", description="test",
-            file_path="foo.py", line_number=1, rule_id="B101",
+            finding_id="f1",
+            severity="HIGH",
+            description="test",
+            file_path="foo.py",
+            line_number=1,
+            rule_id="B101",
         )
         assert f.severity == "HIGH"
 
@@ -153,10 +157,19 @@ class TestTypeChecking:
 class TestGateReport:
     def test_generate_passing_report(self, sigma):
         results = {
-            "overall_passed": True, "total": 10, "passed": 10, "failed": 0,
-            "skipped": 0, "coverage_pct": 85.0, "coverage_passed": True,
-            "security_findings": 0, "critical_findings": 0, "security_passed": True,
-            "type_errors": 0, "type_check_passed": True, "blocking_reasons": [],
+            "overall_passed": True,
+            "total": 10,
+            "passed": 10,
+            "failed": 0,
+            "skipped": 0,
+            "coverage_pct": 85.0,
+            "coverage_passed": True,
+            "security_findings": 0,
+            "critical_findings": 0,
+            "security_passed": True,
+            "type_errors": 0,
+            "type_check_passed": True,
+            "blocking_reasons": [],
         }
         md = sigma.generate_gate_report(results)
         assert "PASSED" in md
@@ -164,10 +177,18 @@ class TestGateReport:
 
     def test_generate_blocking_report(self, sigma):
         results = {
-            "overall_passed": False, "total": 10, "passed": 8, "failed": 2,
-            "skipped": 0, "coverage_pct": 60.0, "coverage_passed": False,
-            "security_findings": 1, "critical_findings": 1, "security_passed": False,
-            "type_errors": 3, "type_check_passed": False,
+            "overall_passed": False,
+            "total": 10,
+            "passed": 8,
+            "failed": 2,
+            "skipped": 0,
+            "coverage_pct": 60.0,
+            "coverage_passed": False,
+            "security_findings": 1,
+            "critical_findings": 1,
+            "security_passed": False,
+            "type_errors": 3,
+            "type_check_passed": False,
             "blocking_reasons": ["2 test(s) failed", "Coverage below 80%"],
         }
         md = sigma.generate_gate_report(results)

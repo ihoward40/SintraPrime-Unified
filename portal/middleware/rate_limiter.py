@@ -20,7 +20,7 @@ log = structlog.get_logger()
 settings = get_settings()
 
 AUTH_PATHS = ["/auth/login", "/auth/refresh", "/auth/mfa"]
-AUTH_LIMIT = 10   # per minute per IP
+AUTH_LIMIT = 10  # per minute per IP
 DEFAULT_LIMIT = 100  # per minute per user
 
 # In-memory fallback (non-distributed)
@@ -30,6 +30,7 @@ _rate_store: dict = {}
 def _get_redis():
     try:
         import redis
+
         client = redis.Redis(
             host=settings.REDIS_HOST,
             port=settings.REDIS_PORT,

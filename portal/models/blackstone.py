@@ -5,6 +5,7 @@ Stores claims, evidence, sources, recommendations, provenance chains, and
 risk records in the portal database. Uses JSON columns to remain flexible
 while the BRA data models evolve.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -23,12 +24,8 @@ class EvidenceLedger(Base):
 
     __tablename__ = "evidence_ledger"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        PortableUUID, primary_key=True, default=uuid.uuid4
-    )
-    tenant_id: Mapped[str | None] = mapped_column(
-        String(128), nullable=True, index=True
-    )
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
     object_type: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     object_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     action: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -52,12 +49,8 @@ class BlackstoneEvaluation(Base):
 
     __tablename__ = "blackstone_evaluations"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        PortableUUID, primary_key=True, default=uuid.uuid4
-    )
-    tenant_id: Mapped[str | None] = mapped_column(
-        String(128), nullable=True, index=True
-    )
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
     case_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
     claim_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     question: Mapped[str | None] = mapped_column(Text, nullable=True)

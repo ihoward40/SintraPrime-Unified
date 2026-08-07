@@ -38,10 +38,15 @@ async def create_client(
     db.add(client)
     await db.commit()
     await db.refresh(client)
-    await audit(db, action="client_create", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id,
-                resource_type="client", resource_id=str(client.id),
-                resource_name=client.display_name)
+    await audit(
+        db,
+        action="client_create",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="client",
+        resource_id=str(client.id),
+        resource_name=client.display_name,
+    )
     return ClientResponse.model_validate(client)
 
 
@@ -60,12 +65,14 @@ async def list_clients(
         Client.deleted_at.is_(None),
     )
     if search:
-        stmt = stmt.where(or_(
-            Client.first_name.ilike(f"%{search}%"),
-            Client.last_name.ilike(f"%{search}%"),
-            Client.company_name.ilike(f"%{search}%"),
-            Client.email.ilike(f"%{search}%"),
-        ))
+        stmt = stmt.where(
+            or_(
+                Client.first_name.ilike(f"%{search}%"),
+                Client.last_name.ilike(f"%{search}%"),
+                Client.company_name.ilike(f"%{search}%"),
+                Client.email.ilike(f"%{search}%"),
+            )
+        )
     if status:
         stmt = stmt.where(Client.status == status)
     if attorney_id:
@@ -137,8 +144,14 @@ async def update_client(
         setattr(client, field, value)
     await db.commit()
     await db.refresh(client)
-    await audit(db, action="client_update", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id, resource_type="client", resource_id=str(client.id))
+    await audit(
+        db,
+        action="client_update",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="client",
+        resource_id=str(client.id),
+    )
     return ClientResponse.model_validate(client)
 
 
@@ -149,6 +162,7 @@ async def delete_client(
     db: AsyncSession = Depends(get_db),
 ):
     from datetime import datetime
+
     result = await db.execute(
         select(Client).where(
             Client.id == client_id,
@@ -160,11 +174,18 @@ async def delete_client(
         raise HTTPException(status_code=404)
     client.deleted_at = datetime.now(UTC)
     await db.commit()
-    await audit(db, action="client_delete", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id, resource_type="client", resource_id=str(client_id))
+    await audit(
+        db,
+        action="client_delete",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="client",
+        resource_id=str(client_id),
+    )
 
 
 # ── Matters ───────────────────────────────────────────────────────────────────
+
 
 @router.post("/{client_id}/matters", response_model=MatterResponse, status_code=201)
 async def create_matter(
@@ -179,11 +200,10 @@ async def create_matter(
     # Auto-generate matter number
     if not body_dict.get("matter_number"):
         from datetime import datetime
+
         year = datetime.utcnow().year
         count_q = await db.execute(
-            select(func.count(Matter.id)).where(
-                Matter.tenant_id == current_user.tenant_id
-            )
+            select(func.count(Matter.id)).where(Matter.tenant_id == current_user.tenant_id)
         )
         count = (count_q.scalar() or 0) + 1
         body_dict["matter_number"] = f"{year}-{count:04d}"

@@ -3,6 +3,7 @@
 These tests create temporary repository-like trees and assert the validator's
 deterministic rules. They do not touch the real repo.
 """
+
 from __future__ import annotations
 
 import json
@@ -55,18 +56,20 @@ We are HIPAA compliant and SOC 2 certified.
 
 
 def test_validator_passes_good_tree():
-    root = _make_tree({
-        "docs/ARCHITECTURE.md": "# A",
-        "docs/QUICK_START.md": "# Q",
-        "docs/CAPABILITY_INDEX.md": "# C",
-        "docs/SECURITY.md": "# S",
-        "docs/CLAIMS.md": "# Claims",
-        "docs/REPOSITORY_STATUS.md": "# R",
-        "docs/governance/MISSION_CONTROL_OBSERVATORY_AUTHORITY.md": "# M",
-        "docs/governance/OPEN_PR_DISPOSITION.md": "# O",
-        "docs/DATABASE_AUTHORITY.md": "# D",
-        "README.md": GOOD_README,
-    })
+    root = _make_tree(
+        {
+            "docs/ARCHITECTURE.md": "# A",
+            "docs/QUICK_START.md": "# Q",
+            "docs/CAPABILITY_INDEX.md": "# C",
+            "docs/SECURITY.md": "# S",
+            "docs/CLAIMS.md": "# Claims",
+            "docs/REPOSITORY_STATUS.md": "# R",
+            "docs/governance/MISSION_CONTROL_OBSERVATORY_AUTHORITY.md": "# M",
+            "docs/governance/OPEN_PR_DISPOSITION.md": "# O",
+            "docs/DATABASE_AUTHORITY.md": "# D",
+            "README.md": GOOD_README,
+        }
+    )
     vc.REPO_ROOT = root
     assert vc.errors() == []
 
@@ -79,86 +82,96 @@ def test_validator_fails_missing_required_doc():
 
 
 def test_validator_fails_broken_readme_link():
-    root = _make_tree({
-        "docs/ARCHITECTURE.md": "# A",
-        "docs/QUICK_START.md": "# Q",
-        "docs/CAPABILITY_INDEX.md": "# C",
-        "docs/SECURITY.md": "# S",
-        "docs/CLAIMS.md": "# Claims",
-        "docs/REPOSITORY_STATUS.md": "# R",
-        "docs/governance/MISSION_CONTROL_OBSERVATORY_AUTHORITY.md": "# M",
-        "docs/governance/OPEN_PR_DISPOSITION.md": "# O",
-        "docs/DATABASE_AUTHORITY.md": "# D",
-        "README.md": BAD_README_LINK,
-    })
+    root = _make_tree(
+        {
+            "docs/ARCHITECTURE.md": "# A",
+            "docs/QUICK_START.md": "# Q",
+            "docs/CAPABILITY_INDEX.md": "# C",
+            "docs/SECURITY.md": "# S",
+            "docs/CLAIMS.md": "# Claims",
+            "docs/REPOSITORY_STATUS.md": "# R",
+            "docs/governance/MISSION_CONTROL_OBSERVATORY_AUTHORITY.md": "# M",
+            "docs/governance/OPEN_PR_DISPOSITION.md": "# O",
+            "docs/DATABASE_AUTHORITY.md": "# D",
+            "README.md": BAD_README_LINK,
+        }
+    )
     vc.REPO_ROOT = root
     assert any("README BROKEN LINK" in e for e in vc.errors())
 
 
 def test_validator_fails_retired_path():
-    root = _make_tree({
-        "docs/ARCHITECTURE.md": "# A",
-        "docs/QUICK_START.md": "# Q",
-        "docs/CAPABILITY_INDEX.md": "# C",
-        "docs/SECURITY.md": "# S",
-        "docs/CLAIMS.md": "# Claims",
-        "docs/REPOSITORY_STATUS.md": "# R",
-        "docs/governance/MISSION_CONTROL_OBSERVATORY_AUTHORITY.md": "# M",
-        "docs/governance/OPEN_PR_DISPOSITION.md": "# O",
-        "docs/DATABASE_AUTHORITY.md": "# D",
-        "README.md": BAD_README_PATH,
-    })
+    root = _make_tree(
+        {
+            "docs/ARCHITECTURE.md": "# A",
+            "docs/QUICK_START.md": "# Q",
+            "docs/CAPABILITY_INDEX.md": "# C",
+            "docs/SECURITY.md": "# S",
+            "docs/CLAIMS.md": "# Claims",
+            "docs/REPOSITORY_STATUS.md": "# R",
+            "docs/governance/MISSION_CONTROL_OBSERVATORY_AUTHORITY.md": "# M",
+            "docs/governance/OPEN_PR_DISPOSITION.md": "# O",
+            "docs/DATABASE_AUTHORITY.md": "# D",
+            "README.md": BAD_README_PATH,
+        }
+    )
     vc.REPO_ROOT = root
     assert any("retired path pattern" in e for e in vc.errors())
 
 
 def test_validator_fails_test_total():
-    root = _make_tree({
-        "docs/ARCHITECTURE.md": "# A",
-        "docs/QUICK_START.md": "# Q",
-        "docs/CAPABILITY_INDEX.md": "# C",
-        "docs/SECURITY.md": "# S",
-        "docs/CLAIMS.md": "# Claims",
-        "docs/REPOSITORY_STATUS.md": "# R",
-        "docs/governance/MISSION_CONTROL_OBSERVATORY_AUTHORITY.md": "# M",
-        "docs/governance/OPEN_PR_DISPOSITION.md": "# O",
-        "docs/DATABASE_AUTHORITY.md": "# D",
-        "README.md": BAD_README_TOTAL,
-    })
+    root = _make_tree(
+        {
+            "docs/ARCHITECTURE.md": "# A",
+            "docs/QUICK_START.md": "# Q",
+            "docs/CAPABILITY_INDEX.md": "# C",
+            "docs/SECURITY.md": "# S",
+            "docs/CLAIMS.md": "# Claims",
+            "docs/REPOSITORY_STATUS.md": "# R",
+            "docs/governance/MISSION_CONTROL_OBSERVATORY_AUTHORITY.md": "# M",
+            "docs/governance/OPEN_PR_DISPOSITION.md": "# O",
+            "docs/DATABASE_AUTHORITY.md": "# D",
+            "README.md": BAD_README_TOTAL,
+        }
+    )
     vc.REPO_ROOT = root
     assert any("forbidden hardcoded test total" in e for e in vc.errors())
 
 
 def test_validator_fails_payment_id():
-    root = _make_tree({
-        "docs/ARCHITECTURE.md": "# A",
-        "docs/QUICK_START.md": "# Q",
-        "docs/CAPABILITY_INDEX.md": "# C",
-        "docs/SECURITY.md": "# S",
-        "docs/CLAIMS.md": "# Claims",
-        "docs/REPOSITORY_STATUS.md": "# R",
-        "docs/governance/MISSION_CONTROL_OBSERVATORY_AUTHORITY.md": "# M",
-        "docs/governance/OPEN_PR_DISPOSITION.md": "# O",
-        "docs/DATABASE_AUTHORITY.md": "# D",
-        "README.md": BAD_README_PAYMENT,
-    })
+    root = _make_tree(
+        {
+            "docs/ARCHITECTURE.md": "# A",
+            "docs/QUICK_START.md": "# Q",
+            "docs/CAPABILITY_INDEX.md": "# C",
+            "docs/SECURITY.md": "# S",
+            "docs/CLAIMS.md": "# Claims",
+            "docs/REPOSITORY_STATUS.md": "# R",
+            "docs/governance/MISSION_CONTROL_OBSERVATORY_AUTHORITY.md": "# M",
+            "docs/governance/OPEN_PR_DISPOSITION.md": "# O",
+            "docs/DATABASE_AUTHORITY.md": "# D",
+            "README.md": BAD_README_PAYMENT,
+        }
+    )
     vc.REPO_ROOT = root
     assert any("public payment-intent identifier" in e for e in vc.errors())
 
 
 def test_validator_fails_compliance_claim():
-    root = _make_tree({
-        "docs/ARCHITECTURE.md": "# A",
-        "docs/QUICK_START.md": "# Q",
-        "docs/CAPABILITY_INDEX.md": "# C",
-        "docs/SECURITY.md": "# S",
-        "docs/CLAIMS.md": "# Claims",
-        "docs/REPOSITORY_STATUS.md": "# R",
-        "docs/governance/MISSION_CONTROL_OBSERVATORY_AUTHORITY.md": "# M",
-        "docs/governance/OPEN_PR_DISPOSITION.md": "# O",
-        "docs/DATABASE_AUTHORITY.md": "# D",
-        "README.md": BAD_README_COMPLIANCE,
-    })
+    root = _make_tree(
+        {
+            "docs/ARCHITECTURE.md": "# A",
+            "docs/QUICK_START.md": "# Q",
+            "docs/CAPABILITY_INDEX.md": "# C",
+            "docs/SECURITY.md": "# S",
+            "docs/CLAIMS.md": "# Claims",
+            "docs/REPOSITORY_STATUS.md": "# R",
+            "docs/governance/MISSION_CONTROL_OBSERVATORY_AUTHORITY.md": "# M",
+            "docs/governance/OPEN_PR_DISPOSITION.md": "# O",
+            "docs/DATABASE_AUTHORITY.md": "# D",
+            "README.md": BAD_README_COMPLIANCE,
+        }
+    )
     vc.REPO_ROOT = root
     assert any("unqualified compliance claim" in e for e in vc.errors())
 
@@ -168,4 +181,3 @@ def test_import_report_module_ok():
     # executed-count parsing is out of scope for collection-only truth).
     assert hasattr(ri, "parse_collect_output")
     assert hasattr(ri, "run_collect")
-

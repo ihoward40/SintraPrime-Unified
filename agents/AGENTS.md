@@ -19,7 +19,9 @@ Owns the autonomous agent system comprising four agent families:
 ## Local Contracts
 
 - Each agent runs as an autonomous module — no agent imports another agent's internals
-- Agents communicate via the portal API, file-system drop zones (`intake/`, `processed/`, `errors/`, `exports/`), or the shared database
+- Agents communicate via the portal API, file-system drop zones (`intake/`, `processed/`, `errors/`, `exports/`), the shared database, or the governed PARL orchestration facade
+- New multi-agent orchestration MUST prefer `parl.GovernedPARLOrchestrator`; elevated capabilities are admitted centrally before any worker is spawned
+- God Mode / Principal Command is a Principal capability, never an agent capability; agents must not self-elevate, bypass approvals, or infer elevated authority from task text
 - Nova: every action must route through `approval_gateway.py` and log to `execution_ledger.py`
 - Sigma: enforces coverage thresholds defined in `pyproject.toml` or `.safety-policy.yml`
 - Zero: all auto-patches must be revertible (`git revert` compliant)
@@ -29,11 +31,11 @@ Howard recovery/intake/template agents must remain evidence-intake-only unless e
 
 ## Work Guidance
 
-*(No project-specific standards yet — fill when engineering conventions emerge.)*
+- When adding a new agent to shared orchestration, register it through the governed PARL facade and declare its task risk/capability metadata rather than granting broad ambient authority.
 
 ## Verification
 
-*(No verification framework documented yet — fill when test/coverage thresholds exist.)*
+- Principal Command behavior: `pytest parl/tests/test_god_mode.py parl/tests/test_governed_orchestrator.py`
 
 ## Child DOX Index
 

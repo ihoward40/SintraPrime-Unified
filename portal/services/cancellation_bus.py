@@ -77,3 +77,6 @@ class CancellationBus:
         """Removes a signal once it has been processed and acknowledged."""
         if signal_id in self._active_cancellations:
             del self._active_cancellations[signal_id]
+
+# Global instance for the platform
+bus = CancellationBus()

@@ -338,3 +338,20 @@ export async function getCancellationStatus(): Promise<CancellationControlStatus
     '/api/v1/mission-control/sigma-gate',
   );
 }
+
+export interface RealTimeMetrics {
+  parliament: {
+    total_instances: number;
+    agent_types: Record<string, number>;
+    system_load: number;
+  };
+  cancellation_bus: {
+    active_signals: number;
+    queued_signals: number;
+  };
+  timestamp: string;
+}
+
+export async function getRealTimeMetrics(): Promise<RealTimeMetrics> {
+  return getJson<RealTimeMetrics>('/api/v1/mission-control/real-time-metrics');
+}

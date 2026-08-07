@@ -77,3 +77,6 @@ class ParliamentScalingService:
                 
         final_status = self.get_parliament_status()
         print(f"Simulation Complete. Remaining instances: {final_status['total_instances']}")
+
+# Global instance for the platform
+scaling_service = ParliamentScalingService()

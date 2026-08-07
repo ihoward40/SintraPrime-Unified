@@ -17,19 +17,29 @@ class PrincipalBrief:
         self.timestamp = datetime.now(UTC)
         self.sections: Dict[str, Any] = {}
 
-    async def synthesize(self):
-        """Synthesizes the brief from various platform services."""
+    async def synthesize(self, actor_id: str):
+        """Synthesizes the brief from various platform services with remediation logic."""
+        from .remediation_service import remediation
+        
+        # 1. REMEDIATION: Actor Validation
+        if not remediation.validate_principal(actor_id):
+            raise PermissionError("Unauthorized principal access to brief synthesis.")
+
         logger.info(f"[PRINCIPAL_BRIEF] Synthesizing brief for tenant {self.tenant_id}")
         
-        # 1. Institutional Memory Section
+        # 2. Institutional Memory Section (OmniBrain Retrieval)
         lessons = await memory_vault.retrieve_tenant_memory(self.tenant_id, MemoryType.LESSON_LEARNED)
         procedures = await memory_vault.retrieve_tenant_memory(self.tenant_id, MemoryType.PROVEN_PROCEDURE)
+        knowledge = await memory_vault.retrieve_tenant_memory(self.tenant_id, MemoryType.INSTITUTIONAL_KNOWLEDGE)
         
-        self.sections["memory_summary"] = {
+        # 3. REMEDIATION: Sensitive Data Masking
+        self.sections["memory_summary"] = remediation.mask_sensitive_data({
             "total_lessons": len(lessons),
             "total_procedures": len(procedures),
-            "recent_lesson": lessons[0].content if lessons else "No recent lessons recorded."
-        }
+            "total_knowledge": len(knowledge),
+            "recent_lesson": lessons[0].content if lessons else "No recent lessons recorded.",
+            "strategic_milestones": [k.content for k in knowledge[:3]]
+        })
         
         # 2. Operational Intelligence Section
         plane_status = autonomous_plane.get_plane_status()
@@ -57,9 +67,9 @@ class PrincipalBrief:
 
 class PrincipalBriefService:
     """Manages the generation and distribution of Principal Briefs."""
-    async def create_brief(self, tenant_id: str) -> Dict[str, Any]:
+    async def create_brief(self, tenant_id: str, actor_id: str) -> Dict[str, Any]:
         brief = PrincipalBrief(tenant_id)
-        await brief.synthesize()
+        await brief.synthesize(actor_id)
         return brief.generate_report()
 
 # Global instance

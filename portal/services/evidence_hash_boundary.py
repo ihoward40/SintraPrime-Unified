@@ -122,6 +122,7 @@ class EvidenceItem:
     Only the fields that constitute immutable evidence content are included.
     Metadata (timestamps, rendering info) is deliberately excluded.
     """
+
     item_id: str
     item_type: str  # "exhibit", "fact", "authority", "analysis", "request", "manifest"
     title: str
@@ -151,6 +152,7 @@ class EvidenceCollection:
     the items that should be hashed — no metadata, no timestamps, no
     rendering information.
     """
+
     case_id: str
     items: tuple[EvidenceItem, ...]  # tuple for immutability
 

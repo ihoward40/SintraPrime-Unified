@@ -27,7 +27,7 @@ class TestStripeClient:
     @pytest.mark.asyncio
     async def test_get_or_create_customer_existing(self):
         """Test retrieving existing customer"""
-        with patch('stripe.Customer.list') as mock_list:
+        with patch("stripe.Customer.list") as mock_list:
             mock_customer = Mock()
             mock_customer.id = "cus_123"
             mock_customer.email = "test@example.com"
@@ -46,9 +46,10 @@ class TestStripeClient:
     @pytest.mark.asyncio
     async def test_get_or_create_customer_new(self):
         """Test creating new customer"""
-        with patch('stripe.Customer.list') as mock_list, \
-             patch('stripe.Customer.create') as mock_create:
-
+        with (
+            patch("stripe.Customer.list") as mock_list,
+            patch("stripe.Customer.create") as mock_create,
+        ):
             mock_list.return_value.data = []
 
             mock_customer = Mock()
@@ -68,13 +69,15 @@ class TestStripeClient:
     @pytest.mark.asyncio
     async def test_create_subscription_with_trial(self):
         """Test creating subscription with trial"""
-        with patch('stripe.Subscription.create') as mock_create:
+        with patch("stripe.Subscription.create") as mock_create:
             mock_subscription = Mock()
             mock_subscription.id = "sub_123"
             mock_subscription.customer = "cus_123"
             mock_subscription.status = "trialing"
             mock_subscription.current_period_start = int(datetime.utcnow().timestamp())
-            mock_subscription.current_period_end = int((datetime.utcnow() + timedelta(days=30)).timestamp())
+            mock_subscription.current_period_end = int(
+                (datetime.utcnow() + timedelta(days=30)).timestamp()
+            )
             mock_subscription.trial_start = int(datetime.utcnow().timestamp())
             mock_subscription.trial_end = int((datetime.utcnow() + timedelta(days=14)).timestamp())
             mock_subscription.metadata = {"tier": "starter"}
@@ -83,9 +86,7 @@ class TestStripeClient:
 
             client = StripeClient()
             subscription = await client.create_subscription(
-                customer_id="cus_123",
-                tier="starter",
-                trial_days=14
+                customer_id="cus_123", tier="starter", trial_days=14
             )
 
             assert subscription.subscription_id == "sub_123"
@@ -95,9 +96,10 @@ class TestStripeClient:
     @pytest.mark.asyncio
     async def test_upgrade_subscription(self):
         """Test upgrading subscription"""
-        with patch('stripe.Subscription.retrieve') as mock_get, \
-             patch('stripe.Subscription.modify') as mock_modify:
-
+        with (
+            patch("stripe.Subscription.retrieve") as mock_get,
+            patch("stripe.Subscription.modify") as mock_modify,
+        ):
             mock_current = Mock()
             mock_current.id = "sub_123"
             mock_current.items.data = [Mock(id="item_123")]
@@ -109,7 +111,9 @@ class TestStripeClient:
             mock_upgraded.customer = "cus_123"
             mock_upgraded.status = "active"
             mock_upgraded.current_period_start = int(datetime.utcnow().timestamp())
-            mock_upgraded.current_period_end = int((datetime.utcnow() + timedelta(days=30)).timestamp())
+            mock_upgraded.current_period_end = int(
+                (datetime.utcnow() + timedelta(days=30)).timestamp()
+            )
             mock_upgraded.trial_start = None
             mock_upgraded.trial_end = None
             mock_upgraded.metadata = {"tier": "pro"}
@@ -118,8 +122,7 @@ class TestStripeClient:
 
             client = StripeClient()
             subscription = await client.upgrade_subscription(
-                subscription_id="sub_123",
-                new_tier="pro"
+                subscription_id="sub_123", new_tier="pro"
             )
 
             assert subscription.tier == "pro"
@@ -128,13 +131,15 @@ class TestStripeClient:
     @pytest.mark.asyncio
     async def test_cancel_subscription(self):
         """Test canceling subscription"""
-        with patch('stripe.Subscription.delete') as mock_delete:
+        with patch("stripe.Subscription.delete") as mock_delete:
             mock_canceled = Mock()
             mock_canceled.id = "sub_123"
             mock_canceled.customer = "cus_123"
             mock_canceled.status = "canceled"
             mock_canceled.current_period_start = int(datetime.utcnow().timestamp())
-            mock_canceled.current_period_end = int((datetime.utcnow() + timedelta(days=30)).timestamp())
+            mock_canceled.current_period_end = int(
+                (datetime.utcnow() + timedelta(days=30)).timestamp()
+            )
             mock_canceled.trial_start = None
             mock_canceled.trial_end = None
             mock_canceled.cancel_at = None
@@ -220,20 +225,16 @@ class TestWebhookSignature:
 
     def test_verify_webhook_signature_valid(self):
         """Test valid webhook signature verification"""
-        with patch('stripe.Webhook.construct_event') as mock_verify:
+        with patch("stripe.Webhook.construct_event") as mock_verify:
             mock_event = {
                 "id": "evt_123",
                 "type": "payment_intent.succeeded",
-                "data": {"object": {"id": "pi_123"}}
+                "data": {"object": {"id": "pi_123"}},
             }
             mock_verify.return_value = mock_event
 
             client = StripeClient()
-            event = client.verify_webhook_signature(
-                b"payload",
-                "sig_test",
-                "whsec_test"
-            )
+            event = client.verify_webhook_signature(b"payload", "sig_test", "whsec_test")
 
             assert event["type"] == "payment_intent.succeeded"
             mock_verify.assert_called_once()
@@ -242,20 +243,15 @@ class TestWebhookSignature:
         """Test invalid webhook signature"""
         import stripe as stripe_module
 
-        with patch('stripe.Webhook.construct_event') as mock_verify:
+        with patch("stripe.Webhook.construct_event") as mock_verify:
             mock_verify.side_effect = stripe_module.error.SignatureVerificationError(
-                "Invalid signature",
-                "sig_test"
+                "Invalid signature", "sig_test"
             )
 
             client = StripeClient()
 
             with pytest.raises(stripe_module.error.SignatureVerificationError):
-                client.verify_webhook_signature(
-                    b"payload",
-                    "sig_invalid",
-                    "whsec_test"
-                )
+                client.verify_webhook_signature(b"payload", "sig_invalid", "whsec_test")
 
 
 class TestPaymentModels:
@@ -272,7 +268,7 @@ class TestPaymentModels:
             tier=Tier.STARTER,
             status=SubscriptionStatus.ACTIVE,
             current_period_start=now,
-            current_period_end=future
+            current_period_end=future,
         )
 
         assert subscription.subscription_id == "sub_123"
@@ -281,11 +277,7 @@ class TestPaymentModels:
 
     def test_customer_model(self):
         """Test customer model creation"""
-        customer = Customer(
-            stripe_customer_id="cus_123",
-            email="test@example.com",
-            name="John Doe"
-        )
+        customer = Customer(stripe_customer_id="cus_123", email="test@example.com", name="John Doe")
 
         assert customer.stripe_customer_id == "cus_123"
         assert customer.email == "test@example.com"
@@ -296,7 +288,7 @@ class TestPaymentModels:
             payment_id="pay_123",
             stripe_customer_id="cus_123",
             amount=9900,
-            status=PaymentStatus.SUCCEEDED
+            status=PaymentStatus.SUCCEEDED,
         )
 
         assert payment.payment_id == "pay_123"
@@ -310,7 +302,7 @@ class TestPricingConfig:
     def test_tier_amounts(self):
         """Test tier amounts are configured"""
         assert TIER_AMOUNTS["starter"] == 9900  # $99/month
-        assert TIER_AMOUNTS["pro"] == 49900     # $499/month
+        assert TIER_AMOUNTS["pro"] == 49900  # $499/month
         assert TIER_AMOUNTS["enterprise"] is None
 
     def test_trial_days(self):

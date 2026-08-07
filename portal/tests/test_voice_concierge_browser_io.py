@@ -18,7 +18,10 @@ def test_browser_voice_io_is_transcript_only_and_uses_governed_submit() -> None:
     assert "SpeechRecognition" in source
     assert "SpeechSynthesisUtterance" in source
     assert "speechSynthesis.speak" in source
-    assert "voiceApi.submit({ raw_transcript: rawTranscript, source: captureMode as VoiceSource })" in source
+    assert (
+        "voiceApi.submit({ raw_transcript: rawTranscript, source: captureMode as VoiceSource })"
+        in source
+    )
     assert "FormData" not in source
     assert "MediaRecorder" not in source
     assert "fetch(" not in source
@@ -38,7 +41,10 @@ def test_voice_ui_requires_explicit_submit_or_cancel_after_capture() -> None:
 def test_voice_source_type_matches_backend_enum() -> None:
     source = VOICE_API.read_text(encoding="utf-8")
 
-    assert "export type VoiceSource = 'desktop_voice' | 'remote_voice' | 'transcript_import';" in source
+    assert (
+        "export type VoiceSource = 'desktop_voice' | 'remote_voice' | 'transcript_import';"
+        in source
+    )
     assert "mobile_voice" not in source
     assert "telephony" not in source
     assert "text_fallback" not in source

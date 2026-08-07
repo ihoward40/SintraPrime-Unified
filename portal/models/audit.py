@@ -21,21 +21,24 @@ class AuditLog(Base):
     - hash_chain: SHA-256(previous_hash + entry_content) — tamper detection
     - No soft-delete column — this table is NEVER modified after insert
     """
+
     __tablename__ = "audit_logs"
 
-    id: Mapped[str]                  = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    tenant_id: Mapped[str | None]    = mapped_column(String(36), ForeignKey("tenants.id"), nullable=True)
-    user_id: Mapped[str | None]      = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    tenant_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("tenants.id"), nullable=True
+    )
+    user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
 
     # Who
-    actor_email: Mapped[str | None]  = mapped_column(String(255), nullable=True)
-    actor_role: Mapped[str | None]   = mapped_column(String(50), nullable=True)
-    actor_ip: Mapped[str | None]     = mapped_column(String(45), nullable=True)  # supports IPv6
+    actor_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    actor_role: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    actor_ip: Mapped[str | None] = mapped_column(String(45), nullable=True)  # supports IPv6
     actor_user_agent: Mapped[str | None] = mapped_column(Text, nullable=True)
-    session_id: Mapped[str | None]   = mapped_column(String(255), nullable=True)
+    session_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # What
-    action: Mapped[str]              = mapped_column(String(100), nullable=False)
+    action: Mapped[str] = mapped_column(String(100), nullable=False)
     # login | logout | login_failed | mfa_enabled | password_changed
     # doc_upload | doc_download | doc_view | doc_share | doc_delete | doc_sign
     # case_create | case_update | case_close | case_delete
@@ -47,34 +50,37 @@ class AuditLog(Base):
     # settings_update | branding_update
 
     resource_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    resource_id: Mapped[str | None]   = mapped_column(String(255), nullable=True)
+    resource_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     resource_name: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # Outcome
-    status: Mapped[str]              = mapped_column(String(10), default="success")  # success | failure | error
+    status: Mapped[str] = mapped_column(String(10), default="success")  # success | failure | error
 
     # Details
-    details: Mapped[dict | None]  = mapped_column(JSON, nullable=True)
-    changes: Mapped[dict | None]  = mapped_column(JSON, nullable=True)  # before/after for updates
+    details: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    changes: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # before/after for updates
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Request context
     request_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
-    http_method: Mapped[str | None]      = mapped_column(String(10), nullable=True)
-    http_path: Mapped[str | None]         = mapped_column(Text, nullable=True)
-    http_status_code: Mapped[int | None]  = mapped_column(nullable=True)
+    http_method: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    http_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    http_status_code: Mapped[int | None] = mapped_column(nullable=True)
 
     # Hash chain for tamper detection
-    hash_chain: Mapped[str | None]    = mapped_column(String(64), nullable=True)  # SHA-256 hex
-    entry_hash: Mapped[str | None]    = mapped_column(String(64), nullable=True)  # SHA-256 of this entry
-    previous_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)  # SHA-256 of previous entry
+    hash_chain: Mapped[str | None] = mapped_column(String(64), nullable=True)  # SHA-256 hex
+    entry_hash: Mapped[str | None] = mapped_column(
+        String(64), nullable=True
+    )  # SHA-256 of this entry
+    previous_hash: Mapped[str | None] = mapped_column(
+        String(64), nullable=True
+    )  # SHA-256 of previous entry
 
     # Timestamp (UTC, server-set — NOT user-settable)
-    created_at: Mapped[datetime]     = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
     )
 
-    __table_args__ = (
-    )
+    __table_args__ = ()

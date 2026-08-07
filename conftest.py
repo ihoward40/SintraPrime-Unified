@@ -13,6 +13,7 @@ resolve correctly regardless of test collection order.
 Default CI collects Tier 1 lanes only (tests/, backend/, core/tests/).
 See docs/ci/dependency-matrix.md for the full lane classification.
 """
+
 import contextlib
 import glob
 import os
@@ -35,7 +36,7 @@ if ROOT in sys.path:
 # Find the best insertion point: after all stdlib paths
 insert_pos = 0
 for i, p in enumerate(sys.path):
-    if p.startswith(stdlib_path) or p.startswith(stdlib_platstdlib) or p == '':
+    if p.startswith(stdlib_path) or p.startswith(stdlib_platstdlib) or p == "":
         insert_pos = i + 1
 
 sys.path.insert(insert_pos, ROOT)

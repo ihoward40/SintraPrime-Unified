@@ -25,16 +25,16 @@ from typing import ClassVar
 # Dimension weights — BGS-01. Immutable without CDR.
 # ---------------------------------------------------------------------------
 CCS_WEIGHTS: dict[str, float] = {
-    "citation_integrity":      0.20,  # 20% — all claims traceable to authenticated sources
+    "citation_integrity": 0.20,  # 20% — all claims traceable to authenticated sources
     "provenance_completeness": 0.18,  # 18% — origin and chain of custody documented
-    "jurisdiction_accuracy":   0.14,  # 14% — jurisdiction confirmed and correctly coded
-    "temporal_accuracy":       0.12,  # 12% — all authorities confirmed current
+    "jurisdiction_accuracy": 0.14,  # 14% — jurisdiction confirmed and correctly coded
+    "temporal_accuracy": 0.12,  # 12% — all authorities confirmed current
     "counter_evidence_review": 0.12,  # 12% — counter-evidence systematically identified
-    "confidence_calibration":  0.10,  # 10% — confidence level accurately reflects evidence
-    "transparency":            0.06,  #  6% — reasoning and methodology explicitly stated
-    "auditability":            0.04,  #  4% — all steps reproducible from audit trail
-    "reproducibility":         0.02,  #  2% — independent agent can reach same conclusion
-    "evidence_preservation":   0.02,  #  2% — all evidence preserved in CEL, none deleted
+    "confidence_calibration": 0.10,  # 10% — confidence level accurately reflects evidence
+    "transparency": 0.06,  #  6% — reasoning and methodology explicitly stated
+    "auditability": 0.04,  #  4% — all steps reproducible from audit trail
+    "reproducibility": 0.02,  #  2% — independent agent can reach same conclusion
+    "evidence_preservation": 0.02,  #  2% — all evidence preserved in CEL, none deleted
 }
 
 # Verify weights sum to 1.0 (fails loudly at import time if tampered with)
@@ -62,7 +62,7 @@ CONFIDENCE_THRESHOLDS: list[tuple[float, str]] = [
     (78.0, "CONF-H"),  # High Confidence
     (68.0, "CONF-M"),  # Moderate Confidence
     (55.0, "CONF-L"),  # Limited Confidence
-    (0.0,  "CONF-P"),  # Preliminary Assessment (below 55 but evidence exists)
+    (0.0, "CONF-P"),  # Preliminary Assessment (below 55 but evidence exists)
 ]
 
 
@@ -91,7 +91,9 @@ class CCSResult:
             "min_dimension": {"name": self.min_dimension[0], "score": self.min_dimension[1]},
             "max_dimension": {"name": self.max_dimension[0], "score": self.max_dimension[1]},
             "dimensions": {k: round(v, 2) for k, v in self.dimensions.items()},
-            "weighted_contributions": {k: round(v, 4) for k, v in self.weighted_contributions.items()},
+            "weighted_contributions": {
+                k: round(v, 4) for k, v in self.weighted_contributions.items()
+            },
             "warnings": self.warnings,
         }
 
@@ -122,10 +124,7 @@ class CCSScorer:
         """
         self._validate_inputs(dimensions)
 
-        weighted = {
-            dim: dimensions[dim] * weight
-            for dim, weight in self.WEIGHTS.items()
-        }
+        weighted = {dim: dimensions[dim] * weight for dim, weight in self.WEIGHTS.items()}
         total = sum(weighted.values())
 
         warnings: list[str] = []
@@ -152,9 +151,7 @@ class CCSScorer:
         # Provenance special rule for Operational
         prov = dimensions["provenance_completeness"]
         if prov < 85 and total >= 82:
-            warnings.append(
-                "Provenance Completeness < 85 blocks Operational (STG-5) per BGS-01."
-            )
+            warnings.append("Provenance Completeness < 85 blocks Operational (STG-5) per BGS-01.")
 
         # Litigation Ready: no dimension below 80
         below_80 = {d: v for d, v in dimensions.items() if v < 80}
@@ -197,9 +194,7 @@ class CCSScorer:
             raise ValueError(f"CCS scoring missing required dimensions: {missing}")
         for dim, score in dimensions.items():
             if not (0.0 <= score <= 100.0):
-                raise ValueError(
-                    f"Dimension '{dim}' score {score} is out of range [0, 100]."
-                )
+                raise ValueError(f"Dimension '{dim}' score {score} is out of range [0, 100].")
 
     def _assign_confidence(self, total: float) -> str:
         for threshold, code in CONFIDENCE_THRESHOLDS:
@@ -228,8 +223,7 @@ class CCSScorer:
 
     def _meets_operational_gates(self, dims: dict[str, float]) -> bool:
         return (
-            dims.get("citation_integrity", 0) >= 90
-            and dims.get("provenance_completeness", 0) >= 85
+            dims.get("citation_integrity", 0) >= 90 and dims.get("provenance_completeness", 0) >= 85
         )
 
     def _is_litigation_ready(self, total: float, dims: dict[str, float]) -> bool:

@@ -24,6 +24,7 @@ settings = get_settings()
 
 class Base(DeclarativeBase):
     """Declarative base for all ORM models."""
+
     pass
 
 
@@ -48,6 +49,7 @@ AsyncSessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(
 
 
 # ── Session dependency ─────────────────────────────────────────────────────────
+
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
@@ -119,6 +121,7 @@ async def tenant_session(
 
 
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
+
 
 async def init_db() -> None:
     """Create all tables (for testing / first run). In prod use Alembic."""

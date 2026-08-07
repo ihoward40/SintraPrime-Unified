@@ -39,22 +39,24 @@ class Outcome(StrEnum):
 
 
 # Keys (lowercased) whose values must be redacted from audit metadata/logs.
-REDACTED_FIELDS = frozenset({
-    "password",
-    "token",
-    "bearer",
-    "secret",
-    "private_key",
-    "privatekey",
-    "cookie",
-    "authorization",
-    "api_key",
-    "apikey",
-    "access_token",
-    "refresh_token",
-    "session_id",
-    "csrf_token",
-})
+REDACTED_FIELDS = frozenset(
+    {
+        "password",
+        "token",
+        "bearer",
+        "secret",
+        "private_key",
+        "privatekey",
+        "cookie",
+        "authorization",
+        "api_key",
+        "apikey",
+        "access_token",
+        "refresh_token",
+        "session_id",
+        "csrf_token",
+    }
+)
 
 _REDACTED_VALUE = "[REDACTED]"
 

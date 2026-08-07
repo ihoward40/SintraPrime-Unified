@@ -26,6 +26,7 @@ router = APIRouter()
 
 # ── Dashboard stats ───────────────────────────────────────────────────────────
 
+
 class FirmStats(BaseModel):
     total_users: int
     active_users: int
@@ -46,19 +47,51 @@ async def get_firm_stats(
 ):
     tid = current_user.tenant_id
 
-    users_q = await db.execute(select(func.count(User.id)).where(User.tenant_id == tid, User.deleted_at.is_(None)))
-    active_users_q = await db.execute(select(func.count(User.id)).where(User.tenant_id == tid, User.is_active, User.deleted_at.is_(None)))
-    clients_q = await db.execute(select(func.count(Client.id)).where(Client.tenant_id == tid, Client.deleted_at.is_(None)))
-    active_clients_q = await db.execute(select(func.count(Client.id)).where(Client.tenant_id == tid, Client.status == "active", Client.deleted_at.is_(None)))
-    cases_q = await db.execute(select(func.count(Case.id)).where(Case.tenant_id == tid, Case.deleted_at.is_(None)))
-    open_cases_q = await db.execute(select(func.count(Case.id)).where(Case.tenant_id == tid, Case.stage.not_in(["closed", "archived"]), Case.deleted_at.is_(None)))
-    docs_q = await db.execute(select(func.count(Document.id)).where(Document.tenant_id == tid, Document.deleted_at.is_(None)))
-    storage_q = await db.execute(select(func.sum(Document.size_bytes)).where(Document.tenant_id == tid, Document.deleted_at.is_(None)))
-    outstanding_q = await db.execute(select(func.sum(Invoice.amount_due)).where(Invoice.tenant_id == tid, Invoice.status.in_(["sent", "partial", "overdue"])))
+    users_q = await db.execute(
+        select(func.count(User.id)).where(User.tenant_id == tid, User.deleted_at.is_(None))
+    )
+    active_users_q = await db.execute(
+        select(func.count(User.id)).where(
+            User.tenant_id == tid, User.is_active, User.deleted_at.is_(None)
+        )
+    )
+    clients_q = await db.execute(
+        select(func.count(Client.id)).where(Client.tenant_id == tid, Client.deleted_at.is_(None))
+    )
+    active_clients_q = await db.execute(
+        select(func.count(Client.id)).where(
+            Client.tenant_id == tid, Client.status == "active", Client.deleted_at.is_(None)
+        )
+    )
+    cases_q = await db.execute(
+        select(func.count(Case.id)).where(Case.tenant_id == tid, Case.deleted_at.is_(None))
+    )
+    open_cases_q = await db.execute(
+        select(func.count(Case.id)).where(
+            Case.tenant_id == tid,
+            Case.stage.not_in(["closed", "archived"]),
+            Case.deleted_at.is_(None),
+        )
+    )
+    docs_q = await db.execute(
+        select(func.count(Document.id)).where(
+            Document.tenant_id == tid, Document.deleted_at.is_(None)
+        )
+    )
+    storage_q = await db.execute(
+        select(func.sum(Document.size_bytes)).where(
+            Document.tenant_id == tid, Document.deleted_at.is_(None)
+        )
+    )
+    outstanding_q = await db.execute(
+        select(func.sum(Invoice.amount_due)).where(
+            Invoice.tenant_id == tid, Invoice.status.in_(["sent", "partial", "overdue"])
+        )
+    )
     activity_q = await db.execute(select(func.count(AuditLog.id)).where(AuditLog.tenant_id == tid))
 
     storage_bytes = storage_q.scalar() or 0
-    storage_gb = round(storage_bytes / (1024 ** 3), 3)
+    storage_gb = round(storage_bytes / (1024**3), 3)
 
     return FirmStats(
         total_users=users_q.scalar() or 0,
@@ -75,6 +108,7 @@ async def get_firm_stats(
 
 
 # ── Audit log ─────────────────────────────────────────────────────────────────
+
 
 class AuditLogResponse(BaseModel):
     id: uuid.UUID
@@ -118,7 +152,7 @@ async def get_audit_log(
     total_q = await db.execute(select(func.count()).select_from(stmt.subquery()))
     total = total_q.scalar() or 0
 
-    stmt = stmt.offset((page-1)*page_size).limit(page_size).order_by(AuditLog.created_at.desc())
+    stmt = stmt.offset((page - 1) * page_size).limit(page_size).order_by(AuditLog.created_at.desc())
     result = await db.execute(stmt)
     logs = result.scalars().all()
 
@@ -131,6 +165,7 @@ async def get_audit_log(
 
 
 # ── API keys ──────────────────────────────────────────────────────────────────
+
 
 class ApiKeyResponse(BaseModel):
     id: str
@@ -152,9 +187,13 @@ async def create_api_key(
     key_prefix = raw_key[:12]
     hash_password_for_key(raw_key)
 
-    await audit(db, action="api_key_create", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id,
-                details={"name": name, "prefix": key_prefix})
+    await audit(
+        db,
+        action="api_key_create",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        details={"name": name, "prefix": key_prefix},
+    )
 
     return {
         "key": raw_key,  # Only shown once!
@@ -166,10 +205,12 @@ async def create_api_key(
 
 def hash_password_for_key(key: str) -> str:
     from ..auth.password_handler import hash_password
+
     return hash_password(key)
 
 
 # ── Branding ──────────────────────────────────────────────────────────────────
+
 
 class BrandingUpdate(BaseModel):
     logo_url: str | None = None
@@ -184,9 +225,7 @@ async def update_branding(
     current_user: CurrentUser = Depends(require_permissions(Permission.ADMIN_BRANDING)),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(Tenant).where(Tenant.id == current_user.tenant_id)
-    )
+    result = await db.execute(select(Tenant).where(Tenant.id == current_user.tenant_id))
     tenant = result.scalar_one_or_none()
     if not tenant:
         raise HTTPException(status_code=404)
@@ -201,12 +240,14 @@ async def update_branding(
         tenant.name = body.firm_name
 
     await db.commit()
-    await audit(db, action="branding_update", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id)
+    await audit(
+        db, action="branding_update", user_id=current_user.user_id, tenant_id=current_user.tenant_id
+    )
     return {"message": "Branding updated successfully"}
 
 
 # ── System health (SUPER_ADMIN only) ─────────────────────────────────────────
+
 
 @router.get("/system-health")
 async def system_health(
@@ -222,6 +263,7 @@ async def system_health(
 
 
 # ── Storage quota ─────────────────────────────────────────────────────────────
+
 
 @router.get("/storage-usage")
 async def storage_usage(
@@ -245,11 +287,13 @@ async def storage_usage(
 
     usage_list = []
     for row in rows:
-        usage_list.append({
-            "client_id": str(row.client_id) if row.client_id else None,
-            "document_count": row.doc_count,
-            "storage_bytes": row.total_bytes or 0,
-            "storage_gb": round((row.total_bytes or 0) / (1024 ** 3), 4),
-        })
+        usage_list.append(
+            {
+                "client_id": str(row.client_id) if row.client_id else None,
+                "document_count": row.doc_count,
+                "storage_bytes": row.total_bytes or 0,
+                "storage_gb": round((row.total_bytes or 0) / (1024**3), 4),
+            }
+        )
 
     return {"by_client": usage_list}

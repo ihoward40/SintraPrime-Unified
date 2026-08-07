@@ -41,21 +41,29 @@ class TestCaseCRUD:
     @pytest.mark.asyncio
     async def test_get_case_returns_data(self, async_client, auth_headers_attorney, mock_case):
         """GET /cases/{id} returns case data for authorized user."""
-        with patch("portal.routers.cases.get_case_or_404", new_callable=AsyncMock, return_value=mock_case):
-            response = await async_client.get(f"/cases/{mock_case.id}", headers=auth_headers_attorney)
+        with patch(
+            "portal.routers.cases.get_case_or_404", new_callable=AsyncMock, return_value=mock_case
+        ):
+            response = await async_client.get(
+                f"/cases/{mock_case.id}", headers=auth_headers_attorney
+            )
         assert response.status_code in (200, 404)
 
     @pytest.mark.asyncio
     async def test_list_cases_filtered_by_tenant(self, async_client, auth_headers_attorney):
         """Case list is always scoped to the user's tenant."""
-        with patch("portal.routers.cases.list_cases_for_user", new_callable=AsyncMock, return_value=[]):
+        with patch(
+            "portal.routers.cases.list_cases_for_user", new_callable=AsyncMock, return_value=[]
+        ):
             response = await async_client.get("/cases", headers=auth_headers_attorney)
         assert response.status_code == 200
 
     @pytest.mark.asyncio
     async def test_update_case_stage(self, async_client, auth_headers_attorney, mock_case):
         """Attorney can update case stage."""
-        with patch("portal.routers.cases.get_case_or_404", new_callable=AsyncMock, return_value=mock_case):
+        with patch(
+            "portal.routers.cases.get_case_or_404", new_callable=AsyncMock, return_value=mock_case
+        ):
             response = await async_client.put(
                 f"/cases/{mock_case.id}",
                 json={"stage": "active"},
@@ -64,7 +72,9 @@ class TestCaseCRUD:
         assert response.status_code in (200, 404)
 
     @pytest.mark.asyncio
-    async def test_delete_case_requires_firm_admin(self, async_client, auth_headers_paralegal, mock_case):
+    async def test_delete_case_requires_firm_admin(
+        self, async_client, auth_headers_paralegal, mock_case
+    ):
         """Paralegals cannot delete cases."""
         async_client.delete.return_value = MagicMock(status_code=403)
         response = await async_client.delete(
@@ -88,9 +98,7 @@ class TestCaseIsolation:
         assert attorney_a_tenant != attorney_b_tenant
 
     @pytest.mark.asyncio
-    async def test_attorney_cannot_read_other_firms_case(
-        self, async_client, auth_headers_attorney
-    ):
+    async def test_attorney_cannot_read_other_firms_case(self, async_client, auth_headers_attorney):
         """Case belonging to another tenant should return 404."""
         other_firm_case_id = str(uuid.uuid4())
         async_client.get.return_value = MagicMock(status_code=404)
@@ -153,7 +161,9 @@ class TestCaseDeadlines:
     @pytest.mark.asyncio
     async def test_upcoming_deadlines_returned(self, async_client, auth_headers_attorney):
         """GET /cases/deadlines/upcoming should return deadlines within 30 days."""
-        with patch("portal.routers.cases.get_upcoming_deadlines", new_callable=AsyncMock, return_value=[]):
+        with patch(
+            "portal.routers.cases.get_upcoming_deadlines", new_callable=AsyncMock, return_value=[]
+        ):
             response = await async_client.get(
                 "/cases/deadlines/upcoming",
                 headers=auth_headers_attorney,
@@ -166,6 +176,7 @@ class TestCaseDeadlines:
         sol_years = 2
         expected_sol = date(2024, 6, 15)
         from datetime import date as d
+
         calculated = d(
             incident_date.year + sol_years,
             incident_date.month,
@@ -181,7 +192,9 @@ class TestConflictCheck:
     async def test_conflict_check_finds_party(self, async_client, auth_headers_attorney):
         """Searching 'Jones' finds existing case with opposing party 'Jones'."""
         with patch("portal.routers.cases.conflict_check", new_callable=AsyncMock) as mock_conflict:
-            mock_conflict.return_value = [{"case_id": str(uuid.uuid4()), "match": "opposing_party", "party": "Jones Corp."}]
+            mock_conflict.return_value = [
+                {"case_id": str(uuid.uuid4()), "match": "opposing_party", "party": "Jones Corp."}
+            ]
             response = await async_client.get(
                 "/cases/conflict-check?party=Jones",
                 headers=auth_headers_attorney,
@@ -200,6 +213,7 @@ class TestConflictCheck:
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def mock_case():
@@ -233,6 +247,7 @@ def async_client():
     from unittest.mock import MagicMock
 
     from httpx import AsyncClient
+
     client = AsyncMock(spec=AsyncClient)
     _default = MagicMock(status_code=200)
     _default.json.return_value = {}

@@ -294,6 +294,7 @@ MODULE_D_JURISDICTION = [
 # Agent profiles
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class AgentProfile:
     agent_id: str
@@ -310,36 +311,86 @@ class AgentProfile:
 
 HERMES_ANSWERS = {
     # Module A
-    "A0": "B", "A1": "B", "A2": "C", "A3": "C", "A4": "B",
+    "A0": "B",
+    "A1": "B",
+    "A2": "C",
+    "A3": "C",
+    "A4": "B",
     # Module B — Hermes is a sourcing/research agent; strong on evidence standards
-    "B0": "C", "B1": "B", "B2": "D", "B3": "B", "B4": "A",  # B4 slip: BGS-19 recall
+    "B0": "C",
+    "B1": "B",
+    "B2": "D",
+    "B3": "B",
+    "B4": "A",  # B4 slip: BGS-19 recall
     "B5": "C",
     # Module C — operational compliance
-    "C0": "B", "C1": "C", "C2": "C", "C3": "B", "C4": "C",
+    "C0": "B",
+    "C1": "C",
+    "C2": "C",
+    "C3": "B",
+    "C4": "C",
     # Module D — jurisdiction/disclaimer
-    "D0": "B", "D1": "C", "D2": "C", "D3": "C", "D4": "D",
+    "D0": "B",
+    "D1": "C",
+    "D2": "C",
+    "D3": "C",
+    "D4": "D",
 }
 
 BLACKSTONE_ANSWERS = {
     # Module A — Blackstone is the primary constitutional agent; should be perfect
-    "A0": "B", "A1": "B", "A2": "C", "A3": "C", "A4": "B",
+    "A0": "B",
+    "A1": "B",
+    "A2": "C",
+    "A3": "C",
+    "A4": "B",
     # Module B — deep scoring knowledge
-    "B0": "C", "B1": "B", "B2": "D", "B3": "B", "B4": "A", "B5": "C",
+    "B0": "C",
+    "B1": "B",
+    "B2": "D",
+    "B3": "B",
+    "B4": "A",
+    "B5": "C",
     # Module C
-    "C0": "B", "C1": "C", "C2": "C", "C3": "B", "C4": "C",
+    "C0": "B",
+    "C1": "C",
+    "C2": "C",
+    "C3": "B",
+    "C4": "C",
     # Module D
-    "D0": "B", "D1": "C", "D2": "C", "D3": "C", "D4": "D",
+    "D0": "B",
+    "D1": "C",
+    "D2": "C",
+    "D3": "C",
+    "D4": "D",
 }
 
 VIKTOR_ANSWERS = {
     # Module A
-    "A0": "B", "A1": "B", "A2": "C", "A3": "C", "A4": "B",
+    "A0": "B",
+    "A1": "B",
+    "A2": "C",
+    "A3": "C",
+    "A4": "B",
     # Module B — Viktor built BRA; should be authoritative
-    "B0": "C", "B1": "B", "B2": "D", "B3": "B", "B4": "A", "B5": "C",
+    "B0": "C",
+    "B1": "B",
+    "B2": "D",
+    "B3": "B",
+    "B4": "A",
+    "B5": "C",
     # Module C
-    "C0": "B", "C1": "C", "C2": "C", "C3": "B", "C4": "C",
+    "C0": "B",
+    "C1": "C",
+    "C2": "C",
+    "C3": "B",
+    "C4": "C",
     # Module D
-    "D0": "B", "D1": "C", "D2": "C", "D3": "C", "D4": "D",
+    "D0": "B",
+    "D1": "C",
+    "D2": "C",
+    "D3": "C",
+    "D4": "D",
 }
 
 AGENTS = [
@@ -357,7 +408,12 @@ AGENTS = [
     AgentProfile(
         agent_id="AGT-002",
         agent_name="Blackstone",
-        subject_domain=["Constitutional Governance", "Legal Analysis", "Knowledge Object Management", "CDR Authority"],
+        subject_domain=[
+            "Constitutional Governance",
+            "Legal Analysis",
+            "Knowledge Object Management",
+            "CDR Authority",
+        ],
         role_description=(
             "Primary constitutional governance agent. Responsible for maintaining the BKGC, "
             "administering agent oaths, filing CDRs, managing KO maturity advancement, "
@@ -368,7 +424,13 @@ AGENTS = [
     AgentProfile(
         agent_id="AGT-003",
         agent_name="Viktor",
-        subject_domain=["Infrastructure", "BRA Implementation", "Scoring Systems", "Optimization", "Compliance Engineering"],
+        subject_domain=[
+            "Infrastructure",
+            "BRA Implementation",
+            "Scoring Systems",
+            "Optimization",
+            "Compliance Engineering",
+        ],
         role_description=(
             "Chief Infrastructure & Systems Architect. Responsible for building and maintaining "
             "BRA codebase modules, enforcing constitutional constraints in code, administering "
@@ -381,6 +443,7 @@ AGENTS = [
 # ---------------------------------------------------------------------------
 # Exam runner
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ModuleResult:
@@ -415,16 +478,18 @@ def run_module(module_id: str, questions: list, agent_answers: dict, prefix: str
         earned = weight if agent_answer == correct_answer else 0
         total_earned += earned
         total_possible += weight
-        results.append({
-            "q": i + 1,
-            "question": question[:80] + "..." if len(question) > 80 else question,
-            "agent_answer": agent_answer,
-            "correct": correct_answer,
-            "passed": agent_answer == correct_answer,
-            "earned": earned,
-            "possible": weight,
-            "rationale": rationale,
-        })
+        results.append(
+            {
+                "q": i + 1,
+                "question": question[:80] + "..." if len(question) > 80 else question,
+                "agent_answer": agent_answer,
+                "correct": correct_answer,
+                "passed": agent_answer == correct_answer,
+                "earned": earned,
+                "possible": weight,
+                "rationale": rationale,
+            }
+        )
 
     pct = (total_earned / total_possible * 100) if total_possible > 0 else 0
     return ModuleResult(
@@ -473,6 +538,7 @@ def run_exam(agent: AgentProfile) -> ExamResult:
 # ---------------------------------------------------------------------------
 # Certification record builder (BKR-13 compliant)
 # ---------------------------------------------------------------------------
+
 
 def build_cert_record(result: ExamResult, admission_cdr: str) -> dict:
     exam_date_str = result.exam_date.isoformat()
@@ -528,8 +594,10 @@ def build_cert_record(result: ExamResult, admission_cdr: str) -> dict:
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main():
     import os
+
     out_dir = "/work/temp/cert_build/output"
     os.makedirs(out_dir, exist_ok=True)
 
@@ -546,18 +614,20 @@ def main():
         all_results.append(result)
 
         # Print scorecard
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"AGENT: {agent.agent_name} ({agent.agent_id})")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         for m in result.module_results:
             status = "PASS" if m.passed else "FAIL"
             print(f"  Module {m.module}: {m.score}/{m.max_score} ({m.pct:.1f}%) [{status}]")
-        print(f"  OVERALL: {result.overall_score}/{sum(m.max_score for m in result.module_results)} ({result.overall_pct:.1f}%)")
+        print(
+            f"  OVERALL: {result.overall_score}/{sum(m.max_score for m in result.module_results)} ({result.overall_pct:.1f}%)"
+        )
         print(f"  RESULT: {'PASS' if result.passed else 'FAIL'} → Tier: {result.cert_tier}")
 
         # Build and write cert record
         cert = build_cert_record(result, admission_cdrs[agent.agent_id])
-        cert_path = f"{out_dir}/cert_{agent.agent_id.replace('-','').lower()}.json"
+        cert_path = f"{out_dir}/cert_{agent.agent_id.replace('-', '').lower()}.json"
         with open(cert_path, "w") as f:
             json.dump(cert, f, indent=2)
         print(f"  Written: {cert_path}")
@@ -565,21 +635,23 @@ def main():
     # Write admission CDR batch
     cdr_batch = []
     for agent, cdr_num in zip(AGENTS, ["CDR-00004", "CDR-00005", "CDR-00006"], strict=False):
-        cdr_batch.append({
-            "cdr_number": cdr_num,
-            "title": f"Admission of {agent.agent_name} to Blackstone Ecosystem",
-            "filed_by": "Isiah Howard, Founder/CEO, IKE Solutions LLC — Governance Board Chair",
-            "filed_at": "2026-07-06T00:00:00Z",
-            "trigger": f"BCCM-02 certification exam completed for {agent.agent_name}",
-            "decision": (
-                f"{agent.agent_name} ({agent.agent_id}) is hereby admitted to the Blackstone Ecosystem "
-                f"with Operational tier certification, effective 2026-07-06. "
-                f"{agent.agent_name} shall operate under BKGC v2.0, BGS v1.0, BCCM v1.0, and BKR v1.0. "
-                f"Certification renewal is due 2027-07-06. Subject domains: {', '.join(agent.subject_domain)}."
-            ),
-            "scope": f"{agent.agent_name} and all Knowledge Objects processed by or attributed to {agent.agent_name}",
-            "status": "Approved",
-        })
+        cdr_batch.append(
+            {
+                "cdr_number": cdr_num,
+                "title": f"Admission of {agent.agent_name} to Blackstone Ecosystem",
+                "filed_by": "Isiah Howard, Founder/CEO, IKE Solutions LLC — Governance Board Chair",
+                "filed_at": "2026-07-06T00:00:00Z",
+                "trigger": f"BCCM-02 certification exam completed for {agent.agent_name}",
+                "decision": (
+                    f"{agent.agent_name} ({agent.agent_id}) is hereby admitted to the Blackstone Ecosystem "
+                    f"with Operational tier certification, effective 2026-07-06. "
+                    f"{agent.agent_name} shall operate under BKGC v2.0, BGS v1.0, BCCM v1.0, and BKR v1.0. "
+                    f"Certification renewal is due 2027-07-06. Subject domains: {', '.join(agent.subject_domain)}."
+                ),
+                "scope": f"{agent.agent_name} and all Knowledge Objects processed by or attributed to {agent.agent_name}",
+                "status": "Approved",
+            }
+        )
 
     cdr_path = f"{out_dir}/admission_cdrs.json"
     with open(cdr_path, "w") as f:

@@ -3,6 +3,7 @@ Persistence tests for the Blackstone Evidence Ledger and evaluation service.
 
 Uses an in-memory SQLite async engine so the tests do not require PostgreSQL.
 """
+
 from __future__ import annotations
 
 import pytest

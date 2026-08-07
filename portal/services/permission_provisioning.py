@@ -97,8 +97,6 @@ class PermissionManifest:
     roles: dict[str, tuple[str, ...]]
 
 
-
-
 async def inspect_permission_manifest(db: AsyncSession) -> PermissionSyncReport:
     """Read-only verification of the canonical manifest against persistence."""
     return await _reconcile_permission_manifest(db, apply_changes=False, mode=SyncMode.VERIFY)
@@ -123,7 +121,9 @@ def canonical_permission_manifest() -> PermissionManifest:
         role.value: tuple(sorted(permission.value for permission in ROLE_PERMISSIONS[role]))
         for role in Role
     }
-    return PermissionManifest(schema_version=MANIFEST_SCHEMA_VERSION, permissions=permissions, roles=roles)
+    return PermissionManifest(
+        schema_version=MANIFEST_SCHEMA_VERSION, permissions=permissions, roles=roles
+    )
 
 
 def canonical_manifest_hash() -> str:
@@ -141,18 +141,21 @@ async def _reconcile_permission_manifest(
 
     permission_rows = (await db.execute(select(PermissionModel))).scalars().all()
     role_rows = (
-        await db.execute(
-            select(RoleModel)
-            .options(selectinload(RoleModel.permissions))
-            .order_by(RoleModel.name.asc())
+        (
+            await db.execute(
+                select(RoleModel)
+                .options(selectinload(RoleModel.permissions))
+                .order_by(RoleModel.name.asc())
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     current_permissions = {row.name: row for row in permission_rows}
     current_roles = {row.name: row for row in role_rows}
     current_grants = {
-        role.name: {permission.name for permission in role.permissions}
-        for role in role_rows
+        role.name: {permission.name for permission in role.permissions} for role in role_rows
     }
 
     report = PermissionSyncReport(
@@ -230,17 +233,20 @@ async def _reconcile_permission_manifest(
 
         permission_rows = (await db.execute(select(PermissionModel))).scalars().all()
         role_rows = (
-            await db.execute(
-                select(RoleModel)
-                .options(selectinload(RoleModel.permissions))
-                .order_by(RoleModel.name.asc())
+            (
+                await db.execute(
+                    select(RoleModel)
+                    .options(selectinload(RoleModel.permissions))
+                    .order_by(RoleModel.name.asc())
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         current_permissions = {row.name: row for row in permission_rows}
         current_roles = {row.name: row for row in role_rows}
         current_grants = {
-            role.name: {permission.name for permission in role.permissions}
-            for role in role_rows
+            role.name: {permission.name for permission in role.permissions} for role in role_rows
         }
 
     for role_name, desired_set in manifest["roles"].items():
@@ -266,7 +272,9 @@ async def _reconcile_permission_manifest(
                 permission = current_permissions.get(permission_name)
                 if permission is None:
                     report.role_grants_failed += 1
-                    report.failed_records.append(f"role_grant:{role_name}:{permission_name}:missing_permission")
+                    report.failed_records.append(
+                        f"role_grant:{role_name}:{permission_name}:missing_permission"
+                    )
                     continue
                 if not await _role_permission_exists(db, role.id, permission.id):
                     db.add(RolePermission(role_id=role.id, permission_id=permission.id))
@@ -289,7 +297,9 @@ async def _reconcile_permission_manifest(
                     report.role_grants_removed += len(extra_permission_ids)
                     for permission_name in extra_grants:
                         if permission_name in current_permissions:
-                            report.removed_records.append(f"role_grant:{role_name}:{permission_name}")
+                            report.removed_records.append(
+                                f"role_grant:{role_name}:{permission_name}"
+                            )
         else:
             report.role_grants_unchanged += len(set(desired_set).intersection(actual_set))
 
@@ -297,17 +307,20 @@ async def _reconcile_permission_manifest(
         await db.flush()
         permission_rows = (await db.execute(select(PermissionModel))).scalars().all()
         role_rows = (
-            await db.execute(
-                select(RoleModel)
-                .options(selectinload(RoleModel.permissions))
-                .order_by(RoleModel.name.asc())
+            (
+                await db.execute(
+                    select(RoleModel)
+                    .options(selectinload(RoleModel.permissions))
+                    .order_by(RoleModel.name.asc())
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         current_permissions = {row.name: row for row in permission_rows}
         current_roles = {row.name: row for row in role_rows}
         current_grants = {
-            role.name: {permission.name for permission in role.permissions}
-            for role in role_rows
+            role.name: {permission.name for permission in role.permissions} for role in role_rows
         }
 
     report.permission_missing = sorted(desired_permissions - set(current_permissions))
@@ -403,7 +416,10 @@ def _classify_drift_severity(
     if any(report.role_grant_missing.values()):
         return DriftSeverity.HIGH
 
-    if any(permission.startswith(MISSION_CONTROL_PERMISSION_PREFIX) for permission in report.permission_missing):
+    if any(
+        permission.startswith(MISSION_CONTROL_PERMISSION_PREFIX)
+        for permission in report.permission_missing
+    ):
         return DriftSeverity.HIGH
 
     if report.permission_missing:

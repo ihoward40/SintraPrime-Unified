@@ -44,6 +44,7 @@ from governance.risk_types import (
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def tmp_db(tmp_path: Path) -> Path:
     return tmp_path / "test_audit.db"
@@ -89,8 +90,8 @@ def engine(tmp_db: Path) -> GovernanceEngine:
 # 1. RiskAssessor Tests
 # ===========================================================================
 
-class TestRiskAssessor:
 
+class TestRiskAssessor:
     def test_assess_critical_action(self, assessor: RiskAssessor) -> None:
         risk = assessor.assess("send_payment")
         assert risk.risk_level == RiskLevel.CRITICAL
@@ -198,8 +199,12 @@ class TestRiskAssessor:
 
     def test_add_custom_rule_takes_priority(self, assessor: RiskAssessor) -> None:
         assessor.add_custom_rule(
-            "read_data", RiskLevel.HIGH,
-            "Custom: now HIGH for this org", True, True, "Custom impact"
+            "read_data",
+            RiskLevel.HIGH,
+            "Custom: now HIGH for this org",
+            True,
+            True,
+            "Custom impact",
         )
         risk = assessor.assess("read_data")
         assert risk.risk_level == RiskLevel.HIGH
@@ -220,8 +225,8 @@ class TestRiskAssessor:
 # 2. ApprovalGate Tests
 # ===========================================================================
 
-class TestApprovalGate:
 
+class TestApprovalGate:
     def _make_risk(self, level: RiskLevel = RiskLevel.HIGH) -> ActionRisk:
         return ActionRisk(
             action_type="test_action",
@@ -324,8 +329,8 @@ class TestApprovalGate:
 # 3. AuditTrail Tests
 # ===========================================================================
 
-class TestAuditTrail:
 
+class TestAuditTrail:
     def test_log_creates_entry(self, trail: AuditTrail) -> None:
         entry = trail.log("agent-1", "read_data", "success", RiskLevel.LOW)
         assert entry.id is not None
@@ -356,9 +361,7 @@ class TestAuditTrail:
     def test_query_by_date_range(self, trail: AuditTrail) -> None:
         now = datetime.now(timezone.utc)
         trail.log("agent", "read_data", "success", RiskLevel.LOW)
-        results = trail.query(
-            date_range=(now - timedelta(minutes=1), now + timedelta(minutes=1))
-        )
+        results = trail.query(date_range=(now - timedelta(minutes=1), now + timedelta(minutes=1)))
         assert len(results) >= 1
 
     def test_summary_report(self, trail: AuditTrail) -> None:
@@ -404,7 +407,10 @@ class TestAuditTrail:
 
     def test_log_with_metadata(self, trail: AuditTrail) -> None:
         entry = trail.log(
-            "agent", "send_payment", "success", RiskLevel.CRITICAL,
+            "agent",
+            "send_payment",
+            "success",
+            RiskLevel.CRITICAL,
             approval_id="approval-123",
             metadata={"amount": 5000, "currency": "USD"},
         )
@@ -418,8 +424,8 @@ class TestAuditTrail:
 # 4. InterventionController Tests
 # ===========================================================================
 
-class TestInterventionController:
 
+class TestInterventionController:
     def test_register_agent(self, controller: InterventionController) -> None:
         status = controller.register_agent("agent-1", "legal_research")
         assert status.agent_id == "agent-1"
@@ -511,8 +517,8 @@ class TestInterventionController:
 # 5. ComplianceMonitor Tests
 # ===========================================================================
 
-class TestComplianceMonitor:
 
+class TestComplianceMonitor:
     def test_compliant_low_risk_action(self, monitor: ComplianceMonitor) -> None:
         result = monitor.check_action("read_data", domain="general")
         assert result.compliant is True
@@ -572,15 +578,11 @@ class TestComplianceMonitor:
         assert result.unauthorized_practice is True
 
     def test_data_residency_non_gdpr(self, monitor: ComplianceMonitor) -> None:
-        result = monitor.data_residency_check(
-            {"processing_region": "US"}, user_jurisdiction="US"
-        )
+        result = monitor.data_residency_check({"processing_region": "US"}, user_jurisdiction="US")
         assert result is True
 
     def test_data_residency_gdpr_violation(self, monitor: ComplianceMonitor) -> None:
-        result = monitor.data_residency_check(
-            {"storage_region": "US"}, user_jurisdiction="EU"
-        )
+        result = monitor.data_residency_check({"storage_region": "US"}, user_jurisdiction="EU")
         assert result is False
 
     def test_audit_for_soc2(self, monitor: ComplianceMonitor) -> None:
@@ -601,8 +603,8 @@ class TestComplianceMonitor:
 # 6. GovernanceEngine Tests
 # ===========================================================================
 
-class TestGovernanceEngine:
 
+class TestGovernanceEngine:
     def test_before_action_low_risk_allowed(self, engine: GovernanceEngine) -> None:
         allowed = engine.before_action("read_data", {}, "agent-1")
         assert allowed is True
@@ -695,8 +697,8 @@ class TestGovernanceEngine:
 # 7. Risk Types Tests
 # ===========================================================================
 
-class TestRiskTypes:
 
+class TestRiskTypes:
     def test_risk_level_requires_approval(self) -> None:
         assert RiskLevel.HIGH.requires_approval is True
         assert RiskLevel.CRITICAL.requires_approval is True
@@ -717,6 +719,7 @@ class TestRiskTypes:
 
     def test_approval_request_is_expired(self) -> None:
         from governance.risk_types import ApprovalRequest
+
         now = datetime.now(timezone.utc)
         req = ApprovalRequest(
             action="test",
@@ -729,6 +732,7 @@ class TestRiskTypes:
 
     def test_audit_entry_checksum_changes_on_tamper(self) -> None:
         from governance.risk_types import AuditEntry
+
         entry = AuditEntry(
             timestamp=datetime.now(timezone.utc),
             actor="agent",

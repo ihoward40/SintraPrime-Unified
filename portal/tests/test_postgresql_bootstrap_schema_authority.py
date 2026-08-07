@@ -1,4 +1,5 @@
 """PostgreSQL raw-SQL bootstrap and affected ORM authority certification."""
+
 from __future__ import annotations
 
 import asyncio
@@ -27,9 +28,7 @@ pytestmark = pytest.mark.postgresql
 
 
 def _database_url() -> str:
-    url = os.environ.get("POSTGRESQL_BOOTSTRAP_TEST_DATABASE_URL") or os.environ.get(
-        "DATABASE_URL"
-    )
+    url = os.environ.get("POSTGRESQL_BOOTSTRAP_TEST_DATABASE_URL") or os.environ.get("DATABASE_URL")
     if not url:
         pytest.skip("PostgreSQL bootstrap certification database URL not configured")
     return url
@@ -91,7 +90,14 @@ def _seed_case_user(url: str) -> tuple[uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUI
                 INSERT INTO cases (id, tenant_id, client_id, lead_attorney_id, case_number, title)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 """,
-                (str(case_id), str(tenant_id), str(client_id), str(user_id), f"PRB-{case_id.hex[:8]}", "PR-B Bootstrap Case"),
+                (
+                    str(case_id),
+                    str(tenant_id),
+                    str(client_id),
+                    str(user_id),
+                    f"PRB-{case_id.hex[:8]}",
+                    "PR-B Bootstrap Case",
+                ),
             )
     return tenant_id, client_id, user_id, case_id
 
@@ -247,12 +253,17 @@ def test_live_catalog_constraints_and_uuid_authority(migrated_database_url: str)
                 ORDER BY conname
                 """
             )
-            constraint_defs = "\n".join(f"{name}:{kind}:{definition}" for name, kind, definition in cur.fetchall())
+            constraint_defs = "\n".join(
+                f"{name}:{kind}:{definition}" for name, kind, definition in cur.fetchall()
+            )
             assert "PRIMARY KEY (snapshot_id)" in constraint_defs
             assert "PRIMARY KEY (audit_id)" in constraint_defs
             assert "FOREIGN KEY (case_id) REFERENCES cases(id)" in constraint_defs
             assert "FOREIGN KEY (created_by) REFERENCES users(id)" in constraint_defs
-            assert "FOREIGN KEY (snapshot_id) REFERENCES evidence_snapshots(snapshot_id)" in constraint_defs
+            assert (
+                "FOREIGN KEY (snapshot_id) REFERENCES evidence_snapshots(snapshot_id)"
+                in constraint_defs
+            )
             assert "ON DELETE RESTRICT" in constraint_defs
             assert "CHECK (((status)::text = ANY" in constraint_defs
             assert "CHECK (((verification_status)::text = ANY" in constraint_defs
@@ -265,7 +276,9 @@ def test_live_catalog_constraints_and_uuid_authority(migrated_database_url: str)
                 WHERE tgrelid = 'audit_records'::regclass AND NOT tgisinternal
                 """
             )
-            assert cur.fetchall() == [("trg_audit_record_immutable", "prevent_audit_record_mutation")]
+            assert cur.fetchall() == [
+                ("trg_audit_record_immutable", "prevent_audit_record_mutation")
+            ]
 
             cur.execute(
                 """
@@ -306,9 +319,14 @@ def test_real_orm_crud_uuid_binding_and_audit_immutability(migrated_database_url
             assert found.snapshot_id == snapshot_id
             assert str(found.case_id) == str(case_id)
             assert isinstance(found.snapshot_id, uuid.UUID)
-            assert session.scalars(
-                select(EvidenceSnapshot).where(EvidenceSnapshot.case_id == str(case_id))
-            ).one().snapshot_id == snapshot_id
+            assert (
+                session.scalars(
+                    select(EvidenceSnapshot).where(EvidenceSnapshot.case_id == str(case_id))
+                )
+                .one()
+                .snapshot_id
+                == snapshot_id
+            )
 
             audit = AuditRecord(
                 audit_id=audit_id,
@@ -346,12 +364,20 @@ def test_real_orm_crud_uuid_binding_and_audit_immutability(migrated_database_url
 
         with Session(engine) as session:
             with pytest.raises(Exception, match="audit_records rows cannot be modified"):
-                session.execute(text("UPDATE audit_records SET verification_status = 'failed' WHERE audit_id = :audit_id"), {"audit_id": audit_id})
+                session.execute(
+                    text(
+                        "UPDATE audit_records SET verification_status = 'failed' WHERE audit_id = :audit_id"
+                    ),
+                    {"audit_id": audit_id},
+                )
             session.rollback()
 
         with Session(engine) as session:
             with pytest.raises(Exception, match="audit_records rows cannot be deleted"):
-                session.execute(text("DELETE FROM audit_records WHERE audit_id = :audit_id"), {"audit_id": audit_id})
+                session.execute(
+                    text("DELETE FROM audit_records WHERE audit_id = :audit_id"),
+                    {"audit_id": audit_id},
+                )
             session.rollback()
 
         with Session(engine) as session:
@@ -368,6 +394,9 @@ def test_real_orm_crud_uuid_binding_and_audit_immutability(migrated_database_url
             )
             session.flush()
             session.rollback()
-            assert session.scalar(select(AuditRecord).where(AuditRecord.evidence_hash == "f" * 64)) is None
+            assert (
+                session.scalar(select(AuditRecord).where(AuditRecord.evidence_hash == "f" * 64))
+                is None
+            )
     finally:
         engine.dispose()

@@ -34,10 +34,10 @@ from typing import Any
 REVERIFICATION_INTERVALS: dict[str, int] = {
     "SC-01": 180,  # Primary Legal Authority
     "SC-02": 180,  # Official Government Publication
-    "SC-03": 90,   # Scholarly and Academic
-    "SC-04": 90,   # Privately Published Reference
+    "SC-03": 90,  # Scholarly and Academic
+    "SC-04": 90,  # Privately Published Reference
     "SC-05": 365,  # Historical Document
-    "SC-06": 30,   # Secondary / Informational
+    "SC-06": 30,  # Secondary / Informational
 }
 
 # Source reliability score ranges — BGS-06 reference
@@ -80,9 +80,10 @@ class CustodyEvent:
 @dataclass
 class EvidenceItemRecord:
     """In-memory representation of a CEL evidence item."""
+
     ev_id: str
     title: str
-    source_class: str          # SC-01 through SC-06
+    source_class: str  # SC-01 through SC-06
     source_reliability_score: int
     collected_at: datetime
     collected_by: str
@@ -132,10 +133,14 @@ class EvidenceItemRecord:
             "jurisdiction_code": self.jurisdiction_code,
             "provenance": self.provenance,
             "integrity_status": self.integrity_status,
-            "authenticated_at": self.authenticated_at.isoformat() if self.authenticated_at else None,
+            "authenticated_at": self.authenticated_at.isoformat()
+            if self.authenticated_at
+            else None,
             "authenticated_by": self.authenticated_by,
             "content_hash": self.content_hash,
-            "reverification_due": self.reverification_due.isoformat() if self.reverification_due else None,
+            "reverification_due": self.reverification_due.isoformat()
+            if self.reverification_due
+            else None,
             "chain_of_custody": [e.to_dict() for e in self.chain_of_custody],
             "ko_ids": self.ko_ids,
             "is_ai_generated": self.is_ai_generated,
@@ -209,7 +214,9 @@ class ConstitutionalEvidenceLedger:
         AI-generated content is automatically SC-06 per CDR-00001.
         """
         if source_class not in REVERIFICATION_INTERVALS:
-            raise ValueError(f"Unknown source class: {source_class!r}. Must be SC-01 through SC-06.")
+            raise ValueError(
+                f"Unknown source class: {source_class!r}. Must be SC-01 through SC-06."
+            )
 
         # CDR-00001: AI-generated content is always SC-06
         if is_ai_generated and source_class != "SC-06":
@@ -244,12 +251,14 @@ class ConstitutionalEvidenceLedger:
             notes=notes,
         )
 
-        item.chain_of_custody.append(CustodyEvent(
-            event_type="COLLECTED",
-            actor=collected_by,
-            timestamp=now,
-            description=f"Evidence item created in CEL. Source class: {source_class}.",
-        ))
+        item.chain_of_custody.append(
+            CustodyEvent(
+                event_type="COLLECTED",
+                actor=collected_by,
+                timestamp=now,
+                description=f"Evidence item created in CEL. Source class: {source_class}.",
+            )
+        )
 
         self._items[ev_id] = item
         return ev_id
@@ -314,17 +323,22 @@ class ConstitutionalEvidenceLedger:
 
         # Schedule re-verification
         from datetime import timedelta
+
         interval = REVERIFICATION_INTERVALS[item.source_class]
         item.reverification_due = (now + timedelta(days=interval)).date()
 
-        item.chain_of_custody.append(CustodyEvent(
-            event_type="AUTHENTICATED",
-            actor=authenticator,
-            timestamp=now,
-            description=f"Authenticated. Hash recorded. Re-verification due: {item.reverification_due}. {notes}".strip(),
-        ))
+        item.chain_of_custody.append(
+            CustodyEvent(
+                event_type="AUTHENTICATED",
+                actor=authenticator,
+                timestamp=now,
+                description=f"Authenticated. Hash recorded. Re-verification due: {item.reverification_due}. {notes}".strip(),
+            )
+        )
 
-    def reverify(self, ev_id: str, verifier: str, *, content_hash: str = "", notes: str = "") -> None:
+    def reverify(
+        self, ev_id: str, verifier: str, *, content_hash: str = "", notes: str = ""
+    ) -> None:
         """
         Re-verify an evidence item, resetting the reverification clock.
         Called on the BGS-09 reverification schedule.
@@ -333,6 +347,7 @@ class ConstitutionalEvidenceLedger:
         now = _utcnow()
 
         from datetime import timedelta
+
         interval = REVERIFICATION_INTERVALS[item.source_class]
         item.reverification_due = (now + timedelta(days=interval)).date()
         if content_hash:
@@ -340,12 +355,14 @@ class ConstitutionalEvidenceLedger:
         item.authenticated_at = now
         item.authenticated_by = verifier
 
-        item.chain_of_custody.append(CustodyEvent(
-            event_type="REVERIFIED",
-            actor=verifier,
-            timestamp=now,
-            description=f"Reverification completed. Next due: {item.reverification_due}. {notes}".strip(),
-        ))
+        item.chain_of_custody.append(
+            CustodyEvent(
+                event_type="REVERIFIED",
+                actor=verifier,
+                timestamp=now,
+                description=f"Reverification completed. Next due: {item.reverification_due}. {notes}".strip(),
+            )
+        )
 
     # ------------------------------------------------------------------
     # Deprecation — BGS-07. NO DELETION EVER.
@@ -380,13 +397,15 @@ class ConstitutionalEvidenceLedger:
             "successor_ev_id": successor_ev_id,
         }
 
-        item.chain_of_custody.append(CustodyEvent(
-            event_type="DEPRECATED",
-            actor=deprecated_by,
-            timestamp=now,
-            description=f"DEPRECATED: {reason}"
-            + (f" Successor: {successor_ev_id}." if successor_ev_id else ""),
-        ))
+        item.chain_of_custody.append(
+            CustodyEvent(
+                event_type="DEPRECATED",
+                actor=deprecated_by,
+                timestamp=now,
+                description=f"DEPRECATED: {reason}"
+                + (f" Successor: {successor_ev_id}." if successor_ev_id else ""),
+            )
+        )
 
     def delete(self, ev_id: str) -> None:  # type: ignore[override]
         """
@@ -408,12 +427,14 @@ class ConstitutionalEvidenceLedger:
         item = self.get(ev_id)
         item.legal_hold = True
         item.legal_hold_basis = basis
-        item.chain_of_custody.append(CustodyEvent(
-            event_type="HELD",
-            actor=held_by,
-            timestamp=_utcnow(),
-            description=f"LEGAL HOLD PLACED. Basis: {basis}",
-        ))
+        item.chain_of_custody.append(
+            CustodyEvent(
+                event_type="HELD",
+                actor=held_by,
+                timestamp=_utcnow(),
+                description=f"LEGAL HOLD PLACED. Basis: {basis}",
+            )
+        )
 
     def release_hold(self, ev_id: str, released_by: str, cdr_number: str) -> None:
         """
@@ -426,12 +447,14 @@ class ConstitutionalEvidenceLedger:
         item.legal_hold = False
         old_basis = item.legal_hold_basis
         item.legal_hold_basis = ""
-        item.chain_of_custody.append(CustodyEvent(
-            event_type="ACCESSED",
-            actor=released_by,
-            timestamp=_utcnow(),
-            description=f"LEGAL HOLD RELEASED. Original basis: {old_basis}. Authorizing CDR: {cdr_number}.",
-        ))
+        item.chain_of_custody.append(
+            CustodyEvent(
+                event_type="ACCESSED",
+                actor=released_by,
+                timestamp=_utcnow(),
+                description=f"LEGAL HOLD RELEASED. Original basis: {old_basis}. Authorizing CDR: {cdr_number}.",
+            )
+        )
 
     # ------------------------------------------------------------------
     # KO linkage

@@ -10,6 +10,7 @@ status based on hardship?"
 Run:
     python blackstone/cases/irs_3176c_cnc_case.py
 """
+
 from __future__ import annotations
 
 from blackstone.engines import BlackstoneOrchestrator
@@ -27,9 +28,7 @@ from blackstone.models import (
 def build_case():
     federal_us = Jurisdiction(name="United States", level="federal")
 
-    orch = BlackstoneOrchestrator(
-        agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"]
-    )
+    orch = BlackstoneOrchestrator(agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"])
     orch.register_jurisdiction(federal_us)
 
     sources = [

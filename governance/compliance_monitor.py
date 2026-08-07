@@ -32,26 +32,48 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 GDPR_REGIONS = {
-    "EU", "EEA", "UK", "DE", "FR", "ES", "IT", "NL", "BE", "SE",
-    "PL", "AT", "DK", "FI", "NO", "IS", "LI",
+    "EU",
+    "EEA",
+    "UK",
+    "DE",
+    "FR",
+    "ES",
+    "IT",
+    "NL",
+    "BE",
+    "SE",
+    "PL",
+    "AT",
+    "DK",
+    "FI",
+    "NO",
+    "IS",
+    "LI",
 }
 
 # Actions that require attorney-client privilege protection
 PRIVILEGED_ACTIONS = {
-    "send_legal_advice", "share_case_strategy", "disclose_privileged_info",
-    "forward_attorney_communication", "publish_legal_memo",
+    "send_legal_advice",
+    "share_case_strategy",
+    "disclose_privileged_info",
+    "forward_attorney_communication",
+    "publish_legal_memo",
 }
 
 # Actions potentially constituting unauthorized practice of law
 UPL_ACTIONS = {
-    "give_legal_advice_without_supervision", "represent_client_in_court",
-    "sign_legal_document_as_attorney", "file_legal_document",
+    "give_legal_advice_without_supervision",
+    "represent_client_in_court",
+    "sign_legal_document_as_attorney",
+    "file_legal_document",
 }
 
 # SEC-regulated communication actions
 SEC_ACTIONS = {
-    "publish_financial_forecast", "send_investor_communication",
-    "disclose_material_information", "send_earnings_guidance",
+    "publish_financial_forecast",
+    "send_investor_communication",
+    "disclose_material_information",
+    "send_earnings_guidance",
 }
 
 # HIPAA-sensitive action patterns
@@ -147,7 +169,9 @@ class ComplianceMonitor:
         # Custom domain rules
         for blocked_action in self._custom_rules.get(domain, []):
             if action == blocked_action:
-                violations.append(f"Custom rule violation: '{action}' is blocked in domain '{domain}'.")
+                violations.append(
+                    f"Custom rule violation: '{action}' is blocked in domain '{domain}'."
+                )
 
         # General recommendations
         if not violations:
@@ -165,7 +189,9 @@ class ComplianceMonitor:
 
         if not compliant:
             for v in violations:
-                self.flag_violation(action, v, severity="high" if domain in ("legal", "financial") else "medium")
+                self.flag_violation(
+                    action, v, severity="high" if domain in ("legal", "financial") else "medium"
+                )
 
         return result
 
@@ -201,8 +227,7 @@ class ComplianceMonitor:
         )
         self._violations.append(violation)
         logger.warning(
-            "Compliance violation [%s]: action='%s', rule='%s'",
-            severity.upper(), action, rule
+            "Compliance violation [%s]: action='%s', rule='%s'", severity.upper(), action, rule
         )
         return violation
 
@@ -224,10 +249,7 @@ class ComplianceMonitor:
 
         if date_range:
             start, end = date_range
-            results = [
-                v for v in results
-                if start <= v.detected_at <= end
-            ]
+            results = [v for v in results if start <= v.detected_at <= end]
         if severity:
             results = [v for v in results if v.severity == severity]
         if resolved is not None:
@@ -299,8 +321,7 @@ class ComplianceMonitor:
             f"Address control '{ctrl}': {msg}" for ctrl, msg in failed_controls
         ]
         report.summary = (
-            f"{standard} audit: {passed}/{total} controls passed "
-            f"(score: {report.score:.1f}%)"
+            f"{standard} audit: {passed}/{total} controls passed (score: {report.score:.1f}%)"
         )
 
         return report
@@ -387,14 +408,16 @@ class ComplianceMonitor:
         if processing_region and processing_region not in GDPR_REGIONS:
             logger.warning(
                 "GDPR data residency: processing in '%s' not permitted for jurisdiction '%s'",
-                processing_region, user_jurisdiction
+                processing_region,
+                user_jurisdiction,
             )
             return False
 
         if storage_region and storage_region not in GDPR_REGIONS:
             logger.warning(
                 "GDPR data residency: storage in '%s' not permitted for jurisdiction '%s'",
-                storage_region, user_jurisdiction
+                storage_region,
+                user_jurisdiction,
             )
             return False
 
@@ -420,44 +443,77 @@ class ComplianceMonitor:
             "CC6.1 — Logical Access": (True, "Access controls implemented"),
             "CC6.2 — Authentication": (True, "MFA enabled"),
             "CC7.1 — Threat Detection": (True, "Anomaly detection active"),
-            "CC7.2 — Incident Response": (data.get("incident_response_plan", False), "Incident response plan required"),
-            "CC9.2 — Vendor Risk": (data.get("vendor_assessments", False), "Vendor risk assessments required"),
+            "CC7.2 — Incident Response": (
+                data.get("incident_response_plan", False),
+                "Incident response plan required",
+            ),
+            "CC9.2 — Vendor Risk": (
+                data.get("vendor_assessments", False),
+                "Vendor risk assessments required",
+            ),
             "A1.1 — Availability": (True, "System availability monitored"),
         }
 
     def _iso27001_controls(self, data: Dict) -> Dict[str, tuple]:
         return {
             "A.9 — Access Control": (True, "Access controls in place"),
-            "A.10 — Cryptography": (data.get("encryption_at_rest", False), "Encryption at rest required"),
+            "A.10 — Cryptography": (
+                data.get("encryption_at_rest", False),
+                "Encryption at rest required",
+            ),
             "A.12 — Operations Security": (True, "Audit logging active"),
-            "A.16 — Incident Management": (data.get("incident_management", False), "Incident management required"),
+            "A.16 — Incident Management": (
+                data.get("incident_management", False),
+                "Incident management required",
+            ),
             "A.18 — Compliance": (True, "Compliance monitoring active"),
         }
 
     def _hipaa_controls(self, data: Dict) -> Dict[str, tuple]:
         return {
             "§164.308 — Admin Safeguards": (True, "Security officer designated"),
-            "§164.310 — Physical Safeguards": (data.get("physical_controls", False), "Physical controls required"),
-            "§164.312 — Technical Safeguards": (data.get("encryption", False), "Technical encryption required"),
+            "§164.310 — Physical Safeguards": (
+                data.get("physical_controls", False),
+                "Physical controls required",
+            ),
+            "§164.312 — Technical Safeguards": (
+                data.get("encryption", False),
+                "Technical encryption required",
+            ),
             "§164.314 — Org Requirements": (True, "BAA agreements in place"),
-            "§164.316 — Policies": (data.get("security_policies", False), "Written security policies required"),
+            "§164.316 — Policies": (
+                data.get("security_policies", False),
+                "Written security policies required",
+            ),
         }
 
     def _gdpr_controls(self, data: Dict) -> Dict[str, tuple]:
         return {
             "Art. 5 — Data Principles": (True, "Data minimization applied"),
-            "Art. 13 — Transparency": (data.get("privacy_notice", False), "Privacy notice required"),
+            "Art. 13 — Transparency": (
+                data.get("privacy_notice", False),
+                "Privacy notice required",
+            ),
             "Art. 17 — Right to Erasure": (True, "Deletion workflows in place"),
             "Art. 25 — Privacy by Design": (True, "Privacy-by-design implemented"),
-            "Art. 30 — Records of Processing": (data.get("ropa", False), "ROPA (Record of Processing) required"),
+            "Art. 30 — Records of Processing": (
+                data.get("ropa", False),
+                "ROPA (Record of Processing) required",
+            ),
             "Art. 32 — Security": (True, "Encryption and audit logging active"),
             "Art. 37 — DPO": (data.get("dpo_appointed", False), "Data Protection Officer required"),
         }
 
     def _sox_controls(self, data: Dict) -> Dict[str, tuple]:
         return {
-            "§302 — CEO/CFO Certification": (data.get("executive_certification", False), "Executive certification required"),
-            "§404 — Internal Controls": (data.get("internal_controls", False), "Internal control assessment required"),
+            "§302 — CEO/CFO Certification": (
+                data.get("executive_certification", False),
+                "Executive certification required",
+            ),
+            "§404 — Internal Controls": (
+                data.get("internal_controls", False),
+                "Internal control assessment required",
+            ),
             "§409 — Real-time Disclosure": (True, "Material event logging active"),
             "§802 — Record Retention": (True, "7-year audit log retention active"),
         }

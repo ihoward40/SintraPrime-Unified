@@ -4,6 +4,7 @@ Uses FastAPI TestClient with mocked DB and RBAC dependencies to cover
 the 0%-coverage routers: admin, clients, messages, users.
 Also adds additional coverage for auth, billing, cases, documents routers.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -16,9 +17,11 @@ from fastapi.testclient import TestClient
 
 # ─── Shared helpers ───────────────────────────────────────────────────────────
 
+
 def _make_mock_user(role="FIRM_ADMIN", tenant_id=None):
     """Create a mock CurrentUser for dependency injection."""
     from portal.auth.rbac import CurrentUser, Permission, Role
+
     user = MagicMock(spec=CurrentUser)
     user.user_id = str(uuid.uuid4())
     user.tenant_id = tenant_id or str(uuid.uuid4())
@@ -79,6 +82,7 @@ def _build_app_with_router(router, current_user=None, db=None):
 
 
 # ─── Admin router ─────────────────────────────────────────────────────────────
+
 
 class TestAdminRouter:
     """Tests for portal.routers.admin endpoints."""
@@ -141,6 +145,7 @@ class TestAdminRouter:
 
 # ─── Clients router ───────────────────────────────────────────────────────────
 
+
 class TestClientsRouter:
     """Tests for portal.routers.clients endpoints."""
 
@@ -191,17 +196,25 @@ class TestClientsRouter:
         mock_client.created_at = datetime.now(UTC)
         mock_client.updated_at = datetime.now(UTC)
         mock_client.matters = []
-        mock_db.refresh = AsyncMock(side_effect=lambda obj: setattr(obj, 'id', str(uuid.uuid4())))
+        mock_db.refresh = AsyncMock(side_effect=lambda obj: setattr(obj, "id", str(uuid.uuid4())))
 
         app = FastAPI()
         app.dependency_overrides[get_db] = lambda: mock_db
 
         client, mock_user, mock_db = self._make_app()
-        resp = client.post("/clients", json={
-            "name": "Acme Corp",
-            "email": "acme@example.com",
-        })
-        assert resp.status_code in (200, 201, 422, 500)  # 422 if schema validation fails, 500 if mock db missing attrs
+        resp = client.post(
+            "/clients",
+            json={
+                "name": "Acme Corp",
+                "email": "acme@example.com",
+            },
+        )
+        assert resp.status_code in (
+            200,
+            201,
+            422,
+            500,
+        )  # 422 if schema validation fails, 500 if mock db missing attrs
 
     def test_get_client_not_found_returns_404(self):
         client, _mock_user, mock_db = self._make_app()
@@ -221,6 +234,7 @@ class TestClientsRouter:
 
 
 # ─── Messages router ──────────────────────────────────────────────────────────
+
 
 class TestMessagesRouter:
     """Tests for portal.routers.messages endpoints."""
@@ -264,7 +278,13 @@ class TestMessagesRouter:
         mock_db.execute = AsyncMock(return_value=mock_result)
         # Try both path formats
         resp = client.get(f"/messages/threads/{uuid.uuid4()}/messages")
-        assert resp.status_code in (404, 405, 422, 200, 403)  # any response indicates endpoint was reached
+        assert resp.status_code in (
+            404,
+            405,
+            422,
+            200,
+            403,
+        )  # any response indicates endpoint was reached
 
     def test_create_thread_returns_201(self):
         from portal.database import get_db
@@ -279,14 +299,18 @@ class TestMessagesRouter:
         app.dependency_overrides[get_db] = lambda: mock_db
 
         client, _mock_user, mock_db = self._make_app()
-        resp = client.post("/messages/threads", json={
-            "subject": "Test Thread",
-            "participants": [str(uuid.uuid4())],
-        })
+        resp = client.post(
+            "/messages/threads",
+            json={
+                "subject": "Test Thread",
+                "participants": [str(uuid.uuid4())],
+            },
+        )
         assert resp.status_code in (200, 201, 422)
 
 
 # ─── Users router ─────────────────────────────────────────────────────────────
+
 
 class TestUsersRouter:
     """Tests for portal.routers.users endpoints."""
@@ -344,21 +368,29 @@ class TestUsersRouter:
         client, _mock_user, _mock_db = self._make_app()
         # get_user_sessions returns in-memory sessions (no DB lookup for user existence)
         resp = client.get(f"/users/{uuid.uuid4()}/sessions")
-        assert resp.status_code in (200, 404, 500)  # 200 if sessions found, 404 if user not found, 500 if session_manager error
+        assert resp.status_code in (
+            200,
+            404,
+            500,
+        )  # 200 if sessions found, 404 if user not found, 500 if session_manager error
 
     def test_invite_user_returns_201(self):
         client, _mock_user, _mock_db = self._make_app()
         with patch("portal.routers.users.send_email", new_callable=AsyncMock):
-            resp = client.post("/users/invite", json={
-                "email": "newuser@firm.com",
-                "role": "ATTORNEY",
-                "first_name": "Jane",
-                "last_name": "Doe",
-            })
+            resp = client.post(
+                "/users/invite",
+                json={
+                    "email": "newuser@firm.com",
+                    "role": "ATTORNEY",
+                    "first_name": "Jane",
+                    "last_name": "Doe",
+                },
+            )
         assert resp.status_code in (200, 201, 400, 409, 422)
 
 
 # ─── Auth router (additional coverage) ───────────────────────────────────────
+
 
 class TestAuthRouterCoverage:
     """Additional coverage tests for portal.routers.auth."""
@@ -428,11 +460,13 @@ class TestAuthRouterCoverage:
 
 # ─── Document processor service (additional coverage) ────────────────────────
 
+
 class TestDocumentProcessorCoverage:
     """Tests for portal.services.document_processor to boost its 23% coverage."""
 
     def test_add_watermark_function_callable(self):
         from portal.services.document_processor import add_watermark
+
         # add_watermark uses pypdf internally; just verify it's callable
         # and raises on invalid input (not a crash)
         try:
@@ -445,14 +479,17 @@ class TestDocumentProcessorCoverage:
 
     def test_add_watermark_function_exists(self):
         from portal.services import document_processor
+
         assert hasattr(document_processor, "add_watermark")
 
     def test_create_digital_signature_function_exists(self):
         from portal.services import document_processor
+
         assert hasattr(document_processor, "create_digital_signature")
 
     def test_create_digital_signature_with_mock(self):
         from portal.services.document_processor import create_digital_signature
+
         try:
             result = create_digital_signature(
                 b"fake pdf bytes",
@@ -467,12 +504,14 @@ class TestDocumentProcessorCoverage:
 
 # ─── Auth session_manager (additional coverage) ──────────────────────────────
 
+
 class TestAuthSessionManagerCoverage:
     """Additional tests for portal.auth.session_manager (in-memory implementation)."""
 
     @pytest.mark.asyncio
     async def test_blocklist_jti_adds_to_blocklist(self):
         import portal.auth.session_manager as sm
+
         sm._memory_blocklist.clear()
         await sm.blocklist_jti("jti-test-1")
         assert "jti-test-1" in sm._memory_blocklist
@@ -480,6 +519,7 @@ class TestAuthSessionManagerCoverage:
     @pytest.mark.asyncio
     async def test_is_jti_blocklisted_returns_false_for_unknown(self):
         import portal.auth.session_manager as sm
+
         sm._memory_blocklist.discard("jti-unknown-xyz")
         result = await sm.is_jti_blocklisted("jti-unknown-xyz")
         assert result is False
@@ -487,6 +527,7 @@ class TestAuthSessionManagerCoverage:
     @pytest.mark.asyncio
     async def test_is_jti_blocklisted_returns_true_when_blocked(self):
         import portal.auth.session_manager as sm
+
         sm._memory_blocklist.add("jti-blocked-xyz")
         result = await sm.is_jti_blocklisted("jti-blocked-xyz")
         assert result is True
@@ -495,6 +536,7 @@ class TestAuthSessionManagerCoverage:
     @pytest.mark.asyncio
     async def test_create_session_returns_session_id(self):
         import portal.auth.session_manager as sm
+
         session_id = await sm.create_session(
             user_id="user-1",
             email="user@firm.com",
@@ -507,6 +549,7 @@ class TestAuthSessionManagerCoverage:
     @pytest.mark.asyncio
     async def test_revoke_session_removes_session(self):
         import portal.auth.session_manager as sm
+
         session_id = await sm.create_session(
             user_id="user-2",
             email="user2@firm.com",
@@ -518,6 +561,7 @@ class TestAuthSessionManagerCoverage:
     @pytest.mark.asyncio
     async def test_revoke_all_user_sessions_removes_all(self):
         import portal.auth.session_manager as sm
+
         sid1 = await sm.create_session(user_id="user-3", email="u3@firm.com")
         sid2 = await sm.create_session(user_id="user-3", email="u3@firm.com")
         await sm.revoke_all_user_sessions("user-3")
@@ -526,15 +570,18 @@ class TestAuthSessionManagerCoverage:
 
     def test_get_token_jti_returns_hex_string(self):
         from portal.auth.session_manager import get_token_jti
+
         jti = get_token_jti("some.jwt.token")
         assert isinstance(jti, str)
         assert len(jti) == 16  # first 16 chars of SHA-256 hex
 
     def test_get_token_jti_is_deterministic(self):
         from portal.auth.session_manager import get_token_jti
+
         token = "some.jwt.token"
         assert get_token_jti(token) == get_token_jti(token)
 
     def test_get_token_jti_differs_for_different_tokens(self):
         from portal.auth.session_manager import get_token_jti
+
         assert get_token_jti("token.a") != get_token_jti("token.b")

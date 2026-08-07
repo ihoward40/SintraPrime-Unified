@@ -1,6 +1,7 @@
 """
 Tests for the Blackstone case workflow endpoints and live case scripts.
 """
+
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator

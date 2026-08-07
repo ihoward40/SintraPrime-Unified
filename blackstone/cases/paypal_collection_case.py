@@ -4,6 +4,7 @@ Live case script: PayPal collections case.
 Evaluates: PayPal Credit / Synchrony alleges a default and may have sold or
 collected the debt. Debtor disputes the balance and reporting.
 """
+
 from __future__ import annotations
 
 from blackstone.engines import BlackstoneOrchestrator
@@ -19,9 +20,7 @@ from blackstone.models import (
 
 
 def build_case():
-    orchestrator = BlackstoneOrchestrator(
-        agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"]
-    )
+    orchestrator = BlackstoneOrchestrator(agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"])
     jurisdiction = Jurisdiction(name="United States", level="federal")
     orchestrator.register_jurisdiction(jurisdiction)
 

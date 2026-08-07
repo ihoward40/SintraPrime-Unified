@@ -4,6 +4,7 @@ Live case script: Self Financial credit-builder / collection case.
 Evaluates: Self Financial, Inc. reports a purported default on a credit-builder
 loan. Debtor disputes the tradeline and collection attempts.
 """
+
 from __future__ import annotations
 
 from blackstone.engines import BlackstoneOrchestrator
@@ -19,9 +20,7 @@ from blackstone.models import (
 
 
 def build_case():
-    orchestrator = BlackstoneOrchestrator(
-        agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"]
-    )
+    orchestrator = BlackstoneOrchestrator(agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"])
     jurisdiction = Jurisdiction(name="United States", level="federal")
     orchestrator.register_jurisdiction(jurisdiction)
 

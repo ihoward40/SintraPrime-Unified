@@ -41,7 +41,9 @@ ALL_VOICE_PERMS = (
 )
 
 
-def _user(*permissions: Permission, tenant_id: str = TENANT_ID, user_id: str = USER_ID) -> CurrentUser:
+def _user(
+    *permissions: Permission, tenant_id: str = TENANT_ID, user_id: str = USER_ID
+) -> CurrentUser:
     return CurrentUser(
         {
             "sub": user_id,
@@ -121,7 +123,9 @@ def test_authentication_is_required(db: AsyncSession) -> None:
 
     app = FastAPI()
     app.include_router(voice_commands.router)
-    response = TestClient(app).post("/api/v1/voice/commands", json={"raw_transcript": "show status"})
+    response = TestClient(app).post(
+        "/api/v1/voice/commands", json={"raw_transcript": "show status"}
+    )
     assert response.status_code == 401
 
 
@@ -132,7 +136,9 @@ def test_create_permission_is_required(client: TestClient) -> None:
 
 
 def test_read_permission_is_required(client: TestClient) -> None:
-    client.app.dependency_overrides[get_current_user] = lambda: _user(Permission.VOICE_COMMAND_CREATE)
+    client.app.dependency_overrides[get_current_user] = lambda: _user(
+        Permission.VOICE_COMMAND_CREATE
+    )
     response = _submit(client, raw_transcript="show status")
     assert response.status_code == 201
     command_id = response.json()["command_id"]
@@ -224,7 +230,9 @@ def _submit_sensitive(client: TestClient, monkeypatch, target: str = "jordan@exa
     return response.json()
 
 
-def test_sensitive_write_requires_confirmation_before_execution(client: TestClient, monkeypatch) -> None:
+def test_sensitive_write_requires_confirmation_before_execution(
+    client: TestClient, monkeypatch
+) -> None:
     body = _submit_sensitive(client, monkeypatch)
     assert body["session_state"] == "awaiting_confirmation"
     assert body["result"] == "awaiting_confirmation"
@@ -296,7 +304,9 @@ def test_confirm_on_already_terminal_command_returns_409(client: TestClient, mon
 
 
 @pytest.mark.asyncio
-async def test_expired_confirmation_is_refused(client: TestClient, monkeypatch, db: AsyncSession) -> None:
+async def test_expired_confirmation_is_refused(
+    client: TestClient, monkeypatch, db: AsyncSession
+) -> None:
     body = _submit_sensitive(client, monkeypatch)
     command_id = body["command_id"]
 
@@ -529,7 +539,9 @@ def test_tenant_isolation_prevents_cross_tenant_read(client: TestClient, monkeyp
 
 
 @pytest.mark.asyncio
-async def test_tenant_and_principal_come_from_server_context(client: TestClient, db: AsyncSession) -> None:
+async def test_tenant_and_principal_come_from_server_context(
+    client: TestClient, db: AsyncSession
+) -> None:
     response = _submit(client, raw_transcript="show status")
     assert response.status_code == 201
     result = await db.execute(select(VoiceCommand))
@@ -542,7 +554,9 @@ async def test_tenant_and_principal_come_from_server_context(client: TestClient,
 
 
 @pytest.mark.asyncio
-async def test_terminal_command_writes_receipt_and_audit(client: TestClient, db: AsyncSession, monkeypatch) -> None:
+async def test_terminal_command_writes_receipt_and_audit(
+    client: TestClient, db: AsyncSession, monkeypatch
+) -> None:
     monkeypatch.setenv("SP_VOICE_001_ENABLED", "true")
     response = _submit(client, raw_transcript="show status")
     assert response.status_code == 201

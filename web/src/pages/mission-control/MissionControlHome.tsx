@@ -16,11 +16,13 @@ import {
   getCancellationStatus,
   listIntents,
   listRunControls,
+  getRealTimeMetrics,
   MissionControlSummary,
   MissionMetric,
   CommandListResponse,
   RunControlListResponse,
   CancellationControlStatus,
+  RealTimeMetrics,
   FreshnessMeta,
   SourceLoadState,
 } from '../../api/missionControl';
@@ -335,6 +337,9 @@ export default function MissionControlHome() {
   const [sigmaState, setSigmaState] = useState<SourceState<CancellationControlStatus>>(
     initialSourceState(),
   );
+  const [realTimeMetricsState, setRealTimeMetricsState] = useState<SourceState<RealTimeMetrics>>(
+    initialSourceState(),
+  );
 
   const refresh = useCallback(async () => {
     // Fire all requests in parallel; each source gets independent error handling.
@@ -426,6 +431,26 @@ export default function MissionControlHome() {
           status: prev.data ? 'STALE' : 'UNAVAILABLE',
           data: prev.data,
           error: err instanceof Error ? err.message : 'Sigma-gate request failed',
+          freshness: prev.freshness,
+        }));
+      });
+
+    // Real-time metrics
+    setRealTimeMetricsState((prev) => ({
+      status: 'LOADING',
+      data: prev.data,
+      error: null,
+      freshness: prev.freshness,
+    }));
+    getRealTimeMetrics()
+      .then((data) => {
+        setRealTimeMetricsState({ status: 'AVAILABLE', data, error: null, freshness: null });
+      })
+      .catch((err: unknown) => {
+        setRealTimeMetricsState((prev) => ({
+          status: prev.data ? 'STALE' : 'UNAVAILABLE',
+          data: prev.data,
+          error: err instanceof Error ? err.message : 'Real-time metrics request failed',
           freshness: prev.freshness,
         }));
       });
@@ -536,6 +561,62 @@ export default function MissionControlHome() {
           <MetricCard label="Daily spend" metric={metrics.daily_spend_usd} format={(v) => `$${v}`} />
           <MetricCard label="Kill switch" metric={metrics.kill_switch} />
         </div>
+      </section>
+
+      <section>
+        <div className="mc-section-title">
+          <div>
+            <p className="mc-eyebrow">PHASE 3C: COMMAND AUTHORITY</p>
+            <h2>Agent Parliament & Cancellation Bus</h2>
+          </div>
+          <span>
+            {realTimeMetricsState.status === 'AVAILABLE' ? 'Live telemetry' : 'Connecting...'}
+          </span>
+        </div>
+        <SourceStatusBanner status={realTimeMetricsState.status} error={realTimeMetricsState.error} />
+        
+        {realTimeMetricsState.data && (
+          <div className="mc-metrics parliament-metrics">
+            <article className="mc-metric">
+              <div className="mc-metric-label">Parliament Instances</div>
+              <div className="mc-metric-value">{realTimeMetricsState.data.parliament.total_instances}</div>
+              <div className="mc-parliament-types">
+                {Object.entries(realTimeMetricsState.data.parliament.agent_types).map(([type, count]) => (
+                  <span key={type}>{type}: {count}</span>
+                ))}
+              </div>
+            </article>
+            
+            <article className="mc-metric">
+              <div className="mc-metric-label">System Load</div>
+              <div className="mc-metric-value">
+                {(realTimeMetricsState.data.parliament.system_load * 100).toFixed(1)}%
+              </div>
+              <div className="mc-load-bar">
+                <div 
+                  className="mc-load-fill" 
+                  style={{ width: `${realTimeMetricsState.data.parliament.system_load * 100}%` }}
+                />
+              </div>
+            </article>
+
+            <article className="mc-metric">
+              <div className="mc-metric-label">Active Cancellations</div>
+              <div className="mc-metric-value">{realTimeMetricsState.data.cancellation_bus.active_signals}</div>
+              <div className="mc-source verified">
+                <CheckCircle2 /> Priority Bus
+              </div>
+            </article>
+
+            <article className="mc-metric">
+              <div className="mc-metric-label">Queued Signals</div>
+              <div className="mc-metric-value">{realTimeMetricsState.data.cancellation_bus.queued_signals}</div>
+              <div className="mc-source verified">
+                <Activity /> Real-time
+              </div>
+            </article>
+          </div>
+        )}
       </section>
 
       <section>

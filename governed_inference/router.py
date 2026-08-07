@@ -61,8 +61,12 @@ class GovernedInferenceRouter:
         request = replace(
             request,
             data_classification=classification,
-            max_input_tokens=min(request.max_input_tokens, self.policy.per_request.max_input_tokens),
-            max_output_tokens=min(request.max_output_tokens, self.policy.per_request.max_output_tokens),
+            max_input_tokens=min(
+                request.max_input_tokens, self.policy.per_request.max_input_tokens
+            ),
+            max_output_tokens=min(
+                request.max_output_tokens, self.policy.per_request.max_output_tokens
+            ),
         )
 
         # Trace: create root span for this inference request
@@ -83,7 +87,11 @@ class GovernedInferenceRouter:
         self.ledger.emit("inference.requested", request_id=request.request_id)
         logger.info(
             "inference.requested",
-            extra={"request_id": request.request_id, "task_type": request.task_type, "capability": request.capability},
+            extra={
+                "request_id": request.request_id,
+                "task_type": request.task_type,
+                "capability": request.capability,
+            },
         )
         redaction_receipt = redact_for_policy(request)
         self.ledger.emit(
@@ -198,13 +206,19 @@ class GovernedInferenceRouter:
                     attempt=attempt,
                 )
                 try:
-                    result = self._invoke_provider(provider, request, stream=stream and attempt == 1)
+                    result = self._invoke_provider(
+                        provider, request, stream=stream and attempt == 1
+                    )
                     result = replace(result, attempts=attempt, policy_receipt_id=receipt.receipt_id)
                     self._enforce_post_caps(result, request)
                     self.cache.set(request, result)
                     self.ledger.record_provider_success(candidate.provider)
                     self.ledger.finalize_receipt(receipt.receipt_id, result)
-                    self.ledger.emit("inference.completed", request_id=request.request_id, provider=result.provider)
+                    self.ledger.emit(
+                        "inference.completed",
+                        request_id=request.request_id,
+                        provider=result.provider,
+                    )
                     self.ledger.emit("inference.cost_recorded", request_id=request.request_id)
                     logger.info(
                         "inference.completed",
@@ -440,6 +454,10 @@ class GovernedInferenceRouter:
 
     def _enforce_post_caps(self, result: InferenceResult, request: InferenceRequest) -> None:
         if result.usage.get("input_tokens", 0) > request.max_input_tokens:
-            raise InferenceError("provider exceeded input token cap", ProviderErrorKind.CONTEXT_OVERFLOW)
+            raise InferenceError(
+                "provider exceeded input token cap", ProviderErrorKind.CONTEXT_OVERFLOW
+            )
         if result.usage.get("output_tokens", 0) > request.max_output_tokens:
-            raise InferenceError("provider exceeded output token cap", ProviderErrorKind.CONTEXT_OVERFLOW)
+            raise InferenceError(
+                "provider exceeded output token cap", ProviderErrorKind.CONTEXT_OVERFLOW
+            )

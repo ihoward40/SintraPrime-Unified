@@ -17,12 +17,15 @@ from typing import Any, Dict, List, Optional
 try:
     from fastapi import APIRouter, HTTPException, Query
     from pydantic import BaseModel
+
     FASTAPI_AVAILABLE = True
 except ImportError:
     FASTAPI_AVAILABLE = False
+
     # Stub classes for environments without FastAPI
     class BaseModel:  # type: ignore
         pass
+
     APIRouter = None  # type: ignore
 
 from governance.governance_engine import GovernanceEngine
@@ -31,6 +34,7 @@ from governance.risk_types import ApprovalStatus, RiskLevel
 # ---------------------------------------------------------------------------
 # Pydantic request/response models
 # ---------------------------------------------------------------------------
+
 
 class ApproveRequest(BaseModel):
     approver_id: str
@@ -62,6 +66,7 @@ class PauseAgentRequest(BaseModel):
 # ---------------------------------------------------------------------------
 # Router factory
 # ---------------------------------------------------------------------------
+
 
 def create_governance_router(engine: GovernanceEngine) -> "APIRouter":
     """

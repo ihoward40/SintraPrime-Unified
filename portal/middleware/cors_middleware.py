@@ -1,6 +1,7 @@
 """
 CORS middleware for portal.
- """
+"""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware as FastAPICORSMiddleware
 

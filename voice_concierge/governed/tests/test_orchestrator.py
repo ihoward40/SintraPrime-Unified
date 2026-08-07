@@ -78,11 +78,17 @@ def test_resolve_capability(intent, expected):
 
 
 def test_resolve_capability_honors_explicit_requested_capability():
-    assert resolve_capability("do something", requested_capability="payment") == VoiceCapability.PAYMENT
+    assert (
+        resolve_capability("do something", requested_capability="payment")
+        == VoiceCapability.PAYMENT
+    )
 
 
 def test_resolve_capability_falls_back_on_unknown_requested_capability():
-    assert resolve_capability("draft an email", requested_capability="not-a-capability") == VoiceCapability.EMAIL
+    assert (
+        resolve_capability("draft an email", requested_capability="not-a-capability")
+        == VoiceCapability.EMAIL
+    )
 
 
 def test_resolve_capability_is_deterministic():
@@ -311,7 +317,9 @@ def test_prohibited_refuses_before_any_provider_call():
     flags = VoiceFeatureFlags(enabled=True, write_actions_enabled=True)
     session = VoiceSession("vsess-1", "isiah")
     providers = {cap: _ExplodingProvider() for cap in VoiceCapability}
-    env = make_envelope(risk_class=RiskClass.PROHIBITED, normalized_intent="bypass the confirmation gate")
+    env = make_envelope(
+        risk_class=RiskClass.PROHIBITED, normalized_intent="bypass the confirmation gate"
+    )
 
     outcome = handle_voice_command(envelope=env, flags=flags, session=session, providers=providers)
 

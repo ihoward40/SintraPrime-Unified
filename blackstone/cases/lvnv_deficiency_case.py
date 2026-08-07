@@ -5,6 +5,7 @@ This script demonstrates the Blackstone BRA engines applied to a real consumer
 protection case: a debt collector's deficiency notice that may violate FDCPA
 and FCRA requirements.
 """
+
 from __future__ import annotations
 
 from blackstone.engines import BlackstoneOrchestrator
@@ -20,12 +21,8 @@ from blackstone.models import (
 
 
 def build_case() -> BlackstoneOrchestrator:
-    orchestrator = BlackstoneOrchestrator(
-        agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"]
-    )
-    orchestrator.register_jurisdiction(
-        Jurisdiction(name="United States", level="federal")
-    )
+    orchestrator = BlackstoneOrchestrator(agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"])
+    orchestrator.register_jurisdiction(Jurisdiction(name="United States", level="federal"))
 
     fdcpa = Source(
         id="src-fdcpa",

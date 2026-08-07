@@ -142,6 +142,7 @@ class TestRecurringTaskManager:
         task_id = reg["system_health_check"]
         # Verify the scheduler got the custom schedule
         from scheduler.task_scheduler import TaskScheduler
+
         # The manager's internal scheduler
         task = mgr._scheduler.get_task(task_id)
         assert task.schedule.interval_minutes == 5
@@ -156,9 +157,7 @@ class TestRecurringTaskManager:
 
     def test_customize_kwargs(self, mgr):
         mgr.customize("court_docket_monitor", case_numbers=["2025-CV-999"])
-        assert mgr._custom_payloads["court_docket_monitor"]["case_numbers"] == [
-            "2025-CV-999"
-        ]
+        assert mgr._custom_payloads["court_docket_monitor"]["case_numbers"] == ["2025-CV-999"]
 
     # --- Manager methods delegate to standalone functions ---
 

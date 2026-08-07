@@ -257,6 +257,23 @@
   .mc-empty-state p { @apply text-sm text-slate-500 max-w-lg mt-2; }
   .mc-empty-state span { @apply flex items-center gap-2 text-xs text-amber-400/80 mt-5; }
   .mc-empty-state span svg { @apply w-3.5 h-3.5; }
+
+  /* Phase 3C: Mission Control Command Authority Styles */
+  .mc-parliament-types {
+    @apply mt-2 text-xs text-slate-400 flex flex-wrap gap-x-3 gap-y-1;
+  }
+
+  .mc-load-bar {
+    @apply mt-3 h-1.5 w-full bg-slate-900 rounded-full overflow-hidden;
+  }
+
+  .mc-load-fill {
+    @apply h-full bg-amber-500 transition-all duration-500 ease-out;
+  }
+
+  .parliament-metrics .mc-metric {
+    @apply border-l-2 border-l-amber-500/30;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -8,10 +8,11 @@ export default function MissionControlLayout() {
       <header className="mc-masthead">
         <div>
           <p className="mc-eyebrow">SINTRAPRIME / CONTROL PLANE</p>
-          <h1>Mission Control</h1>
-          <p>Authorized work. Verifiable outcomes.</p>
+          <h1>Principal Command</h1>
+          <p>Unified orchestration. Autonomous integrity.</p>
         </div>
         <div className="mc-doctrine">
+          <span className="god-mode-tag">GOD MODE ACTIVE</span>
           <span>GOVERNANCE FIRST</span>
           <span>EVIDENCE REQUIRED</span>
         </div>

@@ -40,6 +40,7 @@ from portal.services.evidence_hash_boundary import (
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def sample_items():
     """A set of sample evidence items for testing."""
@@ -95,6 +96,7 @@ def sample_collection(sample_items):
 # ACCEPTANCE TEST A: Same evidence → 5 consecutive hashes → ALL IDENTICAL
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestDeterministicHashing:
     """Evidence A → Hash → Hash → Hash → Hash → Hash → All identical."""
 
@@ -148,6 +150,7 @@ class TestDeterministicHashing:
 # ACCEPTANCE TEST B: Modify one evidence item → New hash → DIFFERENT
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestModifiedEvidenceProducesDifferentHash:
     """Modify one evidence item → New Snapshot → New Hash → Different."""
 
@@ -175,7 +178,8 @@ class TestModifiedEvidenceProducesDifferentHash:
         original = EvidenceCollection(case_id="CASE-001", items=sample_items)
         h_original = compute_evidence_hash(original)
 
-        extended_items = (*sample_items,
+        extended_items = (
+            *sample_items,
             EvidenceItem(
                 item_id="EX-002",
                 item_type="exhibit",
@@ -206,9 +210,11 @@ class TestModifiedEvidenceProducesDifferentHash:
 
         modified_items = list(sample_items)
         modified_items[0] = EvidenceItem(
-            item_id="EX-001", item_type="exhibit",
+            item_id="EX-001",
+            item_type="exhibit",
             title="Device Purchase Invoice",  # title changed
-            content=sample_items[0].content, sequence=1,
+            content=sample_items[0].content,
+            sequence=1,
         )
         modified = EvidenceCollection(case_id="CASE-001", items=tuple(modified_items))
         h_modified = compute_evidence_hash(modified)
@@ -240,6 +246,7 @@ class TestModifiedEvidenceProducesDifferentHash:
 # ACCEPTANCE TEST C: Metadata changes → Evidence Hash UNCHANGED
 # ^^^ THE HEART OF GI-B-2026-001 ^^^
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestMetadataExcludedFromHash:
     """Metadata changes / Timestamp changes / Packet version changes
@@ -341,6 +348,7 @@ class TestMetadataExcludedFromHash:
 # Integration: Hash Boundary + EvidenceSnapshot Service
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestHashBoundaryWithSnapshotService:
     """End-to-end: compute hash → create snapshot → verify hash → deterministic."""
 
@@ -388,7 +396,8 @@ class TestHashBoundaryWithSnapshotService:
         # Tamper with evidence
         tampered_items = list(sample_items)
         tampered_items[0] = EvidenceItem(
-            item_id="EX-001", item_type="exhibit",
+            item_id="EX-001",
+            item_type="exhibit",
             title="Device Purchase Receipt",
             content="TAMPERED CONTENT",
             sequence=1,
@@ -403,6 +412,7 @@ class TestHashBoundaryWithSnapshotService:
 # Edge Cases
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestEdgeCases:
     def test_empty_evidence_collection(self):
         """Empty evidence collection should still produce a valid deterministic hash."""
@@ -415,10 +425,15 @@ class TestEdgeCases:
         """Single-item collection produces valid hash."""
         single = EvidenceCollection(
             case_id="CASE-SINGLE",
-            items=(EvidenceItem(
-                item_id="ITEM-1", item_type="exhibit",
-                title="Sole Exhibit", content="Only evidence.", sequence=1,
-            ),),
+            items=(
+                EvidenceItem(
+                    item_id="ITEM-1",
+                    item_type="exhibit",
+                    title="Sole Exhibit",
+                    content="Only evidence.",
+                    sequence=1,
+                ),
+            ),
         )
         hashes = [compute_evidence_hash(single) for _ in range(5)]
         assert len(set(hashes)) == 1
@@ -427,12 +442,15 @@ class TestEdgeCases:
         """Unicode content must hash deterministically."""
         unicode_col = EvidenceCollection(
             case_id="CASE-UNICODE",
-            items=(EvidenceItem(
-                item_id="UNI-1", item_type="fact",
-                title="Ünïcödé Tëst",
-                content="Ñoño señor café résumé naïve 日本語 中文 한국어",
-                sequence=1,
-            ),),
+            items=(
+                EvidenceItem(
+                    item_id="UNI-1",
+                    item_type="fact",
+                    title="Ünïcödé Tëst",
+                    content="Ñoño señor café résumé naïve 日本語 中文 한국어",
+                    sequence=1,
+                ),
+            ),
         )
         hashes = [compute_evidence_hash(unicode_col) for _ in range(5)]
         assert len(set(hashes)) == 1
@@ -442,10 +460,15 @@ class TestEdgeCases:
         large_content = "x" * 100_000
         large_col = EvidenceCollection(
             case_id="CASE-LARGE",
-            items=(EvidenceItem(
-                item_id="LARGE-1", item_type="exhibit",
-                title="Large Document", content=large_content, sequence=1,
-            ),),
+            items=(
+                EvidenceItem(
+                    item_id="LARGE-1",
+                    item_type="exhibit",
+                    title="Large Document",
+                    content=large_content,
+                    sequence=1,
+                ),
+            ),
         )
         hashes = [compute_evidence_hash(large_col) for _ in range(5)]
         assert len(set(hashes)) == 1
@@ -466,6 +489,7 @@ class TestEdgeCases:
 # ══════════════════════════════════════════════════════════════════════════════
 # GI-B-2026-001 Regression Test
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestGIB2026001Regression:
     """Explicit regression test for the exact bug that caused GI-B-2026-001.

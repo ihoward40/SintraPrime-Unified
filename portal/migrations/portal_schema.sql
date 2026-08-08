@@ -834,8 +834,9 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     user_id             UUID REFERENCES users(id),
     actor_email         VARCHAR(320),
     actor_role          VARCHAR(50),
-    actor_ip            INET,
+    actor_ip            VARCHAR(45),
     actor_user_agent    TEXT,
+    session_id          VARCHAR(255),
     
     action              VARCHAR(100) NOT NULL,
     resource_type       VARCHAR(50),
@@ -843,6 +844,8 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     resource_name       VARCHAR(500),
     status              VARCHAR(20) NOT NULL DEFAULT 'success',
     details             JSONB,
+    changes             JSONB,
+    request_id          VARCHAR(36),
     error_message       TEXT,
     
     http_method         VARCHAR(10),
@@ -852,6 +855,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     -- Chain integrity
     previous_hash       VARCHAR(64),
     entry_hash          VARCHAR(64) NOT NULL,
+    hash_chain          VARCHAR(64),
     
     -- Retention: 7 years minimum
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()

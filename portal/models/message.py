@@ -12,16 +12,16 @@ from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Tex
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
+from ..models.types import PortableUUIDString
 
 
 class MessageThread(Base):
     __tablename__ = "message_threads"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUIDString, primary_key=True, default=lambda: str(uuid.uuid4)
     )
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+        PortableUUIDString, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )
 
     subject: Mapped[str] = mapped_column(String(500), nullable=False)
@@ -30,10 +30,10 @@ class MessageThread(Base):
 
     # Context
     client_id: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("clients.id"), nullable=True
+        PortableUUIDString, ForeignKey("clients.id"), nullable=True
     )
     case_id: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("cases.id"), nullable=True
+        PortableUUIDString, ForeignKey("cases.id"), nullable=True
     )
 
     # Participants: list of user_ids
@@ -51,7 +51,7 @@ class MessageThread(Base):
     message_count: Mapped[int] = mapped_column(Integer, default=0)
 
     created_by: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=False
+        PortableUUIDString, ForeignKey("users.id"), nullable=False
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
@@ -70,16 +70,15 @@ class MessageThread(Base):
 class Message(Base):
     __tablename__ = "messages"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUIDString, primary_key=True, default=lambda: str(uuid.uuid4)
     )
     thread_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("message_threads.id", ondelete="CASCADE"), nullable=False
+        PortableUUIDString, ForeignKey("message_threads.id", ondelete="CASCADE"), nullable=False
     )
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+        PortableUUIDString, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )
-    sender_id: Mapped[uuid.UUID] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    sender_id: Mapped[uuid.UUID] = mapped_column(PortableUUIDString, ForeignKey("users.id"), nullable=False)
     idempotency_key: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
 
     # Content (stored encrypted if thread.is_encrypted)
@@ -96,12 +95,12 @@ class Message(Base):
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     deleted_by: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True
+        PortableUUIDString, ForeignKey("users.id"), nullable=True
     )
 
     # Reply to
     reply_to_id: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("messages.id"), nullable=True
+        PortableUUIDString, ForeignKey("messages.id"), nullable=True
     )
 
     # Read receipts: {user_id: iso_timestamp}
@@ -129,14 +128,13 @@ class MessageAttachment(Base):
 
     __tablename__ = "message_attachments"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUIDString, primary_key=True, default=lambda: str(uuid.uuid4)
     )
     message_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("messages.id", ondelete="CASCADE"), nullable=False
+        PortableUUIDString, ForeignKey("messages.id", ondelete="CASCADE"), nullable=False
     )
     document_id: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("documents.id"), nullable=True
+        PortableUUIDString, ForeignKey("documents.id"), nullable=True
     )
 
     # For external attachments not in vault

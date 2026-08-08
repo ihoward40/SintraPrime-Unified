@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 from sqlalchemy import JSON, DateTime, Integer, String, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 from ..database import Base
+from ..models.types import PortableUUIDString
 
 class MissionControlOutbox(Base):
     """

@@ -1,9 +1,11 @@
 """Sweep portal/models/*.py: replace String(36) with PortableUUIDString
 for UUID-semantic columns (PK with uuid default or ForeignKey)."""
+
 import re
 from pathlib import Path
 
 MODEL_DIR = Path("portal/models")
+
 
 def sweep_file(path: Path) -> int:
     text = path.read_text(encoding="utf-8")
@@ -29,46 +31,56 @@ def sweep_file(path: Path) -> int:
         else:
             import_idx = text.find("\nfrom ")
             if import_idx > 0:
-                text = text[:import_idx] + "\nfrom portal.models.types import PortableUUIDString" + text[import_idx:]
+                text = (
+                    text[:import_idx]
+                    + "\nfrom portal.models.types import PortableUUIDString"
+                    + text[import_idx:]
+                )
             import_idx = text.find("\nimport ")
             if import_idx > 0 and "PortableUUIDString" not in text:
-                text = text[:import_idx] + "\nfrom portal.models.types import PortableUUIDString" + text[import_idx:]
+                text = (
+                    text[:import_idx]
+                    + "\nfrom portal.models.types import PortableUUIDString"
+                    + text[import_idx:]
+                )
 
     # PK pattern: mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     text = re.sub(
-        r'mapped_column\(\s*String\(36\),\s*primary_key=True,\s*default=lambda:\s*str\(uuid\.uuid4\(\)\)\)',
-        'mapped_column(PortableUUIDString, primary_key=True, default=uuid.uuid4)',
+        r"mapped_column\(\s*String\(36\),\s*primary_key=True,\s*default=lambda:\s*str\(uuid\.uuid4\(\)\)\)",
+        "mapped_column(PortableUUIDString, primary_key=True, default=uuid.uuid4)",
         text,
     )
     # PK pattern: mapped_column(String(36), primary_key=True, default=uuid.uuid4)
     text = re.sub(
-        r'mapped_column\(\s*String\(36\),\s*primary_key=True,\s*default=uuid\.uuid4\)',
-        'mapped_column(PortableUUIDString, primary_key=True, default=uuid.uuid4)',
+        r"mapped_column\(\s*String\(36\),\s*primary_key=True,\s*default=uuid\.uuid4\)",
+        "mapped_column(PortableUUIDString, primary_key=True, default=uuid.uuid4)",
         text,
     )
 
     # Single-line FK: mapped_column(String(36), ForeignKey(...), ...)
     def replace_single_fk(m):
-        return m.group(0).replace('String(36)', 'PortableUUIDString', 1)
+        return m.group(0).replace("String(36)", "PortableUUIDString", 1)
+
     text = re.sub(
-        r'mapped_column\(\s*String\(36\),\s*(ForeignKey\([^)]+\)[^,]*(?:,\s*\w+[^,]*)*)',
+        r"mapped_column\(\s*String\(36\),\s*(ForeignKey\([^)]+\)[^,]*(?:,\s*\w+[^,]*)*)",
         replace_single_fk,
         text,
     )
 
     # Multi-line FK: mapped_column(\n        String(36),\n        ForeignKey(...),
     def replace_multi_fk(m):
-        return m.group(0).replace('String(36)', 'PortableUUIDString', 1)
+        return m.group(0).replace("String(36)", "PortableUUIDString", 1)
+
     text = re.sub(
-        r'mapped_column\(\s*\n\s*String\(36\),\s*\n\s*(ForeignKey)',
+        r"mapped_column\(\s*\n\s*String\(36\),\s*\n\s*(ForeignKey)",
         replace_multi_fk,
         text,
     )
 
     # Simple: mapped_column(String(36), index=True, ...) — tenant_id without explicit FK
     text = re.sub(
-        r'mapped_column\(\s*String\(36\),\s*index=True,\s*nullable=False\)',
-        'mapped_column(PortableUUIDString, index=True, nullable=False)',
+        r"mapped_column\(\s*String\(36\),\s*index=True,\s*nullable=False\)",
+        "mapped_column(PortableUUIDString, index=True, nullable=False)",
         text,
     )
 
@@ -77,6 +89,7 @@ def sweep_file(path: Path) -> int:
         count = orig.count("String(36)") - text.count("String(36)")
         path.write_text(text, encoding="utf-8")
     return count
+
 
 total = 0
 files_touched = 0

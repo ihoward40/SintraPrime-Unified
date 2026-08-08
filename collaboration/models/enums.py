@@ -184,10 +184,10 @@ class NotificationThreshold(str, Enum):
     MEANINGFUL_COMPLETION = "meaningful_completion"
     ALL = "all"
 
-class GovernanceMode(str, object):
+
+class GovernanceMode(str):
     LAB = "lab"
     DEVELOPMENT = "development"
     CERTIFIED = "certified"
     PRODUCTION = "production"
     RESTRICTED = "restricted"
-

@@ -107,6 +107,7 @@ class EventPolicyEngine:
         # 3b. Constitutional invariant gate (§2)
         if self.invariant_engine and hasattr(self.invariant_engine, "evaluate_all"):
             from collaboration.governance.invariants import ActionContext
+
             ctx = ActionContext(
                 action="activate",
                 actor_id=binding.agent_id,

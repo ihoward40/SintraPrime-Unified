@@ -19,6 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
+from ..models.types import PortableUUIDString
 
 
 class MissionControlCommand(Base):
@@ -26,9 +27,9 @@ class MissionControlCommand(Base):
 
     __tablename__ = "mission_control_commands"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False)
-    requested_by: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    id: Mapped[str] = mapped_column(PortableUUIDString, primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[str] = mapped_column(PortableUUIDString, ForeignKey("tenants.id"), nullable=False)
+    requested_by: Mapped[str] = mapped_column(PortableUUIDString, ForeignKey("users.id"), nullable=False)
 
     command_type: Mapped[str] = mapped_column(String(40), nullable=False)
     target_type: Mapped[str] = mapped_column(String(40), nullable=False)
@@ -43,7 +44,7 @@ class MissionControlCommand(Base):
     metadata_json: Mapped[dict] = mapped_column("metadata", JSON, nullable=False, default=dict)
 
     audit_log_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("audit_logs.id"), nullable=True
+        PortableUUIDString, ForeignKey("audit_logs.id"), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -79,9 +80,9 @@ class MissionControlCommandEvent(Base):
 
     __tablename__ = "mission_control_command_events"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(PortableUUIDString, primary_key=True, default=uuid.uuid4)
     command_id: Mapped[str] = mapped_column(
-        String(36),
+        PortableUUIDString,
         ForeignKey("mission_control_commands.id", ondelete="CASCADE"),
         nullable=False,
     )
@@ -109,16 +110,16 @@ class MissionControlCommandReceipt(Base):
 
     __tablename__ = "mission_control_command_receipts"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(PortableUUIDString, primary_key=True, default=uuid.uuid4)
     command_id: Mapped[str] = mapped_column(
-        String(36),
+        PortableUUIDString,
         ForeignKey("mission_control_commands.id", ondelete="CASCADE"),
         nullable=False,
     )
     receipt_type: Mapped[str] = mapped_column(String(40), nullable=False)
     receipt_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     audit_log_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("audit_logs.id"), nullable=True
+        PortableUUIDString, ForeignKey("audit_logs.id"), nullable=True
     )
     evidence_refs: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

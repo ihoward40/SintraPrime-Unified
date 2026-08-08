@@ -13,6 +13,7 @@ from sqlalchemy import JSON, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..database import Base
+from ..models.types import PortableUUIDString
 
 
 class AuditLog(Base):
@@ -24,11 +25,11 @@ class AuditLog(Base):
 
     __tablename__ = "audit_logs"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(PortableUUIDString, primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("tenants.id"), nullable=True
+        PortableUUIDString, ForeignKey("tenants.id"), nullable=True
     )
-    user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    user_id: Mapped[str | None] = mapped_column(PortableUUIDString, ForeignKey("users.id"), nullable=True)
 
     # Who
     actor_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -62,7 +63,7 @@ class AuditLog(Base):
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Request context
-    request_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    request_id: Mapped[str | None] = mapped_column(PortableUUIDString, nullable=True)
     http_method: Mapped[str | None] = mapped_column(String(10), nullable=True)
     http_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     http_status_code: Mapped[int | None] = mapped_column(nullable=True)

@@ -140,6 +140,14 @@ class EventDispatcher:
             return EventDispatchStatus.QUEUED
         if not decision.binding_active:
             return EventDispatchStatus.SKIPPED_AGENT_STOPPED
+        if not decision.kill_switch_ok:
+            return EventDispatchStatus.BLOCKED_KILL_SWITCH
+        # quarantine
+        if "quarantine" in decision.skipped_reasons:
+            return EventDispatchStatus.SKIPPED_QUARANTINE
+        # invariant
+        if "invariant" in decision.skipped_reasons:
+            return EventDispatchStatus.BLOCKED_INVARIANT
         if not decision.event_type_allowed:
             return EventDispatchStatus.SKIPPED_NOT_SUBSCRIBED
         if not decision.tenant_match:

@@ -44,6 +44,8 @@ class EventPolicyEngine:
         rate_limit: RateLimitPolicy | None = None,
         loop_guard: LoopGuard | None = None,
         concurrency: ConcurrencyPolicy | None = None,
+        quarantine_service: object | None = None,
+        invariant_engine: object | None = None,
     ):
         self.max_agent_hops = max_agent_hops
         self.kill_switch = kill_switch
@@ -51,6 +53,8 @@ class EventPolicyEngine:
         self.rate_limit = rate_limit
         self.loop_guard = loop_guard
         self.concurrency = concurrency
+        self.quarantine_service = quarantine_service
+        self.invariant_engine = invariant_engine
 
     def evaluate(
         self,
@@ -91,6 +95,30 @@ class EventPolicyEngine:
             d.reason = "tenant_mismatch"
             d.skipped_reasons.append("tenant_mismatch")
             return d
+
+        # 3a. Agent quarantine — quarantined agents receive no new activation (§47)
+        if self.quarantine_service and hasattr(self.quarantine_service, "is_quarantined"):
+            if self.quarantine_service.is_quarantined(binding.agent_id):
+                d.allow = False
+                d.reason = "agent_quarantined"
+                d.skipped_reasons.append("quarantine")
+                return d
+
+        # 3b. Constitutional invariant gate (§2)
+        if self.invariant_engine and hasattr(self.invariant_engine, "evaluate_all"):
+            from collaboration.governance.invariants import ActionContext
+            ctx = ActionContext(
+                action="activate",
+                actor_id=binding.agent_id,
+                actor_type="agent",
+                tenant_id=event.tenant_id,
+                matter_id=event.payload.get("matter_id", ""),
+            )
+            if not self.invariant_engine.evaluate_all(ctx):
+                d.allow = False
+                d.reason = "constitutional_invariant_violation"
+                d.skipped_reasons.append("invariant")
+                return d
 
         # 4. Event type allowed by binding
         d.event_type_allowed = event.event_type.value in binding.allowed_event_types or (

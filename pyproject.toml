@@ -255,9 +255,15 @@ known-first-party = ["portal", "operator", "voice_concierge"]
 "affiliate-engine/**" = ["ARG002"]
 # tests
 "tests/**" = ["ARG002", "F401", "F811", "F841", "N802", "N999", "PT009", "PT011", "PT027", "RUF059"]
+# workflow_runtime — registered operation callbacks take (run, node, context)
+# even when a particular op doesn't use all of them; __init__ re-exports the
+# package API surface.
+"workflow_runtime/__init__.py" = ["F401"]
+"workflow_runtime/node_executor.py" = ["ARG001", "ARG002"]
+"workflow_runtime/tests/**" = ["ARG002", "F811", "PT009", "PT011"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "portal/tests", "voice_concierge/governed/tests"]
+testpaths = ["tests", "portal/tests", "voice_concierge/governed/tests", "workflow_runtime/tests"]
 python_files = "test_*.py"
 asyncio_mode = "auto"
 addopts = "-m 'not experimental'"

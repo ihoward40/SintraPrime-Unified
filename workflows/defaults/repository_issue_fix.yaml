@@ -1,0 +1,89 @@
+# WF-001 — repository_issue_fix
+#
+# Context → classify → research → plan → isolated implementation →
+# changed-scope tests → fresh-context review → draft PR preparation.
+# No auto-merge. No auto-deploy.
+name: repository_issue_fix
+version: 1
+description: Governed issue-resolution workflow
+
+policy:
+  authority: engineering
+  approval_mode: inherited
+  isolation: worktree
+  max_parallel_nodes: 4
+
+defaults:
+  provider_class: coding
+  execution_profile: standard
+
+budget:
+  max_tokens: 1000000
+  max_provider_cost: 20.0
+  max_wall_time_seconds: 7200
+  max_agent_calls: 30
+
+model_strategy:
+  initial: economy
+  escalate_after_failures: 2
+  escalation: [balanced, reasoning, frontier]
+
+capabilities:
+  - github.read
+  - repository.write_worktree
+  - tests.execute
+
+nodes:
+  - id: collect_context
+    type: deterministic
+    action: github.issue.fetch
+    depends_on: []
+
+  - id: classify
+    type: agent
+    role: issue_classifier
+    fresh_context: true
+    depends_on: [collect_context]
+    metadata:
+      objective: Classify the issue scope, severity, and area
+
+  - id: research
+    type: agent
+    role: researcher
+    fresh_context: true
+    depends_on: [classify]
+    metadata:
+      objective: Gather relevant context for the issue
+
+  - id: plan
+    type: agent
+    role: engineer
+    fresh_context: true
+    depends_on: [research]
+    metadata:
+      objective: Produce a bounded implementation plan
+
+  - id: implement
+    type: agent
+    role: engineer
+    depends_on: [plan]
+    metadata:
+      objective: Implement the planned change in an isolated worktree
+
+  - id: validate
+    type: deterministic
+    action: test.changed_scope
+    depends_on: [implement]
+
+  - id: review
+    type: agent
+    role: auditor
+    fresh_context: true
+    depends_on: [validate]
+    metadata:
+      objective: Independently review the implementation against acceptance criteria
+
+  - id: prepare_pr
+    type: deterministic
+    action: github.pr.prepare
+    depends_on: [review]

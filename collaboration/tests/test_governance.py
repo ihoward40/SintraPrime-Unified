@@ -1,26 +1,41 @@
-"""Governance expansion tests — §140–§145 mandatory proof conditions."""
+"""Governance expansion tests — §140-§145 mandatory proof conditions."""
+
 from __future__ import annotations
 
 import tempfile
-from dataclasses import field
 from pathlib import Path
 
 import pytest
 
+from collaboration.governance.budget_governor import BudgetGovernor
+from collaboration.governance.capability_lease import LeaseService
+from collaboration.governance.causal import CausalRecord, CausalStore
+from collaboration.governance.dead_letter import DeadLetterQueue
+from collaboration.governance.dlp import DLPScanner
+from collaboration.governance.effect_receipts import EffectService
+from collaboration.governance.goal_drift import (
+    GoalDriftDetector,
+    MissionContract,
+    ScopeCreepDetector,
+)
 from collaboration.governance.invariants import (
     ActionContext,
     Invariant,
     InvariantEngine,
-    InvariantViolation,
 )
-from collaboration.governance.dead_letter import DeadLetterEvent, DeadLetterQueue, PoisonEvent
-from collaboration.governance.quarantine import AgentQuarantineRecord, AgentQuarantineService, QuarantineReason
-from collaboration.governance.capability_lease import CapabilityLease, LeaseService
 from collaboration.governance.lineage import (
     EvidenceScorer,
     LineageClass,
     LineageTag,
     TaintTracker,
+)
+from collaboration.governance.linter import (
+    ArchitectureLinter,
+    GovernanceLinter,
+)
+from collaboration.governance.quarantine import (
+    AgentQuarantineService,
+    QuarantineReason,
 )
 from collaboration.governance.uncertainty import (
     Assumption,
@@ -28,36 +43,13 @@ from collaboration.governance.uncertainty import (
     UncertaintyItem,
     UncertaintyRegistry,
 )
-from collaboration.governance.effect_receipts import EffectReceipt, EffectService
-from collaboration.governance.budget_governor import BudgetGovernor
-from collaboration.governance.causal import CausalRecord, CausalStore
-from collaboration.governance.linter import (
-    ArchitectureLinter,
-    GovernanceLinter,
-    LintResult,
-    LintSeverity,
-)
-from collaboration.governance.goal_drift import (
-    DriftAlert,
-    GoalDriftDetector,
-    MissionContract,
-    ScopeCreepDetector,
-)
-from collaboration.governance.dlp import DLPScanner, DLPVerdict
-
 from collaboration.policies import (
     EventPolicyEngine,
-    EventPolicyDecision,
-    KillSwitch,
-    LoopGuard,
-    DeduplicationPolicy,
-    ConcurrencyPolicy,
-    RateLimitPolicy,
 )
 from collaboration.services.store import CollaborationStore
 
-
 # ─── Fixtures ────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def tmp_base():
@@ -127,6 +119,7 @@ def arch_linter():
 
 # ─── §140: Constitutional tests ─────────────────────────────────────
 
+
 class TestConstitutionalInvariants:
     def test_agent_cannot_self_approve(self, invariant_engine):
         ctx = ActionContext(
@@ -156,7 +149,9 @@ class TestConstitutionalInvariants:
             authority_class="A3",
         )
         violations = invariant_engine.evaluate(ctx)
-        assert any(v.invariant == Invariant.NO_CONSEQUENTIAL_ACTION_WITHOUT_AUTHORITY for v in violations)
+        assert any(
+            v.invariant == Invariant.NO_CONSEQUENTIAL_ACTION_WITHOUT_AUTHORITY for v in violations
+        )
 
     def test_cross_tenant_blocked(self, invariant_engine):
         ctx = ActionContext(
@@ -214,7 +209,12 @@ class TestConstitutionalInvariants:
         assert any(v.invariant == Invariant.NO_UNBOUNDED_PROVIDER_SPEND for v in violations)
 
     def test_unregistered_tool_rejected(self, invariant_engine):
-        ctx = ActionContext(action="tool_execute", actor_id="a1", capability="unknown_tool", capability_registered=False)
+        ctx = ActionContext(
+            action="tool_execute",
+            actor_id="a1",
+            capability="unknown_tool",
+            capability_registered=False,
+        )
         violations = invariant_engine.evaluate(ctx)
         assert any(v.invariant == Invariant.NO_UNREGISTERED_TOOL_EXECUTION for v in violations)
 
@@ -229,7 +229,9 @@ class TestConstitutionalInvariants:
         assert any(v.invariant == Invariant.NO_UNVERSIONED_POLICY_EXECUTION for v in violations)
 
     def test_public_agent_high_authority_rejected(self, invariant_engine):
-        ctx = ActionContext(action="act", actor_id="pub1", is_public_agent=True, authority_class="A3")
+        ctx = ActionContext(
+            action="act", actor_id="pub1", is_public_agent=True, authority_class="A3"
+        )
         violations = invariant_engine.evaluate(ctx)
         assert any(v.invariant == Invariant.NO_PRIVILEGED_PUBLIC_AGENT for v in violations)
 
@@ -239,7 +241,9 @@ class TestConstitutionalInvariants:
         assert any(v.invariant == Invariant.NO_SILENT_EXTERNAL_WRITE for v in violations)
 
     def test_audited_external_write_ok(self, invariant_engine):
-        ctx = ActionContext(action="write", actor_id="a1", external_write=True, metadata={"audited": True})
+        ctx = ActionContext(
+            action="write", actor_id="a1", external_write=True, metadata={"audited": True}
+        )
         violations = invariant_engine.evaluate(ctx)
         assert all(v.invariant != Invariant.NO_SILENT_EXTERNAL_WRITE for v in violations)
 
@@ -249,26 +253,44 @@ class TestConstitutionalInvariants:
         assert any(v.invariant == Invariant.NO_UNBOUNDED_PROVIDER_SPEND for v in violations)
 
     def test_static_workflow_compliant(self, invariant_engine):
-        violations = invariant_engine.static_check_workflow({
-            "max_iterations": 10, "budget": {"max_tokens": 5000},
-            "hash": "abc123", "version": "1",
-        })
+        violations = invariant_engine.static_check_workflow(
+            {
+                "max_iterations": 10,
+                "budget": {"max_tokens": 5000},
+                "hash": "abc123",
+                "version": "1",
+            }
+        )
         assert not violations
 
 
 # ─── §140: Dead letter tests ────────────────────────────────────────
 
+
 class TestDeadLetter:
     def test_failure_persisted(self, dlq):
-        entry = dlq.record_failure(event_id="e1", consumer_id="c1", tenant_id="t1", channel_id="ch1", failure_class="provider_error", error="timeout")
+        entry = dlq.record_failure(
+            event_id="e1",
+            consumer_id="c1",
+            tenant_id="t1",
+            channel_id="ch1",
+            failure_class="provider_error",
+            error="timeout",
+        )
         assert entry.failure_count == 1
         loaded = dlq.get("e1")
         assert loaded.failure_count == 1
 
     def test_retry_bounded(self, dlq):
-        dlq.record_failure(event_id="e2", consumer_id="c1", tenant_id="t1", channel_id="ch1", failure_class="error")
-        dlq.record_failure(event_id="e2", consumer_id="c1", tenant_id="t1", channel_id="ch1", failure_class="error")
-        dlq.record_failure(event_id="e2", consumer_id="c1", tenant_id="t1", channel_id="ch1", failure_class="error")
+        dlq.record_failure(
+            event_id="e2", consumer_id="c1", tenant_id="t1", channel_id="ch1", failure_class="error"
+        )
+        dlq.record_failure(
+            event_id="e2", consumer_id="c1", tenant_id="t1", channel_id="ch1", failure_class="error"
+        )
+        dlq.record_failure(
+            event_id="e2", consumer_id="c1", tenant_id="t1", channel_id="ch1", failure_class="error"
+        )
         entry = dlq.get("e2")
         assert entry.exhausted
         assert entry.quarantined
@@ -281,6 +303,7 @@ class TestDeadLetter:
 
 
 # ─── §140: Agent quarantine tests ──────────────────────────────────
+
 
 class TestAgentQuarantine:
     def test_quarantine_blocks_activation(self, quarantine_service):
@@ -308,34 +331,61 @@ class TestAgentQuarantine:
 
 # ─── §140: Capability lease tests ───────────────────────────────────
 
+
 class TestCapabilityLease:
     def test_valid_lease(self, lease_service):
-        lease = lease_service.issue(lease_id="l1", agent_id="a1", capability="read", scope="repo/x", purpose="pr_review")
-        ok, reason = lease_service.validate("l1", capability="read", scope="repo/x", purpose="pr_review")
+        lease_service.issue(
+            lease_id="l1", agent_id="a1", capability="read", scope="repo/x", purpose="pr_review"
+        )
+        ok, reason = lease_service.validate(
+            "l1", capability="read", scope="repo/x", purpose="pr_review"
+        )
         assert ok is True
+        assert reason == "valid"
 
     def test_expired_lease_rejected(self, lease_service):
-        lease = lease_service.issue(lease_id="l2", agent_id="a1", capability="read", scope="repo/x", purpose="pr_review", ttl_minutes=-1)
-        ok, reason = lease_service.validate("l2", capability="read", scope="repo/x", purpose="pr_review")
+        lease_service.issue(
+            lease_id="l2",
+            agent_id="a1",
+            capability="read",
+            scope="repo/x",
+            purpose="pr_review",
+            ttl_minutes=-1,
+        )
+        ok, reason = lease_service.validate(
+            "l2", capability="read", scope="repo/x", purpose="pr_review"
+        )
         assert ok is False
         assert "expired" in reason
 
     def test_wrong_purpose_rejected(self, lease_service):
-        lease_service.issue(lease_id="l3", agent_id="a1", capability="read", scope="repo/x", purpose="pr_review")
-        ok, reason = lease_service.validate("l3", capability="read", scope="repo/x", purpose="deploy")
+        lease_service.issue(
+            lease_id="l3", agent_id="a1", capability="read", scope="repo/x", purpose="pr_review"
+        )
+        ok, reason = lease_service.validate(
+            "l3", capability="read", scope="repo/x", purpose="deploy"
+        )
         assert ok is False
         assert "purpose_mismatch" in reason
 
     def test_wrong_scope_rejected(self, lease_service):
-        lease_service.issue(lease_id="l4", agent_id="a1", capability="read", scope="repo/x", purpose="pr_review")
-        ok, reason = lease_service.validate("l4", capability="read", scope="repo/y", purpose="pr_review")
+        lease_service.issue(
+            lease_id="l4", agent_id="a1", capability="read", scope="repo/x", purpose="pr_review"
+        )
+        ok, reason = lease_service.validate(
+            "l4", capability="read", scope="repo/y", purpose="pr_review"
+        )
         assert ok is False
         assert "scope_mismatch" in reason
 
     def test_revoked_lease_rejected(self, lease_service):
-        lease_service.issue(lease_id="l5", agent_id="a1", capability="read", scope="repo/x", purpose="pr_review")
+        lease_service.issue(
+            lease_id="l5", agent_id="a1", capability="read", scope="repo/x", purpose="pr_review"
+        )
         lease_service.revoke("l5")
-        ok, reason = lease_service.validate("l5", capability="read", scope="repo/x", purpose="pr_review")
+        ok, reason = lease_service.validate(
+            "l5", capability="read", scope="repo/x", purpose="pr_review"
+        )
         assert ok is False
         assert "revoked" in reason
 
@@ -347,6 +397,7 @@ class TestCapabilityLease:
 
 
 # ─── §140: Data taint tests ────────────────────────────────────────
+
 
 class TestLineageTaint:
     def test_external_unverified_persists(self):
@@ -372,6 +423,7 @@ class TestLineageTaint:
 
 # ─── §140: Uncertainty/assumption tests ────────────────────────────
 
+
 class TestUncertaintyAssumption:
     def test_register_and_resolve(self, uncertainty_registry):
         item = UncertaintyItem(id="u1", uncertainty_type="unknown", description="is it secure?")
@@ -391,24 +443,62 @@ class TestUncertaintyAssumption:
 
 # ─── §140: Effect receipt + idempotency tests ──────────────────────
 
+
 class TestEffectReceipt:
     def test_apply_first_time(self, effect_service):
-        r1 = effect_service.apply(effect_id="ef1", operation="merge", target="repo", idempotency_key="ik1", before_state="open", after_state="merged", authorization="approved", result="done")
+        r1 = effect_service.apply(
+            effect_id="ef1",
+            operation="merge",
+            target="repo",
+            idempotency_key="ik1",
+            before_state="open",
+            after_state="merged",
+            authorization="approved",
+            result="done",
+        )
         assert r1.effect_id == "ef1"
         assert r1.receipt_hash
 
     def test_idempotent_retry(self, effect_service):
-        r1 = effect_service.apply(effect_id="ef2", operation="deploy", target="prod", idempotency_key="ik2", before_state="v1", after_state="v2", authorization="approved", result="ok")
-        r2 = effect_service.apply(effect_id="ef2_dupe", operation="deploy", target="prod", idempotency_key="ik2", before_state="v1", after_state="v3", authorization="approved", result="ok")
+        r1 = effect_service.apply(
+            effect_id="ef2",
+            operation="deploy",
+            target="prod",
+            idempotency_key="ik2",
+            before_state="v1",
+            after_state="v2",
+            authorization="approved",
+            result="ok",
+        )
+        r2 = effect_service.apply(
+            effect_id="ef2_dupe",
+            operation="deploy",
+            target="prod",
+            idempotency_key="ik2",
+            before_state="v1",
+            after_state="v3",
+            authorization="approved",
+            result="ok",
+        )
         assert r1.effect_id == r2.effect_id  # same receipt returned
         assert r1.receipt_hash == r2.receipt_hash
 
     def test_hash_verify(self, effect_service):
-        effect_service.apply(effect_id="ef3", operation="write", target="db", idempotency_key="ik3", before_state="", after_state="x", authorization="auth", result="ok")
+        effect_service.apply(
+            effect_id="ef3",
+            operation="write",
+            target="db",
+            idempotency_key="ik3",
+            before_state="",
+            after_state="x",
+            authorization="auth",
+            result="ok",
+        )
         assert effect_service.verify_hash("ik3") is True
 
 
 # ─── §140: Budget governor tests ────────────────────────────────────
+
 
 class TestBudgetGovernor:
     def test_hard_token_limit(self, budget_governor):
@@ -441,9 +531,16 @@ class TestBudgetGovernor:
 
 # ─── §140: Causal explanation tests ────────────────────────────────
 
+
 class TestCausal:
     def test_record_and_explain(self, causal_store):
-        rec = CausalRecord(action_id="act1", triggering_event_id="e1", agent_selected="a1", selection_reason="capability_match", provider="openai")
+        rec = CausalRecord(
+            action_id="act1",
+            triggering_event_id="e1",
+            agent_selected="a1",
+            selection_reason="capability_match",
+            provider="openai",
+        )
         causal_store.record(rec)
         result = causal_store.explain_dict("act1")
         assert result["found"] is True
@@ -454,7 +551,8 @@ class TestCausal:
         assert result["found"] is False
 
 
-# ─── §144–§145: Linter tests ───────────────────────────────────────
+# ─── §144-§145: Linter tests ───────────────────────────────────────
+
 
 class TestGovernanceLinter:
     def test_unbounded_loop_detected(self, linter):
@@ -483,7 +581,9 @@ class TestGovernanceLinter:
         assert any(i.rule == "UNAUTHORIZED_ALL_MESSAGES" for i in result.issues)
 
     def test_compliant_workflow(self, linter):
-        result = linter.lint_workflow({"max_iterations": 10, "budget": {}, "hash": "x", "version": "1"})
+        result = linter.lint_workflow(
+            {"max_iterations": 10, "budget": {}, "hash": "x", "version": "1"}
+        )
         assert result.passed is True
 
     def test_architecture_linter(self, arch_linter):
@@ -496,6 +596,7 @@ class TestGovernanceLinter:
 
 
 # ─── §140: Goal drift tests ────────────────────────────────────────
+
 
 class TestGoalDrift:
     def test_unauthorized_repo_detected(self):
@@ -529,6 +630,7 @@ class TestScopeCreep:
 
 # ─── §140: DLP tests ───────────────────────────────────────────────
 
+
 class TestDLP:
     def test_secret_in_payload_detected(self):
         scanner = DLPScanner()
@@ -556,28 +658,47 @@ class TestDLP:
 
 # ─── §140: Cross-tenant/matter via invariant engine ────────────────
 
+
 class TestCrossTenantMatter:
     def test_event_injection_blocked(self, invariant_engine):
-        ctx = ActionContext(action="activate", actor_id="a1", tenant_id="t2", metadata={"source_tenant": "t1"})
+        ctx = ActionContext(
+            action="activate", actor_id="a1", tenant_id="t2", metadata={"source_tenant": "t1"}
+        )
         violations = invariant_engine.evaluate(ctx)
         assert any(v.invariant == Invariant.NO_CROSS_TENANT_IMPLICIT_ACCESS for v in violations)
 
     def test_matter_isolation(self, invariant_engine):
-        ctx = ActionContext(action="activate", actor_id="a1", tenant_id="t1", matter_id="matter-b", metadata={"source_matter": "matter-a"})
+        ctx = ActionContext(
+            action="activate",
+            actor_id="a1",
+            tenant_id="t1",
+            matter_id="matter-b",
+            metadata={"source_matter": "matter-a"},
+        )
         violations = invariant_engine.evaluate(ctx)
         assert any(v.invariant == Invariant.NO_CROSS_MATTER_IMPLICIT_ACCESS for v in violations)
 
 
 # ─── §140: Policy engine integration (quarantine) ──────────────────
 
+
 class TestPolicyQuarantineIntegration:
     def test_quarantine_skips_activation(self, quarantine_service):
         quarantine_service.quarantine("blocked-agent", QuarantineReason.SECURITY_VIOLATION)
         from collaboration.models import AgentChannelBinding, EventEnvelope
         from collaboration.models.enums import EventType
+
         ep = EventPolicyEngine(quarantine_service=quarantine_service)
-        evt = EventEnvelope(event_id="e1", event_type=EventType.AGENT_MENTIONED, tenant_id="t1", channel_id="ch1")
-        binding = AgentChannelBinding(id="b1", tenant_id="t1", channel_id="ch1", agent_id="blocked-agent", allowed_event_types=["agent_mentioned"])
+        evt = EventEnvelope(
+            event_id="e1", event_type=EventType.AGENT_MENTIONED, tenant_id="t1", channel_id="ch1"
+        )
+        binding = AgentChannelBinding(
+            id="b1",
+            tenant_id="t1",
+            channel_id="ch1",
+            agent_id="blocked-agent",
+            allowed_event_types=["agent_mentioned"],
+        )
         d = ep.evaluate(evt, binding)
         assert d.allow is False
         assert "quarantine" in d.skipped_reasons
@@ -585,14 +706,28 @@ class TestPolicyQuarantineIntegration:
     def test_clean_agent_not_quarantined(self, quarantine_service):
         from collaboration.models import AgentChannelBinding, EventEnvelope
         from collaboration.models.enums import EventType
+
         ep = EventPolicyEngine(quarantine_service=quarantine_service)
-        evt = EventEnvelope(event_id="e1", event_type=EventType.AGENT_MENTIONED, tenant_id="t1", channel_id="ch1", actor_type="system")
-        binding = AgentChannelBinding(id="b1", tenant_id="t1", channel_id="ch1", agent_id="clean-agent", allowed_event_types=["agent_mentioned"])
+        evt = EventEnvelope(
+            event_id="e1",
+            event_type=EventType.AGENT_MENTIONED,
+            tenant_id="t1",
+            channel_id="ch1",
+            actor_type="system",
+        )
+        binding = AgentChannelBinding(
+            id="b1",
+            tenant_id="t1",
+            channel_id="ch1",
+            agent_id="clean-agent",
+            allowed_event_types=["agent_mentioned"],
+        )
         d = ep.evaluate(evt, binding)
         assert d.allow is True
 
 
 # ─── §140: Persistence across restart ──────────────────────────────
+
 
 class TestPersistenceRestart:
     def test_quarantine_survives(self, store):
@@ -603,7 +738,9 @@ class TestPersistenceRestart:
 
     def test_dead_letter_survives(self, store):
         dlq = DeadLetterQueue(store)
-        dlq.record_failure(event_id="e1", consumer_id="c1", tenant_id="t1", channel_id="ch1", failure_class="err")
+        dlq.record_failure(
+            event_id="e1", consumer_id="c1", tenant_id="t1", channel_id="ch1", failure_class="err"
+        )
         dlq2 = DeadLetterQueue(store)
         entry = dlq2.get("e1")
         assert entry is not None
@@ -618,7 +755,16 @@ class TestPersistenceRestart:
 
     def test_effect_receipt_survives(self, store):
         es = EffectService(store)
-        es.apply(effect_id="ef1", operation="op", target="t", idempotency_key="ik1", before_state="a", after_state="b", authorization="auth", result="ok")
+        es.apply(
+            effect_id="ef1",
+            operation="op",
+            target="t",
+            idempotency_key="ik1",
+            before_state="a",
+            after_state="b",
+            authorization="auth",
+            result="ok",
+        )
         es2 = EffectService(store)
         r = es2.get("ik1")
         assert r is not None

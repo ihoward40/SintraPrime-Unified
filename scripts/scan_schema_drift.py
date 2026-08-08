@@ -1,17 +1,15 @@
 """Scan ORM model columns vs SQL migration schema for the canonical bootstrap tables."""
+
+import os
 import re
 import sys
 from pathlib import Path
 
-import sqlalchemy as sa
-
 sys.path.insert(0, str(Path(".").resolve()))
 
-# Load all portal models
-import os
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./probe.db")
+import portal.models
 from portal.database import Base
-import portal.models  # noqa
 
 # Build SQL schema column map from migration files
 MIGRATIONS = [
@@ -34,7 +32,11 @@ for mig in MIGRATIONS:
             sql_cols[table] = {}
         for line in body.splitlines():
             line = line.strip()
-            if not line or line.startswith("--") or line.startswith(("CONSTRAINT", "PRIMARY", "UNIQUE", "FOREIGN", "CHECK", "INDEX")):
+            if (
+                not line
+                or line.startswith("--")
+                or line.startswith(("CONSTRAINT", "PRIMARY", "UNIQUE", "FOREIGN", "CHECK", "INDEX"))
+            ):
                 continue
             parts = line.split()
             if len(parts) < 2:

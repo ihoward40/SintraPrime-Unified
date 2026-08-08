@@ -92,4 +92,5 @@ When the user requests a durable behavior change, record it here or in the relev
 | `governance/blackstone/AGENTS.md` | Blackstone Governance Library | Constitutional charter, standards, knowledge core, architecture, certification, registry, casebook |
 | `voice_concierge/governed/AGENTS.md` | SP-VOICE-001 Governed Voice Operations | Voice command envelope, risk classifier, policy decision, session state machine, confirmation, receipts, feature flags |
 | `collaboration/AGENTS.md` | Collaborative Agent Fabric (CF-1) | Channels, membership, agent bindings, event router, activation runtime, policies (loop/dedup/rate/concurrency/kill switch), handoffs, receipts, POC engineering-lab |
+| `collaboration/governance/AGENTS.md` | Collaborative Agent Governance Foundation | Constitutional invariants, dead-letter queue, poison quarantine, agent quarantine, capability leases, lineage/taint, assumptions/uncertainties, governance linter, causal records, effect receipts, budget governor, DLP |
 | `docs/orchestration/AGENTS.md` | Adaptive orchestration documentation | Architecture, provider, routing, security, governance, and certification contracts |

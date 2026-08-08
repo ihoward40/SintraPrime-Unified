@@ -80,6 +80,8 @@ class EventDispatchStatus(str, Enum):
     SKIPPED_DEDUP = "skipped_dedup"
     SKIPPED_AGENT_STOPPED = "skipped_agent_stopped"
     SKIPPED_SHADOW = "skipped_shadow"
+    SKIPPED_QUARANTINE = "skipped_quarantine"
+    BLOCKED_INVARIANT = "blocked_invariant"
     SKIPPED_NO_MEMBERSHIP = "skipped_no_membership"
     BLOCKED_KILL_SWITCH = "blocked_kill_switch"
     QUEUED = "queued"
@@ -181,3 +183,11 @@ class NotificationThreshold(str, Enum):
     SECURITY_EVENT = "security_event"
     MEANINGFUL_COMPLETION = "meaningful_completion"
     ALL = "all"
+
+
+class GovernanceMode(str):
+    LAB = "lab"
+    DEVELOPMENT = "development"
+    CERTIFIED = "certified"
+    PRODUCTION = "production"
+    RESTRICTED = "restricted"

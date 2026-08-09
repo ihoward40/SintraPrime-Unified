@@ -36,6 +36,7 @@ _VOICE_RUNTIME_MODULES = (
     "voice_runtime.providers.mock",
     "voice_runtime.providers.legacy",
     "voice_runtime.providers.browser",
+    "voice_runtime.providers.vibevoice_realtime",
     "voice_runtime.audio",
     "voice_runtime.audio.normalization",
     "voice_runtime.audio.formats",

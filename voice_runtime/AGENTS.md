@@ -48,6 +48,17 @@ implemented.
   `voice` package import); declares `AUDIO_NORMALIZATION` only
 - `providers/browser.py` — server-side descriptor for the PR #247 browser
   Web Speech API fallback tier; never executes browser APIs from Python
+- `providers/vibevoice_realtime.py` — official
+  `microsoft/VibeVoice-Realtime-0.5B` single-speaker streaming TTS adapter
+  (Phase 2A). Declares only `TTS`/`STREAMING_TTS`. Fully lazy `torch`/
+  `transformers` imports (never at module level); layered preflight
+  (`DEPENDENCY_MISSING` → `MODEL_MISSING` → hardware `AVAILABLE`/
+  `AVAILABLE_DEGRADED`); never auto-downloads model weights (local-only
+  cache/path checks); not registered in `build_default_registry()` — must
+  be explicitly constructed by callers who have verified their own
+  environment. Real end-to-end inference is **not yet certified** on the
+  primary development host (no CUDA GPU, limited disk) — see
+  `artifacts/voice/SP_VOICE_002_PHASE2A_CERTIFICATION.md`.
 - `audio/normalization.py`, `audio/formats.py` — pure-Python audio
   preprocessing utilities (no `numpy`)
 - `tests/` — 54 tests covering import-dependency boundary, registry,
@@ -95,7 +106,12 @@ implemented.
   heavy dependencies lazily, inside methods gated by `preflight()` —
   never at module import time. See `providers/legacy.py`'s docstring for
   the pattern of harvesting an *algorithm* rather than importing an unsafe
-  module wholesale when adapting legacy code.
+  module wholesale when adapting legacy code. `providers/vibevoice_realtime.py`
+  follows this same pattern for real (not-yet-installed) ML dependencies.
+- Any real provider must never auto-download model weights at runtime;
+  model acquisition is always a separate, explicit setup/admin action, and
+  absence must be reported via `PreflightResult.model_missing()`, not
+  silently fetched.
 - Do not add real provider credentials as plain dataclass fields; follow
   the existing repository secrets-management pattern instead.
 

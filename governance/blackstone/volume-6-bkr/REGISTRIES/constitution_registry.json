@@ -1,0 +1,135 @@
+{
+  "$schema_note": "Machine-readable mirror of constitution_registry.md. This file is derived and non-authoritative; constitution_registry.md governs in case of any discrepancy. Regenerate whenever the Markdown table changes.",
+  "schema_version": "1.0.0",
+  "source": "governance/blackstone/volume-6-bkr/REGISTRIES/constitution_registry.md",
+  "governing_cdr": "CDR-0007",
+  "tooling_cdr": "CDR-0008",
+  "last_updated": "2026-08-01",
+  "library_volumes": [
+    {
+      "constitution_id": "BKGC-V1",
+      "title": "Blackstone Knowledge Governance Constitution — Enterprise Knowledge Governance Framework",
+      "version": "1.0.0",
+      "status": "Archived",
+      "supersedes": null,
+      "superseded_by": "BKGC-V2",
+      "sha256": "3ab6dde80faa52eb62afac3fa956accddbc745cda2796b1b7d0f66bab2314bcf",
+      "cdr": "CDR-0007",
+      "repository_path": "volume-1-bkgc/archive/BKGC_v1.0.md"
+    },
+    {
+      "constitution_id": "BKGC-V2",
+      "title": "Blackstone Knowledge Governance Constitution",
+      "version": "2.0.0",
+      "status": "Draft (unratified)",
+      "supersedes": "BKGC-V1",
+      "superseded_by": null,
+      "sha256": null,
+      "cdr": "CDR-0001",
+      "repository_path": "volume-1-bkgc/BKGC.md"
+    },
+    {
+      "constitution_id": "BGS",
+      "title": "Blackstone Governance Standards",
+      "version": "see CHANGELOG",
+      "status": "Draft",
+      "supersedes": null,
+      "superseded_by": null,
+      "sha256": null,
+      "cdr": "CDR-0002",
+      "repository_path": "volume-2-bgs/BGS.md"
+    },
+    {
+      "constitution_id": "BKC",
+      "title": "Blackstone Knowledge Core",
+      "version": "see CHANGELOG",
+      "status": "Draft",
+      "supersedes": null,
+      "superseded_by": null,
+      "sha256": null,
+      "cdr": ["CDR-0003", "CDR-0004"],
+      "repository_path": "volume-3-bkc/BKC.md"
+    },
+    {
+      "constitution_id": "BRA",
+      "title": "Blackstone Reference Architecture",
+      "version": "see CHANGELOG",
+      "status": "Draft",
+      "supersedes": null,
+      "superseded_by": null,
+      "sha256": null,
+      "cdr": null,
+      "repository_path": "volume-4-bra/BRA.md"
+    },
+    {
+      "constitution_id": "BCCM",
+      "title": "Blackstone Certification & Compliance Manual",
+      "version": "see CHANGELOG",
+      "status": "Draft",
+      "supersedes": null,
+      "superseded_by": null,
+      "sha256": null,
+      "cdr": null,
+      "repository_path": "volume-5-bccm/BCCM.md"
+    },
+    {
+      "constitution_id": "BKR",
+      "title": "Blackstone Knowledge Registry",
+      "version": "see CHANGELOG",
+      "status": "Draft",
+      "supersedes": null,
+      "superseded_by": null,
+      "sha256": null,
+      "cdr": "CDR-0005",
+      "repository_path": "volume-6-bkr/BKR.md"
+    },
+    {
+      "constitution_id": "BGC",
+      "title": "Blackstone Governance Casebook",
+      "version": "see CHANGELOG",
+      "status": "Draft",
+      "supersedes": null,
+      "superseded_by": null,
+      "sha256": null,
+      "cdr": null,
+      "repository_path": "volume-7-bgc/BGC.md"
+    }
+  ],
+  "ecosystem_constitutions": [
+    {
+      "constitution_id": "SEOS",
+      "title": "SintraPrime Executive Operating System Constitution",
+      "version": null,
+      "status": "Planned",
+      "repository_path": null
+    },
+    {
+      "constitution_id": "ENGINEERING",
+      "title": "Engineering Constitution",
+      "version": null,
+      "status": "Planned",
+      "repository_path": null
+    },
+    {
+      "constitution_id": "MISSION_CONTROL",
+      "title": "Mission Control Constitution",
+      "version": null,
+      "status": "Planned",
+      "repository_path": null
+    },
+    {
+      "constitution_id": "TRUST",
+      "title": "Trust Constitution",
+      "version": null,
+      "status": "Planned",
+      "repository_path": null
+    },
+    {
+      "constitution_id": "AUTOMATION",
+      "title": "Automation Constitution",
+      "version": null,
+      "status": "Planned",
+      "repository_path": null
+    }
+  ]
+}

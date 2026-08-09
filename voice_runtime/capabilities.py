@@ -9,10 +9,10 @@ touching routing logic.
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 
-class SpeechCapability(str, Enum):
+class SpeechCapability(StrEnum):
     """A single speech/audio computation capability a provider may support."""
 
     ASR = "asr"

@@ -10,10 +10,10 @@ registration.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 
-class PreflightState(str, Enum):
+class PreflightState(StrEnum):
     """Coarse-grained availability state for a speech provider."""
 
     AVAILABLE = "available"

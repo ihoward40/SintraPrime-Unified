@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from pathlib import Path
+from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
@@ -9,6 +10,8 @@ from legal_authority.comparison import CONFLICT_OF_LAWS_WARNING, JurisdictionCom
 from legal_authority.engine import RuleEvaluationEngine
 from legal_authority.repository import LegalAuthorityRepository
 from legal_authority.ucc_filing import UCCFilingAssessmentService
+from portal.auth.jwt_handler import create_access_token
+from portal.auth.rbac import Role
 from portal.main import create_app
 
 
@@ -217,11 +220,22 @@ def test_ucc_continuation_window_edge_cases():
 
 def test_phase_2b_api_new_states_comparison_and_ucc_endpoints():
     c = TestClient(create_app())
+    token = create_access_token(
+        user_id=str(uuid4()),
+        tenant_id=str(uuid4()),
+        role=Role.SUPER_ADMIN.value,
+        permissions=[],
+    )
+    auth_headers = {"Authorization": f"Bearer {token}"}
     for code in ("NY", "PA"):
-        detail = c.get(f"/jurisdictions/{code}")
+        detail = c.get(f"/jurisdictions/{code}", headers=auth_headers)
         assert detail.status_code == 200
         assert detail.json()["support_status"] == "TESTED"
-        rules = c.get(f"/jurisdictions/{code}/rules", params={"topic": "continuation"})
+        rules = c.get(
+            f"/jurisdictions/{code}/rules",
+            params={"topic": "continuation"},
+            headers=auth_headers,
+        )
         assert rules.status_code == 200
         assert rules.json()
     comparison = c.get(
@@ -231,11 +245,13 @@ def test_phase_2b_api_new_states_comparison_and_ucc_endpoints():
             "domain": "ucc_article9",
             "topic": "continuation window",
         },
+        headers=auth_headers,
     )
     assert comparison.status_code == 200
     assert comparison.json()["conflict_of_laws_warning"] == CONFLICT_OF_LAWS_WARNING
     denied = c.post(
         "/ucc-filings/evaluate",
+        headers=auth_headers,
         json={
             "filing_jurisdiction": "NY",
             "filing_date": "2022-01-15",
@@ -245,12 +261,14 @@ def test_phase_2b_api_new_states_comparison_and_ucc_endpoints():
         },
     )
     assert denied.status_code == 403
+    reviewer_headers = {
+        **auth_headers,
+        "X-Reviewer-Role": "LEGAL_RESEARCHER",
+        "X-Reviewer-Identity": "researcher@example.test",
+    }
     created = c.post(
         "/ucc-filings/evaluate",
-        headers={
-            "X-Reviewer-Role": "LEGAL_RESEARCHER",
-            "X-Reviewer-Identity": "researcher@example.test",
-        },
+        headers=reviewer_headers,
         json={
             "filing_jurisdiction": "NY",
             "filing_date": "2022-01-15",
@@ -260,7 +278,10 @@ def test_phase_2b_api_new_states_comparison_and_ucc_endpoints():
         },
     )
     assert created.status_code == 200
-    fetched = c.get(f"/ucc-filings/{created.json()['evaluation_id']}")
+    fetched = c.get(
+        f"/ucc-filings/{created.json()['evaluation_id']}",
+        headers=auth_headers,
+    )
     assert fetched.status_code == 200
 
 

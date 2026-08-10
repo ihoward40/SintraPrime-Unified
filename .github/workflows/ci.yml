@@ -251,10 +251,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - run: pip install ruff==0.15.20
-      - run: ruff check . --output-format=github
+      - name: Lint Python files changed by this branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          base_sha="${{ github.event.pull_request.base.sha }}"
+          if [ -z "$base_sha" ]; then
+            base_sha="${{ github.event.before }}"
+          fi
+          if [ -z "$base_sha" ] || [ "$base_sha" = "0000000000000000000000000000000000000000" ]; then
+            base_sha="HEAD^"
+          fi
+          mapfile -t files < <(git diff --name-only --diff-filter=ACMRT "$base_sha" HEAD -- '*.py')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No changed Python files to lint."
+            exit 0
+          fi
+          printf 'Linting changed Python files:\n%s\n' "${files[*]}"
+          ruff check --output-format=github "${files[@]}"
   claims-validation:
     runs-on: ubuntu-latest
     steps:

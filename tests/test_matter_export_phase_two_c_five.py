@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from legal_authority.repository import LegalAuthorityRepository
 from portal.auth.jwt_handler import create_access_token
 from portal.auth.rbac import ROLE_PERMISSIONS, Permission, Role
+from portal.database import get_db
 from portal.main import create_app
 from portal.services.matter_export_service import (
     MatterExportResult,
@@ -146,8 +147,18 @@ def _headers(*, role: str, permissions: list[Permission]) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
+async def _fake_db_dependency():
+    yield _FakeDB()
+
+
+def _test_app():
+    app = create_app()
+    app.dependency_overrides[get_db] = _fake_db_dependency
+    return app
+
+
 def test_export_route_requires_auth_and_registers_scope():
-    client = TestClient(create_app())
+    client = TestClient(_test_app())
     assert (
         client.post("/api/v1/matters/matter-1/exports", json={"format": "JSON"}).status_code == 401
     )
@@ -158,7 +169,7 @@ def test_export_route_requires_auth_and_registers_scope():
 
 
 def test_export_route_rejects_client_without_export_permission():
-    client = TestClient(create_app())
+    client = TestClient(_test_app())
     response = client.post(
         "/api/v1/matters/matter-1/exports",
         json={"format": "JSON"},
@@ -182,7 +193,7 @@ def test_export_route_returns_hash_headers(monkeypatch):
         )
 
     monkeypatch.setattr(matter_export.service, "build_packet", fake_build_packet)
-    client = TestClient(create_app())
+    client = TestClient(_test_app())
     response = client.post(
         "/api/v1/matters/matter-1/exports",
         json={"format": "JSON"},

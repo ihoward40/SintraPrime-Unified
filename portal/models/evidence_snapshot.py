@@ -20,7 +20,7 @@ from sqlalchemy import DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..database import Base
-from .types import PortableUUID
+from .types import PortableUUID, PortableUUIDString
 
 
 class SnapshotStatus(_enum.StrEnum):
@@ -63,7 +63,7 @@ class EvidenceSnapshot(Base):
         default=uuid.uuid4,
     )
     case_id: Mapped[str] = mapped_column(
-        String(36),
+        PortableUUIDString,
         ForeignKey("cases.id"),
         nullable=False,
         index=True,
@@ -97,7 +97,7 @@ class EvidenceSnapshot(Base):
         doc="Server-set creation timestamp. Never modified.",
     )
     created_by: Mapped[str] = mapped_column(
-        String(36),
+        PortableUUIDString,
         ForeignKey("users.id"),
         nullable=False,
         doc="User who created this snapshot.",

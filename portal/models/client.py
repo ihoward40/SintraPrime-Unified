@@ -12,16 +12,16 @@ from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Numeric, String, Tex
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
+from ..models.types import PortableUUIDString
 
 
 class Client(Base):
     __tablename__ = "clients"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUIDString, primary_key=True, default=lambda: str(uuid.uuid4)
     )
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+        PortableUUIDString, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     # Type: individual or organization
@@ -58,13 +58,13 @@ class Client(Base):
 
     # Portal access
     portal_user_id: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True
+        PortableUUIDString, ForeignKey("users.id"), nullable=True
     )
     portal_access: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Assigned attorney
     primary_attorney_id: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True
+        PortableUUIDString, ForeignKey("users.id"), nullable=True
     )
 
     # Client status
@@ -108,14 +108,13 @@ class Matter(Base):
 
     __tablename__ = "matters"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUIDString, primary_key=True, default=lambda: str(uuid.uuid4)
     )
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+        PortableUUIDString, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
     )
     client_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("clients.id", ondelete="CASCADE"), nullable=False
+        PortableUUIDString, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False
     )
 
     matter_number: Mapped[str] = mapped_column(String(50), nullable=False)  # e.g., "2024-001"
@@ -135,10 +134,10 @@ class Matter(Base):
 
     # Staff
     responsible_attorney_id: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True
+        PortableUUIDString, ForeignKey("users.id"), nullable=True
     )
     billing_attorney_id: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True
+        PortableUUIDString, ForeignKey("users.id"), nullable=True
     )
 
     opened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

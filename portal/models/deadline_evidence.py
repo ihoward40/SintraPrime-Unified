@@ -9,17 +9,18 @@ from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, Unique
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..database import Base
+from ..models.types import PortableUUIDString
 
 
 class MatterDeadline(Base):
     __tablename__ = "matter_deadlines"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(PortableUUIDString, primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+        PortableUUIDString, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
     )
     matter_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("matters.id", ondelete="CASCADE"), nullable=False, index=True
+        PortableUUIDString, ForeignKey("matters.id", ondelete="CASCADE"), nullable=False, index=True
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     deadline_type: Mapped[str] = mapped_column(String(40), nullable=False)
@@ -38,7 +39,7 @@ class MatterDeadline(Base):
     limitations: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     review_status: Mapped[str] = mapped_column(String(40), nullable=False, default="NOT_SUBMITTED")
     current_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    created_by: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    created_by: Mapped[str] = mapped_column(PortableUUIDString, ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -54,15 +55,15 @@ class MatterDeadlineVersion(Base):
         UniqueConstraint("deadline_id", "version_number", name="uq_matter_deadline_version"),
     )
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(PortableUUIDString, primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+        PortableUUIDString, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
     )
     matter_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("matters.id", ondelete="CASCADE"), nullable=False, index=True
+        PortableUUIDString, ForeignKey("matters.id", ondelete="CASCADE"), nullable=False, index=True
     )
     deadline_id: Mapped[str] = mapped_column(
-        String(36),
+        PortableUUIDString,
         ForeignKey("matter_deadlines.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -74,7 +75,7 @@ class MatterDeadlineVersion(Base):
     calculation_inputs_redacted: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     assumptions: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     limitations: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
-    created_by: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    created_by: Mapped[str] = mapped_column(PortableUUIDString, ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -83,19 +84,19 @@ class MatterDeadlineVersion(Base):
 class MatterEvidenceNode(Base):
     __tablename__ = "matter_evidence_nodes"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(PortableUUIDString, primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+        PortableUUIDString, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
     )
     matter_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("matters.id", ondelete="CASCADE"), nullable=False, index=True
+        PortableUUIDString, ForeignKey("matters.id", ondelete="CASCADE"), nullable=False, index=True
     )
     node_type: Mapped[str] = mapped_column(String(32), nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     statement_redacted: Mapped[str | None] = mapped_column(Text, nullable=True)
     evidence_status: Mapped[str] = mapped_column(String(32), nullable=False)
     source_document_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("documents.id"), nullable=True
+        PortableUUIDString, ForeignKey("documents.id"), nullable=True
     )
     source_authority_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     source_rule_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
@@ -103,7 +104,7 @@ class MatterEvidenceNode(Base):
         "provenance", JSON, nullable=True, default=dict
     )
     review_status: Mapped[str] = mapped_column(String(40), nullable=False, default="NOT_SUBMITTED")
-    created_by: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    created_by: Mapped[str] = mapped_column(PortableUUIDString, ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -116,23 +117,23 @@ class MatterEvidenceNode(Base):
 class MatterEvidenceLink(Base):
     __tablename__ = "matter_evidence_links"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(PortableUUIDString, primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+        PortableUUIDString, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
     )
     matter_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("matters.id", ondelete="CASCADE"), nullable=False, index=True
+        PortableUUIDString, ForeignKey("matters.id", ondelete="CASCADE"), nullable=False, index=True
     )
     source_node_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("matter_evidence_nodes.id", ondelete="CASCADE"), nullable=False
+        PortableUUIDString, ForeignKey("matter_evidence_nodes.id", ondelete="CASCADE"), nullable=False
     )
     target_node_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("matter_evidence_nodes.id", ondelete="CASCADE"), nullable=False
+        PortableUUIDString, ForeignKey("matter_evidence_nodes.id", ondelete="CASCADE"), nullable=False
     )
     relationship_type: Mapped[str] = mapped_column(String(32), nullable=False)
     confidence: Mapped[float] = mapped_column(nullable=False, default=0.0)
     notes_redacted: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_by: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    created_by: Mapped[str] = mapped_column(PortableUUIDString, ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -141,23 +142,23 @@ class MatterEvidenceLink(Base):
 class MatterEvidenceFinding(Base):
     __tablename__ = "matter_evidence_findings"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(PortableUUIDString, primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+        PortableUUIDString, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
     )
     matter_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("matters.id", ondelete="CASCADE"), nullable=False, index=True
+        PortableUUIDString, ForeignKey("matters.id", ondelete="CASCADE"), nullable=False, index=True
     )
     finding_type: Mapped[str] = mapped_column(String(32), nullable=False)
     node_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("matter_evidence_nodes.id", ondelete="CASCADE"), nullable=True
+        PortableUUIDString, ForeignKey("matter_evidence_nodes.id", ondelete="CASCADE"), nullable=True
     )
     related_node_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("matter_evidence_nodes.id", ondelete="CASCADE"), nullable=True
+        PortableUUIDString, ForeignKey("matter_evidence_nodes.id", ondelete="CASCADE"), nullable=True
     )
     summary_redacted: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(24), nullable=False, default="OPEN")
-    created_by: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    created_by: Mapped[str] = mapped_column(PortableUUIDString, ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

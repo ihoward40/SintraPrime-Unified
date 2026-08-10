@@ -18,6 +18,7 @@ from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, String, Text,
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
+from ..models.types import PortableUUIDString
 
 
 class VoiceCommand(Base):
@@ -31,9 +32,9 @@ class VoiceCommand(Base):
 
     __tablename__ = "voice_commands"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False)
-    principal_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    id: Mapped[str] = mapped_column(PortableUUIDString, primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[str] = mapped_column(PortableUUIDString, ForeignKey("tenants.id"), nullable=False)
+    principal_id: Mapped[str] = mapped_column(PortableUUIDString, ForeignKey("users.id"), nullable=False)
 
     command_id: Mapped[str] = mapped_column(String(80), nullable=False)
     voice_session_id: Mapped[str] = mapped_column(String(80), nullable=False)
@@ -62,7 +63,7 @@ class VoiceCommand(Base):
     artifacts: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
 
     audit_log_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("audit_logs.id"), nullable=True
+        PortableUUIDString, ForeignKey("audit_logs.id"), nullable=True
     )
     # Timestamps are set client-side (never server_default/onupdate). Under the
     # async engine, reading a column back after flush() (not commit()+refresh())
@@ -110,9 +111,9 @@ class VoiceCommandEvent(Base):
 
     __tablename__ = "voice_command_events"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(PortableUUIDString, primary_key=True, default=uuid.uuid4)
     command_id: Mapped[str] = mapped_column(
-        String(36),
+        PortableUUIDString,
         ForeignKey("voice_commands.id", ondelete="CASCADE"),
         nullable=False,
     )
@@ -139,9 +140,9 @@ class VoiceCommandReceipt(Base):
 
     __tablename__ = "voice_command_receipts"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(PortableUUIDString, primary_key=True, default=uuid.uuid4)
     command_id: Mapped[str] = mapped_column(
-        String(36),
+        PortableUUIDString,
         ForeignKey("voice_commands.id", ondelete="CASCADE"),
         nullable=False,
     )
@@ -149,7 +150,7 @@ class VoiceCommandReceipt(Base):
     receipt_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     result: Mapped[str] = mapped_column(String(40), nullable=False)
     audit_log_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("audit_logs.id"), nullable=True
+        PortableUUIDString, ForeignKey("audit_logs.id"), nullable=True
     )
     evidence_refs: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(

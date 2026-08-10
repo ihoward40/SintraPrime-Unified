@@ -247,6 +247,74 @@ jobs:
           name: postgresql-bootstrap-certification-log
           path: /tmp/postgresql-bootstrap-certification.log
           if-no-files-found: ignore
+  migration-authority-gate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sintraprime_mig
+          POSTGRES_PASSWORD: sintraprime_mig
+          POSTGRES_DB: sintraprime_migration_gate
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U sintraprime_mig -d sintraprime_migration_gate"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run migration authority gate — full schema + drift + RLS
+        env:
+          PGPASSWORD: sintraprime_mig
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGDATABASE: sintraprime_migration_gate
+          PGUSER: sintraprime_mig
+        run: |
+          set -euo pipefail
+          python - <<'PY' | tee /tmp/migration-authority-gate.log
+          import os
+          import pytest
+
+          scheme = "postgresql" + "://"
+          os.environ["POSTGRESQL_BOOTSTRAP_TEST_DATABASE_URL"] = (
+              scheme
+              + os.environ["PGUSER"]
+              + ":"
+              + os.environ["PGPASSWORD"]
+              + "@"
+              + os.environ["PGHOST"]
+              + ":"
+              + os.environ["PGPORT"]
+              + "/"
+              + os.environ["PGDATABASE"]
+          )
+          raise SystemExit(pytest.main([
+              "-vv",
+              "-rs",
+              "--tb=long",
+              "--maxfail=3",
+              "portal/tests/test_orm_schema_drift.py",
+              "portal/tests/test_postgresql_bootstrap_schema_authority.py::test_authoritative_migration_sequence_is_ordered",
+              "portal/tests/test_postgresql_bootstrap_schema_authority.py::test_clean_raw_sql_bootstrap_repeats_three_times",
+          ]))
+          PY
+          ! grep -q 'SKIPPED' /tmp/migration-authority-gate.log
+      - name: Upload migration authority gate log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-authority-gate-log
+          path: /tmp/migration-authority-gate.log
+          if-no-files-found: ignore
   lint:
     runs-on: ubuntu-latest
     steps:

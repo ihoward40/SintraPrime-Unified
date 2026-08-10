@@ -14,7 +14,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./shared/schemas/unified_schema.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./portal/migrations:/migrations/portal/migrations:ro
+      - ./shared/schemas/docker_init.sh:/docker-entrypoint-initdb.d/01-canonical-schema.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sintraprime"]
       interval: 10s

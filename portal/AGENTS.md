@@ -20,6 +20,13 @@ Owns the SintraPrime client portal — the FastAPI application that provides sec
 - No raw SQL in application code (SQLAlchemy ORM only; migrations exempt)
 - JWT access tokens 15-min, refresh tokens 30d httpOnly cookie, TOTP MFA
 - Runtime schema migrations live in `portal/migrations/` and must include inline DOWN migration comments or a separate `_down.sql` file
+- **Migration authority (R3):** `MIGRATIONS_ARE_AUTHORITY` is the declared doctrine and is now enforced:
+  - Alembic revision chain lives in `portal/alembic/versions/`; root config is `alembic.ini`
+  - Canonical migration sequence is defined once in `portal/scripts/postgresql_bootstrap.py::MIGRATION_SEQUENCE` and mirrored in the Alembic baseline revision `a1b2c3d4e5f6`
+  - Docker provisioning uses `shared/schemas/docker_init.sh` (mounts `portal/migrations/` read-only)
+  - Deployment contract: **Option B** — migrations ship as source checkout (not bundled in wheel); see `evidence/r3-schema/R3_K_DEPLOYMENT_CONTRACT.md`
+  - Adoption procedure for pre-R3 databases: `evidence/r3-schema/R3_N_ADOPTION_STRATEGY.md`
+  - CI gate: `migration-authority-gate` job in `.github/workflows/ci.yml`
 
 ## Work Guidance
 

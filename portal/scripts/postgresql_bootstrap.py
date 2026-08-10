@@ -1,7 +1,18 @@
 """Apply the authoritative raw-SQL PostgreSQL fresh-bootstrap sequence.
 
-This is a CI verifier/runner for disposable or empty PostgreSQL databases. It is
-not an Alembic replacement and does not certify upgrades from unknown schemas.
+This is the canonical provisioning tool for disposable or empty PostgreSQL
+databases.  It executes migration files in the canonical dependency order that
+matches the Alembic revision a1b2c3d4e5f6 (R3 baseline).
+
+Deployment contract (R3-K Option B):
+  Migrations ship as a separate provisioning artefact (source checkout).
+  The installed application wheel does NOT bundle migration files.
+  Provisioning command:
+      python -m portal.scripts.postgresql_bootstrap --database-url $DATABASE_URL
+
+R1 security preservation:
+  This script does not create or alter the sintraprime_app runtime role.
+  Role provisioning is performed by the infrastructure layer before this script runs.
 """
 
 from __future__ import annotations
@@ -14,27 +25,98 @@ from urllib.parse import urlsplit, urlunsplit
 import psycopg2
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# Canonical migration order — must match portal/alembic/versions/a1b2c3d4e5f6_r3_canonical_baseline.py
 MIGRATION_SEQUENCE = (
     Path("portal/migrations/portal_schema.sql"),
     Path("portal/migrations/add_evidence_snapshots.sql"),
     Path("portal/migrations/add_audit_records.sql"),
+    Path("portal/migrations/add_legal_authority_rules.sql"),
+    Path("portal/migrations/add_voice_command_ledger.sql"),
     Path("portal/migrations/add_mission_control_command_ledger.sql"),
     Path("portal/migrations/add_mission_control_run_control_projection.sql"),
+    Path("portal/migrations/add_matter_intelligence.sql"),
+    Path("portal/migrations/add_deadline_evidence_intelligence.sql"),
+    Path("portal/migrations/add_permissions_rbac.sql"),
+    Path("portal/migrations/add_blackstone_evidence_ledger.sql"),
+    Path("portal/migrations/add_mission_control_outbox.sql"),
+    Path("portal/migrations/runtime_schema_baseline.sql"),
+    Path("portal/migrations/runtime_schema_integrity_2026_07_27.sql"),
 )
+
+# Complete set of authoritative runtime tables.
+# SQL-only intentional tables (agents, swarms, skills, knowledge_entries,
+# execution_history, sessions) are included — they have documented SQL authority
+# and deliberate absence of an ORM model.
 EXPECTED_TABLES = (
+    # Core portal schema
     "tenants",
     "roles",
     "users",
     "clients",
     "matters",
     "cases",
+    "case_events",
+    "case_deadlines",
+    "case_notes",
+    "case_tasks",
+    "document_folders",
+    "documents",
+    "document_versions",
+    "document_shares",
+    "message_threads",
+    "messages",
+    "message_attachments",
+    "time_entries",
+    "expenses",
+    "invoices",
+    "invoice_line_items",
+    "payments",
+    "trust_accounts",
+    "notifications",
+    "audit_logs",
+    # Extended portal schema
     "evidence_snapshots",
     "audit_records",
+    "legal_authorities",
+    "jurisdiction_rules",
+    "professional_reviews",
+    "voice_commands",
+    "voice_command_events",
+    "voice_command_receipts",
     "mission_control_commands",
     "mission_control_command_events",
     "mission_control_command_receipts",
     "mission_control_run_controls",
     "mission_control_run_control_events",
+    "matter_parties",
+    "matter_accounts",
+    "matter_filings",
+    "matter_communications",
+    "matter_disputes",
+    "matter_attachments",
+    "matter_assessments",
+    "matter_assessment_versions",
+    "matter_audit_events",
+    "matter_deadlines",
+    "matter_deadline_versions",
+    "matter_evidence_nodes",
+    "matter_evidence_links",
+    "matter_evidence_findings",
+    # R3 — previously ORM-only, now SQL-covered
+    "permissions",
+    "role_permissions",
+    "user_permissions",
+    "evidence_ledger",
+    "blackstone_evaluations",
+    "mission_control_outbox",
+    # SQL-only intentional (agent runtime subsystem)
+    "agents",
+    "swarms",
+    "skills",
+    "knowledge_entries",
+    "execution_history",
+    "sessions",
 )
 
 

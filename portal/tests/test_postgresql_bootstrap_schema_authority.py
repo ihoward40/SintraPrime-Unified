@@ -103,13 +103,23 @@ def _seed_case_user(url: str) -> tuple[uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUI
 
 
 def test_authoritative_migration_sequence_is_ordered() -> None:
-    assert [str(path).replace("\\", "/") for path in MIGRATION_SEQUENCE] == [
+    expected = [
         "portal/migrations/portal_schema.sql",
         "portal/migrations/add_evidence_snapshots.sql",
         "portal/migrations/add_audit_records.sql",
+        "portal/migrations/add_legal_authority_rules.sql",
+        "portal/migrations/add_voice_command_ledger.sql",
         "portal/migrations/add_mission_control_command_ledger.sql",
         "portal/migrations/add_mission_control_run_control_projection.sql",
+        "portal/migrations/add_matter_intelligence.sql",
+        "portal/migrations/add_deadline_evidence_intelligence.sql",
+        "portal/migrations/add_permissions_rbac.sql",
+        "portal/migrations/add_blackstone_evidence_ledger.sql",
+        "portal/migrations/add_mission_control_outbox.sql",
+        "portal/migrations/runtime_schema_baseline.sql",
+        "portal/migrations/runtime_schema_integrity_2026_07_27.sql",
     ]
+    assert [str(path).replace("\\", "/") for path in MIGRATION_SEQUENCE] == expected
 
 
 def test_postgresql_orm_foreign_key_column_types_are_internally_consistent() -> None:

@@ -1,0 +1,708 @@
+{
+  "r3_phase": "R3-A",
+  "purpose": "Schema authority baseline enumerated from R2 HEAD",
+  "head_sha": "05db05f233dbe588cabde0a2d80d261c25b988f9",
+  "enumeration_date": "2026-08-10",
+  "doctrine": "MIGRATIONS_ARE_AUTHORITY",
+  "alembic_present": true,
+  "alembic_revision_chain": false,
+  "summary": {
+    "orm_table_count": 58,
+    "sql_table_count": 58,
+    "orm_only_tables": 6,
+    "sql_only_tables": 6,
+    "rls_enabled_tables": 8,
+    "rls_policies": 8,
+    "triggers": 6,
+    "functions": 6,
+    "extensions_required": ["uuid-ossp", "pg_trgm"],
+    "migration_files": 10,
+    "docker_bootstrap_tables": 8,
+    "gap_docker_vs_canonical": "Docker initialises 8-table legacy runtime; canonical ORM requires 58 tables"
+  },
+  "schema_objects": [
+    {
+      "object_type": "TABLE", "object_name": "tenants",
+      "ORM_source": "portal/models/user.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": false,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "GLOBAL"
+    },
+    {
+      "object_type": "TABLE", "object_name": "roles",
+      "ORM_source": "portal/models/user.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": false,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "GLOBAL",
+      "note": "SQL uses permissions TEXT[] legacy column; ORM uses separate permissions table. Both coexist."
+    },
+    {
+      "object_type": "TABLE", "object_name": "users",
+      "ORM_source": "portal/models/user.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": "portal/migrations/runtime_schema_baseline.sql",
+      "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": true, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_DIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "permissions",
+      "ORM_source": "portal/models/user.py", "SQL_source": null,
+      "Docker_source": null, "migration_source": null,
+      "runtime_required": true, "tenant_sensitive": false,
+      "RLS_required": false, "status": "ORM_ONLY_MISSING_SQL",
+      "scope_class": "GLOBAL",
+      "previously_missing": true, "classification": "ACTIVE_RUNTIME"
+    },
+    {
+      "object_type": "TABLE", "object_name": "role_permissions",
+      "ORM_source": "portal/models/user.py", "SQL_source": null,
+      "Docker_source": null, "migration_source": null,
+      "runtime_required": true, "tenant_sensitive": false,
+      "RLS_required": false, "status": "ORM_ONLY_MISSING_SQL",
+      "scope_class": "GLOBAL",
+      "previously_missing": true, "classification": "ACTIVE_RUNTIME"
+    },
+    {
+      "object_type": "TABLE", "object_name": "user_permissions",
+      "ORM_source": "portal/models/user.py", "SQL_source": null,
+      "Docker_source": null, "migration_source": null,
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "ORM_ONLY_MISSING_SQL",
+      "scope_class": "TENANT_SCOPED_DIRECT",
+      "previously_missing": true, "classification": "ACTIVE_RUNTIME"
+    },
+    {
+      "object_type": "TABLE", "object_name": "clients",
+      "ORM_source": "portal/models/client.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": true, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_DIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "matters",
+      "ORM_source": "portal/models/client.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_DIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "cases",
+      "ORM_source": "portal/models/case.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": true, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_DIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "case_events",
+      "ORM_source": "portal/models/case.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "case_deadlines",
+      "ORM_source": "portal/models/case.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "case_notes",
+      "ORM_source": "portal/models/case.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "case_tasks",
+      "ORM_source": "portal/models/case.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "documents",
+      "ORM_source": "portal/models/document.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": true, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_DIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "document_folders",
+      "ORM_source": "portal/models/document.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "document_versions",
+      "ORM_source": "portal/models/document.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "document_shares",
+      "ORM_source": "portal/models/document.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "message_threads",
+      "ORM_source": "portal/models/message.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": true, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_DIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "messages",
+      "ORM_source": "portal/models/message.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": "portal/migrations/runtime_schema_baseline.sql",
+      "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": true, "status": "SCHEMA_CONFLICT",
+      "scope_class": "TENANT_SCOPED_DIRECT",
+      "note": "messages exists in both portal_schema.sql (tenant-scoped) and runtime_schema_baseline.sql (legacy unscoped). portal_schema.sql is authoritative."
+    },
+    {
+      "object_type": "TABLE", "object_name": "message_attachments",
+      "ORM_source": "portal/models/message.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "expenses",
+      "ORM_source": "portal/models/billing.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "invoices",
+      "ORM_source": "portal/models/billing.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": true, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_DIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "invoice_line_items",
+      "ORM_source": "portal/models/billing.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "payments",
+      "ORM_source": "portal/models/billing.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "time_entries",
+      "ORM_source": "portal/models/billing.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": true, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_DIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "trust_accounts",
+      "ORM_source": "portal/models/billing.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_DIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "audit_logs",
+      "ORM_source": "portal/models/audit.py", "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": false,
+      "RLS_required": true, "status": "AUTHORITATIVE",
+      "scope_class": "APPEND_ONLY_AUDIT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "notifications",
+      "ORM_source": "portal/routers/notifications.py (inline)",
+      "SQL_source": "portal/migrations/portal_schema.sql",
+      "Docker_source": null, "migration_source": "portal_schema",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_DIRECT",
+      "note": "ORM model defined inline in router — intentional for simplicity. SQL authority is portal_schema.sql."
+    },
+    {
+      "object_type": "TABLE", "object_name": "evidence_snapshots",
+      "ORM_source": "portal/models/evidence_snapshot.py",
+      "SQL_source": "portal/migrations/add_evidence_snapshots.sql",
+      "Docker_source": null, "migration_source": "add_evidence_snapshots",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "audit_records",
+      "ORM_source": "portal/models/audit_record.py",
+      "SQL_source": "portal/migrations/add_audit_records.sql",
+      "Docker_source": null, "migration_source": "add_audit_records",
+      "runtime_required": true, "tenant_sensitive": false,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "APPEND_ONLY_AUDIT",
+      "previously_missing": true, "classification": "ACTIVE_RUNTIME",
+      "note": "Previously F-C finding. SQL now present. RESOLVED."
+    },
+    {
+      "object_type": "TABLE", "object_name": "blackstone_evaluations",
+      "ORM_source": "portal/models/blackstone.py", "SQL_source": null,
+      "Docker_source": null, "migration_source": null,
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": true, "status": "ORM_ONLY_MISSING_SQL",
+      "scope_class": "TENANT_SCOPED_DIRECT",
+      "previously_missing": true, "classification": "ACTIVE_RUNTIME"
+    },
+    {
+      "object_type": "TABLE", "object_name": "evidence_ledger",
+      "ORM_source": "portal/models/blackstone.py", "SQL_source": null,
+      "Docker_source": null, "migration_source": null,
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": true, "status": "ORM_ONLY_MISSING_SQL",
+      "scope_class": "TENANT_SCOPED_DIRECT",
+      "previously_missing": true, "classification": "ACTIVE_RUNTIME"
+    },
+    {
+      "object_type": "TABLE", "object_name": "legal_authorities",
+      "ORM_source": "portal/models/legal_authority.py",
+      "SQL_source": "portal/migrations/add_legal_authority_rules.sql",
+      "Docker_source": null, "migration_source": "add_legal_authority_rules",
+      "runtime_required": true, "tenant_sensitive": false,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "GLOBAL"
+    },
+    {
+      "object_type": "TABLE", "object_name": "jurisdiction_rules",
+      "ORM_source": "portal/models/legal_authority.py",
+      "SQL_source": "portal/migrations/add_legal_authority_rules.sql",
+      "Docker_source": null, "migration_source": "add_legal_authority_rules",
+      "runtime_required": true, "tenant_sensitive": false,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "GLOBAL"
+    },
+    {
+      "object_type": "TABLE", "object_name": "professional_reviews",
+      "ORM_source": "portal/models/legal_authority.py",
+      "SQL_source": "portal/migrations/add_legal_authority_rules.sql",
+      "Docker_source": null, "migration_source": "add_legal_authority_rules",
+      "runtime_required": true, "tenant_sensitive": false,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "GLOBAL"
+    },
+    {
+      "object_type": "TABLE", "object_name": "voice_commands",
+      "ORM_source": "portal/models/voice_command.py",
+      "SQL_source": "portal/migrations/add_voice_command_ledger.sql",
+      "Docker_source": null, "migration_source": "add_voice_command_ledger",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": true, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_DIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "voice_command_events",
+      "ORM_source": "portal/models/voice_command.py",
+      "SQL_source": "portal/migrations/add_voice_command_ledger.sql",
+      "Docker_source": null, "migration_source": "add_voice_command_ledger",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "voice_command_receipts",
+      "ORM_source": "portal/models/voice_command.py",
+      "SQL_source": "portal/migrations/add_voice_command_ledger.sql",
+      "Docker_source": null, "migration_source": "add_voice_command_ledger",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "mission_control_commands",
+      "ORM_source": "portal/models/mission_control_command.py",
+      "SQL_source": "portal/migrations/add_mission_control_command_ledger.sql",
+      "Docker_source": null, "migration_source": "add_mission_control_command_ledger",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_DIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "mission_control_command_events",
+      "ORM_source": "portal/models/mission_control_command.py",
+      "SQL_source": "portal/migrations/add_mission_control_command_ledger.sql",
+      "Docker_source": null, "migration_source": "add_mission_control_command_ledger",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "APPEND_ONLY_AUDIT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "mission_control_command_receipts",
+      "ORM_source": "portal/models/mission_control_command.py",
+      "SQL_source": "portal/migrations/add_mission_control_command_ledger.sql",
+      "Docker_source": null, "migration_source": "add_mission_control_command_ledger",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "APPEND_ONLY_AUDIT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "mission_control_outbox",
+      "ORM_source": "portal/models/mission_control_outbox.py", "SQL_source": null,
+      "Docker_source": null, "migration_source": null,
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": true, "status": "ORM_ONLY_MISSING_SQL",
+      "scope_class": "TENANT_SCOPED_DIRECT",
+      "previously_missing": true, "classification": "ACTIVE_RUNTIME"
+    },
+    {
+      "object_type": "TABLE", "object_name": "mission_control_run_controls",
+      "ORM_source": "portal/models/mission_control_run_control.py",
+      "SQL_source": "portal/migrations/add_mission_control_run_control_projection.sql",
+      "Docker_source": null, "migration_source": "add_mission_control_run_control",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_DIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "mission_control_run_control_events",
+      "ORM_source": "portal/models/mission_control_run_control.py",
+      "SQL_source": "portal/migrations/add_mission_control_run_control_projection.sql",
+      "Docker_source": null, "migration_source": "add_mission_control_run_control",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "APPEND_ONLY_AUDIT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "matter_parties",
+      "ORM_source": "portal/models/matter_intelligence.py",
+      "SQL_source": "portal/migrations/add_matter_intelligence.sql",
+      "Docker_source": null, "migration_source": "add_matter_intelligence",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "matter_accounts",
+      "ORM_source": "portal/models/matter_intelligence.py",
+      "SQL_source": "portal/migrations/add_matter_intelligence.sql",
+      "Docker_source": null, "migration_source": "add_matter_intelligence",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "matter_filings",
+      "ORM_source": "portal/models/matter_intelligence.py",
+      "SQL_source": "portal/migrations/add_matter_intelligence.sql",
+      "Docker_source": null, "migration_source": "add_matter_intelligence",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "matter_communications",
+      "ORM_source": "portal/models/matter_intelligence.py",
+      "SQL_source": "portal/migrations/add_matter_intelligence.sql",
+      "Docker_source": null, "migration_source": "add_matter_intelligence",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "matter_disputes",
+      "ORM_source": "portal/models/matter_intelligence.py",
+      "SQL_source": "portal/migrations/add_matter_intelligence.sql",
+      "Docker_source": null, "migration_source": "add_matter_intelligence",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "matter_attachments",
+      "ORM_source": "portal/models/matter_intelligence.py",
+      "SQL_source": "portal/migrations/add_matter_intelligence.sql",
+      "Docker_source": null, "migration_source": "add_matter_intelligence",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "matter_assessments",
+      "ORM_source": "portal/models/matter_intelligence.py",
+      "SQL_source": "portal/migrations/add_matter_intelligence.sql",
+      "Docker_source": null, "migration_source": "add_matter_intelligence",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "matter_assessment_versions",
+      "ORM_source": "portal/models/matter_intelligence.py",
+      "SQL_source": "portal/migrations/add_matter_intelligence.sql",
+      "Docker_source": null, "migration_source": "add_matter_intelligence",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "matter_audit_events",
+      "ORM_source": "portal/models/matter_intelligence.py",
+      "SQL_source": "portal/migrations/add_matter_intelligence.sql",
+      "Docker_source": null, "migration_source": "add_matter_intelligence",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "APPEND_ONLY_AUDIT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "matter_deadlines",
+      "ORM_source": "portal/models/deadline_evidence.py",
+      "SQL_source": "portal/migrations/add_deadline_evidence_intelligence.sql",
+      "Docker_source": null, "migration_source": "add_deadline_evidence_intelligence",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "matter_deadline_versions",
+      "ORM_source": "portal/models/deadline_evidence.py",
+      "SQL_source": "portal/migrations/add_deadline_evidence_intelligence.sql",
+      "Docker_source": null, "migration_source": "add_deadline_evidence_intelligence",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "matter_evidence_nodes",
+      "ORM_source": "portal/models/deadline_evidence.py",
+      "SQL_source": "portal/migrations/add_deadline_evidence_intelligence.sql",
+      "Docker_source": null, "migration_source": "add_deadline_evidence_intelligence",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "matter_evidence_links",
+      "ORM_source": "portal/models/deadline_evidence.py",
+      "SQL_source": "portal/migrations/add_deadline_evidence_intelligence.sql",
+      "Docker_source": null, "migration_source": "add_deadline_evidence_intelligence",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "matter_evidence_findings",
+      "ORM_source": "portal/models/deadline_evidence.py",
+      "SQL_source": "portal/migrations/add_deadline_evidence_intelligence.sql",
+      "Docker_source": null, "migration_source": "add_deadline_evidence_intelligence",
+      "runtime_required": true, "tenant_sensitive": true,
+      "RLS_required": false, "status": "AUTHORITATIVE",
+      "scope_class": "TENANT_SCOPED_INDIRECT"
+    },
+    {
+      "object_type": "TABLE", "object_name": "agents",
+      "ORM_source": null,
+      "SQL_source": "portal/migrations/runtime_schema_baseline.sql",
+      "Docker_source": "shared/schemas/unified_schema.sql",
+      "migration_source": "runtime_schema_baseline",
+      "runtime_required": true, "tenant_sensitive": false,
+      "RLS_required": false, "status": "SQL_ONLY_INTENTIONAL",
+      "scope_class": "SYSTEM_INTERNAL",
+      "note": "Runtime agent registry — no portal ORM model; managed by the agent runtime subsystem."
+    },
+    {
+      "object_type": "TABLE", "object_name": "swarms",
+      "ORM_source": null,
+      "SQL_source": "portal/migrations/runtime_schema_baseline.sql",
+      "Docker_source": "shared/schemas/unified_schema.sql",
+      "migration_source": "runtime_schema_baseline",
+      "runtime_required": true, "tenant_sensitive": false,
+      "RLS_required": false, "status": "SQL_ONLY_INTENTIONAL",
+      "scope_class": "SYSTEM_INTERNAL",
+      "note": "Agent swarm registry — no portal ORM model."
+    },
+    {
+      "object_type": "TABLE", "object_name": "skills",
+      "ORM_source": null,
+      "SQL_source": "portal/migrations/runtime_schema_baseline.sql",
+      "Docker_source": "shared/schemas/unified_schema.sql",
+      "migration_source": "runtime_schema_baseline",
+      "runtime_required": true, "tenant_sensitive": false,
+      "RLS_required": false, "status": "SQL_ONLY_INTENTIONAL",
+      "scope_class": "SYSTEM_INTERNAL",
+      "note": "Agent skill registry — no portal ORM model."
+    },
+    {
+      "object_type": "TABLE", "object_name": "knowledge_entries",
+      "ORM_source": null,
+      "SQL_source": "portal/migrations/runtime_schema_baseline.sql",
+      "Docker_source": "shared/schemas/unified_schema.sql",
+      "migration_source": "runtime_schema_baseline",
+      "runtime_required": true, "tenant_sensitive": false,
+      "RLS_required": false, "status": "SQL_ONLY_INTENTIONAL",
+      "scope_class": "SYSTEM_INTERNAL",
+      "note": "Agent knowledge store — no portal ORM model."
+    },
+    {
+      "object_type": "TABLE", "object_name": "execution_history",
+      "ORM_source": null,
+      "SQL_source": "portal/migrations/runtime_schema_baseline.sql",
+      "Docker_source": "shared/schemas/unified_schema.sql",
+      "migration_source": "runtime_schema_baseline",
+      "runtime_required": true, "tenant_sensitive": false,
+      "RLS_required": false, "status": "SQL_ONLY_INTENTIONAL",
+      "scope_class": "SYSTEM_INTERNAL",
+      "note": "Agent command execution history — no portal ORM model."
+    },
+    {
+      "object_type": "TABLE", "object_name": "sessions",
+      "ORM_source": null,
+      "SQL_source": "portal/migrations/runtime_schema_baseline.sql",
+      "Docker_source": "shared/schemas/unified_schema.sql",
+      "migration_source": "runtime_schema_baseline",
+      "runtime_required": true, "tenant_sensitive": false,
+      "RLS_required": false, "status": "SQL_ONLY_INTENTIONAL",
+      "scope_class": "SYSTEM_INTERNAL",
+      "note": "Legacy runtime session table — no portal ORM model; portal uses JWT-based auth without DB sessions."
+    }
+  ],
+  "previously_missing_table_disposition": {
+    "audit_records": {
+      "classification": "ACTIVE_RUNTIME",
+      "status_at_current_head": "RESOLVED",
+      "sql_present": "portal/migrations/add_audit_records.sql",
+      "orm_present": "portal/models/audit_record.py"
+    },
+    "blackstone_evaluations": {
+      "classification": "ACTIVE_RUNTIME",
+      "status_at_current_head": "ORM_ONLY_MISSING_SQL",
+      "sql_present": null,
+      "orm_present": "portal/models/blackstone.py"
+    },
+    "evidence_ledger": {
+      "classification": "ACTIVE_RUNTIME",
+      "status_at_current_head": "ORM_ONLY_MISSING_SQL",
+      "sql_present": null,
+      "orm_present": "portal/models/blackstone.py"
+    },
+    "memory_vault": {
+      "classification": "DEAD",
+      "status_at_current_head": "NOT_FOUND_AT_CURRENT_HEAD",
+      "sql_present": null,
+      "orm_present": null,
+      "note": "No ORM class, no SQL definition found at current HEAD. Removed from baseline."
+    },
+    "mission_control_outbox": {
+      "classification": "ACTIVE_RUNTIME",
+      "status_at_current_head": "ORM_ONLY_MISSING_SQL",
+      "sql_present": null,
+      "orm_present": "portal/models/mission_control_outbox.py"
+    },
+    "orchestration_linkages": {
+      "classification": "DEAD",
+      "status_at_current_head": "NOT_FOUND_AT_CURRENT_HEAD",
+      "sql_present": null,
+      "orm_present": null,
+      "note": "No ORM class, no SQL definition found at current HEAD. Removed from baseline."
+    },
+    "orchestration_principal_authorities": {
+      "classification": "DEAD",
+      "status_at_current_head": "NOT_FOUND_AT_CURRENT_HEAD",
+      "sql_present": null,
+      "orm_present": null,
+      "note": "No ORM class, no SQL definition found at current HEAD. Removed from baseline."
+    },
+    "permissions": {
+      "classification": "ACTIVE_RUNTIME",
+      "status_at_current_head": "ORM_ONLY_MISSING_SQL",
+      "sql_present": null,
+      "orm_present": "portal/models/user.py",
+      "note": "portal_schema.sql has permissions as TEXT[] column in roles; ORM declares separate permissions table."
+    },
+    "role_permissions": {
+      "classification": "ACTIVE_RUNTIME",
+      "status_at_current_head": "ORM_ONLY_MISSING_SQL",
+      "sql_present": null,
+      "orm_present": "portal/models/user.py"
+    },
+    "user_permissions": {
+      "classification": "ACTIVE_RUNTIME",
+      "status_at_current_head": "ORM_ONLY_MISSING_SQL",
+      "sql_present": null,
+      "orm_present": "portal/models/user.py"
+    }
+  },
+  "rls_coverage": {
+    "enabled_tables": [
+      "audit_logs", "clients", "cases", "documents", "message_threads",
+      "messages", "invoices", "time_entries"
+    ],
+    "policies": [
+      {"table": "audit_logs", "name": "audit_insert_only"},
+      {"table": "audit_logs", "name": "audit_select"},
+      {"table": "clients", "name": "tenant_isolation"},
+      {"table": "cases", "name": "tenant_isolation"},
+      {"table": "documents", "name": "tenant_isolation"},
+      {"table": "message_threads", "name": "tenant_isolation"},
+      {"table": "messages", "name": "tenant_isolation"},
+      {"table": "invoices", "name": "tenant_isolation"},
+      {"table": "time_entries", "name": "tenant_isolation"}
+    ],
+    "tables_requiring_rls_not_yet_covered": [
+      "blackstone_evaluations", "evidence_ledger", "mission_control_outbox",
+      "voice_commands"
+    ]
+  },
+  "migration_authority_gaps": {
+    "F_C_001": {
+      "finding": "No enforced migration system",
+      "status": "OPEN — Alembic present as dependency but zero revisions exist"
+    },
+    "F_C_002": {
+      "finding": "ORM/SQL schema mismatch",
+      "status": "OPEN — 6 ORM tables have no SQL definition; roles.permissions TEXT[] vs separate table"
+    },
+    "F_C_003": {
+      "finding": "Docker bootstrap incomplete",
+      "status": "OPEN — Docker uses shared/schemas/unified_schema.sql (8 tables); canonical schema is 58 tables"
+    },
+    "RISK_R1_003": {
+      "finding": "ORM tables absent and therefore not RLS-protected",
+      "status": "OPEN — blackstone_evaluations, evidence_ledger, mission_control_outbox not in SQL, therefore no RLS"
+    }
+  },
+  "docker_gap": {
+    "docker_bootstrap_file": "shared/schemas/unified_schema.sql",
+    "docker_bootstrap_tables": ["agents", "swarms", "users", "skills", "knowledge_entries", "execution_history", "sessions", "messages"],
+    "canonical_table_count": 58,
+    "gap": 50
+  },
+  "schema_authority_verdict_pre_r3": "MIGRATION_AUTHORITY_FAILED"
+}

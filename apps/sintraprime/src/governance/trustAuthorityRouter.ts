@@ -131,9 +131,12 @@ export function routeTrustAuthority(request: TaskRequest): TrustAuthorityRoute {
   const principalApproval = request.context?.trustAuthority?.principalApproval === true;
   const blockingReasons: string[] = [];
 
-  if (legalEffectRequested && currentLawVerification.status !== 'VERIFIED_CURRENT') {
+  if (
+    (legalEffectRequested || externalExecutionRequested) &&
+    currentLawVerification.status !== 'VERIFIED_CURRENT'
+  ) {
     blockingReasons.push(
-      'Current-law verification is required before a legal-effect conclusion or execution.',
+      'Current-law verification is required before a legal-effect conclusion or external execution.',
     );
   }
 
@@ -160,11 +163,6 @@ export function routeTrustAuthority(request: TaskRequest): TrustAuthorityRoute {
   };
 }
 
-/**
- * Adds the mandatory authority route to planner context without weakening or
- * replacing caller-supplied context. This is how Hermes/SintraPrime planners
- * learn the required source order before any downstream reasoning.
- */
 export function attachTrustAuthorityRoute(request: TaskRequest): TaskRequest {
   const route = routeTrustAuthority(request);
   if (!route.isTrustRelated) return request;
@@ -177,7 +175,7 @@ export function attachTrustAuthorityRoute(request: TaskRequest): TaskRequest {
       mandatoryAuthorityInstructions: [
         'Consult trust-instrument-authority first for trust-specific governing language.',
         'Consult weisss-trustee-handbook second as secondary educational authority only.',
-        'Obtain current-law verification before stating or executing any legal-effect conclusion.',
+        'Obtain current-law verification before stating any legal-effect conclusion or executing any external trust action.',
         'Do not execute an external trust action unless the required principal/trustee approval is documented.',
         'Record conflicts rather than silently reconciling lower-ranked sources with controlling authority.',
       ],
@@ -195,12 +193,6 @@ function isExternalStep(step: PlanStep): boolean {
   return EXTERNAL_EXECUTION_PATTERNS.some((pattern) => pattern.test(marker));
 }
 
-/**
- * Runtime gate evaluated immediately before every plan step.
- * Research/verification steps are always allowed so the system can satisfy the
- * gate. A step capable of creating legal effect remains blocked until current
- * law is verified; an external step also requires principal/trustee approval.
- */
 export function evaluateTrustAuthorityStep(
   step: PlanStep,
   route: TrustAuthorityRoute,
@@ -210,7 +202,7 @@ export function evaluateTrustAuthorityStep(
   }
 
   if (
-    route.legalEffectRequested &&
+    (route.legalEffectRequested || route.externalExecutionRequested || isExternalStep(step)) &&
     route.currentLawVerification.status !== 'VERIFIED_CURRENT'
   ) {
     return {

@@ -18,7 +18,6 @@ from .models import (
     SpendRequest,
 )
 
-
 PROVENANCE_CHAIN_FIELDS: tuple[tuple[str, str], ...] = (
     ("origin", "origin"),
     ("claimed_owner", "claimed owner"),

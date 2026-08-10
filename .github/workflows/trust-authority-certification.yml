@@ -1,0 +1,65 @@
+name: Trust Authority Certification
+
+on:
+  pull_request:
+    paths:
+      - 'apps/sintraprime/src/core/orchestrator.ts'
+      - 'apps/sintraprime/src/core/planner.ts'
+      - 'apps/sintraprime/src/governance/trustAuthorityRouter.ts'
+      - 'apps/sintraprime/src/governance/trustAuthorityRouter.smoke.ts'
+      - 'apps/sintraprime/src/governance/trustAuthorityRuntime.e2e.ts'
+      - 'apps/sintraprime/src/tools/trust/**'
+      - 'apps/sintraprime/src/index.ts'
+      - 'channels/message_router.py'
+      - 'channels/trust_authority_router.py'
+      - 'channels/tests/test_trust_authority_router.py'
+      - '.github/workflows/trust-authority-certification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-authority-adapters:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: apps/sintraprime
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/sintraprime/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Router fail-closed smoke test
+        run: npx tsx src/governance/trustAuthorityRouter.smoke.ts
+
+      - name: RB-TA-2 runtime sequencing E2E
+        run: npx tsx src/governance/trustAuthorityRuntime.e2e.ts
+
+  hermes-trust-routing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pytest
+        run: python -m pip install --disable-pip-version-check pytest
+
+      - name: Hermes trust authority routing tests
+        run: python -m pytest channels/tests/test_trust_authority_router.py -q

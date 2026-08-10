@@ -89,6 +89,12 @@ const EXTERNAL_EXECUTION_PATTERNS = [
   /\bdistribute\b/i,
 ];
 
+const AUTHORITY_TOOL_NAMES = new Set<TrustAuthorityStage>([
+  'trust-instrument-authority',
+  'weisss-trustee-handbook',
+  'current-law-verifier',
+]);
+
 function searchableRequestText(request: TaskRequest): string {
   let context = '';
   try {
@@ -99,27 +105,14 @@ function searchableRequestText(request: TaskRequest): string {
   return `${request.prompt}\n${context}`;
 }
 
-function readVerification(request: TaskRequest): TrustAuthorityVerification {
-  const verification = request.context?.trustAuthority?.currentLawVerification;
-  if (verification?.status === 'VERIFIED_CURRENT') {
-    return {
-      status: 'VERIFIED_CURRENT',
-      jurisdiction: verification.jurisdiction,
-      authorities: Array.isArray(verification.authorities) ? verification.authorities : [],
-      verifiedAt: verification.verifiedAt,
-      verifier: verification.verifier,
-    };
-  }
-  if (verification?.status === 'CONFLICT_FOUND') {
-    return {
-      status: 'CONFLICT_FOUND',
-      jurisdiction: verification.jurisdiction,
-      authorities: Array.isArray(verification.authorities) ? verification.authorities : [],
-      verifiedAt: verification.verifiedAt,
-      verifier: verification.verifier,
-    };
-  }
-  return { status: 'NOT_YET_VERIFIED' };
+function initialVerification(request: TaskRequest): TrustAuthorityVerification {
+  // A caller may supply jurisdiction as routing context, but may NOT pre-seed
+  // VERIFIED_CURRENT. Only applyTrustAuthorityStepResult can promote a route
+  // after the explicit current-law-verifier stage executes successfully.
+  const jurisdiction = request.context?.trustAuthority?.jurisdiction;
+  return jurisdiction
+    ? { status: 'NOT_YET_VERIFIED', jurisdiction: String(jurisdiction) }
+    : { status: 'NOT_YET_VERIFIED' };
 }
 
 function recalculateRoute(route: TrustAuthorityRoute): TrustAuthorityRoute {
@@ -147,9 +140,11 @@ function recalculateRoute(route: TrustAuthorityRoute): TrustAuthorityRoute {
 export function routeTrustAuthority(request: TaskRequest): TrustAuthorityRoute {
   const text = searchableRequestText(request);
   const isTrustRelated = TRUST_PATTERNS.some((pattern) => pattern.test(text));
-  const legalEffectRequested = isTrustRelated && LEGAL_EFFECT_PATTERNS.some((pattern) => pattern.test(text));
-  const externalExecutionRequested = isTrustRelated && EXTERNAL_EXECUTION_PATTERNS.some((pattern) => pattern.test(text));
-  const currentLawVerification = readVerification(request);
+  const legalEffectRequested =
+    isTrustRelated && LEGAL_EFFECT_PATTERNS.some((pattern) => pattern.test(text));
+  const externalExecutionRequested =
+    isTrustRelated && EXTERNAL_EXECUTION_PATTERNS.some((pattern) => pattern.test(text));
+  const currentLawVerification = initialVerification(request);
   const principalApproval = request.context?.trustAuthority?.principalApproval === true;
 
   return recalculateRoute({
@@ -190,8 +185,11 @@ export function attachTrustAuthorityRoute(request: TaskRequest): TaskRequest {
 }
 
 function isAuthorityResearchStep(step: PlanStep): boolean {
-  const marker = `${step.description ?? ''} ${step.tool ?? ''} ${JSON.stringify(step.args ?? {})}`;
-  return /trust-instrument-authority|weisss-trustee-handbook|current-law-verifier|verify current law|legal research/i.test(marker);
+  const stage = step.args?.authorityStage;
+  if (!AUTHORITY_TOOL_NAMES.has(step.tool as TrustAuthorityStage)) {
+    return false;
+  }
+  return stage === step.tool;
 }
 
 function isExternalStep(step: PlanStep): boolean {
@@ -237,7 +235,11 @@ export function applyTrustAuthorityStepResult(
   step: PlanStep,
   result: any,
 ): TrustAuthorityRoute {
-  if (!route.isTrustRelated || step.args?.authorityStage !== 'current-law-verifier') {
+  if (
+    !route.isTrustRelated ||
+    step.tool !== 'current-law-verifier' ||
+    step.args?.authorityStage !== 'current-law-verifier'
+  ) {
     return route;
   }
 
@@ -246,7 +248,12 @@ export function applyTrustAuthorityStepResult(
   const authorities = Array.isArray(candidate?.authorities) ? candidate.authorities : [];
   const jurisdiction = candidate?.jurisdiction;
 
-  if (status === 'VERIFIED_CURRENT' && jurisdiction && authorities.length > 0) {
+  if (
+    status === 'VERIFIED_CURRENT' &&
+    jurisdiction &&
+    authorities.length > 0 &&
+    candidate?.verifier === 'current-law-verifier'
+  ) {
     return recalculateRoute({
       ...route,
       currentLawVerification: {
@@ -254,7 +261,7 @@ export function applyTrustAuthorityStepResult(
         jurisdiction,
         authorities,
         verifiedAt: candidate?.verifiedAt ?? new Date().toISOString(),
-        verifier: candidate?.verifier ?? 'current-law-verifier',
+        verifier: 'current-law-verifier',
       },
     });
   }
@@ -267,13 +274,16 @@ export function applyTrustAuthorityStepResult(
         jurisdiction,
         authorities,
         verifiedAt: candidate?.verifiedAt ?? new Date().toISOString(),
-        verifier: candidate?.verifier ?? 'current-law-verifier',
+        verifier: 'current-law-verifier',
       },
     });
   }
 
   return recalculateRoute({
     ...route,
-    currentLawVerification: { status: 'NOT_YET_VERIFIED' },
+    currentLawVerification: {
+      status: 'NOT_YET_VERIFIED',
+      jurisdiction: route.currentLawVerification.jurisdiction,
+    },
   });
 }

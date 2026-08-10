@@ -1,6 +1,6 @@
 /**
  * Core Orchestrator - The brain of the autonomous agent system
- * 
+ *
  * Responsibilities:
  * - Receive and validate task requests
  * - Generate execution plans
@@ -14,6 +14,12 @@ import { PolicyGate } from '../governance/policyGate.js';
 import { ReceiptLedger } from '../audit/receiptLedger.js';
 import { Executor } from './executor.js';
 import { Planner } from './planner.js';
+import {
+  attachTrustAuthorityRoute,
+  evaluateTrustAuthorityStep,
+  routeTrustAuthority,
+  type TrustAuthorityRoute,
+} from '../governance/trustAuthorityRouter.js';
 
 export class Orchestrator {
   private policyGate: PolicyGate;
@@ -35,10 +41,13 @@ export class Orchestrator {
   }
 
   /**
-   * Process a task request from start to finish
+   * Process a task request from start to finish.
+   *
+   * Trust-related requests are enriched with the Howard Trust Authority route
+   * before planning. Legal-effect and external execution steps are then checked
+   * again immediately before execution so a planner cannot bypass the gate.
    */
   async processTask(request: TaskRequest): Promise<JobState> {
-    // Create a new job
     const jobId = this.generateJobId();
     const job: JobState = {
       id: jobId,
@@ -52,11 +61,35 @@ export class Orchestrator {
       // Step 1: Validate the request
       await this.validateRequest(request);
 
-      // Step 2: Generate a plan
-      const plan = await this.planner.generatePlan(request);
+      // Step 1A: Determine and attach trust authority routing before planning.
+      const trustRoute = routeTrustAuthority(request);
+      const governedRequest = attachTrustAuthorityRoute(request);
+
+      if (trustRoute.isTrustRelated) {
+        await this.receiptLedger.recordAction({
+          id: this.generateReceiptId(),
+          toolCallId: '',
+          actor: 'trust_authority_router',
+          action: 'trust_authority_route_attached',
+          timestamp: new Date().toISOString(),
+          result: {
+            jobId: job.id,
+            routeId: trustRoute.routeId,
+            authorityOrder: trustRoute.authorityOrder,
+            legalEffectRequested: trustRoute.legalEffectRequested,
+            externalExecutionRequested: trustRoute.externalExecutionRequested,
+            currentLawStatus: trustRoute.currentLawVerification.status,
+            principalApproval: trustRoute.principalApproval,
+            blockingReasons: trustRoute.blockingReasons,
+          },
+          hash: this.hashObject(trustRoute)
+        });
+      }
+
+      // Step 2: Generate a plan from the governed request.
+      const plan = await this.planner.generatePlan(governedRequest);
       job.planId = plan.id;
 
-      // Log the plan creation
       await this.receiptLedger.recordAction({
         id: this.generateReceiptId(),
         toolCallId: '',
@@ -67,8 +100,9 @@ export class Orchestrator {
         hash: this.hashObject(plan)
       });
 
-      // Step 3: Execute the plan
-      await this.executePlan(job, plan);
+      // Step 3: Execute the plan with the trust authority gate in front of the
+      // ordinary policy gate.
+      await this.executePlan(job, plan, trustRoute);
 
       // Step 4: Mark job as completed
       job.status = 'completed';
@@ -84,13 +118,12 @@ export class Orchestrator {
 
       return job;
     } catch (error) {
-      // Handle errors and mark job as failed
-      job.status = 'failed';
+      job.status = job.status === 'waiting-human' ? 'waiting-human' : 'failed';
       await this.receiptLedger.recordAction({
         id: this.generateReceiptId(),
         toolCallId: '',
         actor: 'orchestrator',
-        action: 'job_failed',
+        action: job.status === 'waiting-human' ? 'job_waiting_human' : 'job_failed',
         timestamp: new Date().toISOString(),
         result: { jobId: job.id, error: String(error) },
         hash: this.hashObject(job)
@@ -99,20 +132,42 @@ export class Orchestrator {
     }
   }
 
-  /**
-   * Execute a plan step by step
-   */
-  private async executePlan(job: JobState, plan: Plan): Promise<void> {
+  /** Execute a plan step by step. */
+  private async executePlan(
+    job: JobState,
+    plan: Plan,
+    trustRoute: TrustAuthorityRoute,
+  ): Promise<void> {
     for (const step of plan.steps) {
-      // Check if all dependencies are completed
       if (!this.areDependenciesCompleted(step, job)) {
         throw new Error(`Dependencies not met for step ${step.id}`);
       }
 
-      // Update job state
       job.currentStepId = step.id;
 
-      // Check policy gate before executing
+      // Trust authority gate executes before the general tool policy gate.
+      const trustDecision = evaluateTrustAuthorityStep(step, trustRoute);
+      if (!trustDecision.allowed) {
+        job.status = 'waiting-human';
+        await this.receiptLedger.recordAction({
+          id: this.generateReceiptId(),
+          toolCallId: step.id,
+          actor: 'trust_authority_gate',
+          action: 'trust_execution_blocked',
+          timestamp: new Date().toISOString(),
+          result: {
+            stepId: step.id,
+            reason: trustDecision.reason,
+            routeId: trustRoute.routeId,
+            currentLawStatus: trustRoute.currentLawVerification.status,
+            principalApproval: trustRoute.principalApproval,
+          },
+          hash: this.hashObject({ step, trustDecision, trustRoute })
+        });
+        throw new Error(trustDecision.reason ?? 'Execution blocked by trust authority gate');
+      }
+
+      // Existing policy gate remains authoritative for ordinary tool governance.
       const policyDecision = await this.policyGate.evaluate({
         id: this.generateToolCallId(),
         idempotencyKey: this.generateIdempotencyKey(),
@@ -123,7 +178,6 @@ export class Orchestrator {
       });
 
       if (policyDecision.decision === 'block') {
-        // Pause job and wait for human intervention
         job.status = 'waiting-human';
         await this.receiptLedger.recordAction({
           id: this.generateReceiptId(),
@@ -137,7 +191,6 @@ export class Orchestrator {
         throw new Error(`Execution blocked by policy: ${policyDecision.reason}`);
       }
 
-      // Execute the step
       try {
         const result = await this.executor.executeStep(step);
         job.history.push({
@@ -158,18 +211,12 @@ export class Orchestrator {
     }
   }
 
-  /**
-   * Validate a task request
-   */
   private async validateRequest(request: TaskRequest): Promise<void> {
     if (!request.id || !request.prompt) {
       throw new Error('Invalid task request: missing required fields');
     }
   }
 
-  /**
-   * Check if all dependencies for a step are completed
-   */
   private areDependenciesCompleted(step: PlanStep, job: JobState): boolean {
     if (!step.dependencies || step.dependencies.length === 0) {
       return true;
@@ -180,9 +227,6 @@ export class Orchestrator {
     );
   }
 
-  /**
-   * Resume a paused job
-   */
   async resumeJob(jobId: string): Promise<JobState> {
     const job = this.jobs.get(jobId);
     if (!job) {
@@ -194,14 +238,9 @@ export class Orchestrator {
     }
 
     job.status = 'running';
-    // Continue execution from where it left off
-    // (Implementation would need to reconstruct the plan and continue)
     return job;
   }
 
-  /**
-   * Pause a running job
-   */
   async pauseJob(jobId: string): Promise<JobState> {
     const job = this.jobs.get(jobId);
     if (!job) {
@@ -222,7 +261,6 @@ export class Orchestrator {
     return job;
   }
 
-  // Helper methods
   private generateJobId(): string {
     return `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
@@ -240,7 +278,6 @@ export class Orchestrator {
   }
 
   private hashObject(obj: any): string {
-    // Simple hash implementation - in production, use crypto.createHash
     return JSON.stringify(obj);
   }
 }

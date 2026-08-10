@@ -122,6 +122,28 @@ function readVerification(request: TaskRequest): TrustAuthorityVerification {
   return { status: 'NOT_YET_VERIFIED' };
 }
 
+function recalculateRoute(route: TrustAuthorityRoute): TrustAuthorityRoute {
+  const blockingReasons: string[] = [];
+  if (
+    (route.legalEffectRequested || route.externalExecutionRequested) &&
+    route.currentLawVerification.status !== 'VERIFIED_CURRENT'
+  ) {
+    blockingReasons.push(
+      'Current-law verification is required before a legal-effect conclusion or external execution.',
+    );
+  }
+  if (route.externalExecutionRequested && !route.principalApproval) {
+    blockingReasons.push(
+      'Principal/trustee approval is required before external trust execution.',
+    );
+  }
+  return {
+    ...route,
+    executionAllowed: blockingReasons.length === 0,
+    blockingReasons,
+  };
+}
+
 export function routeTrustAuthority(request: TaskRequest): TrustAuthorityRoute {
   const text = searchableRequestText(request);
   const isTrustRelated = TRUST_PATTERNS.some((pattern) => pattern.test(text));
@@ -129,24 +151,8 @@ export function routeTrustAuthority(request: TaskRequest): TrustAuthorityRoute {
   const externalExecutionRequested = isTrustRelated && EXTERNAL_EXECUTION_PATTERNS.some((pattern) => pattern.test(text));
   const currentLawVerification = readVerification(request);
   const principalApproval = request.context?.trustAuthority?.principalApproval === true;
-  const blockingReasons: string[] = [];
 
-  if (
-    (legalEffectRequested || externalExecutionRequested) &&
-    currentLawVerification.status !== 'VERIFIED_CURRENT'
-  ) {
-    blockingReasons.push(
-      'Current-law verification is required before a legal-effect conclusion or external execution.',
-    );
-  }
-
-  if (externalExecutionRequested && !principalApproval) {
-    blockingReasons.push(
-      'Principal/trustee approval is required before external trust execution.',
-    );
-  }
-
-  return {
+  return recalculateRoute({
     isTrustRelated,
     routeId: 'HOWARD-TRUST-AUTHORITY',
     authorityOrder: [
@@ -158,9 +164,9 @@ export function routeTrustAuthority(request: TaskRequest): TrustAuthorityRoute {
     externalExecutionRequested,
     currentLawVerification,
     principalApproval,
-    executionAllowed: blockingReasons.length === 0,
-    blockingReasons,
-  };
+    executionAllowed: true,
+    blockingReasons: [],
+  });
 }
 
 export function attachTrustAuthorityRoute(request: TaskRequest): TaskRequest {
@@ -219,4 +225,55 @@ export function evaluateTrustAuthorityStep(
   }
 
   return { allowed: true };
+}
+
+/**
+ * Accepts a verifier result only from the explicit current-law stage and only
+ * when it contains jurisdiction plus at least one authority. Anything weaker
+ * remains fail-closed.
+ */
+export function applyTrustAuthorityStepResult(
+  route: TrustAuthorityRoute,
+  step: PlanStep,
+  result: any,
+): TrustAuthorityRoute {
+  if (!route.isTrustRelated || step.args?.authorityStage !== 'current-law-verifier') {
+    return route;
+  }
+
+  const candidate = result?.verification ?? result;
+  const status = candidate?.status;
+  const authorities = Array.isArray(candidate?.authorities) ? candidate.authorities : [];
+  const jurisdiction = candidate?.jurisdiction;
+
+  if (status === 'VERIFIED_CURRENT' && jurisdiction && authorities.length > 0) {
+    return recalculateRoute({
+      ...route,
+      currentLawVerification: {
+        status: 'VERIFIED_CURRENT',
+        jurisdiction,
+        authorities,
+        verifiedAt: candidate?.verifiedAt ?? new Date().toISOString(),
+        verifier: candidate?.verifier ?? 'current-law-verifier',
+      },
+    });
+  }
+
+  if (status === 'CONFLICT_FOUND') {
+    return recalculateRoute({
+      ...route,
+      currentLawVerification: {
+        status: 'CONFLICT_FOUND',
+        jurisdiction,
+        authorities,
+        verifiedAt: candidate?.verifiedAt ?? new Date().toISOString(),
+        verifier: candidate?.verifier ?? 'current-law-verifier',
+      },
+    });
+  }
+
+  return recalculateRoute({
+    ...route,
+    currentLawVerification: { status: 'NOT_YET_VERIFIED' },
+  });
 }

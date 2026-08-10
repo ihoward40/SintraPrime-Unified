@@ -24,6 +24,8 @@ _TRUST_PATTERNS = [
     re.compile(r"\bfiduciary dut(?:y|ies)\b", re.I),
     re.compile(r"\btrust administration\b", re.I),
     re.compile(r"\btrust banking\b", re.I),
+    re.compile(r"\btrust amendment\b", re.I),
+    re.compile(r"\btrust resolution\b", re.I),
 ]
 
 _LEGAL_EFFECT_PATTERNS = [

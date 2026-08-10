@@ -57,7 +57,7 @@ class ApprovalReceipt:
         issued_at: datetime,
         expires_at: datetime,
     ) -> ApprovalReceipt:
-        payload = {
+        hash_material = {
             "approval_request_id": approval_request_id,
             "tenant_id": tenant_id,
             "mission_id": mission_id,
@@ -68,7 +68,18 @@ class ApprovalReceipt:
             "issued_at": issued_at.isoformat(),
             "expires_at": expires_at.isoformat(),
         }
-        return cls(**payload, receipt_hash=canonical_digest(payload))
+        return cls(
+            approval_request_id=approval_request_id,
+            tenant_id=tenant_id,
+            mission_id=mission_id,
+            principal_id=principal_id,
+            request_digest=request_digest,
+            policy_version=policy_version,
+            approved=approved,
+            issued_at=issued_at,
+            expires_at=expires_at,
+            receipt_hash=canonical_digest(hash_material),
+        )
 
     def validates(self, *, tenant_id: str, mission_id: str, request_digest: str, now: datetime) -> bool:
         if not self.approved or now >= self.expires_at:
@@ -79,7 +90,7 @@ class ApprovalReceipt:
             self.request_digest,
         ):
             return False
-        payload = {
+        hash_material = {
             "approval_request_id": self.approval_request_id,
             "tenant_id": self.tenant_id,
             "mission_id": self.mission_id,
@@ -90,7 +101,7 @@ class ApprovalReceipt:
             "issued_at": self.issued_at.isoformat(),
             "expires_at": self.expires_at.isoformat(),
         }
-        return self.receipt_hash == canonical_digest(payload)
+        return self.receipt_hash == canonical_digest(hash_material)
 
 
 class ReservationState(StrEnum):
@@ -185,7 +196,7 @@ class LedgerEvent:
         created_at: datetime | None = None,
     ) -> LedgerEvent:
         created_at = created_at or datetime.now(UTC)
-        material = {
+        hash_material = {
             "tenant_id": tenant_id,
             "mission_id": mission_id,
             "actor_id": actor_id,
@@ -197,7 +208,19 @@ class LedgerEvent:
             "previous_hash": previous_hash,
             "created_at": created_at.isoformat(),
         }
-        return cls(**material, event_hash=canonical_digest(material))
+        return cls(
+            tenant_id=tenant_id,
+            mission_id=mission_id,
+            actor_id=actor_id,
+            sequence=sequence,
+            decision_type=decision_type,
+            policy_version=policy_version,
+            evidence_refs=evidence_refs,
+            payload=payload,
+            previous_hash=previous_hash,
+            event_hash=canonical_digest(hash_material),
+            created_at=created_at,
+        )
 
 
 def verify_chain(events: list[LedgerEvent]) -> bool:
@@ -205,7 +228,7 @@ def verify_chain(events: list[LedgerEvent]) -> bool:
     for expected_sequence, event in enumerate(events, start=1):
         if event.sequence != expected_sequence or event.previous_hash != previous:
             return False
-        material = {
+        hash_material = {
             "tenant_id": event.tenant_id,
             "mission_id": event.mission_id,
             "actor_id": event.actor_id,
@@ -217,7 +240,7 @@ def verify_chain(events: list[LedgerEvent]) -> bool:
             "previous_hash": event.previous_hash,
             "created_at": event.created_at.isoformat(),
         }
-        if event.event_hash != canonical_digest(material):
+        if event.event_hash != canonical_digest(hash_material):
             return False
         previous = event.event_hash
     return True

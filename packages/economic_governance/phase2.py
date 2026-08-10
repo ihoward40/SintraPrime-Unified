@@ -14,7 +14,6 @@ from enum import StrEnum
 
 from .models import SpendCategory
 
-
 HARD_DENY_CATEGORIES = frozenset(
     {
         SpendCategory.TRANSFER_TO_HUMAN,

@@ -8,6 +8,7 @@ from enum import StrEnum
 
 from sqlalchemy import (
     JSON,
+    UUID,
     Boolean,
     DateTime,
     Float,
@@ -18,12 +19,10 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
-    UUID,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
-from ..models.types import PortableUUIDString
 
 
 class OrchestrationTaskType(StrEnum):
@@ -127,21 +126,21 @@ class OrchestrationRun(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    nodes: Mapped[list["OrchestrationNode"]] = relationship(
+    nodes: Mapped[list[OrchestrationNode]] = relationship(
         "OrchestrationNode",
         back_populates="run",
         cascade="all, delete-orphan",
         lazy="selectin",
         order_by="OrchestrationNode.sequence",
     )
-    events: Mapped[list["OrchestrationEvent"]] = relationship(
+    events: Mapped[list[OrchestrationEvent]] = relationship(
         "OrchestrationEvent",
         back_populates="run",
         cascade="all, delete-orphan",
         lazy="selectin",
         order_by="OrchestrationEvent.sequence",
     )
-    budget_usage: Mapped["BudgetUsage | None"] = relationship(
+    budget_usage: Mapped[BudgetUsage | None] = relationship(
         "BudgetUsage",
         back_populates="run",
         cascade="all, delete-orphan",
@@ -184,7 +183,7 @@ class OrchestrationNode(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     run: Mapped[OrchestrationRun] = relationship("OrchestrationRun", back_populates="nodes")
-    routing_decisions: Mapped[list["RoutingDecision"]] = relationship(
+    routing_decisions: Mapped[list[RoutingDecision]] = relationship(
         "RoutingDecision",
         back_populates="node",
         cascade="all, delete-orphan",
@@ -437,6 +436,7 @@ class EvidenceReference(Base):
         Index("ix_orchestration_evidence_run_node", "run_id", "node_id"),
         Index("ix_orchestration_evidence_quality", "run_id", "evidence_quality"),
     )
+
 
 class MemoryEntry(Base):
     """Remediation: Durable OmniBrain memory entry for Phase 10 flow."""

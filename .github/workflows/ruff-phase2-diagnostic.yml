@@ -1,0 +1,21 @@
+name: Ruff Phase2 Diagnostic
+on:
+  push:
+    branches:
+      - feat/economic-governance-provenance
+permissions:
+  contents: read
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install ruff==0.15.20
+      - name: Print canonical diffs
+        run: |
+          ruff check --select I --fix --diff packages/economic_governance/phase2.py || true
+          ruff check --select I --fix --diff portal/models/economic_records.py || true
+          ruff check --select I --fix --diff tests/test_economic_governance_phase2.py || true

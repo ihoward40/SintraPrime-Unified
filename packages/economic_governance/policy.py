@@ -11,12 +11,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, Field
 
-from .models import (
-    AssetProvenanceRecord,
-    EvidenceType,
-    SpendCategory,
-    SpendRequest,
-)
+from .models import AssetProvenanceRecord, EvidenceType, SpendCategory, SpendRequest
 
 
 PROVENANCE_CHAIN_FIELDS: tuple[tuple[str, str], ...] = (

@@ -14,11 +14,15 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from packages.economic_governance.phase2 import canonical_digest
+from packages.economic_governance.phase2 import ApprovalReceipt, canonical_digest
 
 from ..auth.rbac import CurrentUser
 from ..models.economic_budget import EconomicMissionBudget
-from ..models.economic_governance import EconomicBudgetReservation, EconomicLedgerEvent
+from ..models.economic_governance import (
+    EconomicBudgetReservation,
+    EconomicLedgerEvent,
+    EconomicPrincipalApprovalReceipt,
+)
 
 
 class TenantContextRequiredError(ValueError):
@@ -34,6 +38,10 @@ class BudgetExceededError(ValueError):
 
 
 class ReservationStateError(ValueError):
+    pass
+
+
+class ApprovalReceiptError(ValueError):
     pass
 
 
@@ -196,6 +204,57 @@ async def release_reservation(
     return reservation
 
 
+async def record_approval_receipt(
+    db: AsyncSession,
+    *,
+    current_user: CurrentUser,
+    receipt: ApprovalReceipt,
+) -> EconomicPrincipalApprovalReceipt:
+    """Persist immutable approval evidence only when tenant/principal integrity holds."""
+    tenant_id = _tenant_id(current_user)
+    await _bind_tenant(db, tenant_id)
+    if receipt.tenant_id != tenant_id:
+        raise ApprovalReceiptError("approval receipt tenant mismatch")
+    if receipt.principal_id != str(current_user.user_id):
+        raise ApprovalReceiptError("approval receipt principal mismatch")
+    if not receipt.validates(
+        tenant_id=tenant_id,
+        mission_id=receipt.mission_id,
+        request_digest=receipt.request_digest,
+        now=receipt.issued_at,
+    ):
+        raise ApprovalReceiptError("approval receipt integrity validation failed")
+
+    existing_result = await db.execute(
+        select(EconomicPrincipalApprovalReceipt).where(
+            EconomicPrincipalApprovalReceipt.tenant_id == tenant_id,
+            EconomicPrincipalApprovalReceipt.approval_request_id == receipt.approval_request_id,
+        )
+    )
+    existing = existing_result.scalar_one_or_none()
+    if existing:
+        if existing.receipt_hash != receipt.receipt_hash:
+            raise ApprovalReceiptError("approval request ID reused with different receipt")
+        return existing
+
+    row = EconomicPrincipalApprovalReceipt(
+        id=str(uuid.uuid4()),
+        tenant_id=tenant_id,
+        approval_request_id=receipt.approval_request_id,
+        principal_id=receipt.principal_id,
+        mission_id=receipt.mission_id,
+        request_digest=receipt.request_digest,
+        policy_version=receipt.policy_version,
+        result="approved" if receipt.approved else "denied",
+        receipt_hash=receipt.receipt_hash,
+        issued_at=receipt.issued_at,
+        expires_at=receipt.expires_at,
+    )
+    db.add(row)
+    await db.flush()
+    return row
+
+
 async def append_ledger_event(
     db: AsyncSession,
     *,
@@ -222,6 +281,7 @@ async def append_ledger_event(
     previous = latest_result.scalar_one_or_none()
     sequence = 1 if previous is None else previous.sequence + 1
     previous_hash = None if previous is None else previous.event_hash
+    created_at = datetime.now(UTC)
     material = {
         "tenant_id": tenant_id,
         "mission_id": mission_id,
@@ -232,11 +292,21 @@ async def append_ledger_event(
         "evidence_refs": evidence_refs or [],
         "payload": payload,
         "previous_hash": previous_hash,
+        "created_at": created_at.isoformat(),
     }
     event = EconomicLedgerEvent(
         id=str(uuid.uuid4()),
-        **material,
+        tenant_id=tenant_id,
+        mission_id=mission_id,
+        actor_id=str(current_user.user_id),
+        sequence=sequence,
+        decision_type=decision_type,
+        policy_version=policy_version,
+        evidence_refs=evidence_refs or [],
+        payload=payload,
+        previous_hash=previous_hash,
         event_hash=canonical_digest(material),
+        created_at=created_at,
     )
     db.add(event)
     await db.flush()

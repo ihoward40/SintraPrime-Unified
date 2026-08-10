@@ -9,14 +9,13 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from pydantic import BaseModel, Field
-
 from .models import (
     AssetProvenanceRecord,
     EvidenceType,
     SpendCategory,
     SpendRequest,
 )
+from pydantic import BaseModel, Field
 
 
 PROVENANCE_CHAIN_FIELDS: tuple[tuple[str, str], ...] = (

@@ -29,7 +29,6 @@ from portal.models.economic_records import (
 )
 from portal.services.economic_governance_service import TenantContextRequiredError, _tenant_id
 
-
 NOW = datetime(2026, 8, 10, 18, 0, tzinfo=UTC)
 
 
@@ -255,5 +254,5 @@ def test_migration_enforces_immutability_rls_and_no_execution_adapter():
     assert "uq_economic_budget_reservation_idempotency" in sql
     lowered = sql.lower()
     assert "stripe" not in lowered
-    assert "brokerage" in lowered  # explicitly documented as excluded
-    assert "payment-provider" in lowered  # explicitly documented as excluded
+    assert "brokerage" in lowered
+    assert "payment-provider" in lowered

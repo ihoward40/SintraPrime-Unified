@@ -249,6 +249,8 @@ jobs:
           if-no-files-found: ignore
   migration-authority-gate:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     services:
       postgres:
         image: postgres:16

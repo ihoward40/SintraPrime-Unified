@@ -254,5 +254,4 @@ def test_migration_enforces_immutability_rls_and_no_execution_adapter():
     assert "uq_economic_budget_reservation_idempotency" in sql
     lowered = sql.lower()
     assert "stripe" not in lowered
-    assert "brokerage" in lowered
-    assert "payment-provider" in lowered
+    assert "no payment, banking, brokerage, borrowing, or trust-asset execution path exists." in lowered

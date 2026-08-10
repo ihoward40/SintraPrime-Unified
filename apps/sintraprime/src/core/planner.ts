@@ -37,7 +37,7 @@ export class Planner {
       steps.push({
         id: instrumentStepId,
         description: 'Consult trust-instrument-authority for governing trust language',
-        tool: 'analyze',
+        tool: 'trust-instrument-authority',
         args: {
           authorityStage: 'trust-instrument-authority',
           skill: 'trust-instrument-authority',
@@ -51,7 +51,7 @@ export class Planner {
       steps.push({
         id: weissStepId,
         description: 'Consult weisss-trustee-handbook as secondary educational authority',
-        tool: 'analyze',
+        tool: 'weisss-trustee-handbook',
         args: {
           authorityStage: 'weisss-trustee-handbook',
           skill: 'weisss-trustee-handbook',
@@ -68,11 +68,13 @@ export class Planner {
         steps.push({
           id: currentLawStepId,
           description: 'Run current-law-verifier against current primary authority',
-          tool: 'web_search',
+          tool: 'current-law-verifier',
           args: {
             authorityStage: 'current-law-verifier',
             task: request.prompt,
-            jurisdiction: trustRoute.currentLawVerification?.jurisdiction,
+            jurisdiction:
+              trustRoute.currentLawVerification?.jurisdiction ??
+              request.context?.trustAuthority?.jurisdiction,
             requirePrimarySources: true,
             outputContract: {
               status: 'VERIFIED_CURRENT | CONFLICT_FOUND | NOT_YET_VERIFIED',

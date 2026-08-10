@@ -16,7 +16,7 @@ from sqlalchemy import JSON, DateTime, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from portal.database import Base
-from portal.models.types import PortableUUIDString, PortableUUID
+from portal.models.types import PortableUUID
 
 
 class EvidenceLedger(Base):

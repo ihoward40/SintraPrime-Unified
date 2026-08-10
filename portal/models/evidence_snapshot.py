@@ -20,7 +20,7 @@ from sqlalchemy import DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..database import Base
-from .types import PortableUUIDString, PortableUUID
+from .types import PortableUUID, PortableUUIDString
 
 
 class SnapshotStatus(_enum.StrEnum):

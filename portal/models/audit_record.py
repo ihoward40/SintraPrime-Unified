@@ -19,7 +19,7 @@ from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..database import Base
-from .types import PortableUUIDString, PortableUUID
+from .types import PortableUUID, PortableUUIDString
 
 
 class AuditRecord(Base):

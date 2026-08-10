@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+from uuid import uuid4
+
 from fastapi.testclient import TestClient
 
 from legal_authority.constants import AUTHORITY_HIERARCHY
 from legal_authority.repository import LegalAuthorityRepository
+from portal.auth.jwt_handler import create_access_token
+from portal.auth.rbac import Role
 
 
 def test_federal_package_validates_and_preserves_provenance():
@@ -151,13 +155,20 @@ def test_federal_rules_keep_explicit_non_advice_limitations():
 def test_federal_read_only_api_endpoints():
     from portal.main import create_app
 
+    token = create_access_token(
+        user_id=str(uuid4()),
+        tenant_id=str(uuid4()),
+        role=Role.SUPER_ADMIN.value,
+        permissions=[],
+    )
+    headers = {"Authorization": f"Bearer {token}"}
     client = TestClient(create_app())
-    domains = client.get("/federal/domains")
-    rules = client.get("/federal/rules", params={"domain": "bankruptcy"})
-    authorities = client.get("/federal/authorities")
-    conflicts = client.get("/federal/conflicts")
-    detail = client.get("/federal/rules/FED-RULE-FDCPA-VALIDATION")
-    missing = client.get("/federal/rules/does-not-exist")
+    domains = client.get("/federal/domains", headers=headers)
+    rules = client.get("/federal/rules", params={"domain": "bankruptcy"}, headers=headers)
+    authorities = client.get("/federal/authorities", headers=headers)
+    conflicts = client.get("/federal/conflicts", headers=headers)
+    detail = client.get("/federal/rules/FED-RULE-FDCPA-VALIDATION", headers=headers)
+    missing = client.get("/federal/rules/does-not-exist", headers=headers)
 
     assert domains.status_code == 200
     assert any(item["domain"] == "bankruptcy" for item in domains.json())

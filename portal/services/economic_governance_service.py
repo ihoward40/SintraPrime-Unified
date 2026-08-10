@@ -10,14 +10,15 @@ import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from packages.economic_governance.phase2 import canonical_digest
 
 from ..auth.rbac import CurrentUser
 from ..models.economic_budget import EconomicMissionBudget
 from ..models.economic_governance import EconomicBudgetReservation, EconomicLedgerEvent
-from ...packages.economic_governance.phase2 import canonical_digest
 
 
 class TenantContextRequiredError(ValueError):
@@ -43,6 +44,16 @@ def _tenant_id(current_user: CurrentUser) -> str:
     return str(tenant_id)
 
 
+async def _bind_tenant(db: AsyncSession, tenant_id: str) -> None:
+    """Bind PostgreSQL RLS tenant context; non-PostgreSQL tests rely on service filters."""
+    bind = db.get_bind()
+    if bind is not None and bind.dialect.name == "postgresql":
+        await db.execute(
+            text("SELECT set_config('app.tenant_id', :tenant_id, true)"),
+            {"tenant_id": tenant_id},
+        )
+
+
 async def reserve_budget(
     db: AsyncSession,
     *,
@@ -56,6 +67,7 @@ async def reserve_budget(
 ) -> EconomicBudgetReservation:
     """Atomically reserve mission budget with idempotent replay semantics."""
     tenant_id = _tenant_id(current_user)
+    await _bind_tenant(db, tenant_id)
     request_digest = canonical_digest(request_payload)
 
     existing_result = await db.execute(
@@ -110,6 +122,7 @@ async def reserve_budget(
         await db.flush()
     except IntegrityError as exc:
         await db.rollback()
+        await _bind_tenant(db, tenant_id)
         replay = await db.execute(
             select(EconomicBudgetReservation).where(
                 EconomicBudgetReservation.tenant_id == tenant_id,
@@ -132,6 +145,7 @@ async def commit_reservation(
     now: datetime | None = None,
 ) -> EconomicBudgetReservation:
     tenant_id = _tenant_id(current_user)
+    await _bind_tenant(db, tenant_id)
     now = now or datetime.now(UTC)
     result = await db.execute(
         select(EconomicBudgetReservation)
@@ -164,6 +178,7 @@ async def release_reservation(
     now: datetime | None = None,
 ) -> EconomicBudgetReservation:
     tenant_id = _tenant_id(current_user)
+    await _bind_tenant(db, tenant_id)
     result = await db.execute(
         select(EconomicBudgetReservation)
         .where(
@@ -193,6 +208,7 @@ async def append_ledger_event(
 ) -> EconomicLedgerEvent:
     """Append the next immutable hash-chained event for one tenant/mission."""
     tenant_id = _tenant_id(current_user)
+    await _bind_tenant(db, tenant_id)
     latest_result = await db.execute(
         select(EconomicLedgerEvent)
         .where(

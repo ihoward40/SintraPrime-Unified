@@ -14,6 +14,7 @@ load_dotenv()
 # Import settings and services using get_settings() instead of module-level constants
 from portal.admin.dashboard import router as admin_dashboard_router
 from portal.config import get_settings
+from portal.middleware.auth_middleware import AuthMiddleware
 from portal.middleware.correlation_middleware import CorrelationMiddleware
 from portal.middleware.cors_middleware import CORSMiddleware
 from portal.middleware.rate_limiter import RateLimiterMiddleware
@@ -126,6 +127,10 @@ def create_app() -> FastAPI:
 
     # Correlation Middleware (must be outermost to provide request IDs to all downstream)
     app.add_middleware(CorrelationMiddleware)
+
+    # Auth Middleware — JWT enforcement with GET-only public access for legal
+    # reference prefixes and explicitly enumerated write exceptions
+    app.add_middleware(AuthMiddleware)
 
     # Register routers
     app.include_router(sso.router, prefix="/api/v1/sso", tags=["sso"])

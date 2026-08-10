@@ -30,7 +30,13 @@ Owns the SintraPrime client portal — the FastAPI application that provides sec
 
 ## Work Guidance
 
-*(No project-specific standards yet — fill when engineering conventions emerge.)*
+- `AuthMiddleware` is registered in `main.py` after `CorrelationMiddleware`.
+- **Security model for legal-reference prefixes:** GET requests to `/federal/`, `/jurisdictions`, `/legal-rules/`, `/legal-authorities/`, and `/ucc-filings/` are public (no JWT). Non-GET requests on those prefixes require either a valid JWT *or* must be individually listed in `_is_route_authority_write_exception()` in `middleware/auth_middleware.py`. Write routes using `_authorized_actor()` (reviewer-role headers) are listed there explicitly — adding a new write route under these prefixes without updating that function will correctly return 401.
+- `PUBLIC_GET_PREFIXES` and `_is_route_authority_write_exception()` in `middleware/auth_middleware.py` are the single source of truth for the middleware-layer security boundary on legal-reference routes.
+
+## Known Deficiency
+
+- **`test_404_has_request_id` (test_http_correlation_ws_hardening_certification.py):** This test is order/cache-sensitive and may produce non-deterministic results depending on module import order. It is a pre-existing deficiency unrelated to Phase 2C. Do not treat the shared suite as fully deterministic until this is isolated and fixed.
 
 ## Verification
 

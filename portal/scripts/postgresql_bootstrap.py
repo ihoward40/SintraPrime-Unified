@@ -21,6 +21,9 @@ MIGRATION_SEQUENCE = (
     Path("portal/migrations/add_mission_control_command_ledger.sql"),
     Path("portal/migrations/add_mission_control_run_control_projection.sql"),
 )
+PHASE_TWO_MIGRATIONS = (
+    Path("portal/migrations/add_economic_governance_phase_two.sql"),
+)
 EXPECTED_TABLES = (
     "tenants",
     "roles",
@@ -35,6 +38,16 @@ EXPECTED_TABLES = (
     "mission_control_command_receipts",
     "mission_control_run_controls",
     "mission_control_run_control_events",
+    "economic_asset_provenance_records",
+    "economic_value_accrual_records",
+    "economic_scenario_records",
+    "economic_capital_reserve_targets",
+    "economic_mission_budgets",
+    "economic_spend_requests",
+    "economic_spend_evaluations",
+    "economic_principal_approval_receipts",
+    "economic_budget_reservations",
+    "economic_ledger_events",
 )
 
 
@@ -57,7 +70,7 @@ def apply_migrations(database_url: str, *, reset_public_schema: bool = False) ->
             if reset_public_schema:
                 cur.execute("DROP SCHEMA IF EXISTS public CASCADE")
                 cur.execute("CREATE SCHEMA public")
-            for relative_path in MIGRATION_SEQUENCE:
+            for relative_path in MIGRATION_SEQUENCE + PHASE_TWO_MIGRATIONS:
                 sql = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
                 cur.execute(sql)
                 applied.append(str(relative_path).replace("\\", "/"))
@@ -88,7 +101,7 @@ def main() -> int:
     parser.add_argument("--print-sequence", action="store_true")
     args = parser.parse_args()
     if args.print_sequence:
-        for item in MIGRATION_SEQUENCE:
+        for item in MIGRATION_SEQUENCE + PHASE_TWO_MIGRATIONS:
             print(str(item).replace("\\", "/"))
         return 0
     if not args.database_url:

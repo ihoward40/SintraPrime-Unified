@@ -124,7 +124,7 @@ class ScenarioRecord(BaseModel):
     decision_use: str | None = None
 
     @model_validator(mode="after")
-    def require_meaningful_scenario(self) -> "ScenarioRecord":
+    def require_meaningful_scenario(self) -> ScenarioRecord:
         if any(not item.strip() for item in self.assumptions):
             raise ValueError("scenario assumptions must be non-empty")
         if any(not item.strip() for item in self.failure_conditions):
@@ -147,14 +147,14 @@ class CapitalReservePolicy(BaseModel):
     layers: list[CapitalReserveLayer] = Field(min_length=1)
 
     @model_validator(mode="after")
-    def unique_layers(self) -> "CapitalReservePolicy":
+    def unique_layers(self) -> CapitalReservePolicy:
         identifiers = [item.layer for item in self.layers]
         if len(identifiers) != len(set(identifiers)):
             raise ValueError("capital reserve layer numbers must be unique")
         return self
 
     @classmethod
-    def default_stack(cls) -> "CapitalReservePolicy":
+    def default_stack(cls) -> CapitalReservePolicy:
         names = (
             (1, "Daily liquidity", "Ordinary near-term operating needs"),
             (2, "30-day operating reserve", "Short-duration operating resilience"),

@@ -13,6 +13,20 @@ from .deadline_evidence import (
     MatterEvidenceNode,
 )
 from .document import Document, DocumentFolder, DocumentShare, DocumentVersion
+from .economic_budget import EconomicMissionBudget
+from .economic_governance import (
+    EconomicBudgetReservation,
+    EconomicLedgerEvent,
+    EconomicPrincipalApprovalReceipt,
+    EconomicSpendEvaluation,
+    EconomicSpendRequest,
+)
+from .economic_records import (
+    EconomicAssetProvenanceRecord,
+    EconomicCapitalReserveTarget,
+    EconomicScenarioRecord,
+    EconomicValueAccrualRecord,
+)
 from .evidence_snapshot import EvidenceSnapshot
 from .matter_intelligence import (
     MatterAccount,
@@ -75,6 +89,16 @@ __all__ = [
     "DocumentFolder",
     "DocumentShare",
     "DocumentVersion",
+    "EconomicAssetProvenanceRecord",
+    "EconomicBudgetReservation",
+    "EconomicCapitalReserveTarget",
+    "EconomicLedgerEvent",
+    "EconomicMissionBudget",
+    "EconomicPrincipalApprovalReceipt",
+    "EconomicScenarioRecord",
+    "EconomicSpendEvaluation",
+    "EconomicSpendRequest",
+    "EconomicValueAccrualRecord",
     "EvidenceReference",
     "EvidenceSnapshot",
     "Expense",

@@ -27,11 +27,26 @@ class PassiveTool implements Tool {
   }
 }
 
-function primaryProvider(mode: 'none' | 'verified'): PrimaryLawProvider {
+function primaryProvider(mode: 'none' | 'verified' | 'nonprimary'): PrimaryLawProvider {
   return {
     async verify(request) {
       if (mode === 'none') {
         return { authorities: [], jurisdiction: request.jurisdiction };
+      }
+      if (mode === 'nonprimary') {
+        return {
+          jurisdiction: request.jurisdiction ?? 'New Jersey',
+          authorities: [
+            {
+              title: 'Secondary commentary fixture',
+              citation: 'Secondary source only',
+              url: 'https://example.com/secondary-commentary',
+              jurisdiction: request.jurisdiction ?? 'New Jersey',
+              sourceKind: 'official_guidance',
+              primarySource: false,
+            },
+          ],
+        };
       }
       return {
         jurisdiction: request.jurisdiction ?? 'New Jersey',
@@ -91,17 +106,16 @@ function executedToolNames(ledger: ReceiptLedger): string[] {
     .map((receipt) => receipt.action.slice('tool_executed:'.length));
 }
 
-async function scenarioNoVerification(): Promise<void> {
-  const system = await buildSystem(primaryProvider('none'));
+async function runCurrentLawBlockedScenario(
+  id: string,
+  providerMode: 'none' | 'nonprimary',
+): Promise<void> {
+  const system = await buildSystem(primaryProvider(providerMode));
   try {
-    assert.ok(system.registry.getTool('trust-instrument-authority'));
-    assert.ok(system.registry.getTool('weisss-trustee-handbook'));
-    assert.ok(system.registry.getTool('current-law-verifier'));
-
     let blocked = false;
     try {
       await system.orchestrator.processTask({
-        id: 'rb-ta-2-no-verification',
+        id,
         prompt: 'Determine the legal effect of the ISIAH TARIK HOWARD TRUST amendment and file it.',
         priority: 'high',
         requester: 'rb-ta-2-e2e',
@@ -117,20 +131,32 @@ async function scenarioNoVerification(): Promise<void> {
       blocked = /current law has not been verified/i.test(String(error));
     }
 
-    assert.equal(blocked, true, 'execution must fail closed without current-law proof');
+    assert.equal(blocked, true, `${providerMode} evidence must fail closed`);
     assert.deepEqual(executedToolNames(system.ledger), [
       'trust-instrument-authority',
       'weisss-trustee-handbook',
       'current-law-verifier',
     ]);
-    assert.equal(
-      system.ledger.getReceiptsByAction('trust_execution_blocked').length,
-      1,
-      'block receipt must be emitted',
-    );
+    assert.equal(system.ledger.getReceiptsByAction('trust_execution_blocked').length, 1);
   } finally {
     await rm(system.storageDir, { recursive: true, force: true });
   }
+}
+
+async function scenarioNoVerification(): Promise<void> {
+  const system = await buildSystem(primaryProvider('none'));
+  try {
+    assert.ok(system.registry.getTool('trust-instrument-authority'));
+    assert.ok(system.registry.getTool('weisss-trustee-handbook'));
+    assert.ok(system.registry.getTool('current-law-verifier'));
+  } finally {
+    await rm(system.storageDir, { recursive: true, force: true });
+  }
+  await runCurrentLawBlockedScenario('rb-ta-2-no-verification', 'none');
+}
+
+async function scenarioRejectsNonPrimaryEvidence(): Promise<void> {
+  await runCurrentLawBlockedScenario('rb-ta-2-nonprimary', 'nonprimary');
 }
 
 async function scenarioNoApproval(): Promise<void> {
@@ -206,9 +232,10 @@ async function scenarioVerifiedAndApproved(): Promise<void> {
 }
 
 await scenarioNoVerification();
+await scenarioRejectsNonPrimaryEvidence();
 await scenarioNoApproval();
 await scenarioVerifiedAndApproved();
 
 console.log('RB-TA-2 Runtime Authority Adapters E2E: PASS');
-console.log('Proof: trust instrument -> Weiss -> current law -> approval -> execution.');
+console.log('Proof: trust instrument -> Weiss -> primary current law -> approval -> execution.');
 console.log('No external filing or transaction was performed; the execute adapter was a no-op fixture.');

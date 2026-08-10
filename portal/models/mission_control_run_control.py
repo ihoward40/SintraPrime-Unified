@@ -20,6 +20,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
+from ..models.types import PortableUUIDString
 
 
 class RunControlState(StrEnum):
@@ -47,11 +48,11 @@ class MissionControlRunControl(Base):
 
     __tablename__ = "mission_control_run_controls"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False)
+    id: Mapped[str] = mapped_column(PortableUUIDString, primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[str] = mapped_column(PortableUUIDString, ForeignKey("tenants.id"), nullable=False)
     workflow_id: Mapped[str] = mapped_column(String(128), nullable=False)
     command_id: Mapped[str | None] = mapped_column(
-        String(36),
+        PortableUUIDString,
         ForeignKey("mission_control_commands.id", ondelete="SET NULL"),
         nullable=True,
     )
@@ -68,12 +69,12 @@ class MissionControlRunControl(Base):
 
     pause_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     requested_by: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True
+        PortableUUIDString, ForeignKey("users.id"), nullable=True
     )
     requested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     confirmation_ref: Mapped[str | None] = mapped_column(String(128), nullable=True)
     acknowledged_by: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True
+        PortableUUIDString, ForeignKey("users.id"), nullable=True
     )
     acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     paused_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -112,9 +113,9 @@ class MissionControlRunControlEvent(Base):
 
     __tablename__ = "mission_control_run_control_events"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(PortableUUIDString, primary_key=True, default=uuid.uuid4)
     run_control_id: Mapped[str] = mapped_column(
-        String(36),
+        PortableUUIDString,
         ForeignKey("mission_control_run_controls.id", ondelete="CASCADE"),
         nullable=False,
     )
@@ -125,10 +126,10 @@ class MissionControlRunControlEvent(Base):
     previous_version: Mapped[int] = mapped_column(Integer, nullable=False)
     new_version: Mapped[int] = mapped_column(Integer, nullable=False)
     principal_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True
+        PortableUUIDString, ForeignKey("users.id"), nullable=True
     )
     command_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("mission_control_commands.id", ondelete="SET NULL"), nullable=True
+        PortableUUIDString, ForeignKey("mission_control_commands.id", ondelete="SET NULL"), nullable=True
     )
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     payload: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)

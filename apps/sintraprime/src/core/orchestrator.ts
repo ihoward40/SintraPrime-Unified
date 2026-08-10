@@ -15,6 +15,7 @@ import { ReceiptLedger } from '../audit/receiptLedger.js';
 import { Executor } from './executor.js';
 import { Planner } from './planner.js';
 import {
+  applyTrustAuthorityStepResult,
   attachTrustAuthorityRoute,
   evaluateTrustAuthorityStep,
   routeTrustAuthority,
@@ -40,13 +41,6 @@ export class Orchestrator {
     this.planner = planner;
   }
 
-  /**
-   * Process a task request from start to finish.
-   *
-   * Trust-related requests are enriched with the Howard Trust Authority route
-   * before planning. Legal-effect and external execution steps are then checked
-   * again immediately before execution so a planner cannot bypass the gate.
-   */
   async processTask(request: TaskRequest): Promise<JobState> {
     const jobId = this.generateJobId();
     const job: JobState = {
@@ -58,10 +52,8 @@ export class Orchestrator {
     this.jobs.set(jobId, job);
 
     try {
-      // Step 1: Validate the request
       await this.validateRequest(request);
 
-      // Step 1A: Determine and attach trust authority routing before planning.
       const trustRoute = routeTrustAuthority(request);
       const governedRequest = attachTrustAuthorityRoute(request);
 
@@ -86,7 +78,6 @@ export class Orchestrator {
         });
       }
 
-      // Step 2: Generate a plan from the governed request.
       const plan = await this.planner.generatePlan(governedRequest);
       job.planId = plan.id;
 
@@ -100,11 +91,8 @@ export class Orchestrator {
         hash: this.hashObject(plan)
       });
 
-      // Step 3: Execute the plan with the trust authority gate in front of the
-      // ordinary policy gate.
       await this.executePlan(job, plan, trustRoute);
 
-      // Step 4: Mark job as completed
       job.status = 'completed';
       await this.receiptLedger.recordAction({
         id: this.generateReceiptId(),
@@ -132,12 +120,13 @@ export class Orchestrator {
     }
   }
 
-  /** Execute a plan step by step. */
   private async executePlan(
     job: JobState,
     plan: Plan,
     trustRoute: TrustAuthorityRoute,
   ): Promise<void> {
+    let activeTrustRoute = trustRoute;
+
     for (const step of plan.steps) {
       if (!this.areDependenciesCompleted(step, job)) {
         throw new Error(`Dependencies not met for step ${step.id}`);
@@ -145,8 +134,7 @@ export class Orchestrator {
 
       job.currentStepId = step.id;
 
-      // Trust authority gate executes before the general tool policy gate.
-      const trustDecision = evaluateTrustAuthorityStep(step, trustRoute);
+      const trustDecision = evaluateTrustAuthorityStep(step, activeTrustRoute);
       if (!trustDecision.allowed) {
         job.status = 'waiting-human';
         await this.receiptLedger.recordAction({
@@ -158,16 +146,15 @@ export class Orchestrator {
           result: {
             stepId: step.id,
             reason: trustDecision.reason,
-            routeId: trustRoute.routeId,
-            currentLawStatus: trustRoute.currentLawVerification.status,
-            principalApproval: trustRoute.principalApproval,
+            routeId: activeTrustRoute.routeId,
+            currentLawStatus: activeTrustRoute.currentLawVerification.status,
+            principalApproval: activeTrustRoute.principalApproval,
           },
-          hash: this.hashObject({ step, trustDecision, trustRoute })
+          hash: this.hashObject({ step, trustDecision, activeTrustRoute })
         });
         throw new Error(trustDecision.reason ?? 'Execution blocked by trust authority gate');
       }
 
-      // Existing policy gate remains authoritative for ordinary tool governance.
       const policyDecision = await this.policyGate.evaluate({
         id: this.generateToolCallId(),
         idempotencyKey: this.generateIdempotencyKey(),
@@ -199,6 +186,29 @@ export class Orchestrator {
           result,
           timestamp: new Date().toISOString()
         });
+
+        const previousLawStatus = activeTrustRoute.currentLawVerification.status;
+        activeTrustRoute = applyTrustAuthorityStepResult(activeTrustRoute, step, result);
+
+        if (
+          step.args?.authorityStage === 'current-law-verifier' &&
+          activeTrustRoute.currentLawVerification.status !== previousLawStatus
+        ) {
+          await this.receiptLedger.recordAction({
+            id: this.generateReceiptId(),
+            toolCallId: step.id,
+            actor: 'trust_authority_gate',
+            action: 'current_law_verification_updated',
+            timestamp: new Date().toISOString(),
+            result: {
+              stepId: step.id,
+              verification: activeTrustRoute.currentLawVerification,
+              executionAllowed: activeTrustRoute.executionAllowed,
+              blockingReasons: activeTrustRoute.blockingReasons,
+            },
+            hash: this.hashObject(activeTrustRoute.currentLawVerification)
+          });
+        }
       } catch (error) {
         job.history.push({
           stepId: step.id,

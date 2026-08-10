@@ -168,6 +168,7 @@ def test_export_route_rejects_client_without_export_permission():
 
 
 def test_export_route_returns_hash_headers(monkeypatch):
+    from portal.database import get_db
     from portal.routers import matter_export
 
     async def fake_build_packet(*_args, **_kwargs):
@@ -182,7 +183,26 @@ def test_export_route_returns_hash_headers(monkeypatch):
         )
 
     monkeypatch.setattr(matter_export.service, "build_packet", fake_build_packet)
-    client = TestClient(create_app())
+
+    # The route depends on `db: AsyncSession = Depends(get_db)` purely to pass
+    # it through to `service.build_packet`, which is fully mocked above and
+    # never touches `db`. The default `get_db` dependency opens a real
+    # PostgreSQL session and executes an RLS-context-setting query merely to
+    # construct/yield the session -- before the route body (and therefore
+    # the mocked service call) ever runs. Override it here with the same
+    # `_FakeDB` fixture already used by the service-level unit test above,
+    # matching this repo's established `app.dependency_overrides[get_db]`
+    # pattern (see e.g. portal/tests/test_router_coverage.py,
+    # portal/tests/test_mission_control_commands.py) so this route-level
+    # test exercises only what it claims to verify -- request/response
+    # wiring -- without requiring a real database.
+    app = create_app()
+
+    async def _override_get_db():
+        yield _FakeDB()
+
+    app.dependency_overrides[get_db] = _override_get_db
+    client = TestClient(app)
     response = client.post(
         "/api/v1/matters/matter-1/exports",
         json={"format": "JSON"},

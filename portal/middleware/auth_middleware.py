@@ -7,6 +7,8 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from legal_authority.constants import REVIEWER_ROLES
+
 from ..auth.jwt_handler import decode_access_token
 from ..config import get_settings
 
@@ -66,8 +68,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         method = request.method
 
-        # Always-public paths (any method)
-        if any(path.startswith(p) for p in PUBLIC_PATHS):
+        # Always-public paths (any method).
+        # "/" is matched exactly — startswith("/") would match every path.
+        if path == "/" or any(path.startswith(p) for p in PUBLIC_PATHS if p != "/"):
             return await call_next(request)
 
         # WebSocket: auth handled in endpoint
@@ -78,9 +81,23 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if method == "GET" and any(path.startswith(p) for p in PUBLIC_GET_PREFIXES):
             return await call_next(request)
 
-        # Write routes on legal reference prefixes that use _authorized_actor()
-        # instead of JWT.  Only individually proven routes are listed here.
+        # Write routes on legal reference prefixes that use reviewer-header auth
+        # instead of JWT.  Authorization is enforced here in the middleware so
+        # that 403 is guaranteed to fire before FastAPI validates the request
+        # body — preventing a 422 from leaking past the auth gate.
         if _is_route_authority_write_exception(method, path):
+            x_reviewer_role = request.headers.get("X-Reviewer-Role")
+            x_reviewer_identity = request.headers.get("X-Reviewer-Identity")
+            if not x_reviewer_role or not x_reviewer_identity:
+                return JSONResponse(
+                    status_code=403,
+                    content={"detail": "review authorization headers required"},
+                )
+            if x_reviewer_role not in REVIEWER_ROLES:
+                return JSONResponse(
+                    status_code=403,
+                    content={"detail": "invalid reviewer role"},
+                )
             return await call_next(request)
 
         auth_header = request.headers.get("Authorization", "")

@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import uuid
+from collections.abc import Iterator
 from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
 from enum import Enum, StrEnum
@@ -149,6 +150,8 @@ class InferenceRequest:
     tools: list[dict[str, Any]] | None = None
     paid_use_authorized: bool = False
     cache_policy: str = "default"
+    requires_streaming: bool = False
+    requires_vision: bool = False
     metadata: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -185,6 +188,7 @@ class InferenceResult:
     finish_reason: str
     policy_receipt_id: str
     provider_request_id: str | None = None
+    is_partial: bool = False
 
 
 @dataclass(frozen=True)
@@ -205,7 +209,8 @@ class ProviderCapabilities:
     quality: QualityFloor = QualityFloor.STANDARD
     context_window: int = 8192
     supports_streaming: bool = True
-    supports_structured_output: bool = False
+    supports_vision: bool = False
+    supports_structured_output: bool = True
     paid: bool = False
     cloud: bool = False
 
@@ -345,7 +350,7 @@ class InferenceProvider(Protocol):
     def health(self) -> ProviderHealth: ...
     def estimate_cost(self, request: InferenceRequest) -> CostEstimate: ...
     def invoke(self, request: InferenceRequest) -> InferenceResult: ...
-    def invoke_stream(self, request: InferenceRequest) -> InferenceResult: ...
+    def invoke_stream(self, request: InferenceRequest) -> Iterator[InferenceResult]: ...
     def current_limits(self) -> ProviderLimits: ...
 
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Iterator
 from dataclasses import replace
 from typing import Any
 
@@ -359,6 +360,232 @@ class GovernedInferenceRouter:
         eligible.sort(key=lambda candidate: candidate.score, reverse=True)
         return eligible, rejected
 
+    def invoke_stream(
+        self,
+        request: InferenceRequest,
+        *,
+        authorization: PaidAuthorization | None = None,
+    ) -> Iterator[InferenceResult]:
+        """
+        Streaming variant of invoke.
+
+        Performs the same classification, policy enforcement, and routing as
+        ``invoke()``, then delegates to the selected provider's ``invoke_stream()``.
+        Yields partial content results followed by a final aggregated result.
+        """
+        self._validate(request)
+        classification = classify_request_data(request)
+        request = replace(
+            request,
+            data_classification=classification,
+            max_input_tokens=min(request.max_input_tokens, self.policy.per_request.max_input_tokens),
+            max_output_tokens=min(request.max_output_tokens, self.policy.per_request.max_output_tokens),
+        )
+
+        trace = None
+        root_span = None
+        if self.tracer is not None:
+            trace = self.tracer.new_trace(name=f"inference_stream.{request.task_type}")
+            root_span = self.tracer.create_span(
+                trace,
+                "inference.invoke_stream",
+                tags={
+                    "request_id": request.request_id,
+                    "task_type": request.task_type,
+                    "capability": request.capability,
+                },
+            )
+            root_span.set_tag("classification", classification.value)
+        self.ledger.emit("inference.requested", request_id=request.request_id)
+        logger.info(
+            "inference.requested.stream",
+            extra={"request_id": request.request_id, "task_type": request.task_type, "capability": request.capability},
+        )
+        redaction_receipt = redact_for_policy(request)
+        self.ledger.emit(
+            "inference.classified",
+            request_id=request.request_id,
+            classification=classification.value,
+        )
+        self.ledger.emit(
+            "inference.redacted",
+            request_id=request.request_id,
+            redaction_receipt_hash=redaction_receipt.redaction_receipt_hash,
+        )
+        logger.info(
+            "inference.classified.stream",
+            extra={
+                "request_id": request.request_id,
+                "classification": classification.value,
+                "redaction_decision": redaction_receipt.policy_decision,
+            },
+        )
+
+        # Streaming bypasses exact cache; partial results are not cacheable.
+        eligible, rejected = self._build_candidates(request, classification, authorization)
+        if not eligible:
+            self.ledger.emit("inference.denied", request_id=request.request_id)
+            logger.warning(
+                "inference.denied.stream",
+                extra={
+                    "request_id": request.request_id,
+                    "rejected_count": len(rejected),
+                    "reasons": [r.reason for r in rejected],
+                },
+            )
+            self.ledger.create_receipt(
+                request=request,
+                classification=classification,
+                policy_version=self.policy.version,
+                eligible_routes=[],
+                rejected_routes=rejected,
+                selected=None,
+                attempts=[],
+                fallback_history=[],
+                cache_status=CacheStatus.BYPASS,
+            )
+            self.escalation_queue.enqueue(
+                request=request,
+                classification=classification,
+                reason="no_eligible_route",
+                denied_routes=rejected,
+                estimated_cost_usd=None,
+            )
+            if root_span is not None:
+                root_span.set_tag("outcome", "denied")
+                root_span.finish_with_error("no eligible inference route")
+            raise InferenceError("no eligible inference route", ProviderErrorKind.POLICY_DENIED)
+
+        candidate = eligible[0]
+        provider = self._provider_by_name(candidate.provider)
+        if not provider.capabilities().supports_streaming:
+            # Fall back to synchronous invoke and yield a single final result.
+            final = self.invoke(request, authorization=authorization)
+            if root_span is not None:
+                root_span.set_tag("outcome", "stream_unsupported_fallback")
+                root_span.finish()
+            yield final
+            return
+
+        attempts: list[AttemptRecord] = []
+        receipt = self.ledger.create_receipt(
+            request=request,
+            classification=classification,
+            policy_version=self.policy.version,
+            eligible_routes=eligible,
+            rejected_routes=rejected,
+            selected=candidate,
+            attempts=attempts,
+            fallback_history=[],
+            cache_status=CacheStatus.BYPASS,
+        )
+        self.ledger.emit(
+            "inference.route_selected",
+            request_id=request.request_id,
+            provider=candidate.provider,
+            model=candidate.model,
+        )
+        attempts.append(
+            AttemptRecord(
+                provider=candidate.provider,
+                model=candidate.model,
+                route_tier=candidate.route_tier,
+                attempt=1,
+                event="started",
+            )
+        )
+        self.ledger.emit(
+            "inference.attempt_started",
+            request_id=request.request_id,
+            provider=candidate.provider,
+            attempt=1,
+        )
+
+        full_content = ""
+        final_result: InferenceResult | None = None
+        try:
+            for idx, partial in enumerate(provider.invoke_stream(request)):
+                final_result = partial
+                if isinstance(partial.content, str):
+                    full_content += partial.content
+                # Only yield partial results; the final aggregated result is yielded last.
+                if getattr(partial, "is_partial", True) or idx == 0:
+                    yield partial
+        except InferenceError as exc:
+            self.ledger.record_provider_failure(candidate.provider)
+            attempts.append(
+                AttemptRecord(
+                    provider=candidate.provider,
+                    model=candidate.model,
+                    route_tier=candidate.route_tier,
+                    attempt=1,
+                    event="failed",
+                    error_kind=exc.kind,
+                    message=str(exc),
+                )
+            )
+            self.ledger.emit(
+                "inference.attempt_failed",
+                request_id=request.request_id,
+                provider=candidate.provider,
+                error_kind=exc.kind.value,
+            )
+            logger.warning(
+                "inference.attempt_failed.stream",
+                extra={
+                    "request_id": request.request_id,
+                    "provider": candidate.provider,
+                    "model": candidate.model,
+                    "attempt": 1,
+                    "error_kind": exc.kind.value,
+                },
+            )
+            self.escalation_queue.enqueue(
+                request=request,
+                classification=classification,
+                reason="stream_failed",
+                denied_routes=rejected,
+                estimated_cost_usd=candidate.estimated_cost_usd,
+            )
+            if root_span is not None:
+                root_span.set_tag("outcome", "stream_failed")
+                root_span.finish_with_error(str(exc))
+            raise
+
+        if final_result is None:
+            if root_span is not None:
+                root_span.finish_with_error("provider yielded no stream results")
+            raise InferenceError("provider yielded no stream results", ProviderErrorKind.UNKNOWN)
+
+        # Ensure a final, non-partial aggregated result is always yielded.
+        if getattr(final_result, "is_partial", False):
+            final_result = replace(final_result, content=full_content, is_partial=False)
+        final_result = replace(final_result, policy_receipt_id=receipt.receipt_id, attempts=1)
+        self._enforce_post_caps(final_result, request)
+        self.ledger.record_provider_success(candidate.provider)
+        self.ledger.finalize_receipt(receipt.receipt_id, final_result)
+        self.ledger.emit("inference.completed", request_id=request.request_id, provider=final_result.provider)
+        logger.info(
+            "inference.completed.stream",
+            extra={
+                "request_id": request.request_id,
+                "provider": final_result.provider,
+                "model": final_result.model,
+                "route_tier": final_result.route_tier.value,
+                "latency_ms": final_result.latency_ms,
+                "attempts": 1,
+                "input_tokens": final_result.usage.get("input_tokens", 0),
+                "output_tokens": final_result.usage.get("output_tokens", 0),
+                "estimated_cost_usd": final_result.estimated_cost_usd,
+            },
+        )
+        if root_span is not None:
+            root_span.set_tag("provider", final_result.provider)
+            root_span.set_tag("model", final_result.model)
+            root_span.set_tag("latency_ms", final_result.latency_ms)
+            root_span.finish()
+        yield final_result
+
     def _invoke_provider(
         self,
         provider: InferenceProvider,
@@ -373,7 +600,15 @@ class GovernedInferenceRouter:
             if not stream:
                 return provider.invoke(request)
             try:
-                return provider.invoke_stream(request)
+                # Provider streaming now returns an iterator. Materialize and
+                # return the final (last) result, preserving the original
+                # stream-fallback behavior on transient errors.
+                final_result: InferenceResult | None = None
+                for partial in provider.invoke_stream(request):
+                    final_result = partial
+                if final_result is None:
+                    raise InferenceError("provider yielded no stream results", ProviderErrorKind.UNKNOWN)
+                return final_result
             except InferenceError as exc:
                 if exc.kind != ProviderErrorKind.TRANSIENT:
                     raise

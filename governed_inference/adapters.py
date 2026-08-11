@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import logging
 import time
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from dataclasses import replace
 from typing import Any
 
@@ -182,10 +182,11 @@ class _BaseRealProvider:
             capabilities=self._capabilities,
             quality=self.quality,
             context_window=self.context_window,
+            supports_streaming=True,
+            supports_vision=False,
+            supports_structured_output=True,
             paid=self.paid,
             cloud=self.cloud,
-            supports_structured_output=True,
-            supports_streaming=True,
         )
 
     def health(self) -> ProviderHealth:
@@ -215,6 +216,7 @@ class _BaseRealProvider:
         usage: dict[str, int],
         provider_request_id: str | None = None,
         latency_ms: int = 0,
+        is_partial: bool = False,
     ) -> InferenceResult:
         return InferenceResult(
             request_id=request.request_id,
@@ -231,6 +233,7 @@ class _BaseRealProvider:
             finish_reason="stop",
             policy_receipt_id="pending",
             provider_request_id=provider_request_id,
+            is_partial=is_partial,
         )
 
 
@@ -357,12 +360,13 @@ class OpenAIProvider(_BaseRealProvider):
             )
             raise inf_error from exc
 
-    def invoke_stream(self, request: InferenceRequest) -> InferenceResult:
+    def invoke_stream(self, request: InferenceRequest) -> Iterator[InferenceResult]:
         client = self._ensure_client()
         started = time.perf_counter()
+        model = request.metadata.get("model_override", self.model)
         try:
             kwargs: dict[str, Any] = {
-                "model": request.metadata.get("model_override", self.model),
+                "model": model,
                 "messages": list(request.messages),
                 "temperature": request.temperature,
                 "max_tokens": request.max_output_tokens,
@@ -372,15 +376,32 @@ class OpenAIProvider(_BaseRealProvider):
             full_content = ""
             chunk_count = 0
             for chunk in stream:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    full_content += chunk.choices[0].delta.content
+                delta = ""
+                if chunk.choices and chunk.choices[0].delta:
+                    delta = chunk.choices[0].delta.content or ""
+                if delta:
+                    full_content += delta
                     chunk_count += 1
+                    usage = {
+                        "input_tokens": _rough_tokens(request),
+                        "output_tokens": chunk_count,
+                        "total_tokens": _rough_tokens(request) + chunk_count,
+                        "cached_tokens": 0,
+                    }
+                    yield self._result(
+                        request=request,
+                        content=delta,
+                        usage=usage,
+                        provider_request_id=None,
+                        latency_ms=int((time.perf_counter() - started) * 1000),
+                        is_partial=True,
+                    )
 
             latency_ms = int((time.perf_counter() - started) * 1000)
             usage = {
                 "input_tokens": _rough_tokens(request),
-                "output_tokens": len(full_content.split()),
-                "total_tokens": _rough_tokens(request) + len(full_content.split()),
+                "output_tokens": chunk_count,
+                "total_tokens": _rough_tokens(request) + chunk_count,
                 "cached_tokens": 0,
             }
 
@@ -388,13 +409,20 @@ class OpenAIProvider(_BaseRealProvider):
                 "openai.invoke_stream.success",
                 extra={
                     "provider": self.name,
-                    "model": kwargs["model"],
+                    "model": model,
                     "request_id": request.request_id,
                     "latency_ms": latency_ms,
                     "chunk_count": chunk_count,
                 },
             )
-            return self._result(request, full_content, usage, None, latency_ms)
+            yield self._result(
+                request=request,
+                content=full_content,
+                usage=usage,
+                provider_request_id=None,
+                latency_ms=latency_ms,
+                is_partial=False,
+            )
         except Exception as exc:
             latency_ms = int((time.perf_counter() - started) * 1000)
             inf_error = _translate_openai_error(exc)
@@ -402,7 +430,7 @@ class OpenAIProvider(_BaseRealProvider):
                 "openai.invoke_stream.error",
                 extra={
                     "provider": self.name,
-                    "model": self.model,
+                    "model": model,
                     "request_id": request.request_id,
                     "latency_ms": latency_ms,
                     "error_kind": inf_error.kind.value,
@@ -544,9 +572,12 @@ class AnthropicProvider(_BaseRealProvider):
             )
             raise inf_error from exc
 
-    def invoke_stream(self, request: InferenceRequest) -> InferenceResult:
-        # Anthropic streaming uses a different API shape; fall back to non-stream.
-        return self.invoke(request)
+    def invoke_stream(self, request: InferenceRequest) -> Iterator[InferenceResult]:
+        """Default streaming implementation: delegate to invoke() and yield one result."""
+        yield self.invoke(request)
+
+    def current_limits(self) -> ProviderLimits:
+        return ProviderLimits(rate_limits_known=self.configured)
 
 
 # ---------------------------------------------------------------------------
@@ -695,9 +726,9 @@ class OllamaProvider(_BaseRealProvider):
             )
             raise inf_error from exc
 
-    def invoke_stream(self, request: InferenceRequest) -> InferenceResult:
-        # Ollama streaming uses a different response shape; fall back to non-stream.
-        return self.invoke(request)
+    def invoke_stream(self, request: InferenceRequest) -> Iterator[InferenceResult]:
+        """Default streaming implementation: delegate to invoke() and yield one result."""
+        yield self.invoke(request)
 
 
 # ---------------------------------------------------------------------------
@@ -842,9 +873,12 @@ class DeepSeekProvider(_BaseRealProvider):
             )
             raise inf_error from exc
 
-    def invoke_stream(self, request: InferenceRequest) -> InferenceResult:
-        # DeepSeek streaming is not yet implemented in the adapter; fall back to non-stream.
-        return self.invoke(request)
+    def invoke_stream(self, request: InferenceRequest) -> Iterator[InferenceResult]:
+        """Default streaming implementation: delegate to invoke() and yield one result."""
+        yield self.invoke(request)
+
+    def current_limits(self) -> ProviderLimits:
+        return ProviderLimits(rate_limits_known=self.configured)
 
 
 # ---------------------------------------------------------------------------

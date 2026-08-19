@@ -12,6 +12,18 @@ from portal.database import Base, get_db
 from portal.main import create_app
 from portal.models.audit import AuditLog
 from portal.models.governed_service_identity import GovernedServiceIdentityRecord
+from portal.models.orchestration import (
+    ApprovalRequest,
+    BudgetUsage,
+    EvidenceReference,
+    OrchestrationEvent,
+    OrchestrationLinkage,
+    OrchestrationNode,
+    OrchestrationRun,
+    ReconciliationResult,
+    RoutingDecision,
+    VerificationResult,
+)
 from portal.models.user import Role as UserRole
 from portal.models.user import Tenant, User
 from portal.services.governed_identity import identity_service
@@ -43,6 +55,16 @@ def _sqlite_sessionmaker():
                         User.__table__,
                         AuditLog.__table__,
                         GovernedServiceIdentityRecord.__table__,
+                        OrchestrationRun.__table__,
+                        OrchestrationNode.__table__,
+                        OrchestrationEvent.__table__,
+                        EvidenceReference.__table__,
+                        BudgetUsage.__table__,
+                        RoutingDecision.__table__,
+                        VerificationResult.__table__,
+                        ReconciliationResult.__table__,
+                        ApprovalRequest.__table__,
+                        OrchestrationLinkage.__table__,
                     ],
                 )
             )
@@ -92,17 +114,15 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
 
     Certified here:
     real Bearer JWT Principal -> durable scoped service identity -> living context ->
-    specialist orchestration/model routing -> computer-use draft hash ->
-    Principal approval -> one acceptance-only side effect -> hash-chained evidence ->
-    Principal Brief receipt.
+    specialist orchestration/model routing -> durable lifecycle -> computer-use draft
+    hash -> Principal approval -> one acceptance-only side effect -> hash-chained
+    evidence -> Principal Brief receipt.
 
-    Service-identity descriptors are durable and revocable. The orchestration
-    coordinator remains explicitly process-local. This test does not claim production
-    external computer control or durable orchestration-state certification.
+    Service-identity descriptors and orchestration lifecycle state are durable. This
+    test does not claim production external computer control or scheduler authority.
     """
     client = _client()
 
-    # 1. Principal gateway: identity comes from the verified Bearer JWT.
     session = client.get("/api/v1/principal/session")
     assert session.status_code == 200
     session_body = session.json()
@@ -110,9 +130,8 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
     assert session_body["principal_id"] == PRINCIPAL_ID
     assert session_body["tenant_id"] == TENANT_ID
     assert session_body["service_identity_persistence"] == "postgresql-durable-descriptor"
-    assert session_body["orchestration_state_persistence"] == "process-local-mock-coordinator"
+    assert session_body["orchestration_state_persistence"] == "postgresql-durable-orchestration"
 
-    # 2. Persist a mission-scoped service identity; no credential material is stored here.
     identity_request = {
         "display_name": "IKE Computer Draft Executor",
         "agent_id": "ike-computer-drafter",
@@ -130,7 +149,6 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
     assert service_identity["identity_id"].startswith("svc-")
     assert service_identity["status"] == "ACTIVE"
 
-    # 2a. Identical retry is idempotent; changed authority under the same key conflicts.
     replay = client.post("/api/v1/principal/service-identities", json=identity_request)
     assert replay.status_code == 201
     assert replay.json()["identity_id"] == service_identity["identity_id"]
@@ -141,7 +159,6 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
     assert conflict.status_code == 409
     assert conflict.json()["detail"]["code"] == "SERVICE_IDENTITY_IDEMPOTENCY_CONFLICT"
 
-    # 2b. Clearing process-local compatibility state does not remove durable authority.
     identity_service.identities.clear()
     persisted = client.get("/api/v1/principal/service-identities")
     assert persisted.status_code == 200
@@ -149,7 +166,6 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
         item["identity_id"] for item in persisted.json()
     }
 
-    # 3. Living memory is retrieved from a bounded, hashed Markdown source.
     living = client.post(
         "/api/v1/principal/living-context",
         json={
@@ -163,7 +179,6 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
     assert len(living_items[0]["content_hash"]) == 64
     assert "approval" in living_items[0]["matched_terms"]
 
-    # 4. Build a computer-use draft but do not cross the side-effect boundary.
     computer_use_draft = {
         "mode": "computer_control",
         "agent_id": "ike-computer-drafter",
@@ -176,7 +191,6 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
     }
     draft_hash = _sha256_json(computer_use_draft)
 
-    # 5. Existing orchestrator supplies the specialist graph and model routing.
     run_response = client.post(
         "/api/v1/principal/missions",
         json={
@@ -199,7 +213,12 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
     assert run["approvals"][0]["status"] == "REQUESTED"
     run_id = run["run_id"]
 
-    # 6. Side effect is blocked before Principal approval.
+    # Discard process-local execution state; lifecycle reads must remain durable.
+    orchestrator.RUNS.clear()
+    durable_read = client.get(f"/api/v1/principal/missions/{run_id}")
+    assert durable_read.status_code == 200
+    assert durable_read.json()["status"] == "APPROVAL_REQUIRED"
+
     blocked = client.post(
         "/api/v1/principal/acceptance-side-effects",
         json={
@@ -212,7 +231,6 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
     )
     assert blocked.status_code == 409
 
-    # 7. Principal approves the exact pending mission through the same gateway.
     approval_response = client.post(
         f"/api/v1/principal/missions/{run_id}/approve",
         json={"approved": True, "reason": "Reviewed draft hash and bounded acceptance action"},
@@ -223,7 +241,6 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
     assert approval["status"] == "APPROVED"
     assert approval["principal_id"] == PRINCIPAL_ID
 
-    # 8. Approval diffing: changing the draft invalidates the previous approval.
     stale_hash = _sha256_json({**computer_use_draft, "changed_after_approval": True})
     stale = client.post(
         "/api/v1/principal/acceptance-side-effects",
@@ -237,7 +254,6 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
     )
     assert stale.status_code == 409
 
-    # 9. Commit exactly one bounded approved side effect and receive hashed evidence.
     principal_brief = {
         "objective": "Certify SP-IKE-002 governed E2E mission",
         "specialists": len(run["routing_decisions"]),
@@ -247,7 +263,6 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
         "approval_id": approval["approval_id"],
         "external_action_performed": False,
         "remaining_gates": [
-            "durable orchestration state",
             "canonical scheduler write API",
             "production external computer-use adapter",
         ],
@@ -267,7 +282,6 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
     assert side_effect_receipt["committed"] is True
     assert len(side_effect_receipt["evidence_hash"]) == 64
 
-    # 10. IKE writes the final Principal Brief into the same canonical hash chain.
     final_receipt = client.post(
         "/api/v1/principal/runtime-receipts",
         json={
@@ -290,7 +304,6 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
     assert len(receipt["evidence_hash"]) == 64
     assert receipt["previous_evidence_hash"] == side_effect_receipt["evidence_hash"]
 
-    # 11. Revocation is durable and immediately blocks further use of the identity.
     revoked = client.post(
         f"/api/v1/principal/service-identities/{service_identity['identity_id']}/revoke",
         json={"reason": "Acceptance mission complete"},

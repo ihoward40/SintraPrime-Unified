@@ -4,14 +4,13 @@ This router is deliberately narrow:
 - authenticates the Principal through the existing JWT/RBAC boundary;
 - provisions durable, non-secret, mission-scoped service identity descriptors;
 - exposes bounded living-file retrieval;
-- bridges to the existing governed orchestration coordinator;
+- bridges to the canonical durable orchestration authority;
 - commits one acceptance-only side effect after an orchestration approval;
 - writes all material actions into the canonical hash-chained audit ledger.
 
-The orchestration coordinator remains explicitly process-local/mock while durable
-identity and evidence state are written through canonical persistence. This gateway
-does not bypass the Mission Control refusal-only command gate and it does not expose
-arbitrary computer, email, filing, payment, or publication actions.
+Mission lifecycle state is persisted through the same durable orchestration authority
+used by the activated Mission Control START/CANCEL command path. External computer,
+email, filing, payment, and publication actions remain disabled.
 """
 
 from __future__ import annotations
@@ -28,14 +27,19 @@ from ..auth.correlation import get_current_context
 from ..auth.rbac import CurrentUser, Permission, require_permissions
 from ..database import get_db
 from ..services.audit_service import audit
+from ..services.durable_orchestration_authority import (
+    DurableOrchestrationStateError,
+    approve_durable_run,
+    cancel_durable_run,
+    get_durable_run,
+    start_durable_run,
+)
 from ..services.governed_identity import (
     DuplicateServiceIdentityConflictError,
     GovernedIdentity,
     identity_service,
 )
-from ..services.orchestration import orchestrator
 from ..services.orchestration.budget_policy import BudgetLimits
-from ..services.orchestration.orchestrator import OrchestrationStateError
 from ..services.orchestration.schemas import ExecutionMode
 
 router = APIRouter(prefix="/api/v1/principal", tags=["principal-runtime"])
@@ -58,8 +62,8 @@ class PrincipalSession(BaseModel):
     service_identity_persistence: Literal["postgresql-durable-descriptor"] = (
         "postgresql-durable-descriptor"
     )
-    orchestration_state_persistence: Literal["process-local-mock-coordinator"] = (
-        "process-local-mock-coordinator"
+    orchestration_state_persistence: Literal["postgresql-durable-orchestration"] = (
+        "postgresql-durable-orchestration"
     )
 
 
@@ -275,8 +279,9 @@ async def execute_principal_mission(
     )),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
-    """Execute the existing bounded/mock orchestration coordinator under Principal authority."""
-    run = orchestrator.execute_run(
+    """Create a bounded run, then persist it as the authoritative lifecycle state."""
+    run = await start_durable_run(
+        db,
         objective=body.objective,
         constraints=body.constraints,
         execution_mode=body.execution_mode,
@@ -290,13 +295,13 @@ async def execute_principal_mission(
         user_id=current_user.user_id,
         tenant_id=current_user.tenant_id,
         resource_type="ike_runtime_mission",
-        resource_id=run["run_id"],
+        resource_id=str(run["run_id"]),
         resource_name="principal_mission",
         details={
             "status": run["status"],
             "routing_decisions": len(run.get("routing_decisions", [])),
             "approval_requests": len(run.get("approvals", [])),
-            "orchestration_state_persistence": "process-local-mock-coordinator",
+            "orchestration_state_persistence": "postgresql-durable-orchestration",
             "external_action_performed": False,
         },
     )
@@ -310,8 +315,9 @@ async def get_principal_mission(
         Permission.MISSION_COMMAND_ADMIN,
         Permission.ORCHESTRATION_READ,
     )),
+    db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
-    run = orchestrator.get_run(run_id, tenant_id=current_user.tenant_id)
+    run = await get_durable_run(db, run_id=run_id, tenant_id=current_user.tenant_id)
     if run is None:
         raise HTTPException(status_code=404, detail="Mission not found")
     return run
@@ -328,14 +334,15 @@ async def approve_principal_mission(
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     try:
-        run = orchestrator.approve_run(
-            run_id,
+        run = await approve_durable_run(
+            db,
+            run_id=run_id,
             tenant_id=current_user.tenant_id,
             principal_id=current_user.user_id,
             approved=body.approved,
             reason=body.reason,
         )
-    except OrchestrationStateError as exc:
+    except DurableOrchestrationStateError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     if run is None:
         raise HTTPException(status_code=404, detail="Mission not found")
@@ -351,6 +358,7 @@ async def approve_principal_mission(
             "approved": body.approved,
             "reason": body.reason,
             "principal_id": current_user.user_id,
+            "persistence": "postgresql-durable-orchestration",
         },
     )
     return run
@@ -367,13 +375,14 @@ async def cancel_principal_mission(
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     try:
-        run = orchestrator.cancel_run(
-            run_id,
+        run = await cancel_durable_run(
+            db,
+            run_id=run_id,
             tenant_id=current_user.tenant_id,
             actor_id=current_user.user_id,
             reason=body.reason,
         )
-    except OrchestrationStateError as exc:
+    except DurableOrchestrationStateError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     if run is None:
         raise HTTPException(status_code=404, detail="Mission not found")
@@ -385,7 +394,7 @@ async def cancel_principal_mission(
         resource_type="ike_runtime_mission",
         resource_id=run_id,
         resource_name="principal_cancel",
-        details={"reason": body.reason},
+        details={"reason": body.reason, "persistence": "postgresql-durable-orchestration"},
     )
     return run
 
@@ -440,7 +449,11 @@ async def commit_acceptance_side_effect(
     if not has_access:
         raise HTTPException(status_code=403, detail="Service identity lacks side-effect authority")
 
-    run = orchestrator.get_run(body.run_id, tenant_id=current_user.tenant_id)
+    run = await get_durable_run(
+        db,
+        run_id=body.run_id,
+        tenant_id=current_user.tenant_id,
+    )
     if run is None:
         raise HTTPException(status_code=404, detail="Orchestration run not found")
 

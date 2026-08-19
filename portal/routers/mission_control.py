@@ -31,6 +31,7 @@ from ..schemas.mission_control_projection import (
     RunControlListResponse,
     RunControlProjection,
 )
+from ..services.cancellation_bus import bus
 from ..services.mission_control_projection_service import (
     get_causation_chain,
     get_command,
@@ -38,6 +39,7 @@ from ..services.mission_control_projection_service import (
     list_commands,
     list_run_controls,
 )
+from ..services.parliament_scaling import scaling_service
 from ..services.sigma_gate import get_cancellation_status
 from .system_health import (
     _check_agents,
@@ -46,8 +48,6 @@ from .system_health import (
     _check_recovery_api,
     _check_scheduler,
 )
-from ..services.parliament_scaling import scaling_service
-from ..services.cancellation_bus import bus
 
 router = APIRouter(prefix="/api/v1/mission-control", tags=["mission-control"])
 

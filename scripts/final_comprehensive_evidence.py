@@ -1,18 +1,20 @@
 import asyncio
-import logging
 import json
+import logging
 import uuid
-from datetime import datetime, UTC
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from datetime import UTC, datetime
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from portal.database import Base
-from portal.services.remediation_service import remediation
+from portal.models.mission_control_outbox import EventNodeLinkage, MemoryEntry, MissionControlOutbox
+from portal.services.council_mode import council_mode
+from portal.services.isolation_proof import isolation_proof_service
 from portal.services.memory_vault import memory_vault
 from portal.services.mythos_brain import MythosBrainCoordinator
 from portal.services.principal_brief import brief_service
-from portal.services.isolation_proof import isolation_proof_service
-from portal.services.council_mode import council_mode
-from portal.models.mission_control_outbox import MissionControlOutbox, EventNodeLinkage, MemoryEntry
-from sqlalchemy import select
+from portal.services.remediation_service import remediation
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -22,13 +24,13 @@ DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 async def run_final_evidence():
     logger.info("🎬 GENERATING FINAL MACHINE-READABLE EVIDENCE 🎬")
-    
+
     # 1. Setup DB
     engine = create_async_engine(DATABASE_URL)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     session_factory = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
-    
+
     evidence = {"timestamp": datetime.now(UTC).isoformat(), "results": []}
     tenant_id = "principal-tenant"
     principal_id = "principal-god-mode"
@@ -50,7 +52,7 @@ async def run_final_evidence():
             tenant_id, principal_id, "STANDARD", {"secret": "oauth_token=123"}
         )
         await session.commit()
-        
+
         # Verify redaction
         res = await session.execute(select(MissionControlOutbox).where(MissionControlOutbox.intent_id == intent_id))
         entry = res.scalar_one()
@@ -82,7 +84,7 @@ async def run_final_evidence():
     # Output evidence
     with open("/home/ubuntu/final_evidence_report.json", "w") as f:
         json.dump(evidence, f, indent=2)
-    
+
     logger.info("✨ FINAL EVIDENCE GENERATED ✨")
     await engine.dispose()
     return evidence

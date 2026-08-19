@@ -1,0 +1,61 @@
+name: IKE Runtime E2E Certification
+
+on:
+  pull_request:
+    paths:
+      - "apps/ike-bot/**"
+      - "portal/routers/principal_gateway.py"
+      - "portal/routers/principal_runtime_receipts.py"
+      - "portal/services/governed_identity.py"
+      - "portal/services/orchestration/**"
+      - "portal/tests/test_ike_runtime_e2e_acceptance.py"
+      - "docs/planning/SP-IKE-002_GOVERNED_TOP_FEATURES.md"
+      - ".github/workflows/ike-runtime-e2e.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  governed-e2e:
+    name: governed-e2e
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run governed IKE acceptance mission
+        run: python -m pytest portal/tests/test_ike_runtime_e2e_acceptance.py -q
+
+      - name: Run Principal gateway auth certification
+        run: python -m pytest portal/tests/test_auth_tenant_rbac_certification.py::test_dynamic_live_app_route_discovery -q
+
+  ike-bot-typescript:
+    name: ike-bot-typescript
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: apps/ike-bot/main
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install IKE-Bot dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Compile IKE-Bot TypeScript
+        run: npm run build

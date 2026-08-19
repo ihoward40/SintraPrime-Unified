@@ -20,6 +20,8 @@ MIGRATION_SEQUENCE = (
     Path("portal/migrations/add_audit_records.sql"),
     Path("portal/migrations/add_mission_control_command_ledger.sql"),
     Path("portal/migrations/add_mission_control_run_control_projection.sql"),
+)
+PRODUCTION_GATE_MIGRATION_SEQUENCE = (
     Path("portal/migrations/add_governed_service_identities.sql"),
 )
 EXPECTED_TABLES = (
@@ -51,6 +53,10 @@ def psycopg2_url(raw_url: str) -> str:
     return raw_url
 
 
+def authoritative_migration_sequence() -> tuple[Path, ...]:
+    return MIGRATION_SEQUENCE + PRODUCTION_GATE_MIGRATION_SEQUENCE
+
+
 def apply_migrations(database_url: str, *, reset_public_schema: bool = False) -> list[str]:
     applied: list[str] = []
     with psycopg2.connect(psycopg2_url(database_url)) as conn:
@@ -59,7 +65,7 @@ def apply_migrations(database_url: str, *, reset_public_schema: bool = False) ->
             if reset_public_schema:
                 cur.execute("DROP SCHEMA IF EXISTS public CASCADE")
                 cur.execute("CREATE SCHEMA public")
-            for relative_path in MIGRATION_SEQUENCE:
+            for relative_path in authoritative_migration_sequence():
                 sql = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
                 cur.execute(sql)
                 applied.append(str(relative_path).replace("\\", "/"))
@@ -90,7 +96,7 @@ def main() -> int:
     parser.add_argument("--print-sequence", action="store_true")
     args = parser.parse_args()
     if args.print_sequence:
-        for item in MIGRATION_SEQUENCE:
+        for item in authoritative_migration_sequence():
             print(str(item).replace("\\", "/"))
         return 0
     if not args.database_url:

@@ -20,6 +20,12 @@ from ..services.mission_control_command_service import (
     DuplicateCommandConflictError,
     submit_refusal_only_command,
 )
+from ..services.mission_control_execution_service import (
+    ACTIVATION_MODE,
+    EXECUTABLE_COMMANDS,
+    DurableCommandValidationError,
+    submit_durable_orchestration_command,
+)
 
 router = APIRouter(prefix="/api/v1/mission-control", tags=["mission-control"])
 
@@ -74,6 +80,7 @@ class MissionControlCommandResponse(BaseModel):
     audit_log_id: str | None
     event_ids: list[str]
     receipt_id: str | None
+    execution_ref: str | None = None
     created_at: datetime | None
     completed_at: datetime | None
 
@@ -116,8 +123,20 @@ async def submit_command(
         payload=body.payload,
         metadata=body.metadata,
     )
+    execution_ref = None
+    activated = (
+        body.command_type in EXECUTABLE_COMMANDS
+        and body.payload.get("activation_mode") == ACTIVATION_MODE
+    )
     try:
-        result = await submit_refusal_only_command(db, submission, current_user)
+        if activated:
+            result, execution_ref = await submit_durable_orchestration_command(
+                db,
+                submission,
+                current_user,
+            )
+        else:
+            result = await submit_refusal_only_command(db, submission, current_user)
     except DuplicateCommandConflictError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -126,6 +145,11 @@ async def submit_command(
                 "reason_code": "IDEMPOTENCY_KEY_CONFLICT",
                 "command_id": exc.command_id,
             },
+        ) from exc
+    except DurableCommandValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"reason_code": "INVALID_DURABLE_COMMAND", "message": str(exc)},
         ) from exc
 
     if result.duplicate:
@@ -146,6 +170,7 @@ async def submit_command(
         audit_log_id=str(command.audit_log_id) if command.audit_log_id else None,
         event_ids=result.event_ids,
         receipt_id=result.receipt_id,
+        execution_ref=execution_ref,
         created_at=command.created_at,
         completed_at=command.completed_at,
     )

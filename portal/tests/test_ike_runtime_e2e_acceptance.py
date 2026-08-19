@@ -6,7 +6,8 @@ from collections.abc import AsyncGenerator
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from portal.auth.rbac import CurrentUser, Permission, Role, get_current_user
+from portal.auth.jwt_handler import create_access_token
+from portal.auth.rbac import Permission, Role
 from portal.database import Base, get_db
 from portal.main import create_app
 from portal.models.audit import AuditLog
@@ -83,25 +84,22 @@ def _db_override(session_maker):
     return override
 
 
-def _principal() -> CurrentUser:
-    return CurrentUser(
-        {
-            "sub": PRINCIPAL_ID,
-            "tenant_id": TENANT_ID,
-            "role": Role.SUPER_ADMIN.value,
-            "permissions": [permission.value for permission in PRINCIPAL_PERMISSIONS],
-        }
-    )
-
-
 def _client() -> TestClient:
     orchestrator.RUNS.clear()
     identity_service.identities.clear()
     app = create_app()
     maker = _sqlite_sessionmaker()
     app.dependency_overrides[get_db] = _db_override(maker)
-    app.dependency_overrides[get_current_user] = _principal
-    return TestClient(app)
+
+    token = create_access_token(
+        user_id=PRINCIPAL_ID,
+        tenant_id=TENANT_ID,
+        role=Role.SUPER_ADMIN.value,
+        permissions=[permission.value for permission in PRINCIPAL_PERMISSIONS],
+    )
+    client = TestClient(app)
+    client.headers.update({"Authorization": f"Bearer {token}"})
+    return client
 
 
 def _sha256_json(value: object) -> str:
@@ -113,7 +111,7 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
     """Certify the bounded governance chain used by IKE-Bot PR #285.
 
     Certified here:
-    authenticated Principal -> scoped service identity -> living context ->
+    real Bearer JWT Principal -> scoped service identity -> living context ->
     specialist orchestration/model routing -> computer-use draft hash ->
     Principal approval -> one acceptance-only side effect -> hash-chained evidence ->
     Principal Brief receipt.
@@ -122,7 +120,7 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
     """
     client = _client()
 
-    # 1. Principal gateway: identity comes from the trusted auth dependency.
+    # 1. Principal gateway: identity comes from the verified Bearer JWT.
     session = client.get("/api/v1/principal/session")
     assert session.status_code == 200
     assert session.json()["authenticated"] is True

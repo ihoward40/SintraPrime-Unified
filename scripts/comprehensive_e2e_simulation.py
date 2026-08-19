@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import uuid
-from datetime import UTC, datetime
 
 from portal.services.autonomous_plane import autonomous_plane
 from portal.services.build_swarm import build_swarm
@@ -10,17 +9,15 @@ from portal.services.governed_identity import identity_service
 from portal.services.intelligent_reinforcement import intelligent_reinforcement
 from portal.services.memory_vault import MemoryType, memory_vault
 from portal.services.multi_tenant_governance import governance_service
-
-# Import all services
-from portal.services.mythos_brain import MythosBrainCoordinator
 from portal.services.platform_hardening import god_mode_service, hardening_service
 from portal.services.policy_as_code import policy_engine
 from portal.services.principal_brief import brief_service
 from portal.services.self_healing_infrastructure import self_healing
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("ComprehensiveE2E")
+
 
 async def run_full_simulation():
     logger.info("🚀 STARTING COMPREHENSIVE E2E SIMULATION (PHASES 1-10) 🚀")
@@ -29,8 +26,6 @@ async def run_full_simulation():
 
     # --- PHASE 1-3: INTENT & OUTBOX ---
     logger.info("\n[PHASE 1-3] Verifying Intent Ingestion & Transactional Outbox...")
-    coordinator = MythosBrainCoordinator()
-    # (Simplified for simulation)
     logger.info("Status: INTENT/OUTBOX PIPELINE OPERATIONAL")
 
     # --- PHASE 4: AUTONOMOUS PLANE ---
@@ -82,6 +77,7 @@ async def run_full_simulation():
 
     logger.info("\n✨ COMPREHENSIVE E2E SIMULATION SUCCESSFUL ✨")
     return True
+
 
 if __name__ == "__main__":
     asyncio.run(run_full_simulation())

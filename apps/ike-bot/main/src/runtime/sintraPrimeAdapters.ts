@@ -14,7 +14,7 @@ export interface PrincipalSession {
   permissions: string[];
   correlation_id?: string | null;
   causation_id?: string | null;
-  service_identity_persistence: "process-local-descriptor-only";
+  service_identity_persistence: "postgresql-durable-descriptor";
   orchestration_state_persistence: "process-local-mock-coordinator";
 }
 
@@ -96,6 +96,7 @@ export class SintraPrimeRuntimeBridge {
     allowed_capabilities?: string[];
     credential_ref?: string;
     ttl_minutes?: number;
+    idempotency_key?: string;
   }): Promise<ServiceIdentityDescriptor> {
     return this.json<ServiceIdentityDescriptor>("/api/v1/principal/service-identities", {
       method: "POST",

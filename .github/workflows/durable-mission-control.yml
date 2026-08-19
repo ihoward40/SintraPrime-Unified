@@ -1,0 +1,62 @@
+name: Durable Mission Control Certification
+
+on:
+  pull_request:
+    paths:
+      - "portal/models/orchestration.py"
+      - "portal/models/mission_control_command.py"
+      - "portal/services/orchestration/**"
+      - "portal/services/durable_orchestration_authority.py"
+      - "portal/services/mission_control_command_service.py"
+      - "portal/services/mission_control_execution_service.py"
+      - "portal/routers/mission_control_commands.py"
+      - "portal/routers/principal_gateway.py"
+      - "portal/migrations/add_mission_control_command_ledger.sql"
+      - "portal/tests/test_durable_mission_control_postgresql.py"
+      - ".github/workflows/durable-mission-control.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  durable-mission-control:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: mission_gate
+          POSTGRES_PASSWORD: mission_gate
+          POSTGRES_DB: mission_gate_certification
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U mission_gate -d mission_gate_certification"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Certify durable Mission Control authority
+        env:
+          DURABLE_MISSION_CONTROL_DATABASE_URL: postgresql+asyncpg://mission_gate:mission_gate@127.0.0.1:5432/mission_gate_certification
+        run: |
+          set -euo pipefail
+          python -m pytest -vv -rs --tb=long --maxfail=1 \
+            portal/tests/test_durable_mission_control_postgresql.py \
+            | tee /tmp/durable-mission-control.log
+          ! grep -q 'SKIPPED' /tmp/durable-mission-control.log
+      - name: Upload durable authority evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: durable-mission-control-log
+          path: /tmp/durable-mission-control.log
+          if-no-files-found: ignore

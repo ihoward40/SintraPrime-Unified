@@ -9,6 +9,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..models.orchestration import ApprovalRequest as LegacyApprovalRequest
 from ..models.production_authority import ProductionApprovalRequest as ApprovalRequest
 from ..models.production_authority import ProductionBudgetUsage as BudgetUsage
 from ..models.production_authority import ProductionOrchestrationEvent as OrchestrationEvent
@@ -36,6 +37,18 @@ def _parse_dt(value: Any) -> datetime | None:
     if isinstance(value, datetime):
         return value
     return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+
+
+def _approval_model(db: AsyncSession) -> type[ApprovalRequest] | type[LegacyApprovalRequest]:
+    """Use the legacy approval shape only for SQLite compatibility tests.
+
+    Production PostgreSQL is governed by ``add_adaptive_orchestration_domain.sql``,
+    whose approval table intentionally has no ``version`` column. The historical
+    SQLite/create-all test schema does have a mandatory ``version`` column, so its
+    native mapping must supply that compatibility field.
+    """
+    bind = db.get_bind()
+    return LegacyApprovalRequest if bind.dialect.name == "sqlite" else ApprovalRequest
 
 
 async def save_production_run(db: AsyncSession, run: dict[str, Any]) -> dict[str, Any]:
@@ -200,9 +213,10 @@ async def save_production_run(db: AsyncSession, run: dict[str, Any]) -> dict[str
             )
         )
 
+    approval_model = _approval_model(db)
     for approval in run.get("approvals", []):
         db.add(
-            ApprovalRequest(
+            approval_model(
                 id=approval.get("approval_id") or str(uuid.uuid4()),
                 run_id=run_id,
                 node_id=approval.get("node_id"),
@@ -277,8 +291,9 @@ async def get_production_run(
     reconciliation = (
         await db.execute(select(ReconciliationResult).where(ReconciliationResult.run_id == run_id))
     ).scalars().first()
+    approval_cls = _approval_model(db)
     approvals = list(
-        (await db.execute(select(ApprovalRequest).where(ApprovalRequest.run_id == run_id))).scalars()
+        (await db.execute(select(approval_cls).where(approval_cls.run_id == run_id))).scalars()
     )
     budget = (
         await db.execute(select(BudgetUsage).where(BudgetUsage.run_id == run_id))
@@ -376,7 +391,7 @@ def _reconciliation_to_dict(item: ReconciliationResult) -> dict[str, Any]:
     }
 
 
-def _approval_to_dict(item: ApprovalRequest) -> dict[str, Any]:
+def _approval_to_dict(item: Any) -> dict[str, Any]:
     return {
         "approval_id": str(item.id),
         "node_id": item.node_id,

@@ -6,9 +6,14 @@ import os
 
 import pytest
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
-from portal import models as _models  # noqa: F401
+from portal import models as _models
 from portal.auth.rbac import CurrentUser, Permission
 from portal.scripts.postgresql_bootstrap import apply_migrations
 from portal.services.durable_orchestration_authority import (

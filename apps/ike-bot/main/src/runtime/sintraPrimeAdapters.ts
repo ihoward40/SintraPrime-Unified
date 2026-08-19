@@ -15,6 +15,7 @@ export interface PrincipalSession {
   correlation_id?: string | null;
   causation_id?: string | null;
   service_identity_persistence: "process-local-descriptor-only";
+  orchestration_state_persistence: "process-local-mock-coordinator";
 }
 
 export interface ServiceIdentityDescriptor {
@@ -102,10 +103,7 @@ export class SintraPrimeRuntimeBridge {
     });
   }
 
-  async retrieveLivingContext(
-    query: string,
-    refs: string[],
-  ): Promise<LivingContextItem[]> {
+  async retrieveLivingContext(query: string, refs: string[]): Promise<LivingContextItem[]> {
     const response = await this.json<Array<{
       uri: string;
       title: string;
@@ -131,16 +129,17 @@ export class SintraPrimeRuntimeBridge {
   }
 
   async executeMission(input: SubmitIntentInput): Promise<OrchestrationRun> {
-    return this.json<OrchestrationRun>("/api/orchestration/execute", {
+    return this.json<OrchestrationRun>("/api/v1/principal/missions", {
       method: "POST",
       body: JSON.stringify(input),
     });
   }
 
   async getMission(missionId: string): Promise<OrchestrationRun> {
-    return this.json<OrchestrationRun>(`/api/orchestration/runs/${encodeURIComponent(missionId)}`, {
-      method: "GET",
-    });
+    return this.json<OrchestrationRun>(
+      `/api/v1/principal/missions/${encodeURIComponent(missionId)}`,
+      { method: "GET" },
+    );
   }
 
   async approveMission(
@@ -149,7 +148,7 @@ export class SintraPrimeRuntimeBridge {
     reason?: string,
   ): Promise<OrchestrationRun> {
     return this.json<OrchestrationRun>(
-      `/api/orchestration/runs/${encodeURIComponent(missionId)}/approve`,
+      `/api/v1/principal/missions/${encodeURIComponent(missionId)}/approve`,
       {
         method: "POST",
         body: JSON.stringify({ approved, reason }),
@@ -158,7 +157,7 @@ export class SintraPrimeRuntimeBridge {
   }
 
   async cancelMission(missionId: string, reason: string): Promise<void> {
-    await this.json(`/api/orchestration/runs/${encodeURIComponent(missionId)}/cancel`, {
+    await this.json(`/api/v1/principal/missions/${encodeURIComponent(missionId)}/cancel`, {
       method: "POST",
       body: JSON.stringify({ reason }),
     });
@@ -222,7 +221,9 @@ export class SintraPrimeRuntimeBridge {
       },
       requestApproval: async (input: GovernedAction & { missionId: string; causationId: string }) => {
         const run = await this.getMission(input.missionId);
-        const approval = run.approvals.find((item) => item.status === "REQUESTED" || item.status === "APPROVED");
+        const approval = run.approvals.find(
+          (item) => item.status === "REQUESTED" || item.status === "APPROVED",
+        );
         return {
           approvalId: String(approval?.approval_id ?? ""),
           approved: approval?.status === "APPROVED",

@@ -14,7 +14,8 @@ from portal.services.remediation_service import remediation
 # Use SQLite in-memory for fast, reproducible evidence
 DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
-@pytest.fixture(scope="function")
+
+@pytest.fixture
 async def db_session():
     engine = create_async_engine(DATABASE_URL)
     async with engine.begin() as conn:
@@ -25,6 +26,7 @@ async def db_session():
         yield session
     await engine.dispose()
 
+
 @pytest.mark.asyncio
 async def test_actor_validation_remediation(db_session):
     """EVIDENCE: Unauthorized actor blocked from Principal Command."""
@@ -34,8 +36,9 @@ async def test_actor_validation_remediation(db_session):
             tenant_id="test-tenant",
             actor_id="attacker-001",
             intent_type="PRINCIPAL_COMMAND",
-            payload={"action": "reformat-database"}
+            payload={"action": "reformat-database"},
         )
+
 
 @pytest.mark.asyncio
 async def test_sensitive_data_redaction_remediation(db_session):
@@ -47,7 +50,7 @@ async def test_sensitive_data_redaction_remediation(db_session):
         tenant_id="test-tenant",
         actor_id="principal-god-mode",
         intent_type="STANDARD_INTENT",
-        payload=payload
+        payload=payload,
     )
 
     # Verify outbox entry is redacted
@@ -55,6 +58,7 @@ async def test_sensitive_data_redaction_remediation(db_session):
     entry = result.scalar_one()
     assert "secret_key_123" not in str(entry.payload)
     assert "[MASKED]" in str(entry.payload)
+
 
 @pytest.mark.asyncio
 async def test_lifecycle_timestamps_and_linkage_remediation(db_session):
@@ -64,7 +68,7 @@ async def test_lifecycle_timestamps_and_linkage_remediation(db_session):
         tenant_id="test-tenant",
         actor_id="principal-god-mode",
         intent_type="STANDARD_INTENT",
-        payload={"task": "verify-integrity"}
+        payload={"task": "verify-integrity"},
     )
 
     # 1. Verify timestamps in outbox
@@ -78,6 +82,7 @@ async def test_lifecycle_timestamps_and_linkage_remediation(db_session):
     linkage = link_result.scalar_one()
     assert linkage.node_id == entry.payload["node_id"]
     assert linkage.event_id.startswith("evt-")
+
 
 @pytest.mark.asyncio
 async def test_omnibrain_to_brief_flow_remediation(db_session):

@@ -23,6 +23,7 @@ MIGRATION_SEQUENCE = (
 )
 PRODUCTION_GATE_MIGRATION_SEQUENCE = (
     Path("portal/migrations/add_governed_service_identities.sql"),
+    Path("portal/migrations/add_adaptive_orchestration_domain.sql"),
 )
 EXPECTED_TABLES = (
     "tenants",
@@ -39,6 +40,16 @@ EXPECTED_TABLES = (
     "mission_control_run_controls",
     "mission_control_run_control_events",
     "governed_service_identities",
+    "orchestration_runs",
+    "orchestration_nodes",
+    "orchestration_events",
+    "orchestration_provider_definitions",
+    "orchestration_routing_decisions",
+    "orchestration_verification_results",
+    "orchestration_reconciliation_results",
+    "orchestration_approval_requests",
+    "orchestration_budget_usage",
+    "orchestration_evidence_references",
 )
 
 

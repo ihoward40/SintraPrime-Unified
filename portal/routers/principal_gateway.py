@@ -4,11 +4,15 @@ This router is deliberately narrow:
 - authenticates the Principal through the existing JWT/RBAC boundary;
 - provisions non-secret, mission-scoped service identity descriptors;
 - exposes bounded living-file retrieval;
+- bridges to the existing governed orchestration coordinator;
 - commits one acceptance-only side effect after an orchestration approval;
 - writes all material actions into the canonical hash-chained audit ledger.
 
-It does not bypass the Mission Control refusal-only command gate and it does not
-expose arbitrary computer, email, filing, payment, or publication side effects.
+The existing orchestration SQL projection currently has a UUID type mismatch and
+is not used as an authority source here. The coordinator's state remains explicitly
+process-local/mock while durable evidence is written to the canonical audit chain.
+This gateway does not bypass the Mission Control refusal-only command gate and it
+does not expose arbitrary computer, email, filing, payment, or publication actions.
 """
 
 from __future__ import annotations
@@ -26,7 +30,10 @@ from ..auth.rbac import CurrentUser, Permission, require_permissions
 from ..database import get_db
 from ..services.audit_service import audit
 from ..services.governed_identity import GovernedIdentity, identity_service
-from ..services.orchestration import persistence
+from ..services.orchestration import orchestrator
+from ..services.orchestration.budget_policy import BudgetLimits
+from ..services.orchestration.orchestrator import OrchestrationStateError
+from ..services.orchestration.schemas import ExecutionMode
 
 router = APIRouter(prefix="/api/v1/principal", tags=["principal-runtime"])
 
@@ -47,6 +54,9 @@ class PrincipalSession(BaseModel):
     causation_id: str | None = None
     service_identity_persistence: Literal["process-local-descriptor-only"] = (
         "process-local-descriptor-only"
+    )
+    orchestration_state_persistence: Literal["process-local-mock-coordinator"] = (
+        "process-local-mock-coordinator"
     )
 
 
@@ -214,6 +224,148 @@ async def retrieve_living_context(
     return items
 
 
+class PrincipalMissionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    objective: str = Field(min_length=1, max_length=10000)
+    constraints: dict[str, Any] = Field(default_factory=dict)
+    execution_mode: ExecutionMode = ExecutionMode.THINK_WORK_CHECK
+    budget_limits: BudgetLimits | None = None
+
+
+class PrincipalMissionDecision(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    approved: bool
+    reason: str | None = Field(default=None, max_length=2000)
+
+
+class PrincipalMissionCancel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reason: str = Field(min_length=1, max_length=2000)
+
+
+@router.post("/missions")
+async def execute_principal_mission(
+    body: PrincipalMissionRequest,
+    current_user: CurrentUser = Depends(
+        require_permissions(Permission.MISSION_COMMAND_ADMIN, Permission.ORCHESTRATION_CREATE)
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """Execute the existing bounded/mock orchestration coordinator under Principal authority."""
+    run = orchestrator.execute_run(
+        objective=body.objective,
+        constraints=body.constraints,
+        execution_mode=body.execution_mode,
+        budget_limits=body.budget_limits,
+        tenant_id=current_user.tenant_id,
+        created_by=current_user.user_id,
+    )
+    await audit(
+        db,
+        action="ike_runtime_mission_coordinated",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="ike_runtime_mission",
+        resource_id=run["run_id"],
+        resource_name="principal_mission",
+        details={
+            "status": run["status"],
+            "routing_decisions": len(run.get("routing_decisions", [])),
+            "approval_requests": len(run.get("approvals", [])),
+            "orchestration_state_persistence": "process-local-mock-coordinator",
+            "external_action_performed": False,
+        },
+    )
+    return run
+
+
+@router.get("/missions/{run_id}")
+async def get_principal_mission(
+    run_id: str,
+    current_user: CurrentUser = Depends(
+        require_permissions(Permission.MISSION_COMMAND_ADMIN, Permission.ORCHESTRATION_READ)
+    ),
+) -> dict[str, Any]:
+    run = orchestrator.get_run(run_id, tenant_id=current_user.tenant_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="Mission not found")
+    return run
+
+
+@router.post("/missions/{run_id}/approve")
+async def approve_principal_mission(
+    run_id: str,
+    body: PrincipalMissionDecision,
+    current_user: CurrentUser = Depends(
+        require_permissions(Permission.MISSION_COMMAND_ADMIN, Permission.ORCHESTRATION_APPROVE)
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    try:
+        run = orchestrator.approve_run(
+            run_id,
+            tenant_id=current_user.tenant_id,
+            principal_id=current_user.user_id,
+            approved=body.approved,
+            reason=body.reason,
+        )
+    except OrchestrationStateError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if run is None:
+        raise HTTPException(status_code=404, detail="Mission not found")
+    await audit(
+        db,
+        action="ike_runtime_mission_approval_decided",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="ike_runtime_mission",
+        resource_id=run_id,
+        resource_name="principal_approval",
+        details={
+            "approved": body.approved,
+            "reason": body.reason,
+            "principal_id": current_user.user_id,
+        },
+    )
+    return run
+
+
+@router.post("/missions/{run_id}/cancel")
+async def cancel_principal_mission(
+    run_id: str,
+    body: PrincipalMissionCancel,
+    current_user: CurrentUser = Depends(
+        require_permissions(Permission.MISSION_COMMAND_ADMIN, Permission.ORCHESTRATION_CANCEL)
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    try:
+        run = orchestrator.cancel_run(
+            run_id,
+            tenant_id=current_user.tenant_id,
+            actor_id=current_user.user_id,
+            reason=body.reason,
+        )
+    except OrchestrationStateError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if run is None:
+        raise HTTPException(status_code=404, detail="Mission not found")
+    await audit(
+        db,
+        action="ike_runtime_mission_cancelled",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="ike_runtime_mission",
+        resource_id=run_id,
+        resource_name="principal_cancel",
+        details={"reason": body.reason},
+    )
+    return run
+
+
 class AcceptanceSideEffectRequest(BaseModel):
     """One deliberately bounded side effect used to certify the approval path."""
 
@@ -247,13 +399,7 @@ async def commit_acceptance_side_effect(
     current_user: CurrentUser = Depends(require_permissions(Permission.MISSION_COMMAND_ADMIN)),
     db: AsyncSession = Depends(get_db),
 ) -> AcceptanceSideEffectReceipt:
-    """Commit one internal, reversible-by-record side effect after Principal approval.
-
-    This is intentionally *not* a generic external-action endpoint. It proves that
-    a computer-use draft cannot cross the side-effect boundary until the exact
-    orchestration run has a Principal APPROVED decision and the draft hash is
-    unchanged.
-    """
+    """Commit one internal, bounded acceptance marker after exact-draft approval."""
     identity = identity_service.get_identity(
         body.service_identity_id,
         tenant_id=current_user.tenant_id,
@@ -267,7 +413,7 @@ async def commit_acceptance_side_effect(
     ):
         raise HTTPException(status_code=403, detail="Service identity lacks side-effect authority")
 
-    run = await persistence.get_run(db, body.run_id, tenant_id=current_user.tenant_id)
+    run = orchestrator.get_run(body.run_id, tenant_id=current_user.tenant_id)
     if run is None:
         raise HTTPException(status_code=404, detail="Orchestration run not found")
 

@@ -2,17 +2,16 @@
 
 This router is deliberately narrow:
 - authenticates the Principal through the existing JWT/RBAC boundary;
-- provisions non-secret, mission-scoped service identity descriptors;
+- provisions durable, non-secret, mission-scoped service identity descriptors;
 - exposes bounded living-file retrieval;
 - bridges to the existing governed orchestration coordinator;
 - commits one acceptance-only side effect after an orchestration approval;
 - writes all material actions into the canonical hash-chained audit ledger.
 
-The existing orchestration SQL projection currently has a UUID type mismatch and
-is not used as an authority source here. The coordinator's state remains explicitly
-process-local/mock while durable evidence is written to the canonical audit chain.
-This gateway does not bypass the Mission Control refusal-only command gate and it
-does not expose arbitrary computer, email, filing, payment, or publication actions.
+The orchestration coordinator remains explicitly process-local/mock while durable
+identity and evidence state are written through canonical persistence. This gateway
+does not bypass the Mission Control refusal-only command gate and it does not expose
+arbitrary computer, email, filing, payment, or publication actions.
 """
 
 from __future__ import annotations
@@ -29,7 +28,11 @@ from ..auth.correlation import get_current_context
 from ..auth.rbac import CurrentUser, Permission, require_permissions
 from ..database import get_db
 from ..services.audit_service import audit
-from ..services.governed_identity import GovernedIdentity, identity_service
+from ..services.governed_identity import (
+    DuplicateServiceIdentityConflictError,
+    GovernedIdentity,
+    identity_service,
+)
 from ..services.orchestration import orchestrator
 from ..services.orchestration.budget_policy import BudgetLimits
 from ..services.orchestration.orchestrator import OrchestrationStateError
@@ -52,8 +55,8 @@ class PrincipalSession(BaseModel):
     permissions: list[str]
     correlation_id: str | None = None
     causation_id: str | None = None
-    service_identity_persistence: Literal["process-local-descriptor-only"] = (
-        "process-local-descriptor-only"
+    service_identity_persistence: Literal["postgresql-durable-descriptor"] = (
+        "postgresql-durable-descriptor"
     )
     orchestration_state_persistence: Literal["process-local-mock-coordinator"] = (
         "process-local-mock-coordinator"
@@ -86,6 +89,7 @@ class ServiceIdentityRequest(BaseModel):
     allowed_capabilities: list[str] = Field(default_factory=list, max_length=50)
     credential_ref: str | None = Field(default=None, max_length=512)
     ttl_minutes: int = Field(default=60, ge=1, le=1440)
+    idempotency_key: str | None = Field(default=None, min_length=16, max_length=128)
 
 
 @router.post(
@@ -98,17 +102,29 @@ async def provision_service_identity(
     current_user: CurrentUser = Depends(require_permissions(Permission.MISSION_COMMAND_ADMIN)),
     db: AsyncSession = Depends(get_db),
 ) -> GovernedIdentity:
-    identity = identity_service.provision_service_identity(
-        tenant_id=current_user.tenant_id,
-        created_by=current_user.user_id,
-        display_name=body.display_name,
-        agent_id=body.agent_id,
-        scopes=body.scopes,
-        scoped_folders=body.scoped_folders,
-        allowed_capabilities=body.allowed_capabilities,
-        credential_ref=body.credential_ref,
-        ttl_minutes=body.ttl_minutes,
-    )
+    try:
+        identity = await identity_service.provision_service_identity(
+            db,
+            tenant_id=current_user.tenant_id,
+            created_by=current_user.user_id,
+            display_name=body.display_name,
+            agent_id=body.agent_id,
+            scopes=body.scopes,
+            scoped_folders=body.scoped_folders,
+            allowed_capabilities=body.allowed_capabilities,
+            credential_ref=body.credential_ref,
+            ttl_minutes=body.ttl_minutes,
+            idempotency_key=body.idempotency_key,
+        )
+    except DuplicateServiceIdentityConflictError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "SERVICE_IDENTITY_IDEMPOTENCY_CONFLICT",
+                "identity_id": exc.identity_id,
+            },
+        ) from exc
+
     await audit(
         db,
         action="service_identity_provisioned",
@@ -125,6 +141,8 @@ async def provision_service_identity(
             "expires_at": identity.expires_at.isoformat() if identity.expires_at else None,
             "credential_ref_present": bool(identity.credential_ref),
             "credential_material_stored": False,
+            "idempotency_key_present": bool(body.idempotency_key),
+            "persistence": "postgresql-durable-descriptor",
         },
     )
     return identity
@@ -133,8 +151,9 @@ async def provision_service_identity(
 @router.get("/service-identities", response_model=list[GovernedIdentity])
 async def list_service_identities(
     current_user: CurrentUser = Depends(require_permissions(Permission.MISSION_COMMAND_ADMIN)),
+    db: AsyncSession = Depends(get_db),
 ) -> list[GovernedIdentity]:
-    return identity_service.list_identities(tenant_id=current_user.tenant_id)
+    return await identity_service.list_identities(db, tenant_id=current_user.tenant_id)
 
 
 class RevokeIdentityRequest(BaseModel):
@@ -149,7 +168,8 @@ async def revoke_service_identity(
     current_user: CurrentUser = Depends(require_permissions(Permission.MISSION_COMMAND_ADMIN)),
     db: AsyncSession = Depends(get_db),
 ) -> GovernedIdentity:
-    identity = identity_service.revoke_identity(
+    identity = await identity_service.revoke_identity(
+        db,
         identity_id,
         tenant_id=current_user.tenant_id,
         reason=body.reason,
@@ -164,7 +184,7 @@ async def revoke_service_identity(
         resource_type="governed_service_identity",
         resource_id=identity.identity_id,
         resource_name=identity.display_name,
-        details={"reason": body.reason},
+        details={"reason": body.reason, "persistence": "postgresql-durable-descriptor"},
     )
     return identity
 
@@ -404,17 +424,20 @@ async def commit_acceptance_side_effect(
     db: AsyncSession = Depends(get_db),
 ) -> AcceptanceSideEffectReceipt:
     """Commit one internal, bounded acceptance marker after exact-draft approval."""
-    identity = identity_service.get_identity(
+    identity = await identity_service.get_identity(
+        db,
         body.service_identity_id,
         tenant_id=current_user.tenant_id,
     )
-    if identity is None or not identity_service.validate_access(
+    has_access = identity is not None and await identity_service.validate_access(
+        db,
         body.service_identity_id,
         "runtime-acceptance",
         required_scope="runtime:side-effect",
         required_capability="computer_control",
         tenant_id=current_user.tenant_id,
-    ):
+    )
+    if not has_access:
         raise HTTPException(status_code=403, detail="Service identity lacks side-effect authority")
 
     run = orchestrator.get_run(body.run_id, tenant_id=current_user.tenant_id)

@@ -4,7 +4,7 @@
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS governed_service_identities (
-    id                    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id                    VARCHAR(36) PRIMARY KEY,
     tenant_id             UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     created_by            UUID NOT NULL REFERENCES users(id),
     display_name          VARCHAR(120) NOT NULL,

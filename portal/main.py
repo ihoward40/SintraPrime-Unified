@@ -37,6 +37,7 @@ from portal.routers import (
     mission_control_commands,
     notifications,
     orchestration,
+    principal_gateway,
     recovery,
     sso,
     system_health,
@@ -151,6 +152,7 @@ def create_app() -> FastAPI:
     app.include_router(messages.router, prefix="/api/v1/messages", tags=["messages"])
     app.include_router(mission_control.router)
     app.include_router(mission_control_commands.router)
+    app.include_router(principal_gateway.router)
     app.include_router(voice_commands.router)
     app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["notifications"])
     app.include_router(orchestration.router)

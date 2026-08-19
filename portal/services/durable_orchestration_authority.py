@@ -141,6 +141,7 @@ async def approve_durable_run(
         },
     )
     await db.flush()
+    await db.refresh(row, attribute_names=["events"])
     return await get_persisted_run(db, run_id, tenant_id)
 
 
@@ -191,6 +192,7 @@ async def cancel_durable_run(
         payload={"reason": reason, "actor_id": actor_id},
     )
     await db.flush()
+    await db.refresh(row, attribute_names=["events"])
     return await get_persisted_run(db, run_id, tenant_id)
 
 

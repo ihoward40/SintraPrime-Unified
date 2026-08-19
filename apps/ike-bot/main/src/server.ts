@@ -5,12 +5,13 @@ import beneficiaryRoutes from "./routes/beneficiary.routes";
 import creditDisputeRoutes from "./routes/creditDispute.routes";
 import webhookRoutes from "./routes/webhook.routes";
 import aiRoutes from "./routes/ai.routes";
+import runtimeRoutes from "./routes/runtime.routes";
 import { errorHandler } from "./middleware/errorHandler";
-import { 
-  traceMiddleware, 
-  requestLogger, 
-  responseLogger, 
-  errorLogger 
+import {
+  traceMiddleware,
+  requestLogger,
+  responseLogger,
+  errorLogger
 } from "./middleware/logging.middleware";
 import { logger } from "./config/logger";
 
@@ -44,6 +45,7 @@ app.get("/health", (_req, res) => {
 app.use("/api/beneficiaries", beneficiaryRoutes);
 app.use("/api/credit-disputes", creditDisputeRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/runtime", runtimeRoutes);
 
 // Error handling - error logger before error handler
 app.use(errorLogger);

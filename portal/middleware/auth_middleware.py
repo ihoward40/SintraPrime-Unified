@@ -52,16 +52,17 @@ def is_public_path(path: str) -> bool:
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
+        auth_header = request.headers.get("Authorization", "")
 
-        # The portal's global JWT boundary governs the versioned API namespace.
-        # Legacy non-/api routes have their own route-level authorization model;
-        # letting them reach the router also preserves normal 404 semantics for
-        # unknown browser paths instead of converting them into synthetic 401s.
-        if (
-            request.method == "OPTIONS"
-            or is_public_path(path)
-            or not path.startswith("/api/")
-        ):
+        if request.method == "OPTIONS" or is_public_path(path):
+            return await call_next(request)
+
+        # The portal's mandatory JWT boundary governs the versioned API
+        # namespace. Legacy non-/api routes retain their route-level auth and
+        # normal 404 semantics when no bearer token is presented. If a bearer
+        # token *is* presented anywhere, however, validate it globally so a
+        # revoked credential can never reach a handler.
+        if not path.startswith("/api/") and not auth_header.startswith("Bearer "):
             return await call_next(request)
 
         # WebSocket: auth handled in endpoint.
@@ -78,7 +79,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
         except Exception:
             pass
 
-        auth_header = request.headers.get("Authorization", "")
         if not auth_header.startswith("Bearer "):
             return JSONResponse(
                 status_code=401,

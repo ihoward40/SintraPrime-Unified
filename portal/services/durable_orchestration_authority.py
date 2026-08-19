@@ -11,17 +11,19 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models.orchestration import (
-    ApprovalRequest,
-    OrchestrationEvent,
-    OrchestrationNode,
-    OrchestrationRun,
+from ..models.production_authority import (
+    ProductionApprovalRequest as ApprovalRequest,
+    ProductionOrchestrationEvent as OrchestrationEvent,
+    ProductionOrchestrationNode as OrchestrationNode,
+    ProductionOrchestrationRun as OrchestrationRun,
 )
 from .orchestration import orchestrator
 from .orchestration.budget_policy import BudgetLimits
-from .orchestration.persistence import get_run as get_persisted_run
-from .orchestration.persistence import save_run
 from .orchestration.schemas import ExecutionMode
+from .production_orchestration_persistence import (
+    get_production_run,
+    save_production_run,
+)
 
 
 class DurableOrchestrationStateError(ValueError):
@@ -74,12 +76,7 @@ async def start_durable_run(
         tenant_id=tenant_id,
         created_by=created_by,
     )
-    await save_run(db, run)
-    await db.flush()
-    persisted = await get_persisted_run(db, run["run_id"], tenant_id)
-    if persisted is None:
-        raise RuntimeError("Durable orchestration projection was not persisted")
-    return persisted
+    return await save_production_run(db, run)
 
 
 async def get_durable_run(
@@ -88,7 +85,7 @@ async def get_durable_run(
     run_id: str,
     tenant_id: str,
 ) -> dict[str, Any] | None:
-    return await get_persisted_run(db, run_id, tenant_id)
+    return await get_production_run(db, run_id=run_id, tenant_id=tenant_id)
 
 
 async def approve_durable_run(
@@ -123,7 +120,6 @@ async def approve_durable_run(
         approval.principal_id = principal_id
         approval.decided_at = now
         approval.decision_reason = reason
-        approval.updated_at = now
 
     row.status = "COMPLETED" if approved else "BLOCKED"
     row.updated_at = now
@@ -141,8 +137,7 @@ async def approve_durable_run(
         },
     )
     await db.flush()
-    await db.refresh(row, attribute_names=["events"])
-    return await get_persisted_run(db, run_id, tenant_id)
+    return await get_production_run(db, run_id=run_id, tenant_id=tenant_id)
 
 
 async def cancel_durable_run(
@@ -182,7 +177,6 @@ async def cancel_durable_run(
         approval.principal_id = actor_id
         approval.decided_at = now
         approval.decision_reason = reason
-        approval.updated_at = now
 
     await _append_event(
         db,
@@ -192,8 +186,7 @@ async def cancel_durable_run(
         payload={"reason": reason, "actor_id": actor_id},
     )
     await db.flush()
-    await db.refresh(row, attribute_names=["events"])
-    return await get_persisted_run(db, run_id, tenant_id)
+    return await get_production_run(db, run_id=run_id, tenant_id=tenant_id)
 
 
 async def _locked_run(

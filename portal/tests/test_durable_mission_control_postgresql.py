@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 import os
-import uuid
 
 import pytest
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
 from portal import models as _models  # noqa: F401
 from portal.auth.rbac import CurrentUser, Permission
-from portal.database import Base
-from portal.models.user import Role, Tenant, User
+from portal.scripts.postgresql_bootstrap import apply_migrations
 from portal.services.durable_orchestration_authority import (
     approve_durable_run,
     get_durable_run,
@@ -61,28 +60,51 @@ def _principal() -> CurrentUser:
 
 
 async def _sessionmaker() -> tuple[async_sessionmaker[AsyncSession], AsyncEngine]:
-    engine = create_async_engine(_database_url(), echo=False)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
+    database_url = _database_url()
+    apply_migrations(database_url, reset_public_schema=True)
+    engine = create_async_engine(database_url, echo=False)
     return async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession), engine
 
 
 async def _seed(maker: async_sessionmaker[AsyncSession]) -> None:
     async with maker() as db:
-        role_id = str(uuid.uuid4())
-        db.add(Tenant(id=TENANT_ID, name="Durable Gate", slug="durable-gate"))
-        db.add(Role(id=role_id, name="DURABLE_GATE", display_name="Durable Gate"))
-        db.add(
-            User(
-                id=PRINCIPAL_ID,
-                tenant_id=TENANT_ID,
-                role_id=role_id,
-                email="durable-gate@example.invalid",
-                hashed_password="synthetic-not-a-real-password",
-                first_name="Durable",
-                last_name="Principal",
-            )
+        role_id = await db.scalar(text("SELECT id FROM roles WHERE name = 'SUPER_ADMIN'"))
+        assert role_id is not None
+        await db.execute(
+            text(
+                """
+                INSERT INTO tenants (id, name, slug)
+                VALUES (CAST(:tenant_id AS uuid), :name, :slug)
+                """
+            ),
+            {"tenant_id": TENANT_ID, "name": "Durable Gate", "slug": "durable-gate"},
+        )
+        await db.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, tenant_id, role_id, email, first_name, last_name, hashed_password
+                )
+                VALUES (
+                    CAST(:principal_id AS uuid),
+                    CAST(:tenant_id AS uuid),
+                    CAST(:role_id AS uuid),
+                    :email,
+                    :first_name,
+                    :last_name,
+                    :hashed_password
+                )
+                """
+            ),
+            {
+                "principal_id": PRINCIPAL_ID,
+                "tenant_id": TENANT_ID,
+                "role_id": str(role_id),
+                "email": "durable-gate@example.invalid",
+                "first_name": "Durable",
+                "last_name": "Principal",
+                "hashed_password": "synthetic-not-a-real-password",
+            },
         )
         await db.commit()
 
@@ -122,6 +144,8 @@ async def test_mission_control_start_replay_restart_approval_and_cancel_are_dura
             assert persisted is not None
             assert persisted["status"] == "APPROVAL_REQUIRED"
             assert persisted["approvals"][0]["status"] == "REQUESTED"
+            assert len(persisted["routing_decisions"]) >= 2
+            assert all(decision["node_id"] for decision in persisted["routing_decisions"])
 
             replay, replay_ref = await submit_durable_orchestration_command(db, start, principal)
             assert replay.duplicate is True

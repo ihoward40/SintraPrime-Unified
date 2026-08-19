@@ -11,12 +11,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth.rbac import CurrentUser
-from ..models.mission_control_command import (
-    MissionControlCommand,
-    MissionControlCommandEvent,
-    MissionControlCommandReceipt,
+from ..models.production_authority import (
+    ProductionMissionControlCommand as MissionControlCommand,
+    ProductionMissionControlCommandEvent as MissionControlCommandEvent,
+    ProductionMissionControlCommandReceipt as MissionControlCommandReceipt,
 )
-from .audit_service import audit
 from .durable_orchestration_authority import (
     DurableOrchestrationStateError,
     cancel_durable_run,
@@ -33,6 +32,7 @@ from .mission_control_command_service import (
 )
 from .orchestration.budget_policy import BudgetLimits
 from .orchestration.schemas import ExecutionMode
+from .production_authority_audit import append_production_authority_audit
 
 ACTIVATION_MODE = "durable-orchestration-v1"
 EXECUTABLE_COMMANDS = {CommandType.START_GOVERNED_RUN, CommandType.CANCEL_RUN}
@@ -132,11 +132,11 @@ async def submit_durable_orchestration_command(
     db.add_all(events)
     await db.flush()
 
-    audit_entry = await audit(
+    audit_entry = await append_production_authority_audit(
         db,
         action="mission_control_durable_orchestration_command",
-        user_id=current_user.user_id,
-        tenant_id=current_user.tenant_id,
+        user_id=str(current_user.user_id),
+        tenant_id=str(current_user.tenant_id),
         resource_type="mission_control_command",
         resource_id=str(command.id),
         resource_name=command.command_type,

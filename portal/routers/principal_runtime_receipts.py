@@ -50,9 +50,7 @@ class RuntimeReceiptResponse(BaseModel):
 )
 async def write_runtime_receipt(
     body: RuntimeReceiptRequest,
-    current_user: CurrentUser = Depends(
-        require_permissions(Permission.MISSION_COMMAND_ADMIN)
-    ),
+    current_user: CurrentUser = Depends(require_permissions(Permission.MISSION_COMMAND_ADMIN)),
     db: AsyncSession = Depends(get_db),
 ) -> RuntimeReceiptResponse:
     entry = await audit(

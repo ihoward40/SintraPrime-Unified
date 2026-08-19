@@ -11,6 +11,7 @@ from portal.auth.rbac import Permission, Role
 from portal.database import Base, get_db
 from portal.main import create_app
 from portal.models.audit import AuditLog
+from portal.models.governed_service_identity import GovernedServiceIdentityRecord
 from portal.models.user import Role as UserRole
 from portal.models.user import Tenant, User
 from portal.services.governed_identity import identity_service
@@ -41,6 +42,7 @@ def _sqlite_sessionmaker():
                         UserRole.__table__,
                         User.__table__,
                         AuditLog.__table__,
+                        GovernedServiceIdentityRecord.__table__,
                     ],
                 )
             )
@@ -89,14 +91,14 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
     """Certify the bounded governance chain used by IKE-Bot PR #285.
 
     Certified here:
-    real Bearer JWT Principal -> scoped service identity -> living context ->
+    real Bearer JWT Principal -> durable scoped service identity -> living context ->
     specialist orchestration/model routing -> computer-use draft hash ->
     Principal approval -> one acceptance-only side effect -> hash-chained evidence ->
     Principal Brief receipt.
 
-    The orchestration coordinator and service-identity registry remain explicitly
-    process-local. This test does not claim production external computer control or
-    durable orchestration-state certification.
+    Service-identity descriptors are durable and revocable. The orchestration
+    coordinator remains explicitly process-local. This test does not claim production
+    external computer control or durable orchestration-state certification.
     """
     client = _client()
 
@@ -107,23 +109,45 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
     assert session_body["authenticated"] is True
     assert session_body["principal_id"] == PRINCIPAL_ID
     assert session_body["tenant_id"] == TENANT_ID
+    assert session_body["service_identity_persistence"] == "postgresql-durable-descriptor"
     assert session_body["orchestration_state_persistence"] == "process-local-mock-coordinator"
 
-    # 2. Mission-scoped service identity; no credential material is stored here.
+    # 2. Persist a mission-scoped service identity; no credential material is stored here.
+    identity_request = {
+        "display_name": "IKE Computer Draft Executor",
+        "agent_id": "ike-computer-drafter",
+        "scopes": ["runtime:side-effect", "living-context:read"],
+        "allowed_capabilities": ["computer_control", "living_file_memory"],
+        "ttl_minutes": 30,
+        "idempotency_key": "sp-ike-002-identity-0001",
+    }
     identity_response = client.post(
         "/api/v1/principal/service-identities",
-        json={
-            "display_name": "IKE Computer Draft Executor",
-            "agent_id": "ike-computer-drafter",
-            "scopes": ["runtime:side-effect", "living-context:read"],
-            "allowed_capabilities": ["computer_control", "living_file_memory"],
-            "ttl_minutes": 30,
-        },
+        json=identity_request,
     )
     assert identity_response.status_code == 201
     service_identity = identity_response.json()
     assert service_identity["identity_id"].startswith("svc-")
     assert service_identity["status"] == "ACTIVE"
+
+    # 2a. Identical retry is idempotent; changed authority under the same key conflicts.
+    replay = client.post("/api/v1/principal/service-identities", json=identity_request)
+    assert replay.status_code == 201
+    assert replay.json()["identity_id"] == service_identity["identity_id"]
+
+    conflict_request = dict(identity_request)
+    conflict_request["allowed_capabilities"] = ["computer_control"]
+    conflict = client.post("/api/v1/principal/service-identities", json=conflict_request)
+    assert conflict.status_code == 409
+    assert conflict.json()["detail"]["code"] == "SERVICE_IDENTITY_IDEMPOTENCY_CONFLICT"
+
+    # 2b. Clearing process-local compatibility state does not remove durable authority.
+    identity_service.identities.clear()
+    persisted = client.get("/api/v1/principal/service-identities")
+    assert persisted.status_code == 200
+    assert service_identity["identity_id"] in {
+        item["identity_id"] for item in persisted.json()
+    }
 
     # 3. Living memory is retrieved from a bounded, hashed Markdown source.
     living = client.post(
@@ -224,7 +248,6 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
         "external_action_performed": False,
         "remaining_gates": [
             "durable orchestration state",
-            "durable service identities",
             "canonical scheduler write API",
             "production external computer-use adapter",
         ],
@@ -267,10 +290,31 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
     assert len(receipt["evidence_hash"]) == 64
     assert receipt["previous_evidence_hash"] == side_effect_receipt["evidence_hash"]
 
-    # 11. Service identity can be revoked immediately after mission completion.
+    # 11. Revocation is durable and immediately blocks further use of the identity.
     revoked = client.post(
         f"/api/v1/principal/service-identities/{service_identity['identity_id']}/revoke",
         json={"reason": "Acceptance mission complete"},
     )
     assert revoked.status_code == 200
     assert revoked.json()["status"] == "REVOKED"
+
+    identity_service.identities.clear()
+    persisted_after_revoke = client.get("/api/v1/principal/service-identities")
+    persisted_record = next(
+        item
+        for item in persisted_after_revoke.json()
+        if item["identity_id"] == service_identity["identity_id"]
+    )
+    assert persisted_record["status"] == "REVOKED"
+
+    denied_after_revoke = client.post(
+        "/api/v1/principal/acceptance-side-effects",
+        json={
+            "run_id": run_id,
+            "draft_hash": draft_hash,
+            "service_identity_id": service_identity["identity_id"],
+            "side_effect_type": "ACCEPTANCE_MARKER",
+            "principal_brief": {"status": "must-not-run-after-revoke"},
+        },
+    )
+    assert denied_after_revoke.status_code == 403

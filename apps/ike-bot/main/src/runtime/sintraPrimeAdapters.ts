@@ -15,7 +15,7 @@ export interface PrincipalSession {
   correlation_id?: string | null;
   causation_id?: string | null;
   service_identity_persistence: "postgresql-durable-descriptor";
-  orchestration_state_persistence: "process-local-mock-coordinator";
+  orchestration_state_persistence: "postgresql-durable-orchestration";
 }
 
 export interface ServiceIdentityDescriptor {

@@ -6,7 +6,7 @@ import os
 import uuid
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
 from portal import models as _models  # noqa: F401
 from portal.auth.rbac import CurrentUser
@@ -51,14 +51,12 @@ def _principal() -> CurrentUser:
     )
 
 
-async def _sessionmaker() -> async_sessionmaker[AsyncSession]:
+async def _sessionmaker() -> tuple[async_sessionmaker[AsyncSession], AsyncEngine]:
     engine = create_async_engine(_database_url(), echo=False)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
-    maker = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
-    maker._gate_engine = engine  # type: ignore[attr-defined]
-    return maker
+    return async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession), engine
 
 
 async def _seed(maker: async_sessionmaker[AsyncSession]) -> None:
@@ -82,8 +80,7 @@ async def _seed(maker: async_sessionmaker[AsyncSession]) -> None:
 
 @pytest.mark.asyncio
 async def test_mission_control_start_replay_restart_approval_and_cancel_are_durable() -> None:
-    maker = await _sessionmaker()
-    engine = maker._gate_engine  # type: ignore[attr-defined]
+    maker, engine = await _sessionmaker()
     try:
         await _seed(maker)
         principal = _principal()
@@ -110,7 +107,6 @@ async def test_mission_control_start_replay_restart_approval_and_cancel_are_dura
             assert run_id
             await db.commit()
 
-        # Process-local coordinator state is discarded; PostgreSQL must remain sufficient.
         orchestrator.RUNS.clear()
         async with maker() as db:
             persisted = await get_durable_run(db, run_id=run_id, tenant_id=TENANT_ID)
@@ -124,7 +120,6 @@ async def test_mission_control_start_replay_restart_approval_and_cancel_are_dura
             assert replay.command.id == result.command.id
             await db.commit()
 
-        # Approval occurs after restart without restoring RUNS.
         orchestrator.RUNS.clear()
         async with maker() as db:
             approved = await approve_durable_run(
@@ -142,7 +137,6 @@ async def test_mission_control_start_replay_restart_approval_and_cancel_are_dura
             assert approved["events"][-1]["previous_event_hash"] == approved["events"][-2]["event_hash"]
             await db.commit()
 
-        # Start a second run and cancel it through Mission Control after another restart.
         second_start = CommandSubmission(
             command_type=CommandType.START_GOVERNED_RUN,
             target_type=CommandTargetType.MISSION,

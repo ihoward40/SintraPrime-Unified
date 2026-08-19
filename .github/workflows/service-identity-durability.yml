@@ -1,0 +1,58 @@
+name: Service Identity Durability Certification
+
+on:
+  pull_request:
+    paths:
+      - "portal/models/governed_service_identity.py"
+      - "portal/services/governed_identity.py"
+      - "portal/routers/principal_gateway.py"
+      - "portal/migrations/add_governed_service_identities.sql"
+      - "portal/scripts/postgresql_bootstrap.py"
+      - "portal/tests/test_governed_service_identity_postgresql.py"
+      - ".github/workflows/service-identity-durability.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  durable-service-identity:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: identity_gate
+          POSTGRES_PASSWORD: identity_gate
+          POSTGRES_DB: identity_gate_certification
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U identity_gate -d identity_gate_certification"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Certify PostgreSQL identity durability
+        env:
+          POSTGRESQL_BOOTSTRAP_TEST_DATABASE_URL: postgresql://identity_gate:identity_gate@127.0.0.1:5432/identity_gate_certification
+        run: |
+          set -euo pipefail
+          python -m pytest -vv -rs --tb=long --maxfail=1 \
+            portal/tests/test_governed_service_identity_postgresql.py \
+            | tee /tmp/service-identity-durability.log
+          ! grep -q 'SKIPPED' /tmp/service-identity-durability.log
+      - name: Upload durability evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: service-identity-durability-log
+          path: /tmp/service-identity-durability.log
+          if-no-files-found: ignore

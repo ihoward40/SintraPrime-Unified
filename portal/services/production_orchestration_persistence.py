@@ -9,30 +9,14 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models.production_authority import (
-    ProductionApprovalRequest as ApprovalRequest,
-)
-from ..models.production_authority import (
-    ProductionBudgetUsage as BudgetUsage,
-)
-from ..models.production_authority import (
-    ProductionOrchestrationEvent as OrchestrationEvent,
-)
-from ..models.production_authority import (
-    ProductionOrchestrationNode as OrchestrationNode,
-)
-from ..models.production_authority import (
-    ProductionOrchestrationRun as OrchestrationRun,
-)
-from ..models.production_authority import (
-    ProductionReconciliationResult as ReconciliationResult,
-)
-from ..models.production_authority import (
-    ProductionRoutingDecision as RoutingDecision,
-)
-from ..models.production_authority import (
-    ProductionVerificationResult as VerificationResult,
-)
+from ..models.production_authority import ProductionApprovalRequest as ApprovalRequest
+from ..models.production_authority import ProductionBudgetUsage as BudgetUsage
+from ..models.production_authority import ProductionOrchestrationEvent as OrchestrationEvent
+from ..models.production_authority import ProductionOrchestrationNode as OrchestrationNode
+from ..models.production_authority import ProductionOrchestrationRun as OrchestrationRun
+from ..models.production_authority import ProductionReconciliationResult as ReconciliationResult
+from ..models.production_authority import ProductionRoutingDecision as RoutingDecision
+from ..models.production_authority import ProductionVerificationResult as VerificationResult
 from .remediation_service import remediation
 
 
@@ -55,37 +39,43 @@ def _parse_dt(value: Any) -> datetime | None:
 
 
 async def save_production_run(db: AsyncSession, run: dict[str, Any]) -> dict[str, Any]:
-    """Persist one newly-created deterministic run into the raw production schema."""
+    """Persist one newly-created deterministic run into the raw production schema.
+
+    The production-authority mappings intentionally omit ORM relationships and
+    foreign-key metadata that would couple them to the legacy portal registry.
+    Flush the parent run first so PostgreSQL's real child foreign keys are
+    satisfied deterministically while preserving one transaction boundary.
+    """
     run = remediation.redact_boundaries(run)
     run_id = str(run["run_id"])
     classification = run.get("classification", {})
     now = datetime.now(UTC)
 
-    db.add(
-        OrchestrationRun(
-            id=run_id,
-            tenant_id=str(run["tenant_id"]),
-            created_by=str(run["created_by"]) if run.get("created_by") else None,
-            objective=run["objective"],
-            constraints=run.get("constraints", {}),
-            task_type=classification.get("task_type", "mixed"),
-            sensitivity=classification.get("sensitivity", "INTERNAL"),
-            execution_mode=run.get("execution_mode", "THINK_WORK_CHECK"),
-            status=run.get("status", "PLANNED"),
-            classification=classification,
-            policy={
-                "durable_authority": "postgresql-raw-schema",
-                "external_providers_enabled": False,
-            },
-            final_result=run.get("reconciliation"),
-            approval_required=bool(run.get("approvals")),
-            cancellation_reason=run.get("cancellation_reason"),
-            started_at=_parse_dt(run.get("started_at")),
-            completed_at=_parse_dt(run.get("completed_at")),
-            created_at=_parse_dt(run.get("created_at")) or now,
-            updated_at=now,
-        )
+    run_row = OrchestrationRun(
+        id=run_id,
+        tenant_id=str(run["tenant_id"]),
+        created_by=str(run["created_by"]) if run.get("created_by") else None,
+        objective=run["objective"],
+        constraints=run.get("constraints", {}),
+        task_type=classification.get("task_type", "mixed"),
+        sensitivity=classification.get("sensitivity", "INTERNAL"),
+        execution_mode=run.get("execution_mode", "THINK_WORK_CHECK"),
+        status=run.get("status", "PLANNED"),
+        classification=classification,
+        policy={
+            "durable_authority": "postgresql-raw-schema",
+            "external_providers_enabled": False,
+        },
+        final_result=run.get("reconciliation"),
+        approval_required=bool(run.get("approvals")),
+        cancellation_reason=run.get("cancellation_reason"),
+        started_at=_parse_dt(run.get("started_at")),
+        completed_at=_parse_dt(run.get("completed_at")),
+        created_at=_parse_dt(run.get("created_at")) or now,
+        updated_at=now,
     )
+    db.add(run_row)
+    await db.flush()
 
     for sequence, node in enumerate(run.get("nodes", []), start=1):
         db.add(

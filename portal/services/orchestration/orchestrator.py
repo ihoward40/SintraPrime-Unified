@@ -160,6 +160,7 @@ def approve_run(
     run["updated_at"] = datetime.now(UTC).isoformat()
     return deepcopy(run)
 
+
 def _execute_existing(run: dict[str, Any]) -> None:
     run["status"] = RunStatus.RUNNING.value
     append_event(run["events"], "RUN_STARTED", {}, Role.PLANNER.value)
@@ -195,7 +196,9 @@ def _execute_existing(run: dict[str, Any]) -> None:
             providers=providers,
             exclude_provider_ids=exclude,
         )
-        run["routing_decisions"].append(decision.model_dump(mode="json"))
+        decision_payload = decision.model_dump(mode="json")
+        decision_payload["node_id"] = node_id
+        run["routing_decisions"].append(decision_payload)
         if not decision.selected_provider:
             node["status"] = NodeStatus.BLOCKED.value
             run["status"] = RunStatus.BLOCKED.value

@@ -11,18 +11,6 @@ from portal.auth.rbac import Permission, Role
 from portal.database import Base, get_db
 from portal.main import create_app
 from portal.models.audit import AuditLog
-from portal.models.orchestration import (
-    ApprovalRequest,
-    BudgetUsage,
-    EvidenceReference,
-    OrchestrationEvent,
-    OrchestrationNode,
-    OrchestrationRun,
-    ProviderDefinition,
-    ReconciliationResult,
-    RoutingDecision,
-    VerificationResult,
-)
 from portal.models.user import Role as UserRole
 from portal.models.user import Tenant, User
 from portal.services.governed_identity import identity_service
@@ -53,16 +41,6 @@ def _sqlite_sessionmaker():
                         UserRole.__table__,
                         User.__table__,
                         AuditLog.__table__,
-                        OrchestrationRun.__table__,
-                        OrchestrationNode.__table__,
-                        OrchestrationEvent.__table__,
-                        ProviderDefinition.__table__,
-                        RoutingDecision.__table__,
-                        VerificationResult.__table__,
-                        ReconciliationResult.__table__,
-                        ApprovalRequest.__table__,
-                        BudgetUsage.__table__,
-                        EvidenceReference.__table__,
                     ],
                 )
             )
@@ -116,16 +94,20 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
     Principal approval -> one acceptance-only side effect -> hash-chained evidence ->
     Principal Brief receipt.
 
-    This test intentionally does not claim production external computer control.
+    The orchestration coordinator and service-identity registry remain explicitly
+    process-local. This test does not claim production external computer control or
+    durable orchestration-state certification.
     """
     client = _client()
 
     # 1. Principal gateway: identity comes from the verified Bearer JWT.
     session = client.get("/api/v1/principal/session")
     assert session.status_code == 200
-    assert session.json()["authenticated"] is True
-    assert session.json()["principal_id"] == PRINCIPAL_ID
-    assert session.json()["tenant_id"] == TENANT_ID
+    session_body = session.json()
+    assert session_body["authenticated"] is True
+    assert session_body["principal_id"] == PRINCIPAL_ID
+    assert session_body["tenant_id"] == TENANT_ID
+    assert session_body["orchestration_state_persistence"] == "process-local-mock-coordinator"
 
     # 2. Mission-scoped service identity; no credential material is stored here.
     identity_response = client.post(
@@ -170,9 +152,9 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
     }
     draft_hash = _sha256_json(computer_use_draft)
 
-    # 5. Existing orchestration supplies the specialist graph and model routing.
+    # 5. Existing orchestrator supplies the specialist graph and model routing.
     run_response = client.post(
-        "/api/orchestration/execute",
+        "/api/v1/principal/missions",
         json={
             "objective": (
                 "Implement code with specialist review, then send external communications "
@@ -206,9 +188,9 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
     )
     assert blocked.status_code == 409
 
-    # 7. Principal approves the exact pending run.
+    # 7. Principal approves the exact pending mission through the same gateway.
     approval_response = client.post(
-        f"/api/orchestration/runs/{run_id}/approve",
+        f"/api/v1/principal/missions/{run_id}/approve",
         json={"approved": True, "reason": "Reviewed draft hash and bounded acceptance action"},
     )
     assert approval_response.status_code == 200
@@ -240,7 +222,12 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
         "computer_use": "draft-first",
         "approval_id": approval["approval_id"],
         "external_action_performed": False,
-        "remaining_gate": "production external computer-use adapter",
+        "remaining_gates": [
+            "durable orchestration state",
+            "durable service identities",
+            "canonical scheduler write API",
+            "production external computer-use adapter",
+        ],
     }
     committed = client.post(
         "/api/v1/principal/acceptance-side-effects",
@@ -257,7 +244,7 @@ def test_governed_ike_runtime_acceptance_mission_end_to_end():
     assert side_effect_receipt["committed"] is True
     assert len(side_effect_receipt["evidence_hash"]) == 64
 
-    # 10. IKE writes the final mission receipt into the same canonical hash chain.
+    # 10. IKE writes the final Principal Brief into the same canonical hash chain.
     final_receipt = client.post(
         "/api/v1/principal/runtime-receipts",
         json={

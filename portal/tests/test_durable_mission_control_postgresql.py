@@ -9,7 +9,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
 from portal import models as _models  # noqa: F401
-from portal.auth.rbac import CurrentUser
+from portal.auth.rbac import CurrentUser, Permission
 from portal.database import Base
 from portal.models.user import Role, Tenant, User
 from portal.services.durable_orchestration_authority import (
@@ -46,7 +46,16 @@ def _principal() -> CurrentUser:
             "sub": PRINCIPAL_ID,
             "tenant_id": TENANT_ID,
             "role": "SUPER_ADMIN",
-            "permissions": ["*"],
+            "permissions": [
+                Permission.MISSION_COMMAND_CREATE.value,
+                Permission.MISSION_COMMAND_ADMIN.value,
+                Permission.MISSION_RUN_START.value,
+                Permission.MISSION_RUN_CANCEL.value,
+                Permission.ORCHESTRATION_CREATE.value,
+                Permission.ORCHESTRATION_READ.value,
+                Permission.ORCHESTRATION_APPROVE.value,
+                Permission.ORCHESTRATION_CANCEL.value,
+            ],
         }
     )
 

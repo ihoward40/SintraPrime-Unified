@@ -30,12 +30,13 @@ logger = logging.getLogger("PGEvidence")
 # PostgreSQL connection string (local sandbox)
 PG_URL = "postgresql+asyncpg://sintra_app:sintra_app@localhost/sintraprime_test"
 
+
 async def run_pg_evidence():
     logger.info("🎬 GENERATING AUTHORITATIVE POSTGRESQL/RLS EVIDENCE 🎬")
 
     # Superuser engine for seeding
-    ROOT_URL = "postgresql+asyncpg://postgres:postgres@localhost/sintraprime_test"
-    root_engine = create_async_engine(ROOT_URL)
+    root_url = "postgresql+asyncpg://postgres:postgres@localhost/sintraprime_test"
+    root_engine = create_async_engine(root_url)
     root_session_factory = async_sessionmaker(root_engine, expire_on_commit=False, class_=AsyncSession)
 
     # App engine for testing
@@ -181,6 +182,7 @@ async def run_pg_evidence():
     logger.info(f"✨ EVIDENCE COMMITTED TO {report_path} ✨")
     await engine.dispose()
     return evidence
+
 
 if __name__ == "__main__":
     asyncio.run(run_pg_evidence())

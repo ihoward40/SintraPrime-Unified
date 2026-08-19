@@ -16,6 +16,7 @@ from .deadline_evidence import (
 )
 from .document import Document, DocumentFolder, DocumentShare, DocumentVersion
 from .evidence_snapshot import EvidenceSnapshot
+from .governed_service_identity import GovernedServiceIdentityRecord
 from .matter_intelligence import (
     MatterAccount,
     MatterAssessment,
@@ -108,6 +109,7 @@ __all__ = [
     "EvidenceReference",
     "EvidenceSnapshot",
     "Expense",
+    "GovernedServiceIdentityRecord",
     "Invoice",
     "InvoiceLineItem",
     "Matter",

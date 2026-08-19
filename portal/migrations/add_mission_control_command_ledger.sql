@@ -1,7 +1,6 @@
 -- =============================================================================
 -- Migration: Add Mission Control governed command ledger
--- Phase Two, Increment One: command persistence, events, receipts, idempotency
--- No run, scheduler, agent, mission, or assignment mutation state is introduced.
+-- Phase Two: command persistence, events, receipts, idempotency, bounded execution
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS mission_control_commands (
@@ -35,6 +34,9 @@ CREATE TABLE IF NOT EXISTS mission_control_commands (
         state IN (
             'RECEIVED',
             'VALIDATING',
+            'EXECUTING',
+            'COMPLETED',
+            'FAILED',
             'REFUSED',
             'DUPLICATE_REPLAYED',
             'DUPLICATE_CONFLICT'
@@ -110,7 +112,7 @@ CREATE TRIGGER trg_mission_control_command_receipt_immutable
     EXECUTE FUNCTION prevent_mission_control_command_receipt_mutation();
 
 COMMENT ON TABLE mission_control_commands IS
-    'Mission Control governed command ledger projection. Increment One records and refuses only; no operational mutation path exists.';
+    'Mission Control governed command ledger. START/CANCEL may execute only through the certified durable orchestration activation path; unsupported mutations remain refusal-only.';
 
 COMMENT ON TABLE mission_control_command_events IS
     'Append-only Mission Control command event hash chain.';

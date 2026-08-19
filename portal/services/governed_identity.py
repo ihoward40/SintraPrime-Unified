@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import UTC, datetime, timedelta
-from enum import Enum
+from enum import StrEnum
 from typing import Dict, List
 
 from pydantic import BaseModel, Field
@@ -11,14 +11,14 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 
-class IdentityType(str, Enum):
+class IdentityType(StrEnum):
     PRINCIPAL = "PRINCIPAL"
     AGENT_DELEGATED = "AGENT_DELEGATED"
     SERVICE = "SERVICE"
     SYSTEM = "SYSTEM"
 
 
-class IdentityStatus(str, Enum):
+class IdentityStatus(StrEnum):
     ACTIVE = "ACTIVE"
     REVOKED = "REVOKED"
     EXPIRED = "EXPIRED"
@@ -178,9 +178,7 @@ class GovernedIdentityService:
             return False
         if required_capability and required_capability not in identity.allowed_capabilities:
             return False
-        if identity.scoped_folders and resource_id not in identity.scoped_folders:
-            return False
-        return True
+        return not identity.scoped_folders or resource_id in identity.scoped_folders
 
 
 identity_service = GovernedIdentityService()

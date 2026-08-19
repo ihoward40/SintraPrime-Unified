@@ -1,4 +1,4 @@
-"""JWT authentication middleware — validates tokens on every request."""
+"""JWT authentication middleware — validates tokens on every protected API request."""
 
 from __future__ import annotations
 
@@ -44,14 +44,24 @@ PUBLIC_PREFIX_PATHS = (
 
 
 def is_public_path(path: str) -> bool:
-    return path in PUBLIC_EXACT_PATHS or any(path.startswith(prefix) for prefix in PUBLIC_PREFIX_PATHS)
+    return path in PUBLIC_EXACT_PATHS or any(
+        path.startswith(prefix) for prefix in PUBLIC_PREFIX_PATHS
+    )
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
 
-        if request.method == "OPTIONS" or is_public_path(path):
+        # The portal's global JWT boundary governs the versioned API namespace.
+        # Legacy non-/api routes have their own route-level authorization model;
+        # letting them reach the router also preserves normal 404 semantics for
+        # unknown browser paths instead of converting them into synthetic 401s.
+        if (
+            request.method == "OPTIONS"
+            or is_public_path(path)
+            or not path.startswith("/api/")
+        ):
             return await call_next(request)
 
         # WebSocket: auth handled in endpoint.
@@ -80,12 +90,18 @@ class AuthMiddleware(BaseHTTPMiddleware):
             payload = decode_access_token(token)
             jti = payload.get("jti")
             if isinstance(jti, str) and await is_jti_blocklisted(jti):
-                return JSONResponse(status_code=401, content={"detail": "Token has been revoked"})
+                return JSONResponse(
+                    status_code=401,
+                    content={"detail": "Token has been revoked"},
+                )
             request.state.user_id = payload.get("sub")
             request.state.tenant_id = payload.get("tenant_id")
             request.state.role = payload.get("role")
         except Exception as exc:
             log.warning("auth.invalid_token", path=path, error=str(exc))
-            return JSONResponse(status_code=401, content={"detail": "Invalid or expired token"})
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Invalid or expired token"},
+            )
 
         return await call_next(request)

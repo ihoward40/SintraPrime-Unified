@@ -52,9 +52,7 @@ class PrincipalSession(BaseModel):
 
 @router.get("/session", response_model=PrincipalSession)
 async def principal_session(
-    current_user: CurrentUser = Depends(
-        require_permissions(Permission.MISSION_COMMAND_ADMIN)
-    ),
+    current_user: CurrentUser = Depends(require_permissions(Permission.MISSION_COMMAND_ADMIN)),
 ) -> PrincipalSession:
     """Return identity derived only from the already-verified JWT claims."""
     context = get_current_context()
@@ -87,9 +85,7 @@ class ServiceIdentityRequest(BaseModel):
 )
 async def provision_service_identity(
     body: ServiceIdentityRequest,
-    current_user: CurrentUser = Depends(
-        require_permissions(Permission.MISSION_COMMAND_ADMIN)
-    ),
+    current_user: CurrentUser = Depends(require_permissions(Permission.MISSION_COMMAND_ADMIN)),
     db: AsyncSession = Depends(get_db),
 ) -> GovernedIdentity:
     identity = identity_service.provision_service_identity(
@@ -126,9 +122,7 @@ async def provision_service_identity(
 
 @router.get("/service-identities", response_model=list[GovernedIdentity])
 async def list_service_identities(
-    current_user: CurrentUser = Depends(
-        require_permissions(Permission.MISSION_COMMAND_ADMIN)
-    ),
+    current_user: CurrentUser = Depends(require_permissions(Permission.MISSION_COMMAND_ADMIN)),
 ) -> list[GovernedIdentity]:
     return identity_service.list_identities(tenant_id=current_user.tenant_id)
 
@@ -142,9 +136,7 @@ class RevokeIdentityRequest(BaseModel):
 async def revoke_service_identity(
     identity_id: str,
     body: RevokeIdentityRequest,
-    current_user: CurrentUser = Depends(
-        require_permissions(Permission.MISSION_COMMAND_ADMIN)
-    ),
+    current_user: CurrentUser = Depends(require_permissions(Permission.MISSION_COMMAND_ADMIN)),
     db: AsyncSession = Depends(get_db),
 ) -> GovernedIdentity:
     identity = identity_service.revoke_identity(
@@ -198,9 +190,7 @@ def _resolve_living_ref(ref: str) -> Path:
 @router.post("/living-context", response_model=list[LivingContextItem])
 async def retrieve_living_context(
     body: LivingContextRequest,
-    current_user: CurrentUser = Depends(
-        require_permissions(Permission.MISSION_COMMAND_ADMIN)
-    ),
+    current_user: CurrentUser = Depends(require_permissions(Permission.MISSION_COMMAND_ADMIN)),
 ) -> list[LivingContextItem]:
     terms = sorted({term.lower() for term in body.query.split() if len(term) >= 3})
     items: list[LivingContextItem] = []
@@ -254,9 +244,7 @@ class AcceptanceSideEffectReceipt(BaseModel):
 )
 async def commit_acceptance_side_effect(
     body: AcceptanceSideEffectRequest,
-    current_user: CurrentUser = Depends(
-        require_permissions(Permission.MISSION_COMMAND_ADMIN)
-    ),
+    current_user: CurrentUser = Depends(require_permissions(Permission.MISSION_COMMAND_ADMIN)),
     db: AsyncSession = Depends(get_db),
 ) -> AcceptanceSideEffectReceipt:
     """Commit one internal, reversible-by-record side effect after Principal approval.

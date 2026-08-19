@@ -31,7 +31,7 @@ jobs:
           cache: pip
 
       - name: Install Python dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt aiosqlite
 
       - name: Run governed IKE acceptance mission
         run: python -m pytest portal/tests/test_ike_runtime_e2e_acceptance.py -q

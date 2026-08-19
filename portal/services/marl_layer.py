@@ -1,37 +1,51 @@
 import logging
-from typing import Dict, List, Any, Optional
-from enum import Enum
-from pydantic import BaseModel
+from enum import StrEnum
 
 logger = logging.getLogger(__name__)
 
-class AgentPolicy(str, Enum):
+
+class AgentPolicy(StrEnum):
     COOPERATIVE = "COOPERATIVE"
     COMPETITIVE = "COMPETITIVE"
     EXPLORATORY = "EXPLORATORY"
 
+
 class MARLLayer:
-    """
-    Multi-Agent Reinforcement Learning (MARL) Layer.
-    Coordinates learning and policy optimization across the Agent Parliament.
-    """
+    """Coordinate learning and policy optimization across the Agent Parliament."""
+
     def __init__(self):
-        self.active_policies: Dict[str, AgentPolicy] = {}
+        self.active_policies: dict[str, AgentPolicy] = {}
         self.global_reward_signal: float = 0.0
 
-    def register_agent(self, agent_id: str, initial_policy: AgentPolicy = AgentPolicy.COOPERATIVE):
+    def register_agent(
+        self,
+        agent_id: str,
+        initial_policy: AgentPolicy = AgentPolicy.COOPERATIVE,
+    ):
         self.active_policies[agent_id] = initial_policy
-        logger.info(f"[MARL_LAYER] Registered agent {agent_id} with policy {initial_policy}")
+        logger.info(
+            "[MARL_LAYER] Registered agent %s with policy %s",
+            agent_id,
+            initial_policy,
+        )
 
     def update_policy(self, agent_id: str, new_policy: AgentPolicy):
         if agent_id in self.active_policies:
             self.active_policies[agent_id] = new_policy
-            logger.info(f"[MARL_LAYER] Updated agent {agent_id} to policy {new_policy}")
+            logger.info(
+                "[MARL_LAYER] Updated agent %s to policy %s",
+                agent_id,
+                new_policy,
+            )
 
     def distribute_reward(self, reward: float):
-        """Distributes a reward signal to all active agents for policy reinforcement."""
+        """Distribute a reward signal to active agents for policy reinforcement."""
         self.global_reward_signal += reward
-        logger.info(f"[MARL_LAYER] Distributed global reward: {reward}. Total: {self.global_reward_signal}")
+        logger.info(
+            "[MARL_LAYER] Distributed global reward: %s. Total: %s",
+            reward,
+            self.global_reward_signal,
+        )
 
-# Global instance
+
 marl_layer = MARLLayer()

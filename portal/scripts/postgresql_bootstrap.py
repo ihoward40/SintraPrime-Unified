@@ -20,6 +20,7 @@ MIGRATION_SEQUENCE = (
     Path("portal/migrations/add_audit_records.sql"),
     Path("portal/migrations/add_mission_control_command_ledger.sql"),
     Path("portal/migrations/add_mission_control_run_control_projection.sql"),
+    Path("portal/migrations/add_governed_service_identities.sql"),
 )
 EXPECTED_TABLES = (
     "tenants",
@@ -35,6 +36,7 @@ EXPECTED_TABLES = (
     "mission_control_command_receipts",
     "mission_control_run_controls",
     "mission_control_run_control_events",
+    "governed_service_identities",
 )
 
 

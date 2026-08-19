@@ -40,11 +40,18 @@ async def audit(
     http_status_code: int | None = None,
     error_message: str | None = None,
 ) -> AuditLog:
+    """Append an immutable audit entry with SHA-256 chaining.
+
+    ``created_at`` is assigned in application code rather than relying only on the
+    database server default. SQLite's ``CURRENT_TIMESTAMP`` is commonly only
+    second-resolution, which allowed multiple sequential writes to share the same
+    timestamp and made ``ORDER BY created_at`` unable to identify the real chain
+    head deterministically. Using the same high-resolution UTC timestamp for both
+    the persisted row and the hash payload keeps chain order reproducible across
+    supported databases.
     """
-    Append an immutable audit entry with SHA-256 chaining.
-    """
-    # Get the hash of the previous entry for chain integrity
     prev_hash = await _get_last_hash(db, tenant_id)
+    event_time = datetime.now(UTC)
 
     entry_data = {
         "action": action,
@@ -55,7 +62,7 @@ async def audit(
         "resource_name": resource_name,
         "status": status,
         "details": details,
-        "timestamp": datetime.now(UTC).isoformat(),
+        "timestamp": event_time.isoformat(),
         "prev_hash": prev_hash,
     }
     entry_hash = _compute_hash(entry_data)
@@ -79,6 +86,7 @@ async def audit(
         error_message=error_message,
         previous_hash=prev_hash,
         entry_hash=entry_hash,
+        created_at=event_time,
     )
     add_result = db.add(entry)
     if inspect.isawaitable(add_result):

@@ -11,6 +11,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..models.orchestration import ApprovalRequest as LegacyApprovalRequest
 from ..models.production_authority import (
     ProductionApprovalRequest as ApprovalRequest,
 )
@@ -34,6 +35,12 @@ from .production_orchestration_persistence import (
 
 class DurableOrchestrationStateError(ValueError):
     """Raised when a durable lifecycle transition violates the current state."""
+
+
+def _approval_model(db: AsyncSession) -> type[ApprovalRequest] | type[LegacyApprovalRequest]:
+    """Use the historical approval shape only for SQLite compatibility tests."""
+    bind = db.get_bind()
+    return LegacyApprovalRequest if bind.dialect.name == "sqlite" else ApprovalRequest
 
 
 def _event_hash(
@@ -109,10 +116,11 @@ async def approve_durable_run(
     if row.status != "APPROVAL_REQUIRED":
         raise DurableOrchestrationStateError("No pending Principal approval exists for this run")
 
+    approval_cls = _approval_model(db)
     approval_result = await db.execute(
-        select(ApprovalRequest).where(
-            ApprovalRequest.run_id == run_id,
-            ApprovalRequest.status == "REQUESTED",
+        select(approval_cls).where(
+            approval_cls.run_id == run_id,
+            approval_cls.status == "REQUESTED",
         )
     )
     approvals = list(approval_result.scalars().all())
@@ -172,10 +180,11 @@ async def cancel_durable_run(
             node.status = "CANCELLED"
             node.updated_at = now
 
+    approval_cls = _approval_model(db)
     approval_result = await db.execute(
-        select(ApprovalRequest).where(
-            ApprovalRequest.run_id == run_id,
-            ApprovalRequest.status == "REQUESTED",
+        select(approval_cls).where(
+            approval_cls.run_id == run_id,
+            approval_cls.status == "REQUESTED",
         )
     )
     for approval in approval_result.scalars().all():

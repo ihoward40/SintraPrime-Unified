@@ -249,9 +249,10 @@ class PrincipalMissionCancel(BaseModel):
 @router.post("/missions")
 async def execute_principal_mission(
     body: PrincipalMissionRequest,
-    current_user: CurrentUser = Depends(
-        require_permissions(Permission.MISSION_COMMAND_ADMIN, Permission.ORCHESTRATION_CREATE)
-    ),
+    current_user: CurrentUser = Depends(require_permissions(
+        Permission.MISSION_COMMAND_ADMIN,
+        Permission.ORCHESTRATION_CREATE,
+    )),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """Execute the existing bounded/mock orchestration coordinator under Principal authority."""
@@ -285,9 +286,10 @@ async def execute_principal_mission(
 @router.get("/missions/{run_id}")
 async def get_principal_mission(
     run_id: str,
-    current_user: CurrentUser = Depends(
-        require_permissions(Permission.MISSION_COMMAND_ADMIN, Permission.ORCHESTRATION_READ)
-    ),
+    current_user: CurrentUser = Depends(require_permissions(
+        Permission.MISSION_COMMAND_ADMIN,
+        Permission.ORCHESTRATION_READ,
+    )),
 ) -> dict[str, Any]:
     run = orchestrator.get_run(run_id, tenant_id=current_user.tenant_id)
     if run is None:
@@ -299,9 +301,10 @@ async def get_principal_mission(
 async def approve_principal_mission(
     run_id: str,
     body: PrincipalMissionDecision,
-    current_user: CurrentUser = Depends(
-        require_permissions(Permission.MISSION_COMMAND_ADMIN, Permission.ORCHESTRATION_APPROVE)
-    ),
+    current_user: CurrentUser = Depends(require_permissions(
+        Permission.MISSION_COMMAND_ADMIN,
+        Permission.ORCHESTRATION_APPROVE,
+    )),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     try:
@@ -337,9 +340,10 @@ async def approve_principal_mission(
 async def cancel_principal_mission(
     run_id: str,
     body: PrincipalMissionCancel,
-    current_user: CurrentUser = Depends(
-        require_permissions(Permission.MISSION_COMMAND_ADMIN, Permission.ORCHESTRATION_CANCEL)
-    ),
+    current_user: CurrentUser = Depends(require_permissions(
+        Permission.MISSION_COMMAND_ADMIN,
+        Permission.ORCHESTRATION_CANCEL,
+    )),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     try:

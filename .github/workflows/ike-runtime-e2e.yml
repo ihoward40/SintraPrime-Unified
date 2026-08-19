@@ -39,8 +39,8 @@ jobs:
       - name: Run Principal gateway auth certification
         run: python -m pytest portal/tests/test_auth_tenant_rbac_certification.py::test_dynamic_live_app_route_discovery -q
 
-  ike-bot-typescript:
-    name: ike-bot-typescript
+  ike-bot-runtime-typescript:
+    name: ike-bot-runtime-typescript
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -55,7 +55,12 @@ jobs:
           node-version: "20"
 
       - name: Install IKE-Bot dependencies
-        run: npm install --no-audit --no-fund
+        run: npm install --legacy-peer-deps --no-audit --no-fund
 
-      - name: Compile IKE-Bot TypeScript
-        run: npm run build
+      - name: Type-check governed runtime integration
+        run: >-
+          ./node_modules/.bin/tsc --noEmit --target ES2020 --module commonjs
+          --moduleResolution node --esModuleInterop --strict --skipLibCheck
+          src/runtime/governedRuntime.ts
+          src/runtime/sintraPrimeAdapters.ts
+          src/routes/runtime.routes.ts

@@ -427,6 +427,13 @@ async def test_gate4c_durable_rate_limit_and_provider_429(monkeypatch) -> None:
             assert bucket_count == 1
             await db.commit()
 
+        # The provider-429 case is independent from the local limiter case above.
+        # Clear only the disposable test bucket; production semantics intentionally
+        # do not permit a new lease to widen an active tenant+adapter minute bucket.
+        async with maker() as db:
+            await db.execute(text("DELETE FROM external_provider_rate_buckets"))
+            await db.commit()
+
         async def provider_429(**kwargs):
             raise ProviderBoundaryError("Provider rate limit returned 429")
 

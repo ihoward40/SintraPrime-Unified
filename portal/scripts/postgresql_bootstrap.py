@@ -26,6 +26,8 @@ PRODUCTION_GATE_MIGRATION_SEQUENCE = (
     Path("portal/migrations/add_adaptive_orchestration_domain.sql"),
     Path("portal/migrations/add_governed_scheduler_domain.sql"),
     Path("portal/migrations/add_external_action_sandbox_domain.sql"),
+)
+PROVIDER_GATE_MIGRATION_SEQUENCE = (
     Path("portal/migrations/extend_external_action_provider_test.sql"),
 )
 EXPECTED_TABLES = (
@@ -78,7 +80,7 @@ def psycopg2_url(raw_url: str) -> str:
 
 
 def authoritative_migration_sequence() -> tuple[Path, ...]:
-    return MIGRATION_SEQUENCE + PRODUCTION_GATE_MIGRATION_SEQUENCE
+    return MIGRATION_SEQUENCE + PRODUCTION_GATE_MIGRATION_SEQUENCE + PROVIDER_GATE_MIGRATION_SEQUENCE
 
 
 def apply_migrations(database_url: str, *, reset_public_schema: bool = False) -> list[str]:

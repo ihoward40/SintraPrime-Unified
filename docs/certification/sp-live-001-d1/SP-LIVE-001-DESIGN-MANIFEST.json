@@ -1,0 +1,65 @@
+{
+  "base_commit": "8e30f397fac81a23e7873364b122efdfbdc6f114",
+  "files": [
+    {
+      "bytes": 1786,
+      "path": "AGENTS.md",
+      "sha256": "c55c775191520ab56343bafec07a810b273615703f25e4e193bdfc77d8812902"
+    },
+    {
+      "bytes": 4073,
+      "path": "SP-LIVE-001-ACTION-ENVELOPE-SCHEMA.json",
+      "sha256": "598bd5aaf08ec1bbc0ce879f9d4b1eabc2bf3770c48ad5a54575cde242ea142e"
+    },
+    {
+      "bytes": 3742,
+      "path": "SP-LIVE-001-AUTHORITY-STATE-MACHINE.md",
+      "sha256": "858bf9f7956082f6250b0d29cbecafbf98c0446696346eca0ff01df135f81130"
+    },
+    {
+      "bytes": 5104,
+      "path": "SP-LIVE-001-END-TO-END-ACCEPTANCE-PLAN.md",
+      "sha256": "1f8ac88c550b431c9b7fea94a18c409a70bccb843fe093011981c133f758e17a"
+    },
+    {
+      "bytes": 3625,
+      "path": "SP-LIVE-001-FIRST-MISSION-SELECTION.md",
+      "sha256": "d5d0dd06eeb651b6714c1ba39b60e1e20fd375d3a4bbbaa4b0cdfd39e73f7929"
+    },
+    {
+      "bytes": 3514,
+      "path": "SP-LIVE-001-MEMORY-CONTRACT.md",
+      "sha256": "8a227ec7cb556b16411d24e9da5f8c25bb5d36893558f4c2591526d9b5fbec40"
+    },
+    {
+      "bytes": 4052,
+      "path": "SP-LIVE-001-MISSION-CONTRACT.md",
+      "sha256": "57092bc55f9d541238b7142ad381a7f6451ad1e61a0c25d84e92ab3c24c7c143"
+    },
+    {
+      "bytes": 3761,
+      "path": "SP-LIVE-001-SWARM-CONTRACT.md",
+      "sha256": "f94311eec519f4e038d8346ea2c3de7ffceca559e30e5b48b6b6458eabf12dee"
+    },
+    {
+      "bytes": 4057,
+      "path": "SP-LIVE-001-THREAT-MODEL.md",
+      "sha256": "e1d7e96c192478379d51731e728f39793f399167e167a37effcb68dd48fc899d"
+    },
+    {
+      "bytes": 3382,
+      "path": "SP-LIVE-001-VOICE-APPROVAL-PROTOCOL.md",
+      "sha256": "4cc06d2f72f3bc323b232a502374ec07363c676f4aaefc6f2e411a65b8968f94"
+    }
+  ],
+  "gate": "SP_LIVE_001_D1_ARCHITECTURE_AND_MISSION_CONTRACT",
+  "gate_4d_b_certified_head": "457f69be6714797f2332e20dfc6a245c817099e5",
+  "gate_4d_c_design_status": "RATIFIED_FROZEN_PUSHED",
+  "implementation_authorized": false,
+  "live_execution_authorized": false,
+  "program": "SP-LIVE-001",
+  "real_side_effect_authorized": false,
+  "schema_version": "1.0",
+  "sp_live_001_i1_authorized": false,
+  "status": "DESIGN_COMPLETE_PENDING_PRINCIPAL_REVIEW"
+}

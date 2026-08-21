@@ -17,7 +17,7 @@ from typing import Any
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models.external_action_sandbox import (
+from portal.models.external_action_sandbox import (
     ExternalActionApproval,
     ExternalActionEvidence,
     ExternalActionIntent,
@@ -26,8 +26,8 @@ from ..models.external_action_sandbox import (
     ExternalProviderCredentialLease,
     ExternalProviderRateBucket,
 )
-from ..models.governed_service_identity import GovernedServiceIdentityRecord
-from .postman_echo_provider_adapter import (
+from portal.models.governed_service_identity import GovernedServiceIdentityRecord
+from portal.services.postman_echo_provider_adapter import (
     ADAPTER_ID as POSTMAN_ADAPTER_ID,
     APPROVED_URL as POSTMAN_APPROVED_URL,
     ENVIRONMENT as POSTMAN_ENVIRONMENT,
@@ -35,7 +35,7 @@ from .postman_echo_provider_adapter import (
     ProviderBoundaryError,
     postman_echo_provider_adapter,
 )
-from .sandbox_echo_adapter import (
+from portal.services.sandbox_echo_adapter import (
     ADAPTER_ID as SANDBOX_ADAPTER_ID,
     ENVIRONMENT as SANDBOX_ENVIRONMENT,
     OPERATION_ID as SANDBOX_OPERATION_ID,

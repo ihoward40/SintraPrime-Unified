@@ -9,7 +9,12 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import func, select, text
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from portal.models.external_action_sandbox import (
     ExternalActionIntent,
@@ -445,9 +450,11 @@ async def test_gate4c_durable_rate_limit_and_provider_429(monkeypatch) -> None:
                     ExternalProviderAttempt.intent_id == intent["intent_id"]
                 )
             )
-            assert attempt is not None and attempt.outcome == "RATE_LIMITED"
+            assert attempt is not None
+            assert attempt.outcome == "RATE_LIMITED"
             stored = await db.get(ExternalActionIntent, intent["intent_id"])
-            assert stored is not None and stored.status == "FAILED"
+            assert stored is not None
+            assert stored.status == "FAILED"
     finally:
         await engine.dispose()
 
@@ -555,7 +562,8 @@ async def test_gate4c_concurrent_duplicate_suppression_evidence_and_logical_comp
                 select(ExternalProviderAttempt).where(ExternalProviderAttempt.intent_id == intent_id)
             )
             assert attempt is not None
-            assert attempt.request_hash and attempt.response_hash
+            assert attempt.request_hash
+            assert attempt.response_hash
             assert attempt.provider_url == APPROVED_URL
             chain = await verify_external_evidence_chain(
                 db,

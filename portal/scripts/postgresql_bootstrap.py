@@ -30,6 +30,9 @@ PRODUCTION_GATE_MIGRATION_SEQUENCE = (
 PROVIDER_GATE_MIGRATION_SEQUENCE = (
     Path("portal/migrations/extend_external_action_provider_test.sql"),
 )
+READONLY_GATE_MIGRATION_SEQUENCE = (
+    Path("portal/migrations/extend_external_action_github_readonly.sql"),
+)
 EXPECTED_TABLES = (
     "tenants",
     "roles",
@@ -80,7 +83,12 @@ def psycopg2_url(raw_url: str) -> str:
 
 
 def authoritative_migration_sequence() -> tuple[Path, ...]:
-    return MIGRATION_SEQUENCE + PRODUCTION_GATE_MIGRATION_SEQUENCE + PROVIDER_GATE_MIGRATION_SEQUENCE
+    return (
+        MIGRATION_SEQUENCE
+        + PRODUCTION_GATE_MIGRATION_SEQUENCE
+        + PROVIDER_GATE_MIGRATION_SEQUENCE
+        + READONLY_GATE_MIGRATION_SEQUENCE
+    )
 
 
 def apply_migrations(database_url: str, *, reset_public_schema: bool = False) -> list[str]:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import socket
 
 import pytest
@@ -15,8 +16,6 @@ from portal.services.postman_echo_provider_adapter import (
     postman_echo_provider_adapter,
     validate_destination,
 )
-
-pytestmark = pytest.mark.integration
 
 
 class _FakeResponse:
@@ -146,6 +145,8 @@ async def test_dns_resolution_is_pinned_into_actual_http_connector(monkeypatch) 
 @pytest.mark.asyncio
 async def test_live_postman_echo_https_boundary() -> None:
     """Cross a real provider-owned HTTP boundary without persistent provider state."""
+    if os.environ.get("GATE4C_LIVE_HTTP") != "1":
+        pytest.skip("Live Gate 4C provider call is certified only in its dedicated workflow")
     receipt = await postman_echo_provider_adapter.execute_once(
         payload={"gate": "4c", "purpose": "provider-boundary-certification"},
         timeout_seconds=15.0,

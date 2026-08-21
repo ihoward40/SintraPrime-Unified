@@ -58,9 +58,10 @@ class PrincipalScheduleDispatchRequest(BaseModel):
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_principal_schedule(
     body: PrincipalScheduleRequest,
-    current_user: CurrentUser = Depends(
-        require_permissions(Permission.MISSION_COMMAND_ADMIN, Permission.ORCHESTRATION_CREATE)
-    ),
+    current_user: CurrentUser = Depends(require_permissions(
+        Permission.MISSION_COMMAND_ADMIN,
+        Permission.ORCHESTRATION_CREATE,
+    )),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     try:
@@ -107,9 +108,10 @@ async def create_principal_schedule(
 
 @router.get("")
 async def list_principal_schedules(
-    current_user: CurrentUser = Depends(
-        require_permissions(Permission.MISSION_COMMAND_ADMIN, Permission.ORCHESTRATION_READ)
-    ),
+    current_user: CurrentUser = Depends(require_permissions(
+        Permission.MISSION_COMMAND_ADMIN,
+        Permission.ORCHESTRATION_READ,
+    )),
     db: AsyncSession = Depends(get_db),
 ) -> list[dict[str, Any]]:
     return await list_schedules(db, tenant_id=current_user.tenant_id)
@@ -118,9 +120,10 @@ async def list_principal_schedules(
 @router.get("/{schedule_id}")
 async def get_principal_schedule(
     schedule_id: str,
-    current_user: CurrentUser = Depends(
-        require_permissions(Permission.MISSION_COMMAND_ADMIN, Permission.ORCHESTRATION_READ)
-    ),
+    current_user: CurrentUser = Depends(require_permissions(
+        Permission.MISSION_COMMAND_ADMIN,
+        Permission.ORCHESTRATION_READ,
+    )),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     schedule = await get_schedule(db, schedule_id=schedule_id, tenant_id=current_user.tenant_id)
@@ -133,9 +136,10 @@ async def get_principal_schedule(
 async def cancel_principal_schedule(
     schedule_id: str,
     body: PrincipalScheduleCancelRequest,
-    current_user: CurrentUser = Depends(
-        require_permissions(Permission.MISSION_COMMAND_ADMIN, Permission.ORCHESTRATION_CANCEL)
-    ),
+    current_user: CurrentUser = Depends(require_permissions(
+        Permission.MISSION_COMMAND_ADMIN,
+        Permission.ORCHESTRATION_CANCEL,
+    )),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     try:
@@ -170,9 +174,10 @@ async def cancel_principal_schedule(
 @router.post("/{schedule_id}/replay")
 async def replay_principal_schedule(
     schedule_id: str,
-    current_user: CurrentUser = Depends(
-        require_permissions(Permission.MISSION_COMMAND_ADMIN, Permission.ORCHESTRATION_READ)
-    ),
+    current_user: CurrentUser = Depends(require_permissions(
+        Permission.MISSION_COMMAND_ADMIN,
+        Permission.ORCHESTRATION_READ,
+    )),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     try:
@@ -208,9 +213,10 @@ async def replay_principal_schedule(
 async def dispatch_principal_schedule(
     schedule_id: str,
     body: PrincipalScheduleDispatchRequest,
-    current_user: CurrentUser = Depends(
-        require_permissions(Permission.MISSION_COMMAND_ADMIN, Permission.ORCHESTRATION_CREATE)
-    ),
+    current_user: CurrentUser = Depends(require_permissions(
+        Permission.MISSION_COMMAND_ADMIN,
+        Permission.ORCHESTRATION_CREATE,
+    )),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """Bounded Gate 3 dispatch into durable orchestration; no external adapter runs."""

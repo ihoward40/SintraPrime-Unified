@@ -1,0 +1,22 @@
+name: Ruff Gate4D Import Diff Once
+
+on:
+  pull_request:
+    paths:
+      - "portal/tests/test_gate4d_github_authority_postgresql.py"
+      - ".github/workflows/ruff-gate4d-import-diff-once.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  diff:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install ruff==0.15.20
+      - name: Show canonical import diff
+        run: ruff check portal/tests/test_gate4d_github_authority_postgresql.py --select I001 --fix --diff || true

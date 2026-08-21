@@ -1,4 +1,4 @@
-"""Gate 4B production-authority mappings for the disposable external-action sandbox."""
+"""Production-authority mappings for restricted external actions (Gates 4B/4C)."""
 
 from __future__ import annotations
 
@@ -16,9 +16,7 @@ class ExternalActionAuthorityBase(DeclarativeBase):
 
 class ExternalActionIntent(ExternalActionAuthorityBase):
     __tablename__ = "external_action_intents"
-    __table_args__ = (
-        UniqueConstraint("tenant_id", "principal_id", "idempotency_key"),
-    )
+    __table_args__ = (UniqueConstraint("tenant_id", "principal_id", "idempotency_key"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(UUID(as_uuid=False), nullable=False)
@@ -106,3 +104,57 @@ class SandboxEchoEffect(ExternalActionAuthorityBase):
     confirmation_id: Mapped[str] = mapped_column(String(128), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     compensated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ExternalProviderCredentialLease(ExternalActionAuthorityBase):
+    __tablename__ = "external_provider_credential_leases"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(UUID(as_uuid=False), nullable=False)
+    principal_id: Mapped[str] = mapped_column(UUID(as_uuid=False), nullable=False)
+    service_identity_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    adapter_id: Mapped[str] = mapped_column(String(120), nullable=False)
+    environment: Mapped[str] = mapped_column(String(32), nullable=False)
+    destination: Mapped[str] = mapped_column(Text, nullable=False)
+    credential_ref: Mapped[str] = mapped_column(Text, nullable=False)
+    credential_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False)
+    issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revocation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    rate_limit_per_minute: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ExternalProviderRateBucket(ExternalActionAuthorityBase):
+    __tablename__ = "external_provider_rate_buckets"
+
+    scope_key: Mapped[str] = mapped_column(String(240), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(UUID(as_uuid=False), nullable=False)
+    adapter_id: Mapped[str] = mapped_column(String(120), nullable=False)
+    window_started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    request_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    limit_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ExternalProviderAttempt(ExternalActionAuthorityBase):
+    __tablename__ = "external_provider_attempts"
+    __table_args__ = (UniqueConstraint("intent_id", "attempt_no"),)
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True)
+    intent_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    tenant_id: Mapped[str] = mapped_column(UUID(as_uuid=False), nullable=False)
+    adapter_id: Mapped[str] = mapped_column(String(120), nullable=False)
+    credential_lease_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    attempt_no: Mapped[int] = mapped_column(Integer, nullable=False)
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    response_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    provider_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    provider_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    resolved_ips: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
+    outcome: Mapped[str] = mapped_column(String(32), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -3,8 +3,13 @@ name: Provider HTTP Gate 4C Certification
 on:
   pull_request:
     paths:
+      - "portal/migrations/extend_external_action_provider_test.sql"
+      - "portal/models/external_action_sandbox.py"
+      - "portal/services/restricted_external_action.py"
       - "portal/services/postman_echo_provider_adapter.py"
+      - "portal/scripts/postgresql_bootstrap.py"
       - "portal/tests/test_gate4c_postman_echo_provider.py"
+      - "portal/tests/test_gate4c_provider_authority_postgresql.py"
       - "docs/planning/SP-IKE-005_PROVIDER_HTTP_GATE.md"
       - ".github/workflows/provider-http-gate4c.yml"
   workflow_dispatch:
@@ -14,30 +19,54 @@ permissions:
 
 jobs:
   provider-http-boundary:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: gate4c
+          POSTGRES_PASSWORD: gate4c
+          POSTGRES_DB: gate4c_certification
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U gate4c -d gate4c_certification"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
     env:
       GATE4C_LIVE_HTTP: "1"
+      GATE4C_POSTMAN_ECHO_TOKEN: "gate4c-synthetic-provider-token-not-a-secret"
+      GATE4C_PROVIDER_AUTHORITY_DATABASE_URL: postgresql+asyncpg://gate4c:gate4c@127.0.0.1:5432/gate4c_certification
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
       - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Certify redirect DNS pinning and live provider boundary
         run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[test]"
-      - name: Certify redirect and DNS pinning controls plus live provider boundary
+          set -euo pipefail
+          python -m pytest -vv -rs --tb=long --maxfail=1 \
+            portal/tests/test_gate4c_postman_echo_provider.py \
+            | tee /tmp/gate4c-provider-http.log
+          ! grep -q 'SKIPPED' /tmp/gate4c-provider-http.log
+      - name: Certify durable provider authority envelope
         run: |
-          set -o pipefail
-          pytest portal/tests/test_gate4c_postman_echo_provider.py -vv -rs | tee gate4c-provider-http.log
-          if grep -q "SKIPPED" gate4c-provider-http.log; then
-            echo "Gate 4C live provider certification may not skip tests"
-            exit 1
-          fi
+          set -euo pipefail
+          python -m pytest -vv -rs --tb=long --maxfail=1 \
+            portal/tests/test_gate4c_provider_authority_postgresql.py \
+            | tee /tmp/gate4c-provider-authority.log
+          ! grep -q 'SKIPPED' /tmp/gate4c-provider-authority.log
       - name: Upload Gate 4C provider evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: gate4c-provider-http-evidence
-          path: gate4c-provider-http.log
+          path: |
+            /tmp/gate4c-provider-http.log
+            /tmp/gate4c-provider-authority.log
+          if-no-files-found: ignore

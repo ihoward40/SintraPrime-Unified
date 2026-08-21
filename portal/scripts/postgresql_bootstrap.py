@@ -26,6 +26,7 @@ PRODUCTION_GATE_MIGRATION_SEQUENCE = (
     Path("portal/migrations/add_adaptive_orchestration_domain.sql"),
     Path("portal/migrations/add_governed_scheduler_domain.sql"),
     Path("portal/migrations/add_external_action_sandbox_domain.sql"),
+    Path("portal/migrations/extend_external_action_provider_test.sql"),
 )
 EXPECTED_TABLES = (
     "tenants",
@@ -59,6 +60,9 @@ EXPECTED_TABLES = (
     "external_action_evidence",
     "external_execution_kill_switches",
     "sandbox_echo_effects",
+    "external_provider_credential_leases",
+    "external_provider_rate_buckets",
+    "external_provider_attempts",
 )
 
 

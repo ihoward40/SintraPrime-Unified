@@ -146,31 +146,33 @@ class PostmanEchoProviderAdapter:
         if credential_header is not None:
             headers["Authorization"] = credential_header
 
-        async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
-            async with session.post(
+        async with (
+            aiohttp.ClientSession(connector=connector, timeout=timeout) as session,
+            session.post(
                 destination,
                 json=canonical,
                 headers=headers,
                 allow_redirects=False,
-            ) as response:
-                if 300 <= response.status < 400:
-                    location = response.headers.get("Location")
-                    raise ProviderBoundaryError(
-                        f"Provider redirect blocked before follow: status={response.status} location={location!r}"
-                    )
-                if response.status == 429:
-                    raise ProviderBoundaryError("Provider rate limit returned 429")
-                if response.status < 200 or response.status >= 300:
-                    raise ProviderBoundaryError(f"Provider returned unexpected status {response.status}")
-                body = await response.read()
-                response_hash = hashlib.sha256(body).hexdigest()
-                return ProviderReceipt(
-                    status=response.status,
-                    payload_hash=payload_hash,
-                    response_hash=response_hash,
-                    resolved_ips=pinned_ips,
-                    provider_url=str(response.url),
+            ) as response,
+        ):
+            if 300 <= response.status < 400:
+                location = response.headers.get("Location")
+                raise ProviderBoundaryError(
+                    f"Provider redirect blocked before follow: status={response.status} location={location!r}"
                 )
+            if response.status == 429:
+                raise ProviderBoundaryError("Provider rate limit returned 429")
+            if response.status < 200 or response.status >= 300:
+                raise ProviderBoundaryError(f"Provider returned unexpected status {response.status}")
+            body = await response.read()
+            response_hash = hashlib.sha256(body).hexdigest()
+            return ProviderReceipt(
+                status=response.status,
+                payload_hash=payload_hash,
+                response_hash=response_hash,
+                resolved_ips=pinned_ips,
+                provider_url=str(response.url),
+            )
 
 
 postman_echo_provider_adapter = PostmanEchoProviderAdapter()

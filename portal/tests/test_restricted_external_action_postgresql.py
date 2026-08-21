@@ -29,10 +29,15 @@ from portal.services.restricted_external_action import (
     execute_external_intent,
     preflight_external_intent,
     reconcile_external_intent,
+    revoke_external_approval,
     set_external_kill_switch,
     verify_external_evidence_chain,
 )
-from portal.services.sandbox_echo_adapter import ADAPTER_ID, SandboxAdapterError, sandbox_echo_adapter
+from portal.services.sandbox_echo_adapter import (
+    ADAPTER_ID,
+    SandboxAdapterError,
+    sandbox_echo_adapter,
+)
 
 pytestmark = pytest.mark.postgresql
 
@@ -69,9 +74,13 @@ async def _seed(maker: async_sessionmaker[AsyncSession]) -> None:
             (TENANT_B, "Gate 4B B", "gate4b-b"),
         ):
             await db.execute(
-                text("INSERT INTO tenants (id, name, slug) VALUES (CAST(:id AS uuid), :name, :slug)"),
+                text(
+                    "INSERT INTO tenants (id, name, slug) "
+                    "VALUES (CAST(:id AS uuid), :name, :slug)"
+                ),
                 {"id": tenant_id, "name": name, "slug": slug},
             )
+
         for principal_id, tenant_id, email in (
             (PRINCIPAL_A, TENANT_A, "gate4b-a@example.invalid"),
             (PRINCIPAL_B, TENANT_B, "gate4b-b@example.invalid"),
@@ -94,6 +103,7 @@ async def _seed(maker: async_sessionmaker[AsyncSession]) -> None:
                     "email": email,
                 },
             )
+
         expires_at = datetime.now(UTC) + timedelta(hours=2)
         for identity_id in (IDENTITY_A, IDENTITY_REVOKED):
             await db.execute(
@@ -146,7 +156,7 @@ async def _approved_intent(
         idempotency_key=idempotency_key,
         schedule_id=schedule_id,
     )
-    intent = await preflight_external_intent(
+    await preflight_external_intent(
         db,
         tenant_id=TENANT_A,
         intent_id=intent["intent_id"],
@@ -161,11 +171,12 @@ async def _approved_intent(
     )
 
 
-def test_gate4b_is_last_authoritative_bootstrap_gate_and_adapter_is_sandbox_only() -> None:
+def test_gate4b_bootstrap_and_adapter_are_sandbox_only() -> None:
     paths = [str(path).replace("\\", "/") for path in PRODUCTION_GATE_MIGRATION_SEQUENCE]
     assert paths[-1] == "portal/migrations/add_external_action_sandbox_domain.sql"
     assert paths.count("portal/migrations/add_external_action_sandbox_domain.sql") == 1
     assert ADAPTER_ID == "sandbox.echo-write-v1"
+
     receipt = sandbox_echo_adapter.preflight(
         destination=DESTINATION_A,
         payload={"message": "dry-run"},
@@ -173,6 +184,7 @@ def test_gate4b_is_last_authoritative_bootstrap_gate_and_adapter_is_sandbox_only
     assert receipt["network_access"] is False
     assert receipt["credential_access"] is False
     assert receipt["production_reachable"] is False
+
     with pytest.raises(SandboxAdapterError):
         sandbox_echo_adapter.preflight(
             destination="https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
@@ -181,7 +193,7 @@ def test_gate4b_is_last_authoritative_bootstrap_gate_and_adapter_is_sandbox_only
 
 
 @pytest.mark.asyncio
-async def test_gate4b_rejects_mutation_revocation_scheduler_bypass_kill_switch_and_cross_tenant() -> None:
+async def test_gate4b_fail_closed_authority_matrix() -> None:
     maker, engine = await _sessionmaker()
     try:
         await _seed(maker)
@@ -193,7 +205,7 @@ async def test_gate4b_rejects_mutation_revocation_scheduler_bypass_kill_switch_a
                     db,
                     tenant_id=TENANT_A,
                     intent_id=approved["intent_id"],
-                    worker_id="mutation-worker",
+                    worker_id="payload-mutation-worker",
                     execution_payload={"message": "mutated-after-approval"},
                 )
             with pytest.raises(ExternalActionAuthorityError, match="destination differs"):
@@ -201,7 +213,7 @@ async def test_gate4b_rejects_mutation_revocation_scheduler_bypass_kill_switch_a
                     db,
                     tenant_id=TENANT_A,
                     intent_id=approved["intent_id"],
-                    worker_id="destination-worker",
+                    worker_id="destination-mutation-worker",
                     execution_destination="sandbox://gate4b/target-b",
                 )
             await db.commit()
@@ -233,16 +245,37 @@ async def test_gate4b_rejects_mutation_revocation_scheduler_bypass_kill_switch_a
             await db.commit()
 
         async with maker() as db:
-            revoked = await _approved_intent(
+            approval_revoked = await _approved_intent(
                 db,
-                idempotency_key="gate4b-revoked-identity-0001",
+                idempotency_key="gate4b-approval-revoked-0001",
+            )
+            await revoke_external_approval(
+                db,
+                tenant_id=TENANT_A,
+                intent_id=approval_revoked["intent_id"],
+                principal_id=PRINCIPAL_A,
+                reason="Gate 4B explicit approval revocation certification",
+            )
+            with pytest.raises(ExternalActionAuthorityError, match="not executable"):
+                await execute_external_intent(
+                    db,
+                    tenant_id=TENANT_A,
+                    intent_id=approval_revoked["intent_id"],
+                    worker_id="revoked-approval-worker",
+                )
+            await db.commit()
+
+        async with maker() as db:
+            identity_revoked = await _approved_intent(
+                db,
+                idempotency_key="gate4b-identity-revoked-0001",
                 identity_id=IDENTITY_REVOKED,
             )
             await db.execute(
                 text(
                     "UPDATE governed_service_identities "
-                    "SET status='REVOKED', revoked_at=NOW(), revocation_reason='Gate 4B test' "
-                    "WHERE id=:id"
+                    "SET status='REVOKED', revoked_at=NOW(), "
+                    "revocation_reason='Gate 4B certification' WHERE id=:id"
                 ),
                 {"id": IDENTITY_REVOKED},
             )
@@ -250,8 +283,8 @@ async def test_gate4b_rejects_mutation_revocation_scheduler_bypass_kill_switch_a
                 await execute_external_intent(
                     db,
                     tenant_id=TENANT_A,
-                    intent_id=revoked["intent_id"],
-                    worker_id="revocation-worker",
+                    intent_id=identity_revoked["intent_id"],
+                    worker_id="revoked-identity-worker",
                 )
             await db.commit()
 
@@ -276,13 +309,17 @@ async def test_gate4b_rejects_mutation_revocation_scheduler_bypass_kill_switch_a
                 scope_key="GLOBAL",
                 active=False,
                 updated_by=PRINCIPAL_A,
-                reason="Resume after certification",
+                reason="Resume sandbox after certification",
             )
             await db.commit()
 
         async with maker() as db:
-            cross_tenant = await _approved_intent(db, idempotency_key="gate4b-cross-tenant-0001")
+            cross_tenant = await _approved_intent(
+                db,
+                idempotency_key="gate4b-cross-tenant-0001",
+            )
             await db.commit()
+
         async with maker() as db:
             with pytest.raises(ExternalActionAuthorityError, match="not found"):
                 await execute_external_intent(
@@ -296,7 +333,7 @@ async def test_gate4b_rejects_mutation_revocation_scheduler_bypass_kill_switch_a
 
 
 @pytest.mark.asyncio
-async def test_gate4b_restart_reconciliation_concurrent_duplicate_suppression_and_compensation() -> None:
+async def test_gate4b_restart_reconciliation_duplicate_suppression_and_compensation() -> None:
     maker, engine = await _sessionmaker()
     try:
         await _seed(maker)
@@ -314,8 +351,6 @@ async def test_gate4b_restart_reconciliation_concurrent_duplicate_suppression_an
             assert result["provider"] is None
             await db.commit()
 
-        # New session simulates restart. Reconciliation must discover the existing
-        # provider-side effect rather than retrying the write.
         async with maker() as db:
             reconciled = await reconcile_external_intent(
                 db,
@@ -345,7 +380,7 @@ async def test_gate4b_restart_reconciliation_concurrent_duplicate_suppression_an
             concurrent_id = concurrent["intent_id"]
             await db.commit()
 
-        async def _execute(worker_id: str) -> dict:
+        async def execute(worker_id: str) -> dict:
             async with maker() as db:
                 result = await execute_external_intent(
                     db,
@@ -357,8 +392,8 @@ async def test_gate4b_restart_reconciliation_concurrent_duplicate_suppression_an
                 return result
 
         first, second = await asyncio.gather(
-            _execute("concurrent-worker-a"),
-            _execute("concurrent-worker-b"),
+            execute("concurrent-worker-a"),
+            execute("concurrent-worker-b"),
         )
         assert first["provider"]["confirmation_id"] == second["provider"]["confirmation_id"]
         assert {first["duplicate"], second["duplicate"]} == {False, True}
@@ -387,13 +422,14 @@ async def test_gate4b_restart_reconciliation_concurrent_duplicate_suppression_an
             )
             assert compensated["status"] == "COMPENSATED"
             assert compensated["provider"]["compensated"] is True
+            assert compensated["events"][-1]["event_type"] == "COMPENSATION_COMPLETED"
+
             compensated_chain = await verify_external_evidence_chain(
                 db,
                 tenant_id=TENANT_A,
                 intent_id=concurrent_id,
             )
             assert compensated_chain["valid"] is True
-            assert compensated["events"][-1]["event_type"] == "COMPENSATION_COMPLETED"
             await db.commit()
     finally:
         await engine.dispose()

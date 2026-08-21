@@ -9,7 +9,12 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import func, select, text
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from portal.models.external_action_sandbox import (
     ExternalActionIntent,

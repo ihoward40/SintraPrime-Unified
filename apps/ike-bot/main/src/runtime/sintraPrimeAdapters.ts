@@ -44,6 +44,20 @@ export interface OrchestrationRun {
   events: Array<Record<string, unknown>>;
 }
 
+export interface GovernedSchedule {
+  schedule_id: string;
+  tenant_id: string;
+  created_by: string;
+  objective: string;
+  constraints: Record<string, unknown>;
+  execution_mode: string;
+  run_at: string;
+  status: string;
+  dispatched_run_id?: string | null;
+  persistence: "postgresql-durable-scheduler";
+  events: Array<Record<string, unknown>>;
+}
+
 export interface LivingContextItem extends LivingFileRef {
   excerpt: string;
   matchedTerms: string[];
@@ -71,6 +85,12 @@ export interface SubmitIntentInput {
   constraints?: Record<string, unknown>;
   execution_mode?: string;
   budget_limits?: Record<string, unknown>;
+}
+
+export interface ScheduleMissionInput extends SubmitIntentInput {
+  run_at: string;
+  idempotency_key: string;
+  service_identity_id?: string;
 }
 
 export class SintraPrimeRuntimeBridge {
@@ -157,6 +177,30 @@ export class SintraPrimeRuntimeBridge {
     );
   }
 
+  async scheduleMission(input: ScheduleMissionInput): Promise<GovernedSchedule> {
+    return this.json<GovernedSchedule>("/api/v1/principal/schedules", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async getSchedule(scheduleId: string): Promise<GovernedSchedule> {
+    return this.json<GovernedSchedule>(
+      `/api/v1/principal/schedules/${encodeURIComponent(scheduleId)}`,
+      { method: "GET" },
+    );
+  }
+
+  async cancelSchedule(scheduleId: string, reason: string): Promise<GovernedSchedule> {
+    return this.json<GovernedSchedule>(
+      `/api/v1/principal/schedules/${encodeURIComponent(scheduleId)}/cancel`,
+      {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      },
+    );
+  }
+
   async cancelMission(missionId: string, reason: string): Promise<void> {
     await this.json(`/api/v1/principal/missions/${encodeURIComponent(missionId)}/cancel`, {
       method: "POST",
@@ -236,10 +280,9 @@ export class SintraPrimeRuntimeBridge {
       retrieveContext: async (query: string, refs?: string[]) => {
         return this.retrieveLivingContext(query, refs ?? []);
       },
-      scheduleMission: async () => {
-        throw new Error(
-          "Canonical scheduler write API is not exposed by SintraPrime Portal; private scheduler fallback is forbidden.",
-        );
+      scheduleMission: async (input: unknown) => {
+        const schedule = await this.scheduleMission(input as ScheduleMissionInput);
+        return { scheduleId: schedule.schedule_id };
       },
       cancelMission: async (missionId: string, reason: string) => {
         await this.cancelMission(missionId, reason);

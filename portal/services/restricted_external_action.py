@@ -1,18 +1,20 @@
-"""Gate 4B durable authority envelope for one disposable E1 sandbox adapter.
+"""Canonical durable restricted external-action authority for Gates 4B and 4C.
 
-No real connector is registered here. `sandbox.echo-write-v1` is the only executable
-adapter and its provider effect is an isolated PostgreSQL certification object.
+This module remains the single execution authority. Protocol adapters may validate,
+translate and perform provider I/O, but they cannot mint approval, widen scope,
+select credentials, bypass rate limits, or own durable lifecycle state.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import os
 import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.external_action_sandbox import (
@@ -20,22 +22,32 @@ from ..models.external_action_sandbox import (
     ExternalActionEvidence,
     ExternalActionIntent,
     ExternalExecutionKillSwitch,
+    ExternalProviderAttempt,
+    ExternalProviderCredentialLease,
+    ExternalProviderRateBucket,
 )
 from ..models.governed_service_identity import GovernedServiceIdentityRecord
+from .postman_echo_provider_adapter import (
+    ADAPTER_ID as POSTMAN_ADAPTER_ID,
+    APPROVED_URL as POSTMAN_APPROVED_URL,
+    ENVIRONMENT as POSTMAN_ENVIRONMENT,
+    OPERATION_ID as POSTMAN_OPERATION_ID,
+    ProviderBoundaryError,
+    postman_echo_provider_adapter,
+)
 from .sandbox_echo_adapter import (
-    ADAPTER_ID,
-    ENVIRONMENT,
-    OPERATION_ID,
+    ADAPTER_ID as SANDBOX_ADAPTER_ID,
+    ENVIRONMENT as SANDBOX_ENVIRONMENT,
+    OPERATION_ID as SANDBOX_OPERATION_ID,
     canonical_json_hash,
     sandbox_echo_adapter,
 )
 
 RISK_CLASS = "E1"
-REQUIRED_CAPABILITY = f"external:{ADAPTER_ID}:{OPERATION_ID}"
 
 
 class ExternalActionAuthorityError(RuntimeError):
-    """Raised whenever Gate 4B authority fails closed."""
+    """Raised whenever restricted external-action authority fails closed."""
 
 
 class ExternalActionIdempotencyConflictError(ExternalActionAuthorityError):
@@ -57,14 +69,42 @@ def _canonical_hash(value: dict[str, Any]) -> str:
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
+def _adapter_spec(adapter_id: str) -> dict[str, Any]:
+    if adapter_id == SANDBOX_ADAPTER_ID:
+        return {
+            "adapter": sandbox_echo_adapter,
+            "adapter_id": SANDBOX_ADAPTER_ID,
+            "operation_id": SANDBOX_OPERATION_ID,
+            "environment": SANDBOX_ENVIRONMENT,
+            "risk_class": RISK_CLASS,
+            "credential_required": False,
+            "capability": f"external:{SANDBOX_ADAPTER_ID}:{SANDBOX_OPERATION_ID}",
+        }
+    if adapter_id == POSTMAN_ADAPTER_ID:
+        return {
+            "adapter": postman_echo_provider_adapter,
+            "adapter_id": POSTMAN_ADAPTER_ID,
+            "operation_id": POSTMAN_OPERATION_ID,
+            "environment": POSTMAN_ENVIRONMENT,
+            "risk_class": RISK_CLASS,
+            "credential_required": True,
+            "capability": f"external:{POSTMAN_ADAPTER_ID}:{POSTMAN_OPERATION_ID}",
+        }
+    raise ExternalActionAuthorityError("Adapter is not allowlisted by the restricted authority")
+
+
 def _request_hash(
     *,
     tenant_id: str,
     principal_id: str,
     service_identity_id: str,
+    adapter_id: str,
+    operation_id: str,
+    environment: str,
     destination: str,
     payload_hash: str,
     idempotency_key: str,
+    credential_lease_id: str | None,
     mission_id: str | None,
     schedule_id: str | None,
 ) -> str:
@@ -73,13 +113,14 @@ def _request_hash(
             "tenant_id": tenant_id,
             "principal_id": principal_id,
             "service_identity_id": service_identity_id,
-            "adapter_id": ADAPTER_ID,
-            "operation_id": OPERATION_ID,
-            "environment": ENVIRONMENT,
+            "adapter_id": adapter_id,
+            "operation_id": operation_id,
+            "environment": environment,
             "destination": destination,
             "risk_class": RISK_CLASS,
             "payload_hash": payload_hash,
             "idempotency_key": idempotency_key,
+            "credential_lease_id": credential_lease_id,
             "mission_id": mission_id,
             "schedule_id": schedule_id,
         }
@@ -127,6 +168,89 @@ async def _append_evidence(
     return event
 
 
+async def issue_provider_credential_lease(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    principal_id: str,
+    service_identity_id: str,
+    credential_ref: str,
+    destination: str = POSTMAN_APPROVED_URL,
+    expires_at: datetime,
+    rate_limit_per_minute: int = 5,
+) -> dict[str, Any]:
+    spec = _adapter_spec(POSTMAN_ADAPTER_ID)
+    spec["adapter"].validate_destination(destination)
+    if not credential_ref.startswith("env:"):
+        raise ExternalActionAuthorityError("Gate 4C credential references must use the env: resolver")
+    material = _resolve_credential_ref(credential_ref)
+    expires_at = _aware(expires_at)
+    if expires_at <= _now():
+        raise ExternalActionAuthorityError("Credential lease expiry must be in the future")
+    if not 1 <= rate_limit_per_minute <= 60:
+        raise ExternalActionAuthorityError("Credential lease rate limit is outside Gate 4C bounds")
+    identity = await db.scalar(
+        select(GovernedServiceIdentityRecord).where(
+            GovernedServiceIdentityRecord.id == service_identity_id,
+            GovernedServiceIdentityRecord.tenant_id == tenant_id,
+        )
+    )
+    if identity is None or identity.status != "ACTIVE":
+        raise ExternalActionAuthorityError("Credential lease requires an active service identity")
+    if _aware(identity.expires_at) <= _now():
+        raise ExternalActionAuthorityError("Credential lease service identity has expired")
+    if spec["capability"] not in list(identity.allowed_capabilities or []):
+        raise ExternalActionAuthorityError("Service identity lacks the provider-test capability")
+    scoped = list(identity.scoped_folders or [])
+    if scoped and destination not in scoped:
+        raise ExternalActionAuthorityError("Credential lease destination exceeds identity scope")
+
+    lease = ExternalProviderCredentialLease(
+        id=f"lease-{uuid.uuid4().hex[:20]}",
+        tenant_id=tenant_id,
+        principal_id=principal_id,
+        service_identity_id=service_identity_id,
+        adapter_id=POSTMAN_ADAPTER_ID,
+        environment=POSTMAN_ENVIRONMENT,
+        destination=destination,
+        credential_ref=credential_ref,
+        credential_fingerprint=hashlib.sha256(material.encode()).hexdigest(),
+        status="ACTIVE",
+        issued_at=_now(),
+        expires_at=expires_at,
+        rate_limit_per_minute=rate_limit_per_minute,
+        updated_at=_now(),
+    )
+    db.add(lease)
+    await db.flush()
+    return _lease_dict(lease)
+
+
+async def revoke_provider_credential_lease(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    lease_id: str,
+    principal_id: str,
+    reason: str,
+) -> None:
+    lease = await db.scalar(
+        select(ExternalProviderCredentialLease)
+        .where(
+            ExternalProviderCredentialLease.id == lease_id,
+            ExternalProviderCredentialLease.tenant_id == tenant_id,
+        )
+        .with_for_update()
+    )
+    if lease is None or lease.principal_id != principal_id:
+        raise ExternalActionAuthorityError("Credential lease not found for Principal")
+    lease.status = "REVOKED"
+    lease.revoked_at = _now()
+    lease.revocation_reason = reason
+    lease.updated_at = _now()
+    await db.flush()
+
+
 async def create_external_intent(
     db: AsyncSession,
     *,
@@ -139,16 +263,29 @@ async def create_external_intent(
     idempotency_key: str,
     mission_id: str | None = None,
     schedule_id: str | None = None,
+    adapter_id: str = SANDBOX_ADAPTER_ID,
+    credential_lease_id: str | None = None,
 ) -> dict[str, Any]:
-    sandbox_echo_adapter.validate_destination(destination)
-    canonical_payload, payload_hash = sandbox_echo_adapter.canonicalize_payload(payload)
+    spec = _adapter_spec(adapter_id)
+    adapter = spec["adapter"]
+    adapter.validate_destination(destination)
+    canonical_payload, payload_hash = adapter.canonicalize_payload(payload)
+    if spec["credential_required"] and not credential_lease_id:
+        raise ExternalActionAuthorityError("Provider-test intent requires a durable credential lease")
+    if not spec["credential_required"] and credential_lease_id is not None:
+        raise ExternalActionAuthorityError("Sandbox intent cannot attach a provider credential lease")
+
     request_hash = _request_hash(
         tenant_id=tenant_id,
         principal_id=principal_id,
         service_identity_id=service_identity_id,
+        adapter_id=spec["adapter_id"],
+        operation_id=spec["operation_id"],
+        environment=spec["environment"],
         destination=destination,
         payload_hash=payload_hash,
         idempotency_key=idempotency_key,
+        credential_lease_id=credential_lease_id,
         mission_id=mission_id,
         schedule_id=schedule_id,
     )
@@ -171,17 +308,17 @@ async def create_external_intent(
         service_identity_id=service_identity_id,
         mission_id=mission_id,
         schedule_id=schedule_id,
-        adapter_id=ADAPTER_ID,
-        operation_id=OPERATION_ID,
-        environment=ENVIRONMENT,
+        adapter_id=spec["adapter_id"],
+        operation_id=spec["operation_id"],
+        environment=spec["environment"],
         destination=destination,
-        risk_class=RISK_CLASS,
+        risk_class=spec["risk_class"],
         payload=canonical_payload,
         canonical_payload_hash=payload_hash,
         request_hash=request_hash,
         payload_summary=payload_summary,
         idempotency_key=idempotency_key,
-        credential_ref=None,
+        credential_ref=credential_lease_id,
         status="DRAFT",
     )
     db.add(intent)
@@ -191,12 +328,13 @@ async def create_external_intent(
         intent_id=intent.id,
         event_type="INTENT_CREATED",
         payload={
-            "adapter_id": ADAPTER_ID,
-            "operation_id": OPERATION_ID,
-            "environment": ENVIRONMENT,
+            "adapter_id": intent.adapter_id,
+            "operation_id": intent.operation_id,
+            "environment": intent.environment,
             "destination": destination,
             "payload_hash": payload_hash,
             "risk_class": RISK_CLASS,
+            "credential_lease_id": credential_lease_id,
             "schedule_id": schedule_id,
             "external_effect": False,
         },
@@ -215,12 +353,12 @@ async def preflight_external_intent(
         raise ExternalActionAuthorityError("External-action intent not found")
     if intent.status not in {"DRAFT", "APPROVAL_REQUIRED"}:
         raise ExternalActionAuthorityError(f"Intent cannot preflight from {intent.status}")
-    receipt = sandbox_echo_adapter.preflight(
-        destination=intent.destination,
-        payload=dict(intent.payload),
-    )
+    spec = _adapter_spec(intent.adapter_id)
+    receipt = spec["adapter"].preflight(destination=intent.destination, payload=dict(intent.payload))
     if receipt["payload_hash"] != intent.canonical_payload_hash:
         raise ExternalActionAuthorityError("Preflight payload hash does not match durable intent")
+    if spec["credential_required"]:
+        await _validate_provider_credential_lease(db, intent=intent)
     intent.preflight_receipt_hash = receipt["receipt_hash"]
     intent.status = "APPROVAL_REQUIRED"
     intent.updated_at = _now()
@@ -232,9 +370,10 @@ async def preflight_external_intent(
             "preflight_receipt_hash": receipt["receipt_hash"],
             "destination": intent.destination,
             "payload_hash": intent.canonical_payload_hash,
-            "network_access": False,
-            "credential_access": False,
-            "production_reachable": False,
+            "network_access": bool(receipt["network_access"]),
+            "credential_access": bool(receipt["credential_access"]),
+            "production_reachable": bool(receipt["production_reachable"]),
+            "provider_rollback_required": receipt.get("provider_rollback_required"),
             "external_effect": False,
         },
     )
@@ -352,31 +491,29 @@ async def execute_external_intent(
     execution_destination: str | None = None,
     execution_payload: dict[str, Any] | None = None,
     simulate_ambiguous_after_write: bool = False,
+    timeout_seconds: float = 10.0,
 ) -> dict[str, Any]:
     intent = await _locked_intent(db, tenant_id=tenant_id, intent_id=intent_id)
     if intent is None:
         raise ExternalActionAuthorityError("External-action intent not found")
+    spec = _adapter_spec(intent.adapter_id)
+
     if intent.status == "SUCCEEDED":
-        reconciled = await sandbox_echo_adapter.reconcile_unknown_outcome(
-            db,
-            tenant_id=tenant_id,
-            idempotency_key=intent.idempotency_key,
-        )
-        if reconciled is None:
-            raise ExternalActionAuthorityError("Succeeded intent is missing its sandbox provider effect")
-        return {**await _intent_dict(db, intent), "provider": reconciled, "duplicate": True}
+        return await _replay_succeeded_intent(db, intent=intent)
+    if intent.status == "UNKNOWN_REQUIRES_RECONCILIATION":
+        raise ExternalActionAuthorityError("Ambiguous provider outcome requires reconciliation before replay")
     if intent.status != "APPROVED":
         raise ExternalActionAuthorityError(f"Intent is not executable from status {intent.status}")
 
     destination = execution_destination if execution_destination is not None else intent.destination
     payload = execution_payload if execution_payload is not None else dict(intent.payload)
-    _, execution_payload_hash = sandbox_echo_adapter.canonicalize_payload(payload)
+    _, execution_payload_hash = spec["adapter"].canonicalize_payload(payload)
     if destination != intent.destination:
         raise ExternalActionAuthorityError("Execution destination differs from Principal-approved destination")
     if execution_payload_hash != intent.canonical_payload_hash:
         raise ExternalActionAuthorityError("Execution payload differs from Principal-approved payload")
 
-    approval = await _validate_authority(db, intent=intent)
+    approval, lease, credential_material = await _validate_authority(db, intent=intent)
     intent.status = "CLAIMED"
     intent.claimed_by = worker_id
     intent.claimed_at = _now()
@@ -388,40 +525,83 @@ async def execute_external_intent(
         payload={
             "worker_id": worker_id,
             "approval_id": approval.id,
+            "credential_lease_id": lease.id if lease is not None else None,
             "payload_hash": execution_payload_hash,
             "destination": destination,
             "external_effect": False,
         },
     )
 
-    intent.status = "EXECUTING"
     provider_request = {
-        "adapter_id": ADAPTER_ID,
-        "operation_id": OPERATION_ID,
-        "environment": ENVIRONMENT,
+        "adapter_id": intent.adapter_id,
+        "operation_id": intent.operation_id,
+        "environment": intent.environment,
         "destination": destination,
         "payload_hash": execution_payload_hash,
         "idempotency_key": intent.idempotency_key,
+        "credential_lease_id": lease.id if lease is not None else None,
     }
     intent.provider_request_hash = _canonical_hash(provider_request)
+
+    if intent.adapter_id == POSTMAN_ADAPTER_ID:
+        assert lease is not None
+        try:
+            await _consume_provider_rate_limit(db, intent=intent, lease=lease)
+        except ExternalActionAuthorityError:
+            intent.status = "APPROVED"
+            intent.updated_at = _now()
+            await _append_evidence(
+                db,
+                intent_id=intent.id,
+                event_type="LOCAL_RATE_LIMIT_BLOCKED",
+                payload={
+                    "provider_request_hash": intent.provider_request_hash,
+                    "external_effect": False,
+                },
+            )
+            raise
+
+    intent.status = "EXECUTING"
     await _append_evidence(
         db,
         intent_id=intent.id,
         event_type="EXECUTION_ATTEMPTED",
         payload={
             "provider_request_hash": intent.provider_request_hash,
+            "credential_lease_id": lease.id if lease is not None else None,
             "external_effect": False,
         },
     )
 
-    provider = await sandbox_echo_adapter.execute_once(
-        db,
-        tenant_id=tenant_id,
-        destination=destination,
-        payload=payload,
-        idempotency_key=intent.idempotency_key,
-    )
+    if intent.adapter_id == SANDBOX_ADAPTER_ID:
+        provider = await sandbox_echo_adapter.execute_once(
+            db,
+            tenant_id=tenant_id,
+            destination=destination,
+            payload=payload,
+            idempotency_key=intent.idempotency_key,
+        )
+        if simulate_ambiguous_after_write:
+            intent.status = "UNKNOWN_REQUIRES_RECONCILIATION"
+            intent.updated_at = _now()
+            await _append_evidence(
+                db,
+                intent_id=intent.id,
+                event_type="PROVIDER_OUTCOME_AMBIGUOUS",
+                payload={
+                    "provider_request_hash": intent.provider_request_hash,
+                    "automatic_retry_allowed": False,
+                    "external_effect_possible": True,
+                },
+            )
+            return {**await _intent_dict(db, intent), "provider": None, "ambiguous": True}
+        await _record_sandbox_success(db, intent=intent, provider=provider)
+        return {**await _intent_dict(db, intent), "provider": provider, "duplicate": provider["duplicate"]}
+
+    attempt = await _create_provider_attempt(db, intent=intent, lease=lease)
     if simulate_ambiguous_after_write:
+        attempt.outcome = "AMBIGUOUS"
+        attempt.completed_at = _now()
         intent.status = "UNKNOWN_REQUIRES_RECONCILIATION"
         intent.updated_at = _now()
         await _append_evidence(
@@ -429,15 +609,66 @@ async def execute_external_intent(
             intent_id=intent.id,
             event_type="PROVIDER_OUTCOME_AMBIGUOUS",
             payload={
+                "attempt_id": attempt.id,
                 "provider_request_hash": intent.provider_request_hash,
                 "automatic_retry_allowed": False,
-                "external_effect_possible": True,
+                "provider_persistent_state": False,
+                "external_effect_possible": False,
             },
         )
         return {**await _intent_dict(db, intent), "provider": None, "ambiguous": True}
 
-    await _record_success(db, intent=intent, provider=provider)
-    return {**await _intent_dict(db, intent), "provider": provider, "duplicate": provider["duplicate"]}
+    try:
+        receipt = await postman_echo_provider_adapter.execute_once(
+            payload=payload,
+            credential_header=f"Bearer {credential_material}",
+            timeout_seconds=timeout_seconds,
+            destination=destination,
+        )
+    except TimeoutError:
+        attempt.outcome = "AMBIGUOUS"
+        attempt.completed_at = _now()
+        intent.status = "UNKNOWN_REQUIRES_RECONCILIATION"
+        intent.updated_at = _now()
+        await _append_evidence(
+            db,
+            intent_id=intent.id,
+            event_type="PROVIDER_OUTCOME_AMBIGUOUS",
+            payload={
+                "attempt_id": attempt.id,
+                "provider_request_hash": intent.provider_request_hash,
+                "automatic_retry_allowed": False,
+                "provider_persistent_state": False,
+                "external_effect_possible": False,
+                "reason": "timeout",
+            },
+        )
+        return {**await _intent_dict(db, intent), "provider": None, "ambiguous": True}
+    except ProviderBoundaryError as exc:
+        attempt.outcome = "RATE_LIMITED" if "429" in str(exc) else "FAILED"
+        attempt.completed_at = _now()
+        intent.status = "FAILED"
+        intent.updated_at = _now()
+        await _append_evidence(
+            db,
+            intent_id=intent.id,
+            event_type="PROVIDER_RATE_LIMITED" if attempt.outcome == "RATE_LIMITED" else "PROVIDER_FAILED",
+            payload={
+                "attempt_id": attempt.id,
+                "provider_request_hash": intent.provider_request_hash,
+                "reason": str(exc),
+                "automatic_retry_allowed": False,
+                "external_effect": False,
+            },
+        )
+        raise ExternalActionAuthorityError(str(exc)) from exc
+
+    await _record_provider_success(db, intent=intent, attempt=attempt, receipt=receipt)
+    return {
+        **await _intent_dict(db, intent),
+        "provider": _provider_receipt_dict(attempt),
+        "duplicate": False,
+    }
 
 
 async def reconcile_external_intent(
@@ -451,23 +682,45 @@ async def reconcile_external_intent(
         raise ExternalActionAuthorityError("External-action intent not found")
     if intent.status != "UNKNOWN_REQUIRES_RECONCILIATION":
         raise ExternalActionAuthorityError("Only ambiguous outcomes may be reconciled")
-    provider = await sandbox_echo_adapter.reconcile_unknown_outcome(
-        db,
-        tenant_id=tenant_id,
-        idempotency_key=intent.idempotency_key,
-    )
-    if provider is None:
-        intent.status = "FAILED"
-        intent.updated_at = _now()
-        await _append_evidence(
+
+    if intent.adapter_id == SANDBOX_ADAPTER_ID:
+        provider = await sandbox_echo_adapter.reconcile_unknown_outcome(
             db,
-            intent_id=intent.id,
-            event_type="RECONCILIATION_CONFIRMED_NO_EFFECT",
-            payload={"external_effect": False},
+            tenant_id=tenant_id,
+            idempotency_key=intent.idempotency_key,
         )
-        return await _intent_dict(db, intent)
-    await _record_success(db, intent=intent, provider=provider, reconciled=True)
-    return {**await _intent_dict(db, intent), "provider": provider, "reconciled": True}
+        if provider is None:
+            intent.status = "FAILED"
+            intent.updated_at = _now()
+            await _append_evidence(
+                db,
+                intent_id=intent.id,
+                event_type="RECONCILIATION_CONFIRMED_NO_EFFECT",
+                payload={"external_effect": False},
+            )
+            return await _intent_dict(db, intent)
+        await _record_sandbox_success(db, intent=intent, provider=provider, reconciled=True)
+        return {**await _intent_dict(db, intent), "provider": provider, "reconciled": True}
+
+    attempt = await _latest_provider_attempt(db, intent.id)
+    if attempt is None or attempt.outcome != "AMBIGUOUS":
+        raise ExternalActionAuthorityError("Ambiguous provider attempt ledger is missing")
+    intent.status = "FAILED"
+    intent.updated_at = _now()
+    await _append_evidence(
+        db,
+        intent_id=intent.id,
+        event_type="RECONCILIATION_CONFIRMED_NO_PERSISTENT_PROVIDER_STATE",
+        payload={
+            "attempt_id": attempt.id,
+            "provider_persistent_state": False,
+            "provider_rollback_required": False,
+            "automatic_retry_allowed": False,
+            "network_retry_performed": False,
+            "external_effect": False,
+        },
+    )
+    return {**await _intent_dict(db, intent), "provider": None, "reconciled": True}
 
 
 async def compensate_external_intent(
@@ -482,14 +735,36 @@ async def compensate_external_intent(
     if intent is None or intent.principal_id != principal_id:
         raise ExternalActionAuthorityError("Only the bound Principal may compensate this intent")
     if intent.status != "SUCCEEDED":
-        raise ExternalActionAuthorityError("Only a succeeded sandbox effect may be compensated")
-    provider = await sandbox_echo_adapter.compensate(
-        db,
-        tenant_id=tenant_id,
-        idempotency_key=intent.idempotency_key,
-    )
-    if provider is None:
-        raise ExternalActionAuthorityError("Sandbox effect is missing and cannot be compensated")
+        raise ExternalActionAuthorityError("Only a succeeded restricted action may be compensated")
+
+    if intent.adapter_id == SANDBOX_ADAPTER_ID:
+        provider = await sandbox_echo_adapter.compensate(
+            db,
+            tenant_id=tenant_id,
+            idempotency_key=intent.idempotency_key,
+        )
+        if provider is None:
+            raise ExternalActionAuthorityError("Sandbox effect is missing and cannot be compensated")
+        intent.status = "COMPENSATED"
+        intent.updated_at = _now()
+        await _append_evidence(
+            db,
+            intent_id=intent.id,
+            event_type="COMPENSATION_COMPLETED",
+            payload={
+                "reason": reason,
+                "effect_id": provider["effect_id"],
+                "confirmation_id": provider["confirmation_id"],
+                "compensated": True,
+                "provider_rollback_required": True,
+                "external_effect": True,
+            },
+        )
+        return {**await _intent_dict(db, intent), "provider": provider}
+
+    attempt = await _latest_provider_attempt(db, intent.id)
+    if attempt is None or attempt.outcome != "SUCCEEDED":
+        raise ExternalActionAuthorityError("Provider receipt is missing and cannot be logically compensated")
     intent.status = "COMPENSATED"
     intent.updated_at = _now()
     await _append_evidence(
@@ -498,13 +773,18 @@ async def compensate_external_intent(
         event_type="COMPENSATION_COMPLETED",
         payload={
             "reason": reason,
-            "effect_id": provider["effect_id"],
-            "confirmation_id": provider["confirmation_id"],
-            "compensated": True,
-            "external_effect": True,
+            "logical_compensation": True,
+            "provider_rollback_required": False,
+            "provider_persistent_state": False,
+            "network_call_performed": False,
+            "external_effect": False,
         },
     )
-    return {**await _intent_dict(db, intent), "provider": provider}
+    return {
+        **await _intent_dict(db, intent),
+        "provider": _provider_receipt_dict(attempt),
+        "logical_compensation": True,
+    }
 
 
 async def set_external_kill_switch(
@@ -620,11 +900,12 @@ async def _validate_authority(
     db: AsyncSession,
     *,
     intent: ExternalActionIntent,
-) -> ExternalActionApproval:
-    if intent.adapter_id != ADAPTER_ID or intent.operation_id != OPERATION_ID:
-        raise ExternalActionAuthorityError("Adapter or operation is not Gate 4B allowlisted")
-    if intent.environment != ENVIRONMENT or intent.risk_class != RISK_CLASS:
-        raise ExternalActionAuthorityError("Only E1 sandbox execution is permitted")
+) -> tuple[ExternalActionApproval, ExternalProviderCredentialLease | None, str | None]:
+    spec = _adapter_spec(intent.adapter_id)
+    if intent.operation_id != spec["operation_id"]:
+        raise ExternalActionAuthorityError("Adapter operation is not allowlisted")
+    if intent.environment != spec["environment"] or intent.risk_class != spec["risk_class"]:
+        raise ExternalActionAuthorityError("External action environment or risk class is not allowlisted")
     await _assert_kill_switches_clear(db, intent=intent)
 
     identity = await db.scalar(
@@ -637,8 +918,8 @@ async def _validate_authority(
         raise ExternalActionAuthorityError("Durable service identity is missing or revoked")
     if _aware(identity.expires_at) <= _now():
         raise ExternalActionAuthorityError("Durable service identity has expired")
-    if REQUIRED_CAPABILITY not in list(identity.allowed_capabilities or []):
-        raise ExternalActionAuthorityError("Service identity lacks the exact sandbox adapter capability")
+    if spec["capability"] not in list(identity.allowed_capabilities or []):
+        raise ExternalActionAuthorityError("Service identity lacks the exact adapter capability")
     scoped = list(identity.scoped_folders or [])
     if scoped and intent.destination not in scoped:
         raise ExternalActionAuthorityError("Destination is outside the service identity resource scope")
@@ -661,7 +942,227 @@ async def _validate_authority(
         or approval.canonical_payload_hash != intent.canonical_payload_hash
     ):
         raise ExternalActionAuthorityError("Principal approval binding no longer matches the intent")
-    return approval
+
+    if not spec["credential_required"]:
+        return approval, None, None
+    lease, material = await _validate_provider_credential_lease(db, intent=intent)
+    return approval, lease, material
+
+
+async def _validate_provider_credential_lease(
+    db: AsyncSession,
+    *,
+    intent: ExternalActionIntent,
+) -> tuple[ExternalProviderCredentialLease, str]:
+    if not intent.credential_ref:
+        raise ExternalActionAuthorityError("Provider-test intent is missing its credential lease")
+    lease = await db.scalar(
+        select(ExternalProviderCredentialLease).where(
+            ExternalProviderCredentialLease.id == intent.credential_ref,
+            ExternalProviderCredentialLease.tenant_id == intent.tenant_id,
+        )
+    )
+    if lease is None or lease.status != "ACTIVE":
+        raise ExternalActionAuthorityError("Provider credential lease is missing or revoked")
+    if _aware(lease.expires_at) <= _now():
+        raise ExternalActionAuthorityError("Provider credential lease has expired")
+    if (
+        lease.principal_id != intent.principal_id
+        or lease.service_identity_id != intent.service_identity_id
+        or lease.adapter_id != intent.adapter_id
+        or lease.environment != intent.environment
+        or lease.destination != intent.destination
+    ):
+        raise ExternalActionAuthorityError("Provider credential lease binding does not match intent")
+    material = _resolve_credential_ref(lease.credential_ref)
+    if hashlib.sha256(material.encode()).hexdigest() != lease.credential_fingerprint:
+        raise ExternalActionAuthorityError("Provider credential material fingerprint changed after lease")
+    return lease, material
+
+
+def _resolve_credential_ref(credential_ref: str) -> str:
+    if not credential_ref.startswith("env:"):
+        raise ExternalActionAuthorityError("Unsupported provider credential resolver")
+    env_name = credential_ref.removeprefix("env:")
+    if not env_name or not env_name.startswith("GATE4C_"):
+        raise ExternalActionAuthorityError("Provider credential reference is outside Gate 4C namespace")
+    value = os.environ.get(env_name)
+    if not value:
+        raise ExternalActionAuthorityError("Provider credential material is unavailable")
+    return value
+
+
+async def _consume_provider_rate_limit(
+    db: AsyncSession,
+    *,
+    intent: ExternalActionIntent,
+    lease: ExternalProviderCredentialLease,
+) -> None:
+    now = _now()
+    window = now.replace(second=0, microsecond=0)
+    scope_key = f"{intent.tenant_id}:{intent.adapter_id}:{window.isoformat()}"
+    await db.execute(
+        text(
+            """
+            INSERT INTO external_provider_rate_buckets (
+                scope_key, tenant_id, adapter_id, window_started_at,
+                request_count, limit_count, updated_at
+            ) VALUES (
+                :scope_key, CAST(:tenant_id AS uuid), :adapter_id, :window_started_at,
+                0, :limit_count, :updated_at
+            ) ON CONFLICT (scope_key) DO NOTHING
+            """
+        ),
+        {
+            "scope_key": scope_key,
+            "tenant_id": str(intent.tenant_id),
+            "adapter_id": intent.adapter_id,
+            "window_started_at": window,
+            "limit_count": lease.rate_limit_per_minute,
+            "updated_at": now,
+        },
+    )
+    bucket = await db.scalar(
+        select(ExternalProviderRateBucket)
+        .where(ExternalProviderRateBucket.scope_key == scope_key)
+        .with_for_update()
+    )
+    if bucket is None:
+        raise ExternalActionAuthorityError("Provider rate bucket could not be established")
+    if bucket.request_count >= bucket.limit_count:
+        raise ExternalActionAuthorityError("Durable provider rate limit exceeded")
+    bucket.request_count += 1
+    bucket.updated_at = now
+    await db.flush()
+
+
+async def _create_provider_attempt(
+    db: AsyncSession,
+    *,
+    intent: ExternalActionIntent,
+    lease: ExternalProviderCredentialLease | None,
+) -> ExternalProviderAttempt:
+    current = await db.scalar(
+        select(func.max(ExternalProviderAttempt.attempt_no)).where(
+            ExternalProviderAttempt.intent_id == intent.id
+        )
+    )
+    attempt = ExternalProviderAttempt(
+        id=str(uuid.uuid4()),
+        intent_id=intent.id,
+        tenant_id=intent.tenant_id,
+        adapter_id=intent.adapter_id,
+        credential_lease_id=lease.id if lease is not None else None,
+        attempt_no=(current or 0) + 1,
+        request_hash=intent.provider_request_hash or "",
+        outcome="ATTEMPTED",
+        started_at=_now(),
+    )
+    db.add(attempt)
+    await db.flush()
+    return attempt
+
+
+async def _latest_provider_attempt(
+    db: AsyncSession,
+    intent_id: str,
+) -> ExternalProviderAttempt | None:
+    return await db.scalar(
+        select(ExternalProviderAttempt)
+        .where(ExternalProviderAttempt.intent_id == intent_id)
+        .order_by(ExternalProviderAttempt.attempt_no.desc())
+        .limit(1)
+    )
+
+
+async def _record_provider_success(
+    db: AsyncSession,
+    *,
+    intent: ExternalActionIntent,
+    attempt: ExternalProviderAttempt,
+    receipt: Any,
+) -> None:
+    attempt.response_hash = receipt.response_hash
+    attempt.provider_status = receipt.status
+    attempt.provider_url = receipt.provider_url
+    attempt.resolved_ips = list(receipt.resolved_ips)
+    attempt.outcome = "SUCCEEDED"
+    attempt.completed_at = _now()
+    intent.provider_response_hash = receipt.response_hash
+    intent.provider_confirmation_id = f"postman-{receipt.response_hash[:20]}"
+    intent.status = "SUCCEEDED"
+    intent.updated_at = _now()
+    await _append_evidence(
+        db,
+        intent_id=intent.id,
+        event_type="EXECUTION_SUCCEEDED",
+        payload={
+            "attempt_id": attempt.id,
+            "provider_request_hash": intent.provider_request_hash,
+            "provider_response_hash": receipt.response_hash,
+            "provider_status": receipt.status,
+            "provider_url": receipt.provider_url,
+            "resolved_ips": list(receipt.resolved_ips),
+            "provider_persistent_state": False,
+            "provider_rollback_required": False,
+            "external_effect": False,
+        },
+    )
+
+
+async def _record_sandbox_success(
+    db: AsyncSession,
+    *,
+    intent: ExternalActionIntent,
+    provider: dict[str, Any],
+    reconciled: bool = False,
+) -> None:
+    provider_response = {
+        "effect_id": provider["effect_id"],
+        "confirmation_id": provider["confirmation_id"],
+        "payload_hash": provider["payload_hash"],
+        "destination": provider["destination"],
+    }
+    intent.provider_response_hash = canonical_json_hash(provider_response)
+    intent.provider_confirmation_id = provider["confirmation_id"]
+    intent.status = "SUCCEEDED"
+    intent.updated_at = _now()
+    await _append_evidence(
+        db,
+        intent_id=intent.id,
+        event_type="RECONCILIATION_CONFIRMED_EFFECT" if reconciled else "EXECUTION_SUCCEEDED",
+        payload={
+            "provider_response_hash": intent.provider_response_hash,
+            "provider_confirmation_id": intent.provider_confirmation_id,
+            "effect_id": provider["effect_id"],
+            "external_effect": True,
+            "reconciled": reconciled,
+        },
+    )
+
+
+async def _replay_succeeded_intent(
+    db: AsyncSession,
+    *,
+    intent: ExternalActionIntent,
+) -> dict[str, Any]:
+    if intent.adapter_id == SANDBOX_ADAPTER_ID:
+        reconciled = await sandbox_echo_adapter.reconcile_unknown_outcome(
+            db,
+            tenant_id=str(intent.tenant_id),
+            idempotency_key=intent.idempotency_key,
+        )
+        if reconciled is None:
+            raise ExternalActionAuthorityError("Succeeded intent is missing its sandbox provider effect")
+        return {**await _intent_dict(db, intent), "provider": reconciled, "duplicate": True}
+    attempt = await _latest_provider_attempt(db, intent.id)
+    if attempt is None or attempt.outcome != "SUCCEEDED":
+        raise ExternalActionAuthorityError("Succeeded provider intent is missing its durable receipt")
+    return {
+        **await _intent_dict(db, intent),
+        "provider": _provider_receipt_dict(attempt),
+        "duplicate": True,
+    }
 
 
 async def _assert_kill_switches_clear(
@@ -691,35 +1192,36 @@ async def _assert_kill_switches_clear(
         )
 
 
-async def _record_success(
-    db: AsyncSession,
-    *,
-    intent: ExternalActionIntent,
-    provider: dict[str, Any],
-    reconciled: bool = False,
-) -> None:
-    provider_response = {
-        "effect_id": provider["effect_id"],
-        "confirmation_id": provider["confirmation_id"],
-        "payload_hash": provider["payload_hash"],
-        "destination": provider["destination"],
+def _lease_dict(lease: ExternalProviderCredentialLease) -> dict[str, Any]:
+    return {
+        "lease_id": lease.id,
+        "tenant_id": lease.tenant_id,
+        "principal_id": lease.principal_id,
+        "service_identity_id": lease.service_identity_id,
+        "adapter_id": lease.adapter_id,
+        "environment": lease.environment,
+        "destination": lease.destination,
+        "credential_ref": lease.credential_ref,
+        "credential_fingerprint": lease.credential_fingerprint,
+        "status": lease.status,
+        "expires_at": _aware(lease.expires_at).isoformat(),
+        "rate_limit_per_minute": lease.rate_limit_per_minute,
     }
-    intent.provider_response_hash = canonical_json_hash(provider_response)
-    intent.provider_confirmation_id = provider["confirmation_id"]
-    intent.status = "SUCCEEDED"
-    intent.updated_at = _now()
-    await _append_evidence(
-        db,
-        intent_id=intent.id,
-        event_type="RECONCILIATION_CONFIRMED_EFFECT" if reconciled else "EXECUTION_SUCCEEDED",
-        payload={
-            "provider_response_hash": intent.provider_response_hash,
-            "provider_confirmation_id": intent.provider_confirmation_id,
-            "effect_id": provider["effect_id"],
-            "external_effect": True,
-            "reconciled": reconciled,
-        },
-    )
+
+
+def _provider_receipt_dict(attempt: ExternalProviderAttempt) -> dict[str, Any]:
+    return {
+        "attempt_id": attempt.id,
+        "attempt_no": attempt.attempt_no,
+        "request_hash": attempt.request_hash,
+        "response_hash": attempt.response_hash,
+        "provider_status": attempt.provider_status,
+        "provider_url": attempt.provider_url,
+        "resolved_ips": list(attempt.resolved_ips or []),
+        "outcome": attempt.outcome,
+        "provider_persistent_state": False,
+        "provider_rollback_required": False,
+    }
 
 
 async def _intent_dict(
@@ -753,6 +1255,7 @@ async def _intent_dict(
         "payload": dict(intent.payload),
         "canonical_payload_hash": intent.canonical_payload_hash,
         "idempotency_key": intent.idempotency_key,
+        "credential_lease_id": intent.credential_ref,
         "status": intent.status,
         "preflight_receipt_hash": intent.preflight_receipt_hash,
         "provider_request_hash": intent.provider_request_hash,

@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "gate": "GATE_4D_C_GOOGLE_DRIVE_METADATA_READONLY_DESIGN_ONLY",
+  "status": "DESIGN_ONLY_NOT_IMPLEMENTED_NOT_CONNECTED_NOT_CERTIFIED",
+  "preserved_boundary": {
+    "gate": "GATE_4D_B",
+    "certified_head": "457f69be6714797f2332e20dfc6a245c817099e5",
+    "authority_inherited": false,
+    "modification_permitted": false
+  },
+  "proposed_adapter": "provider.google-drive-metadata-read-v1",
+  "risk": "E0_READ_ONLY_METADATA",
+  "oauth_scope_exact": "https://www.googleapis.com/auth/drive.metadata.readonly",
+  "authentication": {
+    "required": true,
+    "principal_approval_required": true,
+    "single_approved_account_binding": true,
+    "silent_account_switching": false,
+    "incremental_scope_expansion": false,
+    "token_exposure": false
+  },
+  "allowed_operations": [
+    "drive.files.list",
+    "drive.files.get"
+  ],
+  "allowed_http_methods": ["GET"],
+  "allowed_metadata_fields": [
+    "id", "name", "mimeType", "createdTime", "modifiedTime", "viewedByMeTime",
+    "parents", "trashed", "starred", "ownedByMe", "driveId", "shortcutDetails",
+    "capabilities.canListChildren", "size", "md5Checksum", "version"
+  ],
+  "prohibited_operations": [
+    "files.get.alt=media", "files.export", "files.download", "files.create", "files.update",
+    "files.copy", "files.delete", "files.emptyTrash", "permissions.create", "permissions.update",
+    "permissions.delete", "comments.create", "comments.update", "comments.delete", "revisions.update",
+    "upload", "rename", "move", "share", "content_read", "docs_body_read",
+    "sheets_cell_read", "slides_body_read"
+  ],
+  "prohibited_http_methods": ["POST", "PUT", "PATCH", "DELETE"],
+  "destination_policy": {
+    "scheme": "https",
+    "hosts": ["www.googleapis.com"],
+    "path_prefixes": ["/drive/v3/files"],
+    "redirects": "DENY",
+    "query_parameters_allowlist": [
+      "q", "spaces", "corpora", "driveId", "includeItemsFromAllDrives",
+      "supportsAllDrives", "pageSize", "pageToken", "orderBy", "fields"
+    ],
+    "query_parameters_denylist": ["alt", "uploadType", "upload_protocol", "acknowledgeAbuse"]
+  },
+  "authority_separation": {
+    "design_authorizes_implementation": false,
+    "implementation_authorizes_account_connection": false,
+    "account_connection_authorizes_metadata_execution": false,
+    "metadata_authority_authorizes_content": false,
+    "metadata_authority_authorizes_writes": false
+  },
+  "canonical_authority": "portal.services.restricted_external_action",
+  "certification_required_before_use": true
+}

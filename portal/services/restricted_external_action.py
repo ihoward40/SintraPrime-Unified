@@ -1,4 +1,4 @@
-"""Canonical durable restricted external-action authority for Gates 4B and 4C.
+"""Canonical durable restricted external-action authority for Gates 4B through 4D-B.
 
 This module remains the single execution authority. Protocol adapters may validate,
 translate and perform provider I/O, but they cannot mint approval, widen scope,
@@ -27,6 +27,22 @@ from portal.models.external_action_sandbox import (
     ExternalProviderRateBucket,
 )
 from portal.models.governed_service_identity import GovernedServiceIdentityRecord
+from portal.services.github_metadata_read_adapter import (
+    ADAPTER_ID as GITHUB_ADAPTER_ID,
+)
+from portal.services.github_metadata_read_adapter import (
+    ENVIRONMENT as GITHUB_ENVIRONMENT,
+)
+from portal.services.github_metadata_read_adapter import (
+    LOCAL_RATE_LIMIT_PER_MINUTE as GITHUB_RATE_LIMIT_PER_MINUTE,
+)
+from portal.services.github_metadata_read_adapter import (
+    OPERATION_ID as GITHUB_OPERATION_ID,
+)
+from portal.services.github_metadata_read_adapter import (
+    RISK_CLASS as GITHUB_RISK_CLASS,
+)
+from portal.services.github_metadata_read_adapter import github_metadata_read_adapter
 from portal.services.postman_echo_provider_adapter import (
     ADAPTER_ID as POSTMAN_ADAPTER_ID,
 )
@@ -92,6 +108,7 @@ def _adapter_spec(adapter_id: str) -> dict[str, Any]:
             "environment": SANDBOX_ENVIRONMENT,
             "risk_class": RISK_CLASS,
             "credential_required": False,
+            "rate_limit_per_minute": None,
             "capability": f"external:{SANDBOX_ADAPTER_ID}:{SANDBOX_OPERATION_ID}",
         }
     if adapter_id == POSTMAN_ADAPTER_ID:
@@ -102,7 +119,19 @@ def _adapter_spec(adapter_id: str) -> dict[str, Any]:
             "environment": POSTMAN_ENVIRONMENT,
             "risk_class": RISK_CLASS,
             "credential_required": True,
+            "rate_limit_per_minute": None,
             "capability": f"external:{POSTMAN_ADAPTER_ID}:{POSTMAN_OPERATION_ID}",
+        }
+    if adapter_id == GITHUB_ADAPTER_ID:
+        return {
+            "adapter": github_metadata_read_adapter,
+            "adapter_id": GITHUB_ADAPTER_ID,
+            "operation_id": GITHUB_OPERATION_ID,
+            "environment": GITHUB_ENVIRONMENT,
+            "risk_class": GITHUB_RISK_CLASS,
+            "credential_required": False,
+            "rate_limit_per_minute": GITHUB_RATE_LIMIT_PER_MINUTE,
+            "capability": f"external:{GITHUB_ADAPTER_ID}:{GITHUB_OPERATION_ID}",
         }
     raise ExternalActionAuthorityError("Adapter is not allowlisted by the restricted authority")
 
@@ -115,6 +144,7 @@ def _request_hash(
     adapter_id: str,
     operation_id: str,
     environment: str,
+    risk_class: str,
     destination: str,
     payload_hash: str,
     idempotency_key: str,
@@ -130,8 +160,8 @@ def _request_hash(
             "adapter_id": adapter_id,
             "operation_id": operation_id,
             "environment": environment,
+            "risk_class": risk_class,
             "destination": destination,
-            "risk_class": RISK_CLASS,
             "payload_hash": payload_hash,
             "idempotency_key": idempotency_key,
             "credential_lease_id": credential_lease_id,
@@ -285,9 +315,9 @@ async def create_external_intent(
     adapter.validate_destination(destination)
     canonical_payload, payload_hash = adapter.canonicalize_payload(payload)
     if spec["credential_required"] and not credential_lease_id:
-        raise ExternalActionAuthorityError("Provider-test intent requires a durable credential lease")
+        raise ExternalActionAuthorityError("Credentialed provider intent requires a durable credential lease")
     if not spec["credential_required"] and credential_lease_id is not None:
-        raise ExternalActionAuthorityError("Sandbox intent cannot attach a provider credential lease")
+        raise ExternalActionAuthorityError("Credential-free adapter intent cannot attach a provider credential lease")
 
     request_hash = _request_hash(
         tenant_id=tenant_id,
@@ -296,6 +326,7 @@ async def create_external_intent(
         adapter_id=spec["adapter_id"],
         operation_id=spec["operation_id"],
         environment=spec["environment"],
+        risk_class=spec["risk_class"],
         destination=destination,
         payload_hash=payload_hash,
         idempotency_key=idempotency_key,
@@ -347,7 +378,7 @@ async def create_external_intent(
             "environment": intent.environment,
             "destination": destination,
             "payload_hash": payload_hash,
-            "risk_class": RISK_CLASS,
+            "risk_class": spec["risk_class"],
             "credential_lease_id": credential_lease_id,
             "schedule_id": schedule_id,
             "external_effect": False,
@@ -557,10 +588,20 @@ async def execute_external_intent(
     }
     intent.provider_request_hash = _canonical_hash(provider_request)
 
+    rate_limit_per_minute: int | None = None
     if intent.adapter_id == POSTMAN_ADAPTER_ID:
         assert lease is not None
+        rate_limit_per_minute = lease.rate_limit_per_minute
+    elif intent.adapter_id == GITHUB_ADAPTER_ID:
+        rate_limit_per_minute = int(spec["rate_limit_per_minute"])
+
+    if rate_limit_per_minute is not None:
         try:
-            await _consume_provider_rate_limit(db, intent=intent, lease=lease)
+            await _consume_provider_rate_limit(
+                db,
+                intent=intent,
+                limit_count=rate_limit_per_minute,
+            )
         except ExternalActionAuthorityError:
             intent.status = "APPROVED"
             intent.updated_at = _now()
@@ -633,12 +674,23 @@ async def execute_external_intent(
         return {**await _intent_dict(db, intent), "provider": None, "ambiguous": True}
 
     try:
-        receipt = await postman_echo_provider_adapter.execute_once(
-            payload=payload,
-            credential_header=f"Bearer {credential_material}",
-            timeout_seconds=timeout_seconds,
-            destination=destination,
-        )
+        if intent.adapter_id == POSTMAN_ADAPTER_ID:
+            receipt = await postman_echo_provider_adapter.execute_once(
+                payload=payload,
+                credential_header=f"Bearer {credential_material}",
+                timeout_seconds=timeout_seconds,
+                destination=destination,
+            )
+        elif intent.adapter_id == GITHUB_ADAPTER_ID:
+            if credential_material is not None or lease is not None:
+                raise ExternalActionAuthorityError("Gate 4D-B GitHub metadata reads cannot use credentials")
+            receipt = await github_metadata_read_adapter.execute_once(
+                payload=payload,
+                timeout_seconds=timeout_seconds,
+                destination=destination,
+            )
+        else:
+            raise ExternalActionAuthorityError("Provider dispatch is not allowlisted")
     except TimeoutError:
         attempt.outcome = "AMBIGUOUS"
         attempt.completed_at = _now()
@@ -659,7 +711,7 @@ async def execute_external_intent(
         )
         return {**await _intent_dict(db, intent), "provider": None, "ambiguous": True}
     except ProviderBoundaryError as exc:
-        attempt.outcome = "RATE_LIMITED" if "429" in str(exc) else "FAILED"
+        attempt.outcome = "RATE_LIMITED" if "rate limit" in str(exc).lower() or "429" in str(exc) else "FAILED"
         attempt.completed_at = _now()
         intent.status = "FAILED"
         intent.updated_at = _now()
@@ -775,6 +827,9 @@ async def compensate_external_intent(
             },
         )
         return {**await _intent_dict(db, intent), "provider": provider}
+
+    if intent.adapter_id == GITHUB_ADAPTER_ID:
+        raise ExternalActionAuthorityError("Read-only GitHub metadata has no external effect to compensate")
 
     attempt = await _latest_provider_attempt(db, intent.id)
     if attempt is None or attempt.outcome != "SUCCEEDED":
@@ -1010,7 +1065,7 @@ async def _consume_provider_rate_limit(
     db: AsyncSession,
     *,
     intent: ExternalActionIntent,
-    lease: ExternalProviderCredentialLease,
+    limit_count: int,
 ) -> None:
     now = _now()
     window = now.replace(second=0, microsecond=0)
@@ -1032,7 +1087,7 @@ async def _consume_provider_rate_limit(
             "tenant_id": str(intent.tenant_id),
             "adapter_id": intent.adapter_id,
             "window_started_at": window,
-            "limit_count": lease.rate_limit_per_minute,
+            "limit_count": limit_count,
             "updated_at": now,
         },
     )
@@ -1103,7 +1158,7 @@ async def _record_provider_success(
     attempt.outcome = "SUCCEEDED"
     attempt.completed_at = _now()
     intent.provider_response_hash = receipt.response_hash
-    intent.provider_confirmation_id = f"postman-{receipt.response_hash[:20]}"
+    intent.provider_confirmation_id = f"{intent.adapter_id}-{receipt.response_hash[:20]}"
     intent.status = "SUCCEEDED"
     intent.updated_at = _now()
     await _append_evidence(

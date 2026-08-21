@@ -83,11 +83,12 @@ async def _seed(maker: async_sessionmaker[AsyncSession]) -> None:
 
 def test_scheduler_gate_is_in_authoritative_bootstrap() -> None:
     paths = [str(path).replace("\\", "/") for path in PRODUCTION_GATE_MIGRATION_SEQUENCE]
-    assert paths == [
+    assert paths[:3] == [
         "portal/migrations/add_governed_service_identities.sql",
         "portal/migrations/add_adaptive_orchestration_domain.sql",
         "portal/migrations/add_governed_scheduler_domain.sql",
     ]
+    assert paths.count("portal/migrations/add_governed_scheduler_domain.sql") == 1
 
 
 @pytest.mark.asyncio

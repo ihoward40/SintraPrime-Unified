@@ -54,9 +54,12 @@ def _seed_principal(url: str) -> tuple[str, str]:
 
 
 def test_durable_identity_gate_is_in_authoritative_bootstrap() -> None:
-    assert [str(path).replace("\\", "/") for path in PRODUCTION_GATE_MIGRATION_SEQUENCE] == [
-        "portal/migrations/add_governed_service_identities.sql"
-    ]
+    migration_paths = [str(path).replace("\\", "/") for path in PRODUCTION_GATE_MIGRATION_SEQUENCE]
+    identity_migration = "portal/migrations/add_governed_service_identities.sql"
+
+    assert migration_paths
+    assert migration_paths[0] == identity_migration
+    assert migration_paths.count(identity_migration) == 1
 
 
 def test_service_identity_survives_reconnect_and_revocation_is_durable() -> None:

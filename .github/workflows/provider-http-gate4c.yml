@@ -1,0 +1,43 @@
+name: Provider HTTP Gate 4C Certification
+
+on:
+  pull_request:
+    paths:
+      - "portal/services/postman_echo_provider_adapter.py"
+      - "portal/tests/test_gate4c_postman_echo_provider.py"
+      - "docs/planning/SP-IKE-005_PROVIDER_HTTP_GATE.md"
+      - ".github/workflows/provider-http-gate4c.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  provider-http-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GATE4C_LIVE_HTTP: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[test]"
+      - name: Certify redirect and DNS pinning controls plus live provider boundary
+        run: |
+          set -o pipefail
+          pytest portal/tests/test_gate4c_postman_echo_provider.py -vv -rs | tee gate4c-provider-http.log
+          if grep -q "SKIPPED" gate4c-provider-http.log; then
+            echo "Gate 4C live provider certification may not skip tests"
+            exit 1
+          fi
+      - name: Upload Gate 4C provider evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate4c-provider-http-evidence
+          path: gate4c-provider-http.log

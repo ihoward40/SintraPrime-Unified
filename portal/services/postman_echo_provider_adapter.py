@@ -76,7 +76,9 @@ class PinnedResolver(AbstractResolver):
         self.host = host
         self.ips = tuple(_validate_public_ip(ip) for ip in ips)
 
-    async def resolve(self, host: str, port: int = 0, family: int = socket.AF_INET) -> list[dict[str, Any]]:
+    async def resolve(
+        self, host: str, port: int = 0, family: int = socket.AF_INET
+    ) -> list[dict[str, Any]]:
         if host != self.host:
             raise ProviderBoundaryError("Resolver escape to an unapproved hostname was blocked")
         result: list[dict[str, Any]] = []
@@ -118,6 +120,8 @@ class PostmanEchoProviderAdapter:
     environment = ENVIRONMENT
     risk_class = RISK_CLASS
     provider_host = PROVIDER_HOST
+    compensation = "logical-only"
+    provider_rollback_required = False
 
     @staticmethod
     def canonicalize_payload(payload: dict[str, Any]) -> tuple[dict[str, Any], str]:
@@ -127,6 +131,30 @@ class PostmanEchoProviderAdapter:
             json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
         )
         return canonical, canonical_json_hash(canonical)
+
+    def validate_destination(self, destination: str) -> None:
+        validate_destination(destination)
+
+    def preflight(self, *, destination: str, payload: dict[str, Any]) -> dict[str, Any]:
+        validate_destination(destination)
+        canonical, payload_hash = self.canonicalize_payload(payload)
+        receipt = {
+            "adapter_id": self.adapter_id,
+            "operation_id": self.operation_id,
+            "environment": self.environment,
+            "risk_class": self.risk_class,
+            "destination": destination,
+            "payload": canonical,
+            "payload_hash": payload_hash,
+            "network_access": True,
+            "credential_access": True,
+            "production_reachable": False,
+            "provider_persistent_state": False,
+            "compensation": self.compensation,
+            "provider_rollback_required": self.provider_rollback_required,
+        }
+        receipt["receipt_hash"] = canonical_json_hash(receipt)
+        return receipt
 
     async def execute_once(
         self,

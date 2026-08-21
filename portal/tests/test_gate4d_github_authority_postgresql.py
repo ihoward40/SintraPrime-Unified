@@ -213,7 +213,7 @@ async def test_gate4d_e0_no_credentials_exact_approval_scheduler_and_kill_switch
             assert approved["credential_lease_id"] is None
             assert await db.scalar(select(func.count()).select_from(ExternalProviderCredentialLease)) == 0
 
-            with pytest.raises(ExternalActionAuthorityError, match="payload"):
+            with pytest.raises(ProviderBoundaryError, match="repository metadata GET"):
                 await execute_external_intent(
                     db,
                     tenant_id=TENANT_A,

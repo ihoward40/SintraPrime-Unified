@@ -28,9 +28,9 @@ from portal.services.github_metadata_read_adapter import (
     APPROVED_PAYLOAD,
     APPROVED_URL,
     ENVIRONMENT,
-    GitHubMetadataReceipt,
     OPERATION_ID,
     RISK_CLASS,
+    GitHubMetadataReceipt,
     github_metadata_read_adapter,
 )
 from portal.services.postman_echo_provider_adapter import ProviderBoundaryError

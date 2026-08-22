@@ -290,8 +290,9 @@ class LiveVoicePipeline:
 
         try:
             tts_result = self.tts_manager.synthesize(text)
-            self.current_interaction.tts_result = tts_result
-            self.current_interaction.response_text = text
+            if self.current_interaction:
+                self.current_interaction.tts_result = tts_result
+                self.current_interaction.response_text = text
 
             if self.on_response:
                 self.on_response(text)

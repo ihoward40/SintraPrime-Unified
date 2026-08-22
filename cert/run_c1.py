@@ -66,23 +66,28 @@ def main():
     summary["test_manifest_sha256"] = test_manifest["sha256"]
     summary["evidence_manifest_sha256"] = evidence_manifest["sha256"]
     
-    # Certification bundle
+    # Certification bundle - compute hash without bundle_sha in summary
     bundle = {
         "certification_report": summary,
         "source_manifest": source_manifest,
         "test_manifest": test_manifest,
         "evidence_manifest": evidence_manifest
     }
-    bundle_sha = hashlib.sha256(json.dumps(bundle, sort_keys=True).encode()).hexdigest()
-    summary["certification_bundle_sha256"] = bundle_sha
     
-    # Save report
+    # Save report (without bundle_sha)
     report_path = Path("C1_CERTIFICATION_REPORT.json")
     report_path.write_text(json.dumps(summary, indent=2, sort_keys=True))
     
     # Save bundle
     bundle_path = Path("C1_CERTIFICATION_BUNDLE.json")
     bundle_path.write_text(json.dumps(bundle, indent=2, sort_keys=True))
+    
+    # Compute final bundle hash after files are written
+    bundle_sha = hashlib.sha256(json.dumps(bundle, sort_keys=True).encode()).hexdigest()
+    
+    # Update report with bundle hash
+    summary["certification_bundle_sha256"] = bundle_sha
+    report_path.write_text(json.dumps(summary, indent=2, sort_keys=True))
     
     print(f"\n=== CERTIFICATION COMPLETE ===")
     print(f"Overall Result: {summary['overall']}")
@@ -97,6 +102,7 @@ def main():
     print(f"  Incomplete: {summary['summary_counts']['tests']['incomplete']}")
     print(f"Report: {report_path}")
     print(f"Bundle: {bundle_path}")
+    print(f"Bundle SHA256: {bundle_sha[:16]}...")
     
     return summary["overall"] == CertificationResult.PASS.value
 

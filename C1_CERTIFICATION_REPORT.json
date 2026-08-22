@@ -6,19 +6,19 @@
   "authorized_mock_side_effects": 1,
   "baseline": "4c86aff2f1dd1ce4b18722a28bf889a43ec4372a",
   "branch": "cert/sp-live-001-c1-convergence",
-  "certification_bundle_sha256": "60f02fba5e726bacef4e79ec0c6e12ac6e86a506c446b1ef6b897f984753e7e8",
+  "certification_bundle_sha256": "85abfcbe7dfcd33d2542bcfacc779ad9dba6b47dffffb77a60d804829559aa7f",
   "clean_room_tests": {
     "passed": 5,
     "total": 5
   },
   "d1_design_drift": 0,
   "duplicate_side_effects": 0,
-  "duration_seconds": 0.03413200378417969,
-  "evidence_manifest_sha256": "cce5c4968fa970d201f0757e1fee3c4dc685577fc18091de6061d0b5f1839e66",
+  "duration_seconds": 0.034508466720581055,
+  "evidence_manifest_sha256": "53cd567247fdae178a1f13d5b55376e00481b002d987fbff104fe471b4a56a91",
   "external_writes": 0,
   "families": {
     "C1-A": {
-      "duration_seconds": 0.0019996166229248047,
+      "duration_seconds": 0.0020003318786621094,
       "failed": 0,
       "incomplete": 0,
       "overall": "PASS",
@@ -27,7 +27,7 @@
       "total": 8
     },
     "C1-B": {
-      "duration_seconds": 0.0015230178833007812,
+      "duration_seconds": 0.0020008087158203125,
       "failed": 0,
       "incomplete": 0,
       "overall": "PASS",
@@ -36,7 +36,7 @@
       "total": 6
     },
     "C1-C": {
-      "duration_seconds": 0.0035088062286376953,
+      "duration_seconds": 0.0035130977630615234,
       "failed": 0,
       "incomplete": 0,
       "overall": "PASS",
@@ -45,7 +45,7 @@
       "total": 10
     },
     "C1-D": {
-      "duration_seconds": 0.004552364349365234,
+      "duration_seconds": 0.0030062198638916016,
       "failed": 0,
       "incomplete": 0,
       "overall": "PASS",
@@ -54,7 +54,7 @@
       "total": 9
     },
     "C1-E": {
-      "duration_seconds": 0.002984762191772461,
+      "duration_seconds": 0.002001047134399414,
       "failed": 0,
       "incomplete": 0,
       "overall": "PASS",
@@ -63,7 +63,7 @@
       "total": 6
     },
     "C1-F": {
-      "duration_seconds": 0.008533239364624023,
+      "duration_seconds": 0.009522438049316406,
       "failed": 0,
       "incomplete": 0,
       "overall": "PASS",
@@ -72,7 +72,7 @@
       "total": 13
     },
     "C1-G": {
-      "duration_seconds": 0.0,
+      "duration_seconds": 0.0009996891021728516,
       "failed": 0,
       "incomplete": 0,
       "overall": "PASS",
@@ -81,7 +81,7 @@
       "total": 15
     },
     "C1-H": {
-      "duration_seconds": 0.00399327278137207,
+      "duration_seconds": 0.004031658172607422,
       "failed": 0,
       "incomplete": 0,
       "overall": "PASS",
@@ -90,7 +90,7 @@
       "total": 12
     },
     "C1-I": {
-      "duration_seconds": 0.0015227794647216797,
+      "duration_seconds": 0.0010061264038085938,
       "failed": 0,
       "incomplete": 0,
       "overall": "PASS",
@@ -99,7 +99,7 @@
       "total": 6
     },
     "C1-J": {
-      "duration_seconds": 0.002518892288208008,
+      "duration_seconds": 0.003000497817993164,
       "failed": 0,
       "incomplete": 0,
       "overall": "PASS",
@@ -117,7 +117,7 @@
       "total": 10
     },
     "C1-L": {
-      "duration_seconds": 0.0,
+      "duration_seconds": 0.0009999275207519531,
       "failed": 0,
       "incomplete": 0,
       "overall": "PASS",
@@ -126,7 +126,7 @@
       "total": 18
     },
     "C1-M": {
-      "duration_seconds": 0.0009949207305908203,
+      "duration_seconds": 0.0,
       "failed": 0,
       "incomplete": 0,
       "overall": "PASS",
@@ -144,7 +144,7 @@
       "total": 16
     },
     "C1-O": {
-      "duration_seconds": 0.0020003318786621094,
+      "duration_seconds": 0.002426624298095703,
       "failed": 0,
       "incomplete": 0,
       "overall": "PASS",
@@ -171,7 +171,7 @@
   "repairs": [],
   "required_evidence_missing": 0,
   "secret_use": 0,
-  "source_manifest_sha256": "0a6f8122cf5d1f4a60b4501168b2b2d424bd0dd9937e9c5b71156fa55cec922b",
+  "source_manifest_sha256": "c63d6bf0749bbda8d4192559cc9526b0f9819b21daf7f187884a6b9a495500dd",
   "static_reachable_fail_open_paths": 0,
   "summary_counts": {
     "families": {
@@ -191,7 +191,7 @@
     "passed": 169,
     "total": 169
   },
-  "test_manifest_sha256": "c553cde0dc540a9a3e419100b7a29ebdfb247069737e911f9211f36b0424ae75",
+  "test_manifest_sha256": "82b18ec879497223322bb6c9a761f565a5724b2015031531d27ca43b5fc3578f",
   "unapproved_side_effects": 0,
   "unresolved_blockers": []
 }

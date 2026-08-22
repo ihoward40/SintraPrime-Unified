@@ -1,0 +1,331 @@
+{
+  "schema_version": "1.0",
+  "i2_head": "7338ce3b2333da4514ee17f5bd5c34f1d131baa7",
+  "i2_tree": "96e1c0ec38d1e90c95d1a79c659545e6c72a71c0",
+  "mission_id": "87467748-ad38-4a79-a129-6ce9e88e33b2",
+  "evidence_chain_root": "612ee25b32998e3ea97e5b0b615958d4884b6d5354e31a5aa14f75c9733eea3e",
+  "evidence_chain_valid": true,
+  "total_records": 11,
+  "records": [
+    {
+      "type": "voice_received",
+      "content": {
+        "request_id": "5ab0a4cd1cc78800",
+        "transcript": "Give me a status briefing and prepare one safe action.",
+        "confidence": 0.99
+      },
+      "hash": "d39e33536cf8be753dd06241b1f2e0586d6056d1a29db95efb56ece617239881",
+      "previous": "78e12011cd0d957a1ab104be4332bfc14eff7934ffbea4f54b46995c15b8f662",
+      "timestamp": 1787394307.4608843
+    },
+    {
+      "type": "mission_created",
+      "content": {
+        "mission_id": "87467748-ad38-4a79-a129-6ce9e88e33b2",
+        "scope": {
+          "mission_id": "87467748-ad38-4a79-a129-6ce9e88e33b2",
+          "purpose": "Status briefing with one safe action",
+          "allowed_operations": [
+            "governed_memory.read",
+            "specialist.dispatch",
+            "model.route",
+            "approval.request",
+            "synthetic_side_effect.execute"
+          ],
+          "prohibited_operations": [
+            "external_api.call",
+            "credential.use",
+            "oauth.execute",
+            "real_side_effect.execute",
+            "microphone.activate",
+            "speaker.activate"
+          ],
+          "consequence_ceiling": "E0",
+          "budgets": {
+            "tokens": 50000,
+            "wall_time_seconds": 120,
+            "specialist_calls": 10,
+            "side_effects": 1
+          },
+          "memory_scope": "governed_status_briefing",
+          "specialist_roles": [
+            "status_analyst",
+            "authority_reviewer"
+          ],
+          "capability_requirements": [
+            "synthetic_side_effect"
+          ],
+          "evidence_requirements": [
+            "authority_decision",
+            "principal_approval",
+            "action_envelope",
+            "provider_attempt",
+            "provider_receipt",
+            "independent_verification",
+            "evidence_chain",
+            "written_principal_brief",
+            "spoken_principal_brief"
+          ],
+          "expiry": 1787397907.4608843,
+          "cancellation_authority": "PRINCIPAL"
+        }
+      },
+      "hash": "3a63057d8e53d762764636c530a823ff317db129e39a1e7b30b9833d1c8af90b",
+      "previous": "d39e33536cf8be753dd06241b1f2e0586d6056d1a29db95efb56ece617239881",
+      "timestamp": 1787394307.4608843
+    },
+    {
+      "type": "memory_retrieved",
+      "content": {
+        "scope": "governed_status_briefing",
+        "items": [
+          "status_briefing",
+          "principal_preference_briefing_style",
+          "safe_action_template"
+        ]
+      },
+      "hash": "175594bdb14e6114e00009acf0b1870d80ee1337fdbd8a935b7c239d2ca8091d",
+      "previous": "3a63057d8e53d762764636c530a823ff317db129e39a1e7b30b9833d1c8af90b",
+      "timestamp": 1787394307.4608843
+    },
+    {
+      "type": "swarm_completed",
+      "content": {
+        "roles": [
+          "status_analyst",
+          "authority_reviewer"
+        ],
+        "model_decisions": [
+          "a5e65ae97c4ddc964060bef8dfc2da3560d68badf44dbea2532cece7dd38492e",
+          "cec285ed29854729595f306b9d735be0993eaddd80f96c21d44fb04e268bb232"
+        ]
+      },
+      "hash": "72f75e6640b8057969647128f7650edf3498944a6b52445415ab8267a4009d66",
+      "previous": "175594bdb14e6114e00009acf0b1870d80ee1337fdbd8a935b7c239d2ca8091d",
+      "timestamp": 1787394307.4608843
+    },
+    {
+      "type": "reconciled",
+      "content": {
+        "claim_matrix": [
+          {
+            "role": "status_analyst",
+            "claim": {
+              "type": "status_summary",
+              "active_matters": 3,
+              "informational": 2,
+              "requires_approval": 1
+            },
+            "evidence_refs": [
+              "memory:status_briefing"
+            ],
+            "confidence": 0.95,
+            "blockers": []
+          },
+          {
+            "role": "status_analyst",
+            "claim": {
+              "type": "safe_actions_available",
+              "count": 2,
+              "details": [
+                "Matter 1: informational",
+                "Matter 2: informational"
+              ]
+            },
+            "evidence_refs": [
+              "memory:status_briefing"
+            ],
+            "confidence": 0.95,
+            "blockers": []
+          },
+          {
+            "role": "status_analyst",
+            "claim": {
+              "type": "consequential_actions_pending",
+              "count": 1,
+              "details": [
+                "Matter 3: requires approval for external update"
+              ]
+            },
+            "evidence_refs": [
+              "memory:status_briefing"
+            ],
+            "confidence": 0.95,
+            "blockers": []
+          },
+          {
+            "role": "authority_reviewer",
+            "claim": {
+              "type": "authority_check",
+              "consequence_ceiling": "E0",
+              "within_mission_scope": true
+            },
+            "evidence_refs": [
+              "memory:safe_action_template",
+              "mission:scope"
+            ],
+            "confidence": 0.98,
+            "blockers": []
+          },
+          {
+            "role": "authority_reviewer",
+            "claim": {
+              "type": "approval_required",
+              "actions_needing_approval": 1,
+              "reason": "Single E0 action prepared"
+            },
+            "evidence_refs": [
+              "memory:safe_action_template",
+              "mission:scope"
+            ],
+            "confidence": 0.98,
+            "blockers": []
+          },
+          {
+            "role": "authority_reviewer",
+            "claim": {
+              "type": "no_authority_escalation",
+              "specialist_escalation_attempted": false,
+              "memory_escalation_attempted": false
+            },
+            "evidence_refs": [
+              "memory:safe_action_template",
+              "mission:scope"
+            ],
+            "confidence": 0.98,
+            "blockers": []
+          }
+        ]
+      },
+      "hash": "3eeed56aa20afbfa2782647471cbb72c13bcd14fccb77694431f2f7d29c06541",
+      "previous": "72f75e6640b8057969647128f7650edf3498944a6b52445415ab8267a4009d66",
+      "timestamp": 1787394307.4608843
+    },
+    {
+      "type": "action_proposed",
+      "content": {
+        "action_hash": "e6c9588186a98ece97ad2685bab75f282999e6f2b8ccd034550033369244587c",
+        "envelope": {
+          "schema_version": "1.0",
+          "mission_id": "87467748-ad38-4a79-a129-6ce9e88e33b2",
+          "principal_identity": {
+            "principal_id": "principal-001",
+            "session_id": "session-001",
+            "display_name": "Isiah Howard",
+            "authority_level": "PRINCIPAL",
+            "verified_at": 1787394307.3729331,
+            "verification_record_hash": "6219552524e1764ed570d84e2f5d9d4ab0f33d9d5c35fb39787a3cea6b8ccbeb",
+            "session_binding": "a3d5b41b331cd231644fd3a20dca28bd"
+          },
+          "action": {
+            "adapter_id": "synthetic",
+            "operation_id": "mock_status_update",
+            "method": "execute",
+            "object_count": 1
+          },
+          "capability": "synthetic_side_effect",
+          "destination": {
+            "scheme": "https",
+            "host": "synthetic.provider",
+            "resource": "/mock/status",
+            "account_binding_digest": "b3cc0475bb78a5026098858e9889acf6"
+          },
+          "parameters": {},
+          "consequence_class": "E0",
+          "mission_authority_hash": "d5d90aed2ed52bcb8939d67b7b74f5ad2d21bc8d414a45039cabffeac8dda207",
+          "capability_certification": {
+            "certification_id": "SP-LIVE-001-SYNTHETIC-001",
+            "exact_head": "ab222ee61c87c2d06e98ec3f843189595f9b0fc0",
+            "contract_hash": "7e38cdd0ee8e73718d6d441d785e1ffa83df61d6cf5175c4ecc1edd6318529c7",
+            "valid_at_execution": true
+          },
+          "action_hash": "e6c9588186a98ece97ad2685bab75f282999e6f2b8ccd034550033369244587c",
+          "approval": null,
+          "idempotency_key": "83536042-fc5f-4865-9336-7c6b45edfe47",
+          "evidence_requirements": [
+            "authority_decision",
+            "principal_approval",
+            "action_envelope",
+            "provider_attempt",
+            "provider_receipt",
+            "independent_verification",
+            "evidence_chain",
+            "written_principal_brief",
+            "spoken_principal_brief"
+          ],
+          "created_at": 1787394307.4608843,
+          "expires_at": 1787397907.4608843
+        }
+      },
+      "hash": "51dfc2b906335de94c311f385d4ac0236fcfd00eb96fec61efebc46c3821141e",
+      "previous": "3eeed56aa20afbfa2782647471cbb72c13bcd14fccb77694431f2f7d29c06541",
+      "timestamp": 1787394307.4623919
+    },
+    {
+      "type": "approval_requested",
+      "content": {
+        "action_hash": "e6c9588186a98ece97ad2685bab75f282999e6f2b8ccd034550033369244587c",
+        "spoken_proposal": "Action: {\"adapter_id\": \"synthetic\", \"method\": \"execute\", \"object_count\": 1, \"operation_id\": \"mock_status_update\"}. Capability: synthetic_side_effect. Destination: {\"account_binding_digest\": \"b3cc0475bb78a5026098858e9889acf6\", \"host\": \"synthetic.provider\", \"resource\": \"/mock/status\", \"scheme\": \"https\"}.",
+        "spoken_proposal_hash": "edb9d67a65c08799dc7f2acbd572b607ae559ede0ccb7dab9f095a61a61ea6cf",
+        "displayed_proposal_hash": "c0747776c989fc7127f4182075f8481ca05383bb8c9cdbb717ac27257fddc562",
+        "transcript": "Proposed action: {'adapter_id': 'synthetic', 'operation_id': 'mock_status_update', 'method': 'execute', 'object_count': 1}. Do you approve?",
+        "transcript_hash": "219f9e0455d104dc6e2d86d45c373e3b38094aab8f855240c183ba177258cb5d",
+        "consequence_class": "E0",
+        "capability": "synthetic_side_effect",
+        "destination": {
+          "scheme": "https",
+          "host": "synthetic.provider",
+          "resource": "/mock/status",
+          "account_binding_digest": "b3cc0475bb78a5026098858e9889acf6"
+        },
+        "parameters": {},
+        "idempotency_key": "83536042-fc5f-4865-9336-7c6b45edfe47",
+        "expires_at": 1787397907.4608843
+      },
+      "hash": "08431221654ea6e2ef589188a9fec21cc4e888c787fd857de02ab2f5d4914195",
+      "previous": "51dfc2b906335de94c311f385d4ac0236fcfd00eb96fec61efebc46c3821141e",
+      "timestamp": 1787394307.4623919
+    },
+    {
+      "type": "approval_received",
+      "content": {
+        "approval_hash": "dcd7e3280f56b70eb745abc5187e447f2089ee6727dddfc3fc8c0ed31bb177e9",
+        "action_hash": "e6c9588186a98ece97ad2685bab75f282999e6f2b8ccd034550033369244587c"
+      },
+      "hash": "68b1ad2acf150999a3feb44e087776a00f096e29076c5b2f7013e118d241b119",
+      "previous": "08431221654ea6e2ef589188a9fec21cc4e888c787fd857de02ab2f5d4914195",
+      "timestamp": 1787394307.4623919
+    },
+    {
+      "type": "side_effect_executed",
+      "content": {
+        "receipt_hash": "d81647ab00c54e025c47c3a54b348bf53b2c5ba3fb1787181dcbf97a830fe996",
+        "attempt_id": "attempt-771b33e80570"
+      },
+      "hash": "52631f00dba9997f97d5f0d9fd1f95c190f1cbb08c65aeb5d2204f7c57f6f9c8",
+      "previous": "68b1ad2acf150999a3feb44e087776a00f096e29076c5b2f7013e118d241b119",
+      "timestamp": 1787394307.4623919
+    },
+    {
+      "type": "verification_completed",
+      "content": {
+        "verification_hash": "d5ed431e0e65f8996f584d6bdb18467e61a587ff11f5ff28e600953871bfd095",
+        "success": true
+      },
+      "hash": "b3253d1c1392318734292882fc0640e89679f752880ad22e84c416b24d2d0f86",
+      "previous": "52631f00dba9997f97d5f0d9fd1f95c190f1cbb08c65aeb5d2204f7c57f6f9c8",
+      "timestamp": 1787394307.4623919
+    },
+    {
+      "type": "brief_generated",
+      "content": {
+        "brief_hash": "609c57ae7f47b7a5127248c40b12258591b8df403765ae800ec3cb366edbd27d",
+        "spoken_output_hash": "c3a156b10b817453"
+      },
+      "hash": "612ee25b32998e3ea97e5b0b615958d4884b6d5354e31a5aa14f75c9733eea3e",
+      "previous": "b3253d1c1392318734292882fc0640e89679f752880ad22e84c416b24d2d0f86",
+      "timestamp": 1787394307.4634023
+    }
+  ],
+  "sha256": "b2a059a07de4289af349ae4f0e208b4ed773391df495606206b132aa0b151360"
+}

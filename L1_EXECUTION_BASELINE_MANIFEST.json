@@ -1,6 +1,6 @@
 {
-  "head": "fb638b1511d27b5b0853a818b06034334c020eed",
-  "tree": "c382462e6ed7ec25a6b931539efb721a83d559ea",
+  "head": "ba9b40f45fc40a9bf8f0bfec4d3bd1d9b6d8c6e1",
+  "tree": "3f06cee497f8f2f38b015f6a0fb7af4fca31bea5",
   "manifest_sha256": "bab7b4d5b5a857163c3b97d1c0252a70713b4ab9fccb890d21ef8745aea6cfcb",
   "files": {
     "sintra_live/authorization/gate.py": "a43e9da29cf6ce2e0a460bfae605ad4581662856d08191fef99f336f13bb9baf",

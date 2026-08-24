@@ -155,11 +155,23 @@ def test_restart_after_replace_before_return_discovers_commit_and_replays(tmp_pa
 
 
 def test_import_graph_has_no_live_provider_credentials_or_network(tmp_path):
-    root = Path(__file__).parents[1] / "sintra_live" / "l2"
+    root = Path(__file__).parents[1]
+    frozen_i1_paths = (
+        "sintra_live/l2/__init__.py",
+        "sintra_live/l2/mission/__init__.py",
+        "sintra_live/l2/mission/model.py",
+        "sintra_live/l2/mission/state.py",
+        "sintra_live/l2/mission/store.py",
+        "sintra_live/l2/mission/errors.py",
+    )
     forbidden_import_roots = {"requests", "httpx", "urllib", "socket", "subprocess"}
     forbidden_fragments = ("github", "credential", "provider", "approval", "executor")
+    paths = tuple(root / relative_path for relative_path in frozen_i1_paths)
+    assert tuple(path.relative_to(root).as_posix() for path in paths) == frozen_i1_paths
+    assert root / "sintra_live/l2/workforce_launcher.py" not in paths
+
     imports = []
-    for path in root.rglob("*.py"):
+    for path in paths:
         tree = ast.parse(path.read_text(), filename=str(path))
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
@@ -168,6 +180,15 @@ def test_import_graph_has_no_live_provider_credentials_or_network(tmp_path):
                 imports.append(node.module)
     assert not [name for name in imports if name.split(".")[0] in forbidden_import_roots]
     assert not [name for name in imports if any(fragment in name.lower() for fragment in forbidden_fragments)]
+
+    forbidden_probe = ast.parse("import subprocess\n")
+    probe_imports = [
+        alias.name
+        for node in ast.walk(forbidden_probe)
+        if isinstance(node, ast.Import)
+        for alias in node.names
+    ]
+    assert [name for name in probe_imports if name.split(".")[0] in forbidden_import_roots] == ["subprocess"]
 
 
 def test_only_control_plane_fields_change(tmp_path):

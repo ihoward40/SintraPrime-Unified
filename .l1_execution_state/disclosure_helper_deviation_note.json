@@ -1,0 +1,12 @@
+{
+  "note": "Temporary disclosure-scope deviation record",
+  "event": "During SP_LIVE_001_L1_FINAL_NEW_ENVELOPE_DISCLOSURE, Hermes created a transient helper script (disclose_new_envelope.py) to avoid shell-heredoc quoting failures in the read-only disclosure gate. The helper was executed once, produced the required envelope disclosure output, and was immediately removed. It did not modify any runtime execution path. Subsequent verification confirmed: runtime execution paths clean, frozen HEAD/tree/source-manifest identities unchanged, and 87/87 relevant L1 tests passing. This deviation is classified as contained to the disclosure gate only and does not alter the approved execution baseline.",
+  "files_touched": ["disclose_new_envelope.py"],
+  "file_status_after": "removed",
+  "runtime_execution_paths_changed": false,
+  "baseline_commit_match": true,
+  "baseline_tree_match": true,
+  "baseline_source_manifest_match": true,
+  "l1_relevant_tests": "87/87 PASS",
+  "recorded_at": "2026-08-24T09:47:00+00:00"
+}

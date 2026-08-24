@@ -265,18 +265,53 @@ class L1CommentRunner:
         self,
         authenticator: GitHubAppAuthenticator,
         principal_id: str = "principal-001",
-        binding_id: str = "binding-m2a-certified"
+        binding_id: str = "binding-m2a-certified",
+        live_execution: bool = False,
+        execution_id: Optional[str] = None,
+        execution_nonce: Optional[str] = None,
     ):
         self.authenticator = authenticator
         self.principal_id = principal_id
         self.binding_id = binding_id
+        self.live_execution = live_execution
+
+        # In live mode, execution identity must be explicitly supplied and bound to the approved envelope.
+        if live_execution:
+            if not execution_id:
+                raise PermissionError("LIVE_EXECUTION_ID_REQUIRED: execution_id must be bound from the approved envelope")
+            if not execution_nonce:
+                raise PermissionError("LIVE_EXECUTION_NONCE_REQUIRED: execution_nonce must be bound from the approved envelope")
+            self.execution_id = execution_id
+            self._nonce = L1ExecutionNonce(nonce=execution_nonce, created_at=time.time())
+            # Keep an immutable shadow copy for runtime tamper detection.
+            self._bound_execution_id = execution_id
+            self._bound_execution_nonce = execution_nonce
+        else:
+            # Offline/mock contexts may retain auto-generated identity for backward compatibility.
+            self.execution_id = execution_id or str(uuid.uuid4())
+            self._nonce = L1ExecutionNonce(nonce=(execution_nonce or str(uuid.uuid4())), created_at=time.time())
+            self._bound_execution_id = self.execution_id
+            self._bound_execution_nonce = self._nonce.nonce
+
         self.evidence_chain = GitHubCommentEvidenceChain(chain_id="l1-execution")
         self.status = L1ExecutionStatus.NOT_STARTED
-        self.execution_id = str(uuid.uuid4())
-        self._nonce: Optional[L1ExecutionNonce] = None
         self._approval: Optional[L1ApprovalRecord] = None
         self._provider_response: Optional[Dict[str, Any]] = None
         self._readback_verification: Optional[Dict[str, Any]] = None
+
+    def _verify_identity_binding(
+        self,
+        approved_execution_id: str,
+        approved_execution_nonce: str
+    ) -> bool:
+        """Verify runner identity still matches the approved envelope exactly."""
+        return (
+            self.execution_id == approved_execution_id and
+            self._nonce is not None and
+            self._nonce.nonce == approved_execution_nonce and
+            self._bound_execution_id == approved_execution_id and
+            self._bound_execution_nonce == approved_execution_nonce
+        )
 
     # ==================== PRE-FLIGHT VERIFICATION ====================
 
@@ -343,7 +378,7 @@ class L1CommentRunner:
             self.execution_id,
             self.binding_id,
             self.principal_id,
-            results
+            {"execution_id": self.execution_id, "nonce": self._nonce.nonce if self._nonce else None, **results}
         )
 
         return results
@@ -374,7 +409,9 @@ class L1CommentRunner:
 
     def display_execution_commitment(self) -> None:
         """Display exact execution commitment for Principal approval."""
-        self._nonce = L1ExecutionNonce.generate()
+        if not self.live_execution:
+            # Only generate a fresh nonce in offline/mock contexts where no envelope is bound.
+            self._nonce = L1ExecutionNonce.generate()
 
         print("\n" + "=" * 70)
         print("L1 EXECUTION COMMITMENT - PRINCIPAL APPROVAL REQUIRED")
@@ -387,7 +424,7 @@ class L1CommentRunner:
         print()
         print("COMMITMENT FIELDS:")
         print(f"  Execution ID:      {self.execution_id}")
-        print(f"  Execution Nonce:   {self._nonce.nonce}")
+        print(f"  Execution Nonce:   {self._nonce.nonce if self._nonce else 'NONE'}")
         print(f"  Target Account:    {self.AUTHORIZED_ACCOUNT}")
         print(f"  Target Repository: {self.AUTHORIZED_REPOSITORY}")
         print(f"  Target PR:         #{self.AUTHORIZED_PR_NUMBER}")
@@ -447,7 +484,9 @@ class L1CommentRunner:
                 "approval_id": approval.approval_id,
                 "approval_hash": approval.approval_hash,
                 "nonce": approval.nonce,
-                "timestamp": approval.timestamp
+                "timestamp": approval.timestamp,
+                "runner_execution_id": self.execution_id,
+                "runner_nonce": self._nonce.nonce if self._nonce else None,
             }
         )
 
@@ -646,6 +685,10 @@ class L1CommentRunner:
         )
         durable = durable.with_state(ExecutionState.EXECUTION_STARTED)
         self._save_durable_state(durable)
+
+        # Identity binding guard: ensure execution_id/nonce in durable state match bound values.
+        if self.live_execution and not self._verify_identity_binding(durable.execution_id, durable.nonce):
+            raise PermissionError("DURABLE_STATE_IDENTITY_BINDING_MISMATCH")
 
         headers = {
             "Authorization": f"Bearer {self.authenticator._raw_token}",
@@ -998,7 +1041,9 @@ class L1CommentRunner:
             {
                 "provider_response": provider_result,
                 "readback_verification": readback,
-                "nonce_consumed": self._nonce.consumed if self._nonce else False
+                "nonce_consumed": self._nonce.consumed if self._nonce else False,
+                "bound_execution_id": self._bound_execution_id,
+                "bound_execution_nonce": self._bound_execution_nonce,
             }
         )
 

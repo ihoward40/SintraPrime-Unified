@@ -1,17 +1,18 @@
 {
-  "head": "ba9b40f45fc40a9bf8f0bfec4d3bd1d9b6d8c6e1",
-  "tree": "3f06cee497f8f2f38b015f6a0fb7af4fca31bea5",
-  "manifest_sha256": "bab7b4d5b5a857163c3b97d1c0252a70713b4ab9fccb890d21ef8745aea6cfcb",
+  "head": "66876d8b0f07c24aef1cb5b6ccc786a7367ee7db",
+  "tree": "f34e03268025570e4607f7e32334435e58715b14",
+  "manifest_sha256": "cd4dd382ad32cdbd4678ea528b437d6d15330f7e328e574d77533a3f52a40653",
   "files": {
     "sintra_live/authorization/gate.py": "a43e9da29cf6ce2e0a460bfae605ad4581662856d08191fef99f336f13bb9baf",
     "sintra_live/envelope/l1_action_envelope.py": "e0266316d040f012f6c8a31e584eff1f830dbb31f9721b882d1be1888a9bd99a",
     "sintra_live/github_app/auth.py": "6252d8147f6042a0609614fbd6153dd32c5178cdeb71d4f4d26ee44060de165c",
     "sintra_live/github_comment/capability.py": "897b73e5f1cb8c4ac536178d9c6f23a3ca915db93d1f09111785aff55534c852",
     "sintra_live/github_comment/evidence.py": "4d3a6dc4240a16291f161772f54b9bd2ffe19df1bffd35644c76e920f2c6c5cc",
-    "sintra_live/github_live/l1_runner.py": "8b0766a6dfed38fe0752172fc6aaea35ca0cad87b6ab6430c49b780de40867b3",
+    "sintra_live/github_live/l1_runner.py": "17a8af9348d4b8e83fae69dc0ab33ba80ebebfda36687c8a7e1d61d5bd79e548",
     "tests/test_authorization_gate.py": "6d948c04675b21ac8b885b6c2b46b5708d155173e2ee0866ed709bfc9d32caf2",
     "tests/test_l1_envelope.py": "dc51ea0bf938c600b9b4e7ec0238a1c15cd6b0c246b6c07652000c27b45c0ff8",
     "tests/test_l1_live_provider_fail_closed.py": "5d6000d57d14bcabac4673fc61fd4d5108ebb25520761018282db7f4d74ca980",
-    "tests/test_l1_runner.py": "72a517c424390c4958ea8a1bd725030f6280a3fd3ce28695a98e194c8d215afe"
+    "tests/test_l1_runner.py": "72a517c424390c4958ea8a1bd725030f6280a3fd3ce28695a98e194c8d215afe",
+    "tests/test_l1_runner_identity_binding.py": "e0f134ea6f846dab9be2441410c09a1654117d9cb641dd45573cc32060f0e2eb"
   }
 }

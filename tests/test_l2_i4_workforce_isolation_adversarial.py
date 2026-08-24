@@ -54,3 +54,12 @@ def test_workspace_inventory_detects_undeclared():
  r=pathlib.Path(tempfile.mkdtemp());w=create_workspace(r,'u');(w/'bad.txt').write_text('x');assert 'bad.txt' in inventory(w);shutil.rmtree(r)
 def test_runtime_cleanup():
  r=pathlib.Path(tempfile.mkdtemp());build_runtime(ROOT,BASE,r/'build');shutil.rmtree(r);assert not r.exists()
+def test_wheel_hash_changes_when_source_byte_changes():
+ r1=pathlib.Path(tempfile.mkdtemp());r2=pathlib.Path(tempfile.mkdtemp());repo=pathlib.Path(tempfile.mkdtemp())
+ try:
+  shutil.copytree(ROOT/'sintra_live',repo/'sintra_live')
+  a=build_runtime(ROOT,BASE,r1/'build')
+  target=repo/'sintra_live/l2/workforce_policy.py';target.write_bytes(target.read_bytes()+b'\n')
+  b=build_runtime(repo,BASE,r2/'build')
+  assert a['wheel_sha256']!=b['wheel_sha256'] and a['manifest_sha256']!=b['manifest_sha256']
+ finally:shutil.rmtree(r1,ignore_errors=True);shutil.rmtree(r2,ignore_errors=True);shutil.rmtree(repo,ignore_errors=True)

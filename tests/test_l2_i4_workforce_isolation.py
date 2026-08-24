@@ -32,3 +32,16 @@ def test_material_disagreement():
 def test_specialist_violation_denied():
  r=reconcile((package('a','1',output('1',self_authorization_claim=True)),));assert r.result is ReconciliationResult.DENIED
 def test_acceptance_mapping():assert {f'W-{i:02}' for i in range(1,9)}|{'M-07'}=={'W-01','W-02','W-03','W-04','W-05','W-06','W-07','W-08','M-07'}
+def test_wheel_build_is_reproducible_across_three_roots():
+ roots=[pathlib.Path(tempfile.mkdtemp()) for _ in range(3)]
+ try:
+  runtimes=[build_runtime(ROOT,BASE,r/'different-root') for r in roots]
+  assert len({x['wheel_sha256'] for x in runtimes})==1
+  assert len({x['manifest_sha256'] for x in runtimes})==1
+  import zipfile
+  def inventory(wheel):
+   with zipfile.ZipFile(wheel) as z:
+    return [(i.filename,i.date_time,i.compress_type,i.CRC,i.file_size,i.compress_size,i.external_attr,i.create_system,i.extra,i.comment,hashlib.sha256(z.read(i)).hexdigest()) for i in z.infolist()]
+  assert inventory(runtimes[0]['wheel'])==inventory(runtimes[1]['wheel'])==inventory(runtimes[2]['wheel'])
+ finally:
+  for r in roots:shutil.rmtree(r,ignore_errors=True)

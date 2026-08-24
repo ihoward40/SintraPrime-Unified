@@ -25,9 +25,19 @@ def build_runtime(repo_root,base_python,out):
   elif f=='sintra_live/l2/mission/__init__.py':p.write_text('"""Minimal I4 runtime mission package."""\n')
   else:shutil.copyfile(repo/f,p)
  manifest=module_manifest(stage);msha=dh(DOMAINS['runtime-module-manifest'],manifest);wheel.parent.mkdir(parents=True,exist_ok=True)
- with zipfile.ZipFile(wheel,'w',zipfile.ZIP_DEFLATED) as z:
-  for f in sorted(RUNTIME_FILES):z.write(stage/f,f)
-  di='sintralive_i4_runtime-0.1.0.dist-info';z.writestr(di+'/METADATA','Metadata-Version: 2.1\nName: sintralive-i4-runtime\nVersion: 0.1.0\n');z.writestr(di+'/WHEEL','Wheel-Version: 1.0\nRoot-Is-Purelib: true\nTag: py3-none-any\n')
+ di='sintralive_i4_runtime-0.1.0.dist-info'
+ entries={f:(stage/f).read_bytes() for f in RUNTIME_FILES}
+ entries[di+'/METADATA']=b'Metadata-Version: 2.1\nName: sintralive-i4-runtime\nVersion: 0.1.0\n'
+ entries[di+'/WHEEL']=b'Wheel-Version: 1.0\nRoot-Is-Purelib: true\nTag: py3-none-any\n'
+ # Write every member from explicit bytes with fixed metadata.  ZipFile.write()
+ # is prohibited because it inherits source timestamps and host file modes.
+ with zipfile.ZipFile(wheel,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as z:
+  z.comment=b''
+  for name in sorted(entries):
+   info=zipfile.ZipInfo(name,date_time=(1980,1,1,0,0,0))
+   info.compress_type=zipfile.ZIP_DEFLATED;info.create_system=3
+   info.external_attr=(0o100644<<16);info.extra=b'';info.comment=b''
+   z.writestr(info,entries[name],compress_type=zipfile.ZIP_DEFLATED,compresslevel=9)
  subprocess.run([str(base_python),'-m','venv','--without-pip',str(venv)],check=True);sp=venv/'Lib/site-packages'
  with zipfile.ZipFile(wheel) as z:z.extractall(sp)
  installed=module_manifest(sp)

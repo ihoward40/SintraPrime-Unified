@@ -37,6 +37,7 @@ class ExecutionDecision(Enum):
     EXPIRED = "EXPIRED"
     KILL_SWITCH = "KILL_SWITCH"
     MISSING_AUTHORITY = "MISSING_AUTHORITY"
+    LIVE_PROVIDER_MISMATCH = "LIVE_PROVIDER_MISMATCH"
 
 
 # Frozen configuration for the first mission
@@ -47,6 +48,12 @@ M2B_RESOURCE_TYPE = "ISSUE"
 M2B_ALLOWED_METHOD = "POST"
 M2B_MAX_EXECUTIONS = 1
 M2B_KILL_SWITCH_DEFAULT = False
+
+# Live execution adapter binding
+M2B_LIVE_EXECUTION_ADAPTER = "github-app-live-comment-v1"
+M2B_LIVE_ENTRYPOINT_ID = "sintra-live-l1-comment-runner-v1"
+M2B_LIVE_PROVIDER_MODE = "LIVE"
+M2B_LIVE_PROVIDER_CLASS = "GitHubAppLiveProvider"
 
 
 @dataclass(frozen=True)
@@ -145,6 +152,20 @@ class MockGitHubCommentReceipt:
         if not self.receipt_hash:
             content = f"{self.receipt_id}|{self.execution_id}|{self.comment_id}|{self.comment_body}|{self.repository}|{self.issue_number}|{self.created_at}"
             object.__setattr__(self, 'receipt_hash', hashlib.sha256(content.encode()).hexdigest())
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "receipt_id": self.receipt_id,
+            "execution_id": self.execution_id,
+            "comment_id": self.comment_id,
+            "comment_url": self.comment_url,
+            "comment_body": self.comment_body,
+            "repository": self.repository,
+            "issue_number": self.issue_number,
+            "created_at": self.created_at,
+            "success": self.success,
+            "receipt_hash": self.receipt_hash,
+        }
 
 
 class MockGitHubCommentProvider:
@@ -171,9 +192,16 @@ class MockGitHubCommentProvider:
 
     def execute_comment_create(
         self,
-        envelope: GitHubCommentActionEnvelope
+        envelope: GitHubCommentActionEnvelope,
+        provider_mode: str = "MOCK"
     ) -> MockGitHubCommentReceipt:
         """Execute comment creation (synthetic)."""
+        if provider_mode != "MOCK":
+            raise PermissionError(
+                f"MockGitHubCommentProvider cannot execute in {provider_mode} mode. "
+                "Use the certified live runner for live execution."
+            )
+
         decision, reason = self.can_execute(envelope.idempotency_key)
         if decision != ExecutionDecision.ALLOW:
             raise PermissionError(f"Execution blocked: {decision.value} - {reason}")

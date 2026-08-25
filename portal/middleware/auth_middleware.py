@@ -71,13 +71,14 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         # FastAPI dependency overrides are test-only. Let route-level test
         # fixtures supply CurrentUser without minting real JWTs.
+        # Fail-closed: if the check itself errors, do NOT silently pass.
         try:
             from ..auth.rbac import get_current_user
 
             if get_current_user in request.app.dependency_overrides:
                 return await call_next(request)
         except Exception:
-            pass
+            pass  # dependency_overrides not present — continue to normal auth
 
         if not auth_header.startswith("Bearer "):
             return JSONResponse(

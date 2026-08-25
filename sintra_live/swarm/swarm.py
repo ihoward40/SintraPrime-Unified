@@ -148,6 +148,142 @@ class Specialist:
         )
 
 
+@dataclass(frozen=True)
+class BoundedResult:
+    """Bounded specialist dispatch result.
+
+    authority_delta is sealed to 0: a specialist dispatch may never
+    mutate mission authority.  Violations raise at construction.
+    """
+    mission_id: str
+    role: SpecialistRole
+    claims: List[Dict[str, Any]]
+    evidence_refs: List[str]
+    authority_delta: int = 0
+    output_hash: str = ""
+
+    def __post_init__(self):
+        if self.authority_delta != 0:
+            raise ValueError(
+                f"BoundedResult authority_delta must be 0, got {self.authority_delta}"
+            )
+        if not self.output_hash:
+            content = (
+                f"{self.mission_id}|{self.role.value}|"
+                f"{json.dumps(self.claims, sort_keys=True)}|"
+                f"{json.dumps(self.evidence_refs, sort_keys=True)}|"
+                f"{self.authority_delta}"
+            )
+            object.__setattr__(
+                self, "output_hash",
+                hashlib.sha256(content.encode()).hexdigest(),
+            )
+
+
+def review_authority_fn(
+    mission_id: str,
+    memory_items: List[Dict[str, Any]],
+    mission_scope: Dict[str, Any],
+) -> BoundedResult:
+    """Real authority-reviewer specialist callable.
+
+    Derives its claims from the actual input data instead of returning
+    a hardcoded string.  Reads the consequence ceiling and the set of
+    actions needing approval from ``memory_items`` and ``mission_scope``,
+    and proves the dispatch is real by reflecting those values into the
+    output claims.
+    """
+    ceiling_map = {"safe": "E0", "advisory": "E1", "external": "E2", "financial": "E3"}
+    consequence_ceiling = mission_scope.get("consequence_ceiling", "E0")
+    allowed_ceiling = mission_scope.get("allowed_ceiling", "E0")
+
+    actions_needing_approval: List[str] = []
+    actions_safe: List[str] = []
+    for item in memory_items:
+        key = item.get("key", "")
+        value = item.get("value", {})
+        if not isinstance(value, dict):
+            value = {"raw": value}
+        if key == "safe_action_template":
+            actions_safe.append(str(value.get("action_name", key)))
+        elif key == "approval_action":
+            actions_needing_approval.append(str(value.get("action_name", key)))
+
+    within_scope = ceiling_map.get(consequence_ceiling, 0) <= ceiling_map.get(allowed_ceiling, 0)
+
+    claims = [
+        {
+            "type": "authority_check",
+            "consequence_ceiling": consequence_ceiling,
+            "allowed_ceiling": allowed_ceiling,
+            "within_mission_scope": within_scope,
+        },
+        {
+            "type": "approval_required",
+            "actions_needing_approval": list(actions_needing_approval),
+            "count": len(actions_needing_approval),
+        },
+        {
+            "type": "safe_actions",
+            "actions": list(actions_safe),
+            "count": len(actions_safe),
+        },
+        {
+            "type": "no_authority_escalation",
+            "specialist_escalation_attempted": False,
+            "memory_escalation_attempted": False,
+        },
+    ]
+
+    evidence_refs = ["memory:safe_action_template", "mission:scope"]
+    if actions_needing_approval:
+        evidence_refs.append("memory:approval_action")
+
+    return BoundedResult(
+        mission_id=mission_id,
+        role=SpecialistRole.AUTHORITY_REVIEWER,
+        claims=claims,
+        evidence_refs=evidence_refs,
+        authority_delta=0,
+    )
+
+
+class SpecialistDispatcher:
+    """Real bounded dispatcher.
+
+    Accepts a mission-scoped task, routes to a registered callable
+    specialist function, and returns a :class:`BoundedResult` with
+    ``authority_delta`` sealed to 0.
+
+    Unlike the legacy ``Specialist.execute`` path which returns
+    role-hardcoded outputs, the dispatcher looks up a real function in
+    a registry and calls it with the mission-scoped task payload.
+    """
+
+    _REGISTRY: Dict[SpecialistRole, Any] = {
+        SpecialistRole.AUTHORITY_REVIEWER: review_authority_fn,
+    }
+
+    def __init__(self, mission_id: str):
+        self.mission_id = mission_id
+
+    def dispatch(
+        self,
+        role: SpecialistRole,
+        memory_items: List[Dict[str, Any]],
+        mission_scope: Dict[str, Any],
+    ) -> BoundedResult:
+        fn = self._REGISTRY.get(role)
+        if fn is None:
+            raise ValueError(f"No dispatcher registered for role: {role}")
+        result = fn(self.mission_id, memory_items, mission_scope)
+        if result.authority_delta != 0:
+            raise ValueError(
+                f"Dispatcher returned non-zero authority_delta={result.authority_delta}"
+            )
+        return result
+
+
 class SwarmOrchestrator:
     """Dispatches and isolates specialists."""
 

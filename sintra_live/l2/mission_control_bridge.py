@@ -130,6 +130,16 @@ class MissionControlBridge:
         """Return the current L2 mission aggregate."""
         return self._store.load(mission_id)
 
+    def project_p5(self, mission_id: str, *, memory_receipt: Any, model_receipt: Any):
+        """Project P5 state from the exact canonical L2 aggregate and sealed receipts."""
+        from .p5_memory_model_gateway import P5MissionProjection
+
+        return P5MissionProjection.from_receipts(
+            self._store.load(mission_id),
+            memory=memory_receipt,
+            model=model_receipt,
+        )
+
     # ------------------------------------------------------------------
     # Agentos-style interface
     # ------------------------------------------------------------------

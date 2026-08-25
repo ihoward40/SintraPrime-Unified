@@ -1,0 +1,56 @@
+{
+  "acceptance_case_ids_changed": false,
+  "action": "STOP FOR PRINCIPAL REVIEW",
+  "artifact_set_hash_definition": "SHA-256 of canonical sorted JSON mapping each of the six non-manifest V2 artifact names to its exact file SHA-256; excludes this manifest to avoid self-reference.",
+  "artifacts": {
+    "AGENTS.md": {
+      "sha256": "f2d6fa72cd301856014e5e56f4b02622e8e3228ac9c4864b9fe2d9a133205dcc",
+      "size_bytes": 1814
+    },
+    "SP_LIVE_001_L2_ACCEPTANCE_TEST_PLAN.md": {
+      "sha256": "8d512b59a4766659ca213dd76593a0793a9549d994ae1d7fa56bf2ab97684dfe",
+      "size_bytes": 11578
+    },
+    "SP_LIVE_001_L2_DESIGN_FREEZE_RECORD_V2.json": {
+      "sha256": "8b15eb8e4b27b7eb7fe119dcf329048548b88e4b1e1a2b183e6bdbda71913d8d",
+      "size_bytes": 2698
+    },
+    "SP_LIVE_001_L2_GOVERNED_MISSION_CONTRACT.md": {
+      "sha256": "797d498591cd0b2a6a4227e434a8046a11e7ce571f4615a7a8042bd660ca340f",
+      "size_bytes": 11861
+    },
+    "SP_LIVE_001_L2_I7B_DESIGN_AMENDMENT_V1.json": {
+      "sha256": "30fea53df2108e6bb7df8b3e1e700d70208c1e2faf1c507f47389cdc6dc618f9",
+      "size_bytes": 8093
+    },
+    "SP_LIVE_001_L2_IMPLEMENTATION_GAP_ANALYSIS.md": {
+      "sha256": "f9603d0c0de223479e1cb85c7a55cccbcf362b229dfc258d167648b83c759c8f",
+      "size_bytes": 11625
+    }
+  },
+  "baseline_head": "a33c4a261f0cc903df2b47c20a9db8a46c3d7d60",
+  "baseline_tree": "174acf18202a3d991ac2cb89b852a98f1d1c8b9d",
+  "change_type": "PROSPECTIVE ADDITIVE AMENDMENT",
+  "database_write_authority": "NONE",
+  "design_artifact_set_sha256": "837b1ce93938a0f5258f3f16c356b261f43ec4d1feb408b677f91a628b74c4b3",
+  "design_gate": "SP_LIVE_001_L2_DESIGN_V2_I7B_INTEGRATION_AND_REFREEZE",
+  "design_version": "V2",
+  "historical_i7_invalidated": false,
+  "historical_i7_reopened": false,
+  "i7b_implementation_authority": "NONE",
+  "i7b_ledger_certification_mode": "UNRESOLVED",
+  "i8_contract_changed": false,
+  "i8_implementation_authority": "NONE",
+  "live_execution_authority": "NONE",
+  "manifest_self_member": false,
+  "manifest_type": "SP_LIVE_001_L2_DESIGN_MANIFEST_V2",
+  "new_stage_added": "L2-I7B",
+  "previous_design_artifact_set_sha256": "55cfcef154b4089dbe071c7f1d41fa69d8b0df83e07adb776cab1ed919beca73",
+  "previous_design_manifest_sha256": "c333ff9a091a1d7aa93c72515a245243cd6beef64f728a0c766f0575477933fe",
+  "schema_version": "sp-live-001-l2-design-manifest-v2",
+  "stage_position": "AFTER L2-I7 / BEFORE L2-I8",
+  "status": "PASS / LOCAL REFREEZE / PENDING PRINCIPAL RATIFICATION",
+  "substantive_original_design_docs_changed": false,
+  "v1_status": "HISTORICAL / SUPERSEDED ONLY AFTER V2 RATIFICATION",
+  "v2_non_manifest_artifact_count": 6
+}

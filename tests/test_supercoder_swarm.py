@@ -507,8 +507,8 @@ class TestSuperCoderSurvivesRepeatedWorkerTimeouts:
         session_e = supervisor.launch_worker(pkt5)
         cert_chain = CertificationChain(mission.mission_id)
         cert_chain.submit(CertStep.IMPLEMENTED, True, session_e.worker_id)
-        cert_chain.submit(CertStep.TESTED, True, session_e.worker_id)
-        cert_chain.submit(CertStep.CODE_REVIEWED, True, session_e.worker_id)
+        cert_chain.submit(CertStep.TESTED, True, "independent-tester")
+        cert_chain.submit(CertStep.CODE_REVIEWED, True, "independent-reviewer")
         rotation.end_session(session_e.worker_id, completed=True)
 
         # ─── VERIFY: Mission survived repeated timeouts ───

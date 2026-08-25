@@ -58,6 +58,15 @@ class Checkpoint:
             sort_keys=True,
         ).encode()
 
+    def to_envelope_json(self) -> bytes:
+        payload = json.loads(self.to_json())
+        payload_raw = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+        return json.dumps(
+            {"checkpoint": payload, "checkpoint_sha256": hashlib.sha256(payload_raw).hexdigest()},
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+
     def checkpoint_hash(self) -> str:
         return hashlib.sha256(self.to_json()).hexdigest()
 
@@ -100,7 +109,7 @@ class CheckpointStore:
         """Atomically save a checkpoint to disk."""
         target = self._checkpoint_path(cp.mission_id, cp.checkpoint_id)
         tmp = target.with_suffix(".tmp")
-        raw = cp.to_json()
+        raw = cp.to_envelope_json()
         with open(tmp, "wb") as f:
             f.write(raw)
             f.flush()
@@ -117,7 +126,11 @@ class CheckpointStore:
         """Load a specific checkpoint."""
         path = self._checkpoint_path(mission_id, checkpoint_id)
         with open(path, "rb") as f:
-            data = json.loads(f.read())
+            envelope = json.loads(f.read())
+        data = envelope["checkpoint"]
+        payload_raw = json.dumps(data, sort_keys=True, separators=(",", ":")).encode()
+        if hashlib.sha256(payload_raw).hexdigest() != envelope.get("checkpoint_sha256"):
+            raise ValueError(f"Checkpoint integrity verification failed for {checkpoint_id}")
         return Checkpoint(
             checkpoint_id=data["checkpoint_id"],
             mission_id=data["mission_id"],
@@ -150,7 +163,8 @@ class CheckpointStore:
         latest_seq = -1
         for f in files:
             with open(f, "rb") as fh:
-                data = json.loads(fh.read())
+                envelope = json.loads(fh.read())
+            data = envelope["checkpoint"]
             seq = data.get("sequence", 0)
             if seq > latest_seq:
                 latest_seq = seq

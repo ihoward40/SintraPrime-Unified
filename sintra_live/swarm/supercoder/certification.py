@@ -60,8 +60,20 @@ class CertificationChain:
     def is_fully_certified(self) -> bool:
         """Check if all required steps have passed."""
         required = {CertStep.IMPLEMENTED, CertStep.TESTED, CertStep.CODE_REVIEWED}
-        passed_steps = {r.step for r in self._results if r.passed}
-        return required.issubset(passed_steps)
+        passed = {r.step: r for r in self._results if r.passed}
+        if not required.issubset(passed):
+            return False
+        reviewers = {
+            passed[CertStep.IMPLEMENTED].reviewer_id,
+            passed[CertStep.TESTED].reviewer_id,
+            passed[CertStep.CODE_REVIEWED].reviewer_id,
+        }
+        return (
+            len(reviewers) == 3
+            and not self.any_failed()
+            and self.authority_delta_total() == 0
+            and self.side_effects_total() == 0
+        )
 
     def any_failed(self) -> bool:
         return any(not r.passed for r in self._results)

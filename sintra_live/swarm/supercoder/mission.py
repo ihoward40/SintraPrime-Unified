@@ -7,6 +7,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 import hashlib
 import json
+import os
 from pathlib import Path
 
 
@@ -81,7 +82,8 @@ class CodingMission:
     def __post_init__(self):
         if not self.created_at:
             self.created_at = _utc_now()
-        self.updated_at = _utc_now()
+        if not self.updated_at:
+            self.updated_at = _utc_now()
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -156,6 +158,104 @@ class CodingMission:
             self.status == MissionStatus.COMPLETE
             or self.current_phase == MissionPhase.COMPLETE
         )
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "CodingMission":
+        work_units = [
+            WorkUnit(
+                unit_id=u["unit_id"],
+                description=u["description"],
+                files_changed=tuple(u.get("files_changed", ())),
+                file_hashes=dict(u.get("file_hashes", {})),
+                test_results=u.get("test_results"),
+                commit_sha=u.get("commit_sha"),
+                completed_at=u.get("completed_at", ""),
+                worker_id=u.get("worker_id", ""),
+            )
+            for u in data.get("completed_work_units", [])
+        ]
+        active = data.get("active_work_unit")
+        active_work_unit = None
+        if active:
+            active_work_unit = WorkUnit(
+                unit_id=active["unit_id"],
+                description=active["description"],
+                files_changed=tuple(active.get("files_changed", ())),
+                file_hashes=dict(active.get("file_hashes", {})),
+                test_results=active.get("test_results"),
+                commit_sha=active.get("commit_sha"),
+                completed_at=active.get("completed_at", ""),
+                worker_id=active.get("worker_id", ""),
+            )
+        return cls(
+            mission_id=data["mission_id"],
+            objective=data["objective"],
+            acceptance_criteria=tuple(data.get("acceptance_criteria", ())),
+            baseline_commit=data["baseline_commit"],
+            integration_branch=data["integration_branch"],
+            owned_paths=tuple(data.get("owned_paths", ())),
+            prohibited_paths=tuple(data.get("prohibited_paths", ())),
+            current_phase=MissionPhase(data.get("current_phase", MissionPhase.PLANNED.value)),
+            status=MissionStatus(data.get("status", MissionStatus.ACTIVE.value)),
+            completed_work_units=work_units,
+            active_work_unit=active_work_unit,
+            blockers=list(data.get("blockers", [])),
+            discoveries=list(data.get("discoveries", [])),
+            changed_files=dict(data.get("changed_files", {})),
+            tests_run=data.get("tests_run", 0),
+            tests_passed=data.get("tests_passed", 0),
+            tests_failed=data.get("tests_failed", 0),
+            candidate_commits=list(data.get("candidate_commits", [])),
+            remaining_work=list(data.get("remaining_work", [])),
+            evidence=list(data.get("evidence", [])),
+            authority_delta=data.get("authority_delta", 0),
+            side_effects=data.get("side_effects", 0),
+            checkpoint_sequence=data.get("checkpoint_sequence", 0),
+            created_at=data.get("created_at", ""),
+            updated_at=data.get("updated_at", ""),
+        )
+
+
+class CodingMissionStore:
+    """Atomic, restart-durable storage for authoritative coding mission state."""
+
+    def __init__(self, root: Path | str):
+        self.root = Path(root)
+        self.root.mkdir(parents=True, exist_ok=True)
+
+    def _path(self, mission_id: str) -> Path:
+        return self.root / f"{mission_id}.json"
+
+    def save(self, mission: CodingMission) -> Path:
+        payload = mission.to_dict()
+        raw_payload = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+        envelope = {
+            "mission": payload,
+            "mission_sha256": hashlib.sha256(raw_payload).hexdigest(),
+        }
+        raw = json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode()
+        target = self._path(mission.mission_id)
+        temp = target.with_suffix(".tmp")
+        with open(temp, "wb") as handle:
+            handle.write(raw)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp, target)
+        if target.read_bytes() != raw:
+            raise IOError(f"Mission readback mismatch for {mission.mission_id}")
+        return target
+
+    def load(self, mission_id: str) -> CodingMission:
+        envelope = json.loads(self._path(mission_id).read_bytes())
+        payload = envelope["mission"]
+        raw_payload = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+        actual = hashlib.sha256(raw_payload).hexdigest()
+        if actual != envelope.get("mission_sha256"):
+            raise ValueError(f"Mission integrity verification failed for {mission_id}")
+        mission = CodingMission.from_dict(payload)
+        if mission.mission_id != mission_id:
+            raise ValueError(f"Mission identity mismatch for {mission_id}")
+        return mission
 
 
 def _utc_now() -> str:

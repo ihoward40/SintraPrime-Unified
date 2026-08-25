@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from .mission import (
     CodingMission,
+    CodingMissionStore,
     MissionPhase,
     MissionStatus,
 )
@@ -38,6 +39,7 @@ from .certification import CertificationChain
 
 __all__ = [
     "CodingMission",
+    "CodingMissionStore",
     "MissionPhase",
     "MissionStatus",
     "Checkpoint",

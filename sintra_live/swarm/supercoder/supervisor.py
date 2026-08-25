@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
-from .mission import CodingMission, MissionPhase, MissionStatus, WorkUnit
+from .mission import CodingMission, CodingMissionStore, MissionPhase, MissionStatus, WorkUnit
 from .checkpoint import Checkpoint, CheckpointStore, create_checkpoint
 from .work_packet import WorkPacket, PacketScheduler, PacketStatus
 from .context_capsule import ContextCapsule, build_capsule
@@ -39,23 +39,33 @@ class SuperCoderSupervisor:
     packet_scheduler: PacketScheduler
     rotation: WorkerRotation
     mission: CodingMission
+    mission_store: Optional[CodingMissionStore] = None
+
+    def _assert_packet_scope(self, packet: WorkPacket) -> None:
+        def owns(path: str) -> bool:
+            return any(path == root or path.startswith(root.rstrip("/") + "/") for root in self.mission.owned_paths)
+
+        for path in packet.exact_files:
+            if path in self.mission.prohibited_paths:
+                raise PermissionError(f"Path {path} is prohibited by mission scope")
+            if not owns(path):
+                raise PermissionError(f"Path {path} is outside mission owned paths")
 
     def launch_worker(self, packet: WorkPacket) -> WorkerSession:
         """Launch a worker for a specific packet."""
-        # Acquire path locks for the packet's files
-        for path in packet.exact_files:
-            if not self.path_locks.acquire(
-                path,
-                self.mission.mission_id,
-                packet.packet_id,
-                "pending",
-            ):
-                raise RuntimeError(f"Path {path} is locked by another worker")
-
         session = self.rotation.start_session(
             self.mission.mission_id,
             packet.packet_id,
         )
+        self._assert_packet_scope(packet)
+        if not self.path_locks.acquire_batch(
+            list(packet.exact_files),
+            self.mission.mission_id,
+            packet.packet_id,
+            session.worker_id,
+        ):
+            self.rotation.end_session(session.worker_id, completed=False)
+            raise RuntimeError("One or more packet paths are locked by another worker")
         self.role_registry.assign(
             SuperCoderRole.IMPLEMENTER,
             session.worker_id,
@@ -69,6 +79,8 @@ class SuperCoderSupervisor:
         self.checkpoint_store.save(checkpoint)
         self.mission.checkpoint_sequence = checkpoint.sequence + 1
         self.mission.updated_at = checkpoint.timestamp
+        if self.mission_store is not None:
+            self.mission_store.save(self.mission)
 
     def handle_timeout(self, worker_id: str) -> TimeoutRecovery:
         """Handle a worker timeout — recover state and prepare replacement."""
@@ -129,7 +141,11 @@ class SuperCoderSupervisor:
         """Check if the mission is complete by verifying all acceptance criteria."""
         return (
             self.mission.status == MissionStatus.COMPLETE
-            or self.mission.current_phase == MissionPhase.COMPLETE
+            and self.mission.current_phase == MissionPhase.COMPLETE
+            and self.mission.authority_delta == 0
+            and self.mission.side_effects == 0
+            and self.mission.tests_failed == 0
+            and not self.mission.blockers
         )
 
     def force_checkpoint(

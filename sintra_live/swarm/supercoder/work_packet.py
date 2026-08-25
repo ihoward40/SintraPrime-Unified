@@ -111,11 +111,26 @@ class PacketScheduler:
         self._packets.append(pkt)
         return pkt
 
+    def restore_packet(self, packet: WorkPacket) -> None:
+        """Restore an integrity-verified packet during process recovery."""
+        if packet.mission_id != self.mission_id:
+            raise ValueError("Packet mission identity mismatch")
+        if any(existing.packet_id == packet.packet_id for existing in self._packets):
+            raise ValueError(f"Duplicate restored packet {packet.packet_id}")
+        self._packets.append(packet)
+        self._seq = max(self._seq, packet.sequence + 1)
+
     def next_pending(self) -> Optional[WorkPacket]:
         for pkt in self._packets:
             if pkt.status == PacketStatus.PENDING:
                 return pkt
         return None
+
+    def get_packet(self, packet_id: str) -> WorkPacket:
+        for packet in self._packets:
+            if packet.packet_id == packet_id:
+                return packet
+        raise KeyError(f"Packet {packet_id} not found")
 
     def mark_active(self, packet_id: str, worker_id: str) -> WorkPacket:
         for i, pkt in enumerate(self._packets):

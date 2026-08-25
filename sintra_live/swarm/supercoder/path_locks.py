@@ -34,6 +34,16 @@ class PathLockRegistry:
         self._locks: Dict[str, PathLock] = {}
         self._lock_timeout = lock_timeout_seconds
 
+    @property
+    def lock_timeout_seconds(self) -> int:
+        return self._lock_timeout
+
+    def restore_lock(self, lock: PathLock) -> None:
+        """Restore a persisted lock fail-closed for restart reconciliation."""
+        if lock.path in self._locks:
+            raise ValueError(f"Duplicate restored path lock {lock.path}")
+        self._locks[lock.path] = lock
+
     def acquire(self, path: str, mission_id: str, packet_id: str, worker_id: str) -> bool:
         """Try to acquire a write lock. Returns True if acquired."""
         # Check if existing lock exists and is still valid

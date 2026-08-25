@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from .mission import CodingMission, CodingMissionStore, MissionPhase, MissionStatus, WorkUnit
@@ -12,6 +13,7 @@ from .path_locks import PathLockRegistry
 from .role_registry import RoleRegistry, SuperCoderRole, QualityLevel
 from .recovery import RecoveryEngine, TimeoutRecovery, RecoveryState
 from .rotation import WorkerRotation, WorkerSession
+from .persistence import RuntimeStateStore, SupervisorLeaseStore
 
 
 @dataclass
@@ -40,6 +42,90 @@ class SuperCoderSupervisor:
     rotation: WorkerRotation
     mission: CodingMission
     mission_store: Optional[CodingMissionStore] = None
+    runtime_store: Optional[RuntimeStateStore] = None
+    lease_store: Optional[SupervisorLeaseStore] = None
+    supervisor_id: str = ""
+    supervisor_epoch: int = 0
+
+    def acquire_mission(self) -> int:
+        if self.lease_store is None or not self.supervisor_id:
+            raise RuntimeError("Supervisor lease store and identity are required")
+        lease = self.lease_store.acquire(self.mission.mission_id, self.supervisor_id)
+        self.supervisor_epoch = lease.epoch
+        if self.mission_store is not None:
+            try:
+                self.mission = self.mission_store.load(self.mission.mission_id)
+            except FileNotFoundError:
+                self.mission_store.save(self.mission)
+        return self.supervisor_epoch
+
+    def accept_worker_result(self, worker_id: str, supervisor_epoch: int) -> None:
+        if supervisor_epoch != self.supervisor_epoch:
+            raise PermissionError("Worker result carries stale supervisor epoch")
+        if self.lease_store is not None:
+            lease = self.lease_store.current(self.mission.mission_id)
+            if not lease or lease.owner_id != self.supervisor_id or lease.epoch != self.supervisor_epoch:
+                raise PermissionError("Worker result rejected: supervisor lease is no longer authoritative")
+
+    def persist_runtime_state(self) -> None:
+        if self.runtime_store is None:
+            raise RuntimeError("Runtime state store is required")
+        self.runtime_store.save_scheduler(self.mission.mission_id, self.packet_scheduler)
+        self.runtime_store.save_roles(self.mission.mission_id, self.role_registry)
+        self.runtime_store.save_path_locks(self.mission.mission_id, self.path_locks)
+        capsule = self.build_context_capsule(self.packet_scheduler.next_pending())
+        self.runtime_store.save_context_capsule(self.mission.mission_id, capsule)
+        if self.mission_store is not None:
+            self.mission_store.save(self.mission)
+
+    @classmethod
+    def recover(
+        cls,
+        root: Path | str,
+        mission_id: str,
+        supervisor_id: str,
+        lease_seconds: int = 60,
+    ) -> "SuperCoderSupervisor":
+        root = Path(root)
+        mission_store = CodingMissionStore(root / "missions")
+        mission = mission_store.load(mission_id)
+        checkpoints = CheckpointStore(root / "checkpoints")
+        runtime = RuntimeStateStore(root / "runtime")
+        scheduler = runtime.load_scheduler(mission_id)
+        roles = runtime.load_roles(mission_id)
+        locks = runtime.load_path_locks(mission_id)
+        recovery = RecoveryEngine(checkpoints, str(root / "worktree"))
+        rotation = WorkerRotation(checkpoints, recovery, str(root / "worktree"))
+        supervisor = cls(
+            checkpoint_store=checkpoints,
+            path_locks=locks,
+            role_registry=roles,
+            packet_scheduler=scheduler,
+            rotation=rotation,
+            mission=mission,
+            mission_store=mission_store,
+            runtime_store=runtime,
+            lease_store=SupervisorLeaseStore(root / "leases", lease_seconds=lease_seconds),
+            supervisor_id=supervisor_id,
+        )
+        supervisor.acquire_mission()
+        return supervisor
+
+    def rotate_recovered_packet(self, packet_id: str) -> WorkerSession:
+        packet = self.packet_scheduler.get_packet(packet_id)
+        old_worker = packet.worker_id
+        if old_worker:
+            self.path_locks.release_all_for_worker(self.mission.mission_id, old_worker)
+        session = self.rotation.start_session(self.mission.mission_id, packet_id)
+        if not self.path_locks.acquire_batch(
+            list(packet.exact_files), self.mission.mission_id, packet_id, session.worker_id
+        ):
+            raise RuntimeError("Recovered packet path-lock conflict")
+        self.packet_scheduler.mark_active(packet_id, session.worker_id)
+        self.role_registry.assign(
+            SuperCoderRole.IMPLEMENTER, session.worker_id, packet_id, self.mission.mission_id
+        )
+        return session
 
     def _assert_packet_scope(self, packet: WorkPacket) -> None:
         def owns(path: str) -> bool:

@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+from contextlib import contextmanager
 
 
 class MissionPhase(str, Enum):
@@ -225,6 +226,22 @@ class CodingMissionStore:
 
     def _path(self, mission_id: str) -> Path:
         return self.root / f"{mission_id}.json"
+
+    @contextmanager
+    def exclusive_process_lock(self, mission_id: str, owner_id: str):
+        lock_path = self.root / f"{mission_id}.store.lock"
+        try:
+            fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError as exc:
+            raise RuntimeError(f"Mission store lock already held for {mission_id}") from exc
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                handle.write(owner_id)
+                handle.flush()
+                os.fsync(handle.fileno())
+            yield
+        finally:
+            lock_path.unlink(missing_ok=True)
 
     def save(self, mission: CodingMission) -> Path:
         payload = mission.to_dict()

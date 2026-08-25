@@ -36,6 +36,7 @@ from .recovery import (
 from .rotation import WorkerRotation
 from .supervisor import SuperCoderSupervisor
 from .certification import CertificationChain
+from .persistence import RuntimeStateStore, SupervisorLeaseStore, SupervisorLease
 
 __all__ = [
     "CodingMission",
@@ -60,4 +61,7 @@ __all__ = [
     "WorkerRotation",
     "SuperCoderSupervisor",
     "CertificationChain",
+    "RuntimeStateStore",
+    "SupervisorLeaseStore",
+    "SupervisorLease",
 ]

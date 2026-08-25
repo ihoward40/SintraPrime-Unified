@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import hashlib
 import json
 import os
+from contextlib import contextmanager
 import tempfile
 
 
@@ -101,6 +102,22 @@ class CheckpointStore:
         d = self.root / mission_id
         d.mkdir(parents=True, exist_ok=True)
         return d
+
+    @contextmanager
+    def exclusive_process_lock(self, mission_id: str, owner_id: str):
+        lock_path = self._mission_dir(mission_id) / ".store.lock"
+        try:
+            fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError as exc:
+            raise RuntimeError(f"Checkpoint store lock already held for {mission_id}") from exc
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                handle.write(owner_id)
+                handle.flush()
+                os.fsync(handle.fileno())
+            yield
+        finally:
+            lock_path.unlink(missing_ok=True)
 
     def _checkpoint_path(self, mission_id: str, checkpoint_id: str) -> Path:
         return self._mission_dir(mission_id) / f"{checkpoint_id}.json"

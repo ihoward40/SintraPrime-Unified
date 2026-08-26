@@ -22,9 +22,13 @@ from portal.models.mission_control_outbox import MissionControlOutbox
 from portal.models.mission_control_run_control import MissionControlRunControl
 from portal.models.orchestration import (
     MemoryEntry,
+    OrchestrationEvent,
     OrchestrationLinkage,
+    OrchestrationNode,
+    OrchestrationRun,
     PrincipalAuthority,
 )
+from portal.models.user import Tenant, User
 from portal.services.memory_service import MemoryService, MemorySourceClass, TrustLevel
 from portal.services.mythos_brain import MythosBrainCoordinator
 from portal.services.remediation_service import remediation
@@ -43,11 +47,16 @@ async def db() -> AsyncSession:
             lambda sync_conn: Base.metadata.create_all(
                 sync_conn,
                 tables=[
+                    Tenant.__table__,
+                    User.__table__,
                     MissionControlCommand.__table__,
                     MissionControlCommandEvent.__table__,
                     MissionControlCommandReceipt.__table__,
                     MissionControlRunControl.__table__,
                     MissionControlOutbox.__table__,
+                    OrchestrationRun.__table__,
+                    OrchestrationEvent.__table__,
+                    OrchestrationNode.__table__,
                     OrchestrationLinkage.__table__,
                     PrincipalAuthority.__table__,
                     MemoryEntry.__table__,

@@ -17,7 +17,28 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass, field
+from datetime import datetime, timezone, timedelta
+from enum import Enum
 from typing import Any, Dict, Optional, Tuple
+
+# Canonical V1 contract — re-exported for convenience
+from sintra_live.l2.bridge_envelope_contract import (
+    BRIDGE_CONTRACT_VERSION,
+    AuthorityDecision,
+    BridgeEnvelopeV1,
+    BridgeResultV1,
+    BridgeValidationError,
+    InMemoryNonceTracker,
+    compute_evidence_sha256,
+    compute_payload_sha256,
+    deserialize_envelope_v1,
+    deserialize_result_v1,
+    serialize_envelope_v1,
+    serialize_result_v1,
+    validate_envelope,
+    validate_result,
+)
+from sintra_live.l2.action_envelope_contract import ConsequenceClass
 
 __all__ = [
     "BridgeEnvelope",
@@ -27,6 +48,30 @@ __all__ = [
     "serialize_envelope",
     "deserialize_envelope",
     "project_mission_state",
+    # V1 canonical contract re-exports
+    "BRIDGE_CONTRACT_VERSION",
+    "AuthorityDecision",
+    "ConsequenceClass",
+    "BridgeEnvelopeV1",
+    "BridgeResultV1",
+    "BridgeValidationError",
+    "InMemoryNonceTracker",
+    "serialize_envelope_v1",
+    "deserialize_envelope_v1",
+    "serialize_result_v1",
+    "deserialize_result_v1",
+    "compute_payload_sha256",
+    "compute_evidence_sha256",
+    "validate_envelope",
+    "validate_result",
+    # V1 bridge runtime adapter additions
+    "BridgeTransportStatus",
+    "BridgeExecutionOutcome",
+    "build_v1_envelope",
+    "receive_v1_envelope",
+    "build_v1_result",
+    "receive_v1_result",
+    "execute_via_bridge",
 ]
 
 BRIDGE_SCHEMA_VERSION = 1
@@ -200,4 +245,282 @@ def project_mission_state(aggregate: Any) -> BridgeProjection:
         current_state=current_state_value,
         authority_delta=0,
         side_effects=0,
+    )
+
+
+# ---------------------------------------------------------------------------
+# V1 canonical bridge runtime adapter
+# ---------------------------------------------------------------------------
+# The functions below use the canonical sp-bridge-v1 contract from
+# bridge_envelope_contract.py.  They build, serialize, deserialize, validate,
+# and execute V1 envelopes/results crossing the Python<->TypeScript boundary.
+#
+# Design rules:
+#   * BRIDGE_TRANSPORT_SUCCESS != MISSION_SUCCESS
+#   * MISSION_SUCCESS_WITHOUT_REQUIRED_EVIDENCE = UNVERIFIED
+#   * UNVERIFIED != COMPLETE
+#   * Fail-closed on every validation failure
+# ---------------------------------------------------------------------------
+
+
+class BridgeTransportStatus(str, Enum):
+    """Transport-layer status for a bridge-mediated execution.
+
+    Distinguished from mission success:
+      * TRANSPORT_OK    — the envelope was received, validated, and a result
+                          was produced (the result itself may still indicate
+                          mission failure or UNVERIFIED).
+      * TRANSPORT_DENIED — authority denied execution (DENY, REVOKED, etc.).
+      * TRANSPORT_FAILED — transport/validation error (deserialize failure,
+                           validation reject rule, etc.).
+    """
+
+    TRANSPORT_OK = "TRANSPORT_OK"
+    TRANSPORT_DENIED = "TRANSPORT_DENIED"
+    TRANSPORT_FAILED = "TRANSPORT_FAILED"
+
+
+@dataclass(frozen=True)
+class BridgeExecutionOutcome:
+    """Outcome of execute_via_bridge().
+
+    transport_status — whether the bridge transport succeeded, was denied,
+                       or failed.
+    result           — the V1 result if one was produced (None when denied
+                       or failed before a result could be built).
+    reason           — human-readable reason for the status.
+    """
+
+    transport_status: BridgeTransportStatus
+    result: Optional[BridgeResultV1]
+    reason: str
+
+
+def _v1_timestamp(dt: Optional[datetime] = None) -> str:
+    """Return a canonical V1 timestamp string (UTC, microsecond precision)."""
+    if dt is None:
+        dt = datetime.now(timezone.utc)
+    return dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+
+def build_v1_envelope(
+    projection: BridgeProjection,
+    authority_decision: str,
+    execution_id: str,
+    nonce: str,
+    tenant_id: str,
+    actor_id: str,
+    capability_id: str,
+    payload: Dict[str, Any],
+    *,
+    consequence_class: str = ConsequenceClass.READ_ONLY.value,
+    issued_at: Optional[str] = None,
+    expires_at: Optional[str] = None,
+    provenance: str = "sintra_live/l2/python_typescript_bridge",
+) -> BridgeEnvelopeV1:
+    """Build a canonical V1 envelope from L2 mission projection + authority.
+
+    The projection supplies ``mission_id`` (and corroborates L2 state).
+    The payload hash is computed deterministically via
+    ``compute_payload_sha256``.
+    """
+    payload_sha = compute_payload_sha256(payload)
+    now = datetime.now(timezone.utc)
+    ts_issued = issued_at or _v1_timestamp(now)
+    ts_expires = expires_at or _v1_timestamp(now + timedelta(seconds=3600))
+    return BridgeEnvelopeV1(
+        schema_version=BRIDGE_CONTRACT_VERSION,
+        mission_id=projection.mission_id,
+        execution_id=execution_id,
+        nonce=nonce,
+        tenant_id=tenant_id,
+        actor_id=actor_id,
+        authority_decision=authority_decision,
+        consequence_class=consequence_class,
+        capability_id=capability_id,
+        payload=payload,
+        payload_sha256=payload_sha,
+        issued_at=ts_issued,
+        expires_at=ts_expires,
+        provenance=provenance,
+    )
+
+
+def receive_v1_envelope(
+    raw: bytes,
+    *,
+    nonce_tracker: Optional[InMemoryNonceTracker] = None,
+    expected_mission_id: Optional[str] = None,
+    expected_tenant_id: Optional[str] = None,
+    current_time: Optional[str] = None,
+) -> BridgeEnvelopeV1:
+    """Deserialize and fully validate a V1 envelope from raw bytes.
+
+    Fail-closed: any deserialize or validation error raises
+    ``BridgeValidationError``.
+    """
+    try:
+        envelope = deserialize_envelope_v1(raw)
+    except BridgeValidationError:
+        raise
+    except Exception as exc:
+        raise BridgeValidationError(
+            "INVALID_ENVELOPE", f"deserialize failed: {exc}"
+        ) from exc
+    validate_envelope(
+        envelope,
+        nonce_tracker=nonce_tracker,
+        expected_mission_id=expected_mission_id,
+        expected_tenant_id=expected_tenant_id,
+        current_time=current_time,
+    )
+    return envelope
+
+
+def build_v1_result(
+    envelope: BridgeEnvelopeV1,
+    status: str,
+    result: Dict[str, Any],
+    evidence: Dict[str, Any],
+    *,
+    completed_at: Optional[str] = None,
+) -> BridgeResultV1:
+    """Build a canonical V1 result from an execution outcome + evidence.
+
+    Invariants enforced by ``BridgeResultV1``:
+      * ``authority_delta == 0``
+      * ``side_effect_count == 0``
+      * ``evidence_sha256`` binds to ``evidence``
+    """
+    return BridgeResultV1(
+        schema_version=BRIDGE_CONTRACT_VERSION,
+        mission_id=envelope.mission_id,
+        execution_id=envelope.execution_id,
+        nonce=envelope.nonce,
+        status=status,
+        result=result,
+        evidence=evidence,
+        evidence_sha256=compute_evidence_sha256(evidence),
+        authority_delta=0,
+        side_effect_count=0,
+        completed_at=completed_at or _v1_timestamp(),
+    )
+
+
+def receive_v1_result(
+    raw: bytes,
+    *,
+    expected_envelope: Optional[BridgeEnvelopeV1] = None,
+) -> BridgeResultV1:
+    """Deserialize and fully validate a V1 result from raw bytes.
+
+    Fail-closed: any deserialize or validation error raises
+    ``BridgeValidationError``.
+    """
+    try:
+        result = deserialize_result_v1(raw)
+    except BridgeValidationError:
+        raise
+    except Exception as exc:
+        raise BridgeValidationError(
+            "INVALID_RESULT", f"deserialize failed: {exc}"
+        ) from exc
+    validate_result(result, expected_envelope=expected_envelope)
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Deterministic mock executor (dogfood / integration)
+# ---------------------------------------------------------------------------
+
+def _mock_execute_payload(payload: Dict[str, Any]) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
+    """Deterministic mock execution for dogfood.
+
+    Returns (status, result_dict, evidence_dict).  The status is COMPLETE
+    only when evidence is non-empty — otherwise UNVERIFIED, demonstrating
+    that MISSION_SUCCESS_WITHOUT_REQUIRED_EVIDENCE = UNVERIFIED and
+    UNVERIFIED != COMPLETE.
+    """
+    result_data = {
+        "executed_action": payload.get("action", "unknown"),
+        "deterministic_output": hashlib.sha256(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest(),
+    }
+    evidence = {
+        "payload_sha256": compute_payload_sha256(payload),
+        "executor": "sintra_live.l2.python_typescript_bridge._mock_execute_payload",
+        "execution_proof": result_data["deterministic_output"],
+    }
+    # Evidence is always non-empty here, so the mission is COMPLETE.
+    status = "COMPLETE"
+    return status, result_data, evidence
+
+
+def execute_via_bridge(
+    raw_envelope: bytes,
+    *,
+    nonce_tracker: Optional[InMemoryNonceTracker] = None,
+    expected_mission_id: Optional[str] = None,
+    expected_tenant_id: Optional[str] = None,
+    current_time: Optional[str] = None,
+) -> BridgeExecutionOutcome:
+    """Canonical bridge-mediated execution flow (Python entry point).
+
+    Flow:
+      1. Deserialize + validate the incoming envelope (all 14 reject rules).
+      2. If authority_decision != ALLOW, return a denied outcome.
+      3. If ALLOW, execute the payload (mock/deterministic for dogfood).
+      4. Build a V1 result with evidence hash.
+      5. Return the outcome.
+
+    BRIDGE_TRANSPORT_SUCCESS != MISSION_SUCCESS:
+      Transport may succeed (TRANSPORT_OK) while the mission result status
+      is UNVERIFIED or even a failure.  The caller must inspect
+      ``outcome.result.status`` for mission-level success.
+    """
+    # 1. Deserialize + validate (fail-closed → TRANSPORT_FAILED)
+    try:
+        envelope = receive_v1_envelope(
+            raw_envelope,
+            nonce_tracker=nonce_tracker,
+            expected_mission_id=expected_mission_id,
+            expected_tenant_id=expected_tenant_id,
+            current_time=current_time,
+        )
+    except BridgeValidationError as exc:
+        return BridgeExecutionOutcome(
+            transport_status=BridgeTransportStatus.TRANSPORT_FAILED,
+            result=None,
+            reason=f"envelope validation failed: {exc}",
+        )
+    except Exception as exc:  # pragma: no cover — defensive
+        return BridgeExecutionOutcome(
+            transport_status=BridgeTransportStatus.TRANSPORT_FAILED,
+            result=None,
+            reason=f"envelope deserialize error: {exc}",
+        )
+
+    # 2. Authority decision gate
+    if envelope.authority_decision != AuthorityDecision.ALLOW.value:
+        return BridgeExecutionOutcome(
+            transport_status=BridgeTransportStatus.TRANSPORT_DENIED,
+            result=None,
+            reason=(
+                f"authority_decision={envelope.authority_decision} "
+                f"does not permit execution"
+            ),
+        )
+
+    # 3. Execute payload (deterministic mock)
+    status, result_data, evidence = _mock_execute_payload(envelope.payload)
+
+    # 4. Build V1 result with evidence hash
+    v1_result = build_v1_result(envelope, status, result_data, evidence)
+
+    # 5. Return outcome
+    return BridgeExecutionOutcome(
+        transport_status=BridgeTransportStatus.TRANSPORT_OK,
+        result=v1_result,
+        reason="execution completed",
     )

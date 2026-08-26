@@ -14,6 +14,26 @@
  *   - The wire schema is versioned; mismatches are denied.
  */
 
+import {
+  BridgeEnvelopeV1,
+  BridgeResultV1,
+  AuthorityDecision,
+  ConsequenceClass,
+  BridgeContractError,
+  InMemoryNonceTracker,
+  ValidateEnvelopeOptions,
+  deserializeEnvelopeV1,
+  deserializeResultV1,
+  serializeEnvelopeV1,
+  serializeResultV1,
+  validateEnvelope,
+  validateResult,
+  computePayloadSha256,
+  computeEvidenceSha256,
+  BRIDGE_CONTRACT_VERSION,
+} from "./bridgeContract";
+import { AuthorityValidator } from "./bridgeAuthority";
+
 /** Bridge wire-schema version.  Must match Python BRIDGE_SCHEMA_VERSION. */
 export const BRIDGE_SCHEMA_VERSION = 1;
 
@@ -168,4 +188,359 @@ export async function deserializeEnvelope(raw: string): Promise<BridgeEnvelope> 
   }
 
   return body as unknown as BridgeEnvelope;
+}
+
+// ---------------------------------------------------------------------------
+// V1 canonical bridge runtime adapter
+//
+// The following functions use the canonical V1 contract (bridgeContract.ts)
+// to provide a fail-closed bridge runtime that consumes only validated V1
+// envelopes, rejects malformed/missing authority fields, preserves
+// mission/execution identity, and returns structured V1 results.
+//
+// Design rules (V1):
+//   - Consume only validated V1 envelopes (deserialize + validate).
+//   - Reject malformed/missing authority fields (fail-closed).
+//   - Preserve mission/execution identity across the boundary.
+//   - Return structured V1 results.
+//   - No privilege inference from caller.
+//   - No direct authority expansion (authority_delta == 0).
+// ---------------------------------------------------------------------------
+
+/**
+ * Transport status for bridge operations.
+ *
+ * BRIDGE_TRANSPORT_SUCCESS != MISSION_SUCCESS.
+ * A successful transport means the envelope was received, validated,
+ * and processed without protocol violations. The mission outcome
+ * is carried in the V1 result's status field, which may be
+ * COMPLETE, UNVERIFIED, FAILED, etc.
+ *
+ * Key distinction:
+ *   - SUCCESS: The bridge transport succeeded (no protocol error).
+ *   - REJECTED: The envelope was rejected by fail-closed validation.
+ *   - DENIED: Authority decision was DENY / AUTHORITY_MISSING / etc.
+ *   - ERROR: An unexpected error occurred during bridge processing.
+ */
+export enum BridgeTransportStatus {
+  /** Bridge transport succeeded — check result.status for mission outcome. */
+  SUCCESS = "SUCCESS",
+  /** Envelope rejected by fail-closed validation (malformed, hash mismatch, etc.). */
+  REJECTED = "REJECTED",
+  /** Authority decision denied execution (DENY, AUTHORITY_MISSING, POLICY_CONFLICT, etc.). */
+  DENIED = "DENIED",
+  /** Envelope expired or authority revoked. */
+  EXPIRED = "EXPIRED",
+  /** Unexpected error during bridge processing. */
+  ERROR = "ERROR",
+}
+
+/**
+ * Outcome of executing a capability via the bridge.
+ *
+ * This is the internal representation of what happened when the
+ * capability executor was invoked. It is used by buildV1Result()
+ * to construct a V1 result envelope.
+ */
+export interface BridgeExecutionOutcome {
+  /** The mission_id from the source envelope (identity preserved). */
+  mission_id: string;
+  /** The execution_id from the source envelope (identity preserved). */
+  execution_id: string;
+  /** The nonce from the source envelope (identity preserved). */
+  nonce: string;
+  /** Mission outcome status (e.g. "COMPLETE", "UNVERIFIED", "FAILED"). */
+  status: string;
+  /** The result payload produced by the capability executor. */
+  result: Record<string, unknown>;
+  /** Evidence produced by the capability executor (must be non-empty). */
+  evidence: Record<string, unknown>;
+  /** ISO-8601 timestamp of completion. */
+  completed_at: string;
+}
+
+/**
+ * Input fields for building a V1 envelope.
+ *
+ * These are the projection + authority + execution fields needed
+ * to construct a canonical BridgeEnvelopeV1.
+ */
+export interface V1EnvelopeInput {
+  // Identity fields
+  mission_id: string;
+  execution_id: string;
+  nonce: string;
+  tenant_id: string;
+  actor_id: string;
+  // Authority fields
+  authority_decision: AuthorityDecision;
+  consequence_class: ConsequenceClass;
+  capability_id: string;
+  // Payload
+  payload: Record<string, unknown>;
+  // Temporal fields
+  issued_at: string;
+  expires_at: string;
+  // Provenance
+  provenance: string;
+}
+
+/**
+ * Build a V1 envelope from projection + authority + execution fields.
+ *
+ * This function constructs a canonical BridgeEnvelopeV1, computing
+ * the payload_sha256 hash from the payload. The envelope is NOT
+ * validated here — call receiveV1Envelope() to validate.
+ *
+ * @param input - The envelope input fields
+ * @returns A BridgeEnvelopeV1 with computed payload_sha256
+ */
+export async function buildV1Envelope(
+  input: V1EnvelopeInput,
+): Promise<BridgeEnvelopeV1> {
+  const payloadSha256 = await computePayloadSha256(input.payload);
+  return {
+    schema_version: BRIDGE_CONTRACT_VERSION,
+    mission_id: input.mission_id,
+    execution_id: input.execution_id,
+    nonce: input.nonce,
+    tenant_id: input.tenant_id,
+    actor_id: input.actor_id,
+    authority_decision: input.authority_decision,
+    consequence_class: input.consequence_class,
+    capability_id: input.capability_id,
+    payload: input.payload,
+    payload_sha256: payloadSha256,
+    issued_at: input.issued_at,
+    expires_at: input.expires_at,
+    provenance: input.provenance,
+  };
+}
+
+/**
+ * Deserialize and validate a V1 envelope (fail-closed).
+ *
+ * This is the canonical receive path:
+ *   1. Deserialize the JSON string (field set + schema version + hash binding).
+ *   2. Validate against all 14 fail-closed reject rules.
+ *
+ * @param raw - The raw JSON string received over the bridge
+ * @param options - Validation options (nonce tracker, expected IDs, etc.)
+ * @returns The validated BridgeEnvelopeV1
+ * @throws BridgeContractError on any validation failure
+ */
+export async function receiveV1Envelope(
+  raw: string,
+  options: ValidateEnvelopeOptions = {},
+): Promise<BridgeEnvelopeV1> {
+  // Step 1: Deserialize (field set, schema version, payload hash binding)
+  const envelope = await deserializeEnvelopeV1(raw);
+  // Step 2: Validate (14 fail-closed reject rules)
+  await validateEnvelope(envelope, options);
+  return envelope;
+}
+
+/**
+ * Build a V1 result from an execution outcome.
+ *
+ * This function constructs a canonical BridgeResultV1, computing
+ * the evidence_sha256 hash from the evidence. The authority_delta
+ * is always 0 (no authority expansion) and side_effect_count is
+ * always 0 (no side effects across the bridge).
+ *
+ * @param outcome - The execution outcome
+ * @returns A BridgeResultV1 with computed evidence_sha256
+ */
+export async function buildV1Result(
+  outcome: BridgeExecutionOutcome,
+): Promise<BridgeResultV1> {
+  const evidenceSha256 = await computeEvidenceSha256(outcome.evidence);
+  return {
+    schema_version: BRIDGE_CONTRACT_VERSION,
+    mission_id: outcome.mission_id,
+    execution_id: outcome.execution_id,
+    nonce: outcome.nonce,
+    status: outcome.status,
+    result: outcome.result,
+    evidence: outcome.evidence,
+    evidence_sha256: evidenceSha256,
+    // Invariants: no authority expansion, no side effects
+    authority_delta: 0,
+    side_effect_count: 0,
+    completed_at: outcome.completed_at,
+  };
+}
+
+/**
+ * Deserialize and validate a V1 result.
+ *
+ * This is the canonical receive path for results:
+ *   1. Deserialize the JSON string (field set + schema version + hash binding).
+ *   2. Validate against fail-closed invariants (authority_delta == 0, etc.).
+ *
+ * @param raw - The raw JSON string received over the bridge
+ * @param expectedEnvelope - Optional envelope for identity binding check
+ * @returns The validated BridgeResultV1
+ * @throws BridgeContractError on any validation failure
+ */
+export async function receiveV1Result(
+  raw: string,
+  expectedEnvelope?: BridgeEnvelopeV1,
+): Promise<BridgeResultV1> {
+  // Step 1: Deserialize (field set, schema version, evidence hash binding)
+  const result = await deserializeResultV1(raw);
+  // Step 2: Validate (authority_delta == 0, side_effect_count == 0, identity binding)
+  await validateResult(result, { expectedEnvelope });
+  return result;
+}
+
+/**
+ * Canonical bridge execution flow: receive → validate → execute → result.
+ *
+ * This is the complete canonical path for executing a capability via the
+ * bridge. It:
+ *   1. Receives and validates the V1 envelope (fail-closed).
+ *   2. Checks authority via AuthorityValidator (fail-closed).
+ *   3. If authority permits (ALLOW), invokes the executor.
+ *   4. If authority denies, returns a DENIED transport status without executing.
+ *   5. Builds a V1 result from the execution outcome.
+ *   6. Returns the transport status + result.
+ *
+ * The executor function receives the validated envelope and returns a
+ * BridgeExecutionOutcome. The executor MUST NOT:
+ *   - Expand authority (authority_delta must be 0 in the result).
+ *   - Produce side effects (side_effect_count must be 0 in the result).
+ *   - Infer privileges from the caller.
+ *   - Modify the envelope.
+ *
+ * @param raw - The raw JSON string received over the bridge
+ * @param executor - The capability executor function
+ * @param options - Validation options (nonce tracker, expected IDs, etc.)
+ * @returns An object with transportStatus and, if successful, the V1 result
+ */
+export async function executeViaBridge(
+  raw: string,
+  executor: (envelope: BridgeEnvelopeV1) => Promise<BridgeExecutionOutcome>,
+  options: {
+    nonceTracker?: InMemoryNonceTracker;
+    expectedMissionId?: string;
+    expectedTenantId?: string;
+    currentTime?: string;
+  } = {},
+): Promise<{
+  transportStatus: BridgeTransportStatus;
+  result?: BridgeResultV1;
+  envelope?: BridgeEnvelopeV1;
+  error?: string;
+}> {
+  let envelope: BridgeEnvelopeV1;
+
+  // Step 1: Receive and validate the envelope (fail-closed)
+  try {
+    envelope = await receiveV1Envelope(raw, {
+      nonceTracker: options.nonceTracker,
+      expectedMissionId: options.expectedMissionId,
+      expectedTenantId: options.expectedTenantId,
+      currentTime: options.currentTime,
+    });
+  } catch (err) {
+    if (err instanceof BridgeContractError) {
+      // Classify the rejection
+      if (
+        err.rule === "EXPIRED_ENVELOPE" ||
+        err.rule === "EXPIRED_AUTHORITY"
+      ) {
+        return {
+          transportStatus: BridgeTransportStatus.EXPIRED,
+          error: err.message,
+        };
+      }
+      if (err.rule === "REVOKED_AUTHORITY") {
+        return {
+          transportStatus: BridgeTransportStatus.EXPIRED,
+          error: err.message,
+        };
+      }
+      return {
+        transportStatus: BridgeTransportStatus.REJECTED,
+        error: err.message,
+      };
+    }
+    return {
+      transportStatus: BridgeTransportStatus.ERROR,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  // Step 2: Authority validation (fail-closed)
+  const authorityValidator = new AuthorityValidator();
+  try {
+    authorityValidator.validate(envelope);
+  } catch (err) {
+    if (err instanceof BridgeContractError) {
+      if (
+        err.rule === "EXPIRED_AUTHORITY" ||
+        err.rule === "REVOKED_AUTHORITY"
+      ) {
+        return {
+          transportStatus: BridgeTransportStatus.EXPIRED,
+          error: err.message,
+          envelope,
+        };
+      }
+      return {
+        transportStatus: BridgeTransportStatus.DENIED,
+        error: err.message,
+        envelope,
+      };
+    }
+    return {
+      transportStatus: BridgeTransportStatus.ERROR,
+      error: err instanceof Error ? err.message : String(err),
+      envelope,
+    };
+  }
+
+  // Step 3: Check if authority permits execution
+  if (!authorityValidator.canExecute(envelope)) {
+    // Authority decision is not ALLOW — deny without executing
+    return {
+      transportStatus: BridgeTransportStatus.DENIED,
+      error: `authority_decision is ${envelope.authority_decision}, not ALLOW`,
+      envelope,
+    };
+  }
+
+  // Step 4: Execute the capability
+  let outcome: BridgeExecutionOutcome;
+  try {
+    outcome = await executor(envelope);
+  } catch (err) {
+    return {
+      transportStatus: BridgeTransportStatus.ERROR,
+      error: err instanceof Error ? err.message : String(err),
+      envelope,
+    };
+  }
+
+  // Step 5: Build the V1 result
+  let result: BridgeResultV1;
+  try {
+    result = await buildV1Result(outcome);
+    // Validate the result we built (self-check)
+    await validateResult(result, { expectedEnvelope: envelope });
+  } catch (err) {
+    return {
+      transportStatus: BridgeTransportStatus.ERROR,
+      error: err instanceof Error ? err.message : String(err),
+      envelope,
+    };
+  }
+
+  // Step 6: Return success
+  return {
+    transportStatus: BridgeTransportStatus.SUCCESS,
+    result,
+    envelope,
+  };
 }

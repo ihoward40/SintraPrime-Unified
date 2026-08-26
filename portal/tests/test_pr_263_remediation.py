@@ -63,7 +63,7 @@ async def db_session():
         # Seed parent rows for FK enforcement: Tenant → Role → User → PrincipalAuthority
         from portal.models.user import Role
 
-        tenant = Tenant(id=TENANT_ID, name="Test Tenant", slug="test-tenant")
+        tenant = Tenant(id=TENANT_ID.replace("-", ""), name="Test Tenant", slug="test-tenant")
         session.add(tenant)
         await session.flush()
 
@@ -73,8 +73,8 @@ async def db_session():
         await session.flush()
 
         user = User(
-            id=PRINCIPAL_ID,
-            tenant_id=TENANT_ID,
+            id=PRINCIPAL_ID.replace("-", ""),
+            tenant_id=TENANT_ID.replace("-", ""),
             role_id="550e8400-e29b-41d4-a716-446655440002",
             email="principal@test.local",
             first_name="Test",

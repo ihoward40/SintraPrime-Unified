@@ -4,6 +4,7 @@ import json
 from collections.abc import AsyncGenerator
 
 from fastapi.testclient import TestClient
+from sqlalchemy import MetaData, String, UUID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from portal.auth.jwt_handler import create_access_token
@@ -44,27 +45,41 @@ PRINCIPAL_PERMISSIONS = (
 def _sqlite_sessionmaker():
     engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
 
+    # SQLite treats SQLAlchemy's generic UUID DDL as numeric affinity. The
+    # production contract remains native UUID; this test-only clone compiles
+    # those columns as text so SQLite can exercise string UUID result semantics.
+    sqlite_metadata = MetaData()
+    for source_table in Base.metadata.tables.values():
+        source_table.to_metadata(sqlite_metadata)
+    for table in sqlite_metadata.tables.values():
+        for column in table.columns:
+            if isinstance(column.type, UUID):
+                column.type = String(36)
+
     async def init():
         async with engine.begin() as conn:
             await conn.run_sync(
                 lambda sync_conn: Base.metadata.create_all(
                     sync_conn,
                     tables=[
-                        Tenant.__table__,
-                        UserRole.__table__,
-                        User.__table__,
-                        AuditLog.__table__,
-                        GovernedServiceIdentityRecord.__table__,
-                        OrchestrationRun.__table__,
-                        OrchestrationNode.__table__,
-                        OrchestrationEvent.__table__,
-                        EvidenceReference.__table__,
-                        BudgetUsage.__table__,
-                        RoutingDecision.__table__,
-                        VerificationResult.__table__,
-                        ReconciliationResult.__table__,
-                        ApprovalRequest.__table__,
-                        OrchestrationLinkage.__table__,
+                        sqlite_metadata.tables[table.name]
+                        for table in (
+                            Tenant.__table__,
+                            UserRole.__table__,
+                            User.__table__,
+                            AuditLog.__table__,
+                            GovernedServiceIdentityRecord.__table__,
+                            OrchestrationRun.__table__,
+                            OrchestrationNode.__table__,
+                            OrchestrationEvent.__table__,
+                            EvidenceReference.__table__,
+                            BudgetUsage.__table__,
+                            RoutingDecision.__table__,
+                            VerificationResult.__table__,
+                            ReconciliationResult.__table__,
+                            ApprovalRequest.__table__,
+                            OrchestrationLinkage.__table__,
+                        )
                     ],
                 )
             )

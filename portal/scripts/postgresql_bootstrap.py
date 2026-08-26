@@ -24,6 +24,7 @@ MIGRATION_SEQUENCE = (
 PRODUCTION_GATE_MIGRATION_SEQUENCE = (
     Path("portal/migrations/add_governed_service_identities.sql"),
     Path("portal/migrations/add_adaptive_orchestration_domain.sql"),
+    Path("portal/migrations/add_orchestration_remediation_tables.sql"),
     Path("portal/migrations/add_governed_scheduler_domain.sql"),
     Path("portal/migrations/add_external_action_sandbox_domain.sql"),
 )
@@ -58,6 +59,9 @@ EXPECTED_TABLES = (
     "orchestration_approval_requests",
     "orchestration_budget_usage",
     "orchestration_evidence_references",
+    "orchestration_linkages",
+    "orchestration_principal_authorities",
+    "memory_vault",
     "governed_schedules",
     "governed_schedule_events",
     "external_action_intents",

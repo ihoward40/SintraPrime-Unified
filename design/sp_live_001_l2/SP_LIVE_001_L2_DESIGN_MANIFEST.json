@@ -1,0 +1,55 @@
+{
+  "manifest_type": "SP_LIVE_001_L2_DESIGN_MANIFEST",
+  "design_gate": "SP_LIVE_001_L2_GOVERNED_END_TO_END_MISSION_DESIGN",
+  "status": "PASS / RATIFIED / FROZEN",
+  "scope_remediation_status": "PASS",
+  "acceptance_case_count": 83,
+  "implementation_authority": "NONE",
+  "live_execution_authority": "NONE",
+  "external_side_effect_authority": "NONE",
+  "root_agents_md_l2_attributable_change": "NONE",
+  "artifact_set_hash_definition": "SHA-256 of canonical sorted JSON mapping each non-manifest artifact name to its file SHA-256; includes regenerated freeze record; excludes this manifest to avoid self-reference.",
+  "design_artifact_set_sha256": "55cfcef154b4089dbe071c7f1d41fa69d8b0df83e07adb776cab1ed919beca73",
+  "historical_pre_remediation_artifact_set_sha256": "f6e41b21a57d3e675b493bf8bd5630944684c6c6922bfce2573470f2927346c8",
+  "historical_pre_remediation_manifest_sha256": "9f0349905d5c15f315b62f2f7da96c9bd3efa5e57cc637ef58177d11e546e5b2",
+  "artifacts": {
+    "AGENTS.md": {
+      "sha256": "f2d6fa72cd301856014e5e56f4b02622e8e3228ac9c4864b9fe2d9a133205dcc",
+      "size_bytes": 1814
+    },
+    "SP_LIVE_001_L2_GOVERNED_MISSION_CONTRACT.md": {
+      "sha256": "797d498591cd0b2a6a4227e434a8046a11e7ce571f4615a7a8042bd660ca340f",
+      "size_bytes": 11861
+    },
+    "SP_LIVE_001_L2_ACCEPTANCE_TEST_PLAN.md": {
+      "sha256": "8d512b59a4766659ca213dd76593a0793a9549d994ae1d7fa56bf2ab97684dfe",
+      "size_bytes": 11578
+    },
+    "SP_LIVE_001_L2_IMPLEMENTATION_GAP_ANALYSIS.md": {
+      "sha256": "f9603d0c0de223479e1cb85c7a55cccbcf362b229dfc258d167648b83c759c8f",
+      "size_bytes": 11625
+    },
+    "SP_LIVE_001_L2_DESIGN_FREEZE_RECORD.json": {
+      "sha256": "1123d83d1c68f26d2c14995542664732b7cb9ef6f4feab0c971b973689083538",
+      "size_bytes": 3539
+    }
+  },
+  "generated_at": "2026-08-24T13:05:07.543907+00:00",
+  "principal_ratification": "RECORDED",
+  "local_design_freeze": true,
+  "local_validation_is_authority": false,
+  "design_complete_is_implementation_authorized": false,
+  "metadata_remediation_status": "PASS",
+  "historical_pre_metadata_remediation_artifact_set_sha256": "5605b1e67e31e992fe26397b91c834e9454510d00dc68a6658fea5334a326fcb",
+  "historical_pre_metadata_remediation_manifest_sha256": "dc99dba81175c611d65b8bbc4f7bc106c99c5e9382e132170d6ad296f09c9344",
+  "ratification_decision": "RATIFY",
+  "ratification_scope": "DESIGN PACKAGE ONLY",
+  "ratified_design_artifact_set_sha256": "e0d565353dca9ee06afe7584e1cda4f0d63a5475c55404f10dbd0abe2b56bbfd",
+  "ratified_design_manifest_sha256": "de9019b40fd5fd075249a10bd1f1a62ea677e81d8a0280f8cc6e4c1453630916",
+  "design_content_changed": false,
+  "l2_implementation_authorized": false,
+  "l2_execution_authorized": false,
+  "ratification_recording_status": "PASS",
+  "post_ratification_recording_artifact_set_sha256": "55cfcef154b4089dbe071c7f1d41fa69d8b0df83e07adb776cab1ed919beca73",
+  "artifact_set_identity_note": "design_artifact_set_sha256 identifies the current post-recording package; ratified_design_artifact_set_sha256 identifies the exact pre-recording package approved by the Principal."
+}

@@ -1,35 +1,31 @@
 import asyncio
 import logging
 import uuid
-from datetime import datetime, UTC
 
-# Import all services
-from portal.services.mythos_brain import MythosBrainCoordinator
 from portal.services.autonomous_plane import autonomous_plane
-from portal.services.intelligent_reinforcement import intelligent_reinforcement
-from portal.services.self_healing_infrastructure import self_healing
-from portal.services.multi_tenant_governance import governance_service
-from portal.services.policy_as_code import policy_engine
-from portal.services.governed_identity import identity_service
-from portal.services.council_mode import council_mode
 from portal.services.build_swarm import build_swarm
-from portal.services.memory_vault import memory_vault, MemoryType
+from portal.services.council_mode import council_mode
+from portal.services.governed_identity import identity_service
+from portal.services.intelligent_reinforcement import intelligent_reinforcement
+from portal.services.memory_vault import MemoryType, memory_vault
+from portal.services.multi_tenant_governance import governance_service
+from portal.services.platform_hardening import god_mode_service, hardening_service
+from portal.services.policy_as_code import policy_engine
 from portal.services.principal_brief import brief_service
-from portal.services.platform_hardening import hardening_service, god_mode_service
+from portal.services.self_healing_infrastructure import self_healing
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("ComprehensiveE2E")
+
 
 async def run_full_simulation():
     logger.info("🚀 STARTING COMPREHENSIVE E2E SIMULATION (PHASES 1-10) 🚀")
     tenant_id = "principal-tenant"
     principal_id = "principal-god-mode"
-    
+
     # --- PHASE 1-3: INTENT & OUTBOX ---
     logger.info("\n[PHASE 1-3] Verifying Intent Ingestion & Transactional Outbox...")
-    coordinator = MythosBrainCoordinator() 
-    # (Simplified for simulation)
     logger.info("Status: INTENT/OUTBOX PIPELINE OPERATIONAL")
 
     # --- PHASE 4: AUTONOMOUS PLANE ---
@@ -72,7 +68,7 @@ async def run_full_simulation():
     logger.info("\n[PHASE 10] Verifying Final Hardening & God Mode Activation...")
     await hardening_service.perform_final_audit()
     await god_mode_service.activate_full_command(principal_id)
-    
+
     if hardening_service.hardening_status == "HARDENED" and god_mode_service.god_mode_active:
         logger.info("Status: PLATFORM HARDENED & GOD MODE ACTIVE")
     else:
@@ -81,6 +77,7 @@ async def run_full_simulation():
 
     logger.info("\n✨ COMPREHENSIVE E2E SIMULATION SUCCESSFUL ✨")
     return True
+
 
 if __name__ == "__main__":
     asyncio.run(run_full_simulation())

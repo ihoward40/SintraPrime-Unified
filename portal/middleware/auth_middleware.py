@@ -1,4 +1,4 @@
-"""JWT authentication middleware — validates tokens on every request."""
+"""JWT authentication middleware — validates tokens on every protected API request."""
 
 from __future__ import annotations
 
@@ -44,14 +44,25 @@ PUBLIC_PREFIX_PATHS = (
 
 
 def is_public_path(path: str) -> bool:
-    return path in PUBLIC_EXACT_PATHS or any(path.startswith(prefix) for prefix in PUBLIC_PREFIX_PATHS)
+    return path in PUBLIC_EXACT_PATHS or any(
+        path.startswith(prefix) for prefix in PUBLIC_PREFIX_PATHS
+    )
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
+        auth_header = request.headers.get("Authorization", "")
 
         if request.method == "OPTIONS" or is_public_path(path):
+            return await call_next(request)
+
+        # The portal's mandatory JWT boundary governs the versioned API
+        # namespace. Legacy non-/api routes retain their route-level auth and
+        # normal 404 semantics when no bearer token is presented. If a bearer
+        # token *is* presented anywhere, however, validate it globally so a
+        # revoked credential can never reach a handler.
+        if not path.startswith("/api/") and not auth_header.startswith("Bearer "):
             return await call_next(request)
 
         # WebSocket: auth handled in endpoint.
@@ -60,15 +71,15 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         # FastAPI dependency overrides are test-only. Let route-level test
         # fixtures supply CurrentUser without minting real JWTs.
+        # Fail-closed: if the check itself errors, do NOT silently pass.
         try:
             from ..auth.rbac import get_current_user
 
             if get_current_user in request.app.dependency_overrides:
                 return await call_next(request)
         except Exception:
-            pass
+            pass  # dependency_overrides not present — continue to normal auth
 
-        auth_header = request.headers.get("Authorization", "")
         if not auth_header.startswith("Bearer "):
             return JSONResponse(
                 status_code=401,
@@ -80,12 +91,18 @@ class AuthMiddleware(BaseHTTPMiddleware):
             payload = decode_access_token(token)
             jti = payload.get("jti")
             if isinstance(jti, str) and await is_jti_blocklisted(jti):
-                return JSONResponse(status_code=401, content={"detail": "Token has been revoked"})
+                return JSONResponse(
+                    status_code=401,
+                    content={"detail": "Token has been revoked"},
+                )
             request.state.user_id = payload.get("sub")
             request.state.tenant_id = payload.get("tenant_id")
             request.state.role = payload.get("role")
         except Exception as exc:
             log.warning("auth.invalid_token", path=path, error=str(exc))
-            return JSONResponse(status_code=401, content={"detail": "Invalid or expired token"})
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Invalid or expired token"},
+            )
 
         return await call_next(request)

@@ -335,4 +335,4 @@ jobs:
       - name: Dependency vulnerability scan (safety)
         run: safety check -r requirements.txt
       - name: Security lint (bandit — baseline mode)
-        run: bandit -r . -x tests/,portal/tests/ -ll --baseline .bandit-baseline.json -f json -o /tmp/bandit.json || true && python scripts/check_bandit.py
+        run: bandit -r . -x tests/,portal/tests/ -ll --baseline .bandit-baseline.json -f json -o /tmp/bandit.json; python scripts/check_bandit.py

@@ -1,10 +1,11 @@
 import asyncio
-import logging
 import json
+import logging
+
+from portal.services.memory_vault import MemoryType, memory_vault
+from portal.services.principal_brief import brief_service
 from portal.services.remediation_service import remediation
 from portal.services.research_swarm import research_swarm
-from portal.services.principal_brief import brief_service
-from portal.services.memory_vault import memory_vault, MemoryType
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -51,8 +52,8 @@ async def run_remediation_simulation():
     topic = "Q3 Emerging Regulatory Frameworks for Cross-Tenant AI"
     investigation = await research_swarm.investigate(topic, tenant_id)
     await memory_vault.store_memory(
-        tenant_id, 
-        content=investigation, 
+        tenant_id,
+        content=investigation,
         memory_type=MemoryType.INSTITUTIONAL_KNOWLEDGE,
         metadata={"category": "REGULATORY"}
     )

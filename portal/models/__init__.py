@@ -14,6 +14,7 @@ from .deadline_evidence import (
 )
 from .document import Document, DocumentFolder, DocumentShare, DocumentVersion
 from .evidence_snapshot import EvidenceSnapshot
+from .governed_service_identity import GovernedServiceIdentityRecord
 from .matter_intelligence import (
     MatterAccount,
     MatterAssessment,
@@ -41,8 +42,10 @@ from .orchestration import (
     ApprovalStatus,
     BudgetUsage,
     EvidenceReference,
+    MemoryEntry,
     OrchestrationEvent,
     OrchestrationExecutionMode,
+    OrchestrationLinkage,
     OrchestrationNode,
     OrchestrationNodeStatus,
     OrchestrationRole,
@@ -50,6 +53,7 @@ from .orchestration import (
     OrchestrationRunStatus,
     OrchestrationSensitivity,
     OrchestrationTaskType,
+    PrincipalAuthority,
     ProviderDefinition,
     ReconciliationResult,
     RoutingDecision,
@@ -78,6 +82,7 @@ __all__ = [
     "EvidenceReference",
     "EvidenceSnapshot",
     "Expense",
+    "GovernedServiceIdentityRecord",
     "Invoice",
     "InvoiceLineItem",
     "Matter",
@@ -95,6 +100,7 @@ __all__ = [
     "MatterEvidenceNode",
     "MatterFiling",
     "MatterParty",
+    "MemoryEntry",
     "Message",
     "MessageAttachment",
     "MessageThread",
@@ -105,6 +111,7 @@ __all__ = [
     "MissionControlRunControlEvent",
     "OrchestrationEvent",
     "OrchestrationExecutionMode",
+    "OrchestrationLinkage",
     "OrchestrationNode",
     "OrchestrationNodeStatus",
     "OrchestrationRole",
@@ -113,6 +120,7 @@ __all__ = [
     "OrchestrationSensitivity",
     "OrchestrationTaskType",
     "Payment",
+    "PrincipalAuthority",
     "ProviderDefinition",
     "ReconciliationResult",
     "RoutingDecision",

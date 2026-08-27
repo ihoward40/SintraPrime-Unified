@@ -1,0 +1,58 @@
+name: Restricted External Sandbox Certification
+
+on:
+  pull_request:
+    paths:
+      - "portal/migrations/add_external_action_sandbox_domain.sql"
+      - "portal/models/external_action_sandbox.py"
+      - "portal/services/sandbox_echo_adapter.py"
+      - "portal/services/restricted_external_action.py"
+      - "portal/scripts/postgresql_bootstrap.py"
+      - "portal/tests/test_restricted_external_action_postgresql.py"
+      - ".github/workflows/restricted-external-sandbox.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  restricted-external-sandbox:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: gate4b
+          POSTGRES_PASSWORD: gate4b
+          POSTGRES_DB: gate4b_certification
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U gate4b -d gate4b_certification"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Certify Gate 4B sandbox authority envelope
+        env:
+          RESTRICTED_EXTERNAL_ACTION_DATABASE_URL: postgresql+asyncpg://gate4b:gate4b@127.0.0.1:5432/gate4b_certification
+        run: |
+          set -euo pipefail
+          python -m pytest -vv -rs --tb=long --maxfail=1 \
+            portal/tests/test_restricted_external_action_postgresql.py \
+            | tee /tmp/restricted-external-sandbox.log
+          ! grep -q 'SKIPPED' /tmp/restricted-external-sandbox.log
+      - name: Upload Gate 4B evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: restricted-external-sandbox-certification-log
+          path: /tmp/restricted-external-sandbox.log
+          if-no-files-found: ignore

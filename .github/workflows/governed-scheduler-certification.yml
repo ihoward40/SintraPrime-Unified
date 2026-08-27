@@ -1,0 +1,60 @@
+name: Governed Scheduler Certification
+
+on:
+  pull_request:
+    paths:
+      - "portal/models/production_scheduler_authority.py"
+      - "portal/services/governed_scheduler.py"
+      - "portal/routers/principal_scheduler.py"
+      - "portal/migrations/add_governed_scheduler_domain.sql"
+      - "portal/scripts/postgresql_bootstrap.py"
+      - "portal/tests/test_governed_scheduler_postgresql.py"
+      - "portal/main.py"
+      - "apps/ike-bot/main/src/runtime/sintraPrimeAdapters.ts"
+      - ".github/workflows/governed-scheduler-certification.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  governed-scheduler:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: scheduler_gate
+          POSTGRES_PASSWORD: scheduler_gate
+          POSTGRES_DB: scheduler_gate_certification
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U scheduler_gate -d scheduler_gate_certification"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Certify governed scheduler durability replay and authority
+        env:
+          GOVERNED_SCHEDULER_DATABASE_URL: postgresql+asyncpg://scheduler_gate:scheduler_gate@127.0.0.1:5432/scheduler_gate_certification
+        run: |
+          set -euo pipefail
+          python -m pytest -vv -rs --tb=long --maxfail=1 \
+            portal/tests/test_governed_scheduler_postgresql.py \
+            | tee /tmp/governed-scheduler-certification.log
+          ! grep -q 'SKIPPED' /tmp/governed-scheduler-certification.log
+      - name: Upload scheduler certification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: governed-scheduler-certification-log
+          path: /tmp/governed-scheduler-certification.log
+          if-no-files-found: ignore

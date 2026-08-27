@@ -1,0 +1,197 @@
+{
+  "adversarial_tests": {
+    "passed": 169,
+    "total": 169
+  },
+  "authorized_mock_side_effects": 1,
+  "baseline": "4c86aff2f1dd1ce4b18722a28bf889a43ec4372a",
+  "branch": "cert/sp-live-001-c1-convergence",
+  "certification_bundle_sha256": "45e87496d1ecfd515a416e196cdc23e33f136c97bb0dfc3df92ae40da0769594",
+  "clean_room_tests": {
+    "passed": 5,
+    "total": 5
+  },
+  "d1_design_drift": 0,
+  "duplicate_side_effects": 0,
+  "duration_seconds": 0.0330805778503418,
+  "evidence_manifest_sha256": "43960f84090e860430e370a2f73634463562f462b5fd7dbdc556dc383ba07d62",
+  "external_writes": 0,
+  "families": {
+    "C1-A": {
+      "duration_seconds": 0.0025196075439453125,
+      "failed": 0,
+      "incomplete": 0,
+      "overall": "PASS",
+      "pass_rate": 1.0,
+      "passed": 8,
+      "total": 8
+    },
+    "C1-B": {
+      "duration_seconds": 0.001997709274291992,
+      "failed": 0,
+      "incomplete": 0,
+      "overall": "PASS",
+      "pass_rate": 1.0,
+      "passed": 6,
+      "total": 6
+    },
+    "C1-C": {
+      "duration_seconds": 0.003999948501586914,
+      "failed": 0,
+      "incomplete": 0,
+      "overall": "PASS",
+      "pass_rate": 1.0,
+      "passed": 10,
+      "total": 10
+    },
+    "C1-D": {
+      "duration_seconds": 0.0025212764739990234,
+      "failed": 0,
+      "incomplete": 0,
+      "overall": "PASS",
+      "pass_rate": 1.0,
+      "passed": 9,
+      "total": 9
+    },
+    "C1-E": {
+      "duration_seconds": 0.0029997825622558594,
+      "failed": 0,
+      "incomplete": 0,
+      "overall": "PASS",
+      "pass_rate": 1.0,
+      "passed": 6,
+      "total": 6
+    },
+    "C1-F": {
+      "duration_seconds": 0.00751948356628418,
+      "failed": 0,
+      "incomplete": 0,
+      "overall": "PASS",
+      "pass_rate": 1.0,
+      "passed": 13,
+      "total": 13
+    },
+    "C1-G": {
+      "duration_seconds": 0.0009999275207519531,
+      "failed": 0,
+      "incomplete": 0,
+      "overall": "PASS",
+      "pass_rate": 1.0,
+      "passed": 15,
+      "total": 15
+    },
+    "C1-H": {
+      "duration_seconds": 0.004001617431640625,
+      "failed": 0,
+      "incomplete": 0,
+      "overall": "PASS",
+      "pass_rate": 1.0,
+      "passed": 12,
+      "total": 12
+    },
+    "C1-I": {
+      "duration_seconds": 0.0010068416595458984,
+      "failed": 0,
+      "incomplete": 0,
+      "overall": "PASS",
+      "pass_rate": 1.0,
+      "passed": 6,
+      "total": 6
+    },
+    "C1-J": {
+      "duration_seconds": 0.0025081634521484375,
+      "failed": 0,
+      "incomplete": 0,
+      "overall": "PASS",
+      "pass_rate": 1.0,
+      "passed": 18,
+      "total": 18
+    },
+    "C1-K": {
+      "duration_seconds": 0.0010068416595458984,
+      "failed": 0,
+      "incomplete": 0,
+      "overall": "PASS",
+      "pass_rate": 1.0,
+      "passed": 10,
+      "total": 10
+    },
+    "C1-L": {
+      "duration_seconds": 0.0,
+      "failed": 0,
+      "incomplete": 0,
+      "overall": "PASS",
+      "pass_rate": 1.0,
+      "passed": 18,
+      "total": 18
+    },
+    "C1-M": {
+      "duration_seconds": 0.0,
+      "failed": 0,
+      "incomplete": 0,
+      "overall": "PASS",
+      "pass_rate": 1.0,
+      "passed": 17,
+      "total": 17
+    },
+    "C1-N": {
+      "duration_seconds": 0.0,
+      "failed": 0,
+      "incomplete": 0,
+      "overall": "PASS",
+      "pass_rate": 1.0,
+      "passed": 16,
+      "total": 16
+    },
+    "C1-O": {
+      "duration_seconds": 0.001999378204345703,
+      "failed": 0,
+      "incomplete": 0,
+      "overall": "PASS",
+      "pass_rate": 1.0,
+      "passed": 5,
+      "total": 5
+    }
+  },
+  "findings_count": 169,
+  "gate_4d_b_authority_diffs": 0,
+  "gate_4d_c_implementation_authority_used": false,
+  "live_voice_executions": 0,
+  "mutation_tests": {
+    "killed": 15,
+    "total": 15
+  },
+  "overall": "PASS",
+  "real_connector_calls": 0,
+  "real_side_effects": 0,
+  "regression_tests": {
+    "passed": 11,
+    "total": 11
+  },
+  "repairs": [],
+  "required_evidence_missing": 0,
+  "secret_use": 0,
+  "source_manifest_sha256": "c63d6bf0749bbda8d4192559cc9526b0f9819b21daf7f187884a6b9a495500dd",
+  "static_reachable_fail_open_paths": 0,
+  "summary_counts": {
+    "families": {
+      "failed": 0,
+      "incomplete": 0,
+      "passed": 15,
+      "total": 15
+    },
+    "tests": {
+      "failed": 0,
+      "incomplete": 0,
+      "passed": 169,
+      "total": 169
+    }
+  },
+  "targeted_tests": {
+    "passed": 169,
+    "total": 169
+  },
+  "test_manifest_sha256": "b5903e4aa9b2fc5133f5932f82000cf15f217b78a27d4b05af41cb98f86cff09",
+  "unapproved_side_effects": 0,
+  "unresolved_blockers": []
+}

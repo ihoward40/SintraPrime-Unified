@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sintraprime.example/schemas/gate-4d-c-drive-metadata-evidence-v1.json",
+  "title": "Gate 4D-C Google Drive metadata-only certification evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "gate", "exact_head", "adapter", "operation", "principal_approval_id",
+    "service_identity_id", "account_binding_digest", "oauth_scope", "request_envelope",
+    "response_summary", "negative_capability_results", "secret_scan", "previous_evidence_hash",
+    "record_hash", "timestamp_utc"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "gate": {"const": "GATE_4D_C_GOOGLE_DRIVE_METADATA_READONLY"},
+    "exact_head": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+    "adapter": {"const": "provider.google-drive-metadata-read-v1"},
+    "operation": {"enum": ["drive.files.list", "drive.files.get"]},
+    "principal_approval_id": {"type": "string", "minLength": 1},
+    "service_identity_id": {"type": "string", "minLength": 1},
+    "account_binding_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "oauth_scope": {"const": "https://www.googleapis.com/auth/drive.metadata.readonly"},
+    "request_envelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "scheme", "host", "path", "query_keys", "fields_mask", "authorization_redacted"],
+      "properties": {
+        "method": {"const": "GET"},
+        "scheme": {"const": "https"},
+        "host": {"const": "www.googleapis.com"},
+        "path": {"type": "string", "pattern": "^/drive/v3/files(?:/[^/]+)?$"},
+        "query_keys": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "fields_mask": {"type": "string", "minLength": 1},
+        "authorization_redacted": {"const": true}
+      }
+    },
+    "response_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "item_count", "metadata_fields_observed", "content_bytes_captured", "body_sha256"],
+      "properties": {
+        "status": {"type": "integer"},
+        "item_count": {"type": "integer", "minimum": 0},
+        "metadata_fields_observed": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "content_bytes_captured": {"const": 0},
+        "body_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "negative_capability_results": {
+      "type": "object",
+      "required": ["content", "download", "export", "write", "delete", "share", "account_switch"],
+      "additionalProperties": {"enum": ["BLOCKED", "NOT_ATTEMPTED_BY_POLICY"]}
+    },
+    "secret_scan": {
+      "type": "object",
+      "required": ["access_tokens", "refresh_tokens", "authorization_codes", "client_secrets"],
+      "additionalProperties": false,
+      "properties": {
+        "access_tokens": {"const": 0}, "refresh_tokens": {"const": 0},
+        "authorization_codes": {"const": 0}, "client_secrets": {"const": 0}
+      }
+    },
+    "previous_evidence_hash": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+    "record_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "timestamp_utc": {"type": "string", "format": "date-time"}
+  }
+}

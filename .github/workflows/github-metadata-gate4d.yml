@@ -1,0 +1,71 @@
+name: GitHub Metadata Gate 4D-B Certification
+
+on:
+  pull_request:
+    paths:
+      - "portal/migrations/extend_external_action_github_readonly.sql"
+      - "portal/models/external_action_sandbox.py"
+      - "portal/services/restricted_external_action.py"
+      - "portal/services/github_metadata_read_adapter.py"
+      - "portal/scripts/postgresql_bootstrap.py"
+      - "portal/tests/test_gate4d_github_metadata_provider.py"
+      - "portal/tests/test_gate4d_github_authority_postgresql.py"
+      - "docs/planning/SP-IKE-006_GITHUB_METADATA_GATE.md"
+      - ".github/workflows/github-metadata-gate4d.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  github-metadata-read-boundary:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: gate4d
+          POSTGRES_PASSWORD: gate4d
+          POSTGRES_DB: gate4d_certification
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U gate4d -d gate4d_certification"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    env:
+      GATE4D_LIVE_HTTP: "1"
+      GATE4D_GITHUB_DATABASE_URL: postgresql+asyncpg://gate4d:gate4d@127.0.0.1:5432/gate4d_certification
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Certify GitHub GET-only network boundary
+        run: |
+          set -euo pipefail
+          python -m pytest -vv -rs --tb=long --maxfail=1 \
+            portal/tests/test_gate4d_github_metadata_provider.py \
+            | tee /tmp/gate4d-github-http.log
+          ! grep -q 'SKIPPED' /tmp/gate4d-github-http.log
+      - name: Certify durable GitHub read authority envelope
+        run: |
+          set -euo pipefail
+          python -m pytest -vv -rs --tb=long --maxfail=1 \
+            portal/tests/test_gate4d_github_authority_postgresql.py \
+            | tee /tmp/gate4d-github-authority.log
+          ! grep -q 'SKIPPED' /tmp/gate4d-github-authority.log
+      - name: Upload Gate 4D-B evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate4d-github-metadata-evidence
+          path: |
+            /tmp/gate4d-github-http.log
+            /tmp/gate4d-github-authority.log
+          if-no-files-found: ignore

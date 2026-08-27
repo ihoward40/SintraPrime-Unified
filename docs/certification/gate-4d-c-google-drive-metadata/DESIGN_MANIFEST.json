@@ -1,0 +1,56 @@
+{
+  "account_connection_authorized": false,
+  "base_certified_head": "457f69be6714797f2332e20dfc6a245c817099e5",
+  "files": [
+    {
+      "bytes": 4785,
+      "path": "acceptance-test-plan.md",
+      "sha256": "71e1f2d859a613c1beef9f57cb2db42a07f2fab3faf5da5cf6b55ba7e35dde69"
+    },
+    {
+      "bytes": 2916,
+      "path": "account-binding-design.md",
+      "sha256": "5801b2bb29e9e1d7542612ae2cdb120d0dd57a1125b28190629e1698472755bf"
+    },
+    {
+      "bytes": 1901,
+      "path": "AGENTS.md",
+      "sha256": "953c3061453cfb2d5fe40fe0f2825870f083c9ea53b6cebbb2eb39cf864386c0"
+    },
+    {
+      "bytes": 2530,
+      "path": "authority-contract.json",
+      "sha256": "28c4f94520d9a78ddabfb67a75ebf4567134f58c9ac34f72f58c68a05de9ea43"
+    },
+    {
+      "bytes": 3055,
+      "path": "certification-ladder.md",
+      "sha256": "2d6d1ed4ceb51c618bdc5147d669b495934c9d60eeb1bbb519f84dea06f55dd7"
+    },
+    {
+      "bytes": 3272,
+      "path": "evidence-schema.json",
+      "sha256": "e5f83d12abbfd204dd44993d1585bd3ab662ce8c4726dbab40f26e1dc850cd21"
+    },
+    {
+      "bytes": 2142,
+      "path": "freeze-and-stop.md",
+      "sha256": "f355f84aa293149422f5d13b7fb21dfae56bddaeebf73cf6774b4ec40307bf77"
+    },
+    {
+      "bytes": 2738,
+      "path": "network-and-metadata-enforcement.md",
+      "sha256": "59e261c1c7add8bfd9e59a4b93dde601ac372054de2387997383300e9cad1da5"
+    },
+    {
+      "bytes": 2898,
+      "path": "threat-model.md",
+      "sha256": "db3773d10671e3c06b0b8d198b8caa55c79bc8dd78d0e6f5a871cfc0bb1af59e"
+    }
+  ],
+  "gate": "GATE_4D_C_GOOGLE_DRIVE_METADATA_READONLY_DESIGN_ONLY",
+  "google_api_calls_authorized": false,
+  "implementation_authorized": false,
+  "schema_version": "1.0",
+  "status": "DESIGN_PACKAGE_COMPLETE_PENDING_PRINCIPAL_REVIEW"
+}

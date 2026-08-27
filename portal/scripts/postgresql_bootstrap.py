@@ -21,6 +21,19 @@ MIGRATION_SEQUENCE = (
     Path("portal/migrations/add_mission_control_command_ledger.sql"),
     Path("portal/migrations/add_mission_control_run_control_projection.sql"),
 )
+PRODUCTION_GATE_MIGRATION_SEQUENCE = (
+    Path("portal/migrations/add_governed_service_identities.sql"),
+    Path("portal/migrations/add_adaptive_orchestration_domain.sql"),
+    Path("portal/migrations/add_orchestration_remediation_tables.sql"),
+    Path("portal/migrations/add_governed_scheduler_domain.sql"),
+    Path("portal/migrations/add_external_action_sandbox_domain.sql"),
+)
+PROVIDER_GATE_MIGRATION_SEQUENCE = (
+    Path("portal/migrations/extend_external_action_provider_test.sql"),
+)
+READONLY_GATE_MIGRATION_SEQUENCE = (
+    Path("portal/migrations/extend_external_action_github_readonly.sql"),
+)
 EXPECTED_TABLES = (
     "tenants",
     "roles",
@@ -35,6 +48,30 @@ EXPECTED_TABLES = (
     "mission_control_command_receipts",
     "mission_control_run_controls",
     "mission_control_run_control_events",
+    "governed_service_identities",
+    "orchestration_runs",
+    "orchestration_nodes",
+    "orchestration_events",
+    "orchestration_provider_definitions",
+    "orchestration_routing_decisions",
+    "orchestration_verification_results",
+    "orchestration_reconciliation_results",
+    "orchestration_approval_requests",
+    "orchestration_budget_usage",
+    "orchestration_evidence_references",
+    "orchestration_linkages",
+    "orchestration_principal_authorities",
+    "memory_vault",
+    "governed_schedules",
+    "governed_schedule_events",
+    "external_action_intents",
+    "external_action_approvals",
+    "external_action_evidence",
+    "external_execution_kill_switches",
+    "sandbox_echo_effects",
+    "external_provider_credential_leases",
+    "external_provider_rate_buckets",
+    "external_provider_attempts",
 )
 
 
@@ -49,6 +86,15 @@ def psycopg2_url(raw_url: str) -> str:
     return raw_url
 
 
+def authoritative_migration_sequence() -> tuple[Path, ...]:
+    return (
+        MIGRATION_SEQUENCE
+        + PRODUCTION_GATE_MIGRATION_SEQUENCE
+        + PROVIDER_GATE_MIGRATION_SEQUENCE
+        + READONLY_GATE_MIGRATION_SEQUENCE
+    )
+
+
 def apply_migrations(database_url: str, *, reset_public_schema: bool = False) -> list[str]:
     applied: list[str] = []
     with psycopg2.connect(psycopg2_url(database_url)) as conn:
@@ -57,7 +103,7 @@ def apply_migrations(database_url: str, *, reset_public_schema: bool = False) ->
             if reset_public_schema:
                 cur.execute("DROP SCHEMA IF EXISTS public CASCADE")
                 cur.execute("CREATE SCHEMA public")
-            for relative_path in MIGRATION_SEQUENCE:
+            for relative_path in authoritative_migration_sequence():
                 sql = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
                 cur.execute(sql)
                 applied.append(str(relative_path).replace("\\", "/"))
@@ -88,7 +134,7 @@ def main() -> int:
     parser.add_argument("--print-sequence", action="store_true")
     args = parser.parse_args()
     if args.print_sequence:
-        for item in MIGRATION_SEQUENCE:
+        for item in authoritative_migration_sequence():
             print(str(item).replace("\\", "/"))
         return 0
     if not args.database_url:

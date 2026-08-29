@@ -1,6 +1,6 @@
 # Cosmos Review Fleet
 
-The Cosmos review fleet uses specialized agents to provide complementary pull-request checks. Depending on repository configuration, the fleet can include:
+The Cosmos review fleet uses specialized agents to provide complementary pull request checks. Depending on repository configuration, the fleet can include:
 
 - a PR author agent that owns the change and responds to feedback, CI failures, and merge conflicts;
 - deep code review and risk analysis agents that examine correctness, security, and change impact; and

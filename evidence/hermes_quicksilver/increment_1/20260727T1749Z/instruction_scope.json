@@ -1,0 +1,51 @@
+{
+  "governing_agents_md": [
+    {
+      "path": "AGENTS.md",
+      "scope": "Root DOX framework"
+    },
+    {
+      "path": "agents/AGENTS.md",
+      "scope": "Autonomous agent system ownership and Nova approval/ledger rules"
+    },
+    {
+      "path": "portal/AGENTS.md",
+      "scope": "Client portal FastAPI app, models, routers, services"
+    },
+    {
+      "path": "portal/routers/AGENTS.md",
+      "scope": "FastAPI route handlers delegate to services"
+    },
+    {
+      "path": "tests/AGENTS.md",
+      "scope": "Root-level tests"
+    }
+  ],
+  "ownership_source_locations": {
+    "agent_identity": [
+      "agent_protocol/agent_discovery.py",
+      "agent_protocol/agent_node.py",
+      "agent_protocol/__init__.py"
+    ],
+    "routing": [
+      "channels/message_router.py",
+      "portal/"
+    ],
+    "approval_policy": [
+      "agents/nova/approval_gateway.py"
+    ],
+    "audit_evidence": [
+      "agents/nova/execution_ledger.py",
+      "blackstone/"
+    ],
+    "tenant_security": [
+      "portal/",
+      "portal/auth/",
+      "portal/security/"
+    ]
+  },
+  "integration_surface": {
+    "primary": "Read-only filesystem adapter",
+    "fallback": "Hermes CLI profile inspection"
+  }
+}

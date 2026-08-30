@@ -1,0 +1,45 @@
+{
+  "failing_tests": [
+    {
+      "test": "tests/gateway/test_approval_prompt_redaction.py",
+      "exit_code": 2,
+      "phase": "collection",
+      "exception": "ModuleNotFoundError: No module named 'concurrent_log_handler'",
+      "first_frame": "hermes_logging.py:65",
+      "root_cause": "The active Python interpreter (C:\\Python314\\python.exe) does not have concurrent_log_handler installed, although it is declared in pyproject.toml line 140 as a Windows-only dependency."
+    },
+    {
+      "test": "tests/gateway/test_tui_approval_redaction.py",
+      "exit_code": 1,
+      "phase": "assertion/setup",
+      "exception": "ModuleNotFoundError: No module named 'concurrent_log_handler'",
+      "first_frame": "hermes_logging.py:65",
+      "root_cause": "Same missing dependency; import triggered by gateway.run import chain."
+    },
+    {
+      "test": "tests/run_agent/test_provider_fallback.py",
+      "exit_code": 1,
+      "phase": "collection/import",
+      "exception": "ModuleNotFoundError: No module named 'concurrent_log_handler'",
+      "first_frame": "hermes_logging.py:65",
+      "root_cause": "Same missing dependency."
+    },
+    {
+      "test": "tests/integration/test_checkpoint_resumption.py",
+      "exit_code": 5,
+      "phase": "deselected",
+      "exception": null,
+      "first_frame": null,
+      "root_cause": "pytest.mark.integration marker; no integration marker selected in default run."
+    }
+  ],
+  "disposition": "ENVIRONMENT MISMATCH CONFIRMED",
+  "evidence": {
+    "pyproject_declaration": "\"concurrent-log-handler==0.9.29; sys_platform == 'win32'\"",
+    "pyproject_line": 140,
+    "active_python": "C:\\Python314\\python.exe",
+    "hermes_cli_package_location": "C:\\Python314\\Lib\\site-packages",
+    "cli_source_skew": "1893 commits behind source tree"
+  },
+  "action_taken": "No installation or upgrade performed during this gate."
+}

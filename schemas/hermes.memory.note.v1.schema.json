@@ -1,0 +1,191 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sintraprime.local/schemas/hermes.memory.note.v1.schema.json",
+  "title": "Hermes Governed Memory Note v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "version",
+    "tenant_id",
+    "title",
+    "note_type",
+    "status",
+    "created_at",
+    "updated_at",
+    "source_ids",
+    "related_notes",
+    "claims",
+    "sensitivity",
+    "owner_profile"
+  ],
+  "properties": {
+    "schema_version": { "const": "hermes.memory.note.v1" },
+    "id": {
+      "type": "string",
+      "pattern": "^note_[0-9a-fA-F-]{36}$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "previous_version_id": {
+      "type": ["string", "null"],
+      "pattern": "^note_[0-9a-fA-F-]{36}$"
+    },
+    "tenant_id": {
+      "type": "string",
+      "pattern": "^tenant_[A-Za-z0-9][A-Za-z0-9._-]{2,127}$"
+    },
+    "matter_id": {
+      "type": ["string", "null"],
+      "pattern": "^matter_[A-Za-z0-9][A-Za-z0-9._-]{2,127}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 240
+    },
+    "note_type": {
+      "enum": [
+        "client",
+        "matter",
+        "project",
+        "decision",
+        "person",
+        "organization",
+        "law",
+        "procedure",
+        "content"
+      ]
+    },
+    "status": {
+      "enum": ["active", "superseded", "archived", "quarantined", "deleted_by_authority"]
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "source_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^src_[a-f0-9]{64}$" }
+    },
+    "related_notes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^note_[0-9a-fA-F-]{36}$" }
+    },
+    "claims": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/claim" }
+    },
+    "sensitivity": {
+      "enum": ["public", "internal", "confidential", "restricted"]
+    },
+    "owner_profile": {
+      "enum": [
+        "hermes-librarian",
+        "hermes-research",
+        "hermes-content",
+        "hermes-client-ops"
+      ]
+    },
+    "quarantine": {
+      "$ref": "#/$defs/quarantine"
+    },
+    "tombstone": {
+      "$ref": "#/$defs/tombstone"
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "version": { "const": 1 } }, "required": ["version"] },
+      "then": { "properties": { "previous_version_id": { "type": "null" } } }
+    },
+    {
+      "if": { "properties": { "version": { "minimum": 2 } }, "required": ["version"] },
+      "then": { "required": ["previous_version_id"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "quarantined" } }, "required": ["status"] },
+      "then": { "required": ["quarantine"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "deleted_by_authority" } }, "required": ["status"] },
+      "then": { "required": ["tombstone"] }
+    }
+  ],
+  "$defs": {
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "claim_key", "classification", "source_ids", "confidence", "text"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^claim_[0-9a-fA-F-]{36}$" },
+        "claim_key": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "classification": {
+          "enum": [
+            "verified_fact",
+            "user_assertion",
+            "legal_proposition",
+            "inference",
+            "unresolved",
+            "recommended_action"
+          ]
+        },
+        "source_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^src_[a-f0-9]{64}$" }
+        },
+        "confidence": { "enum": ["high", "medium", "low"] },
+        "text": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "jurisdiction": { "type": ["string", "null"], "maxLength": 160 },
+        "effective_at": { "type": ["string", "null"], "format": "date-time" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "classification": { "const": "verified_fact" } },
+            "required": ["classification"]
+          },
+          "then": { "properties": { "source_ids": { "minItems": 1 } } }
+        },
+        {
+          "if": {
+            "properties": { "classification": { "const": "legal_proposition" } },
+            "required": ["classification"]
+          },
+          "then": { "properties": { "source_ids": { "minItems": 1 } } }
+        }
+      ]
+    },
+    "quarantine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason_codes", "entered_at", "receipt_id"],
+      "properties": {
+        "reason_codes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 100 }
+        },
+        "entered_at": { "type": "string", "format": "date-time" },
+        "receipt_id": { "type": "string", "pattern": "^rcpt_[0-9a-fA-F-]{36}$" },
+        "review_authority_id": { "type": ["string", "null"], "maxLength": 200 }
+      }
+    },
+    "tombstone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority_id", "deleted_at", "receipt_id", "reason"],
+      "properties": {
+        "authority_id": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "deleted_at": { "type": "string", "format": "date-time" },
+        "receipt_id": { "type": "string", "pattern": "^rcpt_[0-9a-fA-F-]{36}$" },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 1000 }
+      }
+    }
+  }
+}

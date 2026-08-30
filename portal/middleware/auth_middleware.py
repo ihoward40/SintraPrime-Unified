@@ -42,17 +42,52 @@ PUBLIC_PREFIX_PATHS = (
     "/static/",
 )
 
+# The legal-authority pilot exposes reference data anonymously. Keep this
+# method-scoped: review queues and every write endpoint remain authenticated
+# (or, for UCC evaluation, are allowed through to their reviewer-header guard).
+PUBLIC_GET_PREFIX_PATHS = ("/federal/", "/jurisdictions/", "/ucc-filings/")
+PUBLIC_GET_EXACT_PATHS = {"/jurisdictions", "/legal-rules/compare"}
+PUBLIC_METHOD_PATHS = {("POST", "/ucc-filings/evaluate")}
+# These legacy legal-authority pilot routes perform their own reviewer-header
+# authorization. Let them reach the handler so missing headers remain a 403.
+PUBLIC_CONTROLLED_PREFIXES = ("/legal-rules/", "/legal-authorities/")
 
-def is_public_path(path: str) -> bool:
-    return path in PUBLIC_EXACT_PATHS or any(path.startswith(prefix) for prefix in PUBLIC_PREFIX_PATHS)
+
+def is_public_path(path: str, method: str = "GET") -> bool:
+    if any(path.startswith(prefix) for prefix in PUBLIC_CONTROLLED_PREFIXES):
+        return True
+    if path.startswith("/jurisdictions/") and path.endswith("/review-queue"):
+        return True
+    if path in PUBLIC_EXACT_PATHS or any(path.startswith(prefix) for prefix in PUBLIC_PREFIX_PATHS):
+        return True
+    if (method.upper(), path) in PUBLIC_METHOD_PATHS:
+        return True
+    return method.upper() == "GET" and (
+        path in PUBLIC_GET_EXACT_PATHS
+        or any(path.startswith(prefix) for prefix in PUBLIC_GET_PREFIX_PATHS)
+    )
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
 
-        if request.method == "OPTIONS" or is_public_path(path):
+        if request.method == "OPTIONS" or is_public_path(path, request.method):
             return await call_next(request)
+
+        # Let FastAPI resolve unknown paths so clients receive a normal 404
+        # (with correlation headers) instead of an authentication challenge.
+        if request.scope.get("type") == "http":
+            from starlette.routing import Match
+
+            matched = False
+            for route in request.app.router.routes:
+                match, _ = route.matches(request.scope)
+                if match != Match.NONE:
+                    matched = True
+                    break
+            if not matched:
+                return await call_next(request)
 
         # WebSocket: auth handled in endpoint.
         if request.scope.get("type") == "websocket":

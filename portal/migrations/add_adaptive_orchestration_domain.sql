@@ -240,56 +240,56 @@ ALTER TABLE orchestration_evidence_references ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS orchestration_runs_tenant_isolation ON orchestration_runs;
 CREATE POLICY orchestration_runs_tenant_isolation
     ON orchestration_runs
-    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
-    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid);
+    USING (tenant_id::text = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (tenant_id::text = NULLIF(current_setting('app.current_tenant_id', true), ''));
 
 DROP POLICY IF EXISTS orchestration_nodes_tenant_isolation ON orchestration_nodes;
 CREATE POLICY orchestration_nodes_tenant_isolation
     ON orchestration_nodes
-    USING (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid))
-    WITH CHECK (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid));
+    USING (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id::text = NULLIF(current_setting('app.current_tenant_id', true), '')))
+    WITH CHECK (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id::text = NULLIF(current_setting('app.current_tenant_id', true), '')));
 
 DROP POLICY IF EXISTS orchestration_events_tenant_isolation ON orchestration_events;
 CREATE POLICY orchestration_events_tenant_isolation
     ON orchestration_events
-    USING (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid))
-    WITH CHECK (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid));
+    USING (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id::text = NULLIF(current_setting('app.current_tenant_id', true), '')))
+    WITH CHECK (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id::text = NULLIF(current_setting('app.current_tenant_id', true), '')));
 
 DROP POLICY IF EXISTS orchestration_routing_decisions_tenant_isolation ON orchestration_routing_decisions;
 CREATE POLICY orchestration_routing_decisions_tenant_isolation
     ON orchestration_routing_decisions
-    USING (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid))
-    WITH CHECK (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid));
+    USING (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id::text = NULLIF(current_setting('app.current_tenant_id', true), '')))
+    WITH CHECK (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id::text = NULLIF(current_setting('app.current_tenant_id', true), '')));
 
 DROP POLICY IF EXISTS orchestration_verification_results_tenant_isolation ON orchestration_verification_results;
 CREATE POLICY orchestration_verification_results_tenant_isolation
     ON orchestration_verification_results
-    USING (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid))
-    WITH CHECK (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid));
+    USING (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id::text = NULLIF(current_setting('app.current_tenant_id', true), '')))
+    WITH CHECK (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id::text = NULLIF(current_setting('app.current_tenant_id', true), '')));
 
 DROP POLICY IF EXISTS orchestration_reconciliation_results_tenant_isolation ON orchestration_reconciliation_results;
 CREATE POLICY orchestration_reconciliation_results_tenant_isolation
     ON orchestration_reconciliation_results
-    USING (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid))
-    WITH CHECK (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid));
+    USING (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id::text = NULLIF(current_setting('app.current_tenant_id', true), '')))
+    WITH CHECK (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id::text = NULLIF(current_setting('app.current_tenant_id', true), '')));
 
 DROP POLICY IF EXISTS orchestration_approval_requests_tenant_isolation ON orchestration_approval_requests;
 CREATE POLICY orchestration_approval_requests_tenant_isolation
     ON orchestration_approval_requests
-    USING (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid))
-    WITH CHECK (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid));
+    USING (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id::text = NULLIF(current_setting('app.current_tenant_id', true), '')))
+    WITH CHECK (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id::text = NULLIF(current_setting('app.current_tenant_id', true), '')));
 
 DROP POLICY IF EXISTS orchestration_budget_usage_tenant_isolation ON orchestration_budget_usage;
 CREATE POLICY orchestration_budget_usage_tenant_isolation
     ON orchestration_budget_usage
-    USING (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid))
-    WITH CHECK (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid));
+    USING (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id::text = NULLIF(current_setting('app.current_tenant_id', true), '')))
+    WITH CHECK (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id::text = NULLIF(current_setting('app.current_tenant_id', true), '')));
 
 DROP POLICY IF EXISTS orchestration_evidence_references_tenant_isolation ON orchestration_evidence_references;
 CREATE POLICY orchestration_evidence_references_tenant_isolation
     ON orchestration_evidence_references
-    USING (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid))
-    WITH CHECK (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid));
+    USING (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id::text = NULLIF(current_setting('app.current_tenant_id', true), '')))
+    WITH CHECK (EXISTS (SELECT 1 FROM orchestration_runs r WHERE r.id = run_id AND r.tenant_id::text = NULLIF(current_setting('app.current_tenant_id', true), '')));
 
 COMMENT ON TABLE orchestration_runs IS
     'Governed adaptive orchestration run; Milestone One permits deterministic mock providers only.';

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import os
 import uuid
+from pathlib import Path
 
 import psycopg2
 import pytest
@@ -109,6 +110,8 @@ def test_authoritative_migration_sequence_is_ordered() -> None:
         "portal/migrations/add_audit_records.sql",
         "portal/migrations/add_mission_control_command_ledger.sql",
         "portal/migrations/add_mission_control_run_control_projection.sql",
+        "portal/migrations/add_adaptive_orchestration_domain.sql",
+        "portal/migrations/align_orchestration_identity_fk_types.sql",
     ]
 
 
@@ -128,6 +131,22 @@ def test_postgresql_orm_foreign_key_column_types_are_internally_consistent() -> 
                         f"{referred.table.name}.{referred.name} {referred_type}"
                     )
     assert mismatches == []
+
+
+def test_orchestration_identity_compatibility_migration_covers_known_drift() -> None:
+    sql = Path("portal/migrations/align_orchestration_identity_fk_types.sql")
+    migration = sql.read_text(encoding="utf-8")
+    expected_references = {
+        "('orchestration_runs', 'tenant_id', 'tenants', 'id', 'NO ACTION')",
+        "('orchestration_runs', 'created_by', 'users', 'id', 'NO ACTION')",
+        "('orchestration_approval_requests', 'principal_id', 'users', 'id', 'NO ACTION')",
+        "('orchestration_linkages', 'tenant_id', 'tenants', 'id', 'NO ACTION')",
+        "('orchestration_principal_authorities', 'tenant_id', 'tenants', 'id', 'NO ACTION')",
+        "('orchestration_principal_authorities', 'user_id', 'users', 'id', 'NO ACTION')",
+        "('memory_vault', 'tenant_id', 'tenants', 'id', 'CASCADE')",
+    }
+    assert all(reference in migration for reference in expected_references)
+    assert "tenant_id::text = NULLIF(current_setting('app.current_tenant_id'" in migration
 
 
 def test_postgresql_race_prepare_schema_create_all_path_executes() -> None:

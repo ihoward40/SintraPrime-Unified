@@ -1,0 +1,79 @@
+{
+  "artifacts": [
+    {
+      "bytes": 508,
+      "path": "evidence/migrations/migration-file-hashes.json",
+      "sha256": "ea43c213f8378cf6178b50ac786bc7e0eb2485e19671af49ca49e3e38eeb2800"
+    },
+    {
+      "bytes": 476331,
+      "path": "evidence/postgresql/schema-inventory.json",
+      "sha256": "f1335582c28ae7fbc76d7f5b150367958f444e32697da560e472d04966311855"
+    },
+    {
+      "bytes": 206713,
+      "path": "evidence/sqlite/schema-inventory.json",
+      "sha256": "d52676c8276b1f59b656ec217f26cab251cbe9d5fb06e5c506452be09dfe5884"
+    },
+    {
+      "bytes": 983,
+      "path": "evidence/tests/full-suite-output.txt",
+      "sha256": "ea9ec92aaeb5e365023ad8a3b156ba9ad13bc914826f4cf745448af6923ead14"
+    },
+    {
+      "bytes": 657,
+      "path": "evidence/tests/kill-switch-pg-output.txt",
+      "sha256": "88c628b02cc864c8fa3b4dd1bfb44f963ffc664e355ccb89ad55aae520355fc3"
+    },
+    {
+      "bytes": 688,
+      "path": "evidence/tests/kill-switch-sqlite-output.txt",
+      "sha256": "0208546f484bc7017064397a8872eeee6cad8775d4cd2aff0db8d16dfeef40e1"
+    },
+    {
+      "bytes": 7195,
+      "path": "GATE3_ACCEPTANCE_REPORT.md",
+      "sha256": "9184e0e11c598083a8728d0afdf5d3be0e4769a4d1debb364847ad4b8a31db88"
+    }
+  ],
+  "commands": [
+    "DATABASE_URL=sqlite+aiosqlite:////tmp/gate3_bootstrap.db alembic upgrade head",
+    "DATABASE_URL=postgresql+asyncpg://sintraprime:sintraprime@127.0.0.1:5433/gate3_bootstrap alembic upgrade head",
+    "pytest portal/tests/test_observatory.py portal/tests/test_gate4_hardening.py portal/tests/test_event_canonicalization.py -v -W error",
+    "pytest portal/tests/test_observatory.py -v -k kill_switch -W error",
+    "pytest portal/tests/test_gate4_hardening.py::TestPostgreSQLConcurrency -v -W error"
+  ],
+  "created_at": "2026-07-15T15:07:51.679187+00:00",
+  "environment": {
+    "alembic_version": "1.18.5",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "postgresql_version": "PostgreSQL 15.17 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+    "python_version": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+    "sqlalchemy_version": "2.0.50",
+    "sqlite_version": "3.45.1"
+  },
+  "gate": 3,
+  "limitations": [
+    "cleared_by is attribution only, not authenticated authorization",
+    "Principal-backed clear authorization remains Gate 4 work",
+    "PostgreSQL round-trip fingerprints differ only in system-generated NOT NULL check-constraint OIDs"
+  ],
+  "migrations": [
+    {
+      "bytes": 5640,
+      "file": "4f3f0432cf9d_add_run_heads_and_event_run_sequence.py",
+      "sha256": "866d96a1676f0ead8817ec73cf289051cefe29836b84d024171cb4f62dc6fae9"
+    },
+    {
+      "bytes": 62357,
+      "file": "8b349f2cd639_baseline_complete_portal_schema.py",
+      "sha256": "c22d99a2c978cd413d78d0fcab3d4795d820d35f8cc9309ce63037e7b23522ce"
+    },
+    {
+      "bytes": 3129,
+      "file": "905b70986558_add_hash_version_and_check_constraints.py",
+      "sha256": "95c8b21a17b5cb6b773b33aa1cc5d9a43b15b367690609c3101a486149704785"
+    }
+  ],
+  "status": "PASS"
+}

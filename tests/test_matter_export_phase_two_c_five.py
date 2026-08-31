@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from legal_authority.repository import LegalAuthorityRepository
 from portal.auth.jwt_handler import create_access_token
 from portal.auth.rbac import ROLE_PERMISSIONS, Permission, Role
+from portal.database import get_db
 from portal.main import create_app
 from portal.services.matter_export_service import (
     MatterExportResult,
@@ -181,8 +182,13 @@ def test_export_route_returns_hash_headers(monkeypatch):
             content=b'{"schema":"sintra.matter-export.v1"}',
         )
 
+    async def _override_get_db():
+        return object()
+
     monkeypatch.setattr(matter_export.service, "build_packet", fake_build_packet)
-    client = TestClient(create_app())
+    app = create_app()
+    app.dependency_overrides[get_db] = _override_get_db
+    client = TestClient(app)
     response = client.post(
         "/api/v1/matters/matter-1/exports",
         json={"format": "JSON"},

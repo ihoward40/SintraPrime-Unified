@@ -109,6 +109,25 @@ def test_bootstrap_expected_tables_include_run_approvals() -> None:
     assert "mission_control_run_approvals" in EXPECTED_TABLES
 
 
+def test_bootstrap_expected_tables_include_missions() -> None:
+    assert "missions" in EXPECTED_TABLES
+
+
+def test_bootstrap_expected_tables_include_runs() -> None:
+    assert "runs" in EXPECTED_TABLES
+
+
+def test_mission_runs_migration_precedes_run_approvals_in_sequence() -> None:
+    """PG-BOOTSTRAP-001 regression: runs table must exist before approval FK."""
+    paths = [str(path).replace("\\", "/") for path in MIGRATION_SEQUENCE]
+    mission_runs_idx = paths.index("portal/migrations/add_mission_control_mission_runs.sql")
+    run_approvals_idx = paths.index("portal/migrations/add_mission_control_run_approvals.sql")
+    assert mission_runs_idx < run_approvals_idx, (
+        f"add_mission_control_mission_runs.sql (index {mission_runs_idx}) must precede "
+        f"add_mission_control_run_approvals.sql (index {run_approvals_idx})"
+    )
+
+
 def test_authoritative_migration_sequence_is_ordered() -> None:
     assert [str(path).replace("\\", "/") for path in MIGRATION_SEQUENCE] == [
         "portal/migrations/portal_schema.sql",
@@ -116,6 +135,7 @@ def test_authoritative_migration_sequence_is_ordered() -> None:
         "portal/migrations/add_audit_records.sql",
         "portal/migrations/add_tenant_principal.sql",
         "portal/migrations/add_mission_control_command_ledger.sql",
+        "portal/migrations/add_mission_control_mission_runs.sql",
         "portal/migrations/add_mission_control_run_control_projection.sql",
         "portal/migrations/add_mission_control_run_approvals.sql",
     ]

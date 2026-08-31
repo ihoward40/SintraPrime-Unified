@@ -19,6 +19,7 @@ MIGRATION_SEQUENCE = (
     Path("portal/migrations/add_audit_records.sql"),
     Path("portal/migrations/add_tenant_principal.sql"),
     Path("portal/migrations/add_mission_control_command_ledger.sql"),
+    Path("portal/migrations/add_mission_control_mission_runs.sql"),
     Path("portal/migrations/add_mission_control_run_control_projection.sql"),
     Path("portal/migrations/add_mission_control_run_approvals.sql"),
 )
@@ -35,6 +36,8 @@ EXPECTED_TABLES = (
     "mission_control_commands",
     "mission_control_command_events",
     "mission_control_command_receipts",
+    "missions",
+    "runs",
     "mission_control_run_controls",
     "mission_control_run_control_events",
     "mission_control_run_approvals",

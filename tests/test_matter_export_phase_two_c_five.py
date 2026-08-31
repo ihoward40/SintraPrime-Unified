@@ -183,7 +183,7 @@ def test_export_route_returns_hash_headers(monkeypatch):
         )
 
     async def _override_get_db():
-        return object()
+        yield object()
 
     monkeypatch.setattr(matter_export.service, "build_packet", fake_build_packet)
     app = create_app()

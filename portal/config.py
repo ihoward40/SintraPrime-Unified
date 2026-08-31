@@ -14,6 +14,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",
     )
 
     # ── App ─────────────────────────────────────────────────────────────
@@ -22,6 +23,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     ENVIRONMENT: str = "production"  # development | staging | production
     BASE_URL: str = "https://portal.sintraprime.ai"
+    FRONTEND_HEALTH_URL: str | None = None
     SECRET_KEY: str = "CHANGE-ME-IN-PRODUCTION-USE-256-BIT-RANDOM-KEY"
 
     # ── Database ─────────────────────────────────────────────────────────
@@ -164,6 +166,12 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = "https://portal.sintraprime.ai/api/v1/sso/google/callback"
     GOOGLE_HOSTED_DOMAIN: str = ""              # e.g. yourdomain.com; empty = any Google account
+
+    # Add durable-workflow config
+    DURABLE_WORKFLOW_STORE_PATH: str | None = None
+    DURABLE_WORKFLOW_RECOVERY_INTERVAL_SECONDS: float = 5.0
+    DURABLE_WORKFLOW_RECOVERY_BATCH_SIZE: int = 10
+    DURABLE_WORKFLOW_DISPATCH_LEASE_SECONDS: float = 30.0
 
     @field_validator("ENCRYPTION_KEY")
     @classmethod

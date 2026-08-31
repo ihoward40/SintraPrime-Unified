@@ -1,7 +1,9 @@
 """
 Portal FastAPI application entry point with integrated trust layer.
 """
+
 import logging
+from pathlib import Path
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
@@ -13,6 +15,7 @@ load_dotenv()
 # Import settings and services using get_settings() instead of module-level constants
 from portal.admin.dashboard import router as admin_dashboard_router
 from portal.config import get_settings
+from portal.database import init_db
 from portal.middleware.correlation_middleware import CorrelationMiddleware
 from portal.middleware.cors_middleware import CORSMiddleware
 from portal.middleware.rate_limiter import RateLimiterMiddleware
@@ -25,10 +28,13 @@ from portal.routers import (
     blackstone,
     cases,
     clients,
+    credit_command_center,
     documents,
+    hermes,
     messages,
     mission_control,
     mission_control_commands,
+    mission_control_approvals,
     notifications,
     recovery,
     sso,
@@ -38,10 +44,18 @@ from portal.routers import (
     voice_commands,
 )
 from portal.security.security_layer import SecurityLayer
+from portal.services.orchestration_runtime import get_canonical_durable_engine
 from portal.sso.jwt_service import JWTTokenService
 from portal.sso.session_manager import SessionConfig, SessionManager
 
 logger = logging.getLogger(__name__)
+
+
+def _sqlite_db_missing(database_url: str) -> bool:
+    if not database_url.startswith("sqlite+aiosqlite:///"):
+        return False
+    db_path = Path(database_url.removeprefix("sqlite+aiosqlite:///"))
+    return not db_path.exists()
 
 
 def build_session_config() -> SessionConfig:
@@ -83,11 +97,28 @@ async def lifespan(app: FastAPI):
 
     # Initialize security layer
     settings = get_settings()
+
+    if _sqlite_db_missing(settings.DATABASE_URL):
+        await init_db()
+
     app.state.security_layer = SecurityLayer(settings)
+
+    # Canonical durable execution engine: one instance per process with a persistent
+    # SQLite store. The recovery worker autostarts so stranded claims from prior
+    # process failures are reclaimed without manual intervention.
+    app.state.durable_engine = get_canonical_durable_engine()
+    settings = get_settings()
+    app.state.durable_engine.start_recovery_worker(
+        interval_seconds=settings.DURABLE_WORKFLOW_RECOVERY_INTERVAL_SECONDS,
+        batch_size=settings.DURABLE_WORKFLOW_RECOVERY_BATCH_SIZE,
+    )
 
     logger.info("Portal startup complete")
     yield
     logger.info("Portal shutting down...")
+    await app.state.durable_engine.shutdown(timeout_seconds=10.0)
+    app.state.durable_engine.close()
+    logger.info("Portal shutdown complete")
 
 
 def create_app() -> FastAPI:
@@ -107,7 +138,7 @@ def create_app() -> FastAPI:
         allow_origins=settings.CORS_ORIGINS,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["*"]
+        allow_headers=["*"],
     )
 
     # Session Middleware (must come before routers that use request.session)
@@ -137,6 +168,9 @@ def create_app() -> FastAPI:
     app.include_router(messages.router, prefix="/api/v1/messages", tags=["messages"])
     app.include_router(mission_control.router)
     app.include_router(mission_control_commands.router)
+    app.include_router(mission_control_approvals.router)
+    app.include_router(hermes.router)
+    app.include_router(credit_command_center.router)
     app.include_router(voice_commands.router)
     app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["notifications"])
     app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
@@ -161,4 +195,5 @@ app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

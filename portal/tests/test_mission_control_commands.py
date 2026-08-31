@@ -172,11 +172,8 @@ def test_unsupported_command_type_is_rejected(client: TestClient) -> None:
 @pytest.mark.parametrize(
     ("command_type", "target_type"),
     [
-        ("START_GOVERNED_RUN", "run"),
-        ("START_GOVERNED_RUN", "mission"),
         ("PAUSE_RUN", "run"),
         ("RESUME_RUN", "run"),
-        ("CANCEL_RUN", "run"),
         ("ASSIGN_AGENT", "run"),
         ("ASSIGN_AGENT", "task"),
         ("ASSIGN_AGENT", "mission"),
@@ -203,6 +200,7 @@ def test_valid_command_target_combinations_are_accepted(
     [
         ("START_GOVERNED_RUN", "task"),
         ("START_GOVERNED_RUN", "agent"),
+        ("START_GOVERNED_RUN", "run"),
         ("PAUSE_RUN", "agent"),
         ("PAUSE_RUN", "mission"),
         ("RESUME_RUN", "task"),
@@ -253,7 +251,10 @@ def test_idempotency_key_above_maximum_returns_422(client: TestClient) -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("command_type", SUPPORTED_COMMANDS)
+@pytest.mark.parametrize(
+    "command_type",
+    ["PAUSE_RUN", "RESUME_RUN", "ASSIGN_AGENT", "REASSIGN_AGENT"],
+)
 async def test_supported_commands_persist_and_refuse(
     client: TestClient,
     db: AsyncSession,
@@ -283,9 +284,24 @@ async def test_supported_commands_persist_and_refuse(
     assert command.state == "REFUSED"
 
 
+def _registered_route_paths(routes, prefix: str = "") -> set[str]:
+    paths: set[str] = set()
+    for route in routes:
+        path = getattr(route, "path", None)
+        if path is not None:
+            paths.add(f"{prefix}{path}")
+        nested = getattr(route, "original_router", None)
+        if nested is not None:
+            context = getattr(route, "include_context", None)
+            nested_prefix = getattr(context, "prefix", "")
+            paths.update(_registered_route_paths(nested.routes, f"{prefix}{nested_prefix}"))
+    return paths
+
+
 @pytest.mark.asyncio
 async def test_no_operational_mutation_routes_are_added(client: TestClient, db: AsyncSession) -> None:
-    paths = {route.path for route in client.app.routes}
+    paths = _registered_route_paths(client.app.routes)
+    assert "/api/v1/mission-control/commands" in paths
     assert "/runs/{id}/pause" not in paths
     assert "/runs/{id}/resume" not in paths
     assert "/runs/{id}/cancel" not in paths

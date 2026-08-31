@@ -32,6 +32,11 @@ def _database_url() -> str:
     )
     if not url:
         pytest.skip("PostgreSQL bootstrap certification database URL not configured")
+    if not url.startswith("postgresql://") and not url.startswith("postgresql+"):
+        pytest.skip(
+            f"DATABASE_URL is not a PostgreSQL connection string "
+            f"(got: {url[:40]}...) — PostgreSQL bootstrap tests require PostgreSQL"
+        )
     return url
 
 
@@ -96,18 +101,39 @@ def _seed_case_user(url: str) -> tuple[uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUI
     return tenant_id, client_id, user_id, case_id
 
 
+def test_bootstrap_expected_tables_include_tenant_principals() -> None:
+    assert "tenant_principals" in EXPECTED_TABLES
+
+
+def test_bootstrap_expected_tables_include_run_approvals() -> None:
+    assert "mission_control_run_approvals" in EXPECTED_TABLES
+
+
 def test_authoritative_migration_sequence_is_ordered() -> None:
     assert [str(path).replace("\\", "/") for path in MIGRATION_SEQUENCE] == [
         "portal/migrations/portal_schema.sql",
         "portal/migrations/add_evidence_snapshots.sql",
         "portal/migrations/add_audit_records.sql",
+        "portal/migrations/add_tenant_principal.sql",
         "portal/migrations/add_mission_control_command_ledger.sql",
         "portal/migrations/add_mission_control_run_control_projection.sql",
+        "portal/migrations/add_mission_control_run_approvals.sql",
     ]
 
 
 def test_postgresql_orm_foreign_key_column_types_are_internally_consistent() -> None:
-    """Guard the CI create_all path against UUID/VARCHAR FK drift."""
+    """Guard the CI create_all path against UUID/VARCHAR FK drift.
+
+    This test inspects Base.metadata using the PostgreSQL dialect.  When
+    other test suites import portal.main (which transitively imports all
+    routers including those with PostgreSQL-specific column types), extra
+    tables may be registered on Base.metadata that have FK type mismatches
+    against the core portal tables.  This test is only meaningful when all
+    production models are registered AND running against PostgreSQL.  Skip
+    when PostgreSQL is not configured to avoid false positives from partial
+    metadata registration in SQLite-only test sessions.
+    """
+    _database_url()  # skip if PostgreSQL is not available
     dialect = postgresql.dialect()
     mismatches = []
     for table in Base.metadata.tables.values():

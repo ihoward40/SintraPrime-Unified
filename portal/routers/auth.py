@@ -47,6 +47,7 @@ from ..auth.session_manager import (
 )
 from ..config import get_settings
 from ..database import get_db
+from ..models.tenant_principal import TenantPrincipal
 from ..models.user import Role as RoleModel
 from ..models.user import Tenant, User
 from ..services.audit_service import audit
@@ -275,6 +276,15 @@ async def first_run_setup(
         )
         db.add(tenant)
         db.add(owner)
+        await db.flush()
+
+        db.add(
+            TenantPrincipal(
+                tenant_id=tenant.id,
+                principal_user_id=owner.id,
+                establishment_source="first_run_setup",
+            )
+        )
         await db.flush()
 
         owner.role_ref = role

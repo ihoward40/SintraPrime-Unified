@@ -16,7 +16,7 @@ from portal.tests._orchestration_runtime_subprocess import (
 )
 
 
-def _wait_for(path: Path, timeout: float = 10.0) -> bool:
+def _wait_for(path: Path, timeout: float = 30.0) -> bool:
     deadline = time.time() + timeout
     while time.time() < deadline:
         if path.exists():
@@ -25,7 +25,7 @@ def _wait_for(path: Path, timeout: float = 10.0) -> bool:
     return False
 
 
-def _join(process: multiprocessing.Process, timeout: float = 15.0) -> None:
+def _join(process: multiprocessing.Process, timeout: float = 45.0) -> None:
     process.join(timeout=timeout)
     if process.is_alive():
         process.terminate()

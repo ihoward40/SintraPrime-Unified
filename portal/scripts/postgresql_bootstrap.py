@@ -33,6 +33,7 @@ EXPECTED_TABLES = (
     "cases",
     "evidence_snapshots",
     "audit_records",
+    "audit_logs",
     "mission_control_commands",
     "mission_control_command_events",
     "mission_control_command_receipts",

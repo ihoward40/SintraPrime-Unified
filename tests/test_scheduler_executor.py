@@ -6,6 +6,7 @@ retries, safe eval, restricted shell.
 from __future__ import annotations
 
 import os
+import sys
 import time
 from datetime import UTC, datetime, timedelta
 
@@ -38,8 +39,13 @@ def _printer(**_kw):
 
 def _stderr_fn(**_kw):
     import sys
+
     print("stderr line", file=sys.stderr)
     raise RuntimeError("oops")
+
+
+def _python_shell_command(code: str) -> str:
+    return f'"{sys.executable}" -c "{code}"'
 
 
 def _make_task(fn=None, name="exec_task", max_retries=0, timeout_seconds=5):
@@ -124,8 +130,8 @@ class TestRetries:
         assert task.retry_count == 3  # initial + 2 retries
         # Should have slept twice (retry 1 and 2)
         assert len(sleep_calls) == 2
-        assert sleep_calls[0] == 2   # 2^1
-        assert sleep_calls[1] == 4   # 2^2
+        assert sleep_calls[0] == 2  # 2^1
+        assert sleep_calls[1] == 4  # 2^2
 
     def test_success_on_second_attempt(self, executor, monkeypatch):
         monkeypatch.setattr("time.sleep", lambda _s: None)
@@ -207,7 +213,7 @@ class TestSafePython:
 
 class TestRestrictedShell:
     def test_basic_command(self, executor):
-        output = executor.execute_shell("echo hello")
+        output = executor.execute_shell(_python_shell_command("print('hello')"))
         assert "hello" in output
 
     def test_blocked_rm_rf(self, executor):
@@ -223,14 +229,15 @@ class TestRestrictedShell:
             executor.execute_shell("sudo rm -f /etc/passwd")
 
     def test_unsafe_mode_allows(self, executor):
-        output = executor.execute_shell("echo allowed", safe_mode=False)
+        output = executor.execute_shell(_python_shell_command("print('allowed')"), safe_mode=False)
         assert "allowed" in output
 
     def test_shell_timeout(self, executor):
         from scheduler.task_executor import TimeoutError as ExecTimeout
+
         with pytest.raises(ExecTimeout):
-            executor.execute_shell("sleep 120")
+            executor.execute_shell(_python_shell_command("import time; time.sleep(120)"))
 
     def test_nonzero_exit_code(self, executor):
         with pytest.raises(RuntimeError, match="failed"):
-            executor.execute_shell("false")
+            executor.execute_shell(_python_shell_command("import sys; sys.exit(1)"))

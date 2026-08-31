@@ -17,6 +17,7 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from ..auth.jwt_handler import TokenError, decode_access_token
+from ..auth.session_manager import is_jti_blocklisted
 from .correlation import (
     CorrelationContext,
     create_context,
@@ -129,6 +130,12 @@ class Permission(StrEnum):
     CASE_READ_PRIVATE_NOTES = "case:read_private_notes"
     CASE_CONFLICT_CHECK  = "case:conflict_check"
 
+    # Persistent matter intelligence
+    MATTER_INTELLIGENCE_READ = "matter_intelligence:read"
+    MATTER_INTELLIGENCE_WRITE = "matter_intelligence:write"
+    MATTER_INTELLIGENCE_REVIEW = "matter_intelligence:review"
+    MATTER_INTELLIGENCE_EXPORT = "matter_intelligence:export"
+
     # Document management
     DOC_UPLOAD           = "document:upload"
     DOC_READ             = "document:read"
@@ -174,6 +181,12 @@ class Permission(StrEnum):
     AUDIT_READ           = "audit:read"
     AUDIT_EXPORT         = "audit:export"
 
+    # Adaptive orchestration mock operations
+    ORCHESTRATION_CREATE  = "orchestration:create"
+    ORCHESTRATION_READ    = "orchestration:read"
+    ORCHESTRATION_CANCEL  = "orchestration:cancel"
+    ORCHESTRATION_APPROVE = "orchestration:approve"
+
     # Mission Control governed commands
     MISSION_COMMAND_READ   = "mission_control:command_read"
     MISSION_COMMAND_CREATE = "mission_control:command_create"
@@ -207,6 +220,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.CASE_CREATE, Permission.CASE_READ, Permission.CASE_UPDATE,
         Permission.CASE_DELETE, Permission.CASE_ASSIGN, Permission.CASE_CLOSE,
         Permission.CASE_READ_PRIVATE_NOTES, Permission.CASE_CONFLICT_CHECK,
+          Permission.MATTER_INTELLIGENCE_READ, Permission.MATTER_INTELLIGENCE_WRITE,
+          Permission.MATTER_INTELLIGENCE_REVIEW, Permission.MATTER_INTELLIGENCE_EXPORT,
         # Documents
         Permission.DOC_UPLOAD, Permission.DOC_READ, Permission.DOC_UPDATE, Permission.DOC_DELETE,
         Permission.DOC_SHARE, Permission.DOC_SHARE_EXTERNAL, Permission.DOC_DOWNLOAD,
@@ -224,6 +239,9 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.ADMIN_AUDIT_LOG, Permission.ADMIN_BRANDING, Permission.ADMIN_QUOTA,
         # Audit
         Permission.AUDIT_READ, Permission.AUDIT_EXPORT,
+        # Adaptive orchestration mock operations
+        Permission.ORCHESTRATION_CREATE, Permission.ORCHESTRATION_READ,
+        Permission.ORCHESTRATION_CANCEL, Permission.ORCHESTRATION_APPROVE,
         # Mission Control governed commands
         Permission.MISSION_COMMAND_READ, Permission.MISSION_COMMAND_CREATE,
         Permission.MISSION_RUN_START, Permission.MISSION_RUN_PAUSE, Permission.MISSION_RUN_RESUME,
@@ -239,6 +257,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.CASE_CREATE, Permission.CASE_READ, Permission.CASE_UPDATE,
         Permission.CASE_ASSIGN, Permission.CASE_CLOSE,
         Permission.CASE_READ_PRIVATE_NOTES, Permission.CASE_CONFLICT_CHECK,
+          Permission.MATTER_INTELLIGENCE_READ, Permission.MATTER_INTELLIGENCE_WRITE,
+          Permission.MATTER_INTELLIGENCE_REVIEW, Permission.MATTER_INTELLIGENCE_EXPORT,
         Permission.DOC_UPLOAD, Permission.DOC_READ, Permission.DOC_UPDATE,
         Permission.DOC_SHARE, Permission.DOC_SHARE_EXTERNAL, Permission.DOC_DOWNLOAD,
         Permission.DOC_VERSION, Permission.DOC_BULK, Permission.DOC_SIGN,
@@ -247,6 +267,8 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
         Permission.BILLING_TIME_TRACK, Permission.BILLING_REPORT,
         Permission.NOTIF_READ,
         Permission.AUDIT_READ,
+        Permission.ORCHESTRATION_CREATE, Permission.ORCHESTRATION_READ,
+        Permission.ORCHESTRATION_CANCEL, Permission.ORCHESTRATION_APPROVE,
         Permission.MISSION_COMMAND_READ, Permission.MISSION_COMMAND_CREATE,
         Permission.MISSION_RUN_START, Permission.MISSION_RUN_PAUSE, Permission.MISSION_RUN_RESUME,
         Permission.MISSION_AGENT_ASSIGN,
@@ -257,22 +279,27 @@ ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
 
     Role.PARALEGAL: frozenset([
         Permission.CLIENT_READ,
+        Permission.MATTER_INTELLIGENCE_READ, Permission.MATTER_INTELLIGENCE_WRITE,
         Permission.CASE_READ, Permission.CASE_UPDATE,
         Permission.DOC_UPLOAD, Permission.DOC_READ, Permission.DOC_DOWNLOAD,
         Permission.DOC_VERSION, Permission.DOC_BULK,
         Permission.MSG_SEND, Permission.MSG_READ, Permission.MSG_CREATE_THREAD,
         Permission.BILLING_READ, Permission.BILLING_TIME_TRACK,
         Permission.NOTIF_READ,
+        Permission.ORCHESTRATION_CREATE, Permission.ORCHESTRATION_READ,
         Permission.VOICE_COMMAND_READ,
     ]),
 
     Role.ACCOUNTANT: frozenset([
         Permission.CLIENT_READ,
+        Permission.MATTER_INTELLIGENCE_READ, Permission.MATTER_INTELLIGENCE_WRITE,
+        Permission.MATTER_INTELLIGENCE_REVIEW,
         Permission.DOC_UPLOAD, Permission.DOC_READ, Permission.DOC_DOWNLOAD,
         Permission.BILLING_READ, Permission.BILLING_CREATE, Permission.BILLING_UPDATE,
         Permission.BILLING_TRUST, Permission.BILLING_REPORT, Permission.PAYMENT_PROCESS,
         Permission.NOTIF_READ,
         Permission.AUDIT_READ,
+        Permission.ORCHESTRATION_CREATE, Permission.ORCHESTRATION_READ,
     ]),
 
     Role.CLIENT: frozenset([
@@ -380,6 +407,9 @@ async def get_current_user(
         )
     try:
         payload = decode_access_token(credentials.credentials)
+        jti = payload.get("jti")
+        if isinstance(jti, str) and await is_jti_blocklisted(jti):
+            raise TokenError("Token has been revoked")
         user = CurrentUser(payload)
     except TokenError as exc:
         raise HTTPException(

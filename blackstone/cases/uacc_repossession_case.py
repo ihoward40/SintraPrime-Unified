@@ -4,6 +4,7 @@ Live case script: UACC repossession deficiency.
 Evaluates: UACC is collecting an alleged deficiency balance from a vehicle
 repossession; debtor challenges the deficiency calculation and notices.
 """
+
 from __future__ import annotations
 
 from blackstone.engines import BlackstoneOrchestrator
@@ -19,9 +20,7 @@ from blackstone.models import (
 
 
 def build_case():
-    orchestrator = BlackstoneOrchestrator(
-        agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"]
-    )
+    orchestrator = BlackstoneOrchestrator(agents=["AGENT-HERMES-2-0", "AGENT-BLACKSTONE-2-0"])
     jurisdiction = Jurisdiction(name="United States", level="federal")
     orchestrator.register_jurisdiction(jurisdiction)
 

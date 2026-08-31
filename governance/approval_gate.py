@@ -45,8 +45,8 @@ class ApprovalGate:
             proceed_with_payment()
     """
 
-    DEFAULT_TIMEOUT_SECONDS = 300   # 5 minutes
-    DEFAULT_EXPIRY_HOURS = 24       # Requests expire after 24 hours if not acted on
+    DEFAULT_TIMEOUT_SECONDS = 300  # 5 minutes
+    DEFAULT_EXPIRY_HOURS = 24  # Requests expire after 24 hours if not acted on
 
     def __init__(
         self,
@@ -121,7 +121,9 @@ class ApprovalGate:
 
         logger.info(
             "Approval request %s created for action '%s' (status=%s)",
-            req.id, action, req.status.value
+            req.id,
+            action,
+            req.status.value,
         )
         return req
 
@@ -139,8 +141,11 @@ class ApprovalGate:
         with self._lock:
             req = self._requests.get(request_id)
             if not req or req.status != ApprovalStatus.PENDING:
-                logger.warning("Cannot approve request %s (status=%s)",
-                               request_id, req.status.value if req else "NOT_FOUND")
+                logger.warning(
+                    "Cannot approve request %s (status=%s)",
+                    request_id,
+                    req.status.value if req else "NOT_FOUND",
+                )
                 return False
             if req.is_expired:
                 req.status = ApprovalStatus.EXPIRED

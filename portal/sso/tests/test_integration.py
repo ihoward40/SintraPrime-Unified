@@ -7,6 +7,7 @@ Tests the full SSO flow end-to-end:
   - SessionMiddleware fail-closed behaviour on protected routes
   - Full login flow: authorize → callback → protected route → refresh → logout
 """
+
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -31,6 +32,7 @@ from portal.sso import (
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def _make_token(user_id="u1", provider="okta", ttl_seconds=3600) -> SessionToken:
     now = datetime.now(UTC)
     return SessionToken(
@@ -45,6 +47,7 @@ def _make_token(user_id="u1", provider="okta", ttl_seconds=3600) -> SessionToken
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. SSO __init__.py exports
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestSSOModuleExports:
     def test_all_phase21c_components_exported(self):
@@ -73,6 +76,7 @@ class TestSSOModuleExports:
 # 2. RedisSessionStore constructor fix
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestRedisSessionStoreConstructor:
     def test_raises_without_args(self):
         """RedisSessionStore must raise ValueError when called with no args."""
@@ -90,9 +94,7 @@ class TestRedisSessionStoreConstructor:
         fake_redis = MagicMock()
         with patch("redis.asyncio.Redis.from_url", return_value=fake_redis) as mock_from_url:
             store = RedisSessionStore(redis_url="redis://localhost:6379/1")
-            mock_from_url.assert_called_once_with(
-                "redis://localhost:6379/1", decode_responses=True
-            )
+            mock_from_url.assert_called_once_with("redis://localhost:6379/1", decode_responses=True)
             assert store.redis is fake_redis
 
     def test_redis_client_takes_precedence_over_url(self):
@@ -107,6 +109,7 @@ class TestRedisSessionStoreConstructor:
 # ─────────────────────────────────────────────────────────────────────────────
 # 3. SessionMiddlewareManager
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestSessionMiddlewareManagerIntegration:
     def setup_method(self):
@@ -151,10 +154,20 @@ class TestSessionMiddlewareManagerIntegration:
     def test_session_id_is_deterministic_for_same_inputs(self):
         """Same user_id + issued_at must produce the same session ID."""
         now = datetime.now(UTC)
-        t1 = SessionToken(user_id="u3", email="u3@example.com", provider="google",
-                          issued_at=now, expires_at=now + timedelta(hours=1))
-        t2 = SessionToken(user_id="u3", email="u3@example.com", provider="google",
-                          issued_at=now, expires_at=now + timedelta(hours=1))
+        t1 = SessionToken(
+            user_id="u3",
+            email="u3@example.com",
+            provider="google",
+            issued_at=now,
+            expires_at=now + timedelta(hours=1),
+        )
+        t2 = SessionToken(
+            user_id="u3",
+            email="u3@example.com",
+            provider="google",
+            issued_at=now,
+            expires_at=now + timedelta(hours=1),
+        )
         id1 = self.manager.create_session(t1)
         id2 = self.manager.create_session(t2)
         assert id1 == id2
@@ -164,9 +177,11 @@ class TestSessionMiddlewareManagerIntegration:
 # 4. TokenRefreshManager
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestTokenRefreshManagerIntegration:
     def test_circuit_breaker_opens_after_max_failures(self):
         """Circuit breaker must open after max_failures consecutive failures."""
+
         async def _failing_callback(token):
             return None
 
@@ -182,6 +197,7 @@ class TestTokenRefreshManagerIntegration:
 
     def test_circuit_breaker_resets_on_success(self):
         """Circuit breaker must close after a successful refresh."""
+
         async def _ok_callback(token):
             return True
 
@@ -227,6 +243,7 @@ class TestTokenRefreshManagerIntegration:
 # 5. SessionMiddleware fail-closed behaviour
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestSessionMiddlewareFailClosed:
     """Test that SessionMiddleware returns 401 on protected routes without a valid session."""
 
@@ -235,6 +252,7 @@ class TestSessionMiddlewareFailClosed:
             session_secret="test-secret-32-bytes-long-enough!",
             session_ttl_seconds=3600,
         )
+
         # Create a trivial ASGI app that always returns 200
         async def _inner_app(scope, receive, send):
             await send({"type": "http.response.start", "status": 200, "headers": []})
@@ -291,6 +309,7 @@ class TestSessionMiddlewareFailClosed:
 # ─────────────────────────────────────────────────────────────────────────────
 # 6. portal/main.py wiring smoke test (scoped to avoid pre-existing case.py bug)
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestMainPyWiring:
     """Smoke tests for Phase 21D wiring in portal/main.py.
@@ -355,6 +374,7 @@ class TestMainPyWiring:
         """portal/main.py must parse without syntax errors."""
         import ast
         import pathlib
+
         src = (pathlib.Path(__file__).parent.parent.parent / "main.py").read_text()
         tree = ast.parse(src)  # raises SyntaxError if invalid
         assert tree is not None

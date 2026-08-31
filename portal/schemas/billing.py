@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 # ── Time entries ──────────────────────────────────────────────────────────────
 
+
 class TimeEntryCreate(BaseModel):
     client_id: uuid.UUID | None = None
     case_id: uuid.UUID | None = None
@@ -56,6 +57,7 @@ class TimeEntryResponse(BaseModel):
 
 # ── Expenses ──────────────────────────────────────────────────────────────────
 
+
 class ExpenseCreate(BaseModel):
     client_id: uuid.UUID | None = None
     case_id: uuid.UUID | None = None
@@ -85,6 +87,7 @@ class ExpenseResponse(BaseModel):
 
 
 # ── Invoices ──────────────────────────────────────────────────────────────────
+
 
 class InvoiceLineItemCreate(BaseModel):
     description: str
@@ -147,6 +150,7 @@ class InvoiceListResponse(BaseModel):
 
 # ── Payments ──────────────────────────────────────────────────────────────────
 
+
 class PaymentCreate(BaseModel):
     invoice_id: uuid.UUID | None = None
     client_id: uuid.UUID
@@ -175,10 +179,13 @@ class PaymentResponse(BaseModel):
 
 # ── Trust Accounting ──────────────────────────────────────────────────────────
 
+
 class TrustTransactionCreate(BaseModel):
     client_id: uuid.UUID
     matter_id: uuid.UUID | None = None
-    transaction_type: str = Field(..., pattern=r"^(deposit|withdrawal|disbursement|transfer|refund)$")
+    transaction_type: str = Field(
+        ..., pattern=r"^(deposit|withdrawal|disbursement|transfer|refund)$"
+    )
     amount: float = Field(..., gt=0)
     description: str = Field(..., min_length=1)
     reference: str | None = None
@@ -201,6 +208,7 @@ class TrustTransactionResponse(BaseModel):
 
 
 # ── Reports ───────────────────────────────────────────────────────────────────
+
 
 class BillingReportRequest(BaseModel):
     date_from: date

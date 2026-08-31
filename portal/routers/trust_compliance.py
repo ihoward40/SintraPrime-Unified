@@ -20,7 +20,7 @@ HOWARD_POLICY_PACK: Dict[str, Any] = {
         "call",
         "mail",
         "serve",
-        "post"
+        "post",
     ],
     "evidence_rule": "Every claim must be tied to email, screenshot, PDF, credit report, statement, contract, notice, court record, or payment receipt.",
     "active_cases": [
@@ -35,7 +35,7 @@ HOWARD_POLICY_PACK: Dict[str, Any] = {
         "SAP / FMCSA",
         "Expungement",
         "Funding / Grants",
-        "TikTok Shop"
+        "TikTok Shop",
     ],
     "approved_public_theories": [
         "FCRA inaccurate reporting",
@@ -53,7 +53,7 @@ HOWARD_POLICY_PACK: Dict[str, Any] = {
         "unfair or deceptive acts or practices",
         "consumer reporting dispute preservation",
         "evidence preservation",
-        "administrative notice and cure"
+        "administrative notice and cure",
     ],
     "prohibited_outputs": [
         "unsupported legal conclusions",
@@ -64,13 +64,15 @@ HOWARD_POLICY_PACK: Dict[str, Any] = {
         "claims that private or indigenous status exempts public law",
         "company contact without approval",
         "guaranteed lawsuit outcomes",
-        "threats not supported by evidence"
-    ]
+        "threats not supported by evidence",
+    ],
 }
+
 
 class AnalyzeRequest(BaseModel):
     document_text: str
     document_type: str
+
 
 class AnalyzeResponse(BaseModel):
     risk_tags: List[str]
@@ -78,13 +80,16 @@ class AnalyzeResponse(BaseModel):
     compliance_score: float
     recommendations: List[str]
 
+
 class RewriteRequest(BaseModel):
     document_text: str
     risk_tags: List[str]
 
+
 class RewriteResponse(BaseModel):
     rewritten_text: str
     changes_made: List[str]
+
 
 def detect_risks(text: str) -> List[str]:
     lowered = text.lower()
@@ -102,7 +107,7 @@ def detect_risks(text: str) -> List[str]:
         "not subject to": "public-law exemption claim risk",
         "guaranteed": "guarantee language risk",
         "steal": "unsupported accusation risk",
-        "fraud": "fraud allegation requires evidence support"
+        "fraud": "fraud allegation requires evidence support",
     }
 
     for term, tag in prohibited_terms.items():
@@ -130,11 +135,12 @@ def detect_risks(text: str) -> List[str]:
 
     return risks
 
+
 def build_safety_gates(risks: List[str]) -> List[str]:
     gates = [
         "NO_EXTERNAL_ACTION_WITHOUT_APPROVAL",
         "EVIDENCE_REQUIRED_FOR_EVERY_CLAIM",
-        "NO_UNSUPPORTED_CONCLUSIONS"
+        "NO_UNSUPPORTED_CONCLUSIONS",
     ]
 
     if any("litigation" in risk.lower() for risk in risks):
@@ -149,10 +155,14 @@ def build_safety_gates(risks: List[str]) -> List[str]:
     if any("court-record" in risk for risk in risks):
         gates.append("DOCKET_AND_DISPOSITION_REQUIRED")
 
-    if any("exemption" in risk.lower() or "a4v" in risk.lower() or "cusip" in risk.lower() for risk in risks):
+    if any(
+        "exemption" in risk.lower() or "a4v" in risk.lower() or "cusip" in risk.lower()
+        for risk in risks
+    ):
         gates.append("REMOVE_HIGH_RISK_THEORY_FROM_PUBLIC_DOCUMENT")
 
     return gates
+
 
 def compliance_score(risks: List[str], text: str) -> float:
     score = 1.0
@@ -166,14 +176,19 @@ def compliance_score(risks: List[str], text: str) -> float:
         "silence equals agreement",
         "exempt from",
         "not subject to",
-        "guaranteed"
+        "guaranteed",
     ]
 
     for marker in high_risk_markers:
         if marker in lowered:
             score -= 0.15
 
-    if "evidence" in lowered or "screenshot" in lowered or "credit report" in lowered or "pdf" in lowered:
+    if (
+        "evidence" in lowered
+        or "screenshot" in lowered
+        or "credit report" in lowered
+        or "pdf" in lowered
+    ):
         score += 0.05
 
     if "approval required" in lowered or "external action locked" in lowered:
@@ -181,30 +196,42 @@ def compliance_score(risks: List[str], text: str) -> float:
 
     return max(0.0, min(1.0, round(score, 2)))
 
+
 def build_recommendations(risks: List[str], text: str) -> List[str]:
     recommendations = [
         "Maintain evidence-intake-only status until approval is given.",
         "Attach each factual claim to a source document before drafting demands.",
         "Use court-safe language: accuracy, completeness, accounting, reporting, collection authority, and procedural fairness.",
-        "Separate private strategy notes from public-facing filings."
+        "Separate private strategy notes from public-facing filings.",
     ]
 
     if any("external-action" in risk.lower() for risk in risks):
-        recommendations.append("Do not send, file, contact, submit, serve, mail, email, or call without explicit approval.")
+        recommendations.append(
+            "Do not send, file, contact, submit, serve, mail, email, or call without explicit approval."
+        )
 
     if any("FCRA" in risk for risk in risks):
-        recommendations.append("Collect the credit report, bureau dispute, reinvestigation result, furnisher response, and disputed-status screenshot.")
+        recommendations.append(
+            "Collect the credit report, bureau dispute, reinvestigation result, furnisher response, and disputed-status screenshot."
+        )
 
     if any("FDCPA" in risk for risk in risks):
-        recommendations.append("Collect the collection notice, validation request, collector response, payment history, and chain-of-title documents.")
+        recommendations.append(
+            "Collect the collection notice, validation request, collector response, payment history, and chain-of-title documents."
+        )
 
     if any("court-record" in risk for risk in risks):
-        recommendations.append("Collect docket number, charge, disposition, sentencing record, fines/restitution status, and eligibility notes.")
+        recommendations.append(
+            "Collect docket number, charge, disposition, sentencing record, fines/restitution status, and eligibility notes."
+        )
 
     if any("unsupported" in risk.lower() or "fraud" in risk.lower() for risk in risks):
-        recommendations.append("Replace accusation language with documented discrepancy language unless proof is attached.")
+        recommendations.append(
+            "Replace accusation language with documented discrepancy language unless proof is attached."
+        )
 
     return recommendations
+
 
 @router.post("/api/trust-compliance/analyze", response_model=AnalyzeResponse)
 async def analyze(request: AnalyzeRequest):
@@ -214,15 +241,14 @@ async def analyze(request: AnalyzeRequest):
     recs = build_recommendations(risks, request.document_text)
 
     return AnalyzeResponse(
-        risk_tags=risks,
-        safety_gates=gates,
-        compliance_score=score,
-        recommendations=recs
+        risk_tags=risks, safety_gates=gates, compliance_score=score, recommendations=recs
     )
+
 
 @router.get("/api/trust-compliance/policies")
 async def get_policies():
     return HOWARD_POLICY_PACK
+
 
 @router.post("/api/trust-compliance/rewrite", response_model=RewriteResponse)
 async def rewrite(request: RewriteRequest):
@@ -235,7 +261,7 @@ async def rewrite(request: RewriteRequest):
         "self-executing": "subject to documented review and lawful approval",
         "accepted for value": "disputed and preserved for evidence review",
         "not subject to": "request clarification of the applicable authority and procedure for",
-        "exempt from": "request clarification of the applicable authority and procedure for"
+        "exempt from": "request clarification of the applicable authority and procedure for",
     }
 
     changes = []
@@ -254,10 +280,8 @@ async def rewrite(request: RewriteRequest):
 
     changes.append("Added court-safe evidence statement.")
 
-    return RewriteResponse(
-        rewritten_text=rewritten,
-        changes_made=changes
-    )
+    return RewriteResponse(rewritten_text=rewritten, changes_made=changes)
+
 
 @router.get("/api/trust-compliance/health")
 async def health():
@@ -266,5 +290,5 @@ async def health():
         "version": "1.0.0",
         "policy_pack": "HOWARD_RECOVERY_POLICY_PACK_v1",
         "mode": "evidence_intake_only",
-        "external_action": "locked"
+        "external_action": "locked",
     }

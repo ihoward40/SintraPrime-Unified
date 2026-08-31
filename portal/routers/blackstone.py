@@ -5,6 +5,7 @@ Exposes governance evaluation endpoints on top of the BRA engines.
 This is a lightweight integration point; it does not require a database
 and operates on in-memory governance objects.
 """
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -222,7 +223,11 @@ async def intake_case(
             object_id=entry.object_id,
             action=entry.action,
             actor=entry.actor,
-            payload={"prior_hash": entry.prior_hash, "record_hash": entry.record_hash, **entry.payload},
+            payload={
+                "prior_hash": entry.prior_hash,
+                "record_hash": entry.record_hash,
+                **entry.payload,
+            },
             parent_id=entry.prior_hash or None,
             provenance_hash=entry.record_hash,
             tenant_id=request.tenant_id,
@@ -265,8 +270,12 @@ async def get_case_status(
     """
     Retrieve all Blackstone evaluations and ledger entries for a case.
     """
-    evaluations = await BlackstoneEvaluationService.get_by_case(db, case_id=case_id, tenant_id=tenant_id)
-    chain = await EvidenceLedgerService.get_chain(db, object_type="case", object_id=case_id, tenant_id=tenant_id)
+    evaluations = await BlackstoneEvaluationService.get_by_case(
+        db, case_id=case_id, tenant_id=tenant_id
+    )
+    chain = await EvidenceLedgerService.get_chain(
+        db, object_type="case", object_id=case_id, tenant_id=tenant_id
+    )
 
     eval_responses = [
         EvaluateResponse(
@@ -353,7 +362,9 @@ async def evaluate_claim(
 
     orchestrator.add_claim(claim)
 
-    result = orchestrator.evaluate(request.claim.id, question=request.question, actor="AGENT-BLACKSTONE-2-0")
+    result = orchestrator.evaluate(
+        request.claim.id, question=request.question, actor="AGENT-BLACKSTONE-2-0"
+    )
 
     # Persist evaluation snapshot and provenance ledger entries
     snapshot = await BlackstoneEvaluationService.save(
@@ -370,7 +381,11 @@ async def evaluate_claim(
             object_id=entry.object_id,
             action=entry.action,
             actor=entry.actor,
-            payload={"prior_hash": entry.prior_hash, "record_hash": entry.record_hash, **entry.payload},
+            payload={
+                "prior_hash": entry.prior_hash,
+                "record_hash": entry.record_hash,
+                **entry.payload,
+            },
             parent_id=entry.prior_hash or None,
             provenance_hash=entry.record_hash,
             tenant_id=request.tenant_id,

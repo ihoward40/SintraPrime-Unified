@@ -41,7 +41,9 @@ class VoiceCommand(Base):
 
     source: Mapped[str] = mapped_column(String(40), nullable=False)
     raw_transcript_hash: Mapped[str] = mapped_column(String(80), nullable=False)
-    raw_transcript: Mapped[str | None] = mapped_column(Text, nullable=True)  # only when retention=full
+    raw_transcript: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # only when retention=full
     normalized_intent: Mapped[str] = mapped_column(Text, nullable=False)
     requested_capability: Mapped[str | None] = mapped_column(String(40), nullable=True)
     resolved_capability: Mapped[str] = mapped_column(String(40), nullable=False)
@@ -59,7 +61,9 @@ class VoiceCommand(Base):
     provider_mock: Mapped[bool | None] = mapped_column(nullable=True)
     artifacts: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
 
-    audit_log_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("audit_logs.id"), nullable=True)
+    audit_log_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("audit_logs.id"), nullable=True
+    )
     # Timestamps are set client-side (never server_default/onupdate). Under the
     # async engine, reading a column back after flush() (not commit()+refresh())
     # to satisfy a column with a *server-side* default/onupdate expression can
@@ -144,7 +148,9 @@ class VoiceCommandReceipt(Base):
     receipt_type: Mapped[str] = mapped_column(String(40), nullable=False)
     receipt_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     result: Mapped[str] = mapped_column(String(40), nullable=False)
-    audit_log_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("audit_logs.id"), nullable=True)
+    audit_log_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("audit_logs.id"), nullable=True
+    )
     evidence_refs: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC)

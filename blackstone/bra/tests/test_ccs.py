@@ -1,6 +1,7 @@
 """
 Tests for BRA CCS Scorer — BGS-01 compliance.
 """
+
 import pytest
 
 from blackstone.bra.ccs import CCS_WEIGHTS, CCSScorer
@@ -113,9 +114,16 @@ class TestMaturityFloor:
 
 
 class TestMaturityThresholds:
-    @pytest.mark.parametrize(("stage", "min_ccs"), [
-        ("STG-1", 40.0), ("STG-2", 55.0), ("STG-3", 68.0),
-        ("STG-4", 78.0), ("STG-5", 82.0), ("STG-6", 92.0),
-    ])
+    @pytest.mark.parametrize(
+        ("stage", "min_ccs"),
+        [
+            ("STG-1", 40.0),
+            ("STG-2", 55.0),
+            ("STG-3", 68.0),
+            ("STG-4", 78.0),
+            ("STG-5", 82.0),
+            ("STG-6", 92.0),
+        ],
+    )
     def test_minimum_ccs(self, stage, min_ccs):
         assert CCSScorer.minimum_ccs_for_stage(stage) == min_ccs

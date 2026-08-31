@@ -1,0 +1,56 @@
+[
+  {
+    "id": "DE-CONFLICT-DAPT-BANKRUPTCY",
+    "issue": "Delaware DAPT provides strong state-law asset protection, but federal bankruptcy law may override DAPT provisions through the Bankruptcy Code's fraudulent transfer provisions when the settlor files for bankruptcy within the lookback period.",
+    "jurisdiction": "DE",
+    "competing_rules": [
+      "DE-DAPT-ASSET-PROTECTION",
+      "DE-DAPT-LIMITATIONS-PERIOD"
+    ],
+    "competing_authorities": [
+      "DE-TRUST-DAPT-4901",
+      "DE-TRUST-DAPT-4901"
+    ],
+    "authority_ranking": [
+      {"authority_id": "DE-TRUST-DAPT-4901", "authority_type": "DELAWARE_CODE", "authority_weight": 850}
+    ],
+    "date_relationship": "DAPT effective 2015-07-01. Federal bankruptcy fraudulent transfer provisions are ongoing.",
+    "factual_distinctions": [
+      "State DAPT governs creditor-settlor trust disputes in state court.",
+      "Federal bankruptcy court applies federal fraudulent transfer law to DAPT transfers."
+    ],
+    "unresolved_questions": [
+      "Whether a DAPT transfer made shortly before bankruptcy filing is avoidable under 11 U.S.C. § 548.",
+      "Whether the DAPT 'independent trustee' requirement satisfies federal bankruptcy good faith standards."
+    ],
+    "recommended_controlling_rule": null,
+    "confidence": 0.0,
+    "human_review_required": true
+  },
+  {
+    "id": "DE-CONFLICT-DAPT-SELF-SETTLED-VALIDITY",
+    "issue": "DAPT protection requires settlor to receive no direct benefit. Courts are examining whether certain trust structures that reserve distributions or beneficial interests to the settlor constitute 'direct benefits' that void DAPT protection.",
+    "jurisdiction": "DE",
+    "competing_rules": [
+      "DE-DAPT-ASSET-PROTECTION"
+    ],
+    "competing_authorities": [
+      "DE-TRUST-DAPT-4901"
+    ],
+    "authority_ranking": [
+      {"authority_id": "DE-TRUST-DAPT-4901", "authority_type": "DELAWARE_CODE", "authority_weight": 850}
+    ],
+    "date_relationship": "Ongoing litigation and regulatory guidance.",
+    "factual_distinctions": [
+      "Distributions made at independent trustee discretion vs. mandatory income to settlor.",
+      "Settlor as power holder vs. settlor as beneficiary."
+    ],
+    "unresolved_questions": [
+      "What constitutes 'direct benefit' sufficient to void DAPT protection.",
+      "Whether ASC stacking or other multi-trust structures comply."
+    ],
+    "recommended_controlling_rule": null,
+    "confidence": 0.0,
+    "human_review_required": true
+  }
+]

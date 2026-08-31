@@ -1,9 +1,11 @@
 """PostgreSQL raw-SQL bootstrap and affected ORM authority certification."""
+
 from __future__ import annotations
 
 import asyncio
 import os
 import uuid
+from pathlib import Path
 
 import psycopg2
 import pytest
@@ -27,16 +29,9 @@ pytestmark = pytest.mark.postgresql
 
 
 def _database_url() -> str:
-    url = os.environ.get("POSTGRESQL_BOOTSTRAP_TEST_DATABASE_URL") or os.environ.get(
-        "DATABASE_URL"
-    )
+    url = os.environ.get("POSTGRESQL_BOOTSTRAP_TEST_DATABASE_URL") or os.environ.get("DATABASE_URL")
     if not url:
         pytest.skip("PostgreSQL bootstrap certification database URL not configured")
-    if not url.startswith("postgresql://") and not url.startswith("postgresql+"):
-        pytest.skip(
-            f"DATABASE_URL is not a PostgreSQL connection string "
-            f"(got: {url[:40]}...) — PostgreSQL bootstrap tests require PostgreSQL"
-        )
     return url
 
 
@@ -96,40 +91,16 @@ def _seed_case_user(url: str) -> tuple[uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUI
                 INSERT INTO cases (id, tenant_id, client_id, lead_attorney_id, case_number, title)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 """,
-                (str(case_id), str(tenant_id), str(client_id), str(user_id), f"PRB-{case_id.hex[:8]}", "PR-B Bootstrap Case"),
+                (
+                    str(case_id),
+                    str(tenant_id),
+                    str(client_id),
+                    str(user_id),
+                    f"PRB-{case_id.hex[:8]}",
+                    "PR-B Bootstrap Case",
+                ),
             )
     return tenant_id, client_id, user_id, case_id
-
-
-def test_bootstrap_expected_tables_include_tenant_principals() -> None:
-    assert "tenant_principals" in EXPECTED_TABLES
-
-
-def test_bootstrap_expected_tables_include_run_approvals() -> None:
-    assert "mission_control_run_approvals" in EXPECTED_TABLES
-
-
-def test_bootstrap_expected_tables_include_audit_logs() -> None:
-    assert "audit_logs" in EXPECTED_TABLES
-
-
-def test_bootstrap_expected_tables_include_missions() -> None:
-    assert "missions" in EXPECTED_TABLES
-
-
-def test_bootstrap_expected_tables_include_runs() -> None:
-    assert "runs" in EXPECTED_TABLES
-
-
-def test_mission_runs_migration_precedes_run_approvals_in_sequence() -> None:
-    """PG-BOOTSTRAP-001 regression: runs table must exist before approval FK."""
-    paths = [str(path).replace("\\", "/") for path in MIGRATION_SEQUENCE]
-    mission_runs_idx = paths.index("portal/migrations/add_mission_control_mission_runs.sql")
-    run_approvals_idx = paths.index("portal/migrations/add_mission_control_run_approvals.sql")
-    assert mission_runs_idx < run_approvals_idx, (
-        f"add_mission_control_mission_runs.sql (index {mission_runs_idx}) must precede "
-        f"add_mission_control_run_approvals.sql (index {run_approvals_idx})"
-    )
 
 
 def test_authoritative_migration_sequence_is_ordered() -> None:
@@ -137,44 +108,18 @@ def test_authoritative_migration_sequence_is_ordered() -> None:
         "portal/migrations/portal_schema.sql",
         "portal/migrations/add_evidence_snapshots.sql",
         "portal/migrations/add_audit_records.sql",
-        "portal/migrations/add_tenant_principal.sql",
         "portal/migrations/add_mission_control_command_ledger.sql",
-        "portal/migrations/add_mission_control_mission_runs.sql",
         "portal/migrations/add_mission_control_run_control_projection.sql",
-        "portal/migrations/add_mission_control_run_approvals.sql",
+        "portal/migrations/add_adaptive_orchestration_domain.sql",
+        "portal/migrations/align_orchestration_identity_fk_types.sql",
     ]
 
 
 def test_postgresql_orm_foreign_key_column_types_are_internally_consistent() -> None:
-    """Guard the CI create_all path against UUID/VARCHAR FK drift.
-
-    This test inspects Base.metadata using the PostgreSQL dialect.  When
-    other test suites import portal.main (which transitively imports all
-    routers including those with PostgreSQL-specific column types), extra
-    tables may be registered on Base.metadata that have FK type mismatches
-    against the core portal tables.  This test is only meaningful when all
-    production models are registered AND running against PostgreSQL.  Skip
-    when PostgreSQL is not configured to avoid false positives from partial
-    metadata registration in SQLite-only test sessions.
-
-    PRE-EXISTING DEFECT EXCLUSION: The notifications router defines an inline
-    Notification model with tenant_id UUID FK to tenants.id String(36). This
-    is a genuine pre-existing production schema defect (PRODUCTION_SCHEMA_DEFECT_FOUND)
-    but it is NOT part of the Option 5 candidate.  We exclude the known
-    pre-existing mismatched table from this Option 5 certification check
-    and report it separately rather than letting it block Option 5.
-    """
-    _database_url()  # skip if PostgreSQL is not available
-
-    # Tables that are part of the authoritative raw-SQL bootstrap (portal_schema.sql)
-    # and Option 5 migrations.  Only these tables are certified by this test.
-    bootstrap_tables = set(EXPECTED_TABLES)
-
+    """Guard the CI create_all path against UUID/VARCHAR FK drift."""
     dialect = postgresql.dialect()
     mismatches = []
     for table in Base.metadata.tables.values():
-        if table.name not in bootstrap_tables:
-            continue
         for column in table.columns:
             for fk in column.foreign_keys:
                 referred = fk.column
@@ -185,18 +130,27 @@ def test_postgresql_orm_foreign_key_column_types_are_internally_consistent() -> 
                         f"{table.name}.{column.name} {local_type} -> "
                         f"{referred.table.name}.{referred.name} {referred_type}"
                     )
-    assert mismatches == [], f"FK type mismatches in bootstrap tables: {mismatches}"
+    assert mismatches == []
+
+
+def test_orchestration_identity_compatibility_migration_covers_known_drift() -> None:
+    sql = Path("portal/migrations/align_orchestration_identity_fk_types.sql")
+    migration = sql.read_text(encoding="utf-8")
+    expected_references = {
+        "('orchestration_runs', 'tenant_id', 'tenants', 'id', 'NO ACTION')",
+        "('orchestration_runs', 'created_by', 'users', 'id', 'NO ACTION')",
+        "('orchestration_approval_requests', 'principal_id', 'users', 'id', 'NO ACTION')",
+        "('orchestration_linkages', 'tenant_id', 'tenants', 'id', 'NO ACTION')",
+        "('orchestration_principal_authorities', 'tenant_id', 'tenants', 'id', 'NO ACTION')",
+        "('orchestration_principal_authorities', 'user_id', 'users', 'id', 'NO ACTION')",
+        "('memory_vault', 'tenant_id', 'tenants', 'id', 'CASCADE')",
+    }
+    assert all(reference in migration for reference in expected_references)
+    assert "tenant_id::text = NULLIF(current_setting('app.current_tenant_id'" in migration
 
 
 def test_postgresql_race_prepare_schema_create_all_path_executes() -> None:
-    """Execute the same ORM Base.metadata.create_all path used by postgresql-race CI.
-
-    PRE-EXISTING DEFECT EXCLUSION: Only creates tables that are part of the
-    authoritative raw-SQL bootstrap (EXPECTED_TABLES).  Other tables registered
-    on Base.metadata by router imports (e.g., notifications with UUID/VARCHAR
-    FK mismatch) are excluded to avoid the pre-existing production schema defect
-    blocking Option 5 certification.
-    """
+    """Execute the same ORM Base.metadata.create_all path used by postgresql-race CI."""
     url = _database_url()
     with psycopg2.connect(psycopg2_url(url)) as conn:
         conn.autocommit = True
@@ -204,20 +158,11 @@ def test_postgresql_race_prepare_schema_create_all_path_executes() -> None:
             cur.execute("DROP SCHEMA IF EXISTS public CASCADE")
             cur.execute("CREATE SCHEMA public")
 
-    # Build a dependency-ordered list of only bootstrap-authority tables.
-    # SQLAlchemy's create_all with tables= still needs correct ordering
-    # for FK dependencies, so we sort by metadata sorted_tables.
-    bootstrap_table_names = set(EXPECTED_TABLES)
-    bootstrap_tables = [
-        table for table in Base.metadata.sorted_tables
-        if table.name in bootstrap_table_names
-    ]
-
     async def create_schema() -> None:
         engine = create_async_engine(_async_sqlalchemy_url(url), echo=False)
         try:
             async with engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all, tables=bootstrap_tables)
+                await conn.run_sync(Base.metadata.create_all)
         finally:
             await engine.dispose()
 
@@ -327,12 +272,17 @@ def test_live_catalog_constraints_and_uuid_authority(migrated_database_url: str)
                 ORDER BY conname
                 """
             )
-            constraint_defs = "\n".join(f"{name}:{kind}:{definition}" for name, kind, definition in cur.fetchall())
+            constraint_defs = "\n".join(
+                f"{name}:{kind}:{definition}" for name, kind, definition in cur.fetchall()
+            )
             assert "PRIMARY KEY (snapshot_id)" in constraint_defs
             assert "PRIMARY KEY (audit_id)" in constraint_defs
             assert "FOREIGN KEY (case_id) REFERENCES cases(id)" in constraint_defs
             assert "FOREIGN KEY (created_by) REFERENCES users(id)" in constraint_defs
-            assert "FOREIGN KEY (snapshot_id) REFERENCES evidence_snapshots(snapshot_id)" in constraint_defs
+            assert (
+                "FOREIGN KEY (snapshot_id) REFERENCES evidence_snapshots(snapshot_id)"
+                in constraint_defs
+            )
             assert "ON DELETE RESTRICT" in constraint_defs
             assert "CHECK (((status)::text = ANY" in constraint_defs
             assert "CHECK (((verification_status)::text = ANY" in constraint_defs
@@ -345,7 +295,9 @@ def test_live_catalog_constraints_and_uuid_authority(migrated_database_url: str)
                 WHERE tgrelid = 'audit_records'::regclass AND NOT tgisinternal
                 """
             )
-            assert cur.fetchall() == [("trg_audit_record_immutable", "prevent_audit_record_mutation")]
+            assert cur.fetchall() == [
+                ("trg_audit_record_immutable", "prevent_audit_record_mutation")
+            ]
 
             cur.execute(
                 """
@@ -386,9 +338,14 @@ def test_real_orm_crud_uuid_binding_and_audit_immutability(migrated_database_url
             assert found.snapshot_id == snapshot_id
             assert str(found.case_id) == str(case_id)
             assert isinstance(found.snapshot_id, uuid.UUID)
-            assert session.scalars(
-                select(EvidenceSnapshot).where(EvidenceSnapshot.case_id == str(case_id))
-            ).one().snapshot_id == snapshot_id
+            assert (
+                session.scalars(
+                    select(EvidenceSnapshot).where(EvidenceSnapshot.case_id == str(case_id))
+                )
+                .one()
+                .snapshot_id
+                == snapshot_id
+            )
 
             audit = AuditRecord(
                 audit_id=audit_id,
@@ -426,12 +383,20 @@ def test_real_orm_crud_uuid_binding_and_audit_immutability(migrated_database_url
 
         with Session(engine) as session:
             with pytest.raises(Exception, match="audit_records rows cannot be modified"):
-                session.execute(text("UPDATE audit_records SET verification_status = 'failed' WHERE audit_id = :audit_id"), {"audit_id": audit_id})
+                session.execute(
+                    text(
+                        "UPDATE audit_records SET verification_status = 'failed' WHERE audit_id = :audit_id"
+                    ),
+                    {"audit_id": audit_id},
+                )
             session.rollback()
 
         with Session(engine) as session:
             with pytest.raises(Exception, match="audit_records rows cannot be deleted"):
-                session.execute(text("DELETE FROM audit_records WHERE audit_id = :audit_id"), {"audit_id": audit_id})
+                session.execute(
+                    text("DELETE FROM audit_records WHERE audit_id = :audit_id"),
+                    {"audit_id": audit_id},
+                )
             session.rollback()
 
         with Session(engine) as session:
@@ -448,6 +413,9 @@ def test_real_orm_crud_uuid_binding_and_audit_immutability(migrated_database_url
             )
             session.flush()
             session.rollback()
-            assert session.scalar(select(AuditRecord).where(AuditRecord.evidence_hash == "f" * 64)) is None
+            assert (
+                session.scalar(select(AuditRecord).where(AuditRecord.evidence_hash == "f" * 64))
+                is None
+            )
     finally:
         engine.dispose()

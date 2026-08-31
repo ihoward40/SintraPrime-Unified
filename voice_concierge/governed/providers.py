@@ -51,19 +51,50 @@ _CAPABILITY_PATTERNS: list[tuple[list[re.Pattern[str]], VoiceCapability]] = [
         VoiceCapability.EMAIL,
     ),
     (
-        _compile([r"\bcalendar\b", r"\bmeeting\b", r"\bevent\b", r"\bschedule\b", r"\bappointment\b"]),
+        _compile(
+            [r"\bcalendar\b", r"\bmeeting\b", r"\bevent\b", r"\bschedule\b", r"\bappointment\b"]
+        ),
         VoiceCapability.CALENDAR,
     ),
     (
-        _compile([r"\bpay\b", r"\bspend\b", r"\bpurchase\b", r"\bbuy\b", r"\binvoice\b", r"\brefund\b", r"\btransfer funds\b", r"\bwire\b"]),
+        _compile(
+            [
+                r"\bpay\b",
+                r"\bspend\b",
+                r"\bpurchase\b",
+                r"\bbuy\b",
+                r"\binvoice\b",
+                r"\brefund\b",
+                r"\btransfer funds\b",
+                r"\bwire\b",
+            ]
+        ),
         VoiceCapability.PAYMENT,
     ),
     (
-        _compile([r"\bfile (a |an |the )", r"\be-?file\b", r"\bmotion\b", r"\bcourt filing\b", r"\bpleading\b"]),
+        _compile(
+            [
+                r"\bfile (a |an |the )",
+                r"\be-?file\b",
+                r"\bmotion\b",
+                r"\bcourt filing\b",
+                r"\bpleading\b",
+            ]
+        ),
         VoiceCapability.FILING,
     ),
     (
-        _compile([r"\bmessage\b", r"\btext\b", r"\bslack\b", r"\bnotify\b", r"\btweet\b", r"\bpost\b", r"\bpublish\b"]),
+        _compile(
+            [
+                r"\bmessage\b",
+                r"\btext\b",
+                r"\bslack\b",
+                r"\bnotify\b",
+                r"\btweet\b",
+                r"\bpost\b",
+                r"\bpublish\b",
+            ]
+        ),
         VoiceCapability.MESSAGING,
     ),
     (

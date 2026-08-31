@@ -33,6 +33,7 @@ class SnapshotStatus(_enum.StrEnum):
 
     No reverse transitions. No deletion.
     """
+
     ACTIVE = "active"
     SUPERSEDED = "superseded"
     ARCHIVED = "archived"
@@ -52,29 +53,39 @@ class EvidenceSnapshot(Base):
     Hash computation (the hash boundary function) belongs to Step 2;
     this model accepts hashes as inputs without computing them.
     """
+
     __tablename__ = "evidence_snapshots"
 
     # ── Identity ──────────────────────────────────────────────────────
     snapshot_id: Mapped[uuid.UUID] = mapped_column(
-        PortableUUID, primary_key=True, default=uuid.uuid4,
+        PortableUUID,
+        primary_key=True,
+        default=uuid.uuid4,
     )
     case_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("cases.id"), nullable=False, index=True,
+        String(36),
+        ForeignKey("cases.id"),
+        nullable=False,
+        index=True,
     )
 
     # ── Evidence integrity ────────────────────────────────────────────
     evidence_hash: Mapped[str] = mapped_column(
-        String(64), nullable=False,
+        String(64),
+        nullable=False,
         doc="SHA-256 hex digest of immutable evidence content.",
     )
     manifest_hash: Mapped[str] = mapped_column(
-        String(64), nullable=False,
+        String(64),
+        nullable=False,
         doc="SHA-256 hex digest of the evidence manifest.",
     )
 
     # ── Versioning ────────────────────────────────────────────────────
     snapshot_version: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=1,
+        Integer,
+        nullable=False,
+        default=1,
         doc="Monotonically increasing version per case. v1, v2, v3, ...",
     )
 
@@ -86,19 +97,25 @@ class EvidenceSnapshot(Base):
         doc="Server-set creation timestamp. Never modified.",
     )
     created_by: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=False,
+        String(36),
+        ForeignKey("users.id"),
+        nullable=False,
         doc="User who created this snapshot.",
     )
 
     # ── Content metadata ──────────────────────────────────────────────
     evidence_count: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=0,
+        Integer,
+        nullable=False,
+        default=0,
         doc="Number of evidence items included in this snapshot.",
     )
 
     # ── Status ────────────────────────────────────────────────────────
     status: Mapped[str] = mapped_column(
-        String(20), nullable=False, default=SnapshotStatus.ACTIVE,
+        String(20),
+        nullable=False,
+        default=SnapshotStatus.ACTIVE,
         doc="'active', 'superseded', or 'archived'. Forward transitions only.",
     )
 
@@ -118,9 +135,7 @@ class EvidenceSnapshot(Base):
         """
         return {
             "case_id": str(self.case_id),
-            "created_at": (
-                self.created_at.isoformat() if self.created_at else None
-            ),
+            "created_at": (self.created_at.isoformat() if self.created_at else None),
             "created_by": str(self.created_by),
             "evidence_count": self.evidence_count,
             "evidence_hash": self.evidence_hash,

@@ -46,10 +46,14 @@ class MessageHandler:
 
         await handler(event, user_id, tenant_id, db)
 
-    async def _handle_ping(self, event: dict, user_id: str, tenant_id: str, db: AsyncSession) -> None:
+    async def _handle_ping(
+        self, event: dict, user_id: str, tenant_id: str, db: AsyncSession
+    ) -> None:
         await ws_manager.send_to_user(user_id, {"type": "pong"})
 
-    async def _handle_typing_start(self, event: dict, user_id: str, tenant_id: str, db: AsyncSession) -> None:
+    async def _handle_typing_start(
+        self, event: dict, user_id: str, tenant_id: str, db: AsyncSession
+    ) -> None:
         thread_id = event.get("thread_id")
         if not thread_id:
             return
@@ -57,38 +61,52 @@ class MessageHandler:
         from sqlalchemy import select
 
         from ..models.message import MessageThread
-        result = await db.execute(select(MessageThread).where(MessageThread.id == uuid.UUID(thread_id)))
+
+        result = await db.execute(
+            select(MessageThread).where(MessageThread.id == uuid.UUID(thread_id))
+        )
         thread = result.scalar_one_or_none()
         if not thread:
             return
-        for participant_id in (thread.participants or []):
+        for participant_id in thread.participants or []:
             if participant_id != user_id:
-                await ws_manager.send_to_user(participant_id, {
-                    "type": "typing",
-                    "thread_id": thread_id,
-                    "user_id": user_id,
-                    "is_typing": True,
-                })
+                await ws_manager.send_to_user(
+                    participant_id,
+                    {
+                        "type": "typing",
+                        "thread_id": thread_id,
+                        "user_id": user_id,
+                        "is_typing": True,
+                    },
+                )
 
-    async def _handle_typing_stop(self, event: dict, user_id: str, tenant_id: str, db: AsyncSession) -> None:
+    async def _handle_typing_stop(
+        self, event: dict, user_id: str, tenant_id: str, db: AsyncSession
+    ) -> None:
         thread_id = event.get("thread_id")
         if not thread_id:
             return
         from sqlalchemy import select
 
         from ..models.message import MessageThread
-        result = await db.execute(select(MessageThread).where(MessageThread.id == uuid.UUID(thread_id)))
+
+        result = await db.execute(
+            select(MessageThread).where(MessageThread.id == uuid.UUID(thread_id))
+        )
         thread = result.scalar_one_or_none()
         if not thread:
             return
-        for participant_id in (thread.participants or []):
+        for participant_id in thread.participants or []:
             if participant_id != user_id:
-                await ws_manager.send_to_user(participant_id, {
-                    "type": "typing",
-                    "thread_id": thread_id,
-                    "user_id": user_id,
-                    "is_typing": False,
-                })
+                await ws_manager.send_to_user(
+                    participant_id,
+                    {
+                        "type": "typing",
+                        "thread_id": thread_id,
+                        "user_id": user_id,
+                        "is_typing": False,
+                    },
+                )
 
 
 # Singleton

@@ -1,6 +1,7 @@
 """
 Session and Token Data Models
 """
+
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
@@ -12,6 +13,7 @@ class SessionData:
     User session data.
     Immutable reference for session operations.
     """
+
     session_id: str
     user_id: str
     email: str
@@ -34,13 +36,7 @@ class SessionData:
 
     @classmethod
     def create(
-        cls,
-        user_id: str,
-        email: str,
-        issuer: str,
-        audience: str,
-        ttl_seconds: int,
-        **kwargs
+        cls, user_id: str, email: str, issuer: str, audience: str, ttl_seconds: int, **kwargs
     ) -> "SessionData":
         """Create a new session with generated ID."""
         now = datetime.utcnow()
@@ -54,7 +50,7 @@ class SessionData:
             audience=audience,
             created_at=now,
             expires_at=expires_at,
-            **kwargs
+            **kwargs,
         )
 
     def is_expired(self) -> bool:
@@ -81,6 +77,7 @@ class RefreshToken:
     Refresh token for extending sessions.
     Single-use or rotatable depending on implementation.
     """
+
     token_id: str
     session_id: str
     user_id: str
@@ -131,6 +128,7 @@ class TokenPair:
     """
     JWT access token + refresh token pair.
     """
+
     access_token: str
     refresh_token: str
     token_type: str = "Bearer"

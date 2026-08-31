@@ -95,7 +95,11 @@ class InferenceLedger:
             final_output_hash=stable_hash(result.content),
         )
         self.receipts[receipt_id] = finalized
-        cost = result.actual_cost_usd if result.actual_cost_usd is not None else result.estimated_cost_usd
+        cost = (
+            result.actual_cost_usd
+            if result.actual_cost_usd is not None
+            else result.estimated_cost_usd
+        )
         if cost is not None:
             self.daily_total_usd += cost
             self.monthly_total_usd += cost

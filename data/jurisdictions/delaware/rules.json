@@ -1,0 +1,1097 @@
+[
+  {
+    "id": "DE-TRUST-APPLICABILITY-ACT",
+    "jurisdiction": "DE",
+    "domain": "trust_law",
+    "topic": "uniform trust code applicability statutory trust common law trust",
+    "rule_statement": "Delaware distinguishes between common-law express trusts governed by 12 Del. C. §§ 3301-3334 (Delaware Trust Act) and statutory trusts governed by 12 Del. C. §§ 3342-3365 (Delaware Statutory Trust Act). The Delaware Trust Act does not apply to trusts formed under the DSTA.",
+    "rule_logic": {
+      "conditions": [
+        "trust_is_statutory_business_series_trust"
+      ],
+      "conclusion": "DSTA_APPLIES_12DelC3342"
+    },
+    "authority_ids": [
+      "DE-TRUST-DSTA-3342",
+      "DE-TRUST-ACT-3301"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.94,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "mixed trust",
+        "rule": "A trust that combines statutory and common-law features requires analysis of which act governs each provision."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-TRUST-CREATION-REQUIREMENTS",
+    "jurisdiction": "DE",
+    "domain": "trust_law",
+    "topic": "trust creation settlor capacity intent property lawful purpose beneficiary",
+    "rule_statement": "A Delaware express trust is created when the settlor declares a trust or transfers property to a trustee, with intent to create a trust, for a lawful purpose, with ascertainable beneficiaries or a definite oriable class. Written trust instrument is required for real property transfers; oral trusts are recognized for personal property subject to proof.",
+    "rule_logic": {
+      "conditions": [
+        "settlor_capacity",
+        "intent_to_create_trust",
+        "trust_property",
+        "lawful_purpose",
+        "beneficiary_definite_or_ascertainable"
+      ],
+      "conclusion": "EXPRESS_TRUST_CREATED"
+    },
+    "authority_ids": [
+      "DE-TRUST-ACT-3301"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.91,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "oral trust personal property",
+        "rule": "Oral trusts for personal property are recognized in Delaware but require proof by clear and convincing evidence."
+      },
+      {
+        "issue": "charitable purpose trust",
+        "rule": "A trust for a definite charitable purpose does not require ascertainable individual beneficiaries."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-TRUST-REVOCABLE-EXPOSURE",
+    "jurisdiction": "DE",
+    "domain": "trust_law",
+    "topic": "revocable trust settlor creditor exposure",
+    "rule_statement": "A revocable trust in Delaware is treated as the settlor's property during lifetime. Settlor's creditors may reach assets in a revocable trust, including through attachment, garnishment, or judgment execution, because the settlor retains the power to revoke and control.",
+    "rule_logic": {
+      "conditions": [
+        "trust_is_revocable",
+        "settlor_is_creditor",
+        "settlor_retains_revocation_power"
+      ],
+      "conclusion": "SETTLOR_CREDITOR_MAY_REACH_TRUST_ASSETS"
+    },
+    "authority_ids": [
+      "DE-TRUST-REVOCABLE-3313",
+      "DE-TRUST-ACT-3301"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.93,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "postdeath revocable trust assets",
+        "rule": "Assets passing through a revocable trust at death are subject to estate administration and creditor claims against the estate, not the trust directly."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-SPENDTHRIFT-VALIDITY",
+    "jurisdiction": "DE",
+    "domain": "creditor_protection",
+    "topic": "spendthrift validity creditor restraint discretionary distributions",
+    "rule_statement": "Delaware enforces spendthrift clauses in trust instruments that restrain a beneficiary's right to anticipate or assign distributions. A creditor of a beneficiary may not attach or reach trust principal or income if a valid spendthrift clause exists, except for statutory exception creditors.",
+    "rule_logic": {
+      "conditions": [
+        "valid_spendthrift_clause",
+        "beneficiary_is_not_settlor",
+        "distribution_not_yet_made"
+      ],
+      "conclusion": "SPENDTHRIFT_PROTECTION_ENFORCED"
+    },
+    "authority_ids": [
+      "DE-TRUST-SPENDTHRIFT-3319"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.92,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "child support alimony",
+        "rule": "A court may order distributions to be made for the support of a beneficiary's minor children or spouse despite a spendthrift clause."
+      },
+      {
+        "issue": "government claims",
+        "rule": "State and federal government claims for taxes, welfare overpayments, or other governmental obligations may reach spendthrift-protected distributions."
+      },
+      {
+        "issue": "tort judgment",
+        "rule": "A judgment creditor who has a claim arising from the beneficiary's tort may petition a court to reach trust assets in limited circumstances."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-DAPT-ASSET-PROTECTION",
+    "jurisdiction": "DE",
+    "domain": "creditor_protection",
+    "topic": "self-settled asset protection trust DAPT qualified disposition",
+    "rule_statement": "Under Delaware's Qualified Dispositions in Trust Act (DAPT), a settlor may transfer assets to an irrevocable trust and obtain protection from the settlor's own creditors, subject to strict conditions: the trust must be irrevocable, the settlor may not receive direct benefit, distributions require an independent trustee's discretion, and certain exception creditors may still reach assets.",
+    "rule_logic": {
+      "conditions": [
+        "trust_is_irrevocable",
+        "settlor_reserves_no_direct_benefit",
+        "independent_trustee_has_discretion",
+        "qualified_disposition_made",
+        "transfer_not_fraudulent"
+      ],
+      "conclusion": "DAPT_PROTECTION_AVAILABLE"
+    },
+    "authority_ids": [
+      "DE-TRUST-DAPT-4901"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.88,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "bankruptcy",
+        "rule": "A federal bankruptcy court may apply the Bankruptcy Code's fraudulent transfer provisions to set aside a DAPT transfer if the debtor was insolvent at the time of transfer."
+      },
+      {
+        "issue": "child support spousal support",
+        "rule": "Delaware courts have recognized that family support obligations may constitute exception creditor claims that survive DAPT protection."
+      },
+      {
+        "issue": "government claims",
+        "rule": "Federal and state government claims for taxes and certain regulatory violations may reach DAPT-protected assets."
+      },
+      {
+        "issue": "fraudulent transfer",
+        "rule": "If the transfer was made with intent to defraud creditors, a court may void the qualified disposition regardless of DAPT protection."
+      },
+      {
+        "issue": "settlor as beneficiary",
+        "rule": "DAPT protection requires genuine relinquishment of benefit; a settlor who reserves distributions or beneficial interests may lose protection."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-DAPT-LIMITATIONS-PERIOD",
+    "jurisdiction": "DE",
+    "domain": "creditor_protection",
+    "topic": "self-settled DAPT limitations period fraudulent transfer",
+    "rule_statement": "A creditor must bring a claim against a DAPT trust within the applicable Delaware fraudulent transfer statute of limitations. Claims under the Uniform Voidable Transactions Act (UVTA) have a four-year lookback period from the date of transfer or from when the creditor discovered the fraud, whichever is later.",
+    "rule_logic": {
+      "conditions": [
+        "transfer_to_irrevocable_trust_made",
+        "creditor_claim_exists",
+        "claim_brought_within_statute_of_limitations"
+      ],
+      "conclusion": "CREDITORS_CLAIM_TIMELY"
+    },
+    "authority_ids": [
+      "DE-TRUST-DAPT-4901"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.87,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "fraudulent intent",
+        "rule": "If the transfer was made with actual intent to defraud, the limitation period runs from the date of transfer, and the lookback period under UVTA is four years."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-TRUST-DISCRETIONARY-OVERDUE",
+    "jurisdiction": "DE",
+    "domain": "trust_law",
+    "topic": "discretionary trusts mandatory overdue distributions trustee discretion",
+    "rule_statement": "A trustee's discretionary distribution power does not create a claim for a beneficiary until the trustee makes a distribution decision. An overdue mandatory distribution (one that is due but unpaid under the trust terms) may be enforced by a court upon petition.",
+    "rule_logic": {
+      "conditions": [
+        "trustee_discretionary_power_exists",
+        "trustee_made_distribution_decision",
+        "distribution_overdue"
+      ],
+      "conclusion": "MANDATORY_DISTRIBUTION_ENFORCEABLE"
+    },
+    "authority_ids": [
+      "DE-TRUST-ACT-3301",
+      "DE-TRUST-FIDUCIARY-3571"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.89,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "spendthrift clause",
+        "rule": "A spendthrift clause may prevent a creditor from enforcing a distribution against the trustee even if the distribution is overdue."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-DIRECTED-TRUST-STRUCTURE",
+    "jurisdiction": "DE",
+    "domain": "trust_law",
+    "topic": "directed trust investment direction trust administration trustee powers",
+    "rule_statement": "Delaware's Directed Trust Act (12 Del. C. §§ 3527-3536) authorizes a trust instrument to divide fiduciary duties among a directed trustee (who holds trust property but follows directions), an investment direction holder (who directs investments), and an administrative agent (who directs trust administration). The directed trustee is not liable for following a direction unless the direction is improper.",
+    "rule_logic": {
+      "conditions": [
+        "trust_instrument_names_directed_trustee",
+        "trust_instrument_names_direction_holder",
+        "direction_is_given",
+        "direction_is_not_improper"
+      ],
+      "conclusion": "DIRECTED_TRUST_STRUCTURE_VALID"
+    },
+    "authority_ids": [
+      "DE-TRUST-DIRECTED-3527"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.91,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "improper direction",
+        "rule": "A directed trustee who follows an improper direction (e.g., one that violates the prudent investor rule) may be held liable for the consequences."
+      },
+      {
+        "issue": "ERISA plan assets",
+        "rule": "ERISA fiduciary duty rules may override Delaware exculpation provisions for employee benefit plan trusts."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-TRUST-PROTECTOR-POWERS",
+    "jurisdiction": "DE",
+    "domain": "trust_law",
+    "topic": "trust protector trustee removal appointment modification",
+    "rule_statement": "A trust protector appointed under a Delaware trust instrument may have powers to remove and appoint trustees, modify trust terms, consent to trustee actions, and resolve beneficiary disputes. The scope of trust protector powers is defined by the trust instrument; a protector owes fiduciary duties unless exculpated.",
+    "rule_logic": {
+      "conditions": [
+        "trust_instrument_names_protector",
+        "protector_acts_within_granted_powers",
+        "protector_not_exculpated"
+      ],
+      "conclusion": "PROTECTOR_ACTION_VALID"
+    },
+    "authority_ids": [
+      "DE-TRUST-PROTECTOR-3581"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.88,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "exculpatory language",
+        "rule": "If the trust instrument exculpates the trust protector, the protector's fiduciary duty may be limited or eliminated."
+      },
+      {
+        "issue": "court review",
+        "rule": "A court may review a trust protector's exercise of power for abuse of discretion upon petition by an interested party."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-TRUST-DECANTING-AUTHORITY",
+    "jurisdiction": "DE",
+    "domain": "trust_law",
+    "topic": "decanting trust modification trustee discretionary distribution",
+    "rule_statement": "A trustee with power to make discretionary distributions may exercise the power to distribute trust assets to a second trust (decanting) for the benefit of the same or a subset of beneficiaries, provided the decanting does not postpone vesting beyond the rule against perpetuities or violate the trust instrument.",
+    "rule_logic": {
+      "conditions": [
+        "trustee_has_discretionary_power",
+        "beneficiary_class_allows_second_trust",
+        "decanting_not_prohibited_by_instrument",
+        "rule_against_perpetuities_not_violated"
+      ],
+      "conclusion": "DECANTING_AUTHORIZED"
+    },
+    "authority_ids": [
+      "DE-TRUST-DECANTING-3525"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.90,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "beneficiary consent",
+        "rule": "Some decanting actions may require the consent of current income beneficiaries or remainder beneficiaries."
+      },
+      {
+        "issue": "creditor challenge",
+        "rule": "A creditor of a beneficiary may challenge a decanting that diminishes the beneficiary's interest in the original trust."
+      },
+      {
+        "issue": "fraudulent transfer",
+        "rule": "Decanting may be voided if it constitutes a fraudulent transfer under Delaware UVTA."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-TRUST-NJSA-MODIFICATION",
+    "jurisdiction": "DE",
+    "domain": "trust_law",
+    "topic": "nonjudicial settlement agreement trust modification termination",
+    "rule_statement": "Delaware authorizes interested parties (trustees, beneficiaries, and settlors if living) to enter into a nonjudicial settlement agreement (NJSA) to modify, terminate, or reform a trust, without court proceedings, as long as the agreement does not violate a material purpose of the trust and fairly protects the interests of all parties.",
+    "rule_logic": {
+      "conditions": [
+        "all_interest_holders_consent",
+        "agreement_fairly_resolves_all_interests",
+        "no_material_purpose_violated",
+        "agreement_is_valid"
+      ],
+      "conclusion": "NJSA_VALID_AND_BINDING"
+    },
+    "authority_ids": [
+      "DE-TRUST-NJSA-3311"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.89,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "court approval required",
+        "rule": "If the interested parties cannot agree or if the agreement does not adequately protect all parties, court approval is required."
+      },
+      {
+        "issue": "charitable trust AG involvement",
+        "rule": "Charitable trust modifications require notice to and participation by the Delaware Attorney General."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-TRUST-GOVERNING-LAW",
+    "jurisdiction": "DE",
+    "domain": "trust_law",
+    "topic": "governing law choice of law trust situs principal administration",
+    "rule_statement": "Delaware law governs a trust if the trust instrument designates Delaware as the governing law, or if the trust instrument is silent and the trustee is a Delaware trustee. Delaware recognizes and enforces choice-of-law provisions in trust instruments subject to federal constitutional limits.",
+    "rule_logic": {
+      "conditions": [
+        "trust_instrument_designates_delaware_law",
+        "or_trustee_is_delaware_trustee_and_instrument_silent"
+      ],
+      "conclusion": "DELAWARE_LAW_GOVERNS"
+    },
+    "authority_ids": [
+      "DE-TRUST-GOVLAW-3321"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.93,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "federal constitutional limits",
+        "rule": "A state's choice-of-law determination is subject to federal Due Process and Full Faith and Credit Clause limits."
+      },
+      {
+        "issue": "real property located elsewhere",
+        "rule": "The validity of a transfer of real property located in another state is governed by that state's law."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-TRUST-CERTIFICATION",
+    "jurisdiction": "DE",
+    "domain": "trust_law",
+    "topic": "certification of trust trustee third party reliance",
+    "rule_statement": "A Delaware trustee may provide a written certification of trust (rather than the full trust document) to a third party. The certification must state the trust's existence, the trustee's powers, the trust's amendment provisions, and whether the trust is revocable. A third party who relies on an accurate certification is protected.",
+    "rule_logic": {
+      "conditions": [
+        "trustee_provides_written_certification",
+        "certification_contains_required_elements",
+        "third_party_relies_on_certification"
+      ],
+      "conclusion": "THIRD_PARTY_PROTECTED"
+    },
+    "authority_ids": [
+      "DE-TRUST-CERTIFICATION-3331"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.92,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "inaccurate certification",
+        "rule": "A trustee who provides an inaccurate certification may be liable to a harmed third party."
+      },
+      {
+        "issue": "material term omitted",
+        "rule": "If a material term is omitted from the certification, the third party may not be bound by the trust terms disclosed in the certification."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-TRUST-TRUSTEE-REMOVAL",
+    "jurisdiction": "DE",
+    "domain": "trust_law",
+    "topic": "trustee removal successor appointment co-trustee fiduciary",
+    "rule_statement": "A Delaware trustee may be removed by the settlor (if named in the trust instrument), by a trust protector with power to remove, by a court upon petition by an interested party showing cause, or by resignation with proper notice. A successor trustee may be appointed by the trust instrument or by a court.",
+    "rule_logic": {
+      "conditions": [
+        "removal_basis_exists",
+        "successor_trustee_identified",
+        "proper_notice_given"
+      ],
+      "conclusion": "TRUSTEE_REMOVAL_VALID"
+    },
+    "authority_ids": [
+      "DE-TRUST-ACT-3301",
+      "DE-TRUST-PROTECTOR-3581",
+      "DE-TRUST-FIDUCIARY-3571"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.89,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "independent trustee cannot be removed",
+        "rule": "A corporate independent trustee named in a DAPT trust typically cannot be removed without cause."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-TRUST-MIGRATION",
+    "jurisdiction": "DE",
+    "domain": "trust_law",
+    "topic": "trust migration situs change governing law change",
+    "rule_statement": "A trust may be migrated to Delaware by designating Delaware as the new governing law and appointing a Delaware trustee, provided the trust instrument permits a situs change and the迁移 does not violate the rule against perpetuities or other material trust terms.",
+    "rule_logic": {
+      "conditions": [
+        "trust_instrument_permits_situs_change",
+        "delaware_trustee_appointed",
+        "governing_law_changed_to_delaware",
+        "no_perpetuities_violation"
+      ],
+      "conclusion": "TRUST_MIGRATION_TO_DE_PERMISSIBLE"
+    },
+    "authority_ids": [
+      "DE-TRUST-GOVLAW-3321",
+      "DE-TRUST-ACT-3301"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.86,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "original jurisdiction restrictions",
+        "rule": "Some states do not permit a trust formed there to change governing law without court approval."
+      },
+      {
+        "issue": "beneficiary rights",
+        "rule": "Changing situs may affect beneficiary rights to information, accountings, and distribution enforcement."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-BENEFICIARY-INFORMATION",
+    "jurisdiction": "DE",
+    "domain": "trust_law",
+    "topic": "beneficiary information rights trust accounting trustee reporting",
+    "rule_statement": "A Delaware trust beneficiary has the right to receive relevant information about the trust, including the trust instrument, an accounting of trust transactions, and information about the trustee's identity and contact information. The trustee must keep beneficiaries reasonably informed.",
+    "rule_logic": {
+      "conditions": [
+        "beneficiary_has_vested_or_contingent_interest",
+        "beneficiary_requests_information"
+      ],
+      "conclusion": "TRUSTEE_MUST_DISCLOSE"
+    },
+    "authority_ids": [
+      "DE-TRUST-FIDUCIARY-3571"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.90,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "impossibility or undue burden",
+        "rule": "A trustee may not be required to disclose information if it is impossible or would cause undue burden, subject to court review."
+      },
+      {
+        "issue": "confidentiality",
+        "rule": "Trust instruments may include confidentiality provisions limiting the scope of disclosure to beneficiaries."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-UCC-FILING-OFFICE",
+    "jurisdiction": "DE",
+    "domain": "ucc_article9",
+    "topic": "UCC filing office central filing local filing fixture filing",
+    "rule_statement": "UCC Article 9 filings in Delaware are made with the Delaware Secretary of State as the central filing office. Fixture filings (for goods that become part of real property) and local filings (for timber to be cut or as-extracted collateral) are filed with the county recorder in the county where the real property is located.",
+    "rule_logic": {
+      "conditions": [
+        "collateral_is_fixturing_good_or_timber"
+      ],
+      "conclusion": "LOCAL_FILING_REQUIRED_COUNTY_RECORDER"
+    },
+    "authority_ids": [
+      "DE-UCC-9-2701"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.94,
+    "requires_human_review": true,
+    "effective_from": "2013-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "transmitting utility",
+        "rule": "A financing statement for a transmitting utility's collateral may be filed centrally with the Secretary of State regardless of the collateral's location."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-UCC-DEBTOR-NAMING",
+    "jurisdiction": "DE",
+    "domain": "ucc_article9",
+    "topic": "UCC debtor naming trust estate organization individual",
+    "rule_statement": "Under Delaware UCC Article 9, the name of a registered organization debtor is its name as shown in its public organic record. A trust debtor is named using the name set forth in its trust agreement or certification. An individual debtor's name is the debtor's legal name as it appears on the driver's license or government-issued identification.",
+    "rule_logic": {
+      "conditions": [
+        "debtor_is_registered_organization",
+        "or_debtor_is_trust",
+        "or_debtor_is_individual"
+      ],
+      "conclusion": "DEBTOR_NAME_DETERMINED"
+    },
+    "authority_ids": [
+      "DE-UCC-9-2701"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.89,
+    "requires_human_review": true,
+    "effective_from": "2013-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "insufficient name",
+        "rule": "If the debtor name provided does not sufficiently identify the debtor, the filing may be seriously misleading to third parties searching the records."
+      },
+      {
+        "issue": "trust with no name",
+        "rule": "A trust without a named settlor or designated name may not have a clear debtor name for UCC filing purposes."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-UCC-CONTINUATION-WINDOW",
+    "jurisdiction": "DE",
+    "domain": "ucc_article9",
+    "topic": "UCC continuation statement lapse window renewal",
+    "rule_statement": "A Delaware UCC financing statement lapses five years after filing unless a continuation statement is filed before lapse. The continuation statement must be filed within the six-month period before lapse (between 5 years 6 months and 6 years after the original filing). Each continuation statement extends the financing statement for an additional five years.",
+    "rule_logic": {
+      "conditions": [
+        "original_filing_made",
+        "continuation_statement_filed_before_lapse",
+        "continuation_window_observed"
+      ],
+      "conclusion": "UCC_FILING_CONTINUED"
+    },
+    "authority_ids": [
+      "DE-UCC-9-2701"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.94,
+    "requires_human_review": true,
+    "effective_from": "2013-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "fixture filing lapse",
+        "rule": "A fixture filing (covering goods attached to real property) is effective for the shorter of the period of the security interest's perfection or 20 years, unless continued with the county recorder."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-HOMESTEAD-EXEMPTION",
+    "jurisdiction": "DE",
+    "domain": "creditor_protection",
+    "topic": "homestead exemption residential property exempt property",
+    "rule_statement": "Delaware provides a homestead exemption for a debtor's primary residence, subject to statutory value limitations and eligibility conditions. The exemption protects a portion of the home's equity from creditor claims, bankruptcy proceedings, and judgment execution.",
+    "rule_logic": {
+      "conditions": [
+        "property_is_primary_residence",
+        "homestead_claimed",
+        "value_within_statutory_limit"
+      ],
+      "conclusion": "HOMESTEAD_EXEMPTION_APPLIES"
+    },
+    "authority_ids": [
+      "DE-HOMESTEAD-25-101"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.85,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "mortgage lien",
+        "rule": "A mortgage or deed of trust on the property is not subject to the homestead exemption and may be foreclosed if the mortgage obligation is in default."
+      },
+      {
+        "issue": "property tax lien",
+        "rule": "Delinquent property taxes and municipal assessments may be collected from the homestead property despite the exemption."
+      },
+      {
+        "issue": "federal liens",
+        "rule": "Federal tax liens and certain other federal claims may override state homestead exemptions."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-WAGE-GARNISHMENT",
+    "jurisdiction": "DE",
+    "domain": "creditor_protection",
+    "topic": "wage garnishment exempt funds garnishee",
+    "rule_statement": "Delaware limits wage garnishment to 15% of a debtor's gross weekly wages or the amount by which weekly wages exceed 30 times the federal minimum wage, whichever is less. Certain funds deposited directly into a bank account may be exempt from garnishment if traceable to exempt sources.",
+    "rule_logic": {
+      "conditions": [
+        "garnishment_order_issued",
+        "employer_or_bank_is_garnishee",
+        "debtor_claims_exemption",
+        "funds_are_exempt_source"
+      ],
+      "conclusion": "GARNISHMENT_LIMITED_OR_FUNDS_EXEMPT"
+    },
+    "authority_ids": [
+      "DE-HOMESTEAD-25-101"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.84,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "child support",
+        "rule": "Child support orders may attach up to 50% of a debtor's disposable income and are not subject to the standard wage garnishment limits."
+      },
+      {
+        "issue": "government claims",
+        "rule": "Government judgments for taxes, student loans, or regulatory violations may have higher or no garnishment limits."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-RESIDENT-TRUST-TAXATION",
+    "jurisdiction": "DE",
+    "domain": "trust_tax",
+    "topic": "resident trust taxation fiduciary filing Delaware income tax",
+    "rule_statement": "Delaware imposes a trust income tax on certain trusts with Delaware situs, including Delaware resident trusts. A trust is treated as a Delaware situs trust if the trust instrument designates Delaware as the governing law, or if the trust is administered in Delaware by a Delaware trustee. A Delaware fiduciary income tax return may be required.",
+    "rule_logic": {
+      "conditions": [
+        "trust_has_delaware_situs",
+        "trust_is_not_exempt",
+        "delaware_source_income_exists"
+      ],
+      "conclusion": "DELAWARE_TRUST_TAX_OBLIGATION"
+    },
+    "authority_ids": [
+      "DE-TRUST-TAXATION-DEPT",
+      "DE-TRUST-GOVLAW-3321"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.78,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "grantor trust",
+        "rule": "A grantor trust (where the grantor is taxed on trust income) may have different Delaware filing obligations depending on grantor's residency."
+      },
+      {
+        "issue": "Delaware estate tax repealed",
+        "rule": "Delaware repealed its estate tax effective January 1, 2015. Federal estate tax rules continue to apply to Delaware estates."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-VOIDABLE-TRANSFER",
+    "jurisdiction": "DE",
+    "domain": "creditor_protection",
+    "topic": "voidable transfer fraudulent conveyance creditor claim trust transfer",
+    "rule_statement": "Under Delaware's Uniform Voidable Transactions Act (UVTA), a transfer made by a debtor is voidable if the debtor made the transfer with actual intent to defraud creditors, or if the debtor received less than reasonably equivalent value and was insolvent at the time. Trusts that receive voidable transfers may be subject to creditor claims.",
+    "rule_logic": {
+      "conditions": [
+        "transfer_made_by_debtor",
+        "debtor_intent_to_defraud_or_received_insufficient_value",
+        "debtor_insolvent_or_transfer_made_insolvency"
+      ],
+      "conclusion": "TRANSFER_VOIDABLE"
+    },
+    "authority_ids": [
+      "DE-TRUST-DAPT-4901"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.87,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "good faith transferee",
+        "rule": "A good faith transferee who gave value and did not have notice of the fraud may be protected under UVTA's good faith exception."
+      },
+      {
+        "issue": "DAPT transfer",
+        "rule": "A DAPT transfer made in compliance with Delaware's DAPT statute has special protection, but fraudulent transfer challenges under federal bankruptcy law may still apply."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-POWERS-OF-WITHDRAWAL",
+    "jurisdiction": "DE",
+    "domain": "creditor_protection",
+    "topic": "power of withdrawal creditor claim Crummey notice",
+    "rule_statement": "A power of withdrawal (a right to withdraw trust principal or income) held by a beneficiary may be reached by the beneficiary's creditors while the power is outstanding. A Crummey notice (a written notice of the withdrawal right) creates a window during which creditors may challenge the withdrawal power.",
+    "rule_logic": {
+      "conditions": [
+        "beneficiary_holds_power_of_withdrawal",
+        "creditor_claim_exists",
+        "power_not_yet_lapsed_or_released"
+      ],
+      "conclusion": "CREDITOR_MAY_CHALLENGE_WITHDRAWAL_POWER"
+    },
+    "authority_ids": [
+      "DE-TRUST-ACT-3301",
+      "DE-TRUST-DAPT-4901"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.88,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "limited power of appointment",
+        "rule": "A limited power of appointment (one that cannot be exercised in favor of the power holder) is generally not reachable by the power holder's creditors."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-RETIREMENT-ACCOUNT-PROTECTION",
+    "jurisdiction": "DE",
+    "domain": "creditor_protection",
+    "topic": "retirement account protection ERISA qualified plan IRA exemption",
+    "rule_statement": "Delaware protects ERISA-qualified retirement plans and IRAs from creditor claims under federal ERISA preemption and state exemption statutes. The extent of protection depends on the type of plan, contribution history, and whether federal or state law applies.",
+    "rule_logic": {
+      "conditions": [
+        "account_is_erisa_qualified_plan",
+        "or_account_is_traditional_or_roth_ira",
+        "creditor_claims_exists"
+      ],
+      "conclusion": "RETIREMENT_ACCOUNT_EXEMPT"
+    },
+    "authority_ids": [
+      "DE-HOMESTEAD-25-101"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.86,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "federal bankruptcy exemption applies",
+        "rule": "In federal bankruptcy, exemption amounts for IRAs are capped at approximately $1.5 million for traditional and Roth IRAs, subject to certain exceptions."
+      },
+      {
+        "issue": "domestic relations orders",
+        "rule": "Qualified domestic relations orders (QDROs) may divide retirement accounts in divorce proceedings regardless of creditor protections."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  },
+  {
+    "id": "DE-TENANCY-BY-ENTIRETY",
+    "jurisdiction": "DE",
+    "domain": "creditor_protection",
+    "topic": "tenancy by entirety creditor protection joint ownership spouse",
+    "rule_statement": "Delaware recognizes tenancy by the entirety for real property held by married couples. Property held as tenants by the entirety is generally protected from creditor claims against only one spouse, as both spouses have an equal, undivided interest in the whole property.",
+    "rule_logic": {
+      "conditions": [
+        "property_held_by_married_couple_as_tenants_by_entirety",
+        "creditor_claim_is_against_only_one_spouse",
+        "property_is_real_property"
+      ],
+      "conclusion": "TENANCY_BY_ENTIRETY_PROTECTION_APPLIES"
+    },
+    "authority_ids": [
+      "DE-HOMESTEAD-25-101"
+    ],
+    "status": "ACTIVE",
+    "confidence": 0.82,
+    "requires_human_review": true,
+    "effective_from": "2015-07-01",
+    "effective_to": null,
+    "exceptions": [
+      {
+        "issue": "joint creditor",
+        "rule": "If both spouses are debtors on the same debt, the creditor may reach the entirety property."
+      },
+      {
+        "issue": "divorce",
+        "rule": "Upon divorce, tenancy by entirety converts to tenancy in common, and each spouse's interest becomes individually liable for that spouse's debts."
+      }
+    ],
+    "conflicting_rule_ids": [],
+    "supersedes_rule_ids": [],
+    "superseded_by_rule_ids": [],
+    "version": "1.0.0",
+    "created_at": "2026-08-04T00:00:00Z",
+    "updated_at": "2026-08-04T00:00:00Z",
+    "rule_category": "STATE_RULE",
+    "review_status": "NOT_SUBMITTED",
+    "critical_deficiencies": []
+  }
+]

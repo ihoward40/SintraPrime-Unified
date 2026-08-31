@@ -7,6 +7,7 @@ Exit code 0 = all checks pass.  Non-zero = at least one failure.
 
 Run:  python scripts/smoke/repo_truth_check.py
 """
+
 import json
 import os
 import re
@@ -62,8 +63,7 @@ def check_docker_compose():
     for pattern, label in bad_defaults:
         # Check if it appears as a fallback default (:-pattern)
         has_bad = f":-{pattern}" in dc
-        check(f"no hardcoded {label}", not has_bad,
-              f"found ':-{pattern}'" if has_bad else "")
+        check(f"no hardcoded {label}", not has_bad, f"found ':-{pattern}'" if has_bad else "")
 
 
 # ── Nginx health route ──────────────────────────────────────────────────────
@@ -91,14 +91,19 @@ def check_readme():
 
     # Should NOT reference localhost:8000 (that port doesn't exist)
     has_8000 = "localhost:8000" in readme
-    check("no stale localhost:8000 reference", not has_8000,
-          "README still references :8000 which is not in docker-compose" if has_8000 else "")
+    check(
+        "no stale localhost:8000 reference",
+        not has_8000,
+        "README still references :8000 which is not in docker-compose" if has_8000 else "",
+    )
 
     # Python version should say 3.11+
     has_310_only = "3.10+" in readme and "3.11" not in readme
-    check("Python version matches pyproject (3.11+)",
-          not has_310_only,
-          "README says 3.10+ but pyproject requires >=3.11" if has_310_only else "")
+    check(
+        "Python version matches pyproject (3.11+)",
+        not has_310_only,
+        "README says 3.10+ but pyproject requires >=3.11" if has_310_only else "",
+    )
 
 
 # ── Python version alignment ───────────────────────────────────────────────
@@ -113,8 +118,7 @@ def check_python_version():
     m = re.search(r'requires-python\s*=\s*["\'](.*?)["\']', pp)
     if m:
         req = m.group(1)
-        check(f"requires-python = {req}", "3.11" in req or "3.12" in req,
-              f"found: {req}")
+        check(f"requires-python = {req}", "3.11" in req or "3.12" in req, f"found: {req}")
     else:
         warn("requires-python not found in pyproject.toml")
 
@@ -130,8 +134,11 @@ def check_dependencies():
     if requirements.exists():
         req = requirements.read_text()
         is_derived = "DERIVED" in req or "source of truth" in req.lower() or "pyproject.toml" in req
-        check("requirements.txt marked as derived", is_derived,
-              "Should reference pyproject.toml as source" if not is_derived else "")
+        check(
+            "requirements.txt marked as derived",
+            is_derived,
+            "Should reference pyproject.toml as source" if not is_derived else "",
+        )
 
 
 # ── Pytest discovery ────────────────────────────────────────────────────────
@@ -144,8 +151,11 @@ def check_pytest():
 
     pi = pytest_ini.read_text()
     has_dot = re.search(r"^testpaths\s*=\s*\.\s*$", pi, re.MULTILINE)
-    check("pytest.ini does NOT use testpaths = .", not has_dot,
-          "testpaths = . causes ~131 collection errors" if has_dot else "")
+    check(
+        "pytest.ini does NOT use testpaths = .",
+        not has_dot,
+        "testpaths = . causes ~131 collection errors" if has_dot else "",
+    )
 
 
 # ── Private data in public source ───────────────────────────────────────────
@@ -167,8 +177,7 @@ def check_private_data():
     ]
     for pattern, label in pii_patterns:
         found = bool(re.search(pattern, ts))
-        check(f"no hardcoded {label}", not found,
-              f"found in index.ts" if found else "")
+        check(f"no hardcoded {label}", not found, f"found in index.ts" if found else "")
 
 
 # ── CI workflow ─────────────────────────────────────────────────────────────
@@ -181,8 +190,11 @@ def check_ci():
 
     ci = ci_path.read_text()
     has_smoke = "repo_truth_check" in ci
-    check("CI includes repo truth smoke step", has_smoke,
-          "Add: python scripts/smoke/repo_truth_check.py" if not has_smoke else "")
+    check(
+        "CI includes repo truth smoke step",
+        has_smoke,
+        "Add: python scripts/smoke/repo_truth_check.py" if not has_smoke else "",
+    )
 
 
 # ── Main ────────────────────────────────────────────────────────────────────

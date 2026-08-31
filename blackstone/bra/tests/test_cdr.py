@@ -1,6 +1,7 @@
 """
 Tests for BRA CDR Filer — BKGC Art. XXXIII, BKR-11 compliance.
 """
+
 from dataclasses import FrozenInstanceError
 
 import pytest

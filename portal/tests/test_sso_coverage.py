@@ -7,6 +7,7 @@ Covers:
   - portal.websocket.message_handler (typing handlers)
   - portal.sso.session_manager (lifecycle methods)
 """
+
 from __future__ import annotations
 
 import uuid
@@ -16,15 +17,18 @@ import pytest
 
 # ─── portal.sso.session_store — InMemorySessionStore ─────────────────────────
 
+
 class TestInMemorySessionStore:
     """Unit tests for the InMemorySessionStore implementation."""
 
     def _make_store(self):
         from portal.sso.session_store import InMemorySessionStore
+
         return InMemorySessionStore()
 
     def _make_session_data(self, **kwargs):
         from portal.sso.session_models import SessionData
+
         return SessionData.create(
             user_id=str(uuid.uuid4()),
             email="user@firm.com",
@@ -33,18 +37,16 @@ class TestInMemorySessionStore:
             ttl_seconds=3600,
             ip_address="127.0.0.1",
             user_agent="pytest",
-            **kwargs
+            **kwargs,
         )
 
     def _make_refresh_token(self, **kwargs):
         from portal.sso.session_models import RefreshToken
+
         session_id = str(uuid.uuid4())
         user_id = str(uuid.uuid4())
         return RefreshToken.create(
-            session_id=session_id,
-            user_id=user_id,
-            ttl_seconds=604800,
-            **kwargs
+            session_id=session_id, user_id=user_id, ttl_seconds=604800, **kwargs
         )
 
     @pytest.mark.asyncio
@@ -129,6 +131,7 @@ class TestInMemorySessionStore:
         # Use ttl_seconds=0 to make it expire immediately
         # We'll inject directly with a past timestamp
         import time
+
         store._sessions[session.session_id] = (session, time.time() - 1)
         result = await store.get_session(session.session_id)
         assert result is None
@@ -136,20 +139,24 @@ class TestInMemorySessionStore:
 
 # ─── portal.sso.redis_session — RedisSessionManager ──────────────────────────
 
+
 class TestRedisSessionManager:
     """Unit tests for portal.sso.redis_session.RedisSessionStore."""
 
     def _make_manager(self):
         from portal.sso.redis_session import RedisSessionStore
+
         return RedisSessionStore(redis_url="redis://localhost:6379/0")
 
     @pytest.mark.asyncio
     async def test_connect_returns_false_when_redis_unavailable(self):
         from unittest.mock import patch
+
         manager = self._make_manager()
         # Force Redis to be unavailable regardless of environment
-        with patch("redis.asyncio.from_url",
-                   side_effect=ConnectionRefusedError("Redis unavailable")):
+        with patch(
+            "redis.asyncio.from_url", side_effect=ConnectionRefusedError("Redis unavailable")
+        ):
             result = await manager.connect()
         assert result is False
         assert manager._connected is False
@@ -197,6 +204,7 @@ class TestRedisSessionManager:
     async def test_retrieve_with_mock_redis_client(self):
         """Test retrieve() with a mocked Redis client."""
         import json
+
         manager = self._make_manager()
         mock_client = AsyncMock()
         mock_client.get = AsyncMock(return_value=json.dumps({"user_id": "u1"}))
@@ -230,6 +238,7 @@ class TestRedisSessionManager:
 
     def test_key_generation_uses_prefix(self):
         from portal.sso.redis_session import RedisSessionStore
+
         manager = RedisSessionStore(redis_url="redis://localhost:6379/0", prefix="test:session:")
         key = manager._key("session-abc")
         assert "session-abc" in key
@@ -249,6 +258,7 @@ class TestRedisSessionManager:
 
 # ─── portal.sso.sso — Router endpoints ───────────────────────────────────────
 
+
 class TestSSORouter:
     """Unit tests for portal.sso.sso router endpoints using TestClient."""
 
@@ -256,17 +266,24 @@ class TestSSORouter:
         from fastapi import FastAPI
 
         from portal.sso.sso import router
+
         app = FastAPI()
         app.include_router(router)
         return app
 
     def test_authorize_with_okta_provider(self):
         from fastapi.testclient import TestClient
+
         app = self._make_app()
         with patch("portal.sso.sso.okta") as mock_okta:
-            mock_okta.get_authorization_url.return_value = "https://okta.example.com/authorize?client_id=x"
+            mock_okta.get_authorization_url.return_value = (
+                "https://okta.example.com/authorize?client_id=x"
+            )
             client = TestClient(app, raise_server_exceptions=False)
-            resp = client.post("/authorize", json={"provider": "okta", "redirect_uri": "https://app.example.com/callback"})
+            resp = client.post(
+                "/authorize",
+                json={"provider": "okta", "redirect_uri": "https://app.example.com/callback"},
+            )
             assert resp.status_code == 200
             data = resp.json()
             assert "authorization_url" in data
@@ -274,33 +291,50 @@ class TestSSORouter:
 
     def test_authorize_with_azure_provider(self):
         from fastapi.testclient import TestClient
+
         app = self._make_app()
         with patch("portal.sso.sso.azure") as mock_azure:
-            mock_azure.get_authorization_url.return_value = "https://login.microsoftonline.com/authorize"
+            mock_azure.get_authorization_url.return_value = (
+                "https://login.microsoftonline.com/authorize"
+            )
             client = TestClient(app, raise_server_exceptions=False)
-            resp = client.post("/authorize", json={"provider": "azure", "redirect_uri": "https://app.example.com/callback"})
+            resp = client.post(
+                "/authorize",
+                json={"provider": "azure", "redirect_uri": "https://app.example.com/callback"},
+            )
             assert resp.status_code == 200
             assert resp.json()["provider"] == "azure"
 
     def test_authorize_with_google_provider(self):
         from fastapi.testclient import TestClient
+
         app = self._make_app()
         with patch("portal.sso.sso.google") as mock_google:
-            mock_google.get_authorization_url.return_value = "https://accounts.google.com/o/oauth2/auth"
+            mock_google.get_authorization_url.return_value = (
+                "https://accounts.google.com/o/oauth2/auth"
+            )
             client = TestClient(app, raise_server_exceptions=False)
-            resp = client.post("/authorize", json={"provider": "google", "redirect_uri": "https://app.example.com/callback"})
+            resp = client.post(
+                "/authorize",
+                json={"provider": "google", "redirect_uri": "https://app.example.com/callback"},
+            )
             assert resp.status_code == 200
             assert resp.json()["provider"] == "google"
 
     def test_authorize_with_unsupported_provider_returns_400(self):
         from fastapi.testclient import TestClient
+
         app = self._make_app()
         client = TestClient(app, raise_server_exceptions=False)
-        resp = client.post("/authorize", json={"provider": "saml_legacy", "redirect_uri": "https://app.example.com/callback"})
+        resp = client.post(
+            "/authorize",
+            json={"provider": "saml_legacy", "redirect_uri": "https://app.example.com/callback"},
+        )
         assert resp.status_code == 400
 
     def test_get_current_user_without_session_returns_401(self):
         from fastapi.testclient import TestClient
+
         app = self._make_app()
         client = TestClient(app, raise_server_exceptions=False)
         resp = client.get("/me")
@@ -352,6 +386,7 @@ class TestSSORouter:
 
     def test_refresh_without_refresh_token_returns_401(self):
         from fastapi.testclient import TestClient
+
         app = self._make_app()
         client = TestClient(app, raise_server_exceptions=False)
         resp = client.get("/refresh")
@@ -359,6 +394,7 @@ class TestSSORouter:
 
     def test_refresh_without_bearer_token_returns_401(self):
         from fastapi.testclient import TestClient
+
         app = self._make_app()
         client = TestClient(app, raise_server_exceptions=False)
         resp = client.get("/refresh", cookies={"refresh_token": "some-refresh-token"})
@@ -367,12 +403,14 @@ class TestSSORouter:
 
 # ─── portal.websocket.message_handler — typing handlers ──────────────────────
 
+
 class TestMessageHandlerTyping:
     """Unit tests for MessageHandler typing and ping handlers."""
 
     @pytest.mark.asyncio
     async def test_handle_ping_sends_pong(self):
         from portal.websocket.message_handler import MessageHandler
+
         handler = MessageHandler()
         mock_db = AsyncMock()
         with patch("portal.websocket.message_handler.ws_manager") as mock_mgr:
@@ -388,6 +426,7 @@ class TestMessageHandlerTyping:
     @pytest.mark.asyncio
     async def test_handle_missing_type_logs_warning(self):
         from portal.websocket.message_handler import MessageHandler
+
         handler = MessageHandler()
         mock_db = AsyncMock()
         with patch("portal.websocket.message_handler.ws_manager"):
@@ -402,6 +441,7 @@ class TestMessageHandlerTyping:
     @pytest.mark.asyncio
     async def test_handle_unknown_event_type_does_not_raise(self):
         from portal.websocket.message_handler import MessageHandler
+
         handler = MessageHandler()
         mock_db = AsyncMock()
         with patch("portal.websocket.message_handler.ws_manager"):
@@ -415,6 +455,7 @@ class TestMessageHandlerTyping:
     @pytest.mark.asyncio
     async def test_handle_typing_start_with_thread(self):
         from portal.websocket.message_handler import MessageHandler
+
         handler = MessageHandler()
         mock_db = AsyncMock()
         thread_id = str(uuid.uuid4())
@@ -439,6 +480,7 @@ class TestMessageHandlerTyping:
     @pytest.mark.asyncio
     async def test_handle_typing_start_without_thread_id_does_not_raise(self):
         from portal.websocket.message_handler import MessageHandler
+
         handler = MessageHandler()
         mock_db = AsyncMock()
         with patch("portal.websocket.message_handler.ws_manager"):
@@ -452,6 +494,7 @@ class TestMessageHandlerTyping:
     @pytest.mark.asyncio
     async def test_handle_typing_stop_with_thread(self):
         from portal.websocket.message_handler import MessageHandler
+
         handler = MessageHandler()
         mock_db = AsyncMock()
         thread_id = str(uuid.uuid4())
@@ -477,6 +520,7 @@ class TestMessageHandlerTyping:
     @pytest.mark.asyncio
     async def test_handle_typing_start_thread_not_found(self):
         from portal.websocket.message_handler import MessageHandler
+
         handler = MessageHandler()
         mock_db = AsyncMock()
         thread_id = str(uuid.uuid4())
@@ -497,6 +541,7 @@ class TestMessageHandlerTyping:
 
     def test_supported_events_set_is_defined(self):
         from portal.websocket.message_handler import MessageHandler
+
         handler = MessageHandler()
         assert "ping" in handler.SUPPORTED_EVENTS
         assert "typing_start" in handler.SUPPORTED_EVENTS
@@ -505,6 +550,7 @@ class TestMessageHandlerTyping:
 
 # ─── portal.sso.session_manager — lifecycle methods ──────────────────────────
 
+
 class TestSSOSessionManagerLifecycle:
     """Unit tests for portal.sso.session_manager.SessionManager lifecycle."""
 
@@ -512,6 +558,7 @@ class TestSSOSessionManagerLifecycle:
         from portal.sso.session_config import SessionConfig
         from portal.sso.session_manager import SessionManager
         from portal.sso.session_store import InMemorySessionStore
+
         config = SessionConfig(
             jwt_secret_key="test-secret-key-at-least-32-chars-long",
             issuer="https://test.example.com",
@@ -529,7 +576,11 @@ class TestSSOSessionManagerLifecycle:
         )
         assert token_pair is not None
         # create_session returns a TokenPair with access_token and session_id
-        assert hasattr(token_pair, 'access_token') or hasattr(token_pair, 'session_id') or isinstance(token_pair, str)
+        assert (
+            hasattr(token_pair, "access_token")
+            or hasattr(token_pair, "session_id")
+            or isinstance(token_pair, str)
+        )
 
     @pytest.mark.asyncio
     async def test_get_session_returns_none_for_unknown_id(self):
@@ -558,7 +609,7 @@ class TestSSOSessionManagerLifecycle:
             email="user3@firm.com",
         )
         # Get session_id from token_pair
-        session_id = getattr(token_pair, 'session_id', None)
+        session_id = getattr(token_pair, "session_id", None)
         if session_id is None:
             pytest.skip("Cannot extract session_id from token_pair")
         try:

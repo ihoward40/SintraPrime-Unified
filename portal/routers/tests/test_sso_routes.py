@@ -16,6 +16,7 @@ Coverage:
   - validate_session returns None → 401
   - Cookie security attributes (HttpOnly, SameSite)
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -30,6 +31,7 @@ from portal.routers.sso import router as sso_router
 from portal.sso.session_models import SessionData, TokenPair
 
 # ── App factory ───────────────────────────────────────────────────────────────
+
 
 def _make_app() -> FastAPI:
     app = FastAPI()
@@ -46,6 +48,7 @@ def client():
 
 
 # ── Shared test data ──────────────────────────────────────────────────────────
+
 
 def _make_token_pair() -> TokenPair:
     return TokenPair(
@@ -96,14 +99,17 @@ MOCK_SETTINGS.GOOGLE_HOSTED_DOMAIN = ""
 # CSRF / STATE TESTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestCSRFProtection:
     """State parameter validation is the same for all three providers."""
 
     @pytest.mark.parametrize("provider", ["okta", "azure", "google"])
     def test_callback_rejects_missing_state(self, client, provider):
         """Callback with no stored state returns 400."""
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._pop_state", return_value=None):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._pop_state", return_value=None),
+        ):
             resp = client.get(
                 f"/api/v1/sso/{provider}/callback",
                 params={"code": "auth-code-123", "state": "attacker-state"},
@@ -114,8 +120,10 @@ class TestCSRFProtection:
     @pytest.mark.parametrize("provider", ["okta", "azure", "google"])
     def test_callback_rejects_mismatched_state(self, client, provider):
         """Callback with wrong state returns 400."""
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._pop_state", return_value="correct-state-value"):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._pop_state", return_value="correct-state-value"),
+        ):
             resp = client.get(
                 f"/api/v1/sso/{provider}/callback",
                 params={"code": "auth-code-123", "state": "wrong-state-value"},
@@ -127,6 +135,7 @@ class TestCSRFProtection:
 # ═══════════════════════════════════════════════════════════════════════════════
 # MISSING COOKIE / TOKEN TESTS
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestMissingCredentials:
     """Routes that require a cookie or Bearer token return 401 when absent."""
@@ -159,6 +168,7 @@ class TestMissingCredentials:
 # OKTA ROUTES
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestOktaAuthorize:
     def test_authorize_redirects_to_okta(self, client):
         mock_provider = MagicMock()
@@ -166,15 +176,21 @@ class TestOktaAuthorize:
             "https://dev-test.okta.com/oauth2/v1/authorize?client_id=test&state=abc",
             "abc",
         )
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_okta_provider", return_value=mock_provider):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._get_okta_provider", return_value=mock_provider),
+        ):
             resp = client.get("/api/v1/sso/okta/authorize", follow_redirects=False)
         assert resp.status_code == 302
         assert "okta.com" in resp.headers["location"]
 
     def test_authorize_503_when_not_configured(self, client):
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_okta_provider", side_effect=ValueError("missing config")):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch(
+                "portal.routers.sso._get_okta_provider", side_effect=ValueError("missing config")
+            ),
+        ):
             resp = client.get("/api/v1/sso/okta/authorize", follow_redirects=False)
         assert resp.status_code == 503
 
@@ -197,11 +213,13 @@ class TestOktaCallback:
         mock_sm = AsyncMock()
         mock_sm.create_session = AsyncMock(return_value=_make_token_pair())
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._pop_state", return_value=state), \
-             patch("portal.routers.sso.OktaProvider", return_value=mock_provider), \
-             patch("portal.routers.sso._get_okta_provider", return_value=mock_provider), \
-             patch("portal.routers.sso._get_session_manager", return_value=mock_sm):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._pop_state", return_value=state),
+            patch("portal.routers.sso.OktaProvider", return_value=mock_provider),
+            patch("portal.routers.sso._get_okta_provider", return_value=mock_provider),
+            patch("portal.routers.sso._get_session_manager", return_value=mock_sm),
+        ):
             resp = client.get(
                 "/api/v1/sso/okta/callback",
                 params={"code": "auth-code", "state": state},
@@ -218,12 +236,16 @@ class TestOktaCallback:
         mock_provider.config = MagicMock()
         mock_provider.__aenter__ = AsyncMock(return_value=mock_provider)
         mock_provider.__aexit__ = AsyncMock(return_value=False)
-        mock_provider.exchange_code_for_token = AsyncMock(side_effect=ValueError("token exchange failed"))
+        mock_provider.exchange_code_for_token = AsyncMock(
+            side_effect=ValueError("token exchange failed")
+        )
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._pop_state", return_value=state), \
-             patch("portal.routers.sso.OktaProvider", return_value=mock_provider), \
-             patch("portal.routers.sso._get_okta_provider", return_value=mock_provider):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._pop_state", return_value=state),
+            patch("portal.routers.sso.OktaProvider", return_value=mock_provider),
+            patch("portal.routers.sso._get_okta_provider", return_value=mock_provider),
+        ):
             resp = client.get(
                 "/api/v1/sso/okta/callback",
                 params={"code": "bad-code", "state": state},
@@ -236,8 +258,10 @@ class TestOktaRefresh:
         mock_sm = AsyncMock()
         mock_sm.refresh_session = AsyncMock(return_value=_make_token_pair())
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_session_manager", return_value=mock_sm):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._get_session_manager", return_value=mock_sm),
+        ):
             resp = client.post(
                 "/api/v1/sso/okta/refresh",
                 cookies={"sso_refresh_token": "valid-refresh-token"},
@@ -250,8 +274,10 @@ class TestOktaRefresh:
         mock_sm = AsyncMock()
         mock_sm.refresh_session = AsyncMock(return_value=None)
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_session_manager", return_value=mock_sm):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._get_session_manager", return_value=mock_sm),
+        ):
             resp = client.post(
                 "/api/v1/sso/okta/refresh",
                 cookies={"sso_refresh_token": "expired-token"},
@@ -266,8 +292,10 @@ class TestOktaLogout:
         mock_sm.jwt_service.validate_token = MagicMock(return_value={"session_id": "sess-001"})
         mock_sm.revoke_session = AsyncMock(return_value=True)
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_session_manager", return_value=mock_sm):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._get_session_manager", return_value=mock_sm),
+        ):
             resp = client.post(
                 "/api/v1/sso/okta/logout",
                 cookies={"sso_refresh_token": "valid-refresh-token"},
@@ -280,8 +308,10 @@ class TestOktaMe:
         mock_sm = AsyncMock()
         mock_sm.validate_session = AsyncMock(return_value=_make_session_data("okta"))
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_session_manager", return_value=mock_sm):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._get_session_manager", return_value=mock_sm),
+        ):
             resp = client.get(
                 "/api/v1/sso/okta/me",
                 headers={"Authorization": "Bearer valid-access-token"},
@@ -296,8 +326,10 @@ class TestOktaMe:
         mock_sm = AsyncMock()
         mock_sm.validate_session = AsyncMock(return_value=None)
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_session_manager", return_value=mock_sm):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._get_session_manager", return_value=mock_sm),
+        ):
             resp = client.get(
                 "/api/v1/sso/okta/me",
                 headers={"Authorization": "Bearer invalid-token"},
@@ -309,21 +341,26 @@ class TestOktaMe:
 # AZURE ROUTES
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestAzureAuthorize:
     def test_authorize_redirects(self, client):
         mock_provider = MagicMock()
         mock_provider.get_authorization_url.return_value = (
             "https://login.microsoftonline.com/tenant/oauth2/v2.0/authorize?state=abc"
         )
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_azure_provider", return_value=mock_provider):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._get_azure_provider", return_value=mock_provider),
+        ):
             resp = client.get("/api/v1/sso/azure/authorize", follow_redirects=False)
         assert resp.status_code == 302
         assert "microsoftonline.com" in resp.headers["location"]
 
     def test_authorize_503_when_not_configured(self, client):
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_azure_provider", side_effect=ValueError("missing")):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._get_azure_provider", side_effect=ValueError("missing")),
+        ):
             resp = client.get("/api/v1/sso/azure/authorize", follow_redirects=False)
         assert resp.status_code == 503
 
@@ -341,10 +378,12 @@ class TestAzureCallback:
         mock_sm = AsyncMock()
         mock_sm.create_session = AsyncMock(return_value=_make_token_pair())
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._pop_state", return_value=state), \
-             patch("portal.routers.sso._get_azure_provider", return_value=mock_provider), \
-             patch("portal.routers.sso._get_session_manager", return_value=mock_sm):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._pop_state", return_value=state),
+            patch("portal.routers.sso._get_azure_provider", return_value=mock_provider),
+            patch("portal.routers.sso._get_session_manager", return_value=mock_sm),
+        ):
             resp = client.get(
                 "/api/v1/sso/azure/callback",
                 params={"code": "auth-code", "state": state},
@@ -359,9 +398,11 @@ class TestAzureCallback:
         mock_provider = MagicMock()
         mock_provider.exchange_code_for_tokens.side_effect = Exception("Azure error")
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._pop_state", return_value=state), \
-             patch("portal.routers.sso._get_azure_provider", return_value=mock_provider):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._pop_state", return_value=state),
+            patch("portal.routers.sso._get_azure_provider", return_value=mock_provider),
+        ):
             resp = client.get(
                 "/api/v1/sso/azure/callback",
                 params={"code": "bad-code", "state": state},
@@ -374,8 +415,10 @@ class TestAzureRefresh:
         mock_sm = AsyncMock()
         mock_sm.refresh_session = AsyncMock(return_value=_make_token_pair())
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_session_manager", return_value=mock_sm):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._get_session_manager", return_value=mock_sm),
+        ):
             resp = client.post(
                 "/api/v1/sso/azure/refresh",
                 cookies={"sso_refresh_token": "valid-refresh-token"},
@@ -386,8 +429,10 @@ class TestAzureRefresh:
         mock_sm = AsyncMock()
         mock_sm.refresh_session = AsyncMock(return_value=None)
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_session_manager", return_value=mock_sm):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._get_session_manager", return_value=mock_sm),
+        ):
             resp = client.post(
                 "/api/v1/sso/azure/refresh",
                 cookies={"sso_refresh_token": "expired"},
@@ -402,8 +447,10 @@ class TestAzureLogout:
         mock_sm.jwt_service.validate_token = MagicMock(return_value={"session_id": "sess-002"})
         mock_sm.revoke_session = AsyncMock(return_value=True)
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_session_manager", return_value=mock_sm):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._get_session_manager", return_value=mock_sm),
+        ):
             resp = client.post(
                 "/api/v1/sso/azure/logout",
                 cookies={"sso_refresh_token": "valid-token"},
@@ -416,8 +463,10 @@ class TestAzureMe:
         mock_sm = AsyncMock()
         mock_sm.validate_session = AsyncMock(return_value=_make_session_data("azure"))
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_session_manager", return_value=mock_sm):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._get_session_manager", return_value=mock_sm),
+        ):
             resp = client.get(
                 "/api/v1/sso/azure/me",
                 headers={"Authorization": "Bearer valid-access-token"},
@@ -429,8 +478,10 @@ class TestAzureMe:
         mock_sm = AsyncMock()
         mock_sm.validate_session = AsyncMock(return_value=None)
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_session_manager", return_value=mock_sm):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._get_session_manager", return_value=mock_sm),
+        ):
             resp = client.get(
                 "/api/v1/sso/azure/me",
                 headers={"Authorization": "Bearer bad-token"},
@@ -442,21 +493,26 @@ class TestAzureMe:
 # GOOGLE ROUTES
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestGoogleAuthorize:
     def test_authorize_redirects(self, client):
         mock_provider = MagicMock()
         mock_provider.get_authorization_url.return_value = (
             "https://accounts.google.com/o/oauth2/v2/auth?state=abc"
         )
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_google_provider", return_value=mock_provider):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._get_google_provider", return_value=mock_provider),
+        ):
             resp = client.get("/api/v1/sso/google/authorize", follow_redirects=False)
         assert resp.status_code == 302
         assert "google.com" in resp.headers["location"]
 
     def test_authorize_503_when_not_configured(self, client):
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_google_provider", side_effect=ValueError("missing")):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._get_google_provider", side_effect=ValueError("missing")),
+        ):
             resp = client.get("/api/v1/sso/google/authorize", follow_redirects=False)
         assert resp.status_code == 503
 
@@ -474,10 +530,12 @@ class TestGoogleCallback:
         mock_sm = AsyncMock()
         mock_sm.create_session = AsyncMock(return_value=_make_token_pair())
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._pop_state", return_value=state), \
-             patch("portal.routers.sso._get_google_provider", return_value=mock_provider), \
-             patch("portal.routers.sso._get_session_manager", return_value=mock_sm):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._pop_state", return_value=state),
+            patch("portal.routers.sso._get_google_provider", return_value=mock_provider),
+            patch("portal.routers.sso._get_session_manager", return_value=mock_sm),
+        ):
             resp = client.get(
                 "/api/v1/sso/google/callback",
                 params={"code": "auth-code", "state": state},
@@ -492,9 +550,11 @@ class TestGoogleCallback:
         mock_provider = MagicMock()
         mock_provider.exchange_code_for_tokens.side_effect = Exception("Google error")
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._pop_state", return_value=state), \
-             patch("portal.routers.sso._get_google_provider", return_value=mock_provider):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._pop_state", return_value=state),
+            patch("portal.routers.sso._get_google_provider", return_value=mock_provider),
+        ):
             resp = client.get(
                 "/api/v1/sso/google/callback",
                 params={"code": "bad-code", "state": state},
@@ -507,8 +567,10 @@ class TestGoogleRefresh:
         mock_sm = AsyncMock()
         mock_sm.refresh_session = AsyncMock(return_value=_make_token_pair())
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_session_manager", return_value=mock_sm):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._get_session_manager", return_value=mock_sm),
+        ):
             resp = client.post(
                 "/api/v1/sso/google/refresh",
                 cookies={"sso_refresh_token": "valid-refresh-token"},
@@ -519,8 +581,10 @@ class TestGoogleRefresh:
         mock_sm = AsyncMock()
         mock_sm.refresh_session = AsyncMock(return_value=None)
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_session_manager", return_value=mock_sm):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._get_session_manager", return_value=mock_sm),
+        ):
             resp = client.post(
                 "/api/v1/sso/google/refresh",
                 cookies={"sso_refresh_token": "expired"},
@@ -535,8 +599,10 @@ class TestGoogleLogout:
         mock_sm.jwt_service.validate_token = MagicMock(return_value={"session_id": "sess-003"})
         mock_sm.revoke_session = AsyncMock(return_value=True)
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_session_manager", return_value=mock_sm):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._get_session_manager", return_value=mock_sm),
+        ):
             resp = client.post(
                 "/api/v1/sso/google/logout",
                 cookies={"sso_refresh_token": "valid-token"},
@@ -549,8 +615,10 @@ class TestGoogleMe:
         mock_sm = AsyncMock()
         mock_sm.validate_session = AsyncMock(return_value=_make_session_data("google"))
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_session_manager", return_value=mock_sm):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._get_session_manager", return_value=mock_sm),
+        ):
             resp = client.get(
                 "/api/v1/sso/google/me",
                 headers={"Authorization": "Bearer valid-access-token"},
@@ -562,8 +630,10 @@ class TestGoogleMe:
         mock_sm = AsyncMock()
         mock_sm.validate_session = AsyncMock(return_value=None)
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._get_session_manager", return_value=mock_sm):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._get_session_manager", return_value=mock_sm),
+        ):
             resp = client.get(
                 "/api/v1/sso/google/me",
                 headers={"Authorization": "Bearer bad-token"},
@@ -574,6 +644,7 @@ class TestGoogleMe:
 # ═══════════════════════════════════════════════════════════════════════════════
 # COOKIE SECURITY TESTS
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestCookieSecurity:
     """Verify that the refresh cookie has the correct security attributes."""
@@ -595,11 +666,13 @@ class TestCookieSecurity:
         mock_sm = AsyncMock()
         mock_sm.create_session = AsyncMock(return_value=_make_token_pair())
 
-        with patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS), \
-             patch("portal.routers.sso._pop_state", return_value=state), \
-             patch("portal.routers.sso.OktaProvider", return_value=mock_provider), \
-             patch("portal.routers.sso._get_okta_provider", return_value=mock_provider), \
-             patch("portal.routers.sso._get_session_manager", return_value=mock_sm):
+        with (
+            patch("portal.routers.sso.get_settings", return_value=MOCK_SETTINGS),
+            patch("portal.routers.sso._pop_state", return_value=state),
+            patch("portal.routers.sso.OktaProvider", return_value=mock_provider),
+            patch("portal.routers.sso._get_okta_provider", return_value=mock_provider),
+            patch("portal.routers.sso._get_session_manager", return_value=mock_sm),
+        ):
             resp = client.get(
                 "/api/v1/sso/okta/callback",
                 params={"code": "auth-code", "state": state},

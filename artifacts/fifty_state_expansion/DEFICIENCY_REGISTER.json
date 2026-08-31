@@ -1,0 +1,606 @@
+[
+  {
+    "id": "DEF-0001",
+    "domain": "trust_law",
+    "severity": "critical",
+    "description": "The trust_law package advertises all-50-state coverage but stores static unverified doctrine and jurisdiction data without primary-authority verification metadata.",
+    "evidence": [
+      "trust_law/__init__.py",
+      "trust_law/trust_knowledge_base.py",
+      "trust_law/jurisdiction_analyzer.py",
+      "artifacts/fifty_state_expansion/CURRENT_STATE_AUDIT.md"
+    ],
+    "affected_files": [
+      "trust_law/__init__.py",
+      "trust_law/trust_knowledge_base.py",
+      "trust_law/jurisdiction_analyzer.py"
+    ],
+    "recommended_action": "Contain current data as unverified research and create portal-native LegalAuthority, JurisdictionRule, and JurisdictionCoverage models before enabling production use.",
+    "acceptance_criteria": [
+      "All existing static trust claims imported with verification_status='unverified' or quarantined",
+      "Every production rule links to primary authority",
+      "UI displays support level and human-review status"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "DEF-0002",
+    "domain": "ucc",
+    "severity": "critical",
+    "description": "UCC filing assistant can generate financing-statement instructions without verified state filing-office rules or attachment/security-agreement gating.",
+    "evidence": [
+      "trust_law/ucc_filing_assistant.py",
+      "artifacts/fifty_state_expansion/CURRENT_STATE_AUDIT.md",
+      "tests/test_legal_authority_phase_two_b.py",
+      "docs/fifty-state-trust-intelligence/JURISDICTION_COVERAGE.md"
+    ],
+    "affected_files": [
+      "trust_law/ucc_filing_assistant.py"
+    ],
+    "recommended_action": "Gate UCC outputs as draft educational analysis until official state rules and Article 9 requirements are modeled with human review.",
+    "acceptance_criteria": [
+      "Filing instructions cannot be emitted as final advice",
+      "Attachment, value, rights in collateral, and authenticated security agreement checks exist",
+      "Official filing-office authority and last verified dates are stored"
+    ],
+    "status": "in_progress",
+    "phase_2b_notes": [
+      "Phase 2B adds evidence-based UCC filing assessment with attachment/security-agreement/value/debtor-rights gates for NY/PA/NJ, but legacy UCC assistant containment remains open."
+    ]
+  },
+  {
+    "id": "DEF-0003",
+    "domain": "unsupported_claims",
+    "severity": "critical",
+    "description": "Pseudo-legal/private-law claims are detected in one router but there is no durable quarantine model, source-ingestion class, or review workflow.",
+    "evidence": [
+      "portal/routers/trust_compliance.py",
+      "artifacts/fifty_state_expansion/UNSUPPORTED_CLAIM_CONTAINMENT.md"
+    ],
+    "affected_files": [
+      "portal/routers/trust_compliance.py"
+    ],
+    "recommended_action": "Implement a source-ingestion classifier and unsupported-claim quarantine with source links, evidence hashes, warnings, and no production rule promotion path without primary authority.",
+    "acceptance_criteria": [
+      "UNVERIFIED_PRIVATE_LAW_CLAIM source class exists",
+      "Quarantined claims are tenant-scoped and auditable",
+      "Tests cover accepted-for-value, birth-certificate securities, secret Treasury account, tacit acquiescence, and immunity claims"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "DEF-0004",
+    "domain": "creditor_response",
+    "severity": "high",
+    "description": "No normalized creditor-response workspace exists for claimant identity, ownership chain, servicer/collector role, notices, deadlines, disputes, arbitration, court status, or evidence-readiness score.",
+    "evidence": [
+      "portal/routers/trust_compliance.py",
+      "agents/howard_template_agent.py",
+      "blackstone/cases",
+      "artifacts/fifty_state_expansion/CURRENT_STATE_AUDIT.md"
+    ],
+    "affected_files": [
+      "portal/routers/trust_compliance.py",
+      "agents/howard_template_agent.py",
+      "blackstone/cases"
+    ],
+    "recommended_action": "Create creditor matter/evidence/deadline models and an explainable evidence-readiness score that does not rely on pseudo-legal terminology.",
+    "acceptance_criteria": [
+      "Creditor evidence score factors and weights are transparent",
+      "Original-creditor versus debt-collector classification is modeled",
+      "Deadline and evidence preservation workflows are tested"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "DEF-0005",
+    "domain": "legal_authority",
+    "severity": "critical",
+    "description": "No portal-native legal authority/rule schema exists with citation, source URL, effective date, repeal date, last verified date, verifier, verification status, limitations, and machine-readable rule logic.",
+    "evidence": [
+      "portal/models",
+      "blackstone/models.py",
+      "artifacts/fifty_state_expansion/ARCHITECTURE_PROPOSAL.md",
+      "tests/test_legal_authority_phase_two_b.py",
+      "docs/fifty-state-trust-intelligence/JURISDICTION_COVERAGE.md"
+    ],
+    "affected_files": [
+      "portal/models",
+      "blackstone/models.py"
+    ],
+    "recommended_action": "Implement LegalAuthority and JurisdictionRule persistence under portal models with raw SQL migrations and tests.",
+    "acceptance_criteria": [
+      "LegalAuthority model includes all directive-required metadata",
+      "JurisdictionRule model supports effective dates, exceptions, conflicts, confidence, and human-review flag",
+      "Tests cover current, repealed, future-effective, conflicting, and unverified rules"
+    ],
+    "status": "in_progress",
+    "phase_2b_notes": [
+      "Phase 2B generalizes governed jurisdiction packages and adds NY/PA legal-authority/rule records, but full portal persistence and all-state coverage remain incomplete."
+    ]
+  },
+  {
+    "id": "DEF-0006",
+    "domain": "trust_health",
+    "severity": "high",
+    "description": "No explainable trust health and resilience assessment engine exists for the required 25 score dimensions.",
+    "evidence": [
+      "trust_law/trust_reasoning_engine.py",
+      "web/src/pages/TrustLaw.tsx",
+      "artifacts/fifty_state_expansion/CURRENT_STATE_AUDIT.md"
+    ],
+    "affected_files": [
+      "trust_law/trust_reasoning_engine.py",
+      "web/src/pages/TrustLaw.tsx"
+    ],
+    "recommended_action": "Create trust assessment models and scoring service with evidence links, missing evidence, authority references, limitations, and professional-review triggers.",
+    "acceptance_criteria": [
+      "Every score exposes factors, weights, evidence, assumptions, limitations, and review triggers",
+      "UNKNOWN is used when evidence is insufficient",
+      "Tests cover missing evidence and conflicting jurisdiction facts"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "DEF-0007",
+    "domain": "financial_audit_readiness",
+    "severity": "high",
+    "description": "Financial features are dashboard/billing oriented and do not provide professional-grade ledgers, audit-style procedures, workpapers, or an audit-readiness binder.",
+    "evidence": [
+      "portal/models/billing.py",
+      "web/src/components/financial",
+      "app_builder",
+      "artifacts/fifty_state_expansion/CURRENT_STATE_AUDIT.md"
+    ],
+    "affected_files": [
+      "portal/models/billing.py",
+      "web/src/components/financial",
+      "app_builder"
+    ],
+    "recommended_action": "Design separate accounting/audit-readiness models with clear NOT_AN_AUDIT labeling and CPA review workflow.",
+    "acceptance_criteria": [
+      "General ledger and workpaper schemas exist",
+      "Outputs are labeled AUDIT-READINESS WORKPAPER PACKAGE - NOT AN INDEPENDENT AUDIT",
+      "Tests cover assertions, reconciliations, proposed adjustments, and reviewer notes"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "DEF-0008",
+    "domain": "privacy_security",
+    "severity": "high",
+    "description": "The portal has RBAC, audit, encryption, and storage primitives, but lacks integrated data classification, purpose-bound access, privacy budget, selective disclosure, honeytokens, retention/legal holds, and export controls for the proposed expansion.",
+    "evidence": [
+      "portal/auth/rbac.py",
+      "portal/services/encryption_service.py",
+      "portal/services/document_export_service.py",
+      "portal/services/share_service.py",
+      "portal/services/storage_service.py",
+      "artifacts/fifty_state_expansion/SECURITY_AND_PRIVACY_REVIEW.md"
+    ],
+    "affected_files": [
+      "portal/auth/rbac.py",
+      "portal/services",
+      "portal/models"
+    ],
+    "recommended_action": "Add privacy/security policy models before enabling high-volume legal/financial document exports.",
+    "acceptance_criteria": [
+      "Data classification taxonomy exists server-side",
+      "Access purpose and export logging are enforced",
+      "Sensitive-field exposure is tracked and testable"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "DEF-0009",
+    "domain": "multi_agent_parliament",
+    "severity": "critical",
+    "description": "Existing parliament functionality is static/demo/prototype and lacks durable queues, batch manifests, weighted evidence voting, dissent preservation, and 1,000-document processing.",
+    "evidence": [
+      "trust_law/trust_parliament.py",
+      "web/src/pages/AIParliament.tsx",
+      "parl",
+      "agent_protocol",
+      "artifacts/fifty_state_expansion/CURRENT_STATE_AUDIT.md"
+    ],
+    "affected_files": [
+      "trust_law/trust_parliament.py",
+      "web/src/pages/AIParliament.tsx",
+      "parl",
+      "agent_protocol"
+    ],
+    "recommended_action": "Implement a portal-native parliament job architecture with idempotent tasks, document chunks, votes, dissents, conclusions, checkpoints, and deterministic test mode.",
+    "acceptance_criteria": [
+      "Decision states include insufficient evidence, conflicting authority, superseded, and human review required",
+      "Dissent and minority reports are preserved",
+      "Synthetic 1,000-document run reports throughput, errors, retries, and recovery"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "DEF-0010",
+    "domain": "frontend_ux",
+    "severity": "medium",
+    "description": "Trust Law and AI Parliament screens use hard-coded demo data and do not show verification status, support status, authority links, professional-review gates, or evidence-weighted conclusions.",
+    "evidence": [
+      "web/src/pages/TrustLaw.tsx",
+      "web/src/pages/AIParliament.tsx",
+      "artifacts/fifty_state_expansion/CURRENT_STATE_AUDIT.md",
+      "tests/test_legal_authority_phase_two_b.py",
+      "docs/fifty-state-trust-intelligence/JURISDICTION_COVERAGE.md"
+    ],
+    "affected_files": [
+      "web/src/pages/TrustLaw.tsx",
+      "web/src/pages/AIParliament.tsx"
+    ],
+    "recommended_action": "Move legal/parliament content behind APIs and display support level, verification status, limitations, and human-review state.",
+    "acceptance_criteria": [
+      "UI no longer embeds legal rules as source constants",
+      "Every jurisdiction displays support status",
+      "Professional-review gates are visible and server-enforced"
+    ],
+    "status": "in_progress",
+    "phase_2b_notes": [
+      "Phase 2B adds NY/PA jurisdiction workspaces, Northeast comparison, and UCC assessment frontend routes with warnings, but legacy TrustLaw/AI Parliament demo surfaces remain hard-coded."
+    ]
+  },
+  {
+    "id": "DEF-0011",
+    "domain": "testing",
+    "severity": "high",
+    "description": "No test suite covers legal-rule effective dates, supersession, conflicting authority, unsupported-claim quarantine, creditor evidence scoring, trust simulations, privacy exports, or parliament scale.",
+    "evidence": [
+      "pyproject.toml",
+      "portal/tests",
+      "trust_law/tests",
+      "parl/tests",
+      "artifacts/fifty_state_expansion/CURRENT_STATE_AUDIT.md",
+      "tests/test_legal_authority_phase_two_b.py",
+      "docs/fifty-state-trust-intelligence/JURISDICTION_COVERAGE.md"
+    ],
+    "affected_files": [
+      "portal/tests",
+      "trust_law/tests",
+      "parl/tests"
+    ],
+    "recommended_action": "Create focused unit, integration, E2E, security, and fixture tests before claiming feature completion.",
+    "acceptance_criteria": [
+      "Legal-rule fixture set includes current, repealed, future, conflicting, nonuniform, incomplete, secondary-only, and unsupported claims",
+      "Security tests cover tenant boundaries and unauthorized export for new surfaces",
+      "Parliament scale test processes 1,000 synthetic documents"
+    ],
+    "status": "in_progress",
+    "phase_2b_notes": [
+      "Phase 2B adds focused regional rule, comparison, UCC assessment, API, frontend route, and containment tests, but broader proposed feature areas remain untested."
+    ]
+  },
+  {
+    "id": "DEF-0012",
+    "domain": "quality_gates",
+    "severity": "medium",
+    "description": "Many target domains for this expansion are excluded from active Ruff linting, including trust_law, parl, agent_protocol, financial_mastery, legal_intelligence, and artifacts.",
+    "evidence": [
+      "pyproject.toml",
+      "artifacts/fifty_state_expansion/CURRENT_STATE_AUDIT.md"
+    ],
+    "affected_files": [
+      "pyproject.toml"
+    ],
+    "recommended_action": "Keep new production code in actively linted portal/web paths or explicitly add new paths to quality gates; avoid expanding excluded legacy modules as production authority.",
+    "acceptance_criteria": [
+      "New production modules pass Ruff/Black or web lint/type-check",
+      "Legacy excluded modules are not used as production legal authority",
+      "CI scope is documented for the new feature"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "DEF-0013",
+    "domain": "effective_dates",
+    "severity": "critical",
+    "description": "No effective-date, repeal-date, transition, and supersession engine exists for legal authorities or jurisdiction rules.",
+    "evidence": [
+      "trust_law/trust_knowledge_base.py",
+      "trust_law/ucc_filing_assistant.py",
+      "portal/models",
+      "artifacts/fifty_state_expansion/ARCHITECTURE_PROPOSAL.md"
+    ],
+    "affected_files": [
+      "trust_law/trust_knowledge_base.py",
+      "trust_law/ucc_filing_assistant.py",
+      "portal/models"
+    ],
+    "recommended_action": "Model effective ranges and supersession links before any rule can be evaluated for a specific date.",
+    "acceptance_criteria": [
+      "Rule lookup accepts an analysis date",
+      "Future-effective and repealed rules are not active for current analyses",
+      "Superseded rules remain queryable but inactive"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "DEF-0014",
+    "domain": "conflicting_authority",
+    "severity": "high",
+    "description": "The repository has conceptual conflict handling in Blackstone, but no portal workflow to record, expose, and resolve conflicting legal authority for production rules.",
+    "evidence": [
+      "blackstone/engines/authority_engine.py",
+      "blackstone/models.py",
+      "portal/models",
+      "artifacts/fifty_state_expansion/ARCHITECTURE_PROPOSAL.md"
+    ],
+    "affected_files": [
+      "blackstone/engines/authority_engine.py",
+      "blackstone/models.py",
+      "portal/models"
+    ],
+    "recommended_action": "Create conflict records and require human review before a rule with unresolved controlling conflict is used as a conclusion.",
+    "acceptance_criteria": [
+      "Conflicting authorities are linked to propositions and rules",
+      "Rule evaluation can return CONFLICTING_AUTHORITY",
+      "Review decisions preserve both supporting and opposing evidence"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "DEF-0015",
+    "domain": "professional_review",
+    "severity": "critical",
+    "description": "No production professional-review gate exists for legal rules, UCC outputs, trust clauses, creditor-response conclusions, tax conclusions, or audit-readiness findings.",
+    "evidence": [
+      "portal/models",
+      "web/src/pages/TrustLaw.tsx",
+      "trust_law/trust_document_generator.py",
+      "artifacts/fifty_state_expansion/ARCHITECTURE_PROPOSAL.md"
+    ],
+    "affected_files": [
+      "portal/models",
+      "web/src/pages/TrustLaw.tsx",
+      "trust_law/trust_document_generator.py"
+    ],
+    "recommended_action": "Implement professional review items, reviewer roles, dispositions, expiry, and server-side enforcement before production eligibility.",
+    "acceptance_criteria": [
+      "Rules cannot become HUMAN_REVIEWED without a review record",
+      "Execution-ready documents are blocked absent approved review",
+      "Review actions are audit logged and reversible only through supersession"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "DEF-0016",
+    "domain": "jurisdiction_coverage",
+    "severity": "critical",
+    "description": "No production-grade jurisdiction coverage exists; all fifty states, District of Columbia, and federal overlays are explicitly NOT_STARTED in Phase 0.",
+    "evidence": [
+      "data/jurisdictions/coverage.json",
+      "artifacts/fifty_state_expansion/CURRENT_STATE_AUDIT.md"
+    ],
+    "affected_files": [
+      "data/jurisdictions/coverage.json",
+      "trust_law/__init__.py",
+      "trust_law/jurisdiction_analyzer.py"
+    ],
+    "recommended_action": "Use the coverage scaffold as the only support-status source until primary authority research advances individual jurisdictions.",
+    "acceptance_criteria": [
+      "Coverage contains all required jurisdictions",
+      "No jurisdiction support status exceeds verified evidence",
+      "UI and APIs display support status"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "DEF-0017",
+    "domain": "source_classification",
+    "severity": "high",
+    "description": "No source-ingestion pipeline classifies documents into the directive's authority, professional, client, educational, private-template, unsupported-claim, or unknown classes.",
+    "evidence": [
+      "portal/services/document_processor.py",
+      "blackstone/models.py",
+      "artifacts/fifty_state_expansion/DATA_MIGRATION_PLAN.md"
+    ],
+    "affected_files": [
+      "portal/services/document_processor.py",
+      "portal/models",
+      "blackstone/models.py"
+    ],
+    "recommended_action": "Add source document classification and verification metadata before migrating existing source material.",
+    "acceptance_criteria": [
+      "Every ingested document has a source class",
+      "Authority weight and verification state are stored",
+      "Unsupported claims are classified separately from valid citations"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "DEF-0018",
+    "domain": "provenance",
+    "severity": "high",
+    "description": "Evidence hash and snapshot primitives exist, but legal rules, UI legal content, UCC summaries, and parliament conclusions do not yet require source provenance links.",
+    "evidence": [
+      "portal/services/evidence_hash_boundary.py",
+      "portal/services/evidence_snapshot_service.py",
+      "trust_law/trust_knowledge_base.py",
+      "web/src/pages/TrustLaw.tsx",
+      "artifacts/fifty_state_expansion/DATA_MIGRATION_PLAN.md"
+    ],
+    "affected_files": [
+      "portal/services/evidence_hash_boundary.py",
+      "portal/services/evidence_snapshot_service.py",
+      "trust_law/trust_knowledge_base.py",
+      "web/src/pages/TrustLaw.tsx"
+    ],
+    "recommended_action": "Require source document IDs, content hashes, citation extraction metadata, and evidence links for every production rule and conclusion.",
+    "acceptance_criteria": [
+      "Rule records cannot be activated without authority provenance",
+      "Parliament conclusions preserve supporting and opposing evidence",
+      "UI displays provenance summaries and limitations"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "DEF-0019",
+    "domain": "multi_agent_parliament",
+    "severity": "high",
+    "description": "Existing parliament demos use simple vote-style consensus and do not require mandatory dissent, minority reports, source-diversity checks, or unsupported-consensus detection.",
+    "evidence": [
+      "trust_law/trust_parliament.py",
+      "web/src/pages/AIParliament.tsx",
+      "artifacts/fifty_state_expansion/CURRENT_STATE_AUDIT.md"
+    ],
+    "affected_files": [
+      "trust_law/trust_parliament.py",
+      "web/src/pages/AIParliament.tsx"
+    ],
+    "recommended_action": "Replace simple voting with weighted evidence disposition, mandatory dissent preservation, and human-review escalation for unsupported consensus.",
+    "acceptance_criteria": [
+      "Every conclusion stores dissent and unresolved conflicts",
+      "Simple majority alone cannot produce ACCEPTED",
+      "Unsupported consensus is detected and escalated"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "DEF-0020",
+    "domain": "audit_logging",
+    "severity": "medium",
+    "description": "Audit logging primitives exist, but no audit event taxonomy exists yet for proposed legal-rule reads, source imports, quarantines, professional reviews, privacy disclosures, exports, and parliament approvals.",
+    "evidence": [
+      "portal/services/audit_service.py",
+      "portal/models/audit_record.py",
+      "artifacts/fifty_state_expansion/SECURITY_AND_PRIVACY_REVIEW.md"
+    ],
+    "affected_files": [
+      "portal/services/audit_service.py",
+      "portal/models/audit_record.py"
+    ],
+    "recommended_action": "Define and test audit events for every sensitive Phase 1+ workflow before enabling user access.",
+    "acceptance_criteria": [
+      "Sensitive reads and exports create audit events",
+      "Quarantine and review status changes are audit logged",
+      "Audit tampering tests cover the new event classes"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "DEF-0021",
+    "domain": "tenant_boundary_tests",
+    "severity": "medium",
+    "description": "Existing portal tenant/RBAC tests are reusable, but the proposed legal intelligence, creditor, privacy, audit-readiness, and parliament surfaces do not yet exist and therefore have no tenant-boundary tests.",
+    "evidence": [
+      "portal/auth/rbac.py",
+      "portal/tests",
+      "artifacts/fifty_state_expansion/SECURITY_AND_PRIVACY_REVIEW.md"
+    ],
+    "affected_files": [
+      "portal/tests"
+    ],
+    "recommended_action": "Add tenant-boundary and IDOR tests with each new API surface.",
+    "acceptance_criteria": [
+      "Cross-tenant legal source access is blocked",
+      "Cross-tenant creditor and trust assessment access is blocked",
+      "Unauthorized export attempts are rejected and audited"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "DEF-0022",
+    "domain": "legal_output_boundaries",
+    "severity": "high",
+    "description": "The current product lacks a unified server-side boundary separating legal education, document organization, issue spotting, automated rule evaluation, and professional legal/accounting conclusions.",
+    "evidence": [
+      "trust_law/trust_reasoning_engine.py",
+      "trust_law/trust_document_generator.py",
+      "web/src/pages/TrustLaw.tsx",
+      "portal/routers/trust_compliance.py",
+      "artifacts/fifty_state_expansion/CURRENT_STATE_AUDIT.md"
+    ],
+    "affected_files": [
+      "trust_law/trust_reasoning_engine.py",
+      "trust_law/trust_document_generator.py",
+      "web/src/pages/TrustLaw.tsx",
+      "portal/routers/trust_compliance.py"
+    ],
+    "recommended_action": "Create output classification and review gates so user-facing responses cannot impersonate legal, tax, accounting, audit, or filing opinions.",
+    "acceptance_criteria": [
+      "Every output is classified by allowed purpose",
+      "Professional conclusions require review state",
+      "Disclaimers and server enforcement match output class"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "DEF-0023",
+    "domain": "repository_tracking",
+    "severity": "medium",
+    "description": "Core jurisdiction coverage data is hidden by a broad data/ ignore rule and would not be staged by default.",
+    "evidence": [
+      ".gitignore:63:data/",
+      "data/jurisdictions/coverage.json",
+      "artifacts/fifty_state_expansion/PHASE_ZERO_CLOSURE.md"
+    ],
+    "affected_files": [
+      ".gitignore",
+      "data/jurisdictions/coverage.json"
+    ],
+    "recommended_action": "Force-add only data/jurisdictions/coverage.json for Phase 0 and avoid exposing unrelated ignored data directories.",
+    "acceptance_criteria": [
+      "Only coverage.json is tracked from data/jurisdictions",
+      "No broad data/ unignore rule is introduced",
+      "Tracking decision is documented"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "DEF-0024",
+    "domain": "stale_source_monitoring",
+    "severity": "high",
+    "description": "No statutory drift or stale-source monitor exists to detect changed statutes, regulations, official forms, court decisions, or uniform-law amendments affecting encoded rules.",
+    "evidence": [
+      "trust_law/trust_knowledge_base.py",
+      "trust_law/ucc_filing_assistant.py",
+      "portal/models",
+      "artifacts/fifty_state_expansion/ARCHITECTURE_PROPOSAL.md"
+    ],
+    "affected_files": [
+      "trust_law/trust_knowledge_base.py",
+      "trust_law/ucc_filing_assistant.py",
+      "portal/models"
+    ],
+    "recommended_action": "Design re-verification schedules, last-verified metadata, and proposed update records before any jurisdiction becomes production eligible.",
+    "acceptance_criteria": [
+      "Every authority has last_verified_at and verifier",
+      "Rules can be flagged stale without deletion",
+      "Statutory drift creates proposed updates requiring review"
+    ],
+    "status": "open"
+  },
+  {
+    "id": "DEF-0025",
+    "domain": "jurisdiction_coverage",
+    "severity": "high",
+    "description": "Delaware DAPT and Connecticut CUTS rules present novel risks not found in NJ/NY/PA: federal bankruptcy override of DAPT (11 U.S.C. § 548), DAPT 'no direct benefit' ongoing litigation, Connecticut's explicit self-settled prohibition vs. Delaware DAPT, and CUTS nonuniform provisions requiring case-by-case review. These require licensed-attorney review before any production use.",
+    "evidence": [
+      "data/jurisdictions/delaware/rules.json",
+      "data/jurisdictions/connecticut/rules.json",
+      "data/jurisdictions/delaware/conflicts.json",
+      "data/jurisdictions/connecticut/conflicts.json",
+      "docs/fifty-state-trust-intelligence/DELAWARE.md",
+      "docs/fifty-state-trust-intelligence/CONNECTICUT.md"
+    ],
+    "affected_files": [
+      "data/jurisdictions/delaware/",
+      "data/jurisdictions/connecticut/"
+    ],
+    "recommended_action": "Phase 3A rules are TESTED but not HUMAN_REVIEWED. DAPT and CUTS rules require licensed-attorney review before production eligibility. No DAPT or CUTS rule may advance to production without explicit attorney review and bankruptcy-risk disclosure.",
+    "acceptance_criteria": [
+      "All DAPT rules are flagged HUMAN_REVIEW_REQUIRED and blocked from production eligibility.",
+      "All CT self-settled prohibition rules are flagged HUMAN_REVIEW_REQUIRED and blocked from production eligibility.",
+      "Bankruptcy override conflict records are present and visible in comparison output.",
+      "Licensed-attorney review records are entered for all DAPT and CUTS rules before any production advancement."
+    ],
+    "status": "open",
+    "phase_3a_notes": [
+      "Added in Phase 3A. DEF-0025 captures novel legal risks specific to Delaware DAPT and Connecticut CUTS that were not present in NJ/NY/PA."
+    ]
+  }
+]

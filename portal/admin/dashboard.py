@@ -1,4 +1,5 @@
 """Admin Dashboard — Real-time metrics & WebSocket updates."""
+
 import asyncio
 import contextlib
 import json
@@ -139,21 +140,14 @@ async def _inbound_frame_handler(
         if text_data is not None:
             encoded_len = len(text_data.encode("utf-8"))
             if encoded_len > hardening_settings.payload_max_bytes:
-                await event_queue.put(
-                    InboundEvent(kind=_PAYLOAD_TOO_LARGE, close_code=4413)
-                )
+                await event_queue.put(InboundEvent(kind=_PAYLOAD_TOO_LARGE, close_code=4413))
                 return
             try:
                 parsed = json.loads(text_data)
             except (json.JSONDecodeError, TypeError):
-                await event_queue.put(
-                    InboundEvent(kind=_UNSUPPORTED_MESSAGE, close_code=4403)
-                )
+                await event_queue.put(InboundEvent(kind=_UNSUPPORTED_MESSAGE, close_code=4403))
                 return
-            if (
-                isinstance(parsed, dict)
-                and parsed.get("type") in _HEARTBEAT_SCHEMA
-            ):
+            if isinstance(parsed, dict) and parsed.get("type") in _HEARTBEAT_SCHEMA:
                 await event_queue.put(
                     InboundEvent(
                         kind=_HEARTBEAT,
@@ -162,23 +156,17 @@ async def _inbound_frame_handler(
                 )
                 continue
             # Under-limit but unsupported message
-            await event_queue.put(
-                InboundEvent(kind=_UNSUPPORTED_MESSAGE, close_code=4403)
-            )
+            await event_queue.put(InboundEvent(kind=_UNSUPPORTED_MESSAGE, close_code=4403))
             return
 
         # ── binary frame ──────────────────────────────────────────────
         binary_data = msg.get("bytes")
         if binary_data is not None:
             if len(binary_data) > hardening_settings.payload_max_bytes:
-                await event_queue.put(
-                    InboundEvent(kind=_PAYLOAD_TOO_LARGE, close_code=4413)
-                )
+                await event_queue.put(InboundEvent(kind=_PAYLOAD_TOO_LARGE, close_code=4413))
                 return
             # Binary frames are not supported
-            await event_queue.put(
-                InboundEvent(kind=_UNSUPPORTED_MESSAGE, close_code=4403)
-            )
+            await event_queue.put(InboundEvent(kind=_UNSUPPORTED_MESSAGE, close_code=4403))
             return
 
 
@@ -363,7 +351,9 @@ async def websocket_endpoint(websocket: WebSocket):
                 # immediate (no interval wait); subsequent sends respect
                 # min_send_interval_seconds.
                 idle_deadline = last_client_activity + ws_hardening_settings.idle_timeout_seconds
-                max_deadline = connection_start + ws_hardening_settings.max_connection_lifetime_seconds
+                max_deadline = (
+                    connection_start + ws_hardening_settings.max_connection_lifetime_seconds
+                )
                 next_send = now if last_send_time is None else last_send_time + send_interval
                 earliest_deadline = min(next_send, idle_deadline, max_deadline)
                 timeout = max(0.0, earliest_deadline - now)
@@ -515,6 +505,7 @@ async def websocket_endpoint(websocket: WebSocket):
 async def get_metrics(_: CurrentUser = Depends(require_permissions(Permission.ADMIN_DASHBOARD))):
     """REST endpoint for metrics (requires ADMIN_DASHBOARD permission)."""
     return metrics_store
+
 
 @router.post("/metrics/update")
 async def update_metrics(

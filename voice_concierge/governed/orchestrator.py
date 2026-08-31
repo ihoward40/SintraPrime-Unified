@@ -158,7 +158,11 @@ def handle_voice_command(
                 session_state=session.state,
             )
         session.transition(SessionState.COMPLETED, "mock execution completed")
-        result_label = RESULT_DRAFTED if policy.decision == PolicyDecision.ALLOWED_DRAFT_ONLY else RESULT_ALLOWED
+        result_label = (
+            RESULT_DRAFTED
+            if policy.decision == PolicyDecision.ALLOWED_DRAFT_ONLY
+            else RESULT_ALLOWED
+        )
         receipt = build_receipt(
             envelope,
             policy_decision=str(policy.decision),
@@ -286,7 +290,9 @@ def confirm_voice_command(
     )
     return OrchestrationOutcome(
         envelope=envelope_confirmed,
-        policy=PolicyResult(PolicyDecision.CONFIRMATION_REQUIRED, ConfirmationState.CONFIRMED, "confirmed"),
+        policy=PolicyResult(
+            PolicyDecision.CONFIRMATION_REQUIRED, ConfirmationState.CONFIRMED, "confirmed"
+        ),
         capability=capability,
         provider_result=provider_result,
         receipt=receipt,

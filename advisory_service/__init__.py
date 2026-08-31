@@ -161,9 +161,7 @@ class AdvisoryResponse:
     not_a_decision: bool = True
     human_override: bool = True
     questions: list[str] = field(default_factory=list)
-    advisory_classification: AdvisoryClassification = field(
-        default_factory=AdvisoryClassification
-    )
+    advisory_classification: AdvisoryClassification = field(default_factory=AdvisoryClassification)
     provenance: Provenance | None = None
     extensions: dict[str, Any] | None = None  # Reserved for future optional fields
 

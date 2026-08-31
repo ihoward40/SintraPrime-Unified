@@ -29,8 +29,8 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-RETENTION_YEARS = 7          # Legal retention: 7 years
-ANOMALY_THRESHOLD = 10       # Flag actors with > N high-risk actions in 1 hour
+RETENTION_YEARS = 7  # Legal retention: 7 years
+ANOMALY_THRESHOLD = 10  # Flag actors with > N high-risk actions in 1 hour
 DEFAULT_DB_PATH = Path("/tmp/sintraprime_audit.db")
 
 CREATE_TABLE_SQL = """
@@ -213,17 +213,26 @@ class AuditTrail:
 
         Returns the output path.
         """
-        entries = self.query(actor=actor, action=action,
-                             date_range=date_range, risk_level=risk_level,
-                             limit=100_000)
+        entries = self.query(
+            actor=actor, action=action, date_range=date_range, risk_level=risk_level, limit=100_000
+        )
         out = Path(output_path)
         out.parent.mkdir(parents=True, exist_ok=True)
 
         with open(out, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(
                 f,
-                fieldnames=["id", "timestamp", "actor", "action", "outcome",
-                            "risk_level", "approval_id", "checksum", "metadata"],
+                fieldnames=[
+                    "id",
+                    "timestamp",
+                    "actor",
+                    "action",
+                    "outcome",
+                    "risk_level",
+                    "approval_id",
+                    "checksum",
+                    "metadata",
+                ],
             )
             writer.writeheader()
             for e in entries:
@@ -289,7 +298,9 @@ class AuditTrail:
             "generated_at": now.isoformat(),
             "period": f"{thirty_days_ago.date()} to {now.date()}",
             "total_events": len(entries),
-            "high_risk_events": sum(1 for e in entries if e.risk_level in (RiskLevel.HIGH, RiskLevel.CRITICAL)),
+            "high_risk_events": sum(
+                1 for e in entries if e.risk_level in (RiskLevel.HIGH, RiskLevel.CRITICAL)
+            ),
             "approval_events": sum(1 for e in entries if e.approval_id),
         }
 
@@ -304,7 +315,9 @@ class AuditTrail:
             base["retention_policy"] = f"{self.retention_years} years"
 
         elif standard == "HIPAA":
-            phi_entries = [e for e in entries if "phi" in e.action.lower() or "pii" in e.action.lower()]
+            phi_entries = [
+                e for e in entries if "phi" in e.action.lower() or "pii" in e.action.lower()
+            ]
             base["phi_access_events"] = len(phi_entries)
             base["controls"] = {
                 "§164.312(b)": "Audit controls — active",
@@ -313,7 +326,9 @@ class AuditTrail:
             }
 
         elif standard == "GDPR":
-            pii_entries = [e for e in entries if "pii" in e.action.lower() or "data" in e.action.lower()]
+            pii_entries = [
+                e for e in entries if "pii" in e.action.lower() or "data" in e.action.lower()
+            ]
             base["personal_data_events"] = len(pii_entries)
             base["controls"] = {
                 "Art. 30": "Records of processing activities",
@@ -348,8 +363,7 @@ class AuditTrail:
 
         for actor, actor_entries in by_actor.items():
             high_risk = [
-                e for e in actor_entries
-                if e.risk_level in (RiskLevel.HIGH, RiskLevel.CRITICAL)
+                e for e in actor_entries if e.risk_level in (RiskLevel.HIGH, RiskLevel.CRITICAL)
             ]
             if len(high_risk) > ANOMALY_THRESHOLD:
                 flagged.extend(high_risk)

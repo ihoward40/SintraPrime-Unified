@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class SessionInfo(BaseModel):
     """Session metadata stored in Redis."""
+
     session_id: str
     user_id: str
     email: str

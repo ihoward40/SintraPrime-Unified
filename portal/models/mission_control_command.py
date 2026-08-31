@@ -42,7 +42,9 @@ class MissionControlCommand(Base):
     payload: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     metadata_json: Mapped[dict] = mapped_column("metadata", JSON, nullable=False, default=dict)
 
-    audit_log_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("audit_logs.id"), nullable=True)
+    audit_log_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("audit_logs.id"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
@@ -65,7 +67,9 @@ class MissionControlCommand(Base):
             "idempotency_key",
             name="uq_mission_control_command_idempotency",
         ),
-        Index("ix_mission_control_commands_tenant_state_created", "tenant_id", "state", "created_at"),
+        Index(
+            "ix_mission_control_commands_tenant_state_created", "tenant_id", "state", "created_at"
+        ),
         Index("ix_mission_control_commands_target", "tenant_id", "target_type", "target_id"),
     )
 
@@ -113,7 +117,9 @@ class MissionControlCommandReceipt(Base):
     )
     receipt_type: Mapped[str] = mapped_column(String(40), nullable=False)
     receipt_hash: Mapped[str] = mapped_column(String(64), nullable=False)
-    audit_log_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("audit_logs.id"), nullable=True)
+    audit_log_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("audit_logs.id"), nullable=True
+    )
     evidence_refs: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

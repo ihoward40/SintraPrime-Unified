@@ -34,7 +34,6 @@ from scheduler.task_queue import TaskQueue
 from scheduler.recurring_tasks import RecurringTaskManager
 from scheduler.task_executor import TaskExecutor
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -70,6 +69,10 @@ def executor():
 @pytest.fixture()
 def recurring_mgr(scheduler):
     return RecurringTaskManager(scheduler=scheduler)
+
+
+def _python_shell_command(code: str) -> str:
+    return f'"{sys.executable}" -c "{code}"'
 
 
 def _noop(**kwargs) -> str:
@@ -271,6 +274,7 @@ class TestTaskScheduler:
 
     def test_run_task_executes_fn(self, scheduler):
         results = []
+
         def capture_fn(**kwargs):
             results.append("ran")
             return "ran"
@@ -360,8 +364,10 @@ class TestTaskDispatcher:
 
     def test_register_and_dispatch_to_agent(self, dispatcher, scheduler):
         handler_results = []
+
         def agent_handler(**kwargs):
             handler_results.append("handled")
+
         dispatcher.register_agent("legal_agent", agent_handler)
         task = _make_task()
         dispatcher.dispatch_to_agent(task, "legal_agent")
@@ -438,6 +444,7 @@ class TestTaskQueue:
 
     def test_thread_safety(self, queue):
         errors = []
+
         def producer():
             try:
                 for _ in range(20):
@@ -463,7 +470,7 @@ class TestTaskQueue:
     def test_priority_clamped_to_1_10(self, queue):
         t1 = _make_task("p0")
         t2 = _make_task("p99")
-        queue.enqueue(t1, priority=0)   # clamped to 1
+        queue.enqueue(t1, priority=0)  # clamped to 1
         queue.enqueue(t2, priority=99)  # clamped to 10
         assert queue.size() == 2
 
@@ -564,6 +571,7 @@ class TestTaskExecutor:
         def print_fn(**kwargs):
             print("hello from task")
             return None
+
         task = _make_task(fn=print_fn)
         task.max_retries = 0
         result = executor.execute(task)
@@ -589,7 +597,7 @@ class TestTaskExecutor:
             executor.execute_python("import os; os.system('ls')")
 
     def test_execute_shell_basic(self, executor):
-        output = executor.execute_shell("echo hello")
+        output = executor.execute_shell(_python_shell_command("print('hello')"))
         assert "hello" in output
 
     def test_execute_shell_safe_mode_blocks_rm_rf(self, executor):
@@ -598,7 +606,7 @@ class TestTaskExecutor:
 
     def test_execute_shell_unsafe_mode(self, executor):
         # In unsafe mode, dangerous commands are NOT blocked (still runs restricted by OS)
-        output = executor.execute_shell("echo allowed", safe_mode=False)
+        output = executor.execute_shell(_python_shell_command("print('allowed')"), safe_mode=False)
         assert "allowed" in output
 
     def test_retry_exponential_backoff(self, executor, monkeypatch):
@@ -644,12 +652,15 @@ except ImportError:
 @pytest.mark.skipif(not _HAS_FASTAPI, reason="fastapi not installed")
 class TestSchedulerAPI:
     def test_create_task(self):
-        resp = _api_client.post("/scheduler/task", json={
-            "name": "API test task",
-            "description": "Created via API",
-            "task_type": "one_time",
-            "schedule": {"run_at": (datetime.utcnow() + timedelta(hours=1)).isoformat()},
-        })
+        resp = _api_client.post(
+            "/scheduler/task",
+            json={
+                "name": "API test task",
+                "description": "Created via API",
+                "task_type": "one_time",
+                "schedule": {"run_at": (datetime.utcnow() + timedelta(hours=1)).isoformat()},
+            },
+        )
         assert resp.status_code == 201
         data = resp.json()
         assert data["name"] == "API test task"
@@ -661,10 +672,13 @@ class TestSchedulerAPI:
         assert isinstance(resp.json(), list)
 
     def test_get_task(self):
-        create_resp = _api_client.post("/scheduler/task", json={
-            "name": "get_me",
-            "task_type": "one_time",
-        })
+        create_resp = _api_client.post(
+            "/scheduler/task",
+            json={
+                "name": "get_me",
+                "task_type": "one_time",
+            },
+        )
         task_id = create_resp.json()["id"]
         resp = _api_client.get(f"/scheduler/task/{task_id}")
         assert resp.status_code == 200
@@ -675,30 +689,39 @@ class TestSchedulerAPI:
         assert resp.status_code == 404
 
     def test_cancel_task(self):
-        create_resp = _api_client.post("/scheduler/task", json={"name": "cancel_me", "task_type": "one_time"})
+        create_resp = _api_client.post(
+            "/scheduler/task", json={"name": "cancel_me", "task_type": "one_time"}
+        )
         task_id = create_resp.json()["id"]
         resp = _api_client.delete(f"/scheduler/task/{task_id}")
         assert resp.status_code == 200
         assert resp.json()["ok"] is True
 
     def test_pause_task(self):
-        create_resp = _api_client.post("/scheduler/task", json={"name": "pause_me", "task_type": "one_time"})
+        create_resp = _api_client.post(
+            "/scheduler/task", json={"name": "pause_me", "task_type": "one_time"}
+        )
         task_id = create_resp.json()["id"]
         resp = _api_client.put(f"/scheduler/task/{task_id}/pause")
         assert resp.status_code == 200
 
     def test_resume_paused_task(self):
-        create_resp = _api_client.post("/scheduler/task", json={"name": "resume_me", "task_type": "one_time"})
+        create_resp = _api_client.post(
+            "/scheduler/task", json={"name": "resume_me", "task_type": "one_time"}
+        )
         task_id = create_resp.json()["id"]
         _api_client.put(f"/scheduler/task/{task_id}/pause")
         resp = _api_client.put(f"/scheduler/task/{task_id}/resume")
         assert resp.status_code == 200
 
     def test_dispatch_natural_language(self):
-        resp = _api_client.post("/scheduler/dispatch", json={
-            "goal": "run case law digest every morning at 7am",
-            "delivery_method": "log",
-        })
+        resp = _api_client.post(
+            "/scheduler/dispatch",
+            json={
+                "goal": "run case law digest every morning at 7am",
+                "delivery_method": "log",
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert "task_id" in data

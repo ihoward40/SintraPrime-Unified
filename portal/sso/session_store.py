@@ -3,6 +3,7 @@ Session Storage Abstraction
 Support for Redis and in-memory backends.
 Fail-closed: operations raise explicit errors on unavailable backends.
 """
+
 import json
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -124,11 +125,10 @@ class RedisSessionStore(SessionStore):
             from which a client is created automatically.
         """
         if redis_client is None and not redis_url:
-            raise ValueError(
-                "RedisSessionStore requires either redis_client or redis_url"
-            )
+            raise ValueError("RedisSessionStore requires either redis_client or redis_url")
         if redis_client is None:
             import redis.asyncio as _aioredis
+
             redis_client = _aioredis.Redis.from_url(redis_url, decode_responses=True)
         self.redis = redis_client
         self.session_key_prefix = "sso:session:"
@@ -213,7 +213,9 @@ class RedisSessionStore(SessionStore):
             ip_address=data.get("ip_address"),
             user_agent=data.get("user_agent"),
             is_revoked=data.get("is_revoked", False),
-            revoked_at=datetime.fromisoformat(data["revoked_at"]) if data.get("revoked_at") else None,
+            revoked_at=datetime.fromisoformat(data["revoked_at"])
+            if data.get("revoked_at")
+            else None,
         )
 
     @staticmethod
@@ -226,5 +228,7 @@ class RedisSessionStore(SessionStore):
             issued_at=datetime.fromisoformat(data["issued_at"]),
             expires_at=datetime.fromisoformat(data["expires_at"]),
             is_revoked=data.get("is_revoked", False),
-            revoked_at=datetime.fromisoformat(data["revoked_at"]) if data.get("revoked_at") else None,
+            revoked_at=datetime.fromisoformat(data["revoked_at"])
+            if data.get("revoked_at")
+            else None,
         )

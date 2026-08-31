@@ -4,6 +4,7 @@ Persistence service for the Blackstone Evidence Ledger and evaluations.
 Provides async CRUD helpers that integrate with the portal's async SQLAlchemy
 session. Designed to be called from routers and background tasks.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -15,8 +16,6 @@ from portal.models.blackstone import BlackstoneEvaluation, EvidenceLedger
 
 
 class EvidenceLedgerService:
-
-
     @staticmethod
     async def record(
         db: AsyncSession,

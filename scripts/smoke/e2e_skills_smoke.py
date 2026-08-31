@@ -14,6 +14,7 @@ Writes deterministic artifacts:
 
 Exit code 0 = smoke lane passed. Non-zero = at least one failure.
 """
+
 from __future__ import annotations
 
 import json
@@ -124,7 +125,9 @@ def _run_pytest_smoke() -> tuple[int, int, int, int]:
 def _run_repo_truth() -> tuple[bool, list[dict]]:
     script = ROOT / "scripts" / "smoke" / "repo_truth_check.py"
     if not script.exists():
-        return False, [{"name": "repo_truth_check.py", "status": "FAIL", "detail": "script missing"}]
+        return False, [
+            {"name": "repo_truth_check.py", "status": "FAIL", "detail": "script missing"}
+        ]
 
     result = subprocess.run(
         [sys.executable, str(script)],
@@ -135,7 +138,13 @@ def _run_repo_truth() -> tuple[bool, list[dict]]:
     )
     # repo_truth_check prints summary but does not emit JSON; infer from exit code.
     passed = result.returncode == 0
-    details = [{"name": "repo_truth_check.py", "status": "PASS" if passed else "FAIL", "detail": result.stdout[-500:]}]
+    details = [
+        {
+            "name": "repo_truth_check.py",
+            "status": "PASS" if passed else "FAIL",
+            "detail": result.stdout[-500:],
+        }
+    ]
     return passed, details
 
 

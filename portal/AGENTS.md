@@ -23,12 +23,22 @@ Owns the SintraPrime client portal — the FastAPI application that provides sec
 
 ## Work Guidance
 
-*(No project-specific standards yet — fill when engineering conventions emerge.)*
+- Portal-wide HTTP authentication is enforced by `middleware/auth_middleware.py` and installed in `main.py`; public routes must be exact allowlist entries or narrowly scoped prefix entries with tests. Never use a root `startswith("/")` style public check.
+- Production configuration must fail closed when default secrets, local object storage endpoints, insecure MinIO transport, or placeholder encryption/session keys remain configured. Development may use deterministic local defaults only outside production.
+- Tenant-scoped database sessions must activate PostgreSQL RLS settings from verified request/user context. Maintain both `app.current_*` and legacy `app.*` session variables until all migrations converge on one naming convention.
+- Orchestration run projections and document packet provenance are durable DB-backed service concerns. Do not reintroduce process-memory storage for protected run retrieval, packet snapshots, or packet audit records except as explicit injected test doubles.
+- JWT revocation must be checked anywhere an access token is accepted, including middleware and `get_current_user`.
 
 ## Verification
 
-*(No verification framework documented yet — fill when test/coverage thresholds exist.)*
+- Auth, tenant isolation, revocation, production secret gates, public route allowlisting, and RLS activation are certified in `portal/tests/test_auth_tenant_rbac_certification.py`. Run that focused suite after portal auth, config, middleware, or database-session changes.
+- Durable orchestration persistence, document packet provenance, and transactional audit behavior are certified in `portal/tests/test_orchestration_api.py`, `portal/tests/test_document_export_endpoint.py`, and `portal/tests/test_persistence_audit_correctness.py`.
 
 ## Child DOX Index
 
 - `routers/` — API route handlers (FastAPI router modules)
+- `services/orchestration/` — adaptive orchestration service contracts, policies, routing, verification, reconciliation, and mock-provider execution
+
+## Persistent Matter Intelligence
+
+Persistent matter intelligence is owned by `models/matter_intelligence.py`, `models/deadline_evidence.py`, the corresponding schemas/services, and their migrations. Records are tenant- and matter-scoped, soft-deleted where mutable, and sensitive values must be redacted before persistence and audit logging. Assessment and deadline versions are append-only; attorney approval is required for legal/evidence conclusions and accountant approval for tax/accounting assessments. Phase 2C-3 adds rule-provenance deadlines and immutable evidence graph links. Phase 2C-4 owns the frontend matter workspace; Phase 2C-5 owns redacted JSON/PDF packet exports, dedicated export authorization, canonical packet hashes, and export audit events.

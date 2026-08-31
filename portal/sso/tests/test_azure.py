@@ -11,14 +11,13 @@ from portal.sso.providers.azure import AzureADProvider, AzureConfig
 
 
 class TestAzureADProvider(unittest.TestCase):
-
     def setUp(self):
         self.mock_config = AzureConfig(
             tenant_id="test_tenant_id",
             client_id="test_client_id",
             client_secret="test_client_secret",
             redirect_uri="https://test.com/redirect",
-            scopes=["openid", "email", "profile"]
+            scopes=["openid", "email", "profile"],
         )
         self.provider = AzureADProvider(self.mock_config)
         self.mock_openid_config = {
@@ -26,7 +25,7 @@ class TestAzureADProvider(unittest.TestCase):
             "token_endpoint": "https://login.microsoftonline.com/test_tenant_id/oauth2/v2.0/token",
             "userinfo_endpoint": "https://graph.microsoft.com/oidc/userinfo",
             "jwks_uri": "https://login.microsoftonline.com/test_tenant_id/discovery/v2.0/keys",
-            "issuer": "https://login.microsoftonline.com/test_tenant_id/v2.0"
+            "issuer": "https://login.microsoftonline.com/test_tenant_id/v2.0",
         }
         self.mock_jwks = {
             "keys": [
@@ -38,7 +37,7 @@ class TestAzureADProvider(unittest.TestCase):
                     "n": "test_n",
                     "e": "AQAB",
                     "x5c": ["test_x5c"],
-                    "issuer": "test_issuer"
+                    "issuer": "test_issuer",
                 }
             ]
         }
@@ -94,8 +93,18 @@ class TestAzureADProvider(unittest.TestCase):
         assert "code_challenge" in query_params
         assert query_params["code_challenge_method"][0] == "S256"
 
-        code_verifier = base64.urlsafe_b64encode(hashlib.sha256(self.mock_config.client_secret.encode()).digest()).decode().rstrip("=")
-        expected_code_challenge = base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode()).digest()).decode().rstrip("=")
+        code_verifier = (
+            base64.urlsafe_b64encode(
+                hashlib.sha256(self.mock_config.client_secret.encode()).digest()
+            )
+            .decode()
+            .rstrip("=")
+        )
+        expected_code_challenge = (
+            base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode()).digest())
+            .decode()
+            .rstrip("=")
+        )
         assert query_params["code_challenge"][0] == expected_code_challenge
 
     @patch("requests.post")
@@ -104,7 +113,11 @@ class TestAzureADProvider(unittest.TestCase):
         mock_get_openid_config.return_value = self.mock_openid_config
         mock_response = MagicMock()
         mock_response.raise_for_status.return_value = None
-        mock_response.json.return_value = {"access_token": "at", "id_token": "idt", "expires_in": 3600}
+        mock_response.json.return_value = {
+            "access_token": "at",
+            "id_token": "idt",
+            "expires_in": 3600,
+        }
         mock_requests_post.return_value = mock_response
 
         code = "test_code"
@@ -121,7 +134,13 @@ class TestAzureADProvider(unittest.TestCase):
         assert "grant_type" in kwargs["data"]
         assert "code_verifier" in kwargs["data"]
 
-        code_verifier = base64.urlsafe_b64encode(hashlib.sha256(self.mock_config.client_secret.encode()).digest()).decode().rstrip("=")
+        code_verifier = (
+            base64.urlsafe_b64encode(
+                hashlib.sha256(self.mock_config.client_secret.encode()).digest()
+            )
+            .decode()
+            .rstrip("=")
+        )
         assert kwargs["data"]["code_verifier"] == code_verifier
 
     @patch("requests.get")
@@ -139,9 +158,7 @@ class TestAzureADProvider(unittest.TestCase):
         assert user_info["name"] == "Test User"
         mock_requests_get.assert_called_once_with(
             self.mock_openid_config["userinfo_endpoint"],
-            headers={
-                "Authorization": f"Bearer {access_token}"
-            },
+            headers={"Authorization": f"Bearer {access_token}"},
             timeout=10,
         )
 
@@ -168,11 +185,17 @@ class TestAzureADProvider(unittest.TestCase):
     @patch("portal.sso.providers.azure.AzureADProvider._get_openid_config")
     @patch("jose.jwt.decode")
     @patch("jose.jwt.get_unverified_header")
-    def test_validate_id_token_success(self, mock_get_unverified_header, mock_jwt_decode, mock_get_openid_config, mock_get_jwks):
+    def test_validate_id_token_success(
+        self, mock_get_unverified_header, mock_jwt_decode, mock_get_openid_config, mock_get_jwks
+    ):
         mock_get_openid_config.return_value = self.mock_openid_config
         mock_get_jwks.return_value = self.mock_jwks
         mock_get_unverified_header.return_value = {"kid": "test_kid"}
-        mock_jwt_decode.return_value = {"sub": "123", "aud": "test_client_id", "iss": self.mock_openid_config["issuer"]}
+        mock_jwt_decode.return_value = {
+            "sub": "123",
+            "aud": "test_client_id",
+            "iss": self.mock_openid_config["issuer"],
+        }
 
         id_token = "mock_id_token"
         decoded_token = self.provider.validate_id_token(id_token)
@@ -200,8 +223,11 @@ class TestAzureADProvider(unittest.TestCase):
     @patch("portal.sso.providers.azure.AzureADProvider._get_openid_config")
     @patch("jose.jwt.decode")
     @patch("jose.jwt.get_unverified_header")
-    def test_validate_id_token_jwt_error(self, mock_get_unverified_header, mock_jwt_decode, mock_get_openid_config, mock_get_jwks):
+    def test_validate_id_token_jwt_error(
+        self, mock_get_unverified_header, mock_jwt_decode, mock_get_openid_config, mock_get_jwks
+    ):
         from jose.exceptions import JWTError
+
         mock_get_openid_config.return_value = self.mock_openid_config
         mock_get_jwks.return_value = self.mock_jwks
         mock_get_unverified_header.return_value = {"kid": "test_kid"}
@@ -225,7 +251,9 @@ class TestAzureADProvider(unittest.TestCase):
     def test_exchange_code_for_tokens_http_error(self, mock_get_openid_config, mock_requests_post):
         mock_get_openid_config.return_value = self.mock_openid_config
         mock_response = MagicMock()
-        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("400 Bad Request")
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
+            "400 Bad Request"
+        )
         mock_requests_post.return_value = mock_response
 
         with pytest.raises(requests.exceptions.HTTPError):
@@ -236,7 +264,9 @@ class TestAzureADProvider(unittest.TestCase):
     def test_get_user_info_http_error(self, mock_get_openid_config, mock_requests_get):
         mock_get_openid_config.return_value = self.mock_openid_config
         mock_response = MagicMock()
-        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("401 Unauthorized")
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
+            "401 Unauthorized"
+        )
         mock_requests_get.return_value = mock_response
 
         with pytest.raises(requests.exceptions.HTTPError):
@@ -247,10 +277,12 @@ class TestAzureADProvider(unittest.TestCase):
     def test_get_jwks_http_error(self, mock_get_openid_config, mock_requests_get):
         mock_get_openid_config.return_value = self.mock_openid_config
         mock_response = MagicMock()
-        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("500 Internal Server Error")
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
+            "500 Internal Server Error"
+        )
         mock_requests_get.return_value = mock_response
 
-        self.provider._jwks = None # Clear cache to force API call
+        self.provider._jwks = None  # Clear cache to force API call
         with pytest.raises(requests.exceptions.HTTPError):
             self.provider.get_jwks()
 
@@ -258,21 +290,23 @@ class TestAzureADProvider(unittest.TestCase):
     @patch("portal.sso.providers.azure.AzureADProvider._get_openid_config")
     @patch("jose.jwt.decode")
     @patch("jose.jwt.get_unverified_header")
-    def test_validate_id_token_general_exception(self, mock_get_unverified_header, mock_jwt_decode, mock_get_openid_config, mock_get_jwks):
+    def test_validate_id_token_general_exception(
+        self, mock_get_unverified_header, mock_jwt_decode, mock_get_openid_config, mock_get_jwks
+    ):
         mock_get_openid_config.return_value = self.mock_openid_config
         mock_get_jwks.return_value = self.mock_jwks
         mock_get_unverified_header.side_effect = Exception("Something unexpected")
 
         id_token = "mock_id_token"
-        with pytest.raises(ValueError, match="An unexpected error occurred during ID token validation: Something unexpected"):
+        with pytest.raises(
+            ValueError,
+            match="An unexpected error occurred during ID token validation: Something unexpected",
+        ):
             self.provider.validate_id_token(id_token)
 
     def test_azure_config_default_scopes(self):
         config = AzureConfig(
-            tenant_id="tid",
-            client_id="cid",
-            client_secret="cs",
-            redirect_uri="ru"
+            tenant_id="tid", client_id="cid", client_secret="cs", redirect_uri="ru"
         )
         assert config.scopes == ["openid", "email", "profile"]
 
@@ -283,7 +317,7 @@ class TestAzureADProvider(unittest.TestCase):
             client_id="cid",
             client_secret="cs",
             redirect_uri="ru",
-            scopes=custom_scopes
+            scopes=custom_scopes,
         )
         assert config.scopes == custom_scopes
 
@@ -299,10 +333,14 @@ class TestAzureADProvider(unittest.TestCase):
 
     @patch("requests.post")
     @patch("portal.sso.providers.azure.AzureADProvider._get_openid_config")
-    def test_exchange_code_for_tokens_invalid_code(self, mock_get_openid_config, mock_requests_post):
+    def test_exchange_code_for_tokens_invalid_code(
+        self, mock_get_openid_config, mock_requests_post
+    ):
         mock_get_openid_config.return_value = self.mock_openid_config
         mock_response = MagicMock()
-        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("400 Invalid Grant")
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
+            "400 Invalid Grant"
+        )
         mock_requests_post.return_value = mock_response
 
         with pytest.raises(requests.exceptions.HTTPError):
@@ -312,8 +350,11 @@ class TestAzureADProvider(unittest.TestCase):
     @patch("portal.sso.providers.azure.AzureADProvider._get_openid_config")
     @patch("jose.jwt.decode")
     @patch("jose.jwt.get_unverified_header")
-    def test_validate_id_token_invalid_audience(self, mock_get_unverified_header, mock_jwt_decode, mock_get_openid_config, mock_get_jwks):
+    def test_validate_id_token_invalid_audience(
+        self, mock_get_unverified_header, mock_jwt_decode, mock_get_openid_config, mock_get_jwks
+    ):
         from jose.exceptions import JWTError
+
         mock_get_openid_config.return_value = self.mock_openid_config
         mock_get_jwks.return_value = self.mock_jwks
         mock_get_unverified_header.return_value = {"kid": "test_kid"}
@@ -327,8 +368,11 @@ class TestAzureADProvider(unittest.TestCase):
     @patch("portal.sso.providers.azure.AzureADProvider._get_openid_config")
     @patch("jose.jwt.decode")
     @patch("jose.jwt.get_unverified_header")
-    def test_validate_id_token_invalid_issuer(self, mock_get_unverified_header, mock_jwt_decode, mock_get_openid_config, mock_get_jwks):
+    def test_validate_id_token_invalid_issuer(
+        self, mock_get_unverified_header, mock_jwt_decode, mock_get_openid_config, mock_get_jwks
+    ):
         from jose.exceptions import JWTError
+
         mock_get_openid_config.return_value = self.mock_openid_config
         mock_get_jwks.return_value = self.mock_jwks
         mock_get_unverified_header.return_value = {"kid": "test_kid"}
@@ -342,8 +386,11 @@ class TestAzureADProvider(unittest.TestCase):
     @patch("portal.sso.providers.azure.AzureADProvider._get_openid_config")
     @patch("jose.jwt.decode")
     @patch("jose.jwt.get_unverified_header")
-    def test_validate_id_token_expired(self, mock_get_unverified_header, mock_jwt_decode, mock_get_openid_config, mock_get_jwks):
+    def test_validate_id_token_expired(
+        self, mock_get_unverified_header, mock_jwt_decode, mock_get_openid_config, mock_get_jwks
+    ):
         from jose.exceptions import ExpiredSignatureError
+
         mock_get_openid_config.return_value = self.mock_openid_config
         mock_get_jwks.return_value = self.mock_jwks
         mock_get_unverified_header.return_value = {"kid": "test_kid"}
@@ -373,7 +420,9 @@ class TestAzureADProvider(unittest.TestCase):
 
     @patch("requests.post")
     @patch("portal.sso.providers.azure.AzureADProvider._get_openid_config")
-    def test_exchange_code_for_tokens_connection_error(self, mock_get_openid_config, mock_requests_post):
+    def test_exchange_code_for_tokens_connection_error(
+        self, mock_get_openid_config, mock_requests_post
+    ):
         mock_get_openid_config.return_value = self.mock_openid_config
         mock_requests_post.side_effect = requests.exceptions.ConnectionError("Network unreachable")
         with pytest.raises(requests.exceptions.ConnectionError):

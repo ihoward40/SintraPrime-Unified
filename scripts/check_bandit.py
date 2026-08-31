@@ -1,4 +1,5 @@
 """Check bandit results for new HIGH findings."""
+
 import json
 import sys
 

@@ -1,4 +1,5 @@
 """Smoke test to verify app boots without import errors."""
+
 import pytest
 
 from portal.config import get_settings
@@ -18,6 +19,7 @@ def test_settings_loads():
     assert settings is not None
     assert hasattr(settings, "DATABASE_URL")
     assert hasattr(settings, "JWT_SECRET_KEY")
+
 
 def test_no_import_errors():
     """Test that all imports resolve without errors."""

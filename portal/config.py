@@ -5,7 +5,7 @@ All settings read from environment variables with sensible defaults.
 
 from functools import lru_cache
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "SintraPrime Portal"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
-    ENVIRONMENT: str = "production"  # development | staging | production
+    ENVIRONMENT: str = "development"  # development | staging | production
     BASE_URL: str = "https://portal.sintraprime.ai"
     FRONTEND_HEALTH_URL: str | None = None
     SECRET_KEY: str = "CHANGE-ME-IN-PRODUCTION-USE-256-BIT-RANDOM-KEY"
@@ -79,9 +79,9 @@ class Settings(BaseSettings):
     REDIS_SESSION_DB: int = 1
 
     # ── Rate Limiting ────────────────────────────────────────────────────
-    RATE_LIMIT_DEFAULT: int = 100       # requests per minute per user
-    RATE_LIMIT_AUTH: int = 10           # requests per minute on auth endpoints
-    RATE_LIMIT_UPLOAD: int = 20         # file uploads per minute
+    RATE_LIMIT_DEFAULT: int = 100  # requests per minute per user
+    RATE_LIMIT_AUTH: int = 10  # requests per minute on auth endpoints
+    RATE_LIMIT_UPLOAD: int = 20  # file uploads per minute
 
     # ── CORS ─────────────────────────────────────────────────────────────
     CORS_ORIGINS: list[str] = [
@@ -145,11 +145,11 @@ class Settings(BaseSettings):
     SSO_SESSION_SECRET: str = "CHANGE-ME-SSO-SESSION-SECRET-256-BIT"
     SSO_ISSUER: str = "https://portal.sintraprime.ai"
     SSO_AUDIENCE: str = "sintraprime-portal"
-    SSO_SESSION_TTL_SECONDS: int = 3600          # 1 hour
-    SSO_REFRESH_TTL_SECONDS: int = 2592000       # 30 days
+    SSO_SESSION_TTL_SECONDS: int = 3600  # 1 hour
+    SSO_REFRESH_TTL_SECONDS: int = 2592000  # 30 days
 
     # Okta
-    OKTA_DOMAIN: str = ""                        # e.g. dev-123456.okta.com
+    OKTA_DOMAIN: str = ""  # e.g. dev-123456.okta.com
     OKTA_CLIENT_ID: str = ""
     OKTA_CLIENT_SECRET: str = ""
     OKTA_REDIRECT_URI: str = "https://portal.sintraprime.ai/api/v1/sso/okta/callback"
@@ -165,7 +165,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = "https://portal.sintraprime.ai/api/v1/sso/google/callback"
-    GOOGLE_HOSTED_DOMAIN: str = ""              # e.g. yourdomain.com; empty = any Google account
+    GOOGLE_HOSTED_DOMAIN: str = ""  # e.g. yourdomain.com; empty = any Google account
 
     # Add durable-workflow config
     DURABLE_WORKFLOW_STORE_PATH: str | None = None
@@ -179,6 +179,36 @@ class Settings(BaseSettings):
         if len(v.encode()) < 32:
             raise ValueError("ENCRYPTION_KEY must be at least 32 bytes")
         return v
+
+    @model_validator(mode="after")
+    def validate_production_secret_gates(self) -> "Settings":
+        if self.ENVIRONMENT.lower() != "production":
+            return self
+
+        insecure_defaults = {
+            "SECRET_KEY": "CHANGE-ME-IN-PRODUCTION-USE-256-BIT-RANDOM-KEY",
+            "JWT_SECRET_KEY": "CHANGE-ME-JWT-SECRET-256-BIT",
+            "JWT_REFRESH_SECRET_KEY": "CHANGE-ME-REFRESH-SECRET-256-BIT",
+            "MINIO_ACCESS_KEY": "minioadmin",
+            "MINIO_SECRET_KEY": "minioadmin",
+            "ENCRYPTION_KEY": "CHANGE-ME-AES-256-KEY-32-BYTES!!",
+            "ENCRYPTION_SALT": "CHANGE-ME-ENCRYPTION-SALT",
+            "SSO_SESSION_SECRET": "CHANGE-ME-SSO-SESSION-SECRET-256-BIT",
+        }
+        violations = [
+            field
+            for field, default_value in insecure_defaults.items()
+            if getattr(self, field) == default_value or str(getattr(self, field)).startswith("CHANGE-ME")
+        ]
+        if not self.MINIO_SECURE:
+            violations.append("MINIO_SECURE")
+        if self.MINIO_ENDPOINT.startswith("localhost") or self.MINIO_ENDPOINT.startswith("127.0.0.1"):
+            violations.append("MINIO_ENDPOINT")
+
+        if violations:
+            fields = ", ".join(sorted(set(violations)))
+            raise ValueError(f"Production configuration uses insecure defaults: {fields}")
+        return self
 
     @property
     def max_file_size_bytes(self) -> int:

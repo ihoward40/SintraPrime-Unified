@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import importlib
 import inspect
 import json
@@ -7,6 +8,7 @@ import re
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 from uuid import UUID, uuid4
 
 import jwt
@@ -15,6 +17,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
+from portal.auth.session_manager import blocklist_jti
 from portal.auth.jwt_handler import (
     create_refresh_token,
     decode_access_token,
@@ -24,6 +27,9 @@ from portal.auth.jwt_handler import (
     settings as jwt_settings,
 )
 from portal.auth.rbac import CurrentUser, Permission, Role, get_current_user
+from portal.config import Settings
+from portal.middleware.auth_middleware import AuthMiddleware, is_public_path
+from portal.services.encryption_service import _get_key
 from portal.main import create_app
 from portal.models.billing import Invoice
 from portal.routers import billing, users
@@ -31,6 +37,8 @@ from portal.services.audit_service import audit
 
 BASELINE_COMMIT = "baseline-placeholder"
 EVIDENCE_SCHEMA_VERSION = "1.0"
+
+API_ROUTE_PREFIXES = ("/api/v1/", "/api/orchestration")
 
 APPROVED_PUBLIC_V1_ROUTES = {
     "/api/v1/auth/login",
@@ -161,7 +169,11 @@ def current_user_payload():
         "sub": str(uuid4()),
         "tenant_id": str(uuid4()),
         "role": Role.ATTORNEY.value,
-        "permissions": [Permission.BILLING_READ.value, Permission.PAYMENT_PROCESS.value, Permission.USER_MANAGE_ROLES.value],
+        "permissions": [
+            Permission.BILLING_READ.value,
+            Permission.PAYMENT_PROCESS.value,
+            Permission.USER_MANAGE_ROLES.value,
+        ],
         "type": "access",
         "jti": str(uuid4()),
         "iat": datetime.now(UTC),
@@ -208,7 +220,9 @@ def invoice_factory(tenant_pair):
     client_a = uuid4()
     client_b = uuid4()
 
-    def build(*, tenant_id: str, amount_paid: float = 0.0, amount_due: float = 100.0, status: str = "sent"):
+    def build(
+        *, tenant_id: str, amount_paid: float = 0.0, amount_due: float = 100.0, status: str = "sent"
+    ):
         return Invoice(
             id=uuid4(),
             tenant_id=tenant_id,
@@ -347,7 +361,11 @@ def classify_route(route: APIRoute) -> dict[str, str | list[str]]:
     elif "Depends(get_current_user)" in source:
         auth_dependency = "get_current_user"
 
-    if "require_same_tenant(" in source or "tenant_id == current_user.tenant_id" in source or "tenant_id=current_user.tenant_id" in source:
+    if (
+        "require_same_tenant(" in source
+        or "tenant_id == current_user.tenant_id" in source
+        or "tenant_id=current_user.tenant_id" in source
+    ):
         tenant_control = "tenant-bound"
     elif "portal_user_id == current_user.user_id" in source:
         tenant_control = "self-bound"
@@ -381,7 +399,28 @@ def classify_route(route: APIRoute) -> dict[str, str | list[str]]:
 
 def collect_route_matrix(app: FastAPI | None = None) -> list[dict[str, str | list[str]]]:
     app = app or create_app()
-    routes = [route for route in app.routes if isinstance(route, APIRoute) and route.path.startswith("/api/v1/")]
+    # Use recursive terminal-route iteration to handle _IncludedRouter wrappers
+    # (FastAPI 0.139+) in addition to flat APIRoute objects (older versions).
+    from portal.tests.support.route_enumeration import iter_terminal_routes
+
+    routes: list[Any] = []
+    for full_path, route in iter_terminal_routes(app.routes):
+        if not isinstance(route, APIRoute):
+            continue
+        if not any(full_path.startswith(prefix) for prefix in API_ROUTE_PREFIXES):
+            continue
+        # Ensure classify_route sees the full mounted path.  On older
+        # FastAPI, route.path is already the full path; on newer versions
+        # the _IncludedRouter wrapper may need the prefix reconstructed.
+        if route.path != full_path:
+            route = SimpleNamespace(
+                path=full_path,
+                methods=route.methods,
+                name=route.name,
+                endpoint=route.endpoint,
+                dependant=route.dependant,
+            )
+        routes.append(route)
     if not routes:
         root = Path(__file__).resolve().parents[2]
         main_source = (root / "portal" / "main.py").read_text(encoding="utf-8", errors="ignore")
@@ -403,9 +442,12 @@ def collect_route_matrix(app: FastAPI | None = None) -> list[dict[str, str | lis
                     endpoint=route.endpoint,
                     dependant=route.dependant,
                 )
-                if synthetic_route.path.startswith("/api/v1/"):
+                if any(synthetic_route.path.startswith(prefix) for prefix in API_ROUTE_PREFIXES):
                     routes.append(synthetic_route)
-    return [classify_route(route) for route in sorted(routes, key=lambda route: (route.path, sorted(route.methods or [])))]
+    return [
+        classify_route(route)
+        for route in sorted(routes, key=lambda route: (route.path, sorted(route.methods or [])))
+    ]
 
 
 def collect_websocket_routes(app: FastAPI | None = None) -> list[dict[str, str]]:
@@ -428,10 +470,15 @@ def collect_websocket_routes(app: FastAPI | None = None) -> list[dict[str, str]]
                     "module": module,
                 }
             )
-    return sorted({(item["path"], item["name"], item["module"]): item for item in routes}.values(), key=lambda item: item["path"])
+    return sorted(
+        {(item["path"], item["name"], item["module"]): item for item in routes}.values(),
+        key=lambda item: item["path"],
+    )
 
 
-def collect_non_http_entrypoints(app: FastAPI | None = None, root: Path | None = None) -> dict[str, list[dict[str, str]]]:
+def collect_non_http_entrypoints(
+    app: FastAPI | None = None, root: Path | None = None
+) -> dict[str, list[dict[str, str]]]:
     root = root or Path(__file__).resolve().parents[2]
     results = {
         "websocket_routes": collect_websocket_routes(app),
@@ -441,18 +488,35 @@ def collect_non_http_entrypoints(app: FastAPI | None = None, root: Path | None =
         "service_to_service_invocations": [],
     }
 
-    py_files = [path for path in root.rglob("*.py") if "/.venv/" not in path.as_posix() and "/tests/" not in path.as_posix()]
+    py_files = [
+        path
+        for path in root.rglob("*.py")
+        if "/.venv/" not in path.as_posix() and "/tests/" not in path.as_posix()
+    ]
     for path in py_files:
         text = path.read_text(encoding="utf-8", errors="ignore")
         rel = str(path.relative_to(root))
         if re.search(r"\bBackgroundTasks\b|\.add_task\(", text):
-            results["background_tasks"].append({"path": rel, "classification": "ISOLATED NON-PRODUCTION"})
-        if re.search(r"\b(APScheduler|BackgroundScheduler|add_job\(|schedule\()\b|cron", text, re.IGNORECASE):
-            results["scheduler_jobs"].append({"path": rel, "classification": "ISOLATED NON-PRODUCTION"})
+            results["background_tasks"].append(
+                {"path": rel, "classification": "ISOLATED NON-PRODUCTION"}
+            )
+        if re.search(
+            r"\b(APScheduler|BackgroundScheduler|add_job\(|schedule\()\b|cron", text, re.IGNORECASE
+        ):
+            results["scheduler_jobs"].append(
+                {"path": rel, "classification": "ISOLATED NON-PRODUCTION"}
+            )
         if rel.startswith("scripts/") or rel.startswith("scripts\\"):
-            results["cli_admin_scripts"].append({"path": rel, "classification": "OUT OF SUPPORTED SCOPE"})
-        if re.search(r"\b(subprocess\.(run|Popen)|requests\.(get|post|put|patch|delete)|httpx\.(get|post|put|patch|delete)|urllib\.request)\b", text):
-            results["service_to_service_invocations"].append({"path": rel, "classification": "OUT OF SUPPORTED SCOPE"})
+            results["cli_admin_scripts"].append(
+                {"path": rel, "classification": "OUT OF SUPPORTED SCOPE"}
+            )
+        if re.search(
+            r"\b(subprocess\.(run|Popen)|requests\.(get|post|put|patch|delete)|httpx\.(get|post|put|patch|delete)|urllib\.request)\b",
+            text,
+        ):
+            results["service_to_service_invocations"].append(
+                {"path": rel, "classification": "OUT OF SUPPORTED SCOPE"}
+            )
     return results
 
 
@@ -474,7 +538,9 @@ def secure_client_request(client: TestClient, token: str | None = None, scheme: 
         ("role", "NOT_A_ROLE", "Invalid token role: 'NOT_A_ROLE'"),
     ],
 )
-def test_authentication_fails_closed_on_missing_and_invalid_claims(secure_app_client, claim, value, expected_detail):
+def test_authentication_fails_closed_on_missing_and_invalid_claims(
+    secure_app_client, claim, value, expected_detail
+):
     payload = {
         "sub": str(uuid4()),
         "tenant_id": str(uuid4()),
@@ -500,10 +566,15 @@ def test_authentication_fails_closed_on_missing_and_invalid_claims(secure_app_cl
     [
         ("case:read", "Malformed permissions container"),
         ({"case:read": True}, "Malformed permissions container"),
-        ([Permission.BILLING_READ.value, "not.a.permission"], "Unsupported permissions: not.a.permission"),
+        (
+            [Permission.BILLING_READ.value, "not.a.permission"],
+            "Unsupported permissions: not.a.permission",
+        ),
     ],
 )
-def test_authentication_fails_closed_on_permissions_shape_and_values(secure_app_client, permissions, expected_detail):
+def test_authentication_fails_closed_on_permissions_shape_and_values(
+    secure_app_client, permissions, expected_detail
+):
     payload = {
         "sub": str(uuid4()),
         "tenant_id": str(uuid4()),
@@ -573,7 +644,9 @@ def test_authentication_fails_closed_on_jwt_and_header_errors(secure_app_client)
 
 
 @pytest.mark.asyncio
-async def test_billing_tenant_isolation_and_fail_closed_payment_flow(current_user, tenant_pair, invoice_factory):
+async def test_billing_tenant_isolation_and_fail_closed_payment_flow(
+    current_user, tenant_pair, invoice_factory
+):
     tenant_a, tenant_b = tenant_pair
     current_user.tenant_id = tenant_a
     current_user.permissions = frozenset({Permission.PAYMENT_PROCESS})
@@ -622,8 +695,12 @@ async def test_billing_tenant_isolation_and_fail_closed_payment_flow(current_use
 
 
 @pytest.mark.asyncio
-async def test_rbac_escalation_controls(current_user, protected_user, role_change_user, role_obj, team_role_obj, monkeypatch):
-    current_user.permissions = frozenset({Permission.USER_MANAGE_ROLES, Permission.USER_DELETE, Permission.USER_READ})
+async def test_rbac_escalation_controls(
+    current_user, protected_user, role_change_user, role_obj, team_role_obj, monkeypatch
+):
+    current_user.permissions = frozenset(
+        {Permission.USER_MANAGE_ROLES, Permission.USER_DELETE, Permission.USER_READ}
+    )
 
     target_role = SimpleNamespace(id=uuid4(), name=Role.PARALEGAL.value)
     target_user = role_change_user
@@ -646,7 +723,9 @@ async def test_rbac_escalation_controls(current_user, protected_user, role_chang
     monkeypatch.setattr(users, "audit", capture_audit)
     monkeypatch.setattr(users.UserResponse, "from_orm_with_role", staticmethod(response_patch))
 
-    same_tenant_response = await users.change_user_role(user_id=target_user.id, role=target_role.name, current_user=current_user, db=db)
+    same_tenant_response = await users.change_user_role(
+        user_id=target_user.id, role=target_role.name, current_user=current_user, db=db
+    )
     assert same_tenant_response["role_id"] == str(target_role.id)
     assert db.commits == 1
     assert len(revoke_calls) == 1
@@ -654,14 +733,31 @@ async def test_rbac_escalation_controls(current_user, protected_user, role_chang
 
     self_db = DummySession(execute_results=[])
     with pytest.raises(HTTPException) as self_exc:
-        await users.change_user_role(user_id=UUID(current_user.user_id), role=Role.PARALEGAL.value, current_user=current_user, db=self_db)
+        await users.change_user_role(
+            user_id=UUID(current_user.user_id),
+            role=Role.PARALEGAL.value,
+            current_user=current_user,
+            db=self_db,
+        )
     assert self_exc.value.status_code == 400
     assert "Cannot change your own role" in self_exc.value.detail
 
-    cross_tenant_user = SimpleNamespace(id=uuid4(), tenant_id=str(uuid4()), role_id=uuid4(), email="cross@example.test", full_name="Cross Tenant", is_active=True)
+    cross_tenant_user = SimpleNamespace(
+        id=uuid4(),
+        tenant_id=str(uuid4()),
+        role_id=uuid4(),
+        email="cross@example.test",
+        full_name="Cross Tenant",
+        is_active=True,
+    )
     cross_db = DummySession(execute_results=[None])
     with pytest.raises(HTTPException) as cross_exc:
-        await users.change_user_role(user_id=cross_tenant_user.id, role=Role.PARALEGAL.value, current_user=current_user, db=cross_db)
+        await users.change_user_role(
+            user_id=cross_tenant_user.id,
+            role=Role.PARALEGAL.value,
+            current_user=current_user,
+            db=cross_db,
+        )
     assert cross_exc.value.status_code == 404
 
     denied_user = CurrentUser(
@@ -680,14 +776,18 @@ async def test_rbac_escalation_controls(current_user, protected_user, role_chang
     assert not denied_user.has_role(Role.PARALEGAL)
 
     if hasattr(users, "assign_permissions"):
-        pytest.fail("Unsupported permission-assignment route exists and must be covered explicitly.")
+        pytest.fail(
+            "Unsupported permission-assignment route exists and must be covered explicitly."
+        )
 
 
 def test_dynamic_live_app_route_discovery(app_graph):
     matrix = collect_route_matrix(app_graph)
     assert matrix, "Route matrix must not be empty"
 
-    discovered_public = {row["path"] for row in matrix if row["public_protected_classification"] == "PUBLIC"}
+    discovered_public = {
+        row["path"] for row in matrix if row["public_protected_classification"] == "PUBLIC"
+    }
     assert discovered_public == APPROVED_PUBLIC_V1_ROUTES
 
     for row in matrix:
@@ -698,17 +798,36 @@ def test_dynamic_live_app_route_discovery(app_graph):
             assert row["auth_dependency"] != "none"
             assert row["exception_justification"].startswith("Protected by")
 
-    shared_document = next(row for row in matrix if row["path"] == "/api/v1/documents/share/{share_token}")
+    shared_document = next(
+        row for row in matrix if row["path"] == "/api/v1/documents/share/{share_token}"
+    )
     assert shared_document["public_protected_classification"] == "PUBLIC"
     assert "shared-document" in shared_document["exception_justification"].lower()
 
 
 def test_non_http_entrypoint_inventory(app_graph):
     inventory = collect_non_http_entrypoints(app_graph)
-    assert inventory["websocket_routes"], "WebSocket routes must be discovered from the live app graph"
-    assert any(item["classification"] == "ISOLATED NON-PRODUCTION" for item in inventory["background_tasks"]) or inventory["background_tasks"] == []
-    assert any(item["classification"] == "OUT OF SUPPORTED SCOPE" for item in inventory["cli_admin_scripts"]) or inventory["cli_admin_scripts"] == []
-    assert all(item["classification"] in {"ISOLATED NON-PRODUCTION", "OUT OF SUPPORTED SCOPE"} for item in inventory["service_to_service_invocations"])
+    assert inventory["websocket_routes"], (
+        "WebSocket routes must be discovered from the live app graph"
+    )
+    assert (
+        any(
+            item["classification"] == "ISOLATED NON-PRODUCTION"
+            for item in inventory["background_tasks"]
+        )
+        or inventory["background_tasks"] == []
+    )
+    assert (
+        any(
+            item["classification"] == "OUT OF SUPPORTED SCOPE"
+            for item in inventory["cli_admin_scripts"]
+        )
+        or inventory["cli_admin_scripts"] == []
+    )
+    assert all(
+        item["classification"] in {"ISOLATED NON-PRODUCTION", "OUT OF SUPPORTED SCOPE"}
+        for item in inventory["service_to_service_invocations"]
+    )
 
 
 @pytest.mark.asyncio
@@ -770,7 +889,9 @@ async def test_focused_certification_helpers_round_trip(current_user):
     token = jwt.encode(payload, jwt_settings.JWT_SECRET_KEY, algorithm=jwt_settings.JWT_ALGORITHM)
     assert decode_access_token(token)["sub"] == current_user.user_id
 
-    raw = json.loads(json.dumps({"repository": "SintraPrime-Unified", "schema_version": EVIDENCE_SCHEMA_VERSION}))
+    raw = json.loads(
+        json.dumps({"repository": "SintraPrime-Unified", "schema_version": EVIDENCE_SCHEMA_VERSION})
+    )
     assert raw["repository"] == "SintraPrime-Unified"
 
 
@@ -825,3 +946,106 @@ def test_non_http_entrypoint_inventory_works_outside_repo_root(app_graph, monkey
         "collect_non_http_entrypoints default root must be derived from the test file location, not Path.cwd()"
     )
     assert default_inventory["websocket_routes"], "expected at least one websocket route discovered"
+
+
+def test_production_settings_reject_insecure_secret_defaults():
+    with pytest.raises(ValueError, match="Production configuration uses insecure defaults"):
+        Settings(ENVIRONMENT="production")
+
+    secure = Settings(
+        ENVIRONMENT="production",
+        SECRET_KEY="s" * 48,
+        JWT_SECRET_KEY="j" * 48,
+        JWT_REFRESH_SECRET_KEY="r" * 48,
+        MINIO_ENDPOINT="storage.sintraprime.ai:9000",
+        MINIO_ACCESS_KEY="prod-access-key",
+        MINIO_SECRET_KEY="prod-secret-key",
+        MINIO_SECURE=True,
+        ENCRYPTION_KEY="e" * 32,
+        ENCRYPTION_SALT="salt" * 8,
+        SSO_SESSION_SECRET="o" * 48,
+    )
+    assert secure.ENVIRONMENT == "production"
+
+
+def test_encryption_service_rejects_production_fallback(monkeypatch):
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.delenv("ENCRYPTION_KEY", raising=False)
+
+    with pytest.raises(RuntimeError, match="ENCRYPTION_KEY is required in production"):
+        _get_key()
+
+    monkeypatch.setenv("ENCRYPTION_KEY", "k" * 32)
+    assert _get_key() == b"k" * 32
+
+
+@pytest.mark.asyncio
+async def test_rls_context_sets_current_and_legacy_session_variables():
+    from portal.database import _set_rls_context
+
+    class CaptureSession:
+        def __init__(self):
+            self.calls = []
+
+        async def execute(self, query, params=None):
+            self.calls.append((str(query), params or {}))
+
+    session = CaptureSession()
+    tenant_id = str(uuid4())
+    user_id = str(uuid4())
+
+    await _set_rls_context(session, tenant_id, user_id)  # type: ignore[arg-type]
+
+    rendered = "\n".join(query for query, _params in session.calls)
+    assert "app.current_tenant_id" in rendered
+    assert "app.tenant_id" in rendered
+    assert "app.current_user_id" in rendered
+    assert "app.user_id" in rendered
+    assert any(params.get("tid") == tenant_id for _query, params in session.calls)
+    assert any(params.get("uid") == user_id for _query, params in session.calls)
+
+
+def test_auth_middleware_public_allowlist_is_exact_and_protects_private_routes():
+    assert is_public_path("/")
+    assert is_public_path("/api/v1/auth/login")
+    assert is_public_path("/api/v1/documents/share/token-123")
+    assert not is_public_path("/api/v1/clients")
+    assert not is_public_path("/api/system/health")
+
+
+def test_live_app_global_auth_middleware_denies_unlisted_routes_and_allows_health():
+    client = TestClient(create_app())
+
+    assert client.get("/health").status_code == 200
+    response = client.get("/api/system/health")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Missing or invalid Authorization header"
+
+
+def test_global_auth_middleware_rejects_revoked_token_before_handler():
+    app = FastAPI()
+    app.add_middleware(AuthMiddleware)
+
+    @app.get("/protected")
+    async def protected_endpoint():
+        return {"status": "should-not-run"}
+
+    jti = str(uuid4())
+    token = make_access_token({"jti": jti})
+    asyncio.run(blocklist_jti(jti))
+
+    response = TestClient(app).get("/protected", headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Token has been revoked"
+
+
+def test_revoked_access_token_is_rejected_by_current_user_dependency(secure_app_client):
+    jti = str(uuid4())
+    token = make_access_token({"jti": jti})
+    asyncio.run(blocklist_jti(jti))
+
+    response = secure_client_request(secure_app_client, token)
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Token has been revoked"

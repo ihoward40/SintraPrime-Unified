@@ -1,0 +1,207 @@
+[
+  {
+    "topic": "Delaware Trust Act and Delaware Statutory Trust Act applicability",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "DE-TRUST-DSTA-3342",
+      "DE-TRUST-ACT-3301"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Delaware distinguishes common-law express trusts (DTA) from statutory trusts (DSTA). The DSTA applies only to trusts formed under its provisions.",
+    "exceptions": [
+      "Mixed trusts require separate analysis."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Trust creation requirements",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "DE-TRUST-ACT-3301"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Trust creation requires capacity, intent, property, lawful purpose, and ascertainable beneficiaries. Written instrument required for real property transfers.",
+    "exceptions": [
+      "Oral trusts for personal property recognized with proof.",
+      "Charitable purpose trusts exempt from beneficiary ascertainability."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Delaware DAPT self-settled asset protection",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "DE-TRUST-DAPT-4901"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "DAPT allows self-settled trust with creditor protection subject to strict conditions: irrevocable, no direct benefit to settlor, independent trustee, not fraudulent.",
+    "exceptions": [
+      "Bankruptcy override.",
+      "Family support claims.",
+      "Government claims.",
+      "Fraudulent transfer."
+    ],
+    "open_questions": [
+      "Court interpretation of 'independent trustee' in ongoing cases.",
+      "Scope of federal preemption in bankruptcy court."
+    ],
+    "human_review_required": true
+  },
+  {
+    "topic": "Delaware spendthrift enforcement",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "DE-TRUST-SPENDTHRIFT-3319"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Delaware enforces spendthrift clauses. Exception creditors (support, government, tort) may reach protected distributions.",
+    "exceptions": [
+      "Child support and alimony.",
+      "Government claims."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Delaware directed trust",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "DE-TRUST-DIRECTED-3527"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Delaware Directed Trust Act enables investment direction holders and administrative agents separate from the directed trustee.",
+    "exceptions": [
+      "ERISA plan asset contexts.",
+      "Following an improper direction."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Delaware trust decanting",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "DE-TRUST-DECANTING-3525"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Trustee with discretionary power may decant (distribute to a second trust) for beneficiaries, subject to perpetuities and trust instrument limits.",
+    "exceptions": [
+      "Beneficiary consent may be required.",
+      "Creditor challenge.",
+      "Fraudulent transfer."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Delaware UCC Article 9 filing office",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "DE-UCC-9-2701"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Delaware Secretary of State is central filing office. Fixture filings and local filings go to the county recorder.",
+    "exceptions": [
+      "Transmitting utilities central filing."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Delaware trust taxation",
+    "research_status": "primary_authority_partial",
+    "primary_authorities": [
+      "DE-TRUST-TAXATION-DEPT",
+      "DE-TRUST-GOVLAW-3321"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Delaware imposes trust income tax on certain Delaware situs trusts. Situs established by governing law designation or Delaware trustee administration.",
+    "exceptions": [
+      "Grantor trust rules.",
+      "Delaware estate tax repealed 2015."
+    ],
+    "open_questions": [
+      "Specific filing thresholds and exemption amounts require official guidance verification."
+    ],
+    "human_review_required": true
+  },
+  {
+    "topic": "Delaware trust protector",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "DE-TRUST-PROTECTOR-3581"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Trust protectors may remove trustees, modify terms, and consent to actions. Scope defined by instrument; fiduciary duties depend on exculpation.",
+    "exceptions": [
+      "Exculpatory language.",
+      "Court review for abuse."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Delaware nonjudicial settlement",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "DE-TRUST-NJSA-3311"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "NJSA can modify, terminate, or reform trust without court, with all interested parties' consent and no material purpose violation.",
+    "exceptions": [
+      "Charitable trusts require AG involvement."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Delaware homestead and wage garnishment",
+    "research_status": "primary_authority_partial",
+    "primary_authorities": [
+      "DE-HOMESTEAD-25-101"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Delaware provides homestead and wage garnishment protections, subject to statutory limits and exceptions for mortgages, taxes, and government claims.",
+    "exceptions": [
+      "Mortgage and tax liens.",
+      "Child support higher garnishment limits."
+    ],
+    "open_questions": [
+      "Exact dollar amounts for homestead value cap require statutory verification."
+    ],
+    "human_review_required": true
+  },
+  {
+    "topic": "Delaware tenancy by entirety",
+    "research_status": "primary_authority_partial",
+    "primary_authorities": [
+      "DE-HOMESTEAD-25-101"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Delaware recognizes tenancy by the entirety for married couples' real property, shielding it from single-spouse creditors.",
+    "exceptions": [
+      "Joint creditors.",
+      "Divorce converts to tenancy in common."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  },
+  {
+    "topic": "Delaware trust migration",
+    "research_status": "primary_authority_verified",
+    "primary_authorities": [
+      "DE-TRUST-GOVLAW-3321",
+      "DE-TRUST-ACT-3301"
+    ],
+    "secondary_sources": [],
+    "rule_summary": "Trusts may migrate to Delaware by changing governing law to Delaware and appointing a Delaware trustee, subject to original jurisdiction restrictions.",
+    "exceptions": [
+      "Original jurisdiction may restrict outbound migration.",
+      "Beneficiary rights during migration."
+    ],
+    "open_questions": [],
+    "human_review_required": true
+  }
+]

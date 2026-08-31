@@ -47,6 +47,7 @@ async def _run_virus_scan(document_id: str) -> None:
     log.info("virus_scan.start", document_id=document_id)
     try:
         import pyclamd  # type: ignore
+
         pyclamd.ClamdUnixSocket()
         # In production: scan the actual file content
         # result = cd.scan_stream(file_content)
@@ -62,6 +63,7 @@ async def _run_ocr(document_id: str) -> None:
     log.info("ocr.start", document_id=document_id)
     try:
         import pytesseract  # type: ignore
+
         # In production: download the decrypted file, run OCR, store text
         log.info("ocr.complete", document_id=document_id)
     except ImportError:

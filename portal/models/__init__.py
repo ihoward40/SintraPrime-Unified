@@ -1,18 +1,29 @@
 """ORM models package."""
+
 from .audit import AuditLog
 from .audit_record import AuditRecord
 from .billing import Expense, Invoice, InvoiceLineItem, Payment, TimeEntry, TrustAccount
 from .case import Case, CaseDeadline, CaseEvent, CaseNote, CaseTask
 from .client import Client, Matter
+from .deadline_evidence import (
+    MatterDeadline,
+    MatterDeadlineVersion,
+    MatterEvidenceFinding,
+    MatterEvidenceLink,
+    MatterEvidenceNode,
+)
 from .document import Document, DocumentFolder, DocumentShare, DocumentVersion
 from .evidence_snapshot import EvidenceSnapshot
-from .hermes import (
-    AssistantProfile,
-    ContextTrace,
-    ControlledAction,
-    ConversationThread,
-    MemoryEntry,
-    OwnerProfile,
+from .matter_intelligence import (
+    MatterAccount,
+    MatterAssessment,
+    MatterAssessmentVersion,
+    MatterAttachment,
+    MatterAuditEvent,
+    MatterCommunication,
+    MatterDispute,
+    MatterFiling,
+    MatterParty,
 )
 from .message import Message, MessageAttachment, MessageThread
 from .mission_control_command import (
@@ -25,36 +36,65 @@ from .mission_control_run_control import (
     MissionControlRunControlEvent,
     RunControlState,
 )
-from .mission_control_execution import Mission, Run
-from .mission_control_run_approval import RunApproval
-from .tenant_principal import TenantPrincipal
+from .orchestration import (
+    ApprovalRequest,
+    ApprovalStatus,
+    BudgetUsage,
+    EvidenceReference,
+    OrchestrationEvent,
+    OrchestrationExecutionMode,
+    OrchestrationNode,
+    OrchestrationNodeStatus,
+    OrchestrationRole,
+    OrchestrationRun,
+    OrchestrationRunStatus,
+    OrchestrationSensitivity,
+    OrchestrationTaskType,
+    ProviderDefinition,
+    ReconciliationResult,
+    RoutingDecision,
+    VerificationResult,
+)
 from .user import Permission as UserPermission
 from .user import Role as UserRole
 from .user import User, UserPermissionAssoc
 
 __all__ = [
-    "AssistantProfile",
+    "ApprovalRequest",
+    "ApprovalStatus",
     "AuditLog",
     "AuditRecord",
+    "BudgetUsage",
     "Case",
     "CaseDeadline",
     "CaseEvent",
     "CaseNote",
     "CaseTask",
     "Client",
-    "ContextTrace",
-    "ControlledAction",
-    "ConversationThread",
     "Document",
     "DocumentFolder",
     "DocumentShare",
     "DocumentVersion",
+    "EvidenceReference",
     "EvidenceSnapshot",
     "Expense",
     "Invoice",
     "InvoiceLineItem",
     "Matter",
-    "MemoryEntry",
+    "MatterAccount",
+    "MatterAssessment",
+    "MatterAssessmentVersion",
+    "MatterAttachment",
+    "MatterAuditEvent",
+    "MatterCommunication",
+    "MatterDeadline",
+    "MatterDeadlineVersion",
+    "MatterDispute",
+    "MatterEvidenceFinding",
+    "MatterEvidenceLink",
+    "MatterEvidenceNode",
+    "MatterFiling",
+    "MatterParty",
     "Message",
     "MessageAttachment",
     "MessageThread",
@@ -63,16 +103,25 @@ __all__ = [
     "MissionControlCommandReceipt",
     "MissionControlRunControl",
     "MissionControlRunControlEvent",
-    "Mission",
-    "Run",
-    "OwnerProfile",
+    "OrchestrationEvent",
+    "OrchestrationExecutionMode",
+    "OrchestrationNode",
+    "OrchestrationNodeStatus",
+    "OrchestrationRole",
+    "OrchestrationRun",
+    "OrchestrationRunStatus",
+    "OrchestrationSensitivity",
+    "OrchestrationTaskType",
     "Payment",
+    "ProviderDefinition",
+    "ReconciliationResult",
+    "RoutingDecision",
     "RunControlState",
-    "TenantPrincipal",
     "TimeEntry",
     "TrustAccount",
     "User",
     "UserPermission",
     "UserPermissionAssoc",
     "UserRole",
+    "VerificationResult",
 ]

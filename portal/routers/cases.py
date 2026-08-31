@@ -36,6 +36,7 @@ router = APIRouter()
 
 def _generate_case_number(tenant_id: str, count: int) -> str:
     from datetime import datetime
+
     year = datetime.utcnow().year
     return f"CASE-{year}-{count:05d}"
 
@@ -63,9 +64,15 @@ async def create_case(
     await db.commit()
     await db.refresh(case)
 
-    await audit(db, action="case_create", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id,
-                resource_type="case", resource_id=str(case.id), resource_name=case.title)
+    await audit(
+        db,
+        action="case_create",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="case",
+        resource_id=str(case.id),
+        resource_name=case.title,
+    )
     return CaseResponse.model_validate(case)
 
 
@@ -97,16 +104,19 @@ async def list_cases(
     if is_urgent is not None:
         stmt = stmt.where(Case.is_urgent == is_urgent)
     if search:
-        stmt = stmt.where(or_(
-            Case.title.ilike(f"%{search}%"),
-            Case.case_number.ilike(f"%{search}%"),
-            Case.docket_number.ilike(f"%{search}%"),
-            Case.opposing_party.ilike(f"%{search}%"),
-        ))
+        stmt = stmt.where(
+            or_(
+                Case.title.ilike(f"%{search}%"),
+                Case.case_number.ilike(f"%{search}%"),
+                Case.docket_number.ilike(f"%{search}%"),
+                Case.opposing_party.ilike(f"%{search}%"),
+            )
+        )
 
     # CLIENT: only their cases
     if current_user.is_client():
         from ..models.client import Client
+
         client_result = await db.execute(
             select(Client.id).where(Client.portal_user_id == current_user.user_id)
         )
@@ -147,8 +157,10 @@ async def get_case(
 
     # Confidential case: only assigned attorneys can see
     if case.is_confidential and not current_user.is_staff():
-        if current_user.user_id not in (case.assigned_staff or []) and \
-           str(case.lead_attorney_id) != current_user.user_id:
+        if (
+            current_user.user_id not in (case.assigned_staff or [])
+            and str(case.lead_attorney_id) != current_user.user_id
+        ):
             raise HTTPException(status_code=403, detail="Access denied: confidential case")
 
     return CaseResponse.model_validate(case)
@@ -194,9 +206,14 @@ async def update_case(
             details={"old_stage": old_stage, "new_stage": body.stage},
         )
 
-    await audit(db, action="case_update", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id,
-                resource_type="case", resource_id=str(case.id))
+    await audit(
+        db,
+        action="case_update",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="case",
+        resource_id=str(case.id),
+    )
     return CaseResponse.model_validate(case)
 
 
@@ -207,6 +224,7 @@ async def delete_case(
     db: AsyncSession = Depends(get_db),
 ):
     from datetime import datetime
+
     result = await db.execute(
         select(Case).where(Case.id == case_id, Case.tenant_id == current_user.tenant_id)
     )
@@ -215,11 +233,18 @@ async def delete_case(
         raise HTTPException(status_code=404)
     case.deleted_at = datetime.now(UTC)
     await db.commit()
-    await audit(db, action="case_delete", user_id=current_user.user_id,
-                tenant_id=current_user.tenant_id, resource_type="case", resource_id=str(case_id))
+    await audit(
+        db,
+        action="case_delete",
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        resource_type="case",
+        resource_id=str(case_id),
+    )
 
 
 # ── Events ────────────────────────────────────────────────────────────────────
+
 
 @router.post("/{case_id}/events", response_model=CaseEventResponse, status_code=201)
 async def add_case_event(
@@ -254,6 +279,7 @@ async def list_case_events(
 
 
 # ── Deadlines ─────────────────────────────────────────────────────────────────
+
 
 @router.post("/{case_id}/deadlines", response_model=CaseDeadlineResponse, status_code=201)
 async def add_deadline(
@@ -290,6 +316,7 @@ async def list_deadlines(
 
 # ── Notes ─────────────────────────────────────────────────────────────────────
 
+
 @router.post("/{case_id}/notes", response_model=CaseNoteResponse, status_code=201)
 async def add_note(
     case_id: uuid.UUID,
@@ -319,13 +346,16 @@ async def list_notes(
         CaseNote.case_id == case_id,
         CaseNote.deleted_at.is_(None),
     )
-    if current_user.is_client() or not current_user.has_permission(Permission.CASE_READ_PRIVATE_NOTES):
+    if current_user.is_client() or not current_user.has_permission(
+        Permission.CASE_READ_PRIVATE_NOTES
+    ):
         stmt = stmt.where(CaseNote.note_type == "client_visible")
     result = await db.execute(stmt.order_by(CaseNote.pinned.desc(), CaseNote.created_at.desc()))
     return [CaseNoteResponse.model_validate(n) for n in result.scalars().all()]
 
 
 # ── Tasks ─────────────────────────────────────────────────────────────────────
+
 
 @router.post("/{case_id}/tasks", response_model=CaseTaskResponse, status_code=201)
 async def create_task(
@@ -353,15 +383,18 @@ async def list_tasks(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(CaseTask).where(
+        select(CaseTask)
+        .where(
             CaseTask.case_id == case_id,
             CaseTask.deleted_at.is_(None),
-        ).order_by(CaseTask.due_date.asc())
+        )
+        .order_by(CaseTask.due_date.asc())
     )
     return [CaseTaskResponse.model_validate(t) for t in result.scalars().all()]
 
 
 # ── Conflict check ────────────────────────────────────────────────────────────
+
 
 @router.post("/conflict-check", response_model=ConflictCheckResponse)
 async def conflict_check(
@@ -371,11 +404,13 @@ async def conflict_check(
 ):
     """Search all cases and clients for potential conflicts of interest."""
     from ..models.client import Client
+
     term = f"%{body.search_term}%"
 
     # Search cases
     case_result = await db.execute(
-        select(Case).where(
+        select(Case)
+        .where(
             Case.tenant_id == current_user.tenant_id,
             or_(
                 Case.title.ilike(term),
@@ -383,13 +418,15 @@ async def conflict_check(
                 Case.opposing_counsel.ilike(term),
             ),
             Case.deleted_at.is_(None),
-        ).limit(20)
+        )
+        .limit(20)
     )
     cases = case_result.scalars().all()
 
     # Search clients
     client_result = await db.execute(
-        select(Client).where(
+        select(Client)
+        .where(
             Client.tenant_id == current_user.tenant_id,
             or_(
                 Client.first_name.ilike(term),
@@ -397,28 +434,33 @@ async def conflict_check(
                 Client.company_name.ilike(term),
             ),
             Client.deleted_at.is_(None),
-        ).limit(20)
+        )
+        .limit(20)
     )
     clients = client_result.scalars().all()
 
     matches = []
     for c in cases:
-        matches.append({
-            "type": "case",
-            "id": str(c.id),
-            "title": c.title,
-            "case_number": c.case_number,
-            "opposing_party": c.opposing_party,
-            "stage": c.stage,
-        })
+        matches.append(
+            {
+                "type": "case",
+                "id": str(c.id),
+                "title": c.title,
+                "case_number": c.case_number,
+                "opposing_party": c.opposing_party,
+                "stage": c.stage,
+            }
+        )
     for cl in clients:
-        matches.append({
-            "type": "client",
-            "id": str(cl.id),
-            "name": cl.display_name,
-            "email": cl.email,
-            "status": cl.status,
-        })
+        matches.append(
+            {
+                "type": "client",
+                "id": str(cl.id),
+                "name": cl.display_name,
+                "email": cl.email,
+                "status": cl.status,
+            }
+        )
 
     return ConflictCheckResponse(
         matches_found=len(matches) > 0,
@@ -429,10 +471,13 @@ async def conflict_check(
 
 # ── Test-compatibility aliases ──────────────────────────────────────────────
 
+
 async def get_case_or_404(case_id, db=None):
     """Test-compatibility stub: fetch case by ID or raise 404."""
     from fastapi import HTTPException
+
     raise HTTPException(status_code=404, detail="Case not found")
+
 
 list_cases_for_user = list_cases
 

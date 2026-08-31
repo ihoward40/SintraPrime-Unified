@@ -3,6 +3,7 @@
 This is a CI verifier/runner for disposable or empty PostgreSQL databases. It is
 not an Alembic replacement and does not certify upgrades from unknown schemas.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -21,7 +22,12 @@ MIGRATION_SEQUENCE = (
     Path("portal/migrations/add_mission_control_command_ledger.sql"),
     Path("portal/migrations/add_mission_control_mission_runs.sql"),
     Path("portal/migrations/add_mission_control_run_control_projection.sql"),
+<<<<<<< HEAD
     Path("portal/migrations/add_mission_control_run_approvals.sql"),
+=======
+    Path("portal/migrations/add_adaptive_orchestration_domain.sql"),
+    Path("portal/migrations/align_orchestration_identity_fk_types.sql"),
+>>>>>>> origin/main
 )
 EXPECTED_TABLES = (
     "tenants",
@@ -41,7 +47,14 @@ EXPECTED_TABLES = (
     "runs",
     "mission_control_run_controls",
     "mission_control_run_control_events",
+<<<<<<< HEAD
     "mission_control_run_approvals",
+=======
+    "orchestration_runs",
+    "orchestration_nodes",
+    "orchestration_events",
+    "orchestration_approval_requests",
+>>>>>>> origin/main
 )
 
 
@@ -51,9 +64,7 @@ def psycopg2_url(raw_url: str) -> str:
         raw_url = "postgresql://" + raw_url.removeprefix("postgresql+asyncpg://")
     if "ssl=disable" in raw_url:
         parts = urlsplit(raw_url)
-        query = "&".join(
-            part for part in parts.query.split("&") if part and part != "ssl=disable"
-        )
+        query = "&".join(part for part in parts.query.split("&") if part and part != "ssl=disable")
         raw_url = urlunsplit((parts.scheme, parts.netloc, parts.path, query, parts.fragment))
     return raw_url
 

@@ -12,13 +12,11 @@ Engineering Doctrines:
 
 from __future__ import annotations
 
-import uuid
-from datetime import UTC, datetime
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from portal.models.document import Document
 
+from .document_packet_provenance_service import create_evidence_snapshot, create_packet_audit_record
 from .evidence_audit_service import AuditService
 from .evidence_hash_boundary import (
     EvidenceCollection,
@@ -104,14 +102,23 @@ async def export_documents_to_packet(
     evidence_hash = compute_evidence_hash(evidence)
     manifest_hash = compute_manifest_hash(evidence)
 
-    svc = snapshot_service or EvidenceSnapshotService()
-    snapshot = svc.create(
-        case_id=case_id,
-        evidence_hash=evidence_hash,
-        manifest_hash=manifest_hash,
-        created_by=user_id,
-        evidence_count=len(items),
-    )
+    if snapshot_service is not None:
+        snapshot = snapshot_service.create(
+            case_id=case_id,
+            evidence_hash=evidence_hash,
+            manifest_hash=manifest_hash,
+            created_by=user_id,
+            evidence_count=len(items),
+        )
+    else:
+        snapshot = await create_evidence_snapshot(
+            session,
+            case_id=case_id,
+            evidence_hash=evidence_hash,
+            manifest_hash=manifest_hash,
+            created_by=user_id,
+            evidence_count=len(items),
+        )
 
     packet = render_packet(
         snapshot_id=snapshot.snapshot_id,
@@ -124,16 +131,29 @@ async def export_documents_to_packet(
         evidence=evidence,
     )
 
-    audit = (audit_service or AuditService()).create(
-        snapshot_id=snapshot.snapshot_id,
-        evidence_hash=evidence_hash,
-        packet_id=packet.packet_hash,
-        packet_hash=packet.packet_hash,
-        packet_version=int(packet.packet_version.split(".")[0]),
-        serialization_version=packet.serialization_version,
-        created_by=user_id,
-        verify_packet=False,
-    )
+    if audit_service is not None:
+        audit = audit_service.create(
+            snapshot_id=snapshot.snapshot_id,
+            evidence_hash=evidence_hash,
+            packet_id=packet.packet_hash,
+            packet_hash=packet.packet_hash,
+            packet_version=int(packet.packet_version.split(".")[0]),
+            serialization_version=packet.serialization_version,
+            created_by=user_id,
+            verify_packet=False,
+        )
+    else:
+        audit = await create_packet_audit_record(
+            session,
+            snapshot_id=snapshot.snapshot_id,
+            evidence_hash=evidence_hash,
+            packet_id=packet.packet_hash,
+            packet_hash=packet.packet_hash,
+            packet_version=int(packet.packet_version.split(".")[0]),
+            serialization_version=packet.serialization_version,
+            created_by=user_id,
+            verify_packet=False,
+        )
 
     return DocumentExportResult(
         snapshot_id=snapshot.snapshot_id,

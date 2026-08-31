@@ -18,10 +18,12 @@ class AzureConfig:
         if not all([self.tenant_id, self.client_id, self.client_secret, self.redirect_uri]):
             raise ValueError("AzureConfig: Missing required configuration parameters.")
 
+
 class AzureADProvider:
     """
     Azure AD B2C provider for OAuth2/OpenID Connect authentication.
     """
+
     def __init__(self, config: AzureConfig):
         self.config = config
         self.authority = f"https://login.microsoftonline.com/{self.config.tenant_id}/v2.0"
@@ -53,8 +55,16 @@ class AzureADProvider:
         auth_endpoint = openid_config["authorization_endpoint"]
 
         # PKCE (Proof Key for Code Exchange) implementation
-        code_verifier = base64.urlsafe_b64encode(hashlib.sha256(self.config.client_secret.encode()).digest()).decode().rstrip("=")
-        code_challenge = base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode()).digest()).decode().rstrip("=")
+        code_verifier = (
+            base64.urlsafe_b64encode(hashlib.sha256(self.config.client_secret.encode()).digest())
+            .decode()
+            .rstrip("=")
+        )
+        code_challenge = (
+            base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode()).digest())
+            .decode()
+            .rstrip("=")
+        )
 
         params = {
             "client_id": self.config.client_id,
@@ -66,6 +76,7 @@ class AzureADProvider:
             "code_challenge_method": "S256",
         }
         from urllib.parse import urlencode
+
         return f"{auth_endpoint}?{urlencode(params)}"
 
     def exchange_code_for_tokens(self, code: str) -> dict[str, Any]:
@@ -82,7 +93,11 @@ class AzureADProvider:
         token_endpoint = openid_config["token_endpoint"]
 
         # PKCE (Proof Key for Code Exchange) implementation
-        code_verifier = base64.urlsafe_b64encode(hashlib.sha256(self.config.client_secret.encode()).digest()).decode().rstrip("=")
+        code_verifier = (
+            base64.urlsafe_b64encode(hashlib.sha256(self.config.client_secret.encode()).digest())
+            .decode()
+            .rstrip("=")
+        )
 
         data = {
             "client_id": self.config.client_id,
@@ -109,9 +124,7 @@ class AzureADProvider:
         openid_config = self._get_openid_config()
         userinfo_endpoint = openid_config["userinfo_endpoint"]
 
-        headers = {
-            "Authorization": f"Bearer {access_token}"
-        }
+        headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.get(userinfo_endpoint, headers=headers, timeout=10)
         response.raise_for_status()
         return response.json()
@@ -180,10 +193,10 @@ class AzureADProvider:
             return jwt.decode(
                 id_token,
                 key,
-                algorithms=["RS256"], # Azure B2C typically uses RS256
+                algorithms=["RS256"],  # Azure B2C typically uses RS256
                 audience=self.config.client_id,
                 issuer=expected_issuer,
-                options=options
+                options=options,
             )
         except JWTError as e:
             raise ValueError(f"ID token validation failed: {e}")

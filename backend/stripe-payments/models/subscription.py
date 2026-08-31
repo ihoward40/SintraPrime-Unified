@@ -11,6 +11,7 @@ from pydantic import BaseModel, EmailStr, Field
 
 class SubscriptionStatus(str, Enum):
     """Subscription status values"""
+
     ACTIVE = "active"
     PAST_DUE = "past_due"
     CANCELED = "canceled"
@@ -21,6 +22,7 @@ class SubscriptionStatus(str, Enum):
 
 class PaymentStatus(str, Enum):
     """Payment status values"""
+
     PENDING = "pending"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
@@ -29,6 +31,7 @@ class PaymentStatus(str, Enum):
 
 class Tier(str, Enum):
     """Subscription tier options"""
+
     STARTER = "starter"
     PRO = "pro"
     ENTERPRISE = "enterprise"
@@ -36,6 +39,7 @@ class Tier(str, Enum):
 
 class Customer(BaseModel):
     """Stripe customer model"""
+
     stripe_customer_id: str
     email: EmailStr
     name: Optional[str] = None
@@ -48,6 +52,7 @@ class Customer(BaseModel):
 
 class Payment(BaseModel):
     """Payment record model"""
+
     payment_id: str
     stripe_customer_id: str
     stripe_payment_intent_id: Optional[str] = None
@@ -64,6 +69,7 @@ class Payment(BaseModel):
 
 class Subscription(BaseModel):
     """Subscription model"""
+
     subscription_id: str
     stripe_customer_id: str
     tier: Tier
@@ -86,6 +92,7 @@ class Subscription(BaseModel):
 
 class CheckoutRequest(BaseModel):
     """Request to create a checkout session"""
+
     email: EmailStr
     tier: Tier
     success_url: Optional[str] = None
@@ -94,6 +101,7 @@ class CheckoutRequest(BaseModel):
 
 class SubscriptionRequest(BaseModel):
     """Request to create a subscription"""
+
     customer_id: Optional[str] = None  # Stripe customer ID
     email: Optional[EmailStr] = None  # If creating new customer
     tier: Tier
@@ -103,18 +111,21 @@ class SubscriptionRequest(BaseModel):
 
 class UpgradeRequest(BaseModel):
     """Request to upgrade subscription"""
+
     new_tier: Tier
     prorated: bool = True  # Calculate prorated amount
 
 
 class RefundRequest(BaseModel):
     """Request to process a refund"""
+
     reason: str = "requested_by_customer"
     amount: Optional[int] = None  # If partial refund
 
 
 class WebhookEvent(BaseModel):
     """Webhook event from Stripe"""
+
     id: str
     object: str
     api_version: str
@@ -128,8 +139,10 @@ class WebhookEvent(BaseModel):
 
 # Request/Response Models for API Endpoints
 
+
 class CheckoutResponse(BaseModel):
     """Response for checkout session creation"""
+
     session_id: str
     checkout_url: str
     expires_at: int
@@ -137,6 +150,7 @@ class CheckoutResponse(BaseModel):
 
 class SubscriptionResponse(BaseModel):
     """Response for subscription operations"""
+
     subscription_id: str
     status: SubscriptionStatus
     tier: Tier
@@ -150,6 +164,7 @@ class SubscriptionResponse(BaseModel):
 
 class UpgradeResponse(BaseModel):
     """Response for upgrade operation"""
+
     subscription_id: str
     new_tier: Tier
     prorated_credit: int  # In cents
@@ -162,6 +177,7 @@ class UpgradeResponse(BaseModel):
 
 class CancelResponse(BaseModel):
     """Response for subscription cancellation"""
+
     subscription_id: str
     status: SubscriptionStatus
     canceled_at: datetime

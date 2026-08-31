@@ -45,6 +45,7 @@ from portal.services.packet_renderer import render_packet
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def service():
     """Fresh EvidenceSnapshotService for each test."""
@@ -79,10 +80,15 @@ def sample_manifest_hash():
 
 # ── Test: Creation ────────────────────────────────────────────────────────────
 
+
 class TestSnapshotCreation:
     def test_create_snapshot_returns_record(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
         record = service.create(
             case_id=sample_case_id,
@@ -100,8 +106,12 @@ class TestSnapshotCreation:
         assert record.status == "active"
 
     def test_create_snapshot_first_version_is_1(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
         record = service.create(
             case_id=sample_case_id,
@@ -112,8 +122,12 @@ class TestSnapshotCreation:
         assert record.snapshot_version == 1
 
     def test_create_snapshot_default_evidence_count_is_0(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
         record = service.create(
             case_id=sample_case_id,
@@ -126,56 +140,101 @@ class TestSnapshotCreation:
 
 # ── Test: Unique IDs ─────────────────────────────────────────────────────────
 
+
 class TestUniqueSnapshotIDs:
     def test_two_snapshots_have_different_ids(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
-        r1 = service.create(case_id=sample_case_id, evidence_hash=sample_evidence_hash,
-                            manifest_hash=sample_manifest_hash, created_by=sample_user_id)
-        r2 = service.create(case_id=sample_case_id, evidence_hash=sample_evidence_hash,
-                            manifest_hash=sample_manifest_hash, created_by=sample_user_id)
+        r1 = service.create(
+            case_id=sample_case_id,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
+        r2 = service.create(
+            case_id=sample_case_id,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
         assert r1.snapshot_id != r2.snapshot_id
 
     def test_ten_snapshots_all_unique(
-        self, service, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
         ids = set()
         for _ in range(10):
-            record = service.create(case_id=str(uuid.uuid4()), evidence_hash=sample_evidence_hash,
-                                    manifest_hash=sample_manifest_hash, created_by=sample_user_id)
+            record = service.create(
+                case_id=str(uuid.uuid4()),
+                evidence_hash=sample_evidence_hash,
+                manifest_hash=sample_manifest_hash,
+                created_by=sample_user_id,
+            )
             ids.add(record.snapshot_id)
         assert len(ids) == 10
 
 
 # ── Test: Immutability ────────────────────────────────────────────────────────
 
+
 class TestSnapshotImmutability:
     def test_update_raises_immutable_error(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
-        record = service.create(case_id=sample_case_id, evidence_hash=sample_evidence_hash,
-                                manifest_hash=sample_manifest_hash, created_by=sample_user_id)
+        record = service.create(
+            case_id=sample_case_id,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
         with pytest.raises(ImmutableSnapshotError, match="Cannot modify"):
             service.update(record.snapshot_id, evidence_hash="changed")
 
     def test_delete_raises_immutable_error(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
-        record = service.create(case_id=sample_case_id, evidence_hash=sample_evidence_hash,
-                                manifest_hash=sample_manifest_hash, created_by=sample_user_id)
+        record = service.create(
+            case_id=sample_case_id,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
         with pytest.raises(ImmutableSnapshotError, match="Cannot delete"):
             service.delete(record.snapshot_id)
 
     def test_frozen_dataclass_prevents_field_mutation(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
-        record = service.create(case_id=sample_case_id, evidence_hash=sample_evidence_hash,
-                                manifest_hash=sample_manifest_hash, created_by=sample_user_id)
+        record = service.create(
+            case_id=sample_case_id,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
         with pytest.raises(AttributeError):
             record.evidence_hash = "tampered"
         with pytest.raises(AttributeError):
@@ -184,12 +243,20 @@ class TestSnapshotImmutability:
             record.snapshot_version = 999
 
     def test_snapshot_data_unchanged_after_reload(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
-        original = service.create(case_id=sample_case_id, evidence_hash=sample_evidence_hash,
-                                  manifest_hash=sample_manifest_hash, created_by=sample_user_id,
-                                  evidence_count=7)
+        original = service.create(
+            case_id=sample_case_id,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+            evidence_count=7,
+        )
         reloaded = service.get(original.snapshot_id)
         assert reloaded.snapshot_id == original.snapshot_id
         assert reloaded.evidence_hash == original.evidence_hash
@@ -200,6 +267,7 @@ class TestSnapshotImmutability:
 # ── Test: Persistence-Level Immutability ──────────────────────────────────────
 # User-requested: Migration → Insert → Restart Session → Reload → Still Immutable
 
+
 class TestPersistenceLevelImmutability:
     """Verify immutability survives across service instances (simulating restart).
 
@@ -209,8 +277,11 @@ class TestPersistenceLevelImmutability:
     """
 
     def test_immutability_survives_service_restart(
-        self, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
         """Create snapshot in one service, export state, import into fresh service."""
         # Session 1: Create a snapshot
@@ -228,10 +299,7 @@ class TestPersistenceLevelImmutability:
         original_dict = original.to_dict()
 
         # Export state (simulate what a database would persist)
-        exported_state = {
-            sid: record.to_dict()
-            for sid, record in service_a._store.items()
-        }
+        exported_state = {sid: record.to_dict() for sid, record in service_a._store.items()}
 
         # "Restart": Destroy service_a, create service_b
         del service_a
@@ -275,8 +343,11 @@ class TestPersistenceLevelImmutability:
             reloaded.evidence_hash = "tampered"
 
     def test_supersession_works_across_sessions(
-        self, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
         """Snapshot created in session 1, superseded in session 2."""
         from datetime import datetime
@@ -285,8 +356,12 @@ class TestPersistenceLevelImmutability:
 
         # Session 1
         svc1 = EvidenceSnapshotService()
-        r1 = svc1.create(case_id=sample_case_id, evidence_hash=sample_evidence_hash,
-                         manifest_hash=sample_manifest_hash, created_by=sample_user_id)
+        r1 = svc1.create(
+            case_id=sample_case_id,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
         exported = {sid: r.to_dict() for sid, r in svc1._store.items()}
         del svc1
 
@@ -294,11 +369,14 @@ class TestPersistenceLevelImmutability:
         svc2 = EvidenceSnapshotService()
         for sid, data in exported.items():
             restored = SnapshotRecord(
-                snapshot_id=data["snapshot_id"], case_id=data["case_id"],
-                evidence_hash=data["evidence_hash"], manifest_hash=data["manifest_hash"],
+                snapshot_id=data["snapshot_id"],
+                case_id=data["case_id"],
+                evidence_hash=data["evidence_hash"],
+                manifest_hash=data["manifest_hash"],
                 snapshot_version=data["snapshot_version"],
                 created_at=datetime.fromisoformat(data["created_at"]),
-                created_by=data["created_by"], evidence_count=data["evidence_count"],
+                created_by=data["created_by"],
+                evidence_count=data["evidence_count"],
                 status=data["status"],
             )
             svc2._store[sid] = restored
@@ -307,8 +385,12 @@ class TestPersistenceLevelImmutability:
             )
 
         # Create new snapshot in session 2
-        r2 = svc2.create(case_id=sample_case_id, evidence_hash="c" * 64,
-                         manifest_hash="d" * 64, created_by=sample_user_id)
+        r2 = svc2.create(
+            case_id=sample_case_id,
+            evidence_hash="c" * 64,
+            manifest_hash="d" * 64,
+            created_by=sample_user_id,
+        )
 
         assert r2.snapshot_version == 2
         assert r2.status == "active"
@@ -320,15 +402,24 @@ class TestPersistenceLevelImmutability:
 
 # ── Test: SnapshotState Transitions ───────────────────────────────────────────
 
+
 class TestSnapshotStateTransitions:
     """Verify the SnapshotStatus state machine (ACTIVE, SUPERSEDED, ARCHIVED)."""
 
     def test_active_to_archived(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
-        record = service.create(case_id=sample_case_id, evidence_hash=sample_evidence_hash,
-                                manifest_hash=sample_manifest_hash, created_by=sample_user_id)
+        record = service.create(
+            case_id=sample_case_id,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
         assert record.status == "active"
 
         archived = service.archive(record.snapshot_id)
@@ -336,13 +427,25 @@ class TestSnapshotStateTransitions:
         assert archived.evidence_hash == sample_evidence_hash  # data preserved
 
     def test_superseded_to_archived(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
-        r1 = service.create(case_id=sample_case_id, evidence_hash=sample_evidence_hash,
-                            manifest_hash=sample_manifest_hash, created_by=sample_user_id)
-        service.create(case_id=sample_case_id, evidence_hash="c" * 64,
-                       manifest_hash="d" * 64, created_by=sample_user_id)
+        r1 = service.create(
+            case_id=sample_case_id,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
+        service.create(
+            case_id=sample_case_id,
+            evidence_hash="c" * 64,
+            manifest_hash="d" * 64,
+            created_by=sample_user_id,
+        )
 
         old = service.get(r1.snapshot_id)
         assert old.status == "superseded"
@@ -351,11 +454,19 @@ class TestSnapshotStateTransitions:
         assert archived.status == "archived"
 
     def test_archived_is_terminal(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
-        record = service.create(case_id=sample_case_id, evidence_hash=sample_evidence_hash,
-                                manifest_hash=sample_manifest_hash, created_by=sample_user_id)
+        record = service.create(
+            case_id=sample_case_id,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
         service.archive(record.snapshot_id)
 
         with pytest.raises(InvalidStateTransitionError):
@@ -372,27 +483,51 @@ class TestSnapshotStateTransitions:
 
 # ── Test: Append-Only ─────────────────────────────────────────────────────────
 
+
 class TestAppendOnly:
     def test_store_grows_on_create(
-        self, service, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
         assert service.count == 0
-        service.create(case_id=str(uuid.uuid4()), evidence_hash=sample_evidence_hash,
-                       manifest_hash=sample_manifest_hash, created_by=sample_user_id)
+        service.create(
+            case_id=str(uuid.uuid4()),
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
         assert service.count == 1
-        service.create(case_id=str(uuid.uuid4()), evidence_hash=sample_evidence_hash,
-                       manifest_hash=sample_manifest_hash, created_by=sample_user_id)
+        service.create(
+            case_id=str(uuid.uuid4()),
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
         assert service.count == 2
 
     def test_superseded_snapshot_still_exists(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
-        r1 = service.create(case_id=sample_case_id, evidence_hash=sample_evidence_hash,
-                            manifest_hash=sample_manifest_hash, created_by=sample_user_id)
-        r2 = service.create(case_id=sample_case_id, evidence_hash="c" * 64,
-                            manifest_hash="d" * 64, created_by=sample_user_id)
+        r1 = service.create(
+            case_id=sample_case_id,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
+        r2 = service.create(
+            case_id=sample_case_id,
+            evidence_hash="c" * 64,
+            manifest_hash="d" * 64,
+            created_by=sample_user_id,
+        )
         old = service.get(r1.snapshot_id)
         new = service.get(r2.snapshot_id)
         assert old.status == "superseded"
@@ -400,12 +535,21 @@ class TestAppendOnly:
         assert service.count == 2
 
     def test_all_versions_retrievable_for_case(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
         for i in range(5):
-            service.create(case_id=sample_case_id, evidence_hash=f"{i:064x}",
-                           manifest_hash=f"{i:064x}", created_by=sample_user_id, evidence_count=i)
+            service.create(
+                case_id=sample_case_id,
+                evidence_hash=f"{i:064x}",
+                manifest_hash=f"{i:064x}",
+                created_by=sample_user_id,
+                evidence_count=i,
+            )
         all_snapshots = service.get_all_for_case(sample_case_id)
         assert len(all_snapshots) == 5
         assert [s.snapshot_version for s in all_snapshots] == [1, 2, 3, 4, 5]
@@ -413,105 +557,204 @@ class TestAppendOnly:
 
 # ── Test: Version Monotonicity ────────────────────────────────────────────────
 
+
 class TestVersionMonotonicity:
     def test_versions_increment_per_case(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
-        r1 = service.create(case_id=sample_case_id, evidence_hash=sample_evidence_hash,
-                            manifest_hash=sample_manifest_hash, created_by=sample_user_id)
-        r2 = service.create(case_id=sample_case_id, evidence_hash=sample_evidence_hash,
-                            manifest_hash=sample_manifest_hash, created_by=sample_user_id)
-        r3 = service.create(case_id=sample_case_id, evidence_hash=sample_evidence_hash,
-                            manifest_hash=sample_manifest_hash, created_by=sample_user_id)
+        r1 = service.create(
+            case_id=sample_case_id,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
+        r2 = service.create(
+            case_id=sample_case_id,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
+        r3 = service.create(
+            case_id=sample_case_id,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
         assert (r1.snapshot_version, r2.snapshot_version, r3.snapshot_version) == (1, 2, 3)
 
     def test_different_cases_have_independent_versions(
-        self, service, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
         case_a, case_b = str(uuid.uuid4()), str(uuid.uuid4())
-        ra = service.create(case_id=case_a, evidence_hash=sample_evidence_hash,
-                            manifest_hash=sample_manifest_hash, created_by=sample_user_id)
-        rb = service.create(case_id=case_b, evidence_hash=sample_evidence_hash,
-                            manifest_hash=sample_manifest_hash, created_by=sample_user_id)
+        ra = service.create(
+            case_id=case_a,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
+        rb = service.create(
+            case_id=case_b,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
         assert ra.snapshot_version == 1
         assert rb.snapshot_version == 1
 
 
 # ── Test: Supersession ────────────────────────────────────────────────────────
 
+
 class TestSupersession:
     def test_old_snapshot_becomes_superseded(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
-        r1 = service.create(case_id=sample_case_id, evidence_hash=sample_evidence_hash,
-                            manifest_hash=sample_manifest_hash, created_by=sample_user_id)
-        r2 = service.create(case_id=sample_case_id, evidence_hash="f" * 64,
-                            manifest_hash="e" * 64, created_by=sample_user_id)
+        r1 = service.create(
+            case_id=sample_case_id,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
+        r2 = service.create(
+            case_id=sample_case_id,
+            evidence_hash="f" * 64,
+            manifest_hash="e" * 64,
+            created_by=sample_user_id,
+        )
         old = service.get(r1.snapshot_id)
         assert old.status == "superseded"
         assert r2.status == "active"
 
     def test_only_one_active_per_case(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
         for i in range(5):
-            service.create(case_id=sample_case_id, evidence_hash=f"{i:064x}",
-                           manifest_hash=f"{i:064x}", created_by=sample_user_id)
-        active_count = sum(1 for s in service.get_all_for_case(sample_case_id) if s.status == "active")
+            service.create(
+                case_id=sample_case_id,
+                evidence_hash=f"{i:064x}",
+                manifest_hash=f"{i:064x}",
+                created_by=sample_user_id,
+            )
+        active_count = sum(
+            1 for s in service.get_all_for_case(sample_case_id) if s.status == "active"
+        )
         assert active_count == 1
 
     def test_get_active_for_case_returns_latest(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
-        service.create(case_id=sample_case_id, evidence_hash=sample_evidence_hash,
-                       manifest_hash=sample_manifest_hash, created_by=sample_user_id)
-        r2 = service.create(case_id=sample_case_id, evidence_hash="f" * 64,
-                            manifest_hash="e" * 64, created_by=sample_user_id)
+        service.create(
+            case_id=sample_case_id,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
+        r2 = service.create(
+            case_id=sample_case_id,
+            evidence_hash="f" * 64,
+            manifest_hash="e" * 64,
+            created_by=sample_user_id,
+        )
         active = service.get_active_for_case(sample_case_id)
         assert active.snapshot_id == r2.snapshot_id
 
 
 # ── Test: Serialization ──────────────────────────────────────────────────────
 
+
 class TestReproducibleSerialization:
     def test_to_dict_contains_all_fields(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
-        record = service.create(case_id=sample_case_id, evidence_hash=sample_evidence_hash,
-                                manifest_hash=sample_manifest_hash, created_by=sample_user_id, evidence_count=3)
+        record = service.create(
+            case_id=sample_case_id,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+            evidence_count=3,
+        )
         d = record.to_dict()
-        expected_keys = {"case_id", "created_at", "created_by", "evidence_count",
-                         "evidence_hash", "manifest_hash", "snapshot_id", "snapshot_version", "status"}
+        expected_keys = {
+            "case_id",
+            "created_at",
+            "created_by",
+            "evidence_count",
+            "evidence_hash",
+            "manifest_hash",
+            "snapshot_id",
+            "snapshot_version",
+            "status",
+        }
         assert set(d.keys()) == expected_keys
 
     def test_to_dict_is_json_serializable(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
-        record = service.create(case_id=sample_case_id, evidence_hash=sample_evidence_hash,
-                                manifest_hash=sample_manifest_hash, created_by=sample_user_id)
+        record = service.create(
+            case_id=sample_case_id,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
         d = record.to_dict()
         roundtrip = json.loads(json.dumps(d, sort_keys=True))
         assert roundtrip == d
 
     def test_to_dict_is_reproducible(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
-        record = service.create(case_id=sample_case_id, evidence_hash=sample_evidence_hash,
-                                manifest_hash=sample_manifest_hash, created_by=sample_user_id)
+        record = service.create(
+            case_id=sample_case_id,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+        )
         j1 = json.dumps(record.to_dict(), sort_keys=True)
         j2 = json.dumps(record.to_dict(), sort_keys=True)
         assert j1 == j2
 
 
 # ── Test: Retrieval ───────────────────────────────────────────────────────────
+
 
 class TestRetrieval:
     def test_get_nonexistent_raises_not_found(self, service):
@@ -527,14 +770,24 @@ class TestRetrieval:
 
 # ── Test: Step 1 Acceptance Sequence ──────────────────────────────────────────
 
+
 class TestStep1AcceptanceSequence:
     def test_full_acceptance_sequence(
-        self, service, sample_case_id, sample_user_id,
-        sample_evidence_hash, sample_manifest_hash,
+        self,
+        service,
+        sample_case_id,
+        sample_user_id,
+        sample_evidence_hash,
+        sample_manifest_hash,
     ):
         # Create
-        original = service.create(case_id=sample_case_id, evidence_hash=sample_evidence_hash,
-                                  manifest_hash=sample_manifest_hash, created_by=sample_user_id, evidence_count=3)
+        original = service.create(
+            case_id=sample_case_id,
+            evidence_hash=sample_evidence_hash,
+            manifest_hash=sample_manifest_hash,
+            created_by=sample_user_id,
+            evidence_count=3,
+        )
         assert original.status == "active"
         assert original.snapshot_version == 1
 
@@ -555,13 +808,20 @@ class TestStep1AcceptanceSequence:
         assert still_same.evidence_hash == sample_evidence_hash
 
         # Create New → New ID
-        new_snapshot = service.create(case_id=sample_case_id, evidence_hash="c" * 64,
-                                      manifest_hash="d" * 64, created_by=sample_user_id, evidence_count=4)
+        new_snapshot = service.create(
+            case_id=sample_case_id,
+            evidence_hash="c" * 64,
+            manifest_hash="d" * 64,
+            created_by=sample_user_id,
+            evidence_count=4,
+        )
         assert new_snapshot.snapshot_id != original.snapshot_id
         assert new_snapshot.snapshot_version == 2
         assert service.get(original.snapshot_id).status == "superseded"
 
+
 # ── Test: Step 5 Provenance Replay (AT-5) ─────────────────────────────────────
+
 
 class TestProvenanceReplay:
     """Verify the complete evidence → snapshot → packet → audit chain.
@@ -656,9 +916,7 @@ class TestProvenanceReplay:
         # 5. Simulate replay: retrieve all records from the in-memory store
         retrieved_audit = audit_service.get(audit.audit_id)
         retrieved_snapshot = service.get(retrieved_audit.snapshot_id)
-        retrieved_packet_by_audit = audit_service.get_by_packet_id(
-            retrieved_audit.packet_id
-        )
+        retrieved_packet_by_audit = audit_service.get_by_packet_id(retrieved_audit.packet_id)
 
         # 6. Verify chain integrity
         assert retrieved_audit.snapshot_id == snapshot.snapshot_id
@@ -674,7 +932,10 @@ class TestProvenanceReplay:
         assert retrieved_snapshot.manifest_hash == manifest_hash
 
     def test_05_replay_fails_when_snapshot_is_missing(
-        self, audit_service, sample_user_id, sample_case_id,
+        self,
+        audit_service,
+        sample_user_id,
+        sample_case_id,
     ):
         fresh_service = EvidenceSnapshotService()
         with pytest.raises(SnapshotNotFoundError):

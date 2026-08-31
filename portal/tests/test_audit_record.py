@@ -400,9 +400,9 @@ class TestAuditServiceVerification:
         )
         assert record.verification_status == "verified"
         # Verify consistency
-        assert service.verify_packet_against_evidence(
-            record.packet_hash, record.evidence_hash
-        ) is True
+        assert (
+            service.verify_packet_against_evidence(record.packet_hash, record.evidence_hash) is True
+        )
 
     def test_create_with_verification_raises_on_mismatch(self):
         """Test 4.6: Create with mismatched hashes raises verification error."""
@@ -444,9 +444,7 @@ class TestAuditServiceVerification:
         assert retrieved is not None
         assert retrieved.verification_status == "verified"
         assert (
-            service.verify_packet_against_evidence(
-                retrieved.packet_hash, retrieved.evidence_hash
-            )
+            service.verify_packet_against_evidence(retrieved.packet_hash, retrieved.evidence_hash)
             is True
         )
 
@@ -500,7 +498,7 @@ class TestAuditServiceImmutability:
             service.delete(record.audit_id)
         # Message should reference immutability concept (either "immutable" or "append-only")
         msg_lower = str(exc.value).lower()
-        assert ("immutable" in msg_lower or "append-only" in msg_lower)
+        assert "immutable" in msg_lower or "append-only" in msg_lower
         assert "ED-003" in str(exc.value) or "ED-007" in str(exc.value)
 
 

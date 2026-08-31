@@ -18,6 +18,11 @@ import {
   Monitor,
   RadioTower,
   Mic,
+  Landmark,
+  GitCompareArrows,
+  ClipboardCheck,
+  BriefcaseBusiness,
+  Workflow,
 } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import { clsx } from 'clsx';
@@ -31,17 +36,26 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { path: '/mission-control', label: 'Mission Control', icon: RadioTower, badge: 'LIVE', badgeColor: 'green' },
+  { path: '/mission-control', label: 'Principal Command', icon: RadioTower, badge: 'GOD_MODE', badgeColor: 'gold' },
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/legal', label: 'Legal Hub', icon: Scale, badge: '5', badgeColor: 'gold' },
   { path: '/financial', label: 'Financial Empire', icon: TrendingUp },
   { path: '/trust-law', label: 'Trust Law', icon: BookOpen },
+  { path: '/jurisdictions/new-jersey', label: 'New Jersey Pilot', icon: Landmark, badge: 'NJ', badgeColor: 'amber' },
+  { path: '/jurisdictions/new-york', label: 'New York Pilot', icon: Landmark, badge: 'NY', badgeColor: 'amber' },
+  { path: '/jurisdictions/pennsylvania', label: 'Pennsylvania Pilot', icon: Landmark, badge: 'PA', badgeColor: 'amber' },
+  { path: '/jurisdictions/delaware', label: 'Delaware Pilot', icon: Landmark, badge: 'DE', badgeColor: 'amber' },
+  { path: '/jurisdictions/connecticut', label: 'Connecticut Pilot', icon: Landmark, badge: 'CT', badgeColor: 'amber' },
+  { path: '/jurisdictions/northeast-comparison', label: 'NE Comparison', icon: GitCompareArrows, badge: 'NE', badgeColor: 'blue' },
+  { path: '/ucc/filing-assessment', label: 'UCC Assessment', icon: ClipboardCheck, badge: 'UCC', badgeColor: 'blue' },
+  { path: '/matters/matter-1', label: 'Matter Workspace', icon: BriefcaseBusiness, badge: 'MATTER', badgeColor: 'blue' },
   { path: '/cases', label: 'Case Management', icon: Gavel, badge: '3', badgeColor: 'red' },
   { path: '/documents', label: 'Document Vault', icon: FileText },
   { path: '/entities', label: 'Entity Governance', icon: Building2 },
   { path: '/ai-parliament', label: 'AI Parliament', icon: Brain, badge: 'LIVE', badgeColor: 'green' },
   { path: '/caselaw', label: 'Case Law Search', icon: Search },
   { path: '/operations-floor', label: 'Operations Floor', icon: Monitor, badge: 'OPS', badgeColor: 'blue' },
+  { path: '/orchestration', label: 'Orchestration', icon: Workflow, badge: 'MOCK', badgeColor: 'green' },
   { path: '/voice-concierge', label: 'Voice Concierge', icon: Mic, badge: 'MOCK', badgeColor: 'blue' },
   { path: '/settings', label: 'Settings', icon: Settings },
 ];
@@ -51,6 +65,7 @@ const badgeStyles: Record<string, string> = {
   red: 'bg-rose-500/20 text-rose-400 border border-rose-500/40',
   green: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40',
   blue: 'bg-blue-500/20 text-blue-400 border border-blue-500/40',
+  amber: 'bg-amber-500/20 text-amber-400 border border-amber-500/40',
 };
 
 export default function Sidebar() {

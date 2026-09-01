@@ -92,6 +92,7 @@ def run_acceptance_004_real() -> dict:
             base_sha="eeb55ffb",
             timeout_seconds=30,
             owned_files=[f"swarm_fixtures/{fixture_name}"],
+            worktree=worktrees[i]["path"],
         ))
 
     print(f"\n[{swarm_id}] Launching 3 builder workers in real git worktrees...")
@@ -144,9 +145,11 @@ def run_acceptance_004_real() -> dict:
     paths_unique = len(set(paths)) == 3
     branches_unique = len(set(branches)) == 3
 
-    # Check no cross-worker collision
+    # Check no cross-worker collision — each worker should only change its own fixture file
     collisions = 0
     for _wid, info in commits.items():
+        # A collision is when a worker changed files it doesn't own
+        # (more than just its fixture file)
         if len(info["changed_files"]) > 1:
             collisions += 1
 

@@ -232,6 +232,7 @@ def test_orm_on_raw_sql_uuid_schema_compatibility(migrated_database_url: str) ->
     notification_uuid = uuid_mod.uuid4()
 
     # First insert parent rows via raw SQL (as the bootstrap schema expects UUID)
+    role_uuid = uuid_mod.uuid4()
     with psycopg2.connect(psycopg2_url(url)) as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -239,9 +240,14 @@ def test_orm_on_raw_sql_uuid_schema_compatibility(migrated_database_url: str) ->
                 (str(tenant_uuid), "ORM Compat Test", f"orm-compat-{tenant_uuid.hex[:12]}"),
             )
             cur.execute(
-                """INSERT INTO users (id, tenant_id, email, hashed_password, role)
-                   VALUES (%s, %s, %s, %s, %s)""",
-                (str(user_uuid), str(tenant_uuid), "compat@test.local", "hash", "admin"),
+                """INSERT INTO roles (id, name, description, permissions, is_system)
+                   VALUES (%s, %s, %s, %s::text[], %s)""",
+                (str(role_uuid), "compat_admin", "Test admin role", "{*}", False),
+            )
+            cur.execute(
+                """INSERT INTO users (id, tenant_id, role_id, email, first_name, last_name, hashed_password)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                (str(user_uuid), str(tenant_uuid), str(role_uuid), "compat@test.local", "Test", "User", "hash"),
             )
             conn.commit()
 

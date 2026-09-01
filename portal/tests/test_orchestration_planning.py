@@ -1,3 +1,5 @@
+import pytest
+
 from portal.services.orchestration.execution_graph import topological_node_ids, validate_dag
 from portal.services.orchestration.role_assignment import assign_roles
 from portal.services.orchestration.schemas import ExecutionMode, Role, Sensitivity, TaskType
@@ -60,9 +62,5 @@ def test_dag_validation_rejects_missing_dependency():
     )
     nodes[-1].dependencies.append("missing-node")
 
-    try:
+    with pytest.raises(ValueError, match="missing dependencies"):
         validate_dag(nodes)
-    except ValueError as exc:
-        assert "missing dependencies" in str(exc)
-    else:
-        raise AssertionError("Expected missing dependency validation error")

@@ -1,14 +1,15 @@
-import logging
 import asyncio
+import logging
 import uuid
-from datetime import datetime, UTC
-from typing import Dict, List, Any, Optional
-from enum import Enum
-from .cancellation_bus import bus, CancellationSignal, CancellationScope
+from datetime import UTC, datetime
+from enum import Enum, StrEnum
+from typing import Any, Dict, List, Optional
+
+from .cancellation_bus import CancellationScope, CancellationSignal, bus
 
 logger = logging.getLogger(__name__)
 
-class HealthStatus(str, Enum):
+class HealthStatus(StrEnum):
     HEALTHY = "HEALTHY"
     DEGRADED = "DEGRADED"
     CRITICAL = "CRITICAL"
@@ -27,20 +28,20 @@ class AutonomousRecoveryService:
     async def report_agent_failure(self, agent_id: str, error_type: str, context: Dict[str, Any]):
         """Registers an agent failure and initiates recovery."""
         logger.error(f"[AUTONOMOUS_RECOVERY] Agent {agent_id} failed: {error_type}")
-        
+
         self.failure_registry[agent_id] = {
             "timestamp": datetime.now(UTC),
             "error": error_type,
             "context": context,
             "status": "FAILED"
         }
-        
+
         await self.initiate_recovery(agent_id)
 
     async def initiate_recovery(self, agent_id: str):
         """Triggers recovery protocol for a specific agent."""
         logger.info(f"[AUTONOMOUS_RECOVERY] Initiating recovery for {agent_id}...")
-        
+
         # 1. Isolate the failed instance
         signal = CancellationSignal(
             scope=CancellationScope.EXECUTION,
@@ -49,15 +50,15 @@ class AutonomousRecoveryService:
             principal_id="SYSTEM-RECOVERY"
         )
         await bus.publish(signal)
-        
+
         # 2. Re-spawn replacement (simulated)
-        await asyncio.sleep(1) 
+        await asyncio.sleep(1)
         self.recovery_count += 1
-        
+
         if agent_id in self.failure_registry:
             self.failure_registry[agent_id]["status"] = "RECOVERED"
             self.failure_registry[agent_id]["recovered_at"] = datetime.now(UTC)
-            
+
         logger.info(f"[AUTONOMOUS_RECOVERY] Recovery complete for {agent_id}. Total recoveries: {self.recovery_count}")
 
     def get_recovery_metrics(self) -> Dict[str, Any]:

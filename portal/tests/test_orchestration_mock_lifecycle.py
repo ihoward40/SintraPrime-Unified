@@ -2,8 +2,13 @@ import pytest
 
 from portal.services.orchestration import orchestrator
 from portal.services.orchestration.provider_registry import mock_provider_registry
-from portal.services.orchestration.security import denied_actions, detect_prompt_injection, redact_text, sanitize_payload
 from portal.services.orchestration.schemas import ExecutionMode
+from portal.services.orchestration.security import (
+    denied_actions,
+    detect_prompt_injection,
+    redact_text,
+    sanitize_payload,
+)
 
 TENANT_ID = "tenant-a"
 OTHER_TENANT_ID = "tenant-b"

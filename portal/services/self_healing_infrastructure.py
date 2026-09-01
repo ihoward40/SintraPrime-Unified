@@ -1,7 +1,8 @@
 import logging
-from typing import Dict, List, Any
-from .predictive_scaling import predictive_scaling
+from typing import Any, Dict, List
+
 from .autonomous_recovery import autonomous_recovery
+from .predictive_scaling import predictive_scaling
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,7 @@ class SelfHealingInfrastructure:
     async def get_infrastructure_health(self) -> Dict[str, Any]:
         """Aggregates health and performance metrics across the infrastructure."""
         recovery_metrics = self.recovery.get_recovery_metrics()
-        
+
         return {
             "status": recovery_metrics["system_health"],
             "predictive_metrics": {

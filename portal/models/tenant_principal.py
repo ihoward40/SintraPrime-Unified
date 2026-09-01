@@ -7,7 +7,7 @@ from RBAC roles and is NOT self-service writable.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import (
     DateTime,
@@ -43,7 +43,7 @@ class TenantPrincipal(Base):
     established_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     establishment_source: Mapped[str] = mapped_column(
         String(100),

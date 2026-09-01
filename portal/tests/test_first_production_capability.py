@@ -33,30 +33,40 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 pytestmark = pytest.mark.asyncio
 
-from portal.auth.rbac import CurrentUser, Permission, Role as RbacRole
-from portal.database import Base
-from portal.models.audit import AuditLog
-from portal.models.mission_control_execution import Mission, Run
-from portal.models.mission_control_run_approval import RunApproval
-from portal.models.tenant_principal import TenantPrincipal
-from portal.models.user import Role as UserRole, Permission as UserPermission, RolePermission, Tenant, User
-from portal.services.durable_orchestration_authority import DurableOrchestrationAuthority
-from portal.services.mission_control_approval_service import (
-    ApprovalError,
-    DuplicateApprovalError,
-    CapabilityNotEligibleError,
-    create_approval,
-    consume_approval_and_activate,
+from portal.auth.rbac import CurrentUser, Permission  # noqa: E402
+from portal.auth.rbac import Role as RbacRole  # noqa: E402
+from portal.database import Base  # noqa: E402
+from portal.models.audit import AuditLog  # noqa: E402
+from portal.models.mission_control_execution import Mission, Run  # noqa: E402
+from portal.models.mission_control_run_approval import RunApproval  # noqa: E402
+from portal.models.tenant_principal import TenantPrincipal  # noqa: E402
+from portal.models.user import Permission as UserPermission  # noqa: E402
+from portal.models.user import Role as UserRole  # noqa: E402
+from portal.models.user import RolePermission, Tenant, User  # noqa: E402
+from portal.services.durable_orchestration_authority import (  # noqa: E402
+    DurableOrchestrationAuthority,
 )
-from portal.services.mission_control_capability_policy import (
-    CapabilityDecision,
+from portal.services.legal_workflow_handler import (  # noqa: E402
+    LEGAL_WORKFLOW_TYPE,
+    REAL_EXTERNAL_ACTION,
+    legal_workflow_handler,
+)
+from portal.services.mission_control_approval_service import (  # noqa: E402
+    ApprovalError,
+    CapabilityNotEligibleError,
+    DuplicateApprovalError,
+    consume_approval_and_activate,
+    create_approval,
+)
+from portal.services.mission_control_capability_policy import (  # noqa: E402
     _CAPABILITY_CLASSIFICATIONS,
+    CapabilityDecision,
     resolve_capability_policy,
 )
-from portal.services.mission_control_execution_binding import resolve_mission_capability
-from portal.services.legal_workflow_handler import LEGAL_WORKFLOW_TYPE, legal_workflow_handler, REAL_EXTERNAL_ACTION
-from portal.services.tenant_principal_service import is_tenant_principal
-
+from portal.services.mission_control_execution_binding import (  # noqa: E402
+    resolve_mission_capability,
+)
+from portal.services.tenant_principal_service import is_tenant_principal  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Test fixtures
@@ -120,7 +130,8 @@ async def _setup_principal(db: AsyncSession, user_id: str = "principal-a", tenan
     """Insert Tenant, Role, User, TenantPrincipal records."""
     tenant = Tenant(id=tenant_id, name="Test Firm", slug="test-firm")
     db.add(tenant)
-    from portal.models.user import Role as RoleModel, Permission as PermModel
+    from portal.models.user import Permission as PermModel
+    from portal.models.user import Role as RoleModel
     role = RoleModel(id="role-firm-admin", name=RbacRole.FIRM_ADMIN.value, display_name="Firm Admin")
     db.add(role)
     for perm in Permission:
@@ -370,7 +381,7 @@ class TestEngineCallCounts:
         capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id="tenant-a")
         policy = resolve_capability_policy(engine, capability=capability)
 
-        run = await authority.start_run(
+        await authority.start_run(
             db,
             mission_id=mission.mission_id,
             tenant_id="tenant-a",
@@ -542,7 +553,7 @@ class TestCancellationAcceptance:
         # truthfully. Both outcomes are valid:
         #   - True: workflow was still running and was cancelled
         #   - False: workflow already completed (truthful refusal)
-        cancelled = await authority.cancel_run(db, run_id=run.run_id, tenant_id="tenant-a")
+        await authority.cancel_run(db, run_id=run.run_id, tenant_id="tenant-a")
         # The run should be in CANCELLED or FAILED status depending on timing
         run_after = await authority.get_run(db, run_id=run.run_id, tenant_id="tenant-a")
         assert run_after.status in ("CANCELLED", "FAILED")
@@ -565,7 +576,7 @@ class TestCancellationAcceptance:
         )
         actor = _make_current_user()
         await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED")
-        activated = await consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, authority=authority)
+        await consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, authority=authority)
 
         # Wait for completion
         await asyncio.sleep(1.0)

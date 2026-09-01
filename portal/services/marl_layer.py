@@ -1,11 +1,12 @@
 import logging
-from typing import Dict, List, Any, Optional
-from enum import Enum
+from enum import Enum, StrEnum
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
-class AgentPolicy(str, Enum):
+class AgentPolicy(StrEnum):
     COOPERATIVE = "COOPERATIVE"
     COMPETITIVE = "COMPETITIVE"
     EXPLORATORY = "EXPLORATORY"

@@ -1,6 +1,7 @@
 import logging
-from typing import Dict, List, Any, Optional
-from .policy_as_code import policy_engine, PolicyEffect
+from typing import Any, Dict, List, Optional
+
+from .policy_as_code import PolicyEffect, policy_engine
 
 logger = logging.getLogger(__name__)
 
@@ -28,19 +29,19 @@ class MultiTenantGovernanceService:
         if tenant_id not in self.active_tenants:
             logger.error(f"[GOVERNANCE] Unauthorized tenant: {tenant_id}")
             return False
-            
+
         # 1. Check Policy-as-Code
         effect = self.policy_engine.evaluate_action(tenant_id, action, resource, context)
         if effect == PolicyEffect.DENY:
             logger.warning(f"[GOVERNANCE] Policy DENY for {tenant_id}: {action} on {resource}")
             return False
-            
+
         # 2. Check Resource Quotas
         tenant = self.active_tenants[tenant_id]
         if tenant["active_intents"] >= tenant["resource_quota"]:
             logger.warning(f"[GOVERNANCE] Quota exceeded for {tenant_id}")
             return False
-            
+
         logger.info(f"[GOVERNANCE] Intent AUTHORIZED for {tenant_id}: {action} on {resource}")
         return True
 

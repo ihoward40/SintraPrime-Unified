@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from unittest.mock import AsyncMock
+
 import pytest
 import pytest_asyncio
-from unittest.mock import AsyncMock
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from orchestration.durable_execution import DurableWorkflowEngine
@@ -16,8 +17,8 @@ from portal.models.mission_control_command import (
     MissionControlCommandReceipt,
 )
 from portal.models.mission_control_execution import Mission, Run
-from portal.services.durable_orchestration_authority import DurableOrchestrationAuthority
 from portal.services import mission_control_capability_policy as policy_module
+from portal.services.durable_orchestration_authority import DurableOrchestrationAuthority
 from portal.services.mission_control_capability_policy import (
     CapabilityDecision,
     CapabilityPolicyError,
@@ -182,7 +183,7 @@ class TestStartRunRespectsPolicy:
         assert run.execution_ref == "workflow-123"
         assert run.workflow_type == "protected.real"
         assert run.input_data_hash is not None
-        engine.start_workflow.await_count == 1
+        assert engine.start_workflow.await_count == 1
         call_args = engine.start_workflow.await_args
         assert call_args.args[0] == "protected.real"
 
@@ -247,7 +248,9 @@ class TestStartRunRespectsPolicy:
 
     @pytest.mark.asyncio
     async def test_approve_and_start_fails_closed_without_principal_artifact(self, db):
-        from portal.services.durable_orchestration_authority import MissingPrincipalApprovalArtifactError
+        from portal.services.durable_orchestration_authority import (
+            MissingPrincipalApprovalArtifactError,
+        )
         mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.approval")
         db.add(mission)
         await db.flush()
@@ -276,8 +279,13 @@ class TestStartRunRespectsPolicy:
     @pytest.mark.asyncio
     async def test_replay_of_approval_required_run_is_idempotent(self, db, monkeypatch):
         monkeypatch.setattr(policy_module, "_CAPABILITY_CLASSIFICATIONS", {"protected.approval": CapabilityDecision.APPROVAL_REQUIRED})
-        from portal.services.mission_control_command_service import CommandSubmission, CommandTargetType, CommandType, submit_canonical_command
         from portal.auth.rbac import CurrentUser
+        from portal.services.mission_control_command_service import (
+            CommandSubmission,
+            CommandTargetType,
+            CommandType,
+            submit_canonical_command,
+        )
 
         mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.approval", status="ACTIVE")
         db.add(mission)
@@ -305,6 +313,7 @@ class TestStartRunRespectsPolicy:
 
     @pytest.mark.asyncio
     async def test_approval_required_replay_with_changed_input_conflicts(self, db, monkeypatch):
+        from portal.auth.rbac import CurrentUser
         from portal.services.mission_control_command_service import (
             CommandSubmission,
             CommandTargetType,
@@ -312,7 +321,6 @@ class TestStartRunRespectsPolicy:
             DuplicateCommandConflictError,
             submit_canonical_command,
         )
-        from portal.auth.rbac import CurrentUser
 
         monkeypatch.setattr(policy_module, "_CAPABILITY_CLASSIFICATIONS", {"protected.approval": CapabilityDecision.APPROVAL_REQUIRED})
         mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.approval", status="ACTIVE")

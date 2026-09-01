@@ -1,7 +1,8 @@
-import logging
 import asyncio
-from datetime import datetime, UTC, timedelta
-from typing import Dict, List, Any, Optional
+import logging
+from datetime import UTC, datetime, timedelta
+from typing import Any, Dict, List, Optional
+
 from .parliament_scaling import scaling_service
 
 logger = logging.getLogger(__name__)
@@ -39,16 +40,16 @@ class PredictiveScalingService:
         # Simple linear trend analysis
         recent = self.load_history[-5:]
         loads = [m["load"] for m in recent]
-        
+
         # Calculate velocity (load change per metric)
         velocity = (loads[-1] - loads[0]) / len(loads)
-        
+
         if velocity > 0.05: # Load is increasing rapidly (>5% per interval)
             current_instances = recent[-1]["instances"]
             predicted_increase = int(current_instances * 0.2) # Anticipate 20% growth
             logger.info(f"[PREDICTIVE_SCALING] High load velocity detected ({velocity:.2%}). Predicting +{predicted_increase} instances.")
             return predicted_increase
-            
+
         return 0
 
     async def run_predictive_cycle(self):
@@ -56,11 +57,11 @@ class PredictiveScalingService:
         while True:
             status = scaling_service.get_parliament_status()
             await self.record_load_metric(status["system_load"], status["total_instances"])
-            
+
             adjustment = await self.predict_scaling_need()
             if adjustment > 0:
                 await scaling_service.scale_up("PREDICTIVE_WORKER", "SYSTEM", count=adjustment)
-                
+
             await asyncio.sleep(60) # Run every minute
 
 # Global instance

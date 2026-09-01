@@ -7,14 +7,15 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from orchestration.durable_execution import DurableWorkflowEngine
+from portal.auth.rbac import CurrentUser
 from portal.database import Base
+from portal.models.audit import AuditLog
 from portal.models.mission_control_command import (
     MissionControlCommand,
     MissionControlCommandEvent,
     MissionControlCommandReceipt,
 )
 from portal.models.mission_control_execution import Mission, Run
-from portal.models.audit import AuditLog
 from portal.services import mission_control_capability_policy as policy_module
 from portal.services.durable_orchestration_authority import DurableOrchestrationAuthority
 from portal.services.mission_control_capability_policy import (
@@ -27,7 +28,6 @@ from portal.services.mission_control_command_service import (
     CommandType,
     submit_canonical_command,
 )
-from portal.auth.rbac import CurrentUser
 
 
 def _user():

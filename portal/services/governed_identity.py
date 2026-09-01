@@ -1,12 +1,13 @@
 import logging
 import uuid
-from typing import Dict, List, Any, Optional
-from enum import Enum
+from enum import Enum, StrEnum
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
-class IdentityType(str, Enum):
+class IdentityType(StrEnum):
     PRINCIPAL = "PRINCIPAL"
     AGENT_DELEGATED = "AGENT_DELEGATED"
     SYSTEM = "SYSTEM"
@@ -44,13 +45,13 @@ class GovernedIdentityService:
         """Validates if an identity has access to a specific resource (folder)."""
         if identity_id not in self.identities:
             return False
-            
+
         identity = self.identities[identity_id]
-        
+
         # Principal has global access (God Mode)
         if identity.type == IdentityType.PRINCIPAL:
             return True
-            
+
         # Agent has folder-scoped access
         return resource_id in identity.scoped_folders
 

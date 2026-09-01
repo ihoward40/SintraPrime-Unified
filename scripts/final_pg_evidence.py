@@ -1,20 +1,27 @@
 import asyncio
-import logging
 import json
+import logging
 import uuid
+from datetime import UTC, datetime
+
 import asyncpg
-from datetime import datetime, UTC
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy import text, select
+from sqlalchemy import select, text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from portal.database import Base
-from portal.services.remediation_service import remediation
+from portal.models.orchestration import (
+    ApprovalRequest,
+    MemoryEntry,
+    OrchestrationEvent,
+    OrchestrationLinkage,
+    OrchestrationNode,
+    OrchestrationRun,
+    PrincipalAuthority,
+)
 from portal.services.memory_vault import memory_vault
 from portal.services.mythos_brain import MythosBrainCoordinator
 from portal.services.principal_brief import brief_service
-from portal.models.orchestration import (
-    OrchestrationRun, OrchestrationNode, OrchestrationEvent, 
-    ApprovalRequest, OrchestrationLinkage, PrincipalAuthority, MemoryEntry
-)
+from portal.services.remediation_service import remediation
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -25,31 +32,31 @@ PG_URL = "postgresql+asyncpg://sintra_app:sintra_app@localhost/sintraprime_test"
 
 async def run_pg_evidence():
     logger.info("🎬 GENERATING AUTHORITATIVE POSTGRESQL/RLS EVIDENCE 🎬")
-    
+
     # Superuser engine for seeding
-    ROOT_URL = "postgresql+asyncpg://postgres:postgres@localhost/sintraprime_test"
-    root_engine = create_async_engine(ROOT_URL)
+    root_url = "postgresql+asyncpg://postgres:postgres@localhost/sintraprime_test"
+    root_engine = create_async_engine(root_url)
     root_session_factory = async_sessionmaker(root_engine, expire_on_commit=False, class_=AsyncSession)
-    
+
     # App engine for testing
     engine = create_async_engine(PG_URL)
     session_factory = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
-    
+
     evidence = {
         "timestamp": datetime.now(UTC).isoformat(),
         "environment": "PostgreSQL 16 / Ubuntu 24.04",
         "results": []
     }
-    
+
     tenant_a_id = "00000000-0000-0000-0000-00000000000a"
     tenant_b_id = "00000000-0000-0000-0000-00000000000b"
     principal_id = "00000000-0000-0000-0000-000000000001"
-    
+
     async with root_session_factory() as session:
         # CLEAN STATE
         await session.execute(text("TRUNCATE tenants, roles, users, orchestration_runs, orchestration_nodes, orchestration_events, orchestration_approval_requests, orchestration_linkages, orchestration_principal_authorities, memory_vault CASCADE"))
         await session.commit()
-        
+
         # 0. SEED AUTHORITIES (Finding 5)
         logger.info("[STEP 0] Seeding Principal Authority")
         # Seed base tables for FKs
@@ -58,7 +65,7 @@ async def run_pg_evidence():
         role_id = str(uuid.uuid4())
         await session.execute(text(f"INSERT INTO roles (id, name) VALUES ('{role_id}', 'PRINCIPAL')"))
         await session.execute(text(f"INSERT INTO users (id, tenant_id, role_id, email) VALUES ('{principal_id}', '{tenant_a_id}', '{role_id}', 'principal@tenant-a.com')"))
-        
+
         auth = PrincipalAuthority(
             id=str(uuid.uuid4()),
             tenant_id=tenant_a_id,
@@ -68,7 +75,7 @@ async def run_pg_evidence():
         )
         session.add(auth)
         await session.commit()
-    
+
     await root_engine.dispose()
 
     async with session_factory() as session:
@@ -79,12 +86,12 @@ async def run_pg_evidence():
         # Set tenant context
         await session.execute(text(f"SET app.current_tenant_id = '{tenant_a_id}'"))
         run_a = OrchestrationRun(
-            id=run_a_id, tenant_id=tenant_a_id, objective="Tenant A Task", 
+            id=run_a_id, tenant_id=tenant_a_id, objective="Tenant A Task",
             task_type="mixed", sensitivity="INTERNAL", execution_mode="SINGLE"
         )
         session.add(run_a)
         await session.commit()
-        
+
         # Try to read from Tenant B context
         await session.execute(text(f"SET app.current_tenant_id = '{tenant_b_id}'"))
         res = await session.execute(select(OrchestrationRun).where(OrchestrationRun.id == run_a_id))
@@ -103,14 +110,14 @@ async def run_pg_evidence():
         await session.execute(text(f"SET app.current_tenant_id = '{tenant_a_id}'"))
         await save_run(session, run_dict)
         await session.commit()
-        
+
         # Save run second time with new event
         event_2_id = str(uuid.uuid4())
         run_dict["events"].append({"id": event_2_id, "event_type": "WORK", "event_hash": "h2"})
         await session.execute(text(f"SET app.current_tenant_id = '{tenant_a_id}'"))
         await save_run(session, run_dict)
         await session.commit()
-        
+
         # Verify both events exist (no deletion)
         await session.execute(text(f"SET app.current_tenant_id = '{tenant_a_id}'"))
         res = await session.execute(select(OrchestrationEvent).where(OrchestrationEvent.run_id == run_a_id))
@@ -131,12 +138,12 @@ async def run_pg_evidence():
         app_id = str(uuid.uuid4())
         await session.execute(text(f"SET app.current_tenant_id = '{tenant_a_id}'"))
         approval = ApprovalRequest(
-            id=app_id, run_id=run_a_id, requested_action="Test", reason="Test", 
+            id=app_id, run_id=run_a_id, requested_action="Test", reason="Test",
             risk_level="high", status="REQUESTED", requested_by_role="WORKER", version=1
         )
         session.add(approval)
         await session.commit()
-        
+
         # Simulate two concurrent updates
         await session.execute(text(f"SET app.current_tenant_id = '{tenant_a_id}'"))
         success_1 = await remediation.record_approval_with_concurrency_safety(
@@ -146,7 +153,7 @@ async def run_pg_evidence():
             session, app_id, principal_id, "DENIED", "Second", 1
         )
         await session.commit()
-        
+
         concurrency_status = "PASS" if success_1 and not success_2 else "FAIL"
         evidence["results"].append({"gate": "Concurrent Approval Safety", "status": concurrency_status})
 
@@ -158,7 +165,7 @@ async def run_pg_evidence():
         await session.execute(text(f"SET app.current_tenant_id = '{tenant_a_id}'"))
         await save_run(session, run_dict)
         await session.commit()
-        
+
         await session.execute(text(f"SET app.current_tenant_id = '{tenant_a_id}'"))
         res = await session.execute(select(OrchestrationLinkage).where(OrchestrationLinkage.tenant_id == tenant_a_id))
         linkage = res.scalars().first()
@@ -170,7 +177,7 @@ async def run_pg_evidence():
     report_path = "artifacts/remediation_evidence_report.json"
     with open(f"/home/ubuntu/SintraPrime-Unified/{report_path}", "w") as f:
         json.dump(evidence, f, indent=2)
-    
+
     logger.info(f"✨ EVIDENCE COMMITTED TO {report_path} ✨")
     await engine.dispose()
     return evidence

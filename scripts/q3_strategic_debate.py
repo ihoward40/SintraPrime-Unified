@@ -1,8 +1,9 @@
 import asyncio
-import logging
 import json
+import logging
+
 from portal.services.council_mode import council_mode
-from portal.services.memory_vault import memory_vault, MemoryType
+from portal.services.memory_vault import MemoryType, memory_vault
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -10,7 +11,7 @@ logger = logging.getLogger("Q3StrategicDebate")
 
 async def run_q3_debate():
     logger.info("🏛️ INITIATING COUNCIL MODE: Q3 AUTONOMOUS EXPANSION PRIORITIES 🏛️")
-    
+
     intent_id = "q3-expansion-strategy"
     context = {
         "priorities": [
@@ -21,10 +22,10 @@ async def run_q3_debate():
         ],
         "constraints": ["Zero-trust isolation", "Minimal platform overhead"]
     }
-    
+
     # 1. Initiate multi-model debate
     decision = await council_mode.initiate_debate(intent_id, context)
-    
+
     # 2. Store the strategic decision in OmniBrain
     tenant_id = "principal-tenant"
     await memory_vault.store_memory(
@@ -39,7 +40,7 @@ async def run_q3_debate():
         memory_type=MemoryType.INSTITUTIONAL_KNOWLEDGE,
         metadata={"category": "STRATEGY", "quarter": "2026-Q3"}
     )
-    
+
     # 3. Output results
     print(json.dumps(decision.model_dump(), indent=2))
     return decision

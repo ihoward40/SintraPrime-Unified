@@ -1,12 +1,13 @@
 import asyncio
-import logging
 import json
+import logging
 import uuid
-from datetime import datetime, UTC
-from sqlalchemy import text, select
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from datetime import UTC, datetime
 
-from portal.models.orchestration import OrchestrationRun, OrchestrationEvent
+from sqlalchemy import select, text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+from portal.models.orchestration import OrchestrationEvent, OrchestrationRun
 from portal.services.auditable_trails import auditable_trails
 from portal.services.orchestration.persistence import save_run
 
@@ -17,13 +18,13 @@ PG_URL = "postgresql+asyncpg://sintra_app:sintra_app@localhost/sintraprime_test"
 
 async def run_phase_7c_verification():
     logger.info("🎬 INITIALIZING PHASE 7C VERIFICATION: AUDITABLE EXECUTION TRAILS 🎬")
-    
+
     engine = create_async_engine(PG_URL)
     session_factory = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
-    
+
     tenant_id = "00000000-0000-0000-0000-00000000000a"
     run_id = str(uuid.uuid4())
-    
+
     async with session_factory() as session:
         # 1. SETUP: Create a run with events
         async with session.begin():
@@ -41,14 +42,14 @@ async def run_phase_7c_verification():
                 ]
             }
             await save_run(session, run_dict)
-            
+
         # 2. TEST: Generate Trail
         async with session.begin():
             await session.execute(text(f"SET LOCAL app.current_tenant_id = '{tenant_id}'"))
             trail = await auditable_trails.generate_execution_trail(session, run_id, tenant_id)
-            
+
             logger.info(f"[TEST] Trail Generated: {json.dumps(trail, indent=2)}")
-            
+
             # Verify redaction in trail
             first_event = trail["events"][0]
             # Check if any key contains MASKED_KEY
@@ -56,14 +57,14 @@ async def run_phase_7c_verification():
                 logger.info("✅ REDACTION IN TRAIL VERIFIED")
             else:
                 logger.error("❌ REDACTION IN TRAIL FAILED")
-                
+
             # 3. TEST: Verify Integrity
             is_valid = await auditable_trails.verify_trail_integrity(trail)
             if is_valid:
                 logger.info("✅ TRAIL INTEGRITY VERIFIED")
             else:
                 logger.error("❌ TRAIL INTEGRITY FAILED")
-                
+
             # 4. TEST: Tamper Proofing
             trail["events"][1]["payload"]["status"] = "TAMPERED"
             is_valid_tampered = await auditable_trails.verify_trail_integrity(trail)

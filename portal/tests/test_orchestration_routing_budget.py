@@ -1,4 +1,9 @@
-from portal.services.orchestration.budget_policy import BudgetLimits, check_budget, consume_budget, initial_budget_usage
+from portal.services.orchestration.budget_policy import (
+    BudgetLimits,
+    check_budget,
+    consume_budget,
+    initial_budget_usage,
+)
 from portal.services.orchestration.model_router import route_provider
 from portal.services.orchestration.provider_registry import mock_provider_registry
 from portal.services.orchestration.schemas import Role, TaskType

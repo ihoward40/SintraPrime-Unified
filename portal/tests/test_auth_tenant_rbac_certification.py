@@ -17,7 +17,6 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
-from portal.auth.session_manager import blocklist_jti
 from portal.auth.jwt_handler import (
     create_refresh_token,
     decode_access_token,
@@ -27,13 +26,14 @@ from portal.auth.jwt_handler import (
     settings as jwt_settings,
 )
 from portal.auth.rbac import CurrentUser, Permission, Role, get_current_user
+from portal.auth.session_manager import blocklist_jti
 from portal.config import Settings
-from portal.middleware.auth_middleware import AuthMiddleware, is_public_path
-from portal.services.encryption_service import _get_key
 from portal.main import create_app
+from portal.middleware.auth_middleware import AuthMiddleware, is_public_path
 from portal.models.billing import Invoice
 from portal.routers import billing, users
 from portal.services.audit_service import audit
+from portal.services.encryption_service import _get_key
 
 BASELINE_COMMIT = "baseline-placeholder"
 EVIDENCE_SCHEMA_VERSION = "1.0"

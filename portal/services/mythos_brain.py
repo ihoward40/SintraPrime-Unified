@@ -1,8 +1,10 @@
 import logging
 import uuid
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional
+
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from ..models.mission_control_outbox import MissionControlOutbox
 from .remediation_service import remediation
 
@@ -28,9 +30,9 @@ class MythosBrainCoordinator:
         # 2. REMEDIATION: Redaction and Metadata
         safe_payload = remediation.redact_boundaries(payload)
         audit_payload = remediation.inject_audit_metadata(safe_payload)
-        
+
         intent_id = f"int-{uuid.uuid4().hex[:8]}"
-        
+
         # 3. Transactional Outbox Pattern
         outbox_entry = MissionControlOutbox(
             tenant_id=tenant_id,
@@ -40,17 +42,17 @@ class MythosBrainCoordinator:
             status="PENDING",
             created_at=datetime.now(UTC)
         )
-        
+
         self.session.add(outbox_entry)
         await self.session.flush()
-        
+
         # 4. REMEDIATION: Durable Linkage
         await remediation.persist_durable_linkage(
-            self.session, 
-            event_id=f"evt-{intent_id[:4]}", 
+            self.session,
+            event_id=f"evt-{intent_id[:4]}",
             node_id=audit_payload.get("node_id", "unknown"),
             tenant_id=tenant_id
         )
-        
+
         logger.info(f"[MYTHOS_BRAIN] Intent {intent_id} ingested and persisted to outbox.")
         return intent_id

@@ -15,7 +15,6 @@ from pathlib import Path
 from orchestration.durable_execution import DurableWorkflowEngine
 from portal.config import get_settings
 
-
 # One canonical durable engine per application process.
 _engine: DurableWorkflowEngine | None = None
 

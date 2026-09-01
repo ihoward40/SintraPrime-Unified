@@ -24,14 +24,15 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from orchestration.durable_execution import DurableWorkflowEngine
-from portal.auth.rbac import CurrentUser, Permission, Role as RbacRole
+from portal.auth.rbac import CurrentUser, Permission
+from portal.auth.rbac import Role as RbacRole
 from portal.database import Base
 from portal.models.audit import AuditLog
 from portal.models.mission_control_execution import Mission, Run
 from portal.models.mission_control_run_approval import RunApproval
 from portal.models.tenant_principal import TenantPrincipal
-from portal.models.user import Tenant, User
 from portal.models.user import Role as UserRole
+from portal.models.user import Tenant, User
 from portal.services import mission_control_capability_policy as policy_module
 from portal.services.durable_orchestration_authority import DurableOrchestrationAuthority
 from portal.services.mission_control_approval_service import (
@@ -41,8 +42,8 @@ from portal.services.mission_control_approval_service import (
     DuplicateApprovalError,
     InputHashMismatchError,
     NotPrincipalError,
-    RunNotFoundError,
     RunNotApprovalRequiredError,
+    RunNotFoundError,
     consume_approval_and_activate,
     create_approval,
 )
@@ -88,7 +89,8 @@ def _make_current_user(user_id: str = "principal-a", tenant_id: str = "tenant-a"
 
 async def _setup_principal(db: AsyncSession, user_id: str = "principal-a", tenant_id: str = "tenant-a"):
     """Insert a Tenant, Role, User, and TenantPrincipal record."""
-    from portal.models.user import Role as RoleModel, Permission as PermModel
+    from portal.models.user import Permission as PermModel
+    from portal.models.user import Role as RoleModel
     tenant = Tenant(id=tenant_id, name="Test Firm", slug="test-firm")
     db.add(tenant)
     role = RoleModel(id="role-firm-admin", name=RbacRole.FIRM_ADMIN.value, display_name="Firm Admin")
@@ -272,7 +274,7 @@ class TestThreatMatrix:
         _, run_b, _ = await _create_approval_required_run(db, test_engine, input_data={"x": 2})
         actor = _make_current_user()
         # Approve run_a
-        approval_a = await create_approval(db, run_id=run_a.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
+        await create_approval(db, run_id=run_a.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
         # Try to activate run_b using run_a's approval — the service loads by run_id
         # so this will fail because no approval exists for run_b
         with pytest.raises(ApprovalError, match="APPROVAL_NOT_FOUND"):
@@ -310,7 +312,7 @@ class TestThreatMatrix:
         )
         # At least one should succeed, at least one should fail
         successes = [r for r in results if not isinstance(r, Exception)]
-        failures = [r for r in results if isinstance(r, Exception)]
+        [r for r in results if isinstance(r, Exception)]
         # With a single session, the first will consume and the second will find CONSUMED
         # (or both may race on the flush)
         assert len(successes) >= 1
@@ -357,7 +359,7 @@ class TestThreatMatrix:
         await _setup_principal(db)
         _, run, authority = await _create_approval_required_run(db, test_engine, input_data={"x": 1})
         actor = _make_current_user()
-        approval = await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
+        await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
         # Tamper with run input_data_hash
         run.input_data_hash = "tampered_hash"
         await db.flush()
@@ -370,7 +372,7 @@ class TestThreatMatrix:
         await _setup_principal(db)
         _, run, authority = await _create_approval_required_run(db, test_engine, input_data={"x": 1})
         actor = _make_current_user()
-        approval = await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
+        await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
         # Tamper with run workflow_type — capability will no longer be classified
         run.workflow_type = "unregistered.workflow"
         await db.flush()
@@ -416,7 +418,7 @@ class TestActivationAcceptance:
     @pytest.mark.asyncio
     async def test_engine_call_count_before_approval_is_zero(self, db, test_engine):
         await _setup_principal(db)
-        _, run, authority = await _create_approval_required_run(db, test_engine)
+        _, _run, _authority = await _create_approval_required_run(db, test_engine)
         # Verify: no engine call during APPROVAL_REQUIRED creation
         # The engine's store should have no workflows
         workflows = test_engine._store.list_workflows()

@@ -1,9 +1,10 @@
-"""JWT authentication middleware — validates tokens on every request."""
+"""JWT authentication middleware — validates tokens on matched protected requests."""
 
 from __future__ import annotations
 
 import structlog
 from fastapi import Request
+from starlette.routing import Match
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -33,7 +34,6 @@ PUBLIC_EXACT_PATHS = {
     "/api/v1/sso/azure/authorize",
     "/api/v1/sso/google/authorize",
     "/api/v1/sso/callback",
-    "/api/v1/sso/health",
     "/api/v1/blackstone/health",
 }
 
@@ -47,9 +47,40 @@ def is_public_path(path: str) -> bool:
     return path in PUBLIC_EXACT_PATHS or any(path.startswith(prefix) for prefix in PUBLIC_PREFIX_PATHS)
 
 
+def _has_route_match(request: Request) -> bool:
+    """Return whether the request targets a registered route.
+
+    Authentication remains fail-closed if route introspection itself cannot be
+    completed. A genuine route miss may continue to FastAPI/Starlette so the
+    normal 404 response (and correlation headers) are produced without running
+    a protected endpoint.
+    """
+    try:
+        routes = request.app.router.routes
+    except Exception:
+        return True
+
+    for route in routes:
+        matches = getattr(route, "matches", None)
+        if not callable(matches):
+            continue
+        try:
+            match, _ = matches(request.scope)
+        except Exception:
+            return True
+        if match in {Match.FULL, Match.PARTIAL}:
+            return True
+    return False
+
+
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
+
+        # Preserve the application's ordinary 404 semantics for a true route
+        # miss. No protected handler can execute when no route matches.
+        if not _has_route_match(request):
+            return await call_next(request)
 
         if request.method == "OPTIONS" or is_public_path(path):
             return await call_next(request)

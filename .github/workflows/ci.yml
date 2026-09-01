@@ -340,5 +340,8 @@ jobs:
           python -m venv .venv-safety
           .venv-safety/bin/pip install safety==2.3.5
           .venv-safety/bin/safety check -r requirements.txt
-      - name: Security lint (bandit — baseline mode)
-        run: bandit -r . -x tests/,portal/tests/ -ll --baseline .bandit-baseline.json -f json -o /tmp/bandit.json || true && python scripts/check_bandit.py
+      - name: Security lint (bandit — semantic baseline comparison)
+        # Bandit runs WITHOUT --baseline; check_bandit.py does semantic
+        # comparison by (test_id, normalized_filename) to handle line-number
+        # drift from formatting changes without regenerating the baseline.
+        run: bandit -r . -x tests/,portal/tests/ -ll -f json -o /tmp/bandit.json && python scripts/check_bandit.py

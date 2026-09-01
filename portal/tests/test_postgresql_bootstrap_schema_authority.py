@@ -119,11 +119,11 @@ def test_authoritative_migration_sequence_is_ordered() -> None:
         "portal/migrations/add_audit_records.sql",
         "portal/migrations/add_tenant_principal.sql",
         "portal/migrations/add_mission_control_command_ledger.sql",
-        "portal/migrations/add_mission_control_run_control_projection.sql",
         "portal/migrations/add_adaptive_orchestration_domain.sql",
         "portal/migrations/align_orchestration_identity_fk_types.sql",
         "portal/migrations/add_mission_control_mission_runs.sql",
         "portal/migrations/add_mission_control_run_approvals.sql",
+        "portal/migrations/add_mission_control_run_control_projection.sql",
     ]
     # Uniqueness and count invariants
     seq = [str(path).replace("\\", "/") for path in MIGRATION_SEQUENCE]

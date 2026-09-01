@@ -22,11 +22,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install bandit email-validator
-          # Pin safety to 2.3.5 for anonymous scanning compatibility.
-          # Safety 3.x requires platform authentication and crashes in
-          # unauthenticated CI with TypeError: 'Timeout' object cannot be
-          # interpreted as an integer during JWKS fetch.
-          pip install safety==2.3.5
 
       - name: Run unit tests (scoped)
         run: python -m pytest --tb=short -q
@@ -37,4 +32,14 @@ jobs:
         run: bandit -r . -x tests/,portal/tests/ -ll --baseline .bandit-baseline.json -f json -o /tmp/bandit.json || true && python scripts/check_bandit.py
 
       - name: Dependency vulnerability scan (safety)
-        run: safety check -r requirements.txt
+        # Safety is installed in an ISOLATED virtual environment to prevent
+        # its packaging<22 dependency from contaminating the application
+        # test environment. Safety 2.3.5 supports anonymous scanning using
+        # the non-commercial vulnerability database.
+        # Safety 3.x requires platform authentication and crashes in
+        # unauthenticated CI with TypeError: 'Timeout' object cannot be
+        # interpreted as an integer during JWKS fetch.
+        run: |
+          python -m venv .venv-safety
+          .venv-safety/bin/pip install safety==2.3.5
+          .venv-safety/bin/safety check -r requirements.txt

@@ -681,6 +681,11 @@ class CrashTestWorker(BaseWorker):
 
             # Crash after crash_after files
             if i + 1 >= crash_after and self.state.task.get("should_crash", True):
+                # Optional delay before crash — gives external killer time to act
+                crash_delay = self.state.task.get("crash_delay", 0)
+                if crash_delay > 0:
+                    self._heartbeat(f"waiting at crash point ({crash_delay}s)", i + 1, total)
+                    time.sleep(crash_delay)
                 self.state.errors.append(f"deliberate_crash_after_{crash_after}_files")
                 self.store.write_status(self.state.worker_id, self.state)
                 # Simulate crash — exit non-zero

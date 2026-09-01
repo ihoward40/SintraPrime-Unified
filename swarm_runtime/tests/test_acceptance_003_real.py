@@ -39,6 +39,7 @@ class RealCrashWorker:
             task={
                 "crash_after": 3,
                 "should_crash": should_crash,
+                "crash_delay": 10 if should_crash else 0,
             },
             artifact_path=f"artifacts/crash-{worker_id}.json",
             base_sha="eeb55ffb",
@@ -94,10 +95,14 @@ def run_acceptance_003_real() -> dict:
         return {"all_pass": False, "error": "no_checkpoint"}
 
     # Kill the process externally
+    process_killed_externally = False
     proc = controller1.processes.get("C1")
     if proc and proc.poll() is None:
         proc.kill()
+        process_killed_externally = True
         print(f"  Process killed (PID={original_pid})")
+    elif proc and proc.poll() is not None:
+        print(f"  Process already dead (exit={proc.poll()}) — crashed before external kill")
 
     # Wait for process to die
     time.sleep(2)
@@ -162,7 +167,7 @@ def run_acceptance_003_real() -> dict:
     print("SWARM-ACCEPTANCE-003-REAL RESULTS")
     print(f"{'='*60}")
     criteria = [
-        ("PROCESS_KILLED_EXTERNALLY", original_pid is not None),
+        ("PROCESS_KILLED_EXTERNALLY", process_killed_externally),
         ("HEARTBEAT_LOST", c1['status'] in ('failed', 'timed_out')),
         ("ORIGINAL_PID_DEAD", original_dead),
         ("CHECKPOINT_WRITTEN_BEFORE_KILL", checkpoint_written),
@@ -176,7 +181,7 @@ def run_acceptance_003_real() -> dict:
         print(f"  [{'PASS' if passed else 'FAIL'}] {name}")
 
     print(f"\n  OVERALL: {'PASS' if all_pass else 'FAIL'}")
-    return {"all_pass": all_pass, "original_pid": original_pid, "checkpoint": ckpt}
+    return {"all_pass": all_pass, "original_pid": original_pid, "process_killed_externally": process_killed_externally, "checkpoint": ckpt}
 
 
 def test_run() -> None:

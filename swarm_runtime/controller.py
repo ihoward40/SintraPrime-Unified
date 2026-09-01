@@ -401,6 +401,9 @@ if __name__ == "__main__":
                         self.store.append_log(worker_id, stdout, "stdout")
                     if stderr:
                         self.store.append_log(worker_id, stderr, "stderr")
+                        # Print stderr for failed workers so it appears in CI logs
+                        if state.status == WorkerStatus.FAILED:
+                            print(f"  [WORKER {worker_id} STDERR]: {stderr[:500]}")
                 except Exception:
                     pass
 

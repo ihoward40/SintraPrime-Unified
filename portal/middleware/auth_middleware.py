@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import structlog
 from fastapi import Request
-from starlette.routing import Match
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.routing import Match
 
 from ..auth.jwt_handler import decode_access_token
 from ..auth.session_manager import is_jti_blocklisted

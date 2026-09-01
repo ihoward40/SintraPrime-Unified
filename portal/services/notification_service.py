@@ -70,7 +70,7 @@ async def notify_users(
             body=body,
             resource_id=resource_id,
             actor_id=str(actor_id),
-            metadata_=details,
+            extra_data=details,
         )
         db.add(notif)
 

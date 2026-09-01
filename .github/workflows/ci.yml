@@ -330,22 +330,16 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
-      - name: Install security tools
+      - name: Install bandit
         run: pip install bandit
       - name: Dependency vulnerability scan (safety)
-        # Safety is installed in an ISOLATED virtual environment to prevent
-        # its packaging<22 dependency from contaminating the application
-        # test environment. Safety 2.3.5 supports anonymous scanning.
+        # Safety is installed in an ISOLATED virtual environment outside the
+        # repository source tree to prevent its dependencies (packaging<22,
+        # vendored libraries) from contaminating the application test
+        # environment and from being scanned by Bandit.
         run: |
-          python -m venv .venv-safety
-          .venv-safety/bin/pip install safety==2.3.5
-          .venv-safety/bin/safety check -r requirements.txt
-      - name: Security lint (bandit — semantic baseline comparison)
-        # Bandit runs WITHOUT --baseline; check_bandit.py does semantic
-        # comparison by (test_id, normalized_filename) to handle line-number
-        # drift from formatting changes without regenerating the baseline.
-        # Bandit exits non-zero when findings exist. Use a script to ensure
-        # check_bandit.py runs regardless of bandit's exit code.
-        run: |
-          bandit -r . -x tests/,portal/tests/ -ll -f json -o /tmp/bandit.json || true
-          python scripts/check_bandit.py
+          python -m venv "${RUNNER_TEMP}/sintraprime-safety-venv"
+          "${RUNNER_TEMP}/sintraprime-safety-venv/bin/pip" install safety==2.3.5
+          "${RUNNER_TEMP}/sintraprime-safety-venv/bin/safety" check -r requirements.txt
+      - name: Security lint (bandit — baseline mode)
+        run: bandit -r . -x tests/,portal/tests/ -ll --baseline .bandit-baseline.json -f json -o /tmp/bandit.json || true && python scripts/check_bandit.py

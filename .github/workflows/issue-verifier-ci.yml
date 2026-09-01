@@ -21,7 +21,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install bandit safety email-validator
+          pip install bandit email-validator
+          # Pin safety to 2.3.5 for anonymous scanning compatibility.
+          # Safety 3.x requires platform authentication and crashes in
+          # unauthenticated CI with TypeError: 'Timeout' object cannot be
+          # interpreted as an integer during JWKS fetch.
+          pip install safety==2.3.5
 
       - name: Run unit tests (scoped)
         run: python -m pytest --tb=short -q

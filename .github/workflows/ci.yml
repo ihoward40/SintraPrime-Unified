@@ -331,7 +331,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - name: Install security tools
-        run: pip install safety bandit
+        run: pip install safety==2.3.5 bandit
       - name: Dependency vulnerability scan (safety)
         run: safety check -r requirements.txt
       - name: Security lint (bandit — baseline mode)

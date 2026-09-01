@@ -208,6 +208,86 @@ def test_postgresql_race_prepare_schema_create_all_path_executes() -> None:
     asyncio.run(create_schema())
 
 
+def test_orm_on_raw_sql_uuid_schema_compatibility(migrated_database_url: str) -> None:
+    """Prove ORM String(36) models can insert/read through raw-SQL UUID schema.
+
+    The canonical raw-SQL bootstrap creates UUID columns in PostgreSQL.
+    The ORM models use String(36) for cross-database compatibility.
+    SQLAlchemy must transparently coerce between String(36) and UUID columns.
+
+    Issue #291: Notification.tenant_id and Notification.user_id were
+    UUID(as_uuid=True) while Tenant.id and User.id are String(36).
+    After the fix, all are String(36) in ORM metadata. This test proves
+    the ORM can operate against the raw-SQL UUID schema.
+    """
+    import uuid as uuid_mod
+
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    url = migrated_database_url
+    async_url = _async_sqlalchemy_url(url)
+
+    tenant_uuid = uuid_mod.uuid4()
+    user_uuid = uuid_mod.uuid4()
+    notification_uuid = uuid_mod.uuid4()
+
+    # First insert parent rows via raw SQL (as the bootstrap schema expects UUID)
+    with psycopg2.connect(psycopg2_url(url)) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO tenants (id, name, slug) VALUES (%s, %s, %s)",
+                (str(tenant_uuid), "ORM Compat Test", f"orm-compat-{tenant_uuid.hex[:12]}"),
+            )
+            cur.execute(
+                """INSERT INTO users (id, tenant_id, email, hashed_password, role)
+                   VALUES (%s, %s, %s, %s, %s)""",
+                (str(user_uuid), str(tenant_uuid), "compat@test.local", "hash", "admin"),
+            )
+            conn.commit()
+
+    # Now insert and read via ORM (String(36) types against UUID columns)
+    async def orm_roundtrip() -> None:
+        engine = create_async_engine(async_url, echo=False)
+        try:
+            async with AsyncSession(engine, expire_on_commit=False) as session:
+                # Insert a Notification via ORM
+                from portal.routers.notifications import Notification
+
+                notification = Notification(
+                    id=notification_uuid,
+                    tenant_id=tenant_uuid,
+                    user_id=user_uuid,
+                    event_type="test_event",
+                    title="ORM Compatibility Test",
+                    extra_data={"test": True},
+                )
+                session.add(notification)
+                await session.commit()
+
+                # Read back via ORM
+                from sqlalchemy import select
+
+                result = await session.execute(
+                    select(Notification).where(Notification.id == notification_uuid)
+                )
+                fetched = result.scalar_one()
+                assert fetched.tenant_id == tenant_uuid
+                assert fetched.user_id == user_uuid
+                assert fetched.event_type == "test_event"
+                assert fetched.title == "ORM Compatibility Test"
+
+                # Query by tenant_id (ORM filter)
+                result = await session.execute(
+                    select(Notification).where(Notification.tenant_id == tenant_uuid)
+                )
+                tenant_notifications = result.scalars().all()
+                assert len(tenant_notifications) >= 1
+        finally:
+            await engine.dispose()
+
+    asyncio.run(orm_roundtrip())
+
+
 def test_clean_raw_sql_bootstrap_repeats_three_times() -> None:
     url = _database_url()
     for _attempt in range(3):

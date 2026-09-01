@@ -344,6 +344,8 @@ jobs:
         # Bandit runs WITHOUT --baseline; check_bandit.py does semantic
         # comparison by (test_id, normalized_filename) to handle line-number
         # drift from formatting changes without regenerating the baseline.
-        # Bandit exits non-zero when findings exist. Use || true to allow
-        # check_bandit.py to perform the semantic baseline comparison.
-        run: bandit -r . -x tests/,portal/tests/ -ll -f json -o /tmp/bandit.json || true && python scripts/check_bandit.py
+        # Bandit exits non-zero when findings exist. Use a script to ensure
+        # check_bandit.py runs regardless of bandit's exit code.
+        run: |
+          bandit -r . -x tests/,portal/tests/ -ll -f json -o /tmp/bandit.json || true
+          python scripts/check_bandit.py

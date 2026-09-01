@@ -24,6 +24,7 @@ MIGRATION_SEQUENCE = (
     Path("portal/migrations/align_orchestration_identity_fk_types.sql"),
     Path("portal/migrations/add_mission_control_mission_runs.sql"),
     Path("portal/migrations/add_mission_control_run_approvals.sql"),
+    Path("portal/migrations/align_notification_identity_fk_types.sql"),
     Path("portal/migrations/add_mission_control_run_control_projection.sql"),
 )
 EXPECTED_TABLES = (

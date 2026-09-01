@@ -26,10 +26,10 @@ class Notification(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
 
     event_type: Mapped[str] = mapped_column(String(50), nullable=False)

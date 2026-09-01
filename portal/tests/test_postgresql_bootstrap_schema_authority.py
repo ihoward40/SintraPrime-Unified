@@ -104,14 +104,17 @@ def _seed_case_user(url: str) -> tuple[uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUI
 
 
 def test_authoritative_migration_sequence_is_ordered() -> None:
+    # Migration sequence reflects convergence of Option 5 with current main.
+    # Order preserves certified Option 5 sequence while integrating current-main additions.
     assert [str(path).replace("\\", "/") for path in MIGRATION_SEQUENCE] == [
         "portal/migrations/portal_schema.sql",
         "portal/migrations/add_evidence_snapshots.sql",
         "portal/migrations/add_audit_records.sql",
+        "portal/migrations/add_tenant_principal.sql",
         "portal/migrations/add_mission_control_command_ledger.sql",
+        "portal/migrations/add_mission_control_mission_runs.sql",
         "portal/migrations/add_mission_control_run_control_projection.sql",
-        "portal/migrations/add_adaptive_orchestration_domain.sql",
-        "portal/migrations/align_orchestration_identity_fk_types.sql",
+        "portal/migrations/add_mission_control_run_approvals.sql",
     ]
 
 

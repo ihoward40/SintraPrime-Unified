@@ -16,13 +16,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).parent.parent.parent.resolve()
-sys.path.insert(0, str(REPO))
-
 from swarm_runtime import SwarmController, WorkerSpec
 from swarm_runtime.tool_workers import WORKER_REGISTRY, BaseWorker
 
-
+REPO = Path(__file__).resolve().parents[2]
 # Add a BuilderWorker class for this test
 class BuilderWorker(BaseWorker):
     """Creates a fixture file in an isolated worktree and commits it.
@@ -210,6 +207,19 @@ def run_acceptance_004() -> dict:
 
     print(f"\n  OVERALL: {'PASS' if all_pass else 'FAIL'}")
     return {"summary": s, "fixtures_created": fixtures_created, "collisions": collisions, "all_pass": all_pass}
+
+
+def test_run() -> None:
+    """Pytest entry point — delegates to run_* function."""
+    result = run_acceptance_004()
+    if isinstance(result, dict):
+        # Check for all_pass or swarm_result
+        if "all_pass" in result:
+            assert result["all_pass"], "run_acceptance_004 did not pass"
+        elif "swarm_result" in result:
+            assert result["swarm_result"] == "SUCCESS", "run_acceptance_004 failed"
+        elif "status" in result:
+            assert result["status"] == "SUCCESS", "run_acceptance_004 failed"
 
 
 if __name__ == "__main__":

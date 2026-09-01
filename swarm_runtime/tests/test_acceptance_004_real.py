@@ -18,12 +18,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).parent.parent.parent.resolve()
-sys.path.insert(0, str(REPO))
-
 from swarm_runtime import SwarmController, WorkerSpec
 
-
+REPO = Path(__file__).resolve().parents[2]
 def run_acceptance_004_real() -> dict:
     swarm_id = "SWARM-ACCEPTANCE-004-REAL"
     repo_path = str(REPO)
@@ -193,6 +190,19 @@ def run_acceptance_004_real() -> dict:
 
     return {"summary": s, "commits": commits, "all_pass": all_pass,
             "paths_unique": paths_unique, "branches_unique": branches_unique}
+
+
+def test_run() -> None:
+    """Pytest entry point — delegates to run_* function."""
+    result = run_acceptance_004_real()
+    if isinstance(result, dict):
+        # Check for all_pass or swarm_result
+        if "all_pass" in result:
+            assert result["all_pass"], "run_acceptance_004_real did not pass"
+        elif "swarm_result" in result:
+            assert result["swarm_result"] == "SUCCESS", "run_acceptance_004_real failed"
+        elif "status" in result:
+            assert result["status"] == "SUCCESS", "run_acceptance_004_real failed"
 
 
 if __name__ == "__main__":

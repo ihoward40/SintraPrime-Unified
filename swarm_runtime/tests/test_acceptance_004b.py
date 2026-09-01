@@ -10,12 +10,9 @@ import json
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).parent.parent.parent.resolve()
-sys.path.insert(0, str(REPO))
-
 from swarm_runtime.ownership import OwnershipRegistry
 
-
+REPO = Path(__file__).resolve().parents[2]
 def run_acceptance_004b() -> dict:
 
     # Create an ownership registry
@@ -65,6 +62,19 @@ def run_acceptance_004b() -> dict:
     print(f"  Violations: {len(registry.get_violations())}")
 
     return {"all_pass": all_pass, "violations": len(registry.get_violations())}
+
+
+def test_run() -> None:
+    """Pytest entry point — delegates to run_* function."""
+    result = run_acceptance_004b()
+    if isinstance(result, dict):
+        # Check for all_pass or swarm_result
+        if "all_pass" in result:
+            assert result["all_pass"], "run_acceptance_004b did not pass"
+        elif "swarm_result" in result:
+            assert result["swarm_result"] == "SUCCESS", "run_acceptance_004b failed"
+        elif "status" in result:
+            assert result["status"] == "SUCCESS", "run_acceptance_004b failed"
 
 
 if __name__ == "__main__":

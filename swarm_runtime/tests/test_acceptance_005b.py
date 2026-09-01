@@ -19,13 +19,10 @@ import sys
 import time
 from pathlib import Path
 
-REPO = Path(__file__).parent.parent.parent.resolve()
-sys.path.insert(0, str(REPO))
-
 from swarm_runtime import SwarmController, WorkerSpec
 from swarm_runtime.artifact_store import ArtifactStore
 
-
+REPO = Path(__file__).resolve().parents[2]
 def run_acceptance_005b() -> dict:
     swarm_id = "SWARM-ACCEPTANCE-005B"
     run_dir = os.path.join(
@@ -144,6 +141,19 @@ def run_acceptance_005b() -> dict:
 
     print(f"\n  OVERALL: {'PASS' if all_pass else 'FAIL'}")
     return {"all_pass": all_pass, "completed_workers": completed_workers, "summary": summary.to_dict()}
+
+
+def test_run() -> None:
+    """Pytest entry point — delegates to run_* function."""
+    result = run_acceptance_005b()
+    if isinstance(result, dict):
+        # Check for all_pass or swarm_result
+        if "all_pass" in result:
+            assert result["all_pass"], "run_acceptance_005b did not pass"
+        elif "swarm_result" in result:
+            assert result["swarm_result"] == "SUCCESS", "run_acceptance_005b failed"
+        elif "status" in result:
+            assert result["status"] == "SUCCESS", "run_acceptance_005b failed"
 
 
 if __name__ == "__main__":

@@ -56,6 +56,7 @@ from .event_dispatcher import (
     SwarmActivationAdapter,
 )
 from .health_persistence import ProviderHealthStore
+from .hermes_adapter import DelegateTask, HermesSwarmAdapter, SwarmResult, is_swarm_eligible
 from .inference_adapter import SwarmInferenceAdapter, WorkerInferenceRequest, WorkerInferenceResult
 from .ownership import OwnershipRegistry, OwnershipViolation
 from .provider_router import ProviderHealth, ProviderRouter
@@ -90,6 +91,7 @@ __all__ = [
     "CodeSearchWorker",
     "CrashTestWorker",
     "DatabaseSchemaWorker",
+    "DelegateTask",
     "DeliberatelyFlawedBuilderWorker",
     "DispatchOutcome",
     "EventDispatchStatus",
@@ -100,6 +102,7 @@ __all__ = [
     "EventPolicyEngine",
     "FailoverTestWorker",
     "GitDiffWorker",
+    "HermesSwarmAdapter",
     "IndependentBreakerWorker",
     "KillSwitchState",
     "ModelReasoningWorker",
@@ -117,6 +120,7 @@ __all__ = [
     "SwarmEvent",
     # Inference
     "SwarmInferenceAdapter",
+    "SwarmResult",
     "SwarmSummary",
     "TestRunnerWorker",
     # Security
@@ -128,4 +132,5 @@ __all__ = [
     "WorkerStatus",
     "build_worker_environment",
     "check_secret_inheritance",
+    "is_swarm_eligible",
 ]

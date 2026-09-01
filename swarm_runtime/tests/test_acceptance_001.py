@@ -23,13 +23,9 @@ import os
 import sys
 from pathlib import Path
 
-# Add repo to path
-REPO = Path(__file__).parent.parent.resolve()
-sys.path.insert(0, str(REPO))
-
 from swarm_runtime import SwarmController, WorkerSpec
 
-
+REPO = Path(__file__).resolve().parents[1]
 def run_acceptance_001() -> dict:
     swarm_id = "SWARM-ACCEPTANCE-001"
     repo_path = str(REPO)
@@ -173,6 +169,19 @@ def run_acceptance_001() -> dict:
     print(f"  SWARM_RUNTIME_CERTIFICATION = {'LOCALLY_CERTIFIED' if all_pass else 'FAILED'}")
 
     return s
+
+
+def test_run() -> None:
+    """Pytest entry point — delegates to run_* function."""
+    result = run_acceptance_001()
+    if isinstance(result, dict):
+        # Check for all_pass or swarm_result
+        if "all_pass" in result:
+            assert result["all_pass"], "run_acceptance_001 did not pass"
+        elif "swarm_result" in result:
+            assert result["swarm_result"] == "SUCCESS", "run_acceptance_001 failed"
+        elif "status" in result:
+            assert result["status"] == "SUCCESS", "run_acceptance_001 failed"
 
 
 if __name__ == "__main__":

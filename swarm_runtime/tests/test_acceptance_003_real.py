@@ -23,18 +23,15 @@ import sys
 import time
 from pathlib import Path
 
-REPO = Path(__file__).parent.parent.parent.resolve()
-sys.path.insert(0, str(REPO))
-
 from swarm_runtime import SwarmController, WorkerSpec
 from swarm_runtime.artifact_store import ArtifactStore
 
-
+REPO = Path(__file__).resolve().parents[2]
 class RealCrashWorker:
     """Worker that processes files, writes checkpoints, then gets killed."""
 
     @staticmethod
-    def create_spec(worker_id: str, run_dir: str, should_crash: bool = True) -> WorkerSpec:
+    def create_spec(worker_id: str, _run_dir: str, should_crash: bool = True) -> WorkerSpec:
         return WorkerSpec(
             worker_id=worker_id,
             role="real_crash_test",
@@ -107,12 +104,20 @@ def run_acceptance_003_real() -> dict:
     original_dead = True
     if original_pid:
         try:
-            # On Windows, check if process exists
-            result = subprocess.run(
-                ["tasklist", "/FI", f"PID eq {original_pid}"],
-                capture_output=True, text=True, timeout=5,
-            )
-            original_dead = str(original_pid) not in result.stdout
+            # Cross-platform process liveness check
+            if os.name == "nt":
+                # Windows: use tasklist
+                result = subprocess.run(
+                    ["tasklist", "/FI", f"PID eq {original_pid}"],
+                    capture_output=True, text=True, timeout=5,
+                )
+                original_dead = str(original_pid) not in result.stdout
+            else:
+                # Unix: send signal 0 to check if process exists
+                os.kill(original_pid, 0)
+                original_dead = False
+        except (ProcessLookupError, PermissionError):
+            original_dead = True
         except Exception:
             original_dead = True
 
@@ -172,6 +177,19 @@ def run_acceptance_003_real() -> dict:
 
     print(f"\n  OVERALL: {'PASS' if all_pass else 'FAIL'}")
     return {"all_pass": all_pass, "original_pid": original_pid, "checkpoint": ckpt}
+
+
+def test_run() -> None:
+    """Pytest entry point — delegates to run_* function."""
+    result = run_acceptance_003_real()
+    if isinstance(result, dict):
+        # Check for all_pass or swarm_result
+        if "all_pass" in result:
+            assert result["all_pass"], "run_acceptance_003_real did not pass"
+        elif "swarm_result" in result:
+            assert result["swarm_result"] == "SUCCESS", "run_acceptance_003_real failed"
+        elif "status" in result:
+            assert result["status"] == "SUCCESS", "run_acceptance_003_real failed"
 
 
 if __name__ == "__main__":

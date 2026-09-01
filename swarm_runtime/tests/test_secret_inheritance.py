@@ -8,15 +8,14 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).parent.parent.parent.resolve()
-sys.path.insert(0, str(REPO))
-
 from swarm_runtime.capability_lease import (
     DENIED_SECRETS,
     WorkerCapabilityLease,
     build_worker_environment,
     check_secret_inheritance,
 )
+
+REPO = Path(__file__).resolve().parents[2]
 
 
 def run_secret_inheritance_test() -> dict:
@@ -95,6 +94,19 @@ def run_secret_inheritance_test() -> dict:
 
     print(f"\n  OVERALL: {'PASS' if all_pass else 'FAIL'}")
     return {"all_pass": all_pass}
+
+
+def test_run() -> None:
+    """Pytest entry point — delegates to run_* function."""
+    result = run_secret_inheritance_test()
+    if isinstance(result, dict):
+        # Check for all_pass or swarm_result
+        if "all_pass" in result:
+            assert result["all_pass"], "run_secret_inheritance_test did not pass"
+        elif "swarm_result" in result:
+            assert result["swarm_result"] == "SUCCESS", "run_secret_inheritance_test failed"
+        elif "status" in result:
+            assert result["status"] == "SUCCESS", "run_secret_inheritance_test failed"
 
 
 if __name__ == "__main__":

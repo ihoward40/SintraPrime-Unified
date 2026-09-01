@@ -1,9 +1,11 @@
 import logging
 import uuid
-from datetime import datetime, UTC
-from typing import Dict, List, Any, Optional
+from datetime import UTC, datetime
+from typing import Any, Dict, List, Optional
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from ..models.orchestration import MemoryEntry
 from .remediation_service import remediation
 
@@ -15,18 +17,18 @@ class OmniBrainMemoryVault:
     Durable persistence of institutional intelligence.
     """
     async def store_memory(
-        self, 
+        self,
         session: AsyncSession,
-        tenant_id: str, 
-        content: Any, 
-        memory_type: str, 
-        metadata: Optional[Dict[str, Any]] = None
+        tenant_id: str,
+        content: Any,
+        memory_type: str,
+        metadata: Dict[str, Any] | None = None
     ) -> str:
         """Stores a new memory entry with redaction and timestamps."""
         # Apply remediation: redaction and timestamps
         safe_content = remediation.redact_boundaries(content)
         safe_metadata = remediation.redact_boundaries(metadata or {})
-        
+
         memory_id = f"mem-{uuid.uuid4().hex[:8]}"
         entry = MemoryEntry(
             id=memory_id,
@@ -37,20 +39,20 @@ class OmniBrainMemoryVault:
             version=1,
             created_at=datetime.now(UTC)
         )
-        
+
         session.add(entry)
         await session.flush()
         logger.info(f"[MEMORY_VAULT] Stored {memory_type} memory {memory_id} for tenant {tenant_id}")
         return memory_id
 
     async def retrieve_tenant_memory(
-        self, session: AsyncSession, tenant_id: str, memory_type: Optional[str] = None
+        self, session: AsyncSession, tenant_id: str, memory_type: str | None = None
     ) -> List[MemoryEntry]:
         """Retrieves memory entries using SQLAlchemy with RLS context."""
         query = select(MemoryEntry).where(MemoryEntry.tenant_id == tenant_id)
         if memory_type:
             query = query.where(MemoryEntry.type == memory_type)
-        
+
         query = query.order_by(MemoryEntry.created_at.desc())
         result = await session.execute(query)
         return list(result.scalars().all())

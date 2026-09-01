@@ -20,6 +20,7 @@ import sys
 import os
 import time
 import uuid
+from pathlib import Path
 
 # Allow importing orchestration as a package from the project root
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -977,6 +978,340 @@ class TestDurableWorkflowEngine:
             ))
         wfs = engine.list_workflows(status=WorkflowStatus.COMPLETED)
         assert len(wfs) >= 3
+
+    @pytest.mark.asyncio
+    async def test_start_workflow_idempotent_same_request_schedules_once(self):
+        engine = DurableWorkflowEngine()
+        scheduled: list[tuple] = []
+
+        async def my_workflow(ctx, data):
+            return {"ok": True}
+
+        async def counted_run(workflow_id, workflow_type, input_data, owner_id):
+            scheduled.append((workflow_id, workflow_type, input_data, owner_id))
+            await original_run(workflow_id, workflow_type, input_data, owner_id)
+
+        engine.register_workflow("test_wf", my_workflow)
+        original_run = engine._run_workflow
+        engine._run_workflow = counted_run
+
+        wf_id = await engine.start_workflow("test_wf", {"input": "data"})
+        same_id = await engine.start_workflow("test_wf", {"input": "data"}, workflow_id=wf_id)
+        assert same_id == wf_id
+        await asyncio.sleep(0.05)
+        assert len(scheduled) == 1
+
+    @pytest.mark.asyncio
+    async def test_start_workflow_conflicting_request_rejects(self):
+        engine = DurableWorkflowEngine()
+
+        async def my_workflow(ctx, data):
+            return {"ok": True}
+
+        engine.register_workflow("test_wf", my_workflow)
+        wf_id = await engine.start_workflow("test_wf", {"input": "data"})
+
+        with pytest.raises(ValueError, match="conflicting request"):
+            await engine.start_workflow("test_wf", {"input": "changed"}, workflow_id=wf_id)
+
+        # Original record must remain untouched.
+        wf = engine.get_workflow(wf_id)
+        assert wf.workflow_type == "test_wf"
+        assert wf.state == {"input": "data"}
+
+    @pytest.mark.asyncio
+    async def test_start_workflow_parallel_same_id_schedules_once(self):
+        engine = DurableWorkflowEngine()
+        scheduled: list[tuple] = []
+
+        async def my_workflow(ctx, data):
+            return {"ok": True}
+
+        async def counted_run(workflow_id, workflow_type, input_data, owner_id):
+            scheduled.append((workflow_id, workflow_type, input_data, owner_id))
+            await original_run(workflow_id, workflow_type, input_data, owner_id)
+
+        engine.register_workflow("test_wf", my_workflow)
+        original_run = engine._run_workflow
+        engine._run_workflow = counted_run
+
+        wf_id = "parallel-wf-1"
+        results = await asyncio.gather(
+            engine.start_workflow("test_wf", {"input": "data"}, workflow_id=wf_id),
+            engine.start_workflow("test_wf", {"input": "data"}, workflow_id=wf_id),
+            engine.start_workflow("test_wf", {"input": "data"}, workflow_id=wf_id),
+        )
+        assert all(r == wf_id for r in results)
+        await asyncio.sleep(0.05)
+        assert len(scheduled) == 1
+
+    @pytest.mark.asyncio
+    async def test_start_workflow_existing_record_not_overwritten(self):
+        engine = DurableWorkflowEngine()
+
+        async def my_workflow(ctx, data):
+            return {"ok": True}
+
+        engine.register_workflow("test_wf", my_workflow)
+        wf_id = await engine.start_workflow("test_wf", {"input": "data"})
+
+        with pytest.raises(ValueError, match="conflicting request"):
+            await engine.start_workflow("test_wf", {"input": "changed"}, workflow_id=wf_id)
+
+        wf = engine.get_workflow(wf_id)
+        assert wf.state == {"input": "data"}
+
+    @pytest.mark.asyncio
+    async def test_start_workflow_generated_ids_remain_unique(self):
+        engine = DurableWorkflowEngine()
+
+        async def my_workflow(ctx, data):
+            return {"ok": True}
+
+        engine.register_workflow("test_wf", my_workflow)
+        ids = {await engine.start_workflow("test_wf", {"i": i}) for i in range(10)}
+        assert len(ids) == 10
+
+    @pytest.mark.asyncio
+    async def test_new_workflow_starts_in_claimed_not_running(self):
+        engine = DurableWorkflowEngine()
+
+        async def my_workflow(ctx, data):
+            return {"ok": True}
+
+        engine.register_workflow("test_wf", my_workflow)
+        # Block the dispatch handoff so we can inspect pre-dispatch state.
+        async def blocked_dispatch(wf, from_recovery):
+            return False
+
+        engine._dispatch_workflow = blocked_dispatch
+
+        wf_id = await engine.start_workflow("test_wf", {"input": "data"})
+        wf = engine.get_workflow(wf_id)
+        assert wf.status == WorkflowStatus.CLAIMED
+
+    @pytest.mark.asyncio
+    async def test_recovery_dispatches_stranded_claim(self):
+        """Engine A creates a claim and is destroyed before dispatch. Engine B recovers."""
+        import tempfile
+
+        async def my_workflow(ctx, data):
+            return {"recovered": True}
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "test.db"
+            engine_a = DurableWorkflowEngine(db_path=db_path)
+            engine_a.register_workflow("test_wf", my_workflow)
+
+            # Create claim but prevent dispatch from completing.
+            async def blocked_dispatch(wf, from_recovery):
+                return False
+
+            engine_a._dispatch_workflow = blocked_dispatch
+            wf_id = await engine_a.start_workflow("test_wf", {"input": "data"})
+
+            # Verify the claim survived without actual execution.
+            wf = engine_a.get_workflow(wf_id)
+            assert wf.status == WorkflowStatus.CLAIMED
+
+            # Simulate process restart: new engine opens same durable store.
+            engine_b = DurableWorkflowEngine(db_path=db_path)
+            engine_b.register_workflow("test_wf", my_workflow)
+            dispatched = await engine_b.recover_dispatches(batch_size=10)
+            assert dispatched == 1
+
+            # Allow the recovered task to run.
+            await asyncio.sleep(0.2)
+            wf = engine_b.get_workflow(wf_id)
+            assert wf.status == WorkflowStatus.COMPLETED
+            history = engine_b.get_history(wf_id)
+            event_types = [h.event_type for h in history]
+            assert HistoryEventType.WORKFLOW_CLAIMED in event_types
+            assert HistoryEventType.WORKFLOW_RECOVERED in event_types
+            assert HistoryEventType.WORKFLOW_STARTED in event_types
+            assert HistoryEventType.WORKFLOW_COMPLETED in event_types
+
+            engine_a.close()
+            engine_b.close()
+
+    @pytest.mark.asyncio
+    async def test_recovery_does_not_dispatch_cancelled_claim(self):
+        import tempfile
+
+        async def my_workflow(ctx, data):
+            return {"should_not_run": True}
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "test.db"
+            engine_a = DurableWorkflowEngine(db_path=db_path)
+            engine_a.register_workflow("test_wf", my_workflow)
+
+            async def blocked_dispatch(wf, from_recovery):
+                return False
+
+            engine_a._dispatch_workflow = blocked_dispatch
+            wf_id = await engine_a.start_workflow("test_wf", {"input": "data"})
+            assert engine_a.get_workflow(wf_id).status == WorkflowStatus.CLAIMED
+
+            cancelled = await engine_a.cancel_workflow(wf_id)
+            assert cancelled is True
+            assert engine_a.get_workflow(wf_id).status == WorkflowStatus.CANCELLED
+
+            engine_b = DurableWorkflowEngine(db_path=db_path)
+            engine_b.register_workflow("test_wf", my_workflow)
+            dispatched = await engine_b.recover_dispatches(batch_size=10)
+            assert dispatched == 0
+
+            await asyncio.sleep(0.1)
+            wf = engine_b.get_workflow(wf_id)
+            assert wf.status == WorkflowStatus.CANCELLED
+
+            engine_a.close()
+            engine_b.close()
+
+    @pytest.mark.asyncio
+    async def test_recovery_uses_original_input(self):
+        import tempfile
+
+        seen_inputs: list[dict] = []
+
+        async def my_workflow(ctx, data):
+            seen_inputs.append(data)
+            return {"ok": True}
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "test.db"
+            engine_a = DurableWorkflowEngine(db_path=db_path)
+            engine_a.register_workflow("test_wf", my_workflow)
+
+            async def blocked_dispatch(wf, from_recovery):
+                return False
+
+            engine_a._dispatch_workflow = blocked_dispatch
+            wf_id = await engine_a.start_workflow("test_wf", {"input": "original"})
+
+            engine_b = DurableWorkflowEngine(db_path=db_path)
+            engine_b.register_workflow("test_wf", my_workflow)
+            await engine_b.recover_dispatches(batch_size=10)
+            await asyncio.sleep(0.2)
+
+            assert len(seen_inputs) == 1
+            assert seen_inputs[0] == {"input": "original"}
+
+            engine_a.close()
+            engine_b.close()
+
+    @pytest.mark.asyncio
+    async def test_two_recovery_workers_race_one_dispatch(self):
+        import tempfile
+
+        scheduled: list[tuple] = []
+
+        async def my_workflow(ctx, data):
+            return {"ok": True}
+
+        async def counted_run(workflow_id, workflow_type, input_data, owner_id):
+            scheduled.append((workflow_id, workflow_type, input_data, owner_id))
+            await original_run(workflow_id, workflow_type, input_data, owner_id)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "test.db"
+            engine_a = DurableWorkflowEngine(db_path=db_path)
+            engine_a.register_workflow("test_wf", my_workflow)
+
+            async def blocked_dispatch(wf, from_recovery):
+                return False
+
+            engine_a._dispatch_workflow = blocked_dispatch
+            wf_id = await engine_a.start_workflow("test_wf", {"input": "data"})
+
+            engine_b = DurableWorkflowEngine(db_path=db_path)
+            engine_b.register_workflow("test_wf", my_workflow)
+            original_run = engine_b._run_workflow
+            engine_b._run_workflow = counted_run
+
+            engine_c = DurableWorkflowEngine(db_path=db_path)
+            engine_c.register_workflow("test_wf", my_workflow)
+            engine_c._run_workflow = counted_run
+
+            results = await asyncio.gather(
+                engine_b.recover_dispatches(batch_size=10),
+                engine_c.recover_dispatches(batch_size=10),
+            )
+            assert sum(results) == 1
+            await asyncio.sleep(0.05)
+            assert len(scheduled) == 1
+
+            engine_a.close()
+            engine_b.close()
+            engine_c.close()
+
+    @pytest.mark.asyncio
+    async def test_same_request_retry_while_claimed_is_idempotent(self):
+        import tempfile
+
+        scheduled: list[tuple] = []
+
+        async def my_workflow(ctx, data):
+            return {"ok": True}
+
+        async def counted_run(workflow_id, workflow_type, input_data, owner_id):
+            scheduled.append((workflow_id, workflow_type, input_data, owner_id))
+            await original_run(workflow_id, workflow_type, input_data, owner_id)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "test.db"
+            engine_a = DurableWorkflowEngine(db_path=db_path)
+            engine_a.register_workflow("test_wf", my_workflow)
+            original_run = engine_a._run_workflow
+
+            async def blocked_dispatch(wf, from_recovery):
+                return False
+
+            engine_a._dispatch_workflow = blocked_dispatch
+            wf_id = await engine_a.start_workflow("test_wf", {"input": "data"})
+            assert engine_a.get_workflow(wf_id).status == WorkflowStatus.CLAIMED
+
+            # Reinstall counted runner; retry should not schedule again because
+            # the workflow is still CLAIMED (not yet dispatched).
+            engine_a._run_workflow = counted_run
+            same_id = await engine_a.start_workflow("test_wf", {"input": "data"}, workflow_id=wf_id)
+            assert same_id == wf_id
+            await asyncio.sleep(0.05)
+            assert len(scheduled) == 0
+
+            engine_a.close()
+
+    @pytest.mark.asyncio
+    async def test_recovery_worker_runs_periodically(self):
+        import tempfile
+
+        async def my_workflow(ctx, data):
+            return {"ok": True}
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "test.db"
+            engine_a = DurableWorkflowEngine(db_path=db_path)
+            engine_a.register_workflow("test_wf", my_workflow)
+
+            async def blocked_dispatch(wf, from_recovery):
+                return False
+
+            engine_a._dispatch_workflow = blocked_dispatch
+            wf_id = await engine_a.start_workflow("test_wf", {"input": "data"})
+            assert engine_a.get_workflow(wf_id).status == WorkflowStatus.CLAIMED
+
+            engine_b = DurableWorkflowEngine(db_path=db_path)
+            engine_b.register_workflow("test_wf", my_workflow)
+            engine_b.start_recovery_worker(interval_seconds=0.1, batch_size=10)
+            await asyncio.sleep(0.35)
+            await engine_b.shutdown(timeout_seconds=1.0)
+
+            wf = engine_b.get_workflow(wf_id)
+            assert wf.status == WorkflowStatus.COMPLETED
+
+            engine_a.close()
+            engine_b.close()
 
 
 # ---------------------------------------------------------------------------

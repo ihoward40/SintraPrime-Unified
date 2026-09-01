@@ -1,4 +1,4 @@
-"""JWT authentication middleware — validates tokens on every request."""
+"""JWT authentication middleware — validates tokens on matched protected requests."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import structlog
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.routing import Match
 
 from ..auth.jwt_handler import decode_access_token
 from ..auth.session_manager import is_jti_blocklisted
@@ -33,7 +34,6 @@ PUBLIC_EXACT_PATHS = {
     "/api/v1/sso/azure/authorize",
     "/api/v1/sso/google/authorize",
     "/api/v1/sso/callback",
-    "/api/v1/sso/health",
     "/api/v1/blackstone/health",
 }
 
@@ -42,16 +42,75 @@ PUBLIC_PREFIX_PATHS = (
     "/static/",
 )
 
+# Method-scoped public routes for legal-reference reads (PR #289 Lane B policy).
+PUBLIC_GET_EXACT_PATHS = {
+    "/jurisdictions",
+    "/legal-rules/compare",
+}
 
-def is_public_path(path: str) -> bool:
+PUBLIC_GET_PREFIX_PATHS = (
+    "/federal/",
+    "/jurisdictions/",
+    "/ucc-filings/",
+)
+
+PUBLIC_METHOD_PATHS = {
+    ("POST", "/ucc-filings/evaluate"),
+}
+
+PUBLIC_CONTROLLED_PREFIXES = (
+    "/legal-rules/",
+    "/legal-authorities/",
+)
+
+
+def is_public_path(path: str, method: str | None = None) -> bool:
+    if method:
+        if path in PUBLIC_GET_EXACT_PATHS or any(path.startswith(prefix) for prefix in PUBLIC_GET_PREFIX_PATHS):
+            return True
+        if (method, path) in PUBLIC_METHOD_PATHS:
+            return True
+        if any(path.startswith(prefix) for prefix in PUBLIC_CONTROLLED_PREFIXES):
+            return True
     return path in PUBLIC_EXACT_PATHS or any(path.startswith(prefix) for prefix in PUBLIC_PREFIX_PATHS)
+
+
+def _has_route_match(request: Request) -> bool:
+    """Return whether the request targets a registered route.
+
+    Authentication remains fail-closed if route introspection itself cannot be
+    completed. A genuine route miss may continue to FastAPI/Starlette so the
+    normal 404 response (and correlation headers) are produced without running
+    a protected endpoint.
+    """
+    try:
+        routes = request.app.router.routes
+    except Exception:
+        return True
+
+    for route in routes:
+        matches = getattr(route, "matches", None)
+        if not callable(matches):
+            continue
+        try:
+            match, _ = matches(request.scope)
+        except Exception:
+            return True
+        if match in {Match.FULL, Match.PARTIAL}:
+            return True
+    return False
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
 
-        if request.method == "OPTIONS" or is_public_path(path):
+        # Preserve the application's ordinary 404 semantics for a true route
+        # miss. No protected handler can execute when no route matches.
+        if not _has_route_match(request):
+            return await call_next(request)
+
+        if request.method == "OPTIONS" or is_public_path(path, request.method):
             return await call_next(request)
 
         # WebSocket: auth handled in endpoint.

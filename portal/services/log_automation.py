@@ -1,9 +1,11 @@
-import logging
 import asyncio
-from datetime import datetime, UTC, timedelta
-from typing import Dict, List, Any
+import logging
+from datetime import UTC, datetime, timedelta
+from typing import Any, Dict, List
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from ..models.orchestration import OrchestrationRun
 from .auditable_trails import auditable_trails
 
@@ -16,7 +18,7 @@ class DailyLogAutomationService:
     async def collect_and_verify_daily_logs(self, session: AsyncSession, tenant_id: str) -> Dict[str, Any]:
         """Collects all logs from the last 24 hours and verifies their integrity."""
         yesterday = datetime.now(UTC) - timedelta(days=1)
-        
+
         # 1. Fetch runs from the last 24 hours
         stmt = select(OrchestrationRun).where(
             OrchestrationRun.tenant_id == tenant_id,
@@ -24,7 +26,7 @@ class DailyLogAutomationService:
         )
         res = await session.execute(stmt)
         runs = res.scalars().all()
-        
+
         results = {
             "tenant_id": tenant_id,
             "period_start": yesterday.isoformat(),
@@ -34,18 +36,18 @@ class DailyLogAutomationService:
             "failed_verifications": [],
             "status": "HEALTHY"
         }
-        
+
         # 2. Verify each run's audit trail
         for run in runs:
             trail = await auditable_trails.generate_execution_trail(session, str(run.id), tenant_id)
             is_valid = await auditable_trails.verify_trail_integrity(trail)
-            
+
             if is_valid:
                 results["verified_runs"] += 1
             else:
                 results["failed_verifications"].append(str(run.id))
                 results["status"] = "COMPROMISED"
-        
+
         logger.info(f"[LOG_AUTOMATION] Daily verification complete for tenant {tenant_id}. Status: {results['status']}")
         return results
 

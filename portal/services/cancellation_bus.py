@@ -1,20 +1,21 @@
 import asyncio
 import uuid
-from datetime import datetime, UTC
-from typing import Dict, List, Optional, Any
-from enum import Enum
+from datetime import UTC, datetime
+from enum import Enum, StrEnum
+from typing import Any, Dict, List, Optional
 
-class CancellationScope(str, Enum):
+
+class CancellationScope(StrEnum):
     EXECUTION = "EXECUTION"
     TENANT = "TENANT"
     PLATFORM = "PLATFORM"
 
 class CancellationSignal:
     def __init__(
-        self, 
-        scope: CancellationScope, 
-        target_id: str, 
-        reason: str, 
+        self,
+        scope: CancellationScope,
+        target_id: str,
+        reason: str,
         principal_id: str
     ):
         self.signal_id = str(uuid.uuid4())
@@ -45,17 +46,17 @@ class CancellationBus:
         """Publishes a cancellation signal to the bus."""
         # Record in active cancellations for immediate lookup
         self._active_cancellations[signal.signal_id] = signal
-        
+
         # Put into priority queue for subscribers
         # Use signal.timestamp as tie-breaker for same priority
         await self._priority_queue.put((signal.priority, signal.timestamp, signal))
-        
+
         print(f"[CANCELLATION_BUS] Published {signal.scope} signal for {signal.target_id}")
 
     async def subscribe(self):
         """Generator that yields signals in priority order."""
         while True:
-            priority, timestamp, signal = await self._priority_queue.get()
+            _priority, _timestamp, signal = await self._priority_queue.get()
             yield signal
             self._priority_queue.task_done()
 

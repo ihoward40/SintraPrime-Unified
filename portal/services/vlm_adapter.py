@@ -1,12 +1,13 @@
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
 class VisualReasoningRequest(BaseModel):
-    image_url: Optional[str] = None
-    local_path: Optional[str] = None
+    image_url: str | None = None
+    local_path: str | None = None
     prompt: str
     tenant_id: str
 
@@ -24,7 +25,7 @@ class VLMAdapter:
         Analyzes visual context using the configured VLM.
         """
         logger.info(f"[VLM_ADAPTER] Analyzing visual context for tenant {request.tenant_id}")
-        
+
         # Mock analysis result for foundation phase
         return {
             "model": self.model_name,

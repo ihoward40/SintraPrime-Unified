@@ -1,7 +1,8 @@
 import logging
-from typing import Dict, List, Any, Optional
-from .marl_layer import marl_layer, AgentPolicy
-from .vlm_adapter import vlm_adapter, VisualReasoningRequest
+from typing import Any, Dict, List, Optional
+
+from .marl_layer import AgentPolicy, marl_layer
+from .vlm_adapter import VisualReasoningRequest, vlm_adapter
 
 logger = logging.getLogger(__name__)
 

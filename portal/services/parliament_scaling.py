@@ -1,8 +1,9 @@
 import asyncio
-import uuid
 import random
-from typing import Dict, List, Any
-from datetime import datetime, UTC
+import uuid
+from datetime import UTC, datetime
+from typing import Any, Dict, List
+
 
 class AgentInstance:
     def __init__(self, agent_type: str, tenant_id: str):
@@ -32,7 +33,7 @@ class ParliamentScalingService:
             instance = AgentInstance(agent_type, tenant_id)
             self._instances[instance.instance_id] = instance
             new_ids.append(instance.instance_id)
-        
+
         print(f"[PARLIAMENT_SCALING] Scaled up {len(new_ids)} instances for {agent_type}")
         return new_ids
 
@@ -47,7 +48,7 @@ class ParliamentScalingService:
         types = {}
         for inst in self._instances.values():
             types[inst.agent_type] = types.get(inst.agent_type, 0) + 1
-            
+
         return {
             "total_instances": len(self._instances),
             "agent_types": types,
@@ -57,24 +58,24 @@ class ParliamentScalingService:
     async def run_simulation(self, intent_count: int):
         """Simulates parliament behavior under intent load."""
         print(f"--- PARLIAMENT SIMULATION: {intent_count} INTENTS ---")
-        
+
         # 1. Scale up based on load
         await self.scale_up("NOVA", "test-tenant", count=min(50, intent_count // 2))
         await self.scale_up("HERMES", "test-tenant", count=5)
-        
+
         # 2. Simulate processing
         for inst in self._instances.values():
             inst.status = "BUSY"
             inst.load = random.uniform(0.5, 0.95)
-            
+
         status = self.get_parliament_status()
         print(f"Parliament Load: {status['system_load']:.2%}")
-        
+
         # 3. Simulate completion
         for inst_id in list(self._instances.keys()):
             if random.random() > 0.7:
                 await self.scale_down(inst_id)
-                
+
         final_status = self.get_parliament_status()
         print(f"Simulation Complete. Remaining instances: {final_status['total_instances']}")
 

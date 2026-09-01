@@ -1,12 +1,14 @@
 import logging
-from datetime import datetime, UTC
-from typing import Dict, List, Any, Optional
+from datetime import UTC, datetime
+from typing import Any, Dict, List, Optional
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..models.orchestration import OrchestrationRun
+from .auditable_trails import auditable_trails
 from .memory_vault import memory_vault
 from .remediation_service import remediation
-from .auditable_trails import auditable_trails
-from ..models.orchestration import OrchestrationRun
-from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
 
@@ -28,12 +30,12 @@ class PrincipalBrief:
             raise PermissionError("Unauthorized access to Principal Brief.")
 
         logger.info(f"[PRINCIPAL_BRIEF] Synthesizing brief for tenant {self.tenant_id}")
-        
+
         # 2. Real OmniBrain Retrieval
         lessons = await memory_vault.retrieve_tenant_memory(self.session, self.tenant_id, "LESSON_LEARNED")
         procedures = await memory_vault.retrieve_tenant_memory(self.session, self.tenant_id, "PROVEN_PROCEDURE")
         knowledge = await memory_vault.retrieve_tenant_memory(self.session, self.tenant_id, "INSTITUTIONAL_KNOWLEDGE")
-        
+
         # 3. REMEDIATION: Boundary Redaction
         self.sections["memory_summary"] = remediation.redact_boundaries({
             "total_lessons": len(lessons),
@@ -42,12 +44,12 @@ class PrincipalBrief:
             "recent_lesson": lessons[0].content if lessons else "No recent lessons recorded.",
             "strategic_milestones": [k.content for k in knowledge[:3]]
         })
-        
+
         # 4. Real Orchestration Health
         stmt = select(OrchestrationRun).where(OrchestrationRun.tenant_id == self.tenant_id)
         res = await self.session.execute(stmt)
         active_runs = res.scalars().all()
-        
+
         # 5. REMEDIATION: Auditable Trails for active runs
         trails = []
         for run in active_runs[:5]: # Limit to recent 5
@@ -55,7 +57,7 @@ class PrincipalBrief:
             trails.append(trail)
 
         self.sections["operations"] = {
-            "status": "HARDENED", 
+            "status": "HARDENED",
             "active_orchestrations": len(active_runs),
             "verified_audit_trails": len(trails)
         }

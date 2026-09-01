@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import time
 import uuid
 from typing import Any, Dict, List, Optional
@@ -50,10 +51,17 @@ _checkpointer: Optional[InMemoryCheckpointer] = None
 
 
 def get_engine() -> DurableWorkflowEngine:
-    global _engine
-    if _engine is None:
-        _engine = DurableWorkflowEngine()
-    return _engine
+    """Return the portal-owned canonical durable engine when available."""
+    try:
+        from portal.services.orchestration_runtime import get_canonical_durable_engine
+    except ImportError:
+        # Standalone orchestration deployments retain a local persistent owner.
+        global _engine
+        if _engine is None:
+            db_path = os.getenv("DURABLE_WORKFLOW_STORE_PATH", "orchestration_durable.db")
+            _engine = DurableWorkflowEngine(db_path=db_path)
+        return _engine
+    return get_canonical_durable_engine()
 
 
 def get_a2a() -> A2AProtocol:

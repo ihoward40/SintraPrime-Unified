@@ -330,9 +330,16 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
-      - name: Install security tools
-        run: pip install safety bandit
+      - name: Install bandit
+        run: pip install bandit
       - name: Dependency vulnerability scan (safety)
-        run: safety check -r requirements.txt
+        # Safety is installed in an ISOLATED virtual environment outside the
+        # repository source tree to prevent its dependencies (packaging<22,
+        # vendored libraries) from contaminating the application test
+        # environment and from being scanned by Bandit.
+        run: |
+          python -m venv "${RUNNER_TEMP}/sintraprime-safety-venv"
+          "${RUNNER_TEMP}/sintraprime-safety-venv/bin/pip" install safety==2.3.5
+          "${RUNNER_TEMP}/sintraprime-safety-venv/bin/safety" check -r requirements.txt
       - name: Security lint (bandit — baseline mode)
         run: bandit -r . -x tests/,portal/tests/ -ll --baseline .bandit-baseline.json -f json -o /tmp/bandit.json || true && python scripts/check_bandit.py

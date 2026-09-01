@@ -1,13 +1,14 @@
 import asyncio
-import logging
 import json
+import logging
 import uuid
-from datetime import datetime, UTC
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from datetime import UTC, datetime
 
-from portal.services.principal_brief import brief_service
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from portal.services.log_automation import log_automation
+from portal.services.principal_brief import brief_service
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("UpdatedBrief")
@@ -16,27 +17,27 @@ PG_URL = "postgresql+asyncpg://sintra_app:sintra_app@localhost/sintraprime_test"
 
 async def run_updated_brief():
     logger.info("🎬 GENERATING UPDATED PRINCIPAL BRIEF & DAILY LOG VERIFICATION 🎬")
-    
+
     engine = create_async_engine(PG_URL)
     session_factory = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
-    
+
     tenant_id = "00000000-0000-0000-0000-00000000000a"
     principal_id = "00000000-0000-0000-0000-000000000001"
-    
+
     async with session_factory() as session:
         # 1. Run Daily Log Automation
         async with session.begin():
             await session.execute(text(f"SET LOCAL app.current_tenant_id = '{tenant_id}'"))
             log_results = await log_automation.collect_and_verify_daily_logs(session, tenant_id)
             logger.info(f"[DAILY_LOGS] Verification Result: {json.dumps(log_results, indent=2)}")
-            
+
         # 2. Generate Updated Principal Brief
         async with session.begin():
             await session.execute(text(f"SET LOCAL app.current_tenant_id = '{tenant_id}'"))
             brief = await brief_service.create_brief(session, tenant_id, principal_id)
-            
+
             logger.info(f"[BRIEF] Updated Brief Generated: {json.dumps(brief, indent=2)}")
-            
+
             # Save to file
             with open("/home/ubuntu/PRINCIPAL_BRIEF_UPDATED_2026_08_07.md", "w") as f:
                 f.write(f"# PRINCIPAL BRIEF: {datetime.now(UTC).strftime('%Y-%m-%d')}\n")

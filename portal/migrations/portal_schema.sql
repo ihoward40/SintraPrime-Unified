@@ -33,8 +33,8 @@ CREATE TABLE IF NOT EXISTS tenants (
     deleted_at      TIMESTAMPTZ
 );
 
-CREATE INDEX ix_tenants_slug ON tenants(slug);
-CREATE INDEX ix_tenants_domain ON tenants(domain) WHERE domain IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_tenants_slug ON tenants(slug);
+CREATE INDEX IF NOT EXISTS ix_tenants_domain ON tenants(domain) WHERE domain IS NOT NULL;
 
 -- =============================================================================
 -- ROLES & PERMISSIONS
@@ -110,10 +110,10 @@ CREATE TABLE IF NOT EXISTS users (
     CONSTRAINT uq_user_email_tenant UNIQUE (email, tenant_id)
 );
 
-CREATE INDEX ix_users_tenant_id ON users(tenant_id);
-CREATE INDEX ix_users_email ON users(email);
-CREATE INDEX ix_users_role_id ON users(role_id);
-CREATE INDEX ix_users_is_active ON users(is_active) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_users_tenant_id ON users(tenant_id);
+CREATE INDEX IF NOT EXISTS ix_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS ix_users_role_id ON users(role_id);
+CREATE INDEX IF NOT EXISTS ix_users_is_active ON users(is_active) WHERE deleted_at IS NULL;
 
 -- =============================================================================
 -- CLIENTS
@@ -164,11 +164,11 @@ CREATE TABLE IF NOT EXISTS clients (
     deleted_at          TIMESTAMPTZ
 );
 
-CREATE INDEX ix_clients_tenant_id ON clients(tenant_id);
-CREATE INDEX ix_clients_attorney ON clients(primary_attorney_id);
-CREATE INDEX ix_clients_email ON clients(email) WHERE email IS NOT NULL;
-CREATE INDEX ix_clients_status ON clients(status, tenant_id);
-CREATE INDEX ix_clients_fts ON clients USING GIN (
+CREATE INDEX IF NOT EXISTS ix_clients_tenant_id ON clients(tenant_id);
+CREATE INDEX IF NOT EXISTS ix_clients_attorney ON clients(primary_attorney_id);
+CREATE INDEX IF NOT EXISTS ix_clients_email ON clients(email) WHERE email IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_clients_status ON clients(status, tenant_id);
+CREATE INDEX IF NOT EXISTS ix_clients_fts ON clients USING GIN (
     to_tsvector('english',
         COALESCE(first_name, '') || ' ' ||
         COALESCE(last_name, '') || ' ' ||
@@ -206,7 +206,7 @@ CREATE TABLE IF NOT EXISTS matters (
     CONSTRAINT uq_matter_number_tenant UNIQUE (matter_number, tenant_id)
 );
 
-CREATE INDEX ix_matters_client_id ON matters(client_id);
+CREATE INDEX IF NOT EXISTS ix_matters_client_id ON matters(client_id);
 
 -- =============================================================================
 -- CASES
@@ -262,11 +262,11 @@ CREATE TABLE IF NOT EXISTS cases (
     CONSTRAINT uq_case_number_tenant UNIQUE (case_number, tenant_id)
 );
 
-CREATE INDEX ix_cases_tenant_id ON cases(tenant_id);
-CREATE INDEX ix_cases_client_id ON cases(client_id);
-CREATE INDEX ix_cases_attorney ON cases(lead_attorney_id);
-CREATE INDEX ix_cases_stage ON cases(stage, tenant_id);
-CREATE INDEX ix_cases_fts ON cases USING GIN (
+CREATE INDEX IF NOT EXISTS ix_cases_tenant_id ON cases(tenant_id);
+CREATE INDEX IF NOT EXISTS ix_cases_client_id ON cases(client_id);
+CREATE INDEX IF NOT EXISTS ix_cases_attorney ON cases(lead_attorney_id);
+CREATE INDEX IF NOT EXISTS ix_cases_stage ON cases(stage, tenant_id);
+CREATE INDEX IF NOT EXISTS ix_cases_fts ON cases USING GIN (
     to_tsvector('english',
         COALESCE(title, '') || ' ' ||
         COALESCE(case_number, '') || ' ' ||
@@ -297,8 +297,8 @@ CREATE TABLE IF NOT EXISTS case_events (
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX ix_case_events_case_id ON case_events(case_id);
-CREATE INDEX ix_case_events_date ON case_events(event_date);
+CREATE INDEX IF NOT EXISTS ix_case_events_case_id ON case_events(case_id);
+CREATE INDEX IF NOT EXISTS ix_case_events_date ON case_events(event_date);
 
 -- =============================================================================
 -- CASE DEADLINES
@@ -321,8 +321,8 @@ CREATE TABLE IF NOT EXISTS case_deadlines (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX ix_case_deadlines_case_id ON case_deadlines(case_id);
-CREATE INDEX ix_case_deadlines_due_date ON case_deadlines(due_date) WHERE is_completed = FALSE;
+CREATE INDEX IF NOT EXISTS ix_case_deadlines_case_id ON case_deadlines(case_id);
+CREATE INDEX IF NOT EXISTS ix_case_deadlines_due_date ON case_deadlines(due_date) WHERE is_completed = FALSE;
 
 -- =============================================================================
 -- CASE NOTES
@@ -342,7 +342,7 @@ CREATE TABLE IF NOT EXISTS case_notes (
     deleted_at  TIMESTAMPTZ
 );
 
-CREATE INDEX ix_case_notes_case_id ON case_notes(case_id);
+CREATE INDEX IF NOT EXISTS ix_case_notes_case_id ON case_notes(case_id);
 
 -- =============================================================================
 -- CASE TASKS
@@ -385,8 +385,8 @@ CREATE TABLE IF NOT EXISTS document_folders (
     deleted_at  TIMESTAMPTZ
 );
 
-CREATE INDEX ix_folders_tenant_id ON document_folders(tenant_id);
-CREATE INDEX ix_folders_parent_id ON document_folders(parent_id);
+CREATE INDEX IF NOT EXISTS ix_folders_tenant_id ON document_folders(tenant_id);
+CREATE INDEX IF NOT EXISTS ix_folders_parent_id ON document_folders(parent_id);
 
 -- =============================================================================
 -- DOCUMENTS
@@ -448,12 +448,12 @@ CREATE TABLE IF NOT EXISTS documents (
     deleted_at          TIMESTAMPTZ
 );
 
-CREATE INDEX ix_documents_tenant_id ON documents(tenant_id);
-CREATE INDEX ix_documents_client_id ON documents(client_id);
-CREATE INDEX ix_documents_case_id ON documents(case_id);
-CREATE INDEX ix_documents_folder_id ON documents(folder_id);
-CREATE INDEX ix_documents_status ON documents(status) WHERE deleted_at IS NULL;
-CREATE INDEX ix_documents_fts ON documents USING GIN (fts_vector);
+CREATE INDEX IF NOT EXISTS ix_documents_tenant_id ON documents(tenant_id);
+CREATE INDEX IF NOT EXISTS ix_documents_client_id ON documents(client_id);
+CREATE INDEX IF NOT EXISTS ix_documents_case_id ON documents(case_id);
+CREATE INDEX IF NOT EXISTS ix_documents_folder_id ON documents(folder_id);
+CREATE INDEX IF NOT EXISTS ix_documents_status ON documents(status) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_documents_fts ON documents USING GIN (fts_vector);
 
 -- =============================================================================
 -- DOCUMENT VERSIONS
@@ -476,7 +476,7 @@ CREATE TABLE IF NOT EXISTS document_versions (
     CONSTRAINT uq_doc_version UNIQUE (document_id, version_number)
 );
 
-CREATE INDEX ix_doc_versions_document_id ON document_versions(document_id);
+CREATE INDEX IF NOT EXISTS ix_doc_versions_document_id ON document_versions(document_id);
 
 -- =============================================================================
 -- DOCUMENT SHARES
@@ -511,8 +511,8 @@ CREATE TABLE IF NOT EXISTS document_shares (
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX ix_shares_token ON document_shares(share_token);
-CREATE INDEX ix_shares_document_id ON document_shares(document_id);
+CREATE INDEX IF NOT EXISTS ix_shares_token ON document_shares(share_token);
+CREATE INDEX IF NOT EXISTS ix_shares_document_id ON document_shares(document_id);
 
 -- =============================================================================
 -- MESSAGE THREADS
@@ -545,10 +545,10 @@ CREATE TABLE IF NOT EXISTS message_threads (
     deleted_at      TIMESTAMPTZ
 );
 
-CREATE INDEX ix_threads_tenant_id ON message_threads(tenant_id);
-CREATE INDEX ix_threads_case_id ON message_threads(case_id);
-CREATE INDEX ix_threads_participants ON message_threads USING GIN (participants);
-CREATE INDEX ix_threads_last_message ON message_threads(last_message_at DESC NULLS LAST);
+CREATE INDEX IF NOT EXISTS ix_threads_tenant_id ON message_threads(tenant_id);
+CREATE INDEX IF NOT EXISTS ix_threads_case_id ON message_threads(case_id);
+CREATE INDEX IF NOT EXISTS ix_threads_participants ON message_threads USING GIN (participants);
+CREATE INDEX IF NOT EXISTS ix_threads_last_message ON message_threads(last_message_at DESC NULLS LAST);
 
 -- =============================================================================
 -- MESSAGES
@@ -578,11 +578,11 @@ CREATE TABLE IF NOT EXISTS messages (
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX ix_messages_thread_id ON messages(thread_id);
-CREATE INDEX ix_messages_sender_id ON messages(sender_id);
-CREATE INDEX ix_messages_created_at ON messages(created_at DESC);
-CREATE INDEX ix_messages_edited_at ON messages(edited_at) WHERE is_edited = TRUE;
-CREATE UNIQUE INDEX ix_messages_idempotency_key ON messages(idempotency_key) WHERE idempotency_key IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_messages_thread_id ON messages(thread_id);
+CREATE INDEX IF NOT EXISTS ix_messages_sender_id ON messages(sender_id);
+CREATE INDEX IF NOT EXISTS ix_messages_created_at ON messages(created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_messages_edited_at ON messages(edited_at) WHERE is_edited = TRUE;
+CREATE UNIQUE INDEX IF NOT EXISTS ix_messages_idempotency_key ON messages(idempotency_key) WHERE idempotency_key IS NOT NULL;
 
 -- =============================================================================
 -- MESSAGE ATTACHMENTS
@@ -629,10 +629,10 @@ CREATE TABLE IF NOT EXISTS time_entries (
     deleted_at          TIMESTAMPTZ
 );
 
-CREATE INDEX ix_time_entries_tenant ON time_entries(tenant_id);
-CREATE INDEX ix_time_entries_user ON time_entries(user_id);
-CREATE INDEX ix_time_entries_case ON time_entries(case_id);
-CREATE INDEX ix_time_entries_unbilled ON time_entries(is_billed, tenant_id) WHERE is_billed = FALSE AND deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_time_entries_tenant ON time_entries(tenant_id);
+CREATE INDEX IF NOT EXISTS ix_time_entries_user ON time_entries(user_id);
+CREATE INDEX IF NOT EXISTS ix_time_entries_case ON time_entries(case_id);
+CREATE INDEX IF NOT EXISTS ix_time_entries_unbilled ON time_entries(is_billed, tenant_id) WHERE is_billed = FALSE AND deleted_at IS NULL;
 
 -- =============================================================================
 -- BILLING — EXPENSES
@@ -709,9 +709,9 @@ CREATE TABLE IF NOT EXISTS invoices (
     CONSTRAINT uq_invoice_number_tenant UNIQUE (invoice_number, tenant_id)
 );
 
-CREATE INDEX ix_invoices_tenant ON invoices(tenant_id);
-CREATE INDEX ix_invoices_client ON invoices(client_id);
-CREATE INDEX ix_invoices_status ON invoices(status, tenant_id);
+CREATE INDEX IF NOT EXISTS ix_invoices_tenant ON invoices(tenant_id);
+CREATE INDEX IF NOT EXISTS ix_invoices_client ON invoices(client_id);
+CREATE INDEX IF NOT EXISTS ix_invoices_status ON invoices(status, tenant_id);
 
 -- =============================================================================
 -- BILLING — INVOICE LINE ITEMS
@@ -730,14 +730,22 @@ CREATE TABLE IF NOT EXISTS invoice_line_items (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX ix_line_items_invoice ON invoice_line_items(invoice_id);
+CREATE INDEX IF NOT EXISTS ix_line_items_invoice ON invoice_line_items(invoice_id);
 
 -- Add FK for time_entries → invoices
-ALTER TABLE time_entries ADD CONSTRAINT fk_time_entries_invoice
-    FOREIGN KEY (invoice_id) REFERENCES invoices(id);
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_time_entries_invoice') THEN
+        ALTER TABLE time_entries ADD CONSTRAINT fk_time_entries_invoice
+            FOREIGN KEY (invoice_id) REFERENCES invoices(id);
+    END IF;
+END $$;
 
-ALTER TABLE expenses ADD CONSTRAINT fk_expenses_invoice
-    FOREIGN KEY (invoice_id) REFERENCES invoices(id);
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_expenses_invoice') THEN
+        ALTER TABLE expenses ADD CONSTRAINT fk_expenses_invoice
+            FOREIGN KEY (invoice_id) REFERENCES invoices(id);
+    END IF;
+END $$;
 
 -- =============================================================================
 -- BILLING — PAYMENTS
@@ -791,8 +799,8 @@ CREATE TABLE IF NOT EXISTS trust_accounts (
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX ix_trust_client ON trust_accounts(client_id);
-CREATE INDEX ix_trust_date ON trust_accounts(transaction_date);
+CREATE INDEX IF NOT EXISTS ix_trust_client ON trust_accounts(client_id);
+CREATE INDEX IF NOT EXISTS ix_trust_date ON trust_accounts(transaction_date);
 
 -- =============================================================================
 -- NOTIFICATIONS
@@ -820,9 +828,9 @@ CREATE TABLE IF NOT EXISTS notifications (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX ix_notifications_user_id ON notifications(user_id);
-CREATE INDEX ix_notifications_unread ON notifications(user_id, is_read) WHERE is_read = FALSE;
-CREATE INDEX ix_notifications_created ON notifications(created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_notifications_user_id ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS ix_notifications_unread ON notifications(user_id, is_read) WHERE is_read = FALSE;
+CREATE INDEX IF NOT EXISTS ix_notifications_created ON notifications(created_at DESC);
 
 -- =============================================================================
 -- AUDIT LOG (Immutable, Hash-Chained)
@@ -860,19 +868,21 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 -- Make audit_logs append-only via policy
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS audit_insert_only ON audit_logs;
 CREATE POLICY audit_insert_only ON audit_logs
     FOR INSERT WITH CHECK (TRUE);
 
+DROP POLICY IF EXISTS audit_select ON audit_logs;
 CREATE POLICY audit_select ON audit_logs
     FOR SELECT USING (TRUE);
 
 -- No UPDATE or DELETE policies = impossible to modify/delete
 
-CREATE INDEX ix_audit_tenant ON audit_logs(tenant_id);
-CREATE INDEX ix_audit_user ON audit_logs(user_id);
-CREATE INDEX ix_audit_action ON audit_logs(action);
-CREATE INDEX ix_audit_created ON audit_logs(created_at DESC);
-CREATE INDEX ix_audit_resource ON audit_logs(resource_type, resource_id);
+CREATE INDEX IF NOT EXISTS ix_audit_tenant ON audit_logs(tenant_id);
+CREATE INDEX IF NOT EXISTS ix_audit_user ON audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS ix_audit_action ON audit_logs(action);
+CREATE INDEX IF NOT EXISTS ix_audit_created ON audit_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_audit_resource ON audit_logs(resource_type, resource_id);
 
 -- =============================================================================
 -- ROW LEVEL SECURITY
@@ -897,21 +907,27 @@ CREATE OR REPLACE FUNCTION current_user_id() RETURNS UUID AS $$
 $$ LANGUAGE SQL STABLE;
 
 -- Clients: tenant isolation + client self-access
+DROP POLICY IF EXISTS tenant_isolation ON clients;
 CREATE POLICY tenant_isolation ON clients
     FOR ALL USING (tenant_id = current_tenant_id());
 
+DROP POLICY IF EXISTS tenant_isolation ON cases;
 CREATE POLICY tenant_isolation ON cases
     FOR ALL USING (tenant_id = current_tenant_id());
 
+DROP POLICY IF EXISTS tenant_isolation ON documents;
 CREATE POLICY tenant_isolation ON documents
     FOR ALL USING (tenant_id = current_tenant_id());
 
+DROP POLICY IF EXISTS tenant_isolation ON message_threads;
 CREATE POLICY tenant_isolation ON message_threads
     FOR ALL USING (tenant_id = current_tenant_id());
 
+DROP POLICY IF EXISTS tenant_isolation ON messages;
 CREATE POLICY tenant_isolation ON messages
     FOR ALL USING (tenant_id = current_tenant_id());
 
+DROP POLICY IF EXISTS tenant_isolation ON invoices;
 CREATE POLICY tenant_isolation ON invoices
     FOR ALL USING (tenant_id = current_tenant_id());
 
@@ -938,7 +954,7 @@ BEGIN
         'time_entries','expenses','invoices'
     ]) LOOP
         EXECUTE format(
-            'CREATE TRIGGER trg_updated_at BEFORE UPDATE ON %I
+            'CREATE OR REPLACE TRIGGER trg_updated_at BEFORE UPDATE ON %I
              FOR EACH ROW EXECUTE FUNCTION set_updated_at()', t
         );
     END LOOP;
@@ -949,9 +965,9 @@ END $$;
 -- Additional: client display name trigram for fuzzy search
 -- =============================================================================
 
-CREATE INDEX ix_clients_trgm ON clients USING GIN (display_name gin_trgm_ops);
-CREATE INDEX ix_cases_title_trgm ON cases USING GIN (title gin_trgm_ops);
-CREATE INDEX ix_documents_name_trgm ON documents USING GIN (name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS ix_clients_trgm ON clients USING GIN (display_name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS ix_cases_title_trgm ON cases USING GIN (title gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS ix_documents_name_trgm ON documents USING GIN (name gin_trgm_ops);
 
 -- =============================================================================
 -- AUDIT TRIGGER — Auto-log changes to sensitive tables
@@ -989,11 +1005,11 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Apply audit trigger to documents and invoices
-CREATE TRIGGER trg_audit_documents
+CREATE OR REPLACE TRIGGER trg_audit_documents
     AFTER INSERT OR UPDATE OR DELETE ON documents
     FOR EACH ROW EXECUTE FUNCTION log_sensitive_changes();
 
-CREATE TRIGGER trg_audit_invoices
+CREATE OR REPLACE TRIGGER trg_audit_invoices
     AFTER INSERT OR UPDATE OR DELETE ON invoices
     FOR EACH ROW EXECUTE FUNCTION log_sensitive_changes();
 

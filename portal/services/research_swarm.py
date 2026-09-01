@@ -1,7 +1,7 @@
-import logging
 import asyncio
-from typing import Dict, List, Any, Optional
-from datetime import datetime, UTC
+import logging
+from datetime import UTC, datetime
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -19,11 +19,11 @@ class ResearchSwarmService:
         """
         investigation_id = f"res-{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}"
         logger.info(f"[RESEARCH_SWARM] Initiating investigation on: {topic}")
-        
+
         # 1. Parallel Research Streams (Simulated)
         sources = ["regulatory-docs", "academic-papers", "video-evidence", "market-news"]
         results = []
-        
+
         for source in sources:
             logger.info(f"[RESEARCH_SWARM] Agent researching {source}...")
             await asyncio.sleep(0.5)
@@ -32,7 +32,7 @@ class ResearchSwarmService:
                 "findings": f"Verified emerging {topic} patterns in {source}.",
                 "confidence": 0.92
             })
-            
+
         # 2. Synthesis
         synthesis = {
             "investigation_id": investigation_id,
@@ -43,7 +43,7 @@ class ResearchSwarmService:
             "primary_findings": results,
             "status": "COMPLETED"
         }
-        
+
         logger.info(f"[RESEARCH_SWARM] Investigation {investigation_id} complete.")
         return synthesis
 

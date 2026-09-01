@@ -1,7 +1,9 @@
-import logging
 import asyncio
-from typing import Dict, List, Any, Optional
+import logging
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel
+
 from .remediation_service import remediation
 
 logger = logging.getLogger(__name__)
@@ -26,28 +28,26 @@ class CouncilModeService:
         Triggers a multi-model debate with redacted context.
         """
         # REMEDIATION: Redact context boundaries
-        safe_context = remediation.redact_boundaries(context)
-        
+        remediation.redact_boundaries(context)
+
         logger.info(f"[COUNCIL_MODE] Initiating strategic debate for intent {intent_id}")
-        
+
         # Simulate model voting
         votes = {}
         for model in self.available_models:
             decision = "APPROVE" if model != "llama-4" else "NEEDS_REVISION"
             votes[model] = decision
-            
+
         approve_count = list(votes.values()).count("APPROVE")
         consensus = approve_count >= 2
-        
-        decision = CouncilDecision(
+
+        return CouncilDecision(
             intent_id=intent_id,
             consensus_reached=consensus,
             recommendation="Proceed with isolation architecture" if consensus else "Refine security posture",
             votes=votes,
             rationale="Consensus reached among primary strategic models."
         )
-        
-        return decision
 
 # Global instance
 council_mode = CouncilModeService()

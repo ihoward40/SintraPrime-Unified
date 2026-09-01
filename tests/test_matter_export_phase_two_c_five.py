@@ -168,7 +168,11 @@ def test_export_route_rejects_client_without_export_permission():
 
 
 def test_export_route_returns_hash_headers(monkeypatch):
+    from portal.database import get_db
     from portal.routers import matter_export
+
+    async def _override_get_db():
+        yield object()
 
     async def fake_build_packet(*_args, **_kwargs):
         return MatterExportResult(
@@ -182,7 +186,9 @@ def test_export_route_returns_hash_headers(monkeypatch):
         )
 
     monkeypatch.setattr(matter_export.service, "build_packet", fake_build_packet)
-    client = TestClient(create_app())
+    app = create_app()
+    app.dependency_overrides[get_db] = _override_get_db
+    client = TestClient(app)
     response = client.post(
         "/api/v1/matters/matter-1/exports",
         json={"format": "JSON"},

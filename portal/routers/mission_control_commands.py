@@ -7,10 +7,14 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth.rbac import CurrentUser, Permission, require_permissions
 from ..database import get_db
+from ..models.mission_control_execution import Mission, Run
+from ..services.audit_service import audit
+from ..services.durable_orchestration_authority import DurableOrchestrationAuthority
 from ..services.mission_control_command_service import (
     IDEMPOTENCY_KEY_MAX_LENGTH,
     IDEMPOTENCY_KEY_MIN_LENGTH,
@@ -18,11 +22,16 @@ from ..services.mission_control_command_service import (
     CommandTargetType,
     CommandType,
     DuplicateCommandConflictError,
-    submit_refusal_only_command,
+    submit_canonical_command,
 )
+from ..services.orchestration_runtime import get_canonical_durable_engine
 
 router = APIRouter(prefix="/api/v1/mission-control", tags=["mission-control"])
 
+
+mission_control_execution_authority = DurableOrchestrationAuthority(
+    engine=get_canonical_durable_engine()
+)
 
 COMMAND_PERMISSIONS: dict[CommandType, Permission] = {
     CommandType.START_GOVERNED_RUN: Permission.MISSION_RUN_START,
@@ -34,7 +43,7 @@ COMMAND_PERMISSIONS: dict[CommandType, Permission] = {
 }
 
 COMMAND_TARGET_COMPATIBILITY: dict[CommandType, frozenset[CommandTargetType]] = {
-    CommandType.START_GOVERNED_RUN: frozenset({CommandTargetType.RUN, CommandTargetType.MISSION}),
+    CommandType.START_GOVERNED_RUN: frozenset({CommandTargetType.MISSION}),
     CommandType.PAUSE_RUN: frozenset({CommandTargetType.RUN}),
     CommandType.RESUME_RUN: frozenset({CommandTargetType.RUN}),
     CommandType.CANCEL_RUN: frozenset({CommandTargetType.RUN}),
@@ -59,6 +68,11 @@ class MissionControlCommandRequest(BaseModel):
     payload: dict[str, Any] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
+    def canonical_payload(self) -> dict[str, Any]:
+        """Only server-recognized input reaches the canonical execution lane."""
+        raw_input = self.payload.get("input_data")
+        return {"input_data": raw_input} if isinstance(raw_input, dict) else {}
+
 
 class MissionControlCommandResponse(BaseModel):
     command_id: str
@@ -74,8 +88,51 @@ class MissionControlCommandResponse(BaseModel):
     audit_log_id: str | None
     event_ids: list[str]
     receipt_id: str | None
+    mission_id: str | None
+    run_id: str | None
+    execution_ref: str | None
     created_at: datetime | None
     completed_at: datetime | None
+
+
+class MissionCreateResponse(BaseModel):
+    mission_id: str
+    status: str
+
+
+class MissionReadModelResponse(BaseModel):
+    missions: list[dict[str, Any]]
+    runs: list[dict[str, Any]]
+
+
+@router.post("/missions", response_model=MissionCreateResponse, status_code=status.HTTP_201_CREATED)
+async def create_mission(
+    current_user: CurrentUser = Depends(require_permissions(Permission.MISSION_RUN_START)),
+    db: AsyncSession = Depends(get_db),
+) -> MissionCreateResponse:
+    mission = Mission(tenant_id=str(current_user.tenant_id), created_by=str(current_user.user_id), status="ACTIVE")
+    db.add(mission)
+    await db.flush()
+    await audit(db, action="mission_created", user_id=current_user.user_id,
+                tenant_id=current_user.tenant_id, resource_type="mission",
+                resource_id=mission.mission_id, status="success",
+                details={"mission_id": mission.mission_id})
+    return MissionCreateResponse(mission_id=mission.mission_id, status=mission.status)
+
+
+@router.get("/missions", response_model=MissionReadModelResponse)
+async def read_missions(
+    current_user: CurrentUser = Depends(require_permissions(Permission.MISSION_COMMAND_READ)),
+    db: AsyncSession = Depends(get_db),
+) -> MissionReadModelResponse:
+    tenant_id = str(current_user.tenant_id)
+    missions = list((await db.execute(select(Mission).where(Mission.tenant_id == tenant_id))).scalars().all())
+    runs = list((await db.execute(select(Run).where(Run.tenant_id == tenant_id))).scalars().all())
+    return MissionReadModelResponse(
+        missions=[{"mission_id": item.mission_id, "status": item.status} for item in missions],
+        runs=[{"run_id": item.run_id, "mission_id": item.mission_id,
+               "status": item.status, "execution_ref": item.execution_ref} for item in runs],
+    )
 
 
 @router.post(
@@ -113,11 +170,16 @@ async def submit_command(
         target_id=body.target_id,
         idempotency_key=body.idempotency_key,
         reason=body.reason,
-        payload=body.payload,
+        payload=body.canonical_payload(),
         metadata=body.metadata,
     )
     try:
-        result = await submit_refusal_only_command(db, submission, current_user)
+        result = await submit_canonical_command(
+            db,
+            submission,
+            current_user,
+            mission_control_execution_authority,
+        )
     except DuplicateCommandConflictError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -146,6 +208,9 @@ async def submit_command(
         audit_log_id=str(command.audit_log_id) if command.audit_log_id else None,
         event_ids=result.event_ids,
         receipt_id=result.receipt_id,
+        mission_id=result.mission_id,
+        run_id=result.run_id,
+        execution_ref=result.execution_ref,
         created_at=command.created_at,
         completed_at=command.completed_at,
     )

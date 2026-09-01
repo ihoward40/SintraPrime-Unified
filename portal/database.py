@@ -95,7 +95,7 @@ async def get_db(request: Request) -> AsyncGenerator[AsyncSession, None]:
 
 
 async def get_current_tenant_db(
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),  # noqa: B008
 ) -> AsyncGenerator[AsyncSession, None]:
     """Provide a tenant-scoped DB session derived from the authenticated CurrentUser."""
     async for session in get_tenant_db(current_user.tenant_id, current_user.user_id):

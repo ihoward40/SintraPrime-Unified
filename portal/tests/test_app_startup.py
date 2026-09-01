@@ -31,3 +31,12 @@ def test_no_import_errors():
         from portal.sso.session_manager import SessionManager
     except ImportError as e:
         pytest.fail(f"Import error: {e}")
+
+
+
+def test_create_app_does_not_use_in_memory_durable_store():
+    """The canonical durable engine must use a persistent path in production."""
+    from portal.services.orchestration_runtime import _durable_db_path
+    path = _durable_db_path()
+    assert path != ":memory:"
+    assert path.endswith(".db")

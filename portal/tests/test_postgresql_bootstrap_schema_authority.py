@@ -104,18 +104,54 @@ def _seed_case_user(url: str) -> tuple[uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUI
 
 
 def test_authoritative_migration_sequence_is_ordered() -> None:
-    # Migration sequence reflects convergence of Option 5 with current main.
-    # Order preserves certified Option 5 sequence while integrating current-main additions.
+    # Canonical 10-migration sequence reflecting convergence of Option 5 with current main.
+    # Order: portal_schema.sql first (foundational), then additive migrations.
+    # Hard-verified dependency edges (from SQL inspection):
+    #   mission_runs < run_approvals  (run_approvals references runs.run_id)
+    #   command_ledger < run_control_projection  (run-control references mission_control_commands)
+    #   adaptive_domain < identity_fk_alignment  (verify from SQL)
+    #   tenant_principal and mission_runs are INDEPENDENT siblings after portal_schema.sql
+    #   (mission_runs FK: tenants, users; NO tenant_principals reference)
+    # Adopt deterministic canonical order (not strictly dependency-based for siblings).
     assert [str(path).replace("\\", "/") for path in MIGRATION_SEQUENCE] == [
         "portal/migrations/portal_schema.sql",
         "portal/migrations/add_evidence_snapshots.sql",
         "portal/migrations/add_audit_records.sql",
         "portal/migrations/add_tenant_principal.sql",
         "portal/migrations/add_mission_control_command_ledger.sql",
-        "portal/migrations/add_mission_control_mission_runs.sql",
         "portal/migrations/add_mission_control_run_control_projection.sql",
+        "portal/migrations/add_adaptive_orchestration_domain.sql",
+        "portal/migrations/align_orchestration_identity_fk_types.sql",
+        "portal/migrations/add_mission_control_mission_runs.sql",
         "portal/migrations/add_mission_control_run_approvals.sql",
     ]
+    # Uniqueness and count invariants
+    seq = [str(path).replace("\\", "/") for path in MIGRATION_SEQUENCE]
+    assert len(seq) == 10, f"Expected 10 migrations, got {len(seq)}"
+    assert len(set(seq)) == 10, f"Expected 10 unique migrations, got duplicates: {set(seq)}"
+    # All required main migrations present
+    main_migrations = {
+        "portal/migrations/portal_schema.sql",
+        "portal/migrations/add_evidence_snapshots.sql",
+        "portal/migrations/add_audit_records.sql",
+        "portal/migrations/add_mission_control_command_ledger.sql",
+        "portal/migrations/add_adaptive_orchestration_domain.sql",
+        "portal/migrations/align_orchestration_identity_fk_types.sql",
+    }
+    main_present = sum(1 for m in main_migrations if m in seq)
+    assert main_present == 6, f"Expected 6 main migrations present, got {main_present}"
+    # All Option 5 migrations present
+    option5_migrations = {
+        "portal/migrations/add_tenant_principal.sql",
+        "portal/migrations/add_mission_control_command_ledger.sql",
+        "portal/migrations/add_mission_control_mission_runs.sql",
+        "portal/migrations/add_mission_control_run_approvals.sql",
+        "portal/migrations/add_mission_control_run_control_projection.sql",
+    }
+    option5_present = sum(1 for m in option5_migrations if m in seq)
+    assert option5_present == 5, f"Expected 5 Option 5 migrations present, got {option5_present}"
+    # No duplicates
+    assert len(seq) == len(set(seq)), f"Duplicate migrations found: {seq}"
 
 
 def test_postgresql_orm_foreign_key_column_types_are_internally_consistent() -> None:

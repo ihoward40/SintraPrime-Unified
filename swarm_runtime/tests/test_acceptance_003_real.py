@@ -118,9 +118,15 @@ def run_acceptance_003_real() -> dict:
                 )
                 original_dead = str(original_pid) not in result.stdout
             else:
-                # Unix: send signal 0 to check if process exists
-                os.kill(original_pid, 0)
-                original_dead = False
+                # Unix: check if the specific subprocess is dead via proc.poll()
+                # os.kill(pid, 0) can succeed on zombie processes or if PID was reused
+                proc = controller1.processes.get("C1")
+                if proc:
+                    original_dead = proc.poll() is not None
+                else:
+                    # Fallback: try signal 0
+                    os.kill(original_pid, 0)
+                    original_dead = False
         except (ProcessLookupError, PermissionError):
             original_dead = True
         except Exception:

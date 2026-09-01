@@ -25,7 +25,9 @@ from pathlib import Path
 
 from swarm_runtime import SwarmController, WorkerSpec
 
-REPO = Path(__file__).resolve().parents[1]
+REPO = Path(__file__).resolve().parents[2]
+
+
 def run_acceptance_001() -> dict:
     swarm_id = "SWARM-ACCEPTANCE-001"
     repo_path = str(REPO)

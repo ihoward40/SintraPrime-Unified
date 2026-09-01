@@ -1,0 +1,75 @@
+name: Agent Swarm Runtime Certification
+
+on:
+  pull_request:
+    paths:
+      - 'swarm_runtime/**'
+      - '.github/workflows/swarm-runtime-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'swarm_runtime/**'
+
+jobs:
+  swarm-acceptance:
+    name: Swarm Acceptance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install ruff pytest
+
+      - name: Ruff check swarm_runtime
+        run: |
+          ruff check swarm_runtime/ --per-file-ignores "swarm_runtime/tests/*.py:E402,*:N999,swarm_runtime/tests/test_acceptance_003_real.py:ARG004"
+
+      - name: ACCEPTANCE-001 — Deterministic parallelism (5 workers)
+        run: python swarm_runtime/tests/test_acceptance_001.py
+
+      - name: ACCEPTANCE-002 — Provider failover
+        run: python swarm_runtime/tests/test_acceptance_002.py
+
+      - name: ACCEPTANCE-003 — Crash recovery
+        run: python swarm_runtime/tests/test_acceptance_003.py
+
+      - name: ACCEPTANCE-003-REAL — Real process crash recovery
+        run: python swarm_runtime/tests/test_acceptance_003_real.py
+
+      - name: ACCEPTANCE-004 — Builder isolation
+        run: python swarm_runtime/tests/test_acceptance_004.py
+
+      - name: ACCEPTANCE-004-REAL — Real git worktree isolation
+        run: python swarm_runtime/tests/test_acceptance_004_real.py
+
+      - name: ACCEPTANCE-004B — Ownership violation
+        run: python swarm_runtime/tests/test_acceptance_004b.py
+
+      - name: ACCEPTANCE-005 — Builder + Breaker
+        run: python swarm_runtime/tests/test_acceptance_005.py
+
+      - name: ACCEPTANCE-005B — Controller restart recovery
+        run: python swarm_runtime/tests/test_acceptance_005b.py
+
+      - name: Secret inheritance denial
+        run: python swarm_runtime/tests/test_secret_inheritance.py
+
+      - name: Swarm doctor
+        run: |
+          python -c "
+          import sys; sys.path.insert(0, '.')
+          from swarm_runtime import SwarmController
+          c = SwarmController(swarm_id='ci-doctor', repo_path='.')
+          results = c.swarm_doctor()
+          for k, v in results.items():
+              print(f'  {k}: {v}')
+          assert results.get('_overall') == 'healthy', 'Swarm doctor failed'
+          print('SWARM_DOCTOR = HEALTHY')
+          "

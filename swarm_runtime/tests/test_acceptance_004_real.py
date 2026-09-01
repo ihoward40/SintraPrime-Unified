@@ -38,6 +38,21 @@ def run_acceptance_004_real() -> dict:
         subprocess.run(["git", "worktree", "prune"], capture_output=True, timeout=30, cwd=repo_path)
     worktree_base.mkdir(parents=True, exist_ok=True)
 
+    # Ensure git identity is set for commits (CI may not have global config)
+    subprocess.run(
+        ["git", "config", "user.name", "Swarm CI"],
+        capture_output=True, timeout=5, cwd=repo_path,
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "swarm-ci@sintraprime.local"],
+        capture_output=True, timeout=5, cwd=repo_path,
+    )
+    # Add safe.directory for CI environments
+    subprocess.run(
+        ["git", "config", "--global", "--add", "safe.directory", repo_path],
+        capture_output=True, timeout=5,
+    )
+
     worktrees: list[dict] = []
     for wid in ["B1", "B2", "B3"]:
         wt_path = worktree_base / f"builder-{wid}"
@@ -61,6 +76,15 @@ def run_acceptance_004_real() -> dict:
 
         worktrees.append({"id": wid, "path": str(wt_path), "branch": branch})
         print(f"  Created: branch={branch}, path={wt_path}")
+        # Ensure git identity in worktree (shares main config but be explicit)
+        subprocess.run(
+            ["git", "config", "user.name", "Swarm CI"],
+            capture_output=True, timeout=5, cwd=str(wt_path),
+        )
+        subprocess.run(
+            ["git", "config", "user.email", "swarm-ci@sintraprime.local"],
+            capture_output=True, timeout=5, cwd=str(wt_path),
+        )
 
     run_dir = os.path.join(
         os.getenv("LOCALAPPDATA", os.path.expanduser("~")),

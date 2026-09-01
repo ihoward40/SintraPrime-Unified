@@ -42,8 +42,36 @@ PUBLIC_PREFIX_PATHS = (
     "/static/",
 )
 
+# Method-scoped public routes for legal-reference reads (PR #289 Lane B policy).
+PUBLIC_GET_EXACT_PATHS = {
+    "/jurisdictions",
+    "/legal-rules/compare",
+}
 
-def is_public_path(path: str) -> bool:
+PUBLIC_GET_PREFIX_PATHS = (
+    "/federal/",
+    "/jurisdictions/",
+    "/ucc-filings/",
+)
+
+PUBLIC_METHOD_PATHS = {
+    ("POST", "/ucc-filings/evaluate"),
+}
+
+PUBLIC_CONTROLLED_PREFIXES = (
+    "/legal-rules/",
+    "/legal-authorities/",
+)
+
+
+def is_public_path(path: str, method: str | None = None) -> bool:
+    if method:
+        if path in PUBLIC_GET_EXACT_PATHS or any(path.startswith(prefix) for prefix in PUBLIC_GET_PREFIX_PATHS):
+            return True
+        if (method, path) in PUBLIC_METHOD_PATHS:
+            return True
+        if any(path.startswith(prefix) for prefix in PUBLIC_CONTROLLED_PREFIXES):
+            return True
     return path in PUBLIC_EXACT_PATHS or any(path.startswith(prefix) for prefix in PUBLIC_PREFIX_PATHS)
 
 
@@ -82,7 +110,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if not _has_route_match(request):
             return await call_next(request)
 
-        if request.method == "OPTIONS" or is_public_path(path):
+        if request.method == "OPTIONS" or is_public_path(path, request.method):
             return await call_next(request)
 
         # WebSocket: auth handled in endpoint.

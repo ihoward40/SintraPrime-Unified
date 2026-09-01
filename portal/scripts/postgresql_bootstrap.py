@@ -16,7 +16,6 @@ import psycopg2
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MIGRATION_SEQUENCE = (
     Path("portal/migrations/portal_schema.sql"),
-    Path("portal/migrations/runtime_schema_baseline.sql"),
     Path("portal/migrations/add_evidence_snapshots.sql"),
     Path("portal/migrations/add_audit_records.sql"),
     Path("portal/migrations/add_tenant_principal.sql"),
@@ -59,12 +58,6 @@ EXPECTED_TABLES = (
     "orchestration_reconciliation_results",
     "orchestration_budget_usage",
     "orchestration_evidence_references",
-    "agents",
-    "swarms",
-    "skills",
-    "knowledge_entries",
-    "execution_history",
-    "sessions",
     "notifications",
 )
 

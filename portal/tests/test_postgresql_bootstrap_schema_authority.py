@@ -115,7 +115,6 @@ def test_authoritative_migration_sequence_is_ordered() -> None:
     # Adopt deterministic canonical order (not strictly dependency-based for siblings).
     assert [str(path).replace("\\", "/") for path in MIGRATION_SEQUENCE] == [
         "portal/migrations/portal_schema.sql",
-        "portal/migrations/runtime_schema_baseline.sql",
         "portal/migrations/add_evidence_snapshots.sql",
         "portal/migrations/add_audit_records.sql",
         "portal/migrations/add_tenant_principal.sql",
@@ -128,8 +127,8 @@ def test_authoritative_migration_sequence_is_ordered() -> None:
     ]
     # Uniqueness and count invariants
     seq = [str(path).replace("\\", "/") for path in MIGRATION_SEQUENCE]
-    assert len(seq) == 11, f"Expected 11 migrations, got {len(seq)}"
-    assert len(set(seq)) == 11, f"Expected 11 unique migrations, got duplicates: {set(seq)}"
+    assert len(seq) == 10, f"Expected 10 migrations, got {len(seq)}"
+    assert len(set(seq)) == 10, f"Expected 10 unique migrations, got duplicates: {set(seq)}"
     # All required main migrations present
     main_migrations = {
         "portal/migrations/portal_schema.sql",

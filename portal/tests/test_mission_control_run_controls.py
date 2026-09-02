@@ -659,7 +659,7 @@ async def test_parallel_pg_transition_race_appends_exactly_one_event():
         async with session_maker() as session:
             final = await session.get(MissionControlRunControl, run_control_id)
             assert final is not None
-            assert final.tenant_id == tenant_id
+            assert str(final.tenant_id) == str(tenant_id)
             assert final.state_version == 2
             assert final.state == RunControlState.PAUSE_REQUESTED.value
             print(f"RACE FINAL: state_version={final.state_version} state={final.state}")

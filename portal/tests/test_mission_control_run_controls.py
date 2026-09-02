@@ -75,8 +75,8 @@ async def db() -> AsyncGenerator[AsyncSession, None]:
 # portal.models.user.Role has no tenant_id and enforces a unique name). The
 # test uses a deterministic id so the same canonical role is reused across
 # tenants and across repeated fixture invocation.
-CANONICAL_ROLE_ID = "role-1"
-CANONICAL_ROLE_NAME = "role-1"
+CANONICAL_ROLE_ID = "00000000-0000-0000-0000-000000000001"
+CANONICAL_ROLE_NAME = "canonical-role"
 
 
 async def _get_or_create_canonical_role(session: AsyncSession) -> Role:

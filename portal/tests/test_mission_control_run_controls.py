@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 import os
+import uuid
 from collections.abc import AsyncGenerator
 
 import pytest
@@ -74,8 +75,8 @@ async def db() -> AsyncGenerator[AsyncSession, None]:
 # portal.models.user.Role has no tenant_id and enforces a unique name). The
 # test uses a deterministic id so the same canonical role is reused across
 # tenants and across repeated fixture invocation.
-CANONICAL_ROLE_ID = "role-1"
-CANONICAL_ROLE_NAME = "role-1"
+CANONICAL_ROLE_ID = "00000000-0000-0000-0000-000000000001"
+CANONICAL_ROLE_NAME = "canonical-role"
 
 
 async def _get_or_create_canonical_role(session: AsyncSession) -> Role:
@@ -104,8 +105,9 @@ async def _get_or_create_canonical_role(session: AsyncSession) -> Role:
 
 
 async def _seed_refs(session: AsyncSession, *, tenant_id: str = "tenant-1") -> tuple[str, str, str]:
-    # 1. Tenant (parent)
-    tenant = Tenant(id=tenant_id, name=f"Tenant {tenant_id}", slug=tenant_id.replace("-", ""))
+    # 1. Tenant (parent) — use valid UUID strings for PortableUUID compatibility
+    tenant_uuid = str(uuid.uuid4()) if tenant_id == "tenant-1" else tenant_id
+    tenant = Tenant(id=tenant_uuid, name=f"Tenant {tenant_uuid}", slug=tenant_uuid.replace("-", "")[:50])
     session.add(tenant)
     await session.flush()
 
@@ -113,11 +115,12 @@ async def _seed_refs(session: AsyncSession, *, tenant_id: str = "tenant-1") -> t
     role = await _get_or_create_canonical_role(session)
 
     # 3. User/principal (child of tenant and role)
+    user_uuid = str(uuid.uuid4())
     user = User(
-        id=f"user-{tenant_id}",
-        tenant_id=tenant_id,
+        id=user_uuid,
+        tenant_id=tenant_uuid,
         role_id=role.id,
-        email=f"user-{tenant_id}@example.com",
+        email=f"user-{tenant_uuid[:8]}@example.com",
         hashed_password="x",
         first_name="Test",
         last_name="User",
@@ -126,10 +129,11 @@ async def _seed_refs(session: AsyncSession, *, tenant_id: str = "tenant-1") -> t
     await session.flush()
 
     # 4. Mission Control command (child of tenant and user)
+    command_uuid = str(uuid.uuid4())
     command = MissionControlCommand(
-        id=f"command-{tenant_id}",
-        tenant_id=tenant_id,
-        requested_by=user.id,
+        id=command_uuid,
+        tenant_id=tenant_uuid,
+        requested_by=user_uuid,
         command_type="PAUSE_RUN",
         target_type="run",
         target_id=f"workflow-{tenant_id}",
@@ -144,7 +148,7 @@ async def _seed_refs(session: AsyncSession, *, tenant_id: str = "tenant-1") -> t
     # service layer (create_run_control / transition_run_control) in each test,
     # not here, preserving the parent-before-child order at every boundary.
     await session.commit()
-    return tenant.id, user.id, command.id
+    return tenant_uuid, user_uuid, command_uuid
 
 
 @pytest.mark.asyncio
@@ -574,7 +578,7 @@ async def test_parallel_pg_transition_race_appends_exactly_one_event():
         # Seed (parent-before-child) and create the run-control record + initial
         # CREATED event in a committed transaction.
         async with session_maker() as session:
-            tenant_id, user_id, command_id = await _seed_refs(session, tenant_id="tenant-pg")
+            tenant_id, user_id, command_id = await _seed_refs(session, tenant_id=str(uuid.uuid4()))
             control = await create_run_control(
                 session,
                 tenant_id=tenant_id,
@@ -655,7 +659,7 @@ async def test_parallel_pg_transition_race_appends_exactly_one_event():
         async with session_maker() as session:
             final = await session.get(MissionControlRunControl, run_control_id)
             assert final is not None
-            assert final.tenant_id == tenant_id
+            assert str(final.tenant_id) == str(tenant_id)
             assert final.state_version == 2
             assert final.state == RunControlState.PAUSE_REQUESTED.value
             print(f"RACE FINAL: state_version={final.state_version} state={final.state}")
@@ -706,7 +710,7 @@ async def test_parallel_pg_transition_race_appends_exactly_one_event():
                 f"delta event target state={delta_event.new_state}"
             )
             assert delta_event.new_version == 2, f"delta event version={delta_event.new_version}"
-            assert delta_event.run_control_id == run_control_id
+            assert str(delta_event.run_control_id) == str(run_control_id)
 
             # Hash chain verifies across all persisted events (by sequence).
             assert after_events[0].event_hash
@@ -776,7 +780,7 @@ async def test_pg_flushed_transition_rollback_does_not_persist():
         session_maker = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
         async with session_maker() as session:
-            tenant_id, user_id, command_id = await _seed_refs(session, tenant_id="tenant-pg-rb")
+            tenant_id, user_id, command_id = await _seed_refs(session, tenant_id=str(uuid.uuid4()))
             control = await create_run_control(
                 session,
                 tenant_id=tenant_id,

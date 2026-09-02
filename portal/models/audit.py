@@ -13,6 +13,7 @@ from sqlalchemy import JSON, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..database import Base
+from .types import PortableUUID
 
 
 class AuditLog(Base):
@@ -24,11 +25,11 @@ class AuditLog(Base):
 
     __tablename__ = "audit_logs"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    tenant_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("tenants.id"), nullable=True
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(
+        PortableUUID, ForeignKey("tenants.id"), nullable=True
     )
-    user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    user_id: Mapped[uuid.UUID | None] = mapped_column(PortableUUID, ForeignKey("users.id"), nullable=True)
 
     # Who
     actor_email: Mapped[str | None] = mapped_column(String(255), nullable=True)

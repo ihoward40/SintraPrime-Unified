@@ -95,7 +95,7 @@ class AuditRecord(Base):
         doc="Server-set creation timestamp. Never modified.",
     )
     created_by: Mapped[str] = mapped_column(
-        String(36),
+        PortableUUID,
         ForeignKey("users.id"),
         nullable=False,
         doc="User/system that created this audit record.",

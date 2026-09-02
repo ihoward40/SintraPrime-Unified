@@ -35,13 +35,13 @@ class RunApproval(Base):
     approval_id: Mapped[str] = mapped_column(
         PortableUUID, primary_key=True, default=uuid.uuid4
     )
-    tenant_id: Mapped[str] = mapped_column(
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
         PortableUUID, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )
-    principal_user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    principal_user_id: Mapped[uuid.UUID] = mapped_column(
+        PortableUUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    run_id: Mapped[str] = mapped_column(
+    run_id: Mapped[uuid.UUID] = mapped_column(
         PortableUUID, ForeignKey("runs.run_id", ondelete="CASCADE"), nullable=False
     )
 
@@ -55,7 +55,7 @@ class RunApproval(Base):
 
     # Optional correlation fields
     mission_id: Mapped[uuid.UUID | None] = mapped_column(PortableUUID, nullable=True)
-    reason_code: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    reason_code: Mapped[uuid.UUID | None] = mapped_column(String(80), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

@@ -36,7 +36,7 @@ class TenantPrincipal(Base):
         index=True,
     )
     principal_user_id: Mapped[uuid.UUID] = mapped_column(
-        String(36),
+        PortableUUID,
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,

@@ -69,12 +69,12 @@ class MissionControlRunControl(Base):
 
     pause_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     requested_by: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True
+        PortableUUID, ForeignKey("users.id"), nullable=True
     )
     requested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     confirmation_ref: Mapped[str | None] = mapped_column(String(128), nullable=True)
     acknowledged_by: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True
+        PortableUUID, ForeignKey("users.id"), nullable=True
     )
     acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     paused_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -115,7 +115,7 @@ class MissionControlRunControlEvent(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
     run_control_id: Mapped[str] = mapped_column(
-        String(36),
+        PortableUUID,
         ForeignKey("mission_control_run_controls.id", ondelete="CASCADE"),
         nullable=False,
     )

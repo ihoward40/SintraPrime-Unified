@@ -29,7 +29,7 @@ class MissionControlCommand(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("tenants.id"), nullable=False)
-    requested_by: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    requested_by: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("users.id"), nullable=False)
 
     command_type: Mapped[str] = mapped_column(String(40), nullable=False)
     target_type: Mapped[str] = mapped_column(String(40), nullable=False)
@@ -44,7 +44,7 @@ class MissionControlCommand(Base):
     metadata_json: Mapped[dict] = mapped_column("metadata", JSON, nullable=False, default=dict)
 
     audit_log_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("audit_logs.id"), nullable=True
+        PortableUUID, ForeignKey("audit_logs.id"), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -119,7 +119,7 @@ class MissionControlCommandReceipt(Base):
     receipt_type: Mapped[str] = mapped_column(String(40), nullable=False)
     receipt_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     audit_log_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("audit_logs.id"), nullable=True
+        PortableUUID, ForeignKey("audit_logs.id"), nullable=True
     )
     evidence_refs: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

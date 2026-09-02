@@ -1,0 +1,91 @@
+name: Agent Swarm Runtime Certification
+
+on:
+  pull_request:
+    paths:
+      - 'swarm_runtime/**'
+      - '.github/workflows/swarm-runtime-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'swarm_runtime/**'
+
+jobs:
+  swarm-acceptance:
+    name: Swarm Acceptance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install ruff==0.15.20 pytest
+
+      - name: Canonical Ruff check (repo-wide)
+        run: |
+          ruff check . --output-format=github
+
+      - name: ACCEPTANCE-001 — Deterministic parallelism (5 workers)
+        run: python -m pytest swarm_runtime/tests/test_acceptance_001.py -s -q
+
+      - name: ACCEPTANCE-002 — Provider failover
+        run: python -m pytest swarm_runtime/tests/test_acceptance_002.py -s -q
+
+      - name: ACCEPTANCE-003 — Crash recovery
+        run: python -m pytest swarm_runtime/tests/test_acceptance_003.py -s -q
+
+      - name: ACCEPTANCE-003-REAL — Real process crash recovery
+        run: python -m pytest swarm_runtime/tests/test_acceptance_003_real.py -s -q
+
+      - name: ACCEPTANCE-004 — Builder isolation
+        run: python -m pytest swarm_runtime/tests/test_acceptance_004.py -s -q
+
+      - name: ACCEPTANCE-004-REAL — Real git worktree isolation
+        run: python -m pytest swarm_runtime/tests/test_acceptance_004_real.py -s -q
+
+      - name: ACCEPTANCE-004B — Ownership violation
+        run: python -m pytest swarm_runtime/tests/test_acceptance_004b.py -s -q
+
+      - name: ACCEPTANCE-005 — Builder + Breaker
+        run: python -m pytest swarm_runtime/tests/test_acceptance_005.py -s -q
+
+      - name: ACCEPTANCE-005B — Controller restart recovery
+        run: python -m pytest swarm_runtime/tests/test_acceptance_005b.py -s -q
+
+      - name: ACCEPTANCE-006-HERMES — True Hermes E2E swarm
+        run: python -m pytest swarm_runtime/tests/test_acceptance_006_hermes.py -s -q
+
+      - name: Secret inheritance denial
+        run: python -m pytest swarm_runtime/tests/test_secret_inheritance.py -s -q
+
+      - name: Provider health persistence
+        run: python -m pytest swarm_runtime/tests/test_provider_health_persistence.py -s -q
+
+      - name: Conflicting findings aggregation
+        run: python -m pytest swarm_runtime/tests/test_conflicting_findings.py -s -q
+
+      - name: Legacy-path prohibition
+        run: python -m pytest swarm_runtime/tests/test_legacy_path_prohibition.py -s -q
+
+      - name: Governed router failover integration
+        run: python -m pytest swarm_runtime/tests/test_governed_router_failover.py -s -q
+
+      - name: Swarm doctor
+        run: |
+          python -c "
+          from swarm_runtime import SwarmController
+          c = SwarmController(swarm_id='ci-doctor', repo_path='.')
+          results = c.swarm_doctor()
+          for k, v in results.items():
+              print(f'  {k}: {v}')
+          assert results.get('_overall') == 'healthy', 'Swarm doctor failed'
+          print('SWARM_DOCTOR = HEALTHY')
+          "

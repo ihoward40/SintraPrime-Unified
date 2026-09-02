@@ -19,6 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..database import Base
+from .types import PortableUUID
 
 
 class RunApproval(Base):
@@ -32,16 +33,16 @@ class RunApproval(Base):
     __tablename__ = "mission_control_run_approvals"
 
     approval_id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+        PortableUUID, primary_key=True, default=uuid.uuid4
     )
     tenant_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+        PortableUUID, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )
     principal_user_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     run_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("runs.run_id", ondelete="CASCADE"), nullable=False
+        PortableUUID, ForeignKey("runs.run_id", ondelete="CASCADE"), nullable=False
     )
 
     # Principal decision: APPROVED or REJECTED
@@ -53,7 +54,7 @@ class RunApproval(Base):
     input_data_hash: Mapped[str] = mapped_column(String(64), nullable=False)
 
     # Optional correlation fields
-    mission_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    mission_id: Mapped[uuid.UUID | None] = mapped_column(PortableUUID, nullable=True)
     reason_code: Mapped[str | None] = mapped_column(String(80), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(

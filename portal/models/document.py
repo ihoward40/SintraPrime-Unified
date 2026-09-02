@@ -22,6 +22,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
+from .types import PortableUUID
 
 
 class DocumentFolder(Base):
@@ -30,13 +31,13 @@ class DocumentFolder(Base):
     __tablename__ = "document_folders"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+        PortableUUID, primary_key=True, default=uuid.uuid4
     )
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+        PortableUUID, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )
     parent_id: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("document_folders.id", ondelete="SET NULL"), nullable=True
+        PortableUUID, ForeignKey("document_folders.id", ondelete="SET NULL"), nullable=True
     )
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -46,14 +47,14 @@ class DocumentFolder(Base):
 
     # Context: can belong to a client, case, or be global
     client_id: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("clients.id"), nullable=True
+        PortableUUID, ForeignKey("clients.id"), nullable=True
     )
     case_id: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("cases.id"), nullable=True
+        PortableUUID, ForeignKey("cases.id"), nullable=True
     )
 
     created_by: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=False
+        PortableUUID, ForeignKey("users.id"), nullable=False
     )
     color: Mapped[str | None] = mapped_column(String(7), nullable=True)  # hex color
     icon: Mapped[str | None] = mapped_column(String(50), nullable=True)
@@ -76,27 +77,27 @@ class Document(Base):
     __tablename__ = "documents"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+        PortableUUID, primary_key=True, default=uuid.uuid4
     )
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+        PortableUUID, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     # Ownership context
     client_id: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("clients.id"), nullable=True
+        PortableUUID, ForeignKey("clients.id"), nullable=True
     )
     case_id: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("cases.id"), nullable=True
+        PortableUUID, ForeignKey("cases.id"), nullable=True
     )
     matter_id: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("matters.id"), nullable=True
+        PortableUUID, ForeignKey("matters.id"), nullable=True
     )
     folder_id: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("document_folders.id"), nullable=True
+        PortableUUID, ForeignKey("document_folders.id"), nullable=True
     )
     uploaded_by: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=False
+        PortableUUID, ForeignKey("users.id"), nullable=False
     )
 
     # File metadata
@@ -137,7 +138,7 @@ class Document(Base):
     # Digital signature
     signed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     signed_by: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True
+        PortableUUID, ForeignKey("users.id"), nullable=True
     )
     signature_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
@@ -185,10 +186,10 @@ class DocumentVersion(Base):
     __tablename__ = "document_versions"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+        PortableUUID, primary_key=True, default=uuid.uuid4
     )
     document_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False
+        PortableUUID, ForeignKey("documents.id", ondelete="CASCADE"), nullable=False
     )
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
 
@@ -200,7 +201,7 @@ class DocumentVersion(Base):
 
     change_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     uploaded_by: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=False
+        PortableUUID, ForeignKey("users.id"), nullable=False
     )
 
     is_encrypted: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -220,23 +221,23 @@ class DocumentShare(Base):
     __tablename__ = "document_shares"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+        PortableUUID, primary_key=True, default=uuid.uuid4
     )
     document_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False
+        PortableUUID, ForeignKey("documents.id", ondelete="CASCADE"), nullable=False
     )
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+        PortableUUID, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )
 
     share_token: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     created_by: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=False
+        PortableUUID, ForeignKey("users.id"), nullable=False
     )
 
     # Share target (optional — if None, it's a public link)
     shared_with_user_id: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True
+        PortableUUID, ForeignKey("users.id"), nullable=True
     )
     shared_with_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
 

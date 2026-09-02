@@ -8,12 +8,13 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, func, select
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..auth.rbac import CurrentUser, get_current_user
 from ..database import Base, get_db
+from ..models.types import PortableUUID
 
 router = APIRouter()
 
@@ -24,12 +25,12 @@ router = APIRouter()
 class Notification(Base):
     __tablename__ = "notifications"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+        PortableUUID, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        PortableUUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
 
     event_type: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -38,7 +39,7 @@ class Notification(Base):
     resource_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
     resource_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     actor_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    extra_data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    extra_data: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
 
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

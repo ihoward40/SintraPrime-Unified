@@ -23,6 +23,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
+from .types import PortableUUID
 
 
 class OrchestrationTaskType(StrEnum):
@@ -108,8 +109,8 @@ class OrchestrationRun(Base):
     __tablename__ = "orchestration_runs"
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, default=lambda: str(uuid.uuid4()))
-    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False)
-    created_by: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("tenants.id"), nullable=False)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(PortableUUID, ForeignKey("users.id"), nullable=True)
     objective: Mapped[str] = mapped_column(Text, nullable=False)
     constraints: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     task_type: Mapped[str] = mapped_column(String(40), nullable=False)
@@ -336,7 +337,7 @@ class ApprovalRequest(Base):
     risk_level: Mapped[str] = mapped_column(String(40), nullable=False)
     status: Mapped[str] = mapped_column(String(40), nullable=False, default=ApprovalStatus.REQUESTED)
     requested_by_role: Mapped[str] = mapped_column(String(40), nullable=False)
-    principal_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    principal_id: Mapped[uuid.UUID | None] = mapped_column(PortableUUID, ForeignKey("users.id"), nullable=True)
     decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     decision_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
@@ -357,7 +358,7 @@ class OrchestrationLinkage(Base):
     id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, default=lambda: str(uuid.uuid4()))
     event_id: Mapped[str] = mapped_column(UUID(as_uuid=True), ForeignKey("orchestration_events.id", ondelete="CASCADE"), nullable=False)
     node_id: Mapped[str] = mapped_column(UUID(as_uuid=True), ForeignKey("orchestration_nodes.id", ondelete="CASCADE"), nullable=False)
-    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("tenants.id"), nullable=False)
     linked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (
@@ -373,8 +374,8 @@ class PrincipalAuthority(Base):
     __tablename__ = "orchestration_principal_authorities"
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, default=lambda: str(uuid.uuid4()))
-    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False)
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("tenants.id"), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("users.id"), nullable=False)
     scope: Mapped[str] = mapped_column(String(80), nullable=False, default="GLOBAL")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     authorized_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -443,7 +444,7 @@ class MemoryEntry(Base):
     __tablename__ = "memory_vault"
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
     type: Mapped[str] = mapped_column(String(80), nullable=False)
     content: Mapped[dict] = mapped_column(JSON, nullable=False)
     metadata_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)

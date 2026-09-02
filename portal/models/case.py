@@ -12,6 +12,7 @@ from sqlalchemy import JSON, Boolean, Date, DateTime, ForeignKey, String, Text, 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
+from .types import PortableUUID
 
 
 class CaseStage(_enum.StrEnum):
@@ -31,16 +32,16 @@ class Case(Base):
     __tablename__ = "cases"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+        PortableUUID, primary_key=True, default=uuid.uuid4
     )
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+        PortableUUID, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
     )
     client_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("clients.id"), nullable=False
+        PortableUUID, ForeignKey("clients.id"), nullable=False
     )
     matter_id: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("matters.id"), nullable=True
+        PortableUUID, ForeignKey("matters.id"), nullable=True
     )
 
     case_number: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -62,7 +63,7 @@ class Case(Base):
 
     # Staff assignments
     lead_attorney_id: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True
+        PortableUUID, ForeignKey("users.id"), nullable=True
     )
     assigned_staff: Mapped[list | None] = mapped_column(
         JSON, nullable=True, default=list
@@ -126,16 +127,16 @@ class CaseEvent(Base):
     __tablename__ = "case_events"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+        PortableUUID, primary_key=True, default=uuid.uuid4
     )
     case_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
+        PortableUUID, ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
     )
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+        PortableUUID, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )
     created_by: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=False
+        PortableUUID, ForeignKey("users.id"), nullable=False
     )
 
     event_type: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -164,19 +165,19 @@ class CaseDeadline(Base):
     __tablename__ = "case_deadlines"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+        PortableUUID, primary_key=True, default=uuid.uuid4
     )
     case_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
+        PortableUUID, ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
     )
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+        PortableUUID, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )
     assigned_to: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True
+        PortableUUID, ForeignKey("users.id"), nullable=True
     )
     created_by: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=False
+        PortableUUID, ForeignKey("users.id"), nullable=False
     )
 
     title: Mapped[str] = mapped_column(String(500), nullable=False)
@@ -209,16 +210,16 @@ class CaseNote(Base):
     __tablename__ = "case_notes"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+        PortableUUID, primary_key=True, default=uuid.uuid4
     )
     case_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
+        PortableUUID, ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
     )
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+        PortableUUID, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )
     created_by: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=False
+        PortableUUID, ForeignKey("users.id"), nullable=False
     )
 
     title: Mapped[str | None] = mapped_column(String(500), nullable=True)
@@ -244,19 +245,19 @@ class CaseTask(Base):
     __tablename__ = "case_tasks"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4)
+        PortableUUID, primary_key=True, default=uuid.uuid4
     )
     case_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
+        PortableUUID, ForeignKey("cases.id", ondelete="CASCADE"), nullable=False
     )
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+        PortableUUID, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )
     assigned_to: Mapped[uuid.UUID | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True
+        PortableUUID, ForeignKey("users.id"), nullable=True
     )
     created_by: Mapped[uuid.UUID] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=False
+        PortableUUID, ForeignKey("users.id"), nullable=False
     )
 
     title: Mapped[str] = mapped_column(String(500), nullable=False)

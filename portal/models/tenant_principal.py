@@ -18,18 +18,19 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..database import Base
+from .types import PortableUUID
 
 
 class TenantPrincipal(Base):
     __tablename__ = "tenant_principals"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        String(36),
+        PortableUUID,
         primary_key=True,
         default=lambda: str(uuid.uuid4()),
     )
     tenant_id: Mapped[uuid.UUID] = mapped_column(
-        String(36),
+        PortableUUID,
         ForeignKey("tenants.id", ondelete="CASCADE"),
         nullable=False,
         index=True,

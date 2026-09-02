@@ -19,6 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
+from .types import PortableUUID
 
 
 class MissionControlCommand(Base):
@@ -26,8 +27,8 @@ class MissionControlCommand(Base):
 
     __tablename__ = "mission_control_commands"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("tenants.id"), nullable=False)
     requested_by: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
 
     command_type: Mapped[str] = mapped_column(String(40), nullable=False)
@@ -79,9 +80,9 @@ class MissionControlCommandEvent(Base):
 
     __tablename__ = "mission_control_command_events"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
     command_id: Mapped[str] = mapped_column(
-        String(36),
+        PortableUUID,
         ForeignKey("mission_control_commands.id", ondelete="CASCADE"),
         nullable=False,
     )
@@ -109,9 +110,9 @@ class MissionControlCommandReceipt(Base):
 
     __tablename__ = "mission_control_command_receipts"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
     command_id: Mapped[str] = mapped_column(
-        String(36),
+        PortableUUID,
         ForeignKey("mission_control_commands.id", ondelete="CASCADE"),
         nullable=False,
     )

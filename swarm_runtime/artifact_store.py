@@ -6,9 +6,13 @@ are written atomically: write to .tmp → fsync → rename.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import os
+import tempfile
+import threading
 import time
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +29,7 @@ class ArtifactStore:
         self.run_dir.mkdir(parents=True, exist_ok=True)
         self.event_log: list[SwarmEvent] = []
         self._event_log_path = self.run_dir / "event_log.jsonl"
+        self._write_lock = threading.RLock()
 
     def swarm_dir(self) -> Path:
         return self.run_dir
@@ -148,12 +153,31 @@ class ArtifactStore:
         return {"valid": True, "path": str(path), "findings_count": len(data.get("findings", {}))}
 
     def _atomic_write_json(self, path: Path, data: dict) -> None:
-        """Write JSON atomically: .tmp → fsync → rename."""
-        tmp = path.with_suffix(path.suffix + ".tmp")
-        tmp.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
-        with open(tmp, "r+b") as f:
-            os.fsync(f.fileno())
-        os.replace(str(tmp), str(path))
+        """Write JSON atomically: unique same-directory temp, then replace."""
+        payload = json.dumps(data, indent=2, default=str)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with self._write_lock:
+            fd, tmp_name = tempfile.mkstemp(
+                prefix=f".{path.name}.{os.getpid()}.{threading.get_ident()}.",
+                suffix=f".{uuid.uuid4().hex}.tmp",
+                dir=str(path.parent),
+                text=True,
+            )
+            tmp = Path(tmp_name)
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                    handle.write(payload)
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                try:
+                    os.replace(str(tmp), str(path))
+                except PermissionError:
+                    with contextlib.suppress(FileNotFoundError, PermissionError):
+                        tmp.unlink()
+                    raise
+            finally:
+                with contextlib.suppress(FileNotFoundError, PermissionError):
+                    tmp.unlink()
 
 
 def _hash_task(task: dict) -> str:

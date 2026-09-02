@@ -481,21 +481,87 @@ class ModelReasoningWorker(BaseWorker):
     """
 
     def execute(self) -> int:
-        # ModelReasoningWorker is a placeholder — actual LLM calls would go here.
-        # For now, it demonstrates the provider failover pattern.
+        """Execute one governed inference request in the worker subprocess."""
         prompt = self.state.task.get("prompt", "")
-        self._heartbeat("model reasoning (placeholder)", 0, 1)
+        task_id = self.state.task.get("task_id", self.state.worker_id)
+        self._heartbeat("model reasoning", 0, 1)
 
-        # In a real implementation, this would:
-        # 1. Select provider via ProviderRouter
-        # 2. Make API call with timeout
-        # 3. On timeout → failover to next provider
-        # 4. On success → write findings
+        from governed_inference.contracts import (
+            InferencePolicy,
+            PerRequestPolicy,
+            ProviderErrorKind,
+            QualityFloor,
+            RouteTier,
+        )
+        from governed_inference.providers import MockProvider
+        from governed_inference.router import GovernedInferenceRouter
 
+        from .inference_adapter import (
+            SwarmInferenceAdapter,
+            WorkerInferenceRequest,
+        )
+
+        # Provider objects cannot be serialized through the worker spec JSON.
+        # subprocess receives a declarative fixture and constructs only the
+        # approved deterministic providers here.
+        provider_fixtures = self.state.task.get("provider_fixtures") or [
+            {"name": "deterministic-local", "fail_times": 0}
+        ]
+        providers = [
+            MockProvider(
+                name=str(fixture.get("name", "deterministic-local")),
+                model=str(fixture.get("model", "deterministic")),
+                route_tier=RouteTier.LOCAL_PRIVATE,
+                capabilities=("summarization", "classification", "extraction"),
+                fail_times=int(fixture.get("fail_times", 0)),
+                error_kind=ProviderErrorKind(fixture.get("error_kind", "transient")),
+                estimated_cost_usd=0,
+                quality=QualityFloor(str(fixture.get("quality", "standard"))),
+            )
+            for fixture in provider_fixtures
+        ]
+        priority_source = self.state.task.get("governed_provider_priority") or {}
+        policy = InferencePolicy(
+            provider_priority={str(key): int(value) for key, value in priority_source.items()},
+            per_request=PerRequestPolicy(
+                max_input_tokens=int(self.state.task.get("max_input_tokens", 12000)),
+                max_output_tokens=int(self.state.task.get("max_output_tokens", 2000)),
+                max_attempts=int(self.state.task.get("max_attempts", 3)),
+                max_attempts_per_provider=int(self.state.task.get("max_attempts_per_provider", 1)),
+                timeout_seconds=int(self.state.task.get("timeout_seconds", 60)),
+            ),
+        )
+        router = GovernedInferenceRouter(providers, policy=policy)
+        adapter = SwarmInferenceAdapter(router)
+        result = adapter.invoke(WorkerInferenceRequest(
+            worker_id=self.state.worker_id,
+            task_id=task_id,
+            task_type=self.state.task.get("task_type", "summarization"),
+            capability=self.state.task.get("capability", "summarization"),
+            messages=[{"role": "user", "content": prompt}],
+            tenant_id=self.state.task.get("tenant_id", ""),
+            principal_id=self.state.task.get("principal_id", ""),
+            mission_id=self.state.task.get("mission_id", ""),
+            max_input_tokens=self.state.task.get("max_input_tokens", 12000),
+            max_output_tokens=self.state.task.get("max_output_tokens", 2000),
+        ))
+        if result.error:
+            self.state.errors.append(result.error)
+            return 1
         self.findings = {
             "prompt": prompt[:500],
-            "result": "PLACEHOLDER — ModelReasoningWorker requires provider integration",
-            "note": "Use tool-first workers for deterministic tasks",
+            "result": result.content,
+            "provider": result.provider,
+            "model": result.model,
+            "attempts": result.attempts,
+            "failover_observed": result.failover_observed,
+            "provider_attempts": adapter.get_attempt_log(),
+            "providers_attempted": [item["provider"] for item in adapter.get_attempt_log()],
+            "provider_attempt_count": len(adapter.get_attempt_log()),
+            "failover_count": max(0, len(dict.fromkeys(item["provider"] for item in adapter.get_attempt_log())) - 1),
+            "final_provider": result.provider,
+            "final_model": result.model,
+            "attempt_log": adapter.get_attempt_log(),
         }
         self._heartbeat("completed", 1, 0)
         return 0

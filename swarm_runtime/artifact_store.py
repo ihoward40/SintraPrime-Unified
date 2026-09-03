@@ -21,29 +21,63 @@ from .worker import SwarmEvent, WorkerState
 ARTIFACT_SCHEMA_VERSION = "1.0.0"
 
 _TERMINAL_STATUSES = {"completed", "failed", "timed_out", "cancelled"}
+DEFAULT_LOCK_TIMEOUT_SECONDS = 5.0
+
+
+class LockAcquisitionTimeoutError(TimeoutError):
+    """Raised when the bounded ArtifactStore lock deadline expires."""
 
 
 class _CrossProcessLock:
     """Run-directory lock shared by independent ArtifactStore processes."""
 
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, lock_timeout_seconds: float = DEFAULT_LOCK_TIMEOUT_SECONDS) -> None:
+        if lock_timeout_seconds <= 0:
+            raise ValueError("lock_timeout_seconds must be positive")
         self.path = path
+        self.lock_timeout_seconds = lock_timeout_seconds
         self._handle = None
 
     def __enter__(self) -> _CrossProcessLock:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._handle = open(self.path, "a+b")
-        if os.name == "nt":
-            import msvcrt
-            self._handle.seek(0, os.SEEK_END)
-            if self._handle.tell() == 0:
-                self._handle.write(b"0")
-                self._handle.flush()
-            self._handle.seek(0)
-            msvcrt.locking(self._handle.fileno(), msvcrt.LK_LOCK, 1)
-        else:
-            import fcntl
-            fcntl.flock(self._handle.fileno(), fcntl.LOCK_EX)
+        try:
+            deadline = time.monotonic() + self.lock_timeout_seconds
+            if os.name == "nt":
+                import msvcrt
+
+                self._handle.seek(0, os.SEEK_END)
+                if self._handle.tell() == 0:
+                    self._handle.write(b"0")
+                    self._handle.flush()
+                self._handle.seek(0)
+                while True:
+                    try:
+                        msvcrt.locking(self._handle.fileno(), msvcrt.LK_NBLCK, 1)
+                        break
+                    except OSError as exc:
+                        if time.monotonic() >= deadline:
+                            raise LockAcquisitionTimeoutError(
+                                f"timed out acquiring ArtifactStore lock after {self.lock_timeout_seconds}s"
+                            ) from exc
+                        time.sleep(0)
+            else:
+                import fcntl
+
+                while True:
+                    try:
+                        fcntl.flock(self._handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                        break
+                    except BlockingIOError as exc:
+                        if time.monotonic() >= deadline:
+                            raise LockAcquisitionTimeoutError(
+                                f"timed out acquiring ArtifactStore lock after {self.lock_timeout_seconds}s"
+                            ) from exc
+                        time.sleep(0)
+        except BaseException:
+            self._handle.close()
+            self._handle = None
+            raise
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
@@ -52,10 +86,12 @@ class _CrossProcessLock:
         try:
             if os.name == "nt":
                 import msvcrt
+
                 self._handle.seek(0)
                 msvcrt.locking(self._handle.fileno(), msvcrt.LK_UNLCK, 1)
             else:
                 import fcntl
+
                 fcntl.flock(self._handle.fileno(), fcntl.LOCK_UN)
         finally:
             self._handle.close()

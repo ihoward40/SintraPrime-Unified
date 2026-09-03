@@ -20,6 +20,47 @@ from .worker import SwarmEvent, WorkerState
 
 ARTIFACT_SCHEMA_VERSION = "1.0.0"
 
+_TERMINAL_STATUSES = {"completed", "failed", "timed_out", "cancelled"}
+
+
+class _CrossProcessLock:
+    """Run-directory lock shared by independent ArtifactStore processes."""
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+        self._handle = None
+
+    def __enter__(self) -> _CrossProcessLock:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self._handle = open(self.path, "a+b")
+        if os.name == "nt":
+            import msvcrt
+            self._handle.seek(0, os.SEEK_END)
+            if self._handle.tell() == 0:
+                self._handle.write(b"0")
+                self._handle.flush()
+            self._handle.seek(0)
+            msvcrt.locking(self._handle.fileno(), msvcrt.LK_LOCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(self._handle.fileno(), fcntl.LOCK_EX)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        if self._handle is None:
+            return
+        try:
+            if os.name == "nt":
+                import msvcrt
+                self._handle.seek(0)
+                msvcrt.locking(self._handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(self._handle.fileno(), fcntl.LOCK_UN)
+        finally:
+            self._handle.close()
+            self._handle = None
+
 
 class ArtifactStore:
     """Manages on-disk artifacts for a swarm run."""
@@ -29,6 +70,7 @@ class ArtifactStore:
         self.run_dir.mkdir(parents=True, exist_ok=True)
         self.event_log: list[SwarmEvent] = []
         self._event_log_path = self.run_dir / "event_log.jsonl"
+        self._cross_process_lock_path = self.run_dir / ".artifactstore.lock"
         self._write_lock = threading.RLock()
 
     def swarm_dir(self) -> Path:
@@ -39,10 +81,26 @@ class ArtifactStore:
         d.mkdir(parents=True, exist_ok=True)
         return d
 
-    def write_status(self, worker_id: str, state: WorkerState) -> None:
-        """Write worker status.json atomically."""
+    def write_status(self, worker_id: str, state: WorkerState) -> bool:
+        """Write status atomically, rejecting terminal-state regression."""
         path = self.worker_dir(worker_id) / "status.json"
-        self._atomic_write_json(path, state.to_dict())
+        with self._write_lock, _CrossProcessLock(self._cross_process_lock_path):
+            current = self._read_json_if_present(path)
+            current_status = current.get("status") if current else None
+            requested_status = state.status.value
+            if current_status in _TERMINAL_STATUSES and requested_status not in _TERMINAL_STATUSES:
+                return False
+            self._atomic_write_json(path, state.to_dict())
+            return True
+
+    @staticmethod
+    def _read_json_if_present(path: Path) -> dict | None:
+        if not path.exists():
+            return None
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    def _cross_process_lock(self) -> _CrossProcessLock:
+        return _CrossProcessLock(self._cross_process_lock_path)
 
     def read_status(self, worker_id: str) -> dict | None:
         """Read worker status.json."""
@@ -132,8 +190,13 @@ class ArtifactStore:
     def record_event(self, event: SwarmEvent) -> None:
         """Record an event to the event ledger (JSONL format)."""
         self.event_log.append(event)
-        with open(self._event_log_path, "a", encoding="utf-8") as f:
+        with (
+            _CrossProcessLock(self._cross_process_lock_path),
+            open(self._event_log_path, "a", encoding="utf-8") as f,
+        ):
             f.write(json.dumps(event.to_dict()) + "\n")
+            f.flush()
+            os.fsync(f.fileno())
 
     def validate_artifact(self, worker_id: str) -> dict:
         """Validate that a worker produced a valid findings.json artifact."""

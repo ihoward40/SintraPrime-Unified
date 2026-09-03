@@ -177,7 +177,10 @@ def test_transient_retry_is_bounded_and_recorded():
     failed_events = [
         event for event in router.ledger.events if event["event"] == "inference.attempt_failed"
     ]
-    assert len(failed_events) == 2
+    assert len(failed_events) == 1
+    assert provider.invoke_count == 1
+    assert failed_events[0]["provider"] == "flaky"
+    assert failed_events[0].get("retry_same_provider", False) is False
     assert router.escalation_queue.items[0].reason == "eligible_routes_failed"
 
 

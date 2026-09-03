@@ -26,7 +26,28 @@ from governed_inference.escalation import EscalationQueue
 from governed_inference.ledger import InferenceLedger
 from governed_inference.policy import route_denial_reason
 
-TRANSIENT_ERRORS = {ProviderErrorKind.TRANSIENT}
+TRANSIENT_ERRORS = {
+    ProviderErrorKind.TRANSIENT,
+    ProviderErrorKind.TIMEOUT_FIRST_BYTE,
+    ProviderErrorKind.TIMEOUT_PROGRESS,
+    ProviderErrorKind.RATE_LIMITED,
+    ProviderErrorKind.PROVIDER_5XX,
+    ProviderErrorKind.MALFORMED_RESPONSE,
+    ProviderErrorKind.SCHEMA_INVALID,
+    ProviderErrorKind.PROVIDER_UNAVAILABLE,
+}
+FAILOVER_ERROR_KINDS = TRANSIENT_ERRORS
+NON_RETRYABLE_ERRORS = {
+    ProviderErrorKind.AUTH_FAILURE,
+    ProviderErrorKind.AUTHENTICATION,
+    ProviderErrorKind.POLICY_DENIED,
+    ProviderErrorKind.PAYMENT_REQUIRED,
+    ProviderErrorKind.INVALID_REQUEST,
+    ProviderErrorKind.UNSUPPORTED_CAPABILITY,
+    ProviderErrorKind.CONTEXT_OVERFLOW,
+    ProviderErrorKind.QUALITY_FLOOR,
+    ProviderErrorKind.CANCELLED,
+}
 
 logger = logging.getLogger("governed_inference.router")
 
@@ -133,6 +154,14 @@ class GovernedInferenceRouter:
             request_id=request.request_id,
             eligible=len(eligible),
             rejected=len(rejected),
+            candidates=[
+                {
+                    "provider": c.provider,
+                    "score": c.score,
+                    "governed_priority": self.policy.provider_priority.get(c.provider, 0),
+                }
+                for c in eligible
+            ],
         )
         if not eligible:
             self.ledger.emit("inference.denied", request_id=request.request_id)
@@ -189,7 +218,7 @@ class GovernedInferenceRouter:
                 model=candidate.model,
             )
             provider = self._provider_by_name(candidate.provider)
-            for attempt in range(1, self.policy.per_request.max_attempts + 1):
+            for attempt in range(1, min(self.policy.per_request.max_attempts, self.policy.per_request.max_attempts_per_provider) + 1):
                 attempts.append(
                     AttemptRecord(
                         provider=candidate.provider,
@@ -203,6 +232,7 @@ class GovernedInferenceRouter:
                     "inference.attempt_started",
                     request_id=request.request_id,
                     provider=candidate.provider,
+                    model=candidate.model,
                     attempt=attempt,
                 )
                 try:
@@ -273,8 +303,15 @@ class GovernedInferenceRouter:
                             "error_kind": exc.kind.value,
                         },
                     )
+                    if exc.kind in {ProviderErrorKind.POLICY_DENIED, ProviderErrorKind.AUTH_FAILURE, ProviderErrorKind.AUTHENTICATION, ProviderErrorKind.CANCELLED}:
+                        # Governance and credential failures are not provider
+                        # availability failures; never route around them.
+                        raise
                     if exc.kind not in TRANSIENT_ERRORS:
                         break
+                    # A provider failure may be retried on the same provider
+                    # according to the bounded policy. Once its attempts are
+                    # exhausted, the outer loop selects a different provider.
                     time.sleep(min(0.01 * attempt, 0.05))
             fallback_history.append(candidate)
             self.ledger.emit(
@@ -356,7 +393,14 @@ class GovernedInferenceRouter:
                     success_rate=reliability.success_rate,
                 )
             )
-        eligible.sort(key=lambda candidate: candidate.score, reverse=True)
+        eligible.sort(
+            key=lambda candidate: (
+                -candidate.score,
+                candidate.provider not in self.policy.provider_priority,
+                self.policy.provider_priority.get(candidate.provider, 0),
+                candidate.provider,
+            )
+        )
         return eligible, rejected
 
     def _invoke_provider(
@@ -410,7 +454,7 @@ class GovernedInferenceRouter:
                 )
                 raise InferenceError(
                     f"provider exceeded timeout of {timeout_seconds}s",
-                    ProviderErrorKind.TRANSIENT,
+                    ProviderErrorKind.TIMEOUT_PROGRESS,
                 )
             return result
         except InferenceError:

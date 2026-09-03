@@ -356,7 +356,7 @@ class TestTimeoutEnforcement:
         with patch("governed_inference.router.time.monotonic", side_effect=fake_monotonic):
             with pytest.raises(InferenceError) as exc:
                 router.invoke(_req())
-            assert exc.value.kind == ProviderErrorKind.TRANSIENT
+            assert exc.value.kind == ProviderErrorKind.TIMEOUT_PROGRESS
 
     def test_router_completes_within_timeout(self):
         """A fast provider should complete without timeout errors."""
@@ -406,10 +406,20 @@ class TestStructuredLogging:
         policy = InferencePolicy(per_request=PerRequestPolicy(max_attempts=2))
         router = GovernedInferenceRouter([provider], policy=policy)
 
-        with caplog.at_level(logging.WARNING, logger="governed_inference.router"):
+        with (
+            caplog.at_level(logging.WARNING, logger="governed_inference.router"),
+            pytest.raises(InferenceError) as exc,
+        ):
             router.invoke(_req())
 
-        assert any("inference.attempt_failed" in r.message for r in caplog.records)
+        attempt_failures = [
+            record for record in caplog.records if "inference.attempt_failed" in record.message
+        ]
+        assert len(attempt_failures) == 1
+        assert provider.invoke_count == 1
+        assert attempt_failures[0].provider == "flaky"
+        assert getattr(attempt_failures[0], "failure_class", None) is None
+        assert exc.value.kind == ProviderErrorKind.TRANSIENT
 
     def test_no_prompt_content_in_logs(self, caplog):
         """Verify that prompt content is never present in log records."""

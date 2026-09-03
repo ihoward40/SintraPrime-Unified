@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import os
 import sys
+import uuid
 from pathlib import Path
 
 from swarm_runtime import SwarmController, WorkerSpec
@@ -25,7 +26,7 @@ def run_acceptance_003() -> dict:
     swarm_id = "SWARM-ACCEPTANCE-003"
     run_dir = os.path.join(
         os.getenv("LOCALAPPDATA", os.path.expanduser("~")),
-        "SintraPrime", "swarm-runs", swarm_id,
+        "SintraPrime", "swarm-runs", f"{swarm_id}-{os.getpid()}-{uuid.uuid4().hex}",
     )
 
     # Phase 1: Run a crash worker that deliberately crashes

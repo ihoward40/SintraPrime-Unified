@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import uuid
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
 from enum import Enum, StrEnum
@@ -44,6 +45,14 @@ class CacheStatus(StrEnum):
 
 class ProviderErrorKind(StrEnum):
     TRANSIENT = "transient"
+    TIMEOUT_FIRST_BYTE = "timeout_first_byte"
+    TIMEOUT_PROGRESS = "timeout_progress"
+    RATE_LIMITED = "rate_limited"
+    PROVIDER_5XX = "provider_5xx"
+    MALFORMED_RESPONSE = "malformed_response"
+    SCHEMA_INVALID = "schema_invalid"
+    AUTH_FAILURE = "auth_failure"
+    PROVIDER_UNAVAILABLE = "provider_unavailable"
     AUTHENTICATION = "authentication"
     PAYMENT_REQUIRED = "payment_required"
     POLICY_DENIED = "policy_denied"
@@ -51,6 +60,7 @@ class ProviderErrorKind(StrEnum):
     UNSUPPORTED_CAPABILITY = "unsupported_capability"
     CONTEXT_OVERFLOW = "context_overflow"
     QUALITY_FLOOR = "quality_floor"
+    CANCELLED = "cancelled"
     UNKNOWN = "unknown"
 
 
@@ -67,6 +77,7 @@ class PerRequestPolicy:
     max_estimated_cost_usd: float = 0.0
     timeout_seconds: int = 60
     max_attempts: int = 3
+    max_attempts_per_provider: int = 1
 
 
 @dataclass(frozen=True)
@@ -93,6 +104,7 @@ class InferencePolicy:
     promotion_metadata_ttl_days: int = 3
     min_success_rate: float = 0.50
     version: str = "2026-07-21.local-first.v2"
+    provider_priority: Mapping[str, int] = field(default_factory=dict)
 
     @classmethod
     def from_environment(cls, base: InferencePolicy | None = None) -> InferencePolicy:

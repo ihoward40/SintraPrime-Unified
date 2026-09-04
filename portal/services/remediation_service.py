@@ -38,7 +38,9 @@ class RemediationService:
         stmt = select(PrincipalAuthority).where(
             PrincipalAuthority.tenant_id == tenant_id,
             PrincipalAuthority.user_id == actor_id,
-            PrincipalAuthority.is_active is True
+            # SQL-safe predicate; `is True` is a Python identity check that
+            # coerces to a false WHERE clause and denies every actor.
+            PrincipalAuthority.is_active.is_(True)
         )
         res = await session.execute(stmt)
         authority = res.scalar_one_or_none()

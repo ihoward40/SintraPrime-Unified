@@ -29,7 +29,9 @@ class OmniBrainMemoryVault:
         safe_content = remediation.redact_boundaries(content)
         safe_metadata = remediation.redact_boundaries(metadata or {})
 
-        memory_id = f"mem-{uuid.uuid4().hex[:8]}"
+        # MemoryEntry.id is a UUID primary key; generate a canonical UUID so
+        # the insert satisfies the column contract on PostgreSQL and SQLite.
+        memory_id = uuid.uuid4()
         entry = MemoryEntry(
             id=memory_id,
             tenant_id=tenant_id,
@@ -43,7 +45,7 @@ class OmniBrainMemoryVault:
         session.add(entry)
         await session.flush()
         logger.info(f"[MEMORY_VAULT] Stored {memory_type} memory {memory_id} for tenant {tenant_id}")
-        return memory_id
+        return str(memory_id)
 
     async def retrieve_tenant_memory(
         self, session: AsyncSession, tenant_id: str, memory_type: str | None = None

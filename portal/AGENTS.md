@@ -33,6 +33,17 @@ Owns the SintraPrime client portal — the FastAPI application that provides sec
 
 - Auth, tenant isolation, revocation, production secret gates, public route allowlisting, and RLS activation are certified in `portal/tests/test_auth_tenant_rbac_certification.py`. Run that focused suite after portal auth, config, middleware, or database-session changes.
 - Durable orchestration persistence, document packet provenance, and transactional audit behavior are certified in `portal/tests/test_orchestration_api.py`, `portal/tests/test_document_export_endpoint.py`, and `portal/tests/test_persistence_audit_correctness.py`.
+- Governed external action (JARVIS-001-B1) is certified in `portal/tests/test_jarvis_b1_governed_action.py`. Run it after any change to the `jarvis_action_*` services or the GitHub label adapter. Its contracts below are constitutional for JARVIS agency work.
+
+## Governed External Actions (JARVIS-001-B1)
+
+- The only mutation boundary is `services/jarvis_action_executor.py` (`GovernedActionExecutor`). No other component may perform an external mutation; INTELLIGENCE != AUTHORITY holds at that boundary.
+- Proposed actions are frozen, allowlisted (`github.issue.add_label` only for B1), params-hash-bound, and tenant/mission/request-bound (`services/jarvis_proposed_action.py`).
+- Approvals are action-bound artifacts (`services/jarvis_action_approval.py`): PENDING -> APPROVED -> CONSUMED, single-consume, params-hash bound, tenant-bound. Nova-style dict approvals are never authority. Consume happens only after independent post-state verification (or timeout reconciliation proving the effect landed).
+- Mutation credentials never enter worker environments (`services/jarvis_action_credential_isolation.py` filters them), never appear in receipts/memory/logs, and flow only authority_context -> adapter -> provider at the execution boundary.
+- Provider responses are never proof: pre-state capture, mutation, post-state refetch, canonical comparison. Provider timeout -> refetch -> reconcile; never an automatic second POST; undeterminable state is VERIFICATION_INCONCLUSIVE / SIDE_EFFECT_UNKNOWN, never fabricated success.
+- Receipts extend the hash-chain architecture with pre/post state hashes, authority, and tamper detection (`services/jarvis_action_receipt.py`).
+- The A-chain (`jarvis_principal_mission`, read-only workflow, memory writeback, a4 acceptance) is frozen: B1 services must not modify it.
 
 ## Child DOX Index
 

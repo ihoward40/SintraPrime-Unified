@@ -31,6 +31,7 @@ from .jarvis_principal_mission import (
 from .jarvis_read_only_workflow import JarvisMissionResult
 from .memory_vault import memory_vault
 from .principal_brief import brief_service
+from .remediation_service import remediation
 
 MEMORY_TYPE_JARVIS_MISSION_RESULT = "JARVIS_MISSION_RESULT"
 JARVIS_MEMORY_SOURCE = "jarvis.read_only"
@@ -140,6 +141,10 @@ async def store_mission_result_memory(
     Provenance is verified against the authoritative A1 request store before
     any write: the request must exist, belong to the result's tenant, and hash
     to the request_hash carried by the result. Any mismatch fails closed.
+
+    Idempotent: a retry of the same accepted mission/result (same tenant,
+    request, and mission linkage) returns the existing memory record instead
+    of creating a duplicate authoritative row.
     """
     _require_typed_read_only_result(result)
     tenant_id = _coerce_tenant_id(result.mission.tenant_id)
@@ -150,6 +155,25 @@ async def store_mission_result_memory(
         raise PermissionError("JARVIS_MEMORY_TENANT_MISMATCH")
     if request.request_hash != result.request_hash:
         raise PermissionError("JARVIS_MEMORY_HASH_MISMATCH")
+
+    # Idempotency: reuse the existing semantic record for this mission.
+    mission_key = str(result.mission.mission_id)
+    existing = await memory_vault.retrieve_tenant_memory(
+        session, str(tenant_id), MEMORY_TYPE_JARVIS_MISSION_RESULT
+    )
+    for entry in existing:
+        linkage = entry.content.get("linkage", {}) if isinstance(entry.content, dict) else {}
+        if (
+            linkage.get("mission_id") == mission_key
+            and linkage.get("request_id") == str(result.request_id)
+        ):
+            return JarvisMemoryRecord(
+                memory_id=str(entry.id),
+                tenant_id=tenant_id,
+                request_id=result.request_id,
+                mission_id=result.mission.mission_id,
+                request_hash=result.request_hash,
+            )
 
     payload = build_mission_memory_record(result)
     metadata = {
@@ -218,8 +242,14 @@ async def synthesize_mission_brief(
     ``brief_service.create_brief`` to synthesize the brief and annotates the
     returned report with the memory-derived linkage so the brief carries the
     original request, mission, result, evidence, and memory record references.
-    The actor must pass the existing principal-approval validation.
+    The actor is pre-validated through the existing principal-approval
+    remediation BEFORE any authoritative memory mutation, so an unauthorized
+    actor leaves zero mutation.
     """
+    if not await remediation.validate_principal_approval(
+        session, str(result.mission.tenant_id), actor_id, "BRIEF_SYNTHESIS"
+    ):
+        raise PermissionError("JARVIS_MEMORY_UNAUTHORIZED_ACTOR")
     record = await store_mission_result_memory(session, request_store, result)
     entries = await retrieve_mission_memory(
         session, request_store, tenant_id=record.tenant_id, request_id=record.request_id

@@ -46,6 +46,10 @@ class TestNovaExecGate(unittest.TestCase):
         os.environ.pop("NOVA_ALLOW_DYNAMIC_EXEC", None)
         os.environ.pop("OPENAI_API_KEY", None)
         self.agent = NovaAgent(user_id="test-user")
+        # B2-B11 containment: these tests target the legacy dynamic-exec gate
+        # INSIDE the guarded edge; granting the governed context lets calls
+        # reach it. The B2 deny layer is asserted in TestB2Containment below.
+        self.agent.b2_governed_context = object()
 
     def tearDown(self):
         os.environ.pop("NOVA_ALLOW_DYNAMIC_EXEC", None)
@@ -289,6 +293,43 @@ class TestTaskExecutorShellSafety(unittest.TestCase):
             mock_run.side_effect = sp.TimeoutExpired(cmd="echo", timeout=60)
             with self.assertRaises(ExecTimeout):
                 self.executor.execute_shell("echo slow")
+
+
+class TestB2ContainmentLayering(unittest.TestCase):
+    """B2-B11: the containment deny layer composes IN FRONT of legacy exec gates."""
+
+    def _ungoverned_agent(self):
+        agent = NovaAgent(user_id="composition-user")
+        assert agent.b2_governed_context is None
+        return agent
+
+    def test_b2_deny_precedes_legacy_exec_gate(self):
+        """Ungoverned agent + NOVA_ALLOW_DYNAMIC_EXEC=TRUE must still be denied by B2."""
+        os.environ["NOVA_ALLOW_DYNAMIC_EXEC"] = "TRUE"
+        os.environ["OPENAI_API_KEY"] = "fake-key"
+        try:
+            agent = self._ungoverned_agent()
+            mock_openai = MagicMock()
+            mock_client = MagicMock()
+            mock_client.chat.completions.create.return_value = _make_mock_openai_response(
+                HANDLER_CODE
+            )
+            mock_openai.OpenAI.return_value = mock_client
+            with patch.dict("sys.modules", {"openai": mock_openai}):
+                with self.assertRaises(PermissionError) as ctx:
+                    agent.execute_action("UNKNOWN_ACTION_XYZ", {"param": "value"})
+            # Deny must be the B2 layer, not the legacy gate.
+            self.assertIn("LEGACY_BYPASS_DENIED", str(ctx.exception))
+        finally:
+            os.environ.pop("NOVA_ALLOW_DYNAMIC_EXEC", None)
+            os.environ.pop("OPENAI_API_KEY", None)
+
+    def test_ungoverned_known_action_denied_by_b2_not_legacy_gate(self):
+        """Known registered action, ungoverned: B2 deny fires before handler dispatch."""
+        agent = self._ungoverned_agent()
+        with self.assertRaises(PermissionError) as ctx:
+            agent.execute_action("SEND_DISPUTE_LETTER", {"recipient_name": "T"})
+        self.assertIn("LEGACY_BYPASS_DENIED", str(ctx.exception))
 
 
 if __name__ == "__main__":

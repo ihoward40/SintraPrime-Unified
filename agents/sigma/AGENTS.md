@@ -15,6 +15,7 @@ Owns the Sigma Agent: a mandatory CI/CD gate guardian that runs test suites, enf
 ## Local Contracts
 
 - Public API stability: `SigmaAgent.run_test_suite()`, `enforce_coverage_threshold()`, `run_security_scan()`, `enforce_type_checking()`, `generate_gate_report()`, `gate_pull_request()`, and merge actions must remain backward compatible.
+- B2-B11 containment: `post_github_status()` requires a governed B2 context (`agent.b2_governed_context` set); ungoverned mutation fails closed with `PermissionError("LEGACY_BYPASS_DENIED")`. Inventory status alone is not execution authority.
 - The AI Code Review section of `generate_gate_report()` routes through `GovernedInferenceRouter` when a PR diff is provided and an OpenAI API key is present (or when a router is injected).
 - The legacy direct OpenAI SDK path remains as a fallback until an explicit retirement phase.
 - No real external API calls are made in tests.

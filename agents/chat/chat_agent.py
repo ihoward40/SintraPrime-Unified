@@ -222,6 +222,7 @@ class ChatAgent:
         self._openai_key = os.environ.get("OPENAI_API_KEY")
         self._session_store_path = session_store_path
         self._governed_router: Optional[GovernedInferenceRouter] = None
+        self.b2_governed_context = None
 
         # Register built-in tools
         self._register_default_tools()
@@ -229,6 +230,15 @@ class ChatAgent:
         logger.info(
             "ChatAgent initialized (model=%s, mode=%s, tools=%s)",
             model, default_mode, enable_tools
+        )
+
+    def _require_b2_governed_context(self, surface_id: str) -> None:
+        """B2-B11 containment: every legacy mutation edge fails closed without a governed context."""
+        from portal.services.jarvis_legacy_containment import require_surface_governed_context
+
+        require_surface_governed_context(
+            surface_id=surface_id,
+            governed=getattr(self, "b2_governed_context", None) is not None,
         )
 
     # ------------------------------------------------------------------
@@ -379,6 +389,7 @@ class ChatAgent:
         :param require_approval: If True, task waits for human approval before execution.
         :returns: AgentTask with status and result.
         """
+        self._require_b2_governed_context("chat-autonomous")
         task = AgentTask(
             task_type=task_type,
             description=f"Autonomous {task_type} task",

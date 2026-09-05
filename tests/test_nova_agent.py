@@ -48,7 +48,11 @@ from agents.nova.nova_agent import (
 @pytest.fixture
 def nova(tmp_path):
     ledger = str(tmp_path / "ledger.jsonl")
-    return NovaAgent(user_id="test-user", ledger_path=ledger)
+    agent = NovaAgent(user_id="test-user", ledger_path=ledger)
+    # B2-B11 containment: behavior tests run under a governed context;
+    # deny-by-default is asserted explicitly in TestB2Containment.
+    agent.b2_governed_context = object()
+    return agent
 
 
 @pytest.fixture
@@ -545,3 +549,35 @@ class TestGatewayBasics:
         gw = ApprovalGateway(auto_approve_enabled=False)
         req = gw.submit_for_approval("NOTIFY_CREDITOR", {"description": "d"})
         assert req.status == GWApprovalStatus.PENDING.value
+
+
+# ── B2-B11 Containment (deny-by-default at legacy mutation edges) ──
+
+
+class TestB2Containment:
+    """B2-B11: the approval-gateway edge fails closed without a governed context."""
+
+    def test_execute_action_denied_without_governed_context(self, tmp_path):
+        agent = NovaAgent(ledger_path=str(tmp_path / "l.jsonl"))
+        assert agent.b2_governed_context is None
+        with pytest.raises(PermissionError) as denied:
+            agent.execute_action("SEND_DISPUTE_LETTER", {"recipient_name": "T"})
+        assert "LEGACY_BYPASS_DENIED" in str(denied.value)
+
+    def test_ungoverned_dynamic_exec_path_also_blocked(self, tmp_path):
+        """Ungoverned context denies before the legacy exec gate is ever reached."""
+        agent = NovaAgent(ledger_path=str(tmp_path / "l.jsonl"))
+        with pytest.raises(PermissionError) as denied:
+            agent.execute_action("UNKNOWN_ACTION_XYZ", {"param": "value"})
+        assert "LEGACY_BYPASS_DENIED" in str(denied.value)
+
+    def test_inventory_status_alone_never_grants_execution(self, tmp_path):
+        from portal.services.jarvis_legacy_containment import legacy_containment_map
+
+        inventory = {item.surface_id: item for item in legacy_containment_map()}
+        entry = inventory["nova-approval-gateway"]
+        assert entry.mutation_capable is True
+        assert entry.status == "INVENTORY_ONLY"
+        agent = NovaAgent(ledger_path=str(tmp_path / "l2.jsonl"))
+        with pytest.raises(PermissionError):
+            agent.execute_action("SEND_DISPUTE_LETTER", {"x": "y"})

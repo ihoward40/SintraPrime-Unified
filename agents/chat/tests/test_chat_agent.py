@@ -310,6 +310,9 @@ class TestChatAgentTaskExecution(unittest.TestCase):
 
     def setUp(self):
         self.agent = ChatAgent()
+        # B2-B11 containment: behavior tests run under a governed context;
+        # deny-by-default is asserted explicitly in TestB2Containment.
+        self.agent.b2_governed_context = object()
 
     def test_execute_task_autonomously(self):
         session = self.agent.create_session()
@@ -518,6 +521,9 @@ class TestChatAgentStats(unittest.TestCase):
     def setUp(self):
         self.agent = ChatAgent()
         self.agent._openai_key = None
+        # B2-B11 containment: get_stats surfaces task counts through the
+        # guarded autonomous-execution edge family; grant governed context.
+        self.agent.b2_governed_context = object()
 
     def test_get_stats_empty(self):
         stats = self.agent.get_stats()
@@ -592,3 +598,50 @@ class TestSystemPrompt(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ── B2-B11 Containment (deny-by-default at legacy mutation edges) ──
+#
+# (Placed after unittest.main() guard: these are pytest-style tests that must
+# remain collectable when the file is imported by pytest.)
+
+
+import pytest as _pytest  # noqa: E402
+
+
+class TestB2Containment:
+    """B2-B11: the autonomous-execution edge fails closed without a governed context."""
+
+    def test_execute_task_autonomously_denied_without_governed_context(self):
+        agent = ChatAgent()
+        agent._openai_key = None
+        assert agent.b2_governed_context is None
+        session = agent.create_session()
+        with _pytest.raises(PermissionError) as denied:
+            agent.execute_task_autonomously(
+                session.session_id, task_type="run_tests", task_params={}
+            )
+        assert "LEGACY_BYPASS_DENIED" in str(denied.value)
+
+    def test_god_mode_still_registered_as_mutation_surface(self):
+        from portal.services.jarvis_legacy_containment import legacy_containment_map
+
+        inventory = {item.surface_id: item for item in legacy_containment_map()}
+        entry = inventory["chat-god-mode"]
+        assert entry.mutation_capable is True
+        assert entry.status == "INVENTORY_ONLY"
+
+    def test_inventory_status_alone_never_grants_execution(self):
+        from portal.services.jarvis_legacy_containment import legacy_containment_map
+
+        inventory = {item.surface_id: item for item in legacy_containment_map()}
+        entry = inventory["chat-autonomous"]
+        assert entry.mutation_capable is True
+        assert entry.status == "INVENTORY_ONLY"
+        agent = ChatAgent()
+        agent._openai_key = None
+        session = agent.create_session()
+        with _pytest.raises(PermissionError):
+            agent.execute_task_autonomously(
+                session.session_id, task_type="run_tests", task_params={}
+            )

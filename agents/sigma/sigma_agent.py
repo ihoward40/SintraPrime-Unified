@@ -99,7 +99,17 @@ class SigmaAgent:
         self.block_on_security_critical = block_on_security_critical
         self._gate_history: List[GateReport] = []
         self._governed_router: Optional[GovernedInferenceRouter] = None
+        self.b2_governed_context = None
         logger.info("SigmaAgent initialized — coverage min=%.0f%%", coverage_minimum * 100)
+
+    def _require_b2_governed_context(self, surface_id: str) -> None:
+        """B2-B11 containment: every legacy mutation edge fails closed without a governed context."""
+        from portal.services.jarvis_legacy_containment import require_surface_governed_context
+
+        require_surface_governed_context(
+            surface_id=surface_id,
+            governed=getattr(self, "b2_governed_context", None) is not None,
+        )
 
     def run_test_suite(self, module: Optional[str] = None) -> TestResult:
         """Run pytest with coverage and return structured results."""
@@ -386,6 +396,7 @@ class SigmaAgent:
 
     def post_github_status(self, commit_sha: str, state: str, description: str) -> bool:
         """Post a commit status check to GitHub."""
+        self._require_b2_governed_context("sigma-direct-github")
         if not self.github_token:
             logger.warning("No GitHub token; skipping status post.")
             return False

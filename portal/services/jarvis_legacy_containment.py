@@ -41,7 +41,25 @@ def legacy_containment_map() -> tuple[LegacySurface, ...]:
 
 
 def deny_legacy_mutation(*, surface: LegacySurface, provider_calls: int = 0) -> None:
-    if surface.mutation_capable and surface.disposition not in {LegacyDisposition.ALREADY_GOVERNED, LegacyDisposition.REWIRE}:
+    """Fail closed for every legacy mutation surface until explicitly rewired."""
+    if surface.mutation_capable and surface.disposition != LegacyDisposition.ALREADY_GOVERNED:
         raise PermissionError("LEGACY_MUTATION_DENIED")
     if provider_calls:
         raise PermissionError("LEGACY_PROVIDER_CALL_DETECTED")
+
+
+def require_governed_b2_context(*, surface: LegacySurface, governed: bool = False) -> None:
+    """Guard legacy callables; inventory status alone never grants execution."""
+    if surface.mutation_capable and not governed:
+        raise PermissionError("LEGACY_BYPASS_DENIED")
+
+
+def require_surface_governed_context(*, surface_id: str, governed: bool) -> None:
+    """Edge-level guard: resolve the surface by ID and fail closed unless governed."""
+    surface = next(
+        (item for item in LEGACY_CONTAINMENT_MAP if item.surface_id == surface_id),
+        None,
+    )
+    if surface is None:
+        raise PermissionError("LEGACY_SURFACE_UNKNOWN")
+    require_governed_b2_context(surface=surface, governed=governed)

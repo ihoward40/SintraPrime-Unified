@@ -102,9 +102,9 @@ class BrowserController:
         self._page: Optional[Page] = None
         self._last_request_time: float = 0.0
         self._session: Optional[requests.Session] = None
+        self.b2_governed_context = None
 
         os.makedirs(self.screenshot_dir, exist_ok=True)
-
         if PLAYWRIGHT_AVAILABLE:
             self._init_playwright()
         elif REQUESTS_AVAILABLE:
@@ -114,6 +114,15 @@ class BrowserController:
                 "Neither Playwright nor requests is available. "
                 "Install one: pip install playwright requests beautifulsoup4"
             )
+
+    def _require_b2_governed_context(self, surface_id: str) -> None:
+        """B2-B11 containment: every legacy mutation edge fails closed without a governed context."""
+        from portal.services.jarvis_legacy_containment import require_surface_governed_context
+
+        require_surface_governed_context(
+            surface_id=surface_id,
+            governed=getattr(self, "b2_governed_context", None) is not None,
+        )
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -202,6 +211,7 @@ class BrowserController:
 
     def click(self, selector: str) -> ActionResult:
         """Click on a CSS selector or XPath element."""
+        self._require_b2_governed_context("shell-browser")
         start = time.time()
         if self._page is None:
             return ActionResult(success=False, error="Playwright required for click()")
@@ -218,6 +228,7 @@ class BrowserController:
 
     def type_text(self, selector: str, text: str, clear_first: bool = True) -> ActionResult:
         """Type text into a form field identified by selector."""
+        self._require_b2_governed_context("shell-browser")
         start = time.time()
         if self._page is None:
             return ActionResult(success=False, error="Playwright required for type_text()")
@@ -308,6 +319,7 @@ class BrowserController:
 
     def submit_form(self, selector: str = '[type="submit"]') -> ActionResult:
         """Click the submit button and wait for navigation."""
+        self._require_b2_governed_context("shell-browser")
         start = time.time()
         if self._page is None:
             return ActionResult(success=False, error="Playwright required for submit_form()")

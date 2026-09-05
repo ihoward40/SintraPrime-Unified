@@ -14,6 +14,7 @@ Owns the interactive Chat Agent: a general-purpose conversational interface that
 ## Local Contracts
 
 - Public API stability: `ChatAgent.chat()`, `ChatAgent.create_session()`, session management, task execution, tool registration, statistics, and persistence must remain backward compatible.
+- B2-B11 containment: `execute_task_autonomously()` requires a governed B2 context (`agent.b2_governed_context` set); ungoverned mutation fails closed with `PermissionError("LEGACY_BYPASS_DENIED")`. Inventory status alone is not execution authority. B2 containment precedes legacy execution gates.
 - The primary LLM response path (`_get_llm_response`) routes through `GovernedInferenceRouter` when an OpenAI API key is present.
 - Legacy direct OpenAI SDK invocation remains as a fallback until an explicit retirement phase.
 - No real external API calls are made in tests; use deterministic mock providers or legacy OpenAI mocks.

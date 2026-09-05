@@ -35,7 +35,11 @@ def tmp_repo(tmp_path):
 
 @pytest.fixture
 def sigma(tmp_repo):
-    return SigmaAgent(repo_root=str(tmp_repo), coverage_minimum=0.80)
+    agent = SigmaAgent(repo_root=str(tmp_repo), coverage_minimum=0.80)
+    # B2-B11 containment: behavior tests run under a governed context;
+    # deny-by-default is asserted explicitly in TestB2Containment.
+    agent.b2_governed_context = object()
+    return agent
 
 
 @pytest.fixture
@@ -289,3 +293,37 @@ class TestWorkflowContent:
 
     def test_workflow_triggers(self):
         assert "pull_request" in SIGMA_GATE_WORKFLOW
+
+
+# ── B2-B11 Containment (deny-by-default at legacy mutation edges) ──
+
+
+class TestB2Containment:
+    """B2-B11: legacy mutation edges fail closed without a governed context."""
+
+    def test_post_status_denied_without_governed_context(self, tmp_repo):
+        agent = SigmaAgent(repo_root=str(tmp_repo), coverage_minimum=0.80)
+        assert agent.b2_governed_context is None
+        with pytest.raises(PermissionError) as denied:
+            agent.post_github_status("abc123", "success", "ok")
+        assert "LEGACY_BYPASS_DENIED" in str(denied.value)
+
+    def test_guard_unknown_surface_id_denied(self):
+        from portal.services.jarvis_legacy_containment import (
+            require_surface_governed_context,
+        )
+
+        with pytest.raises(PermissionError) as denied:
+            require_surface_governed_context(surface_id="bogus-surface", governed=True)
+        assert "LEGACY_SURFACE_UNKNOWN" in str(denied.value)
+
+    def test_inventory_status_alone_never_grants_execution(self, tmp_repo):
+        from portal.services.jarvis_legacy_containment import legacy_containment_map
+
+        inventory = {item.surface_id: item for item in legacy_containment_map()}
+        assert inventory["sigma-direct-github"].mutation_capable is True
+        assert inventory["sigma-direct-github"].status == "INVENTORY_ONLY"
+        # Inventory listing does not fabricate a context: unguarded call still denied.
+        agent = SigmaAgent(repo_root=str(tmp_repo), coverage_minimum=0.80)
+        with pytest.raises(PermissionError):
+            agent.post_github_status("abc123", "success", "ok")

@@ -90,12 +90,22 @@ class NovaAgent:
     ):
         self.user_id = user_id or "system"
         self.auto_approve_low_risk = auto_approve_low_risk
+        self.b2_governed_context: Optional[Any] = None
         self._registry: Dict[str, ActionSpec] = {}
         self._executions: List[ExecutionRecord] = []
         self._approval_queue: List[Dict[str, Any]] = []
         self._ledger_path = Path(ledger_path) if ledger_path else Path.cwd() / ".nova" / "ledger.jsonl"
         self._register_default_actions()
         logger.info("NovaAgent initialized for user=%s", self.user_id)
+
+    def _require_b2_governed_context(self, surface_id: str) -> None:
+        """B2-B11 containment: every legacy mutation edge fails closed without a governed context."""
+        from portal.services.jarvis_legacy_containment import require_surface_governed_context
+
+        require_surface_governed_context(
+            surface_id=surface_id,
+            governed=getattr(self, "b2_governed_context", None) is not None,
+        )
 
     def _register_default_actions(self) -> None:
         """Register all built-in action types."""
@@ -280,6 +290,7 @@ class NovaAgent:
         approval_required: Optional[bool] = None,
     ) -> ExecutionRecord:
         """Central action dispatcher."""
+        self._require_b2_governed_context("nova-approval-gateway")
         # If action_type is unknown, try to dynamically generate a handler using LLM
         if action_type not in self._registry:
             api_key = os.environ.get("OPENAI_API_KEY")

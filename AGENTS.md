@@ -91,4 +91,5 @@ When the user requests a durable behavior change, record it here or in the relev
 | `.mesh/AGENTS.md` | Agent Mesh coordination | Ledger, registry, protocol messages, and transport status |
 | `governance/blackstone/AGENTS.md` | Blackstone Governance Library | Constitutional charter, standards, knowledge core, architecture, certification, registry, casebook |
 | `voice_concierge/governed/AGENTS.md` | SP-VOICE-001 Governed Voice Operations | Voice command envelope, risk classifier, policy decision, session state machine, confirmation, receipts, feature flags |
+| `voice_runtime/AGENTS.md` | SP-VOICE-002 Federated Speech Runtime (Phase 1) | Speech capability model, provider protocol/registry/router, preflight, provenance, mock/legacy/browser providers, audio normalization utilities |
 | `docs/orchestration/AGENTS.md` | Adaptive orchestration documentation | Architecture, provider, routing, security, governance, and certification contracts |

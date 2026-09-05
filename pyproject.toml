@@ -222,7 +222,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["portal", "operator", "voice_concierge"]
+known-first-party = ["portal", "operator", "voice_concierge", "voice_runtime"]
 
 [tool.ruff.lint.per-file-ignores]
 # ── Per-file baseline ──────────────────────────────────────────────────
@@ -259,7 +259,7 @@ known-first-party = ["portal", "operator", "voice_concierge"]
 "tests/**" = ["ARG002", "F401", "F811", "F841", "N802", "N999", "PT009", "PT011", "PT027", "RUF059"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "portal/tests", "voice_concierge/governed/tests"]
+testpaths = ["tests", "portal/tests", "voice_concierge/governed/tests", "voice_runtime/tests"]
 python_files = "test_*.py"
 asyncio_mode = "auto"
 addopts = "-m 'not experimental'"

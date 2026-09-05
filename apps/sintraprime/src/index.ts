@@ -11,6 +11,7 @@ import { PolicyGate } from './governance/policyGate.js';
 import { ReceiptLedger } from './audit/receiptLedger.js';
 import { SecretsVault } from './security/secretsVault.js';
 import { ToolRegistry } from './tools/toolRegistry.js';
+import { registerTrustAuthorityTools } from './tools/trust/trustAuthorityTools.js';
 import { BrowserRunner } from './automation/browserRunner.js';
 import { JobScheduler } from './scheduler/jobScheduler.js';
 import { ReportingEngine } from './reporting/reportingEngine.js';
@@ -88,6 +89,13 @@ export async function initializeSintraPrime() {
 
   // 4. Initialize Tool Registry
   const toolRegistry = new ToolRegistry();
+
+  // RB-TA-2: register the governed trust authority adapters as first-class tools.
+  // Without an endpoint the current-law verifier deliberately fails closed as
+  // NOT_YET_VERIFIED rather than fabricating legal verification.
+  registerTrustAuthorityTools(toolRegistry, {
+    currentLawEndpoint: process.env.SINTRAPRIME_CURRENT_LAW_ENDPOINT,
+  });
 
   // Register connectors as tools
   const shopifyConnector = new ShopifyConnector({

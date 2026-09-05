@@ -29,7 +29,13 @@ async def admit_for_approval(
     expected_revision: int | None = None,
     registry_service: CapabilityRegistryService | None = None,
 ) -> AdmissionResult:
-    """Admit only a reviewed, currently executable registry record.
+    """Admit a reviewed registry record for the approval pipeline.
+
+    ADMISSION != EXECUTION AUTHORITY (INT-ADMISSION-COMPOSITION-001 correction):
+    admission decides whether a REVIEWED capability may proceed toward
+    approval; it does NOT require and does NOT confer execution authority.
+    Execution eligibility remains separately enforced at TRUSTED via
+    effective_executable in the B2-B4 lease/credential/receipt chain.
 
     CapabilityContract construction remains the single contract validator.
     This gate does not promote state or call a provider.
@@ -46,10 +52,15 @@ async def admit_for_approval(
         return AdmissionResult(False, "STALE_REGISTRY_REVISION", contract.capability_id, contract.capability_version, contract.contract_hash, str(tenant_id), registration.registry_revision)
     if registration.lifecycle_state != LifecycleStatus.REVIEWED.value:
         return AdmissionResult(False, "LIFECYCLE_NOT_REVIEWED", contract.capability_id, contract.capability_version, contract.contract_hash, str(tenant_id), registration.registry_revision)
+    # Admission-stage protections (INT-ADMISSION-COMPOSITION-001):
+    # fail closed on revoked / dependency-quarantined / revalidation-required
+    # states. effective_executable is deliberately NOT required here — at
+    # REVIEWED it is always False by frozen registry semantics, and admission
+    # does not confer execution authority (see invariant above).
     if registration.effective_state in {
         EffectiveStatus.REVOKED.value,
         EffectiveStatus.QUARANTINED_BY_DEPENDENCY.value,
         EffectiveStatus.REVALIDATION_REQUIRED.value,
-    } or not registration.effective_executable:
-        return AdmissionResult(False, "REGISTRY_NOT_EXECUTION_ELIGIBLE", contract.capability_id, contract.capability_version, contract.contract_hash, str(tenant_id), registration.registry_revision)
+    }:
+        return AdmissionResult(False, "REGISTRY_NOT_ADMISSIBLE", contract.capability_id, contract.capability_version, contract.contract_hash, str(tenant_id), registration.registry_revision)
     return AdmissionResult(True, "ADMISSION_ELIGIBLE", contract.capability_id, contract.capability_version, contract.contract_hash, str(tenant_id), registration.registry_revision)

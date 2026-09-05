@@ -576,6 +576,8 @@ async def test_p12_end_to_end_durable_chain_recovered_from_postgres(runtime):
             actor_id=actor_id,
         )
         await session.commit()
+        admission_reviewed = await admit_for_approval(session=session, tenant_id=tenant_id, contract=contract)
+        await session.commit()
         await registry.transition_to_approved(
             session=session, tenant_id=tenant_id, capability_id=contract.capability_id,
             capability_version=contract.capability_version, contract_hash=contract.contract_hash,
@@ -599,14 +601,18 @@ async def test_p12_end_to_end_durable_chain_recovered_from_postgres(runtime):
         await session.commit()
         admission = await admit_for_approval(session=session, tenant_id=tenant_id, contract=contract)
         await session.commit()
-    # INT-ADMISSION-COMPOSITION-001 (observed, not repaired — frozen code):
-    # admit_for_approval requires lifecycle_state == REVIEWED while
-    # effective_executable is only True at TRUSTED, so no public registry path
-    # yields ADMISSION_ELIGIBLE. The gate is structurally fail-closed; the
-    # certification records the denial as evidence and does NOT bypass it.
+    # INT-ADMISSION-COMPOSITION-001 (corrected): admission is the pre-approval
+    # gate at REVIEWED; it does NOT require and does NOT confer execution
+    # authority (ADMISSION != EXECUTION AUTHORITY). The REVIEWED-stage call
+    # above is admissible; the TRUSTED-stage call here is denied by the
+    # admission-stage lifecycle check. Execution eligibility is separate and
+    # remains enforced at TRUSTED (asserted below via effective_executable).
+    assert admission_reviewed.approved is True
+    assert admission_reviewed.reason_code == "ADMISSION_ELIGIBLE"
+    assert admission_reviewed.contract_hash == contract.contract_hash
+    assert admission_reviewed.provider_calls == 0
     assert admission.approved is False
-    assert admission.reason_code in {"LIFECYCLE_NOT_REVIEWED", "REGISTRY_NOT_EXECUTION_ELIGIBLE"}
-    assert admission.contract_hash == contract.contract_hash
+    assert admission.reason_code == "LIFECYCLE_NOT_REVIEWED"
     assert admission.provider_calls == 0
 
     async with factory() as session:

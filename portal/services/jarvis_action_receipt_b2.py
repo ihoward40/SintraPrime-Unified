@@ -1,4 +1,4 @@
-"""B2-B9 deterministic durable receipt and hash-chain primitives."""
+"""B2-B9 deterministic, immutable, non-authorizing receipts."""
 from __future__ import annotations
 
 import hashlib
@@ -7,6 +7,10 @@ import uuid
 from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime
 from typing import Any, Iterable
+
+
+class ReceiptCreationDeniedError(ValueError):
+    """Execution evidence cannot produce a trustworthy receipt."""
 
 
 @dataclass(frozen=True)
@@ -23,6 +27,9 @@ class ActionReceipt:
     capability_id: str
     capability_version: str
     capability_contract_hash: str
+    approved_contract_hash: str
+    runtime_contract_hash: str
+    operation_contract_hash: str
     registry_revision: int
     lease_id: str
     lease_revision: int
@@ -55,8 +62,20 @@ class ActionReceipt:
         values.setdefault("receipt_created_at", datetime.now(UTC).isoformat())
         values["previous_receipt_hash"] = previous_receipt_hash
         values["receipt_hash"] = ""
+        if any(values.get(key) != values.get("approved_contract_hash") for key in (
+            "runtime_contract_hash", "operation_contract_hash", "capability_contract_hash"
+        )):
+            raise ReceiptCreationDeniedError("RECEIPT_CREATION_DENIED:CONTRACT_HASH_MISMATCH")
+        if not values.get("verification_status") or not values.get("post_state_hash"):
+            raise ReceiptCreationDeniedError("RECEIPT_CREATION_DENIED:INCOMPLETE_EVIDENCE")
         candidate = cls(**values)
         return replace(candidate, receipt_hash=receipt_hash(candidate))
+
+    def to_safe_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    def as_authority(self) -> None:
+        raise ReceiptCreationDeniedError("RECEIPT_IS_NOT_AUTHORITY")
 
 
 def canonical_receipt_payload(receipt: ActionReceipt) -> bytes:

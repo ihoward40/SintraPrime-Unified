@@ -1,7 +1,10 @@
 from dataclasses import replace
 
+import pytest
+
 from portal.services.jarvis_action_receipt_b2 import (
     ActionReceipt,
+    ReceiptCreationDeniedError,
     verify_receipt,
     verify_receipt_chain,
 )
@@ -10,7 +13,9 @@ BASE = {
     "tenant_id": "tenant", "mission_id": "mission", "action_id": "action",
     "operation_id": "operation", "attempt_id": "attempt", "principal_id": "principal",
     "approval_id": "approval", "capability_id": "cap", "capability_version": "1",
-    "capability_contract_hash": "contract", "registry_revision": 3, "lease_id": "lease",
+    "capability_contract_hash": "contract", "approved_contract_hash": "contract",
+    "runtime_contract_hash": "contract", "operation_contract_hash": "contract",
+    "registry_revision": 3, "lease_id": "lease",
     "lease_revision": 1, "credential_grant_id": "grant", "executor_id": "executor",
     "executor_version": "1", "executor_artifact_hash": "executor-hash", "adapter_id": "adapter",
     "adapter_version": "1", "adapter_artifact_hash": "adapter-hash", "operation": "op",
@@ -42,3 +47,15 @@ def test_chain_detects_predecessor_tampering_and_gap():
 def test_duplicate_receipt_identity_rejected():
     first = ActionReceipt.create(**BASE)
     assert not verify_receipt_chain([first, first], tenant_id="tenant")
+
+
+def test_contract_hash_disagreement_denies_creation():
+    values = {**BASE, "runtime_contract_hash": "other"}
+    with pytest.raises(ReceiptCreationDeniedError):
+        ActionReceipt.create(**values)
+
+
+def test_receipt_is_not_authority():
+    receipt = ActionReceipt.create(**BASE)
+    with pytest.raises(ReceiptCreationDeniedError):
+        receipt.as_authority()

@@ -734,6 +734,10 @@ class JarvisVoiceSession:
         self._wake_ok = False
         self._wake_model = None
         self._wake_thread: Optional[threading.Thread] = None
+        # BATCH E — turn ownership (E-RACE-2): ONE_TRIGGER -> ONE_TURN
+        self._turn_lock = threading.Lock()
+        self._turn_owner: Optional[str] = None   # None | "PTT" | "WAKE"
+        self._wake_enabled = False               # detector may launch turns
 
     def _set_state(self, new_state: str, reason: str = ""):
         old = self.state
@@ -768,6 +772,7 @@ class JarvisVoiceSession:
         turn_start = time.time()
         self._current_turn += 1
         turn_id = f"vturn-{self._current_turn:04d}"
+        print(f"  [turn {self._current_turn}] trigger={self._turn_owner} start")
 
         try:
             # V4 — STT (with per-stage timing)
@@ -835,9 +840,13 @@ class JarvisVoiceSession:
             self._set_state(State.ERROR, str(e))
             self.receipts.record(turn_id, "", "", 0, f"error: {e}")
         finally:
-            # BATCH D: in wake mode every turn ends by re-arming the
-            # detector (canonical cycle ... SPEAKING -> RETURNING_TO_WAKE
-            # -> WAKE_READY). Errors and empty captures re-arm too.
+            # BATCH E: release turn ownership on EVERY exit path.
+            with self._turn_lock:
+                released_owner = self._turn_owner
+                self._turn_owner = None
+            print(f"  [turn {self._current_turn}] COMPLETE (owner={released_owner})")
+            # BATCH D canonical cycle: ... SPEAKING -> RETURNING_TO_WAKE
+            # -> WAKE_READY. Errors and empty captures re-arm too.
             if self._wake_ok and self.state != State.WAKE_READY:
                 self._return_to_wake("re-arm after turn")
 
@@ -848,10 +857,16 @@ class JarvisVoiceSession:
     # ------------------------------------------------------------------
 
     def _return_to_wake(self, reason: str = ""):
-        """Re-arm wake detection after a hands-free turn."""
+        """Re-arm wake detection after a turn (E-RACE-2: release owner)."""
         self._set_state(State.RETURNING_TO_WAKE, reason)
+        # Clear hands-free state BEFORE releasing ownership so there is no
+        # window where a PTT press can claim during wake teardown.
         self._wake_hands_free = False
-        self._wake_mode = False          # detector thread resumes scoring
+        self._wake_mode = False               # detector thread resumes scoring
+        if self._wake_ok:
+            self._wake_enabled = True         # E-RACE-2: re-arm the detector
+        with self._turn_lock:
+            self._turn_owner = None           # E-RACE-2: owner=NONE (last)
         time.sleep(WAKE_REARM_DELAY_S)
         if self._running:
             self._set_state(State.WAKE_READY, "(say \"Hey Jarvis\")")
@@ -874,6 +889,7 @@ class JarvisVoiceSession:
             self._wake_ok = False
             return False
         self._wake_ok = True
+        self._wake_enabled = True             # detector may now claim turns
         print(f"  ✓ Wake model ready: \"{WAKE_WORD}\" (local ONNX)")
         try:
             # Warm-up inference: eliminates first-frame latency spike
@@ -903,7 +919,10 @@ class JarvisVoiceSession:
         roll_samples = 0
         roll_t0 = time.time()
         while self._running:
-            if self._wake_mode or self.mic.is_recording:
+            # E-RACE-2: detector scores only when wake turns are enabled,
+            # no turn in progress, and no capture active (PTT or hands-free).
+            if (not self._wake_enabled or self._wake_mode
+                    or self.mic.is_recording):
                 time.sleep(0.05)
                 continue
             try:
@@ -965,30 +984,55 @@ class JarvisVoiceSession:
         Uses the SAME MicCapture stream and the SAME _run_turn pipeline as
         the certified push-to-talk path (trigger-only change).
         """
+        # E-RACE-2: atomic claim — exactly one owner per turn. The race the
+        # Principal observed (wake firing inside an active PTT utterance)
+        # dies here: a second trigger can never start a parallel turn.
+        with self._turn_lock:
+            if self._turn_owner is not None:
+                print("  [wake] trigger ignored (turn active, "
+                      f"owner={self._turn_owner})")
+                return
+            self._turn_owner = "WAKE"
+        # Suppress further wake scoring for the whole turn (telemetry-free
+        # ownership: PTT-press guard below also consults this state).
+        self._wake_enabled = False
         self._set_state(State.WAKE_DETECTED, f"\"{WAKE_WORD}\"")
         self._wake_hands_free = True
-        self._wake_mode = True
         self.mic.start()
-        self._set_state(State.LISTENING, "(speak now — pause when done)")
-        speech_seen = False
-        silent_for = 0.0
-        max_wait = time.time() + MAX_RECORD_SECONDS   # absolute cap
-        last_poll = 0.0
-        while self._running and self.mic.is_recording:
-            time.sleep(0.1)
-            if time.time() > max_wait:
-                break
-            if time.time() - last_poll >= 0.2:
-                last_poll = time.time()
-                # require at least one voiced interval before accepting silence
-                if self.mic.recent_rms(0.5) >= WAKE_SPEECH_RMS:
-                    speech_seen = True
-                    silent_for = 0.0
-                elif speech_seen:
-                    silent_for += 0.2
-                    if silent_for >= 1.5:
-                        break
-        audio = self.mic.stop()
+        self._set_state(State.LISTENING,
+                        "(speak now — pause when done)")
+        print(f"  [turn {self._current_turn + 1}] trigger=WAKE LISTENING")
+        try:
+            speech_seen = False
+            silent_for = 0.0
+            max_wait = time.time() + MAX_RECORD_SECONDS   # absolute cap
+            last_poll = 0.0
+            while self._running and self.mic.is_recording:
+                time.sleep(0.1)
+                if time.time() > max_wait:
+                    break
+                if time.time() - last_poll >= 0.2:
+                    last_poll = time.time()
+                    # require a voiced interval before accepting silence
+                    if self.mic.recent_rms(0.5) >= WAKE_SPEECH_RMS:
+                        speech_seen = True
+                        silent_for = 0.0
+                    elif speech_seen:
+                        silent_for += 0.2
+                        if silent_for >= 1.5:
+                            break
+            audio = self.mic.stop()
+        except Exception as e:
+            # Wake-capture failure releases the claimed turn (fail-safe).
+            try:
+                self.mic.stop()
+            except Exception:
+                pass
+            with self._turn_lock:
+                self._turn_owner = None
+            self._wake_enabled = bool(self._wake_ok)
+            print(f"  [wake] capture error: {e}; owner released")
+            return
         if not self._running:
             return
         if audio is None or len(audio) == 0:
@@ -1008,10 +1052,20 @@ class JarvisVoiceSession:
 
     def _on_hotkey_press(self):
         """Callback when push-to-talk hotkey is pressed."""
-        if self.mic.is_recording or self._wake_hands_free:
-            return
+        # E-RACE-2: atomic claim — PTT and wake are mutually exclusive
+        # owners; a PTT press during THINKING/SPEAKING/wake-capture is
+        # refused here instead of starting a parallel turn.
+        with self._turn_lock:
+            busy_states = (State.TRANSCRIBING, State.THINKING,
+                           State.SPEAKING, State.WAKE_DETECTED,
+                           State.RETURNING_TO_WAKE)
+            if (self._turn_owner is not None or self.mic.is_recording
+                    or self._wake_hands_free or self.state in busy_states):
+                return
+            self._turn_owner = "PTT"
         PTTBeep.start()
         self._set_state(State.LISTENING, f"(hold {HOTKEY} to speak)")
+        print(f"  [turn {self._current_turn + 1}] trigger=PTT LISTENING")
         self.mic.start()
 
     def _on_hotkey_release(self):
@@ -1021,6 +1075,9 @@ class JarvisVoiceSession:
         audio = self.mic.stop()
         PTTBeep.stop()
         if audio is None or len(audio) == 0:
+            # E-RACE-2: empty PTT capture releases the claimed turn.
+            with self._turn_lock:
+                self._turn_owner = None
             self._set_state(State.IDLE, "(empty capture)")
             return
         duration = self.mic.duration_seconds

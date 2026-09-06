@@ -56,11 +56,13 @@ ELEVEN_API_KEY = os.environ.get("ELEVEN_API_KEY", "")
 # Trigger-only change: "Hey Jarvis" starts the SAME certified voice loop.
 WAKE_WORD_ENABLED = True
 WAKE_WORD = "hey jarvis"
-WAKE_SENSITIVITY = 0.5           # openWakeWord score threshold
-WAKE_CONFIRMATION_FRAMES = 2     # consecutive positive 0.8s chunks required
-WAKE_FRAME_MS = 800              # openWakeWord predict() consumes 12800-sample
-                                 # (0.8s) chunks at 16kHz; smaller input is
-                                 # zero-padded and would degrade detection
+WAKE_SENSITIVITY = 0.5           # openWakeWord default positive threshold
+WAKE_CONFIRMATION_FRAMES = 1     # single qualifying score (diagnosis-first
+                                 # policy; debounce/confirmation returns after
+                                 # false-trigger testing)
+WAKE_FRAME_MS = 80               # upstream openWakeWord test cadence:
+                                 # predict() in 1280-sample (80ms) steps at
+                                 # 16kHz - the model's native stride
 WAKE_SPEECH_RMS = 0.01           # hands-free speech threshold
 WAKE_REARM_DELAY_S = 1.0         # cooldown before re-arming after a turn
 
@@ -782,7 +784,7 @@ class JarvisVoiceSession:
             self._wake_model.predict(
                 np.zeros(int(SAMPLE_RATE * WAKE_FRAME_MS / 1000), dtype=np.int16))
         except Exception:
-            pass
+            pass  # warm-up is best-effort
         self.mic.start_fe()   # persistent capture front-end (single stream)
         self._wake_thread = threading.Thread(
             target=self._wake_detector_loop, name="wake-detector", daemon=True)
@@ -798,8 +800,12 @@ class JarvisVoiceSession:
         confirmation, switches to hands-free capture on the SAME stream and
         hands the audio to the SAME _run_turn pipeline as push-to-talk.
         """
-        frame_samples = int(SAMPLE_RATE * WAKE_FRAME_MS / 1000)   # 12800 @16k
+        frame_samples = int(SAMPLE_RATE * WAKE_FRAME_MS / 1000)   # 1280 @16k
         pending = 0
+        roll_max = 0.0            # WAKE-DIAG-1: rolling max score
+        roll_rms = 0.0
+        roll_samples = 0
+        roll_t0 = time.time()
         while self._running:
             if self._wake_mode or self.mic.is_recording:
                 time.sleep(0.05)
@@ -813,7 +819,11 @@ class JarvisVoiceSession:
                 time.sleep(0.02)
                 continue
             try:
-                chunk = audio[:, 0].astype(np.int16)
+                # WAKE-DIAG-2 FIX: sounddevice delivers float32 in [-1, 1];
+                # a raw truncating cast flattens it to {0} (model scored
+                # digital silence). Scale properly, matching the certified
+                # STT path conversion.
+                chunk = (audio[:, 0] * 32767.0).clip(-32768, 32767).astype(np.int16)
             except Exception:
                 continue
             for off in range(0, len(chunk) - frame_samples + 1, frame_samples):
@@ -827,6 +837,17 @@ class JarvisVoiceSession:
                     score = float(scores.get(key) or max(scores.values() or [0.0]))
                 else:
                     score = float(scores)
+                # WAKE-DIAG-1 telemetry: bounded rolling window (1 line / 5s)
+                roll_samples += len(frame)
+                roll_rms = max(roll_rms, float(np.sqrt(np.mean(frame.astype(np.float32) ** 2))))
+                roll_max = max(roll_max, score)
+                if time.time() - roll_t0 >= 5.0:
+                    print(f"  [wake] rms={roll_rms:.4f} samples={roll_samples} "
+                          f"score_hey_jarvis_max={roll_max:.3f} threshold={WAKE_SENSITIVITY}")
+                    roll_max = 0.0
+                    roll_rms = 0.0
+                    roll_samples = 0
+                    roll_t0 = time.time()
                 if score >= WAKE_SENSITIVITY:
                     pending += 1
                 else:
@@ -834,9 +855,11 @@ class JarvisVoiceSession:
                 if pending >= WAKE_CONFIRMATION_FRAMES:
                     pending = 0
                     try:
+                        # WAKE-DIAG-5: clear residual feature-window state
                         self._wake_model.reset()
                     except Exception:
                         pass
+                    print(f"  [wake] TRIGGER score={score:.3f}")
                     self._on_wake_detected()
                     break
 

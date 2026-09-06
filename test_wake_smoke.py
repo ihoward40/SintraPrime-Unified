@@ -24,7 +24,8 @@ s = jvm.JarvisVoiceSession()
 # A) wake model load + warm-up (same code path as _start_wake_listener)
 from openwakeword.model import Model  # noqa: E402
 s._wake_model = Model(wakeword_models=["hey_jarvis"], inference_framework="onnx")
-s._wake_model.predict(np.zeros(12800, dtype=np.int16))
+s._wake_model.predict(
+    np.zeros(int(jvm.SAMPLE_RATE * jvm.WAKE_FRAME_MS / 1000), dtype=np.int16))
 check("A_WAKE_MODEL_WARMUP", s._wake_model is not None)
 
 # B) persistent front-end + drain

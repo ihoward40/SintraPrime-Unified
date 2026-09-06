@@ -52,15 +52,30 @@ TEMP_DIR = Path(tempfile.mkdtemp(prefix="jarvis_mvp_"))
 # V15 — ElevenLabs TTS (optional — set ELEVEN_API_KEY env var to enable)
 ELEVEN_API_KEY = os.environ.get("ELEVEN_API_KEY", "")
 
+# BATCH D — Wake word (LOCAL ONLY; PRE_WAKE_CLOUD_AUDIO_UPLOADS = 0)
+# Trigger-only change: "Hey Jarvis" starts the SAME certified voice loop.
+WAKE_WORD_ENABLED = True
+WAKE_WORD = "hey jarvis"
+WAKE_SENSITIVITY = 0.5           # openWakeWord score threshold
+WAKE_CONFIRMATION_FRAMES = 2     # consecutive positive 0.8s chunks required
+WAKE_FRAME_MS = 800              # openWakeWord predict() consumes 12800-sample
+                                 # (0.8s) chunks at 16kHz; smaller input is
+                                 # zero-padded and would degrade detection
+WAKE_SPEECH_RMS = 0.01           # hands-free speech threshold
+WAKE_REARM_DELAY_S = 1.0         # cooldown before re-arming after a turn
+
 # ---------------------------------------------------------------------------
 # Voice session states (mirrors SP-VOICE-001 semantics)
 # ---------------------------------------------------------------------------
 class State:
+    WAKE_READY = "WAKE_READY"
+    WAKE_DETECTED = "WAKE_DETECTED"
     IDLE = "IDLE"
     LISTENING = "LISTENING"
     TRANSCRIBING = "TRANSCRIBING"
     THINKING = "THINKING"
     SPEAKING = "SPEAKING"
+    RETURNING_TO_WAKE = "RETURNING_TO_WAKE"
     ERROR = "ERROR"
 
 # ---------------------------------------------------------------------------
@@ -105,18 +120,54 @@ class MicCapture:
         self._stream: Optional[sd.InputStream] = None
         self._is_recording = False
         self._lock = threading.Lock()
+        # BATCH D — persistent wake front-end (single shared stream)
+        self._fe_running = False
+        self._fe_stream = None
 
     def _callback(self, indata: np.ndarray, frames: int, time_info, status):
         if status:
             print(f"[mic] status: {status}")
-        if self._is_recording:
+        # BATCH D: front-end mode buffers continuously (wake scoring drains
+        # it); PTT recording buffers as before. One stream serves both.
+        if self._is_recording or self._fe_running:
             with self._lock:
                 self._buffer.append(indata.copy())
+
+    def start_fe(self):
+        """Persistent capture front-end for wake scoring (BATCH D).
+
+        Opens ONE stream at startup; wake detector drains it. PTT start/stop
+        reuse this stream (no second device stream)."""
+        if self._fe_stream is not None:
+            return
+        self._fe_running = True
+        self._fe_stream = sd.InputStream(
+            samplerate=self.rate,
+            channels=self.channels,
+            dtype="float32",
+            device=self.device,
+            callback=self._callback,
+            blocksize=1024,
+        )
+        self._fe_stream.start()
+
+    def stop_fe(self):
+        """Close the persistent front-end stream (shutdown)."""
+        self._fe_running = False
+        if self._fe_stream is not None:
+            try:
+                self._fe_stream.stop()
+                self._fe_stream.close()
+            except Exception:
+                pass
+            self._fe_stream = None
 
     def start(self):
         with self._lock:
             self._buffer = []
             self._is_recording = True
+        if self._fe_stream is not None:
+            return  # persistent front-end is already capturing
         self._stream = sd.InputStream(
             samplerate=self.rate,
             channels=self.channels,
@@ -130,6 +181,12 @@ class MicCapture:
     def stop(self) -> Optional[np.ndarray]:
         with self._lock:
             self._is_recording = False
+        if self._fe_stream is not None:
+            # Front-end stream stays open; return just the PTT/hands-free window
+            with self._lock:
+                if not self._buffer:
+                    return None
+                return np.concatenate(self._buffer, axis=0)
         if self._stream:
             self._stream.stop()
             self._stream.close()
@@ -138,6 +195,33 @@ class MicCapture:
             if not self._buffer:
                 return None
             return np.concatenate(self._buffer, axis=0)
+
+    def drain(self):
+        """Return and clear buffered audio (wake-scoring front-end)."""
+        with self._lock:
+            if not self._buffer:
+                return None
+            audio = np.concatenate(self._buffer, axis=0)
+            self._buffer = []
+            return audio
+
+    def recent_rms(self, seconds: float = 0.8) -> float:
+        """RMS of the most recent `seconds` of buffered audio (read-only).
+
+        BATCH D: used ONLY for hands-free end-of-utterance detection after
+        wake-word capture. Does not alter push-to-talk behavior.
+        """
+        with self._lock:
+            if not self._buffer:
+                return 0.0
+            need = int(self.rate * seconds)
+            tail = []
+            for blk in reversed(self._buffer):
+                tail.insert(0, blk)
+                if sum(len(b) for b in tail) >= need:
+                    break
+        audio = np.concatenate(tail, axis=0)[-need:]
+        return float(np.sqrt(np.mean(audio ** 2)))
 
     @property
     def is_recording(self) -> bool:
@@ -546,6 +630,12 @@ class JarvisVoiceSession:
         self._current_turn = 0
         # V11 — per-stage timing
         self._stage_times: dict = {}
+        # BATCH D — wake word state
+        self._wake_mode = False          # current turn originated from wake
+        self._wake_hands_free = False    # hands-free capture in progress
+        self._wake_ok = False
+        self._wake_model = None
+        self._wake_thread: Optional[threading.Thread] = None
 
     def _set_state(self, new_state: str, reason: str = ""):
         old = self.state
@@ -556,6 +646,9 @@ class JarvisVoiceSession:
             State.TRANSCRIBING: "⋯",
             State.THINKING: "…",
             State.SPEAKING: "🔊",
+            State.WAKE_READY: "👂",
+            State.WAKE_DETECTED: "✨",
+            State.RETURNING_TO_WAKE: "↺",
             State.ERROR: "⚠",
         }.get(new_state, "?")
         print(f"\r{indicator} {new_state:<12} {reason}")
@@ -585,7 +678,10 @@ class JarvisVoiceSession:
             stt_result = self.stt.transcribe(audio)
             stt_ms = self._end_stage("stt")
             if not stt_result or not stt_result["text"].strip():
-                self._set_state(State.IDLE, "(no speech detected)")
+                if self._wake_ok:
+                    self._return_to_wake("(no speech detected)")
+                else:
+                    self._set_state(State.IDLE, "(no speech detected)")
                 return
 
             transcript = stt_result["text"].strip()
@@ -623,7 +719,10 @@ class JarvisVoiceSession:
             print(f"  ⏱ stages: stt={stt_ms_val}ms hermes={hermes_ms_val}ms total={turn_ms}ms"
                   + (f" extra={stage_summary}" if stage_summary else ""))
 
-            self._set_state(State.IDLE, f"done in {turn_ms}ms")
+            if self._wake_ok:
+                self._return_to_wake(f"done in {turn_ms}ms")
+            else:
+                self._set_state(State.IDLE, f"done in {turn_ms}ms")
 
             # V9 — Receipt with per-stage timing
             self.receipts.record(
@@ -637,6 +736,148 @@ class JarvisVoiceSession:
         except Exception as e:
             self._set_state(State.ERROR, str(e))
             self.receipts.record(turn_id, "", "", 0, f"error: {e}")
+        finally:
+            # BATCH D: in wake mode every turn ends by re-arming the
+            # detector (canonical cycle ... SPEAKING -> RETURNING_TO_WAKE
+            # -> WAKE_READY). Errors and empty captures re-arm too.
+            if self._wake_ok and self.state != State.WAKE_READY:
+                self._return_to_wake("re-arm after turn")
+
+    # ------------------------------------------------------------------
+    # BATCH D — wake word: "Hey Jarvis" -> SAME certified voice loop.
+    # LOCAL ONLY: openWakeWord ONNX scores mic frames on-device.
+    # PRE_WAKE_CLOUD_AUDIO_UPLOADS = 0 (no audio leaves the machine).
+    # ------------------------------------------------------------------
+
+    def _return_to_wake(self, reason: str = ""):
+        """Re-arm wake detection after a hands-free turn."""
+        self._set_state(State.RETURNING_TO_WAKE, reason)
+        self._wake_hands_free = False
+        self._wake_mode = False          # detector thread resumes scoring
+        time.sleep(WAKE_REARM_DELAY_S)
+        if self._running:
+            self._set_state(State.WAKE_READY, "(say \"Hey Jarvis\")")
+
+    def _start_wake_listener(self):
+        """Load the local wake model, then start the detector thread."""
+        try:
+            from openwakeword.model import Model as WakeModel
+        except Exception as e:
+            print(f"  ✗ Wake detection unavailable (openwakeword import): {e}")
+            self._wake_ok = False
+            return False
+        try:
+            self._wake_model = WakeModel(
+                wakeword_models=["hey_jarvis"],
+                inference_framework="onnx",
+            )
+        except Exception as e:
+            print(f"  ✗ Wake model load failed: {e}")
+            self._wake_ok = False
+            return False
+        self._wake_ok = True
+        print(f"  ✓ Wake model ready: \"{WAKE_WORD}\" (local ONNX)")
+        try:
+            # Warm-up inference: eliminates first-frame latency spike
+            self._wake_model.predict(
+                np.zeros(int(SAMPLE_RATE * WAKE_FRAME_MS / 1000), dtype=np.int16))
+        except Exception:
+            pass
+        self.mic.start_fe()   # persistent capture front-end (single stream)
+        self._wake_thread = threading.Thread(
+            target=self._wake_detector_loop, name="wake-detector", daemon=True)
+        self._wake_thread.start()
+        print("  Say \"Hey Jarvis\" for hands-free. Ctrl+Alt+J still works.\n")
+        return True
+
+    def _wake_detector_loop(self):
+        """Background thread: local wake scoring on the shared mic front-end.
+
+        While idle, drains short audio chunks from MicCapture (callback keeps
+        running) and scores them frame-by-frame with openWakeWord. On
+        confirmation, switches to hands-free capture on the SAME stream and
+        hands the audio to the SAME _run_turn pipeline as push-to-talk.
+        """
+        frame_samples = int(SAMPLE_RATE * WAKE_FRAME_MS / 1000)   # 12800 @16k
+        pending = 0
+        while self._running:
+            if self._wake_mode or self.mic.is_recording:
+                time.sleep(0.05)
+                continue
+            try:
+                audio = self.mic.drain()
+            except Exception:
+                time.sleep(0.05)
+                continue
+            if audio is None or len(audio) == 0:
+                time.sleep(0.02)
+                continue
+            try:
+                chunk = audio[:, 0].astype(np.int16)
+            except Exception:
+                continue
+            for off in range(0, len(chunk) - frame_samples + 1, frame_samples):
+                frame = chunk[off:off + frame_samples]
+                try:
+                    scores = self._wake_model.predict(frame)
+                except Exception:
+                    continue
+                key = WAKE_WORD.replace(" ", "_")
+                if isinstance(scores, dict):
+                    score = float(scores.get(key) or max(scores.values() or [0.0]))
+                else:
+                    score = float(scores)
+                if score >= WAKE_SENSITIVITY:
+                    pending += 1
+                else:
+                    pending = 0
+                if pending >= WAKE_CONFIRMATION_FRAMES:
+                    pending = 0
+                    try:
+                        self._wake_model.reset()
+                    except Exception:
+                        pass
+                    self._on_wake_detected()
+                    break
+
+    def _on_wake_detected(self):
+        """Wake phrase confirmed — capture hands-free until end of speech.
+
+        Uses the SAME MicCapture stream and the SAME _run_turn pipeline as
+        the certified push-to-talk path (trigger-only change).
+        """
+        self._set_state(State.WAKE_DETECTED, f"\"{WAKE_WORD}\"")
+        self._wake_hands_free = True
+        self._wake_mode = True
+        self.mic.start()
+        self._set_state(State.LISTENING, "(speak now — pause when done)")
+        speech_seen = False
+        silent_for = 0.0
+        max_wait = time.time() + MAX_RECORD_SECONDS   # absolute cap
+        last_poll = 0.0
+        while self._running and self.mic.is_recording:
+            time.sleep(0.1)
+            if time.time() > max_wait:
+                break
+            if time.time() - last_poll >= 0.2:
+                last_poll = time.time()
+                # require at least one voiced interval before accepting silence
+                if self.mic.recent_rms(0.5) >= WAKE_SPEECH_RMS:
+                    speech_seen = True
+                    silent_for = 0.0
+                elif speech_seen:
+                    silent_for += 0.2
+                    if silent_for >= 1.5:
+                        break
+        audio = self.mic.stop()
+        if not self._running:
+            return
+        if audio is None or len(audio) == 0:
+            self._return_to_wake("(empty capture)")
+            return
+        duration = audio.shape[0] / SAMPLE_RATE
+        print(f"  🎙 captured {duration:.1f}s of audio (hands-free)")
+        threading.Thread(target=self._run_turn, args=(audio,), daemon=True).start()
 
     def _get_tts(self) -> Optional[SAPITTS]:
         if self.tts is None:
@@ -648,7 +889,7 @@ class JarvisVoiceSession:
 
     def _on_hotkey_press(self):
         """Callback when push-to-talk hotkey is pressed."""
-        if self.mic.is_recording:
+        if self.mic.is_recording or self._wake_hands_free:
             return
         PTTBeep.start()
         self._set_state(State.LISTENING, f"(hold {HOTKEY} to speak)")
@@ -713,6 +954,7 @@ class JarvisVoiceSession:
         print(f"  TTS:  Windows SAPI (local)")
         print(f"  Hermes: {HERMES_CMD}")
         print(f"  Hotkey: {HOTKEY}")
+        print(f"  Wake:  \"{WAKE_WORD}\" (local, hands-free)" if WAKE_WORD_ENABLED else "  Wake:  disabled")
         print(f"  Mode:  READ_ONLY conversation")
         print(f"  Style: CONCISE_BY_DEFAULT")
         print("-" * 60)
@@ -727,6 +969,13 @@ class JarvisVoiceSession:
 
         # Welcome beep
         self._play_welcome()
+
+        # BATCH D — local wake-word listener ("Hey Jarvis")
+        if WAKE_WORD_ENABLED:
+            try:
+                self._start_wake_listener()
+            except Exception as e:
+                print(f"  ✗ Wake listener failed to start: {e}")
 
         # Virtual key codes for J on Windows
         VK_J = 74
@@ -797,6 +1046,8 @@ class JarvisVoiceSession:
 
         if hotkey_ok:
             try:
+                if self._wake_ok:
+                    self._set_state(State.WAKE_READY, f"(say \"{WAKE_WORD}\" or hold {HOTKEY})")
                 while self._running:
                     time.sleep(0.1)
             except KeyboardInterrupt:
@@ -811,6 +1062,7 @@ class JarvisVoiceSession:
     def shutdown(self):
         print("\nShutting down...")
         self._running = False
+        self.mic.stop_fe()   # BATCH D: close persistent wake front-end
         if self.tts:
             self.tts.cleanup()
 

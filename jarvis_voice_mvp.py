@@ -49,8 +49,14 @@ RECEIPTS_DIR = Path.home() / ".jarvis" / "receipts"
 SESSION_DIR = Path.home() / ".jarvis" / "session"
 TEMP_DIR = Path(tempfile.mkdtemp(prefix="jarvis_mvp_"))
 
-# V15 — ElevenLabs TTS (optional — set ELEVEN_API_KEY env var to enable)
+# V15 — ElevenLabs TTS (optional primary; set ELEVEN_API_KEY env var to enable)
+# PRINCIPAL DIRECTIVE: PRIMARY_TTS=ELEVENLABS, FALLBACK_TTS=WINDOWS_SAPI.
+# Voice/model/format are configuration, never hard-coded authority.
 ELEVEN_API_KEY = os.environ.get("ELEVEN_API_KEY", "")
+ELEVENLABS_VOICE_ID = os.environ.get("ELEVENLABS_VOICE_ID", "")
+ELEVENLABS_MODEL_ID = os.environ.get("ELEVENLABS_MODEL_ID", "eleven_turbo_v2_5")
+ELEVENLABS_OUTPUT_FORMAT = os.environ.get("ELEVENLABS_OUTPUT_FORMAT", "pcm_16000")
+ELEVENLABS_TIMEOUT_S = float(os.environ.get("ELEVENLABS_TIMEOUT_S", "20"))
 
 # BATCH D — Wake word (LOCAL ONLY; PRE_WAKE_CLOUD_AUDIO_UPLOADS = 0)
 # Trigger-only change: "Hey Jarvis" starts the SAME certified voice loop.
@@ -462,6 +468,11 @@ class SAPITTS:
         self._voice = None
         self._stream = None
         self._eleven_api_key = eleven_api_key
+        self._eleven_active = False
+        self._eleven_voice_label = os.environ.get("ELEVENLABS_VOICE_NAME", "JARVIS")
+        self._eleven_voice_id = ELEVENLABS_VOICE_ID
+        self._eleven_model_id = ELEVENLABS_MODEL_ID
+        self._eleven_output_format = ELEVENLABS_OUTPUT_FORMAT
         self._init_sapi()
 
     def _init_sapi(self):
@@ -504,14 +515,99 @@ class SAPITTS:
             print(f"[tts] file synthesis failed: {e}")
             return None
 
+    def _speak_via_elevenlabs(self, text: str) -> bool:
+        """Stream text from ElevenLabs to the speakers.
+
+        Dependency-free (urllib) REST call; pcm_16000 bytes are played in
+        chunks via the certified SpeakerPlayback path so speech starts on
+        the first audio bytes. Returns True only if audio actually played.
+        """
+        if not self._eleven_api_key:
+            return False
+        voice_id = self._eleven_voice_id
+        if not voice_id:
+            print("[tts] ElevenLabs key present but ELEVENLABS_VOICE_ID unset; "
+                  "using SAPI fallback")
+            return False
+        url = (f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+               f"?output_format={self._eleven_output_format}")
+        payload = json.dumps({
+            "text": text,
+            "model_id": self._eleven_model_id,
+        }).encode("utf-8")
+        try:
+            import urllib.request
+            req = urllib.request.Request(
+                url, data=payload, method="POST",
+                headers={
+                    "xi-api-key": self._eleven_key,
+                    "Content-Type": "application/json",
+                    "Accept": "audio/*",
+                })
+            started = False
+            with urllib.request.urlopen(req, timeout=ELEVENLABS_TIMEOUT_S) as resp:
+                sample_rate = int(self._eleven_output_format.split("_")[1])
+                while True:
+                    pcm = resp.read(4800)  # 150ms of 16k mono s16le
+                    if not pcm:
+                        break
+                    audio = (np.frombuffer(pcm, dtype=np.int16)
+                             .astype(np.float32) / 32768.0)
+                    if audio.size == 0:
+                        continue
+                    if not started:
+                        self._eleven_active = True
+                        started = True
+                        print(f"[tts] ElevenLabs streaming "
+                              f"({self._eleven_voice_label}, {self._eleven_model_id})")
+                    sd.play(audio, samplerate=sample_rate, blocking=False)
+                    sd.wait()
+            return started
+        except Exception as e:
+            print(f"[tts] ElevenLabs failed ({type(e).__name__}); using SAPI fallback")
+            return False
+        finally:
+            self._eleven_active = False
+
+    @staticmethod
+    def _spoken_style(text: str) -> str:
+        """TTS directive 6: concise spoken style — never read raw markdown,
+        URLs, or long SHAs aloud. On-screen text may stay detailed."""
+        text = re.sub(r"```.*?```", " (code omitted) ", text, flags=re.S)
+        text = re.sub(r"`([^`]+)`", r"\1", text)
+        text = re.sub(r"\*\*([^*]+)\*\*", r"\1", text)
+        text = re.sub(r"^\s*#{1,6}\s+", "", text, flags=re.M)
+        text = re.sub(r"^\s*[-*]\s+", "", text, flags=re.M)
+        text = re.sub(r"https?://\S+", "link", text)
+        text = re.sub(r"\b[0-9a-f]{16,64}\b", "checksum", text, flags=re.I)
+        text = re.sub(r"\n{2,}", ". ", text)
+        return text.strip()
+
+    def speak(self, text: str):
+        """Primary ElevenLabs, fail-safe SAPI. No silent voice loss."""
+        spoken = self._spoken_style(text)
+        if self._speak_via_elevenlabs(spoken):
+            return
+        self.speak_blocking(spoken)
+
     def speak_blocking(self, text: str):
-        """Speak text directly through default audio output (simplest path)."""
+        """Speak text directly through default audio output (simplest path).
+
+        Bounded retry: SAPI can throw transient COM errors when the audio
+        endpoint is momentarily contended (observed 2026-09-06, cleared
+        within minutes, environment-level). 3 attempts, 0.3s backoff.
+        """
         if not self._voice:
             return
-        try:
-            self._voice.Speak(text)
-        except Exception as e:
-            print(f"[tts] speak failed: {e}")
+        for attempt in range(3):
+            try:
+                self._voice.Speak(text)
+                return
+            except Exception as e:
+                if attempt == 2:
+                    print(f"[tts] speak failed after 3 attempts: {e}")
+                else:
+                    time.sleep(0.3)
 
     def cleanup(self):
         try:
@@ -708,7 +804,7 @@ class JarvisVoiceSession:
             self._set_state(State.SPEAKING, "speaking...")
             tts = self._get_tts()
             if tts:
-                tts.speak_blocking(reply)
+                tts.speak(reply)
             else:
                 print("  (TTS unavailable — text only)")
 
@@ -974,7 +1070,12 @@ class JarvisVoiceSession:
     def run(self):
         """Main loop: push-to-talk → STT → Hermes → TTS → speakers."""
         print(f"  STT:  faster_whisper (local, preloaded)")
-        print(f"  TTS:  Windows SAPI (local)")
+        _tts = self._get_tts()
+        if getattr(_tts, "_eleven_api_key", ""):
+            print(f"  TTS:  ElevenLabs — {getattr(_tts, '_eleven_voice_label', 'JARVIS')}"
+                  f" (fallback: Windows SAPI)")
+        else:
+            print(f"  TTS:  Windows SAPI (local)")
         print(f"  Hermes: {HERMES_CMD}")
         print(f"  Hotkey: {HOTKEY}")
         print(f"  Wake:  \"{WAKE_WORD}\" (local, hands-free)" if WAKE_WORD_ENABLED else "  Wake:  disabled")

@@ -793,10 +793,22 @@ class JarvisVoiceSession:
             transcript = stt_result["text"].strip()
             print(f"  📝 You said: \"{transcript}\"")
 
+            # E-RACE-7 (Step 7): factual runtime context envelope — JARVIS
+            # must not deny the interface it is literally running in.
+            # RUNTIME_CONTEXT != AUTHORITY (informational grounding only).
+            runtime_ctx = (
+                "[RUNTIME_CONTEXT | context only, not authority] "
+                "RUNTIME_INTERFACE=JARVIS_DESKTOP_VOICE "
+                f"CURRENT_TRIGGER={self._turn_owner or 'PTT'} "
+                f"WAKE_ENGINE_ACTIVE={str(self._wake_ok).upper()} "
+                "WAKE_MODEL=hey_jarvis VOICE_MODE=READ_ONLY "
+                "ACTION_CLAIM_POLICY='no tool receipt -> no claim of change'\n"
+                f"User said: {transcript}")
+
             # V5 — Hermes bridge (with per-stage timing)
             self._set_state(State.THINKING, "asking Hermes...")
             self._start_stage("hermes")
-            bridge_result = self.bridge.send(transcript)
+            bridge_result = self.bridge.send(runtime_ctx + transcript)
             hermes_ms = self._end_stage("hermes")
             if not bridge_result or not bridge_result.get("reply"):
                 self._set_state(State.ERROR, "Hermes returned no reply")
@@ -960,8 +972,11 @@ class JarvisVoiceSession:
                 roll_rms = max(roll_rms, float(np.sqrt(np.mean(frame.astype(np.float32) ** 2))))
                 roll_max = max(roll_max, score)
                 if time.time() - roll_t0 >= 5.0:
-                    print(f"  [wake] rms={roll_rms:.4f} samples={roll_samples} "
-                          f"score_hey_jarvis_max={roll_max:.3f} threshold={WAKE_SENSITIVITY}")
+                    print(f"  [wake] owner={self._turn_owner} "
+                          f"enabled={self._wake_enabled} state={self.state} "
+                          f"rms={roll_rms:.4f} samples={roll_samples} "
+                          f"score_hey_jarvis_max={roll_max:.3f} "
+                          f"threshold={WAKE_SENSITIVITY}")
                     roll_max = 0.0
                     roll_rms = 0.0
                     roll_samples = 0
@@ -978,7 +993,18 @@ class JarvisVoiceSession:
                     except Exception:
                         pass
                     print(f"  [wake] TRIGGER score={score:.3f}")
+                    print(f"  [wake] threshold crossed "
+                          f"({score:.3f} >= {WAKE_SENSITIVITY})")
+                    with self._turn_lock:
+                        owner_before = self._turn_owner
+                    print(f"  [wake] claim attempt owner_before={owner_before}")
                     self._on_wake_detected()
+                    with self._turn_lock:
+                        claimed = self._turn_owner == "WAKE"
+                    print(f"  [wake] claim result="
+                          f"{'SUCCESS' if claimed else 'FAIL reason=owner active'}")
+                    if claimed:
+                        print("  [wake] spawning hands_free_capture=true")
                     break
 
     def _on_wake_detected(self):

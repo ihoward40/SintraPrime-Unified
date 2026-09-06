@@ -6,6 +6,7 @@ front-end cleanup. Run with the MVP venv python.
 Local only - PRE_WAKE_CLOUD_AUDIO_UPLOADS = 0.
 """
 import sys
+import threading
 import time
 
 import numpy as np
@@ -58,6 +59,23 @@ s._wake_hands_free = True
 s._on_hotkey_press()
 check("E_PTT_GUARD", s.mic.is_recording is False)
 s._wake_hands_free = False
+
+# E2) Step 5: synthetic wake-score injection — deterministic proof that
+# owner=NONE + state=WAKE_READY + qualifying score -> claim -> capture,
+# with zero microphone uncertainty.
+s._wake_enabled = True
+s.state = jvm.State.WAKE_READY
+s._current_turn = 0
+synth = threading.Thread(target=s._on_wake_detected, daemon=True)
+synth.start()
+synth.join(timeout=3)
+check("E2_SYNTHETIC_WAKE_INJECTION",
+      s._turn_owner == "WAKE" and s.mic.is_recording)
+s._wake_hands_free = False          # stop capture loop from spinning
+s.mic._rec = False                  # dummy-mic style release
+with s._turn_lock:
+    s._turn_owner = None            # release claim
+s._wake_enabled = False             # keep detector quiet for F)
 
 # F) cleanup
 s.mic.stop_fe()

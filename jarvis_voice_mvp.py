@@ -467,7 +467,10 @@ class SAPITTS:
         self.rate = rate
         self._voice = None
         self._stream = None
-        self._eleven_api_key = eleven_api_key
+        # V15 — ElevenLabs (optional primary TTS; SAPI remains fail-safe)
+        # Constructor arg wins; otherwise environment (env-backed config).
+        self._eleven_api_key = (eleven_api_key
+                                or os.environ.get("ELEVEN_API_KEY", "")).strip()
         self._eleven_active = False
         self._eleven_voice_label = os.environ.get("ELEVENLABS_VOICE_NAME", "JARVIS")
         self._eleven_voice_id = ELEVENLABS_VOICE_ID
@@ -540,7 +543,7 @@ class SAPITTS:
             req = urllib.request.Request(
                 url, data=payload, method="POST",
                 headers={
-                    "xi-api-key": self._eleven_key,
+                    "xi-api-key": self._eleven_api_key,
                     "Content-Type": "application/json",
                     "Accept": "audio/*",
                 })

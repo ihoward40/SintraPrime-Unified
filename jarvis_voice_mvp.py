@@ -85,6 +85,10 @@ def hermes_exe() -> str:
     return "hermes"
 
 HERMES_CMD = hermes_exe()
+# Voice bridge model provider. The machine default (thinkingmachines) can
+# hard-fail with credential 404s and hang one-shot runs; voice uses the
+# explicitly-configured OpenRouter path (key present, verified).
+VOICE_PROVIDER = os.environ.get("JARVIS_VOICE_PROVIDER", "openrouter")
 
 # ---------------------------------------------------------------------------
 # Audio capture (V3)
@@ -224,10 +228,15 @@ class LocalSTT:
 # Hermes bridge (V5)
 # ---------------------------------------------------------------------------
 class HermesBridge:
-    """Persistent Hermes session via CLI resume.
+    """Persistent Hermes session via the machine-readable -Q/--quiet contract.
 
-    Turn 1: hermes chat -q "<text>" → captures session_id from output.
-    Turn N: hermes chat -q "<text>" --resume <session_id> → preserves context.
+    Primary contract (CLI_PRESENTATION_FORMAT != MACHINE_INTERFACE):
+      stdout = ONLY the final assistant response
+      stderr = diagnostics + "session_id: <id>"
+    Turn 1: hermes chat -q "<text>" -Q --yolo
+    Turn N: ... --resume <session_id>
+    Legacy TUI-box parsing is kept ONLY as a diagnostic fallback if -Q
+    ever returns box graphics (e.g. older Hermes build).
     """
 
     def __init__(self):
@@ -243,7 +252,10 @@ class HermesBridge:
         """Send text to Hermes and return response dict."""
         with self._lock:
             t0 = time.time()
-            cmd = [HERMES_CMD, "chat", "-q", text, "--yolo"]
+            # -Q/--quiet: machine-readable single-query contract — stdout
+            # carries ONLY the final response; stderr carries session_id.
+            cmd = [HERMES_CMD, "chat", "-q", text, "-Q", "--yolo",
+                   "--provider", VOICE_PROVIDER]
             if self._session_id:
                 cmd.extend(["--resume", self._session_id])
 
@@ -258,32 +270,37 @@ class HermesBridge:
                     text=True,
                     encoding="utf-8",
                     errors="replace",
-                    timeout=300,
+                    timeout=600,
                     env=env,
                 )
             except UnicodeDecodeError as e:
                 self._bridge_error = f"UTF8_DECODE_FAIL: {e}"
                 print(f"\n✗ Bridge decode error: {e}", flush=True)
                 return None
+            except subprocess.TimeoutExpired as e:
+                self._bridge_error = f"HERMES_TIMEOUT: {e}"
+                print(f"\n✗ Bridge timeout after 600s", flush=True)
+                return None
 
             stdout = result.stdout or ""
             stderr = result.stderr or ""
-            combined = stdout + stderr
 
-            # Extract session_id from output if present
+            # Session id: prefer stderr "session_id: <id>" (-Q contract);
+            # fall back to the legacy stdout "Session: <id>" line.
             if not self._session_id:
-                m = re.search(r"Session:\s+(\S+)", combined)
+                m = re.search(r"session_id:\s+(\S+)", stderr) or \
+                    re.search(r"Session:\s+(\S+)", stdout + stderr)
                 if m:
                     self._session_id = m.group(1).strip()
 
-            # Extract the assistant reply — between the box markers
-            reply = self._extract_reply(stdout)
+            reply, reply_source = self._extract_reply(stdout)
 
             elapsed = time.time() - t0
             self._turn_count += 1
 
             return {
                 "reply": reply,
+                "reply_source": reply_source,
                 "session_id": self._session_id,
                 "turn": self._turn_count,
                 "hermes_ms": round(elapsed * 1000),
@@ -292,26 +309,59 @@ class HermesBridge:
                 "returncode": result.returncode,
             }
 
-    def _extract_reply(self, stdout: str) -> str:
-        """Pull assistant text from Hermes's TUI box output."""
+    def _extract_reply(self, stdout: str) -> tuple:
+        """Return (reply_text, source).
+
+        Primary: -Q quiet contract — stdout IS the final response.
+        Fallback: legacy TUI box parsing (last non-empty box), used only
+        when -Q output unexpectedly contains box markers.
+        """
+        ansi = re.compile(r"\x1b\[[0-9;]*m")
+        text = ansi.sub("", stdout).strip()
+
+        # Machine contract: clean stdout, no presentation graphics.
+        if text and "╭" not in text and "╰" not in text:
+            return text, "quiet_contract"
+
+        # Legacy fallback — older Hermes builds printed TUI boxes.
+        reply = self._extract_reply_from_boxes(stdout)
+        if reply:
+            return reply, "legacy_box_fallback"
+
+        # No reply at all — emit diagnostics so failures are distinguishable.
+        lines = [l.strip() for l in stdout.split("\n")[-12:] if l.strip()]
+        print("  ⚠ bridge: no final response found. stdout tail:")
+        for l in lines:
+            print(f"    | {l}")
+        return "", "none"
+
+    def _extract_reply_from_boxes(self, stdout: str) -> str:
+        """DEPRECATED legacy TUI-box parser. Kept only as diagnostic fallback."""
         ansi = re.compile(r"\x1b\[[0-9;]*m")
         lines = stdout.split("\n")
+        boxes = []          # each box: list of stripped text lines
         in_box = False
-        reply_lines = []
         for line in lines:
             stripped = ansi.sub("", line)
-            if stripped.startswith("╭"):
+            if "╭" in stripped[:4]:
                 in_box = True
+                boxes.append([])
                 continue
-            if stripped.startswith("╰"):
-                break
+            if "╰" in stripped[:4] or "╯" in stripped[:4]:
+                in_box = False
+                continue
             if in_box:
                 s = stripped.strip()
                 if s:
-                    reply_lines.append(s)
+                    boxes[-1].append(s)
 
-        text = " ".join(reply_lines).strip()
-        return text
+        # Return the LAST non-empty box (the final assistant reply).
+        for box in reversed(boxes):
+            text = " ".join(box).strip()
+            if text:
+                return text
+        return ""
+
 
 # ---------------------------------------------------------------------------
 # TTS (V6) — SAPI via win32com (zero new dependencies)

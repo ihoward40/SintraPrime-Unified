@@ -55,7 +55,7 @@ TEMP_DIR = Path(tempfile.mkdtemp(prefix="jarvis_mvp_"))
 ELEVEN_API_KEY = os.environ.get("ELEVEN_API_KEY", "")
 ELEVENLABS_VOICE_ID = os.environ.get("ELEVENLABS_VOICE_ID", "")
 ELEVENLABS_MODEL_ID = os.environ.get("ELEVENLABS_MODEL_ID", "eleven_turbo_v2_5")
-ELEVENLABS_OUTPUT_FORMAT = os.environ.get("ELEVENLABS_OUTPUT_FORMAT", "pcm_16000")
+ELEVENLABS_OUTPUT_FORMAT = os.environ.get("ELEVENLABS_OUTPUT_FORMAT", "pcm_24000")
 ELEVENLABS_TIMEOUT_S = float(os.environ.get("ELEVENLABS_TIMEOUT_S", "20"))
 
 # BATCH D — Wake word (LOCAL ONLY; PRE_WAKE_CLOUD_AUDIO_UPLOADS = 0)
@@ -548,23 +548,46 @@ class SAPITTS:
                     "Accept": "audio/*",
                 })
             started = False
-            with urllib.request.urlopen(req, timeout=ELEVENLABS_TIMEOUT_S) as resp:
-                sample_rate = int(self._eleven_output_format.split("_")[1])
-                while True:
-                    pcm = resp.read(4800)  # 150ms of 16k mono s16le
-                    if not pcm:
-                        break
-                    audio = (np.frombuffer(pcm, dtype=np.int16)
-                             .astype(np.float32) / 32768.0)
-                    if audio.size == 0:
-                        continue
-                    if not started:
-                        self._eleven_active = True
-                        started = True
-                        print(f"[tts] ElevenLabs streaming "
-                              f"({self._eleven_voice_label}, {self._eleven_model_id})")
-                    sd.play(audio, samplerate=sample_rate, blocking=False)
-                    sd.wait()
+            stream = sd.RawOutputStream(
+                samplerate=int(self._eleven_output_format.split("_")[1]),
+                channels=1, dtype="int16")
+            stream.start()
+            try:
+                carry = b""   # ELEVENLABS_AUDIO_DIAG Step 5: HTTP chunk
+                              # boundaries NEVER align to 16-bit frames
+                with urllib.request.urlopen(req,
+                                            timeout=ELEVENLABS_TIMEOUT_S) as resp:
+                    while True:
+                        pcm = resp.read(4800)  # 100ms of 24k mono s16le
+                        if not pcm:
+                            break
+                        buf = carry + pcm
+                        usable = len(buf) - (len(buf) % 2)
+                        carry = buf[usable:]   # retain odd trailing byte
+                        if not usable:
+                            continue
+                        if not started:
+                            started = True
+                            self._eleven_active = True
+                            print(f"[tts] ElevenLabs streaming "
+                                  f"({self._eleven_voice_label}, "
+                                  f"{self._eleven_model_id}, "
+                                  f"{self._eleven_output_format})")
+                        # ONE continuous stream — per-chunk sd.play()/
+                        # sd.wait() restarts caused the crackle (root
+                        # cause proven by clean whole-WAV playback).
+                        stream.write(buf[:usable])
+            except Exception:
+                # Step 7 fail-safe: abort corrupted playback; speak() will
+                # fall to SAPI. Never play garbage and call it success.
+                started = False
+            finally:
+                try:
+                    stream.stop()
+                    stream.close()
+                except Exception:
+                    pass
+                self._eleven_active = False
             return started
         except Exception as e:
             print(f"[tts] ElevenLabs failed ({type(e).__name__}); using SAPI fallback")

@@ -131,15 +131,39 @@ class MicCapture:
         # BATCH D — persistent wake front-end (single shared stream)
         self._fe_running = False
         self._fe_stream = None
+        self.callback_count = 0
+        self.callback_samples = 0
+        self.append_count = 0
 
     def _callback(self, indata: np.ndarray, frames: int, time_info, status):
         if status:
             print(f"[mic] status: {status}")
         # BATCH D: front-end mode buffers continuously (wake scoring drains
         # it); PTT recording buffers as before. One stream serves both.
-        if self._is_recording or self._fe_running:
-            with self._lock:
+        with self._lock:
+            self.callback_count += 1
+            self.callback_samples += frames
+            if self._is_recording or self._fe_running:
+                self.append_count += 1
                 self._buffer.append(indata.copy())
+
+    def buffer_stats(self) -> tuple:
+        """(callback_count, callback_samples, append_count, fe_running,
+        buffered_samples, recent_rms)
+
+        IDLE-MIC DIAG (Step 2/5): read-only view for the 1s idle heartbeat —
+        separates 'hardware callback alive' from 'frames buffered' from
+        'scorer consuming'. Never mutates state."""
+        with self._lock:
+            buffered = sum(a.shape[0] for a in self._buffer)
+            if self._buffer:
+                tail = np.concatenate(self._buffer[-4:], axis=0)
+                rms = float(np.sqrt(np.mean(tail.astype(np.float32) ** 2)))
+            else:
+                rms = 0.0
+            return (self.callback_count, self.callback_samples,
+                    self.append_count, bool(self._fe_running),
+                    buffered, rms)
 
     def start_fe(self):
         """Persistent capture front-end for wake scoring (BATCH D).
@@ -956,6 +980,22 @@ class JarvisVoiceSession:
         roll_rms = 0.0
         roll_samples = 0
         roll_t0 = time.time()
+        # IDLE-MIC DIAG (Step 2): 1s heartbeat while fully idle — separates
+        # hardware callback activity from scorer consumption. Previously the
+        # telemetry only printed inside the scoring path, so an empty buffer
+        # (silence OR dead pipeline) printed nothing — the blind spot.
+        hb_t0 = time.time()
+        hb_wake_max = 0.0
+        hb_frames_scored = 0
+        # IDLE-MIC FIX (Step 4/5): drain chunks arrive misaligned with the
+        # 1280-sample frame (loop drains ~every 20ms; callbacks append 1024
+        # every ~64ms) — chunks smaller than one frame were silently
+        # DISCARDED by the range() below, starving the scorer to ~1 frame
+        # per 5s (proven by heartbeat: appends==callbacks, frames_scored=0).
+        # Accumulate a residual and score only complete frames; retain the
+        # remainder. Same boundary-alignment pattern as the TTS carry buffer.
+        residual = np.empty(0, dtype=np.int16)
+        RESIDUAL_CAP = SAMPLE_RATE * 5  # 5s safety cap
         while self._running:
             # E-RACE-2: detector scores only when wake turns are enabled,
             # no turn in progress, and no capture active (PTT or hands-free).
@@ -969,6 +1009,19 @@ class JarvisVoiceSession:
                 time.sleep(0.05)
                 continue
             if audio is None or len(audio) == 0:
+                if time.time() - hb_t0 >= 1.0:
+                    hb_t0 = time.time()
+                    cb_count, cb_samples, app_count, fe, buf_samples, tail_rms = \
+                        self.mic.buffer_stats()
+                    print(f"  [idle-mic] callback_frames={cb_count} "
+                          f"callback_samples={cb_samples} "
+                          f"appends={app_count} fe_running={fe} "
+                          f"buffer_samples={buf_samples} rms={tail_rms:.4f} "
+                          f"wake_frames_scored={hb_frames_scored} "
+                          f"wake_max={hb_wake_max:.3f} "
+                          f"owner={self._turn_owner} state={self.state}")
+                    hb_wake_max = 0.0
+                    hb_frames_scored = 0
                 time.sleep(0.02)
                 continue
             try:
@@ -977,10 +1030,25 @@ class JarvisVoiceSession:
                 # digital silence). Scale properly, matching the certified
                 # STT path conversion.
                 chunk = (audio[:, 0] * 32767.0).clip(-32768, 32767).astype(np.int16)
-            except Exception:
+            except Exception as cast_err:
+                # IDLE-MIC DIAG: a persistent cast failure would silently
+                # starve the scorer (drain empties buffer, cast raises,
+                # continue) — make it visible, bounded to 1 print / 5s.
+                if time.time() - hb_t0 >= 5.0:
+                    print(f"  [idle-mic] CAST_ERROR {type(cast_err).__name__}: "
+                          f"{cast_err} | audio shape={getattr(audio, 'shape', '?')} "
+                          f"dtype={getattr(audio, 'dtype', '?')}")
+                    hb_t0 = time.time()
                 continue
             for off in range(0, len(chunk) - frame_samples + 1, frame_samples):
-                frame = chunk[off:off + frame_samples]
+                pass  # replaced below by residual-based scoring
+            residual = np.concatenate([residual, chunk])
+            if len(residual) > RESIDUAL_CAP:  # safety: never grow unbounded
+                residual = residual[-frame_samples:]
+            n_complete = len(residual) // frame_samples
+            for idx in range(n_complete):
+                off = idx * frame_samples
+                frame = residual[off:off + frame_samples]
                 try:
                     scores = self._wake_model.predict(frame)
                 except Exception:
@@ -994,6 +1062,8 @@ class JarvisVoiceSession:
                 roll_samples += len(frame)
                 roll_rms = max(roll_rms, float(np.sqrt(np.mean(frame.astype(np.float32) ** 2))))
                 roll_max = max(roll_max, score)
+                hb_frames_scored += 1
+                hb_wake_max = max(hb_wake_max, score)
                 if time.time() - roll_t0 >= 5.0:
                     print(f"  [wake] owner={self._turn_owner} "
                           f"enabled={self._wake_enabled} state={self.state} "
@@ -1022,6 +1092,11 @@ class JarvisVoiceSession:
                         owner_before = self._turn_owner
                     print(f"  [wake] claim attempt owner_before={owner_before}")
                     self._on_wake_detected()
+                    # Step 6 separation: residual holds scored-only audio —
+                    # drop it so the wake phrase can never become command
+                    # audio; command capture starts fresh in _on_wake_detected.
+                    residual = np.empty(0, dtype=np.int16)
+                    pending = 0
                     with self._turn_lock:
                         claimed = self._turn_owner == "WAKE"
                     print(f"  [wake] claim result="
@@ -1029,6 +1104,7 @@ class JarvisVoiceSession:
                     if claimed:
                         print("  [wake] spawning hands_free_capture=true")
                     break
+            residual = residual[n_complete * frame_samples:]
 
     def _on_wake_detected(self):
         """Wake phrase confirmed — capture hands-free until end of speech.

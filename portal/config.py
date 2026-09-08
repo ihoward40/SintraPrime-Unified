@@ -173,6 +173,19 @@ class Settings(BaseSettings):
     DURABLE_WORKFLOW_RECOVERY_BATCH_SIZE: int = 10
     DURABLE_WORKFLOW_DISPATCH_LEASE_SECONDS: float = 30.0
 
+    # ── Governance: delegation lease ─────────────────────────────────────
+    # Wave 2E-2: delegated agent authority is time-bounded. Secure default is
+    # 24 hours; zero/negative would create immortal delegation and is
+    # rejected at configuration load (fail closed).
+    DELEGATION_TTL_HOURS: int = 24
+
+    @field_validator("DELEGATION_TTL_HOURS")
+    @classmethod
+    def validate_delegation_ttl(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("DELEGATION_TTL_HOURS must be >= 1 (zero/negative would create immortal delegation)")
+        return v
+
     @field_validator("ENCRYPTION_KEY")
     @classmethod
     def validate_encryption_key(cls, v: str) -> str:

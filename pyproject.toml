@@ -230,6 +230,12 @@ known-first-party = ["portal", "operator", "voice_concierge"]
 # As violations are fixed in a directory, remove its entry here.
 # See docs/ci/ruff-baseline.md for counts and cleanup priorities.
 #
+# Legacy test modules kept under the Wave-2B visible-lane policy: module-level
+# pytest.skip precedes imports by design, so E402 is expected.
+"portal/tests/test_mythos_brain_integration.py" = ["E402"]
+"portal/tests/test_pr_263_remediation.py" = ["E402"]
+"portal/tests/test_admin_dashboard.py" = ["E402"]
+#
 # Root-level files
 "__init__.py" = ["N999"]
 "load_test_runner.py" = ["W292", "W293"]

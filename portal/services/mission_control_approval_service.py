@@ -171,13 +171,15 @@ async def create_approval(
         user_id=actor.user_id,
         tenant_id=tenant_id,
         resource_type="run_approval",
-        resource_id=approval.approval_id,
+        resource_id=str(approval.approval_id),  # AuditLog.resource_id is String-bound (2B-REM)
         resource_name=decision,
         status="approved" if decision == "APPROVED" else "rejected",
         details={
-            "approval_id": approval.approval_id,
-            "run_id": run_id,
-            "mission_id": run.mission_id,
+            "approval_id": str(approval.approval_id),
+            # JSON column: canonical string form (UUID objects are not
+            # json.dumps-safe) — Wave 2B-REM.
+            "run_id": str(run_id),
+            "mission_id": str(run.mission_id),
             "decision": decision,
             "input_data_hash": run.input_data_hash,
             "principal_user_id": str(actor.user_id),
@@ -278,13 +280,15 @@ async def consume_approval_and_activate(
         user_id=actor.user_id,
         tenant_id=tenant_id,
         resource_type="run",
-        resource_id=run_id,
+        resource_id=str(run_id),  # AuditLog.resource_id is String-bound (2B-REM)
         resource_name="activate",
         status="active",
         details={
-            "approval_id": approval.approval_id,
-            "run_id": run_id,
-            "mission_id": run.mission_id,
+            "approval_id": str(approval.approval_id),
+            # JSON column: canonical string form (UUID objects are not
+            # json.dumps-safe) — Wave 2B-REM.
+            "run_id": str(run_id),
+            "mission_id": str(run.mission_id),
             "execution_ref": run.execution_ref,
             "input_data_hash": run.input_data_hash,
         },

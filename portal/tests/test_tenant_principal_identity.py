@@ -209,4 +209,6 @@ async def test_tenant_principal_record_is_queryable(db: AsyncSession):
     loaded = await db.execute(
         select(TenantPrincipal).where(TenantPrincipal.tenant_id == tenant.id)
     )
-    assert loaded.scalar_one().principal_user_id == principal_user.id
+    # PortableUUID loads back as uuid.UUID while User.id stayed str in this
+    # fixture context (PR #294): compare canonical strings.
+    assert str(loaded.scalar_one().principal_user_id) == str(principal_user.id)

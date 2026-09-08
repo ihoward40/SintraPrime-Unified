@@ -207,7 +207,10 @@ async def _reconcile_permission_manifest(
             resource, action = _split_permission(permission_name)
             db.add(
                 PermissionModel(
-                    id=str(uuid.uuid4()),
+                    # Canonical UUID object: string PKs corrupt the ORM
+                    # insertmanyvalues sentinel match when this flush is
+                    # batched with server_default columns (see Wave 2A-4).
+                    id=uuid.uuid4(),
                     name=permission_name,
                     resource=resource,
                     action=action,
@@ -220,7 +223,8 @@ async def _reconcile_permission_manifest(
         for role_name in missing_roles:
             db.add(
                 RoleModel(
-                    id=str(uuid.uuid4()),
+                    # Canonical UUID object (sentinel rule, see above).
+                    id=uuid.uuid4(),
                     name=role_name,
                     display_name=_display_name_for_role(role_name),
                     description="Canonical Mission Control system role",

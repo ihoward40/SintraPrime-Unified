@@ -87,6 +87,11 @@ async def audit(
     try:
         await db.flush()
     except Exception as exc:
+        # Deliberately NO rollback: the audit entry is appended to the
+        # caller's transaction, and a failed audit write must not destroy
+        # the caller's business transaction (certified contract in
+        # test_persistence_audit_correctness.py::..._does_not_rollback...
+        # from c3c85a36). The caller owns transaction recovery.
         log.error("audit.write_failed", action=action, error=str(exc))
         raise
 

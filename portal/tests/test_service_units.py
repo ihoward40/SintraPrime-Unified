@@ -526,7 +526,14 @@ class TestAuditService:
         assert result["entries_checked"] == 0
 
     @pytest.mark.asyncio
-    async def test_audit_flush_failure_rolls_back_and_raises(self):
+    async def test_audit_flush_failure_raises_without_caller_rollback(self):
+        """Audit flush failure raises; the caller's transaction is NOT rolled back.
+
+        Contract (c3c85a36, certified in test_persistence_audit_correctness.py):
+        audit() appends to the caller's transaction and must not destroy it on
+        its own write failure — transaction recovery belongs to the caller.
+        (Wave 2B-REM: stale expectation updated.)
+        """
         from portal.services.audit_service import audit
 
         mock_db = AsyncMock()
@@ -539,7 +546,7 @@ class TestAuditService:
 
         with pytest.raises(Exception, match="DB error"):
             await audit(db=mock_db, action="test.action")
-        mock_db.rollback.assert_called_once()
+        mock_db.rollback.assert_not_called()
 
 
 # ─── share_service ────────────────────────────────────────────────────────────

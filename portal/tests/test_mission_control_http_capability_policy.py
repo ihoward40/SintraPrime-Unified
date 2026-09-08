@@ -118,7 +118,7 @@ async def test_http_approval_required_reaches_server_classified_capability(clien
         json={
             "command_type": "START_GOVERNED_RUN",
             "target_type": "mission",
-            "target_id": mission.mission_id,
+            "target_id": str(mission.mission_id),
             "idempotency_key": "http-approval-required-0001",
             "payload": {
                 "require_approval": False,
@@ -149,7 +149,7 @@ async def test_http_direct_allowed_ignores_client_workflow_type(client, db, monk
         json={
             "command_type": "START_GOVERNED_RUN",
             "target_type": "mission",
-            "target_id": mission.mission_id,
+            "target_id": str(mission.mission_id),
             "idempotency_key": "http-direct-allowed-0001",
             "payload": {
                 "require_approval": True,
@@ -180,7 +180,7 @@ async def test_http_unbound_mission_is_refused(client, db, monkeypatch):
         json={
             "command_type": "START_GOVERNED_RUN",
             "target_type": "mission",
-            "target_id": mission.mission_id,
+            "target_id": str(mission.mission_id),
             "idempotency_key": "http-unbound-0001",
             "payload": {},
         },

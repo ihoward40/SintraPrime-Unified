@@ -11,6 +11,7 @@ Tests:
 
 from __future__ import annotations
 
+import uuid
 from collections.abc import AsyncGenerator
 
 import pytest
@@ -48,6 +49,15 @@ TENANT_A = "00000000-0000-0000-0000-000000000002"
 TENANT_B = "00000000-0000-0000-0000-000000000003"
 USER_A = "00000000-0000-0000-0000-000000000001"
 USER_B = "00000000-0000-0000-0000-000000000004"
+
+
+# PortableUUID boundary (PR #294): identity columns are strict UUID; legacy
+# readable labels in this file are derived to stable UUIDs via uuid5.
+def _uuid(label: str) -> str:
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, "sintraprime-test:" + label))
+
+
+
 
 
 def _user(
@@ -204,12 +214,12 @@ async def test_list_commands_tenant_isolation(db: AsyncSession):
 
     # Seed a command for tenant A
     cmd_a = MissionControlCommand(
-        id="cmd-a-001",
+        id=_uuid("cmd-a-001"),
         tenant_id=TENANT_A,
         requested_by=USER_A,
         command_type="PAUSE_RUN",
         target_type="run",
-        target_id="run-001",
+        target_id=_uuid("run-001"),
         idempotency_key="idem-key-tenant-a-001",
         request_hash="hash-a",
         state="REFUSED",
@@ -221,12 +231,12 @@ async def test_list_commands_tenant_isolation(db: AsyncSession):
 
     # Seed a command for tenant B
     cmd_b = MissionControlCommand(
-        id="cmd-b-001",
+        id=_uuid("cmd-b-001"),
         tenant_id=TENANT_B,
         requested_by=USER_B,
         command_type="PAUSE_RUN",
         target_type="run",
-        target_id="run-002",
+        target_id=_uuid("run-002"),
         idempotency_key="idem-key-tenant-b-001",
         request_hash="hash-b",
         state="REFUSED",
@@ -239,12 +249,12 @@ async def test_list_commands_tenant_isolation(db: AsyncSession):
     # Tenant A sees only its commands
     result_a = await list_commands(db, tenant_id=TENANT_A)
     assert result_a.total == 1
-    assert result_a.items[0].id == "cmd-a-001"
+    assert result_a.items[0].id == _uuid("cmd-a-001")
 
     # Tenant B sees only its commands
     result_b = await list_commands(db, tenant_id=TENANT_B)
     assert result_b.total == 1
-    assert result_b.items[0].id == "cmd-b-001"
+    assert result_b.items[0].id == _uuid("cmd-b-001")
 
 
 @pytest.mark.asyncio
@@ -253,12 +263,12 @@ async def test_get_command_cross_tenant_returns_none(db: AsyncSession):
     from portal.services.mission_control_projection_service import get_command
 
     cmd = MissionControlCommand(
-        id="cmd-x-001",
+        id=_uuid("cmd-x-001"),
         tenant_id=TENANT_A,
         requested_by=USER_A,
         command_type="PAUSE_RUN",
         target_type="run",
-        target_id="run-001",
+        target_id=_uuid("run-001"),
         idempotency_key="idem-key-x-001",
         request_hash="hash-x",
         state="REFUSED",
@@ -269,13 +279,13 @@ async def test_get_command_cross_tenant_returns_none(db: AsyncSession):
     await db.flush()
 
     # Tenant B cannot see tenant A's command
-    result = await get_command(db, tenant_id=TENANT_B, command_id="cmd-x-001")
+    result = await get_command(db, tenant_id=TENANT_B, command_id=_uuid("cmd-x-001"))
     assert result is None
 
     # Tenant A can see its own command
-    result = await get_command(db, tenant_id=TENANT_A, command_id="cmd-x-001")
+    result = await get_command(db, tenant_id=TENANT_A, command_id=_uuid("cmd-x-001"))
     assert result is not None
-    assert result.id == "cmd-x-001"
+    assert result.id == _uuid("cmd-x-001")
 
 
 @pytest.mark.asyncio
@@ -284,7 +294,7 @@ async def test_list_run_controls_tenant_isolation(db: AsyncSession):
     from portal.services.mission_control_projection_service import list_run_controls
 
     rc_a = MissionControlRunControl(
-        id="rc-a-001",
+        id=_uuid("rc-a-001"),
         tenant_id=TENANT_A,
         workflow_id="wf-a-001",
         state=RunControlState.RUNNING.value,
@@ -296,7 +306,7 @@ async def test_list_run_controls_tenant_isolation(db: AsyncSession):
     await db.flush()
 
     rc_b = MissionControlRunControl(
-        id="rc-b-001",
+        id=_uuid("rc-b-001"),
         tenant_id=TENANT_B,
         workflow_id="wf-b-001",
         state=RunControlState.RUNNING.value,
@@ -309,11 +319,11 @@ async def test_list_run_controls_tenant_isolation(db: AsyncSession):
 
     result_a = await list_run_controls(db, tenant_id=TENANT_A)
     assert result_a.total == 1
-    assert result_a.items[0].id == "rc-a-001"
+    assert result_a.items[0].id == _uuid("rc-a-001")
 
     result_b = await list_run_controls(db, tenant_id=TENANT_B)
     assert result_b.total == 1
-    assert result_b.items[0].id == "rc-b-001"
+    assert result_b.items[0].id == _uuid("rc-b-001")
 
 
 @pytest.mark.asyncio
@@ -322,7 +332,7 @@ async def test_get_run_control_cross_tenant_returns_none(db: AsyncSession):
     from portal.services.mission_control_projection_service import get_run_control
 
     rc = MissionControlRunControl(
-        id="rc-x-001",
+        id=_uuid("rc-x-001"),
         tenant_id=TENANT_A,
         workflow_id="wf-x-001",
         state=RunControlState.RUNNING.value,
@@ -333,12 +343,12 @@ async def test_get_run_control_cross_tenant_returns_none(db: AsyncSession):
     db.add(rc)
     await db.flush()
 
-    result = await get_run_control(db, tenant_id=TENANT_B, run_control_id="rc-x-001")
+    result = await get_run_control(db, tenant_id=TENANT_B, run_control_id=_uuid("rc-x-001"))
     assert result is None
 
-    result = await get_run_control(db, tenant_id=TENANT_A, run_control_id="rc-x-001")
+    result = await get_run_control(db, tenant_id=TENANT_A, run_control_id=_uuid("rc-x-001"))
     assert result is not None
-    assert result.id == "rc-x-001"
+    assert result.id == _uuid("rc-x-001")
 
 
 @pytest.mark.asyncio
@@ -347,12 +357,12 @@ async def test_get_causation_chain_cross_tenant_returns_none(db: AsyncSession):
     from portal.services.mission_control_projection_service import get_causation_chain
 
     cmd = MissionControlCommand(
-        id="cmd-chain-001",
+        id=_uuid("cmd-chain-001"),
         tenant_id=TENANT_A,
         requested_by=USER_A,
         command_type="PAUSE_RUN",
         target_type="run",
-        target_id="run-001",
+        target_id=_uuid("run-001"),
         idempotency_key="idem-chain-001",
         request_hash="hash-chain",
         state="REFUSED",
@@ -363,13 +373,13 @@ async def test_get_causation_chain_cross_tenant_returns_none(db: AsyncSession):
     await db.flush()
 
     # Tenant B cannot access
-    chain = await get_causation_chain(db, tenant_id=TENANT_B, command_id="cmd-chain-001")
+    chain = await get_causation_chain(db, tenant_id=TENANT_B, command_id=_uuid("cmd-chain-001"))
     assert chain is None
 
     # Tenant A can access
-    chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id="cmd-chain-001")
+    chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id=_uuid("cmd-chain-001"))
     assert chain is not None
-    assert chain.command_id == "cmd-chain-001"
+    assert chain.command_id == _uuid("cmd-chain-001")
 
 
 @pytest.mark.asyncio
@@ -378,12 +388,12 @@ async def test_causation_chain_includes_events_and_receipts(db: AsyncSession):
     from portal.services.mission_control_projection_service import get_causation_chain
 
     cmd = MissionControlCommand(
-        id="cmd-cc-001",
+        id=_uuid("cmd-cc-001"),
         tenant_id=TENANT_A,
         requested_by=USER_A,
         command_type="PAUSE_RUN",
         target_type="run",
-        target_id="run-001",
+        target_id=_uuid("run-001"),
         idempotency_key="idem-cc-001",
         request_hash="hash-cc",
         state="REFUSED",
@@ -394,8 +404,8 @@ async def test_causation_chain_includes_events_and_receipts(db: AsyncSession):
     await db.flush()
 
     event = MissionControlCommandEvent(
-        id="evt-cc-001",
-        command_id="cmd-cc-001",
+        id=_uuid("evt-cc-001"),
+        command_id=_uuid("cmd-cc-001"),
         sequence=1,
         event_type="RECEIVED",
         state="RECEIVED",
@@ -407,8 +417,8 @@ async def test_causation_chain_includes_events_and_receipts(db: AsyncSession):
     await db.flush()
 
     receipt = MissionControlCommandReceipt(
-        id="rct-cc-001",
-        command_id="cmd-cc-001",
+        id=_uuid("rct-cc-001"),
+        command_id=_uuid("cmd-cc-001"),
         receipt_type="REFUSAL",
         receipt_hash="rct-hash-001",
         evidence_refs=[],
@@ -416,7 +426,7 @@ async def test_causation_chain_includes_events_and_receipts(db: AsyncSession):
     db.add(receipt)
     await db.flush()
 
-    chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id="cmd-cc-001")
+    chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id=_uuid("cmd-cc-001"))
     assert chain is not None
     assert len(chain.links) >= 2
     source_types = {link.source_type for link in chain.links}
@@ -436,7 +446,7 @@ class TestRouterIntents:
         assert body["total"] == 0
 
     def test_get_intent_not_found(self, client: TestClient):
-        response = client.get("/api/v1/mission-control/intents/nonexistent")
+        response = client.get(f"/api/v1/mission-control/intents/{_uuid('nonexistent')}")
         assert response.status_code == 404
 
     def test_list_intents_with_data(self, client: TestClient, db: AsyncSession):
@@ -445,12 +455,12 @@ class TestRouterIntents:
         loop = asyncio.new_event_loop()
         try:
             cmd = MissionControlCommand(
-                id="cmd-router-001",
+                id=_uuid("cmd-router-001"),
                 tenant_id=TENANT_A,
                 requested_by=USER_A,
                 command_type="PAUSE_RUN",
                 target_type="run",
-                target_id="run-001",
+                target_id=_uuid("run-001"),
                 idempotency_key="idem-router-001",
                 request_hash="hash-router",
                 state="REFUSED",
@@ -464,7 +474,7 @@ class TestRouterIntents:
             assert response.status_code == 200
             body = response.json()
             assert body["total"] == 1
-            assert body["items"][0]["id"] == "cmd-router-001"
+            assert body["items"][0]["id"] == _uuid("cmd-router-001")
             assert body["items"][0]["command_type"] == "PAUSE_RUN"
         finally:
             loop.close()
@@ -477,11 +487,11 @@ class TestRouterIntents:
         assert body["total"] == 0
 
     def test_get_run_control_not_found(self, client: TestClient):
-        response = client.get("/api/v1/mission-control/run-controls/nonexistent")
+        response = client.get(f"/api/v1/mission-control/run-controls/{_uuid('nonexistent')}")
         assert response.status_code == 404
 
     def test_causation_chain_not_found(self, client: TestClient):
-        response = client.get("/api/v1/mission-control/intents/nonexistent/causation-chain")
+        response = client.get(f"/api/v1/mission-control/intents/{_uuid('nonexistent')}/causation-chain")
         assert response.status_code == 404
 
 

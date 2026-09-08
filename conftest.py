@@ -44,6 +44,18 @@ sys.path.insert(insert_pos, ROOT)
 # ---------------------------------------------------------------------------
 # Directories to skip during collection
 # ---------------------------------------------------------------------------
+# Tier-2/3/4 lanes (portal, backend, core, agents, ...) are EXCLUDED from the
+# default lane by design (PR #98 / Issue #97). Wave 2B (SP-CONVERGE-001) makes
+# the exclusion intentional and visible: setting
+#   SINTRAPRIME_TEST_LANES="default,portal"     (comma-separated)
+# re-enables the listed lane directories at collection time. scripts/certify.py
+# sets this per target; CI sets it for the dedicated portal lane. Nothing is
+# silently ignored anymore — either a lane is explicitly included, or its
+# exclusion is documented right here.
+import os as _os  # noqa: E402  (conftest: env gate must follow sys.path setup)
+
+_ACTIVE_LANES = {lane.strip().lower() for lane in _os.environ.get("SINTRAPRIME_TEST_LANES", "default").split(",") if lane.strip()}
+
 # PR #94 baseline exclusions (namespace collisions / non-test dirs):
 collect_ignore_glob = [
     "apps/*",
@@ -64,12 +76,12 @@ collect_ignore_glob = [
     # .[all] and override testpaths to run them.
     # See docs/ci/dependency-matrix.md for details.
     # -------------------------------------------------------------------
-    # Tier 2 — Portal (needs .[portal])
-    "portal/*",
+    # Tier 2 — Portal (needs .[portal]) — included only via SINTRAPRIME_TEST_LANES
+    *(set() if "portal" in _ACTIVE_LANES else ["portal/*"]),
     # Tier 3 — Predictive (needs .[predictive])
-    "predictive/*",
+    *(set() if "predictive" in _ACTIVE_LANES else ["predictive/*"]),
     # Tier 4 — Integrations (needs .[integrations])
-    "integrations/*",
+    *(set() if "integrations" in _ACTIVE_LANES else ["integrations/*"]),
     # Tier 5 — Deferred (transitive imports unverified)
     "backend/*",
     "core/*",

@@ -1,4 +1,5 @@
 """Focused canonical Mission/Run convergence tests."""
+import uuid
 from unittest.mock import AsyncMock
 
 import pytest
@@ -30,11 +31,23 @@ from portal.services.mission_control_command_service import (
 )
 
 
+# PortableUUID boundary (PR #294): identity columns are strict UUID; legacy
+# readable labels in this file are derived to stable UUIDs via uuid5.
+def _uuid(label: str) -> str:
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, "sintraprime-test:" + label))
+
+
+TENANT_A = _uuid("tenant-a")
+TENANT_B = _uuid("tenant-b")
+ACTOR_A = _uuid("actor-a")
+ACTOR_B = _uuid("actor-b")
+
+
 def _user():
     return CurrentUser(
         {
-            "sub": "actor-a",
-            "tenant_id": "tenant-a",
+            "sub": ACTOR_A,
+            "tenant_id": TENANT_A,
             "role": "ATTORNEY",
             "permissions": [],
         }
@@ -100,7 +113,7 @@ def cancel(run_id, key="canonical-cancel-0001"):
 @pytest.mark.asyncio
 async def test_start_duplicate_dispatches_once_and_preserves_identity(db, monkeypatch):
     _classify(monkeypatch, {"protected.real": CapabilityDecision.DIRECT_ALLOWED})
-    mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.real", status="ACTIVE")
+    mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type="protected.real", status="ACTIVE")
     db.add(mission)
     await db.flush()
 
@@ -119,7 +132,7 @@ async def test_start_duplicate_dispatches_once_and_preserves_identity(db, monkey
 @pytest.mark.asyncio
 async def test_duplicate_start_conflict_does_not_dispatch_or_create_run(db, monkeypatch):
     _classify(monkeypatch, {"protected.real": CapabilityDecision.DIRECT_ALLOWED})
-    mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.real", status="ACTIVE")
+    mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type="protected.real", status="ACTIVE")
     db.add(mission)
     await db.flush()
 
@@ -145,7 +158,7 @@ async def test_duplicate_start_conflict_does_not_dispatch_or_create_run(db, monk
 @pytest.mark.asyncio
 async def test_approval_required_never_dispatches_engine(db, monkeypatch):
     _classify(monkeypatch, {"protected.approval": CapabilityDecision.APPROVAL_REQUIRED})
-    mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.approval", status="ACTIVE")
+    mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type="protected.approval", status="ACTIVE")
     db.add(mission)
     await db.flush()
 
@@ -170,7 +183,7 @@ async def test_approval_required_never_dispatches_engine(db, monkeypatch):
 @pytest.mark.asyncio
 async def test_inactive_mission_is_refused_without_dispatch(db, monkeypatch):
     _classify(monkeypatch, {"protected.real": CapabilityDecision.DIRECT_ALLOWED})
-    mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.real", status="DRAFT")
+    mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type="protected.real", status="DRAFT")
     db.add(mission)
     await db.flush()
 
@@ -186,7 +199,7 @@ async def test_inactive_mission_is_refused_without_dispatch(db, monkeypatch):
 @pytest.mark.asyncio
 async def test_dispatch_failure_leaves_no_false_active_state(db, monkeypatch):
     _classify(monkeypatch, {"protected.real": CapabilityDecision.DIRECT_ALLOWED})
-    mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.real", status="ACTIVE")
+    mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type="protected.real", status="ACTIVE")
     db.add(mission)
     await db.flush()
 
@@ -206,17 +219,17 @@ async def test_dispatch_failure_leaves_no_false_active_state(db, monkeypatch):
 @pytest.mark.asyncio
 async def test_local_cancel_without_execution_ref_succeeds(db, monkeypatch):
     _classify(monkeypatch, {"protected.real": CapabilityDecision.DIRECT_ALLOWED})
-    mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.real", status="ACTIVE")
+    mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type="protected.real", status="ACTIVE")
     db.add(mission)
     await db.flush()
     run = Run(
         mission_id=mission.mission_id,
-        tenant_id="tenant-a",
+        tenant_id=TENANT_A,
         status="PENDING",
         workflow_type="protected.real",
         input_data={},
         input_data_hash="abc",
-        created_by="actor-a",
+        created_by=ACTOR_A,
     )
     db.add(run)
     await db.flush()
@@ -232,18 +245,18 @@ async def test_local_cancel_without_execution_ref_succeeds(db, monkeypatch):
 @pytest.mark.asyncio
 async def test_durable_cancel_uses_exact_execution_ref(db, monkeypatch):
     _classify(monkeypatch, {"protected.real": CapabilityDecision.DIRECT_ALLOWED})
-    mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.real", status="ACTIVE")
+    mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type="protected.real", status="ACTIVE")
     db.add(mission)
     await db.flush()
     run = Run(
         mission_id=mission.mission_id,
-        tenant_id="tenant-a",
+        tenant_id=TENANT_A,
         status="ACTIVE",
         workflow_type="protected.real",
         execution_ref="workflow-b",
         input_data={},
         input_data_hash="abc",
-        created_by="actor-a",
+        created_by=ACTOR_A,
     )
     db.add(run)
     await db.flush()
@@ -261,18 +274,18 @@ async def test_durable_cancel_uses_exact_execution_ref(db, monkeypatch):
 @pytest.mark.asyncio
 async def test_durable_cancel_failure_reports_truthfully(db, monkeypatch):
     _classify(monkeypatch, {"protected.real": CapabilityDecision.DIRECT_ALLOWED})
-    mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.real", status="ACTIVE")
+    mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type="protected.real", status="ACTIVE")
     db.add(mission)
     await db.flush()
     run = Run(
         mission_id=mission.mission_id,
-        tenant_id="tenant-a",
+        tenant_id=TENANT_A,
         status="ACTIVE",
         workflow_type="protected.real",
         execution_ref="workflow-missing",
         input_data={},
         input_data_hash="abc",
-        created_by="actor-a",
+        created_by=ACTOR_A,
     )
     db.add(run)
     await db.flush()
@@ -289,18 +302,18 @@ async def test_durable_cancel_failure_reports_truthfully(db, monkeypatch):
 @pytest.mark.asyncio
 async def test_cross_tenant_cancellation_with_zero_engine_calls(db, monkeypatch):
     _classify(monkeypatch, {"protected.real": CapabilityDecision.DIRECT_ALLOWED})
-    mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.real", status="ACTIVE")
+    mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type="protected.real", status="ACTIVE")
     db.add(mission)
     await db.flush()
     run = Run(
         mission_id=mission.mission_id,
-        tenant_id="tenant-a",
+        tenant_id=TENANT_A,
         status="ACTIVE",
         workflow_type="protected.real",
         execution_ref="workflow-b",
         input_data={},
         input_data_hash="abc",
-        created_by="actor-a",
+        created_by=ACTOR_A,
     )
     db.add(run)
     await db.flush()
@@ -310,8 +323,8 @@ async def test_cross_tenant_cancellation_with_zero_engine_calls(db, monkeypatch)
     authority = DurableOrchestrationAuthority(engine)
     attacker = CurrentUser(
         {
-            "sub": "actor-b",
-            "tenant_id": "tenant-b",
+            "sub": ACTOR_B,
+            "tenant_id": TENANT_B,
             "role": "ATTORNEY",
             "permissions": [],
         }
@@ -325,18 +338,18 @@ async def test_cross_tenant_cancellation_with_zero_engine_calls(db, monkeypatch)
 @pytest.mark.asyncio
 async def test_tenant_scoped_read_only_returns_same_tenant_runs(db, monkeypatch):
     _classify(monkeypatch, {})
-    mission_a = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type=None, status="ACTIVE")
-    mission_b = Mission(tenant_id="tenant-b", created_by="actor-b", workflow_type=None, status="ACTIVE")
+    mission_a = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type=None, status="ACTIVE")
+    mission_b = Mission(tenant_id=TENANT_B, created_by=ACTOR_B, workflow_type=None, status="ACTIVE")
     db.add_all([mission_a, mission_b])
     await db.flush()
 
-    run_a = Run(mission_id=mission_a.mission_id, tenant_id="tenant-a", status="ACTIVE", workflow_type="protected.real", input_data={}, input_data_hash="a", created_by="actor-a")
-    run_b = Run(mission_id=mission_b.mission_id, tenant_id="tenant-b", status="ACTIVE", workflow_type="protected.real", input_data={}, input_data_hash="b", created_by="actor-b")
+    run_a = Run(mission_id=mission_a.mission_id, tenant_id=TENANT_A, status="ACTIVE", workflow_type="protected.real", input_data={}, input_data_hash="a", created_by=ACTOR_A)
+    run_b = Run(mission_id=mission_b.mission_id, tenant_id=TENANT_B, status="ACTIVE", workflow_type="protected.real", input_data={}, input_data_hash="b", created_by=ACTOR_B)
     db.add_all([run_a, run_b])
     await db.flush()
 
-    tenant_a_runs = (await db.execute(select(Run).where(Run.tenant_id == "tenant-a"))).scalars().all()
-    tenant_b_runs = (await db.execute(select(Run).where(Run.tenant_id == "tenant-b"))).scalars().all()
+    tenant_a_runs = (await db.execute(select(Run).where(Run.tenant_id == TENANT_A))).scalars().all()
+    tenant_b_runs = (await db.execute(select(Run).where(Run.tenant_id == TENANT_B))).scalars().all()
     assert len(tenant_a_runs) == 1
     assert len(tenant_b_runs) == 1
 
@@ -344,7 +357,7 @@ async def test_tenant_scoped_read_only_returns_same_tenant_runs(db, monkeypatch)
 @pytest.mark.asyncio
 async def test_client_workflow_and_approval_flags_are_ignored(db, monkeypatch):
     _classify(monkeypatch, {"protected.real": CapabilityDecision.DIRECT_ALLOWED})
-    mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.real", status="ACTIVE")
+    mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type="protected.real", status="ACTIVE")
     db.add(mission)
     await db.flush()
 
@@ -372,7 +385,7 @@ async def test_client_workflow_and_approval_flags_are_ignored(db, monkeypatch):
 @pytest.mark.asyncio
 async def test_unbound_mission_is_refused(db, monkeypatch):
     _classify(monkeypatch, {})
-    mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type=None, status="ACTIVE")
+    mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type=None, status="ACTIVE")
     db.add(mission)
     await db.flush()
 
@@ -387,7 +400,7 @@ async def test_unbound_mission_is_refused(db, monkeypatch):
 @pytest.mark.asyncio
 async def test_unknown_capability_is_refused(db, monkeypatch):
     _classify(monkeypatch, {})
-    mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="unknown.workflow", status="ACTIVE")
+    mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type="unknown.workflow", status="ACTIVE")
     db.add(mission)
     await db.flush()
 

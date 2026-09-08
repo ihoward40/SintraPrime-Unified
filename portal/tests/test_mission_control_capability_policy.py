@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from unittest.mock import AsyncMock
 
 import pytest
@@ -30,6 +31,17 @@ from portal.services.mission_control_execution_binding import (
 )
 
 
+# PortableUUID boundary (PR #294): identity columns are strict UUID; legacy
+# readable labels in this file are derived to stable UUIDs via uuid5.
+def _uuid(label: str) -> str:
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, "sintraprime-test:" + label))
+
+
+TENANT_A = _uuid("tenant-a")
+TENANT_B = _uuid("tenant-b")
+ACTOR_A = _uuid("actor-a")
+
+
 @pytest_asyncio.fixture
 async def db():
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
@@ -56,29 +68,29 @@ async def db():
 class TestResolveMissionCapability:
     @pytest.mark.asyncio
     async def test_missing_workflow_type_raises(self, db):
-        mission = Mission(tenant_id="tenant-a", created_by="actor-a")
+        mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A)
         db.add(mission)
         await db.flush()
 
         with pytest.raises(ExecutionBindingError, match="MISSION_CAPABILITY_UNBOUND"):
-            await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id="tenant-a")
+            await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id=TENANT_A)
 
     @pytest.mark.asyncio
     async def test_cross_tenant_mission_capability_raises(self, db):
-        mission_a = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.wf")
+        mission_a = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type="protected.wf")
         db.add(mission_a)
         await db.flush()
 
         with pytest.raises(ExecutionBindingError, match="MISSION_NOT_FOUND"):
-            await resolve_mission_capability(db, mission_id=mission_a.mission_id, tenant_id="tenant-b")
+            await resolve_mission_capability(db, mission_id=mission_a.mission_id, tenant_id=TENANT_B)
 
     @pytest.mark.asyncio
     async def test_returns_server_bound_capability(self, db):
-        mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.real")
+        mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type="protected.real")
         db.add(mission)
         await db.flush()
 
-        result = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id="tenant-a")
+        result = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id=TENANT_A)
         assert result == "protected.real"
 
 
@@ -135,7 +147,7 @@ class TestResolveCapabilityPolicy:
 class TestStartRunRespectsPolicy:
     @pytest.mark.asyncio
     async def test_approval_required_creates_run_without_dispatch(self, db):
-        mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.approval")
+        mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type="protected.approval")
         db.add(mission)
         await db.flush()
 
@@ -145,8 +157,8 @@ class TestStartRunRespectsPolicy:
         run = await authority.start_run(
             db,
             mission_id=mission.mission_id,
-            tenant_id="tenant-a",
-            created_by="actor-a",
+            tenant_id=TENANT_A,
+            created_by=ACTOR_A,
             workflow_type="protected.approval",
             input_data={"x": 1},
             policy_decision=CapabilityDecision.APPROVAL_REQUIRED,
@@ -161,7 +173,7 @@ class TestStartRunRespectsPolicy:
 
     @pytest.mark.asyncio
     async def test_direct_allowed_dispatches_exactly_once(self, db):
-        mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.real")
+        mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type="protected.real")
         db.add(mission)
         await db.flush()
 
@@ -172,8 +184,8 @@ class TestStartRunRespectsPolicy:
         run = await authority.start_run(
             db,
             mission_id=mission.mission_id,
-            tenant_id="tenant-a",
-            created_by="actor-a",
+            tenant_id=TENANT_A,
+            created_by=ACTOR_A,
             workflow_type="protected.real",
             input_data={"x": 1},
             policy_decision=CapabilityDecision.DIRECT_ALLOWED,
@@ -189,7 +201,7 @@ class TestStartRunRespectsPolicy:
 
     @pytest.mark.asyncio
     async def test_input_hash_mismatch_after_approval_fails_closed(self, db):
-        mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.approval")
+        mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type="protected.approval")
         db.add(mission)
         await db.flush()
 
@@ -199,8 +211,8 @@ class TestStartRunRespectsPolicy:
         run = await authority.start_run(
             db,
             mission_id=mission.mission_id,
-            tenant_id="tenant-a",
-            created_by="actor-a",
+            tenant_id=TENANT_A,
+            created_by=ACTOR_A,
             workflow_type="protected.approval",
             input_data={"x": 1},
             policy_decision=CapabilityDecision.APPROVAL_REQUIRED,
@@ -210,14 +222,14 @@ class TestStartRunRespectsPolicy:
             await authority.approve_and_start(
                 db,
                 run_id=run.run_id,
-                tenant_id="tenant-a",
+                tenant_id=TENANT_A,
                 input_data={"x": 2},
                 principal_approval_artifact={"verified": True, "run_id": run.run_id},
             )
 
     @pytest.mark.asyncio
     async def test_approval_required_run_can_resume_with_matching_input(self, db):
-        mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.approval")
+        mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type="protected.approval")
         db.add(mission)
         await db.flush()
 
@@ -228,8 +240,8 @@ class TestStartRunRespectsPolicy:
         run = await authority.start_run(
             db,
             mission_id=mission.mission_id,
-            tenant_id="tenant-a",
-            created_by="actor-a",
+            tenant_id=TENANT_A,
+            created_by=ACTOR_A,
             workflow_type="protected.approval",
             input_data={"x": 1},
             policy_decision=CapabilityDecision.APPROVAL_REQUIRED,
@@ -238,7 +250,7 @@ class TestStartRunRespectsPolicy:
         resumed = await authority.approve_and_start(
             db,
             run_id=run.run_id,
-            tenant_id="tenant-a",
+            tenant_id=TENANT_A,
             input_data={"x": 1},
             principal_approval_artifact={"verified": True, "run_id": run.run_id},
         )
@@ -251,7 +263,7 @@ class TestStartRunRespectsPolicy:
         from portal.services.durable_orchestration_authority import (
             MissingPrincipalApprovalArtifactError,
         )
-        mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.approval")
+        mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type="protected.approval")
         db.add(mission)
         await db.flush()
 
@@ -260,8 +272,8 @@ class TestStartRunRespectsPolicy:
         run = await authority.start_run(
             db,
             mission_id=mission.mission_id,
-            tenant_id="tenant-a",
-            created_by="actor-a",
+            tenant_id=TENANT_A,
+            created_by=ACTOR_A,
             workflow_type="protected.approval",
             input_data={"x": 1},
             policy_decision=CapabilityDecision.APPROVAL_REQUIRED,
@@ -271,7 +283,7 @@ class TestStartRunRespectsPolicy:
             await authority.approve_and_start(
                 db,
                 run_id=run.run_id,
-                tenant_id="tenant-a",
+                tenant_id=TENANT_A,
                 input_data={"x": 1},
             )
         assert engine.start_workflow.await_count == 0
@@ -287,14 +299,14 @@ class TestStartRunRespectsPolicy:
             submit_canonical_command,
         )
 
-        mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.approval", status="ACTIVE")
+        mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type="protected.approval", status="ACTIVE")
         db.add(mission)
         await db.flush()
 
         engine = AsyncMock()
         engine._registered = {"protected.approval": lambda _context, _input: _input}
         authority = DurableOrchestrationAuthority(engine=engine)
-        user = CurrentUser({"sub": "actor-a", "tenant_id": "tenant-a", "role": "ATTORNEY", "permissions": []})
+        user = CurrentUser({"sub": ACTOR_A, "tenant_id": TENANT_A, "role": "ATTORNEY", "permissions": []})
 
         submission = CommandSubmission(
             CommandType.START_GOVERNED_RUN,
@@ -323,14 +335,14 @@ class TestStartRunRespectsPolicy:
         )
 
         monkeypatch.setattr(policy_module, "_CAPABILITY_CLASSIFICATIONS", {"protected.approval": CapabilityDecision.APPROVAL_REQUIRED})
-        mission = Mission(tenant_id="tenant-a", created_by="actor-a", workflow_type="protected.approval", status="ACTIVE")
+        mission = Mission(tenant_id=TENANT_A, created_by=ACTOR_A, workflow_type="protected.approval", status="ACTIVE")
         db.add(mission)
         await db.flush()
 
         engine = AsyncMock()
         engine._registered = {"protected.approval": lambda _context, _input: _input}
         authority = DurableOrchestrationAuthority(engine=engine)
-        user = CurrentUser({"sub": "actor-a", "tenant_id": "tenant-a", "role": "ATTORNEY", "permissions": []})
+        user = CurrentUser({"sub": ACTOR_A, "tenant_id": TENANT_A, "role": "ATTORNEY", "permissions": []})
 
         first = CommandSubmission(
             CommandType.START_GOVERNED_RUN,

@@ -10,6 +10,7 @@ from __future__ import annotations
 import datetime as dt
 import threading
 import time
+import uuid
 from collections.abc import AsyncGenerator
 
 import pytest
@@ -546,8 +547,8 @@ async def test_tenant_and_principal_come_from_server_context(
     assert response.status_code == 201
     result = await db.execute(select(VoiceCommand))
     command = result.scalar_one()
-    assert command.tenant_id == TENANT_ID
-    assert command.principal_id == USER_ID
+    assert command.tenant_id == uuid.UUID(TENANT_ID)  # PortableUUID loads back as UUID (PR #294)
+    assert command.principal_id == uuid.UUID(USER_ID)
 
 
 # ── receipts / events / correlation ───────────────────────────────────────────

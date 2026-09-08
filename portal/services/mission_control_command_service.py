@@ -12,7 +12,7 @@ from typing import Any
 
 import structlog
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, StatementError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth.rbac import CurrentUser
@@ -170,7 +170,9 @@ async def submit_refusal_only_command(
     now = datetime.now(UTC)
     reason_code = refuse_increment_one_execution().value
     command = MissionControlCommand(
-        id=command_id,
+        # Canonical UUID object for the ORM identity/sentinel path; the str
+        # form is kept for hashing/receipt composition.
+        id=uuid.UUID(command_id),
         tenant_id=str(current_user.tenant_id),
         requested_by=str(current_user.user_id),
         command_type=submission.command_type.value,
@@ -230,7 +232,7 @@ async def submit_refusal_only_command(
     command.audit_log_id = str(audit_entry.id)
 
     receipt = MissionControlCommandReceipt(
-        id=str(uuid.uuid4()),
+        id=uuid.uuid4(),
         command_id=command_id,
         receipt_type="REFUSAL",
         receipt_hash=compute_receipt_hash(
@@ -280,9 +282,11 @@ async def submit_canonical_command(
     )
     tenant_id, actor_id = str(current_user.tenant_id), str(current_user.user_id)
     command = MissionControlCommand(
-        id=str(uuid.uuid4()), tenant_id=tenant_id, requested_by=actor_id,
+        id=uuid.uuid4(), tenant_id=tenant_id, requested_by=actor_id,
         command_type=submission.command_type.value, target_type=submission.target_type.value,
-        target_id=submission.target_id, idempotency_key=submission.idempotency_key,
+        # target_id is a String column: normalize UUID objects to canonical
+        # string form at the boundary (PR #294 / Wave 2B-REM).
+        target_id=str(submission.target_id), idempotency_key=submission.idempotency_key,
         request_hash=request_hash, state=CommandState.VALIDATING.value,
         reason=submission.reason, payload=submission.payload, metadata_json=submission.metadata,
     )
@@ -320,6 +324,12 @@ async def submit_canonical_command(
     except (ExecutionBindingError, CapabilityPolicyError) as exc:
         command.state, command.reason_code = CommandState.REFUSED.value, str(exc)
         command.completed_at = datetime.now(UTC)
+    except StatementError:
+        # Non-canonical identifier cannot bind to a UUID identity column
+        # (e.g. legacy string target ids). This is invalid input, not a
+        # dispatch failure: record a refusal, never FAILED.
+        command.state, command.reason_code = CommandState.REFUSED.value, "INVALID_TARGET"
+        command.completed_at = datetime.now(UTC)
     except DurableDispatchError as exc:
         run = await authority.get_run(db, run_id=exc.run_id, tenant_id=tenant_id)
         command.state, command.reason_code = CommandState.FAILED.value, "DURABLE_DISPATCH_FAILED"
@@ -337,8 +347,9 @@ async def submit_canonical_command(
 
     mission_id = run.mission_id if run else (submission.target_id if submission.target_type == CommandTargetType.MISSION else None)
     run_id, execution_ref = (run.run_id if run else None), (run.execution_ref if run else None)
-    command.metadata_json = {**submission.metadata, "mission_id": mission_id,
-                             "run_id": run_id, "execution_ref": execution_ref}
+    # JSON column: canonical string form (UUID objects are not json.dumps-safe).
+    command.metadata_json = {**submission.metadata, "mission_id": str(mission_id) if mission_id else None,
+                             "run_id": str(run_id) if run_id else None, "execution_ref": execution_ref}
     events = _build_terminal_events(command)
     db.add_all(events)
     await db.flush()
@@ -346,24 +357,32 @@ async def submit_canonical_command(
         db, action="mission_control_command_processed", user_id=actor_id, tenant_id=tenant_id,
         resource_type="mission_control_command", resource_id=str(command.id),
         resource_name=command.command_type, status=command.state.lower(),
-        details={"command_id": str(command.id), "mission_id": mission_id,
-                 "run_id": run_id, "execution_ref": execution_ref, "state": command.state},
+        # JSON column: canonical string form (UUID objects are not json.dumps-safe).
+        details={"command_id": str(command.id),
+                 "mission_id": str(mission_id) if mission_id else None,
+                 "run_id": str(run_id) if run_id else None,
+                 "execution_ref": execution_ref, "state": command.state},
     )
     command.audit_log_id = str(audit_entry.id)
     receipt = MissionControlCommandReceipt(
-        id=str(uuid.uuid4()), command_id=str(command.id), receipt_type="OUTCOME",
+        id=uuid.uuid4(), command_id=str(command.id), receipt_type="OUTCOME",
         receipt_hash=compute_receipt_hash(
             command_id=str(command.id), request_hash=request_hash,
             reason_code=command.reason_code or command.state,
             audit_log_id=str(audit_entry.id), terminal_event_hash=events[-1].event_hash,
         ), audit_log_id=str(audit_entry.id),
-        evidence_refs=[ref for ref in [mission_id, run_id, execution_ref] if ref],
+        # JSON column: canonical string form (UUID objects are not json.dumps-safe).
+        evidence_refs=[str(ref) for ref in [mission_id, run_id, execution_ref] if ref],
     )
     db.add(receipt)
     await db.flush()
     return CommandResult(command=command, event_ids=[str(event.id) for event in events],
-                         receipt_id=str(receipt.id), mission_id=mission_id,
-                         run_id=run_id, execution_ref=execution_ref)
+                         receipt_id=str(receipt.id),
+                         # Response models declare str ids (PR #294 boundary):
+                         # stringify UUID objects here, once.
+                         mission_id=str(mission_id) if mission_id else None,
+                         run_id=str(run_id) if run_id else None,
+                         execution_ref=execution_ref)
 
 
 def _build_terminal_events(command: MissionControlCommand) -> list[MissionControlCommandEvent]:
@@ -379,7 +398,7 @@ def _build_terminal_events(command: MissionControlCommand) -> list[MissionContro
                                         event_type=event_type, state=state, payload=payload,
                                         previous_hash=previous_hash)
         events.append(MissionControlCommandEvent(
-            id=str(uuid.uuid4()), command_id=str(command.id), sequence=sequence,
+            id=uuid.uuid4(), command_id=str(command.id), sequence=sequence,
             event_type=event_type, state=state, payload=payload,
             previous_hash=previous_hash, event_hash=event_hash,
         ))
@@ -462,7 +481,7 @@ def _build_events(
         )
         events.append(
             MissionControlCommandEvent(
-                id=str(uuid.uuid4()),
+                id=uuid.uuid4(),
                 command_id=str(command.id),
                 sequence=sequence,
                 event_type=event_type,

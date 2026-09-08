@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import uuid
 from datetime import datetime
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
@@ -50,6 +51,22 @@ from portal.services.mission_control_approval_service import (
 from portal.services.mission_control_capability_policy import CapabilityDecision
 
 
+# PortableUUID boundary (PR #294): identity columns are strict UUID; legacy
+# readable labels in this file are derived to stable UUIDs via uuid5.
+def _uuid(label: str) -> str:
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, "sintraprime-test:" + label))
+
+
+TENANT_A = _uuid("tenant-a")
+TENANT_B = _uuid("tenant-b")
+PRINCIPAL_A = _uuid("principal-a")
+PRINCIPAL_B = _uuid("principal-b")
+ADMIN_A = _uuid("admin-a")
+ACTOR_A = _uuid("actor-a")
+TP_1 = _uuid("tp-1")
+ROLE_FIRM_ADMIN = _uuid("role-firm-admin")
+
+
 @pytest_asyncio.fixture
 async def db():
     """In-memory test database with all required tables."""
@@ -76,7 +93,7 @@ async def db():
     await engine.dispose()
 
 
-def _make_current_user(user_id: str = "principal-a", tenant_id: str = "tenant-a", role: RbacRole = RbacRole.FIRM_ADMIN) -> CurrentUser:
+def _make_current_user(user_id: str = PRINCIPAL_A, tenant_id: str = TENANT_A, role: RbacRole = RbacRole.FIRM_ADMIN) -> CurrentUser:
     """Create a CurrentUser mock for testing."""
     payload = {
         "sub": user_id,
@@ -87,22 +104,22 @@ def _make_current_user(user_id: str = "principal-a", tenant_id: str = "tenant-a"
     return CurrentUser(payload)
 
 
-async def _setup_principal(db: AsyncSession, user_id: str = "principal-a", tenant_id: str = "tenant-a"):
+async def _setup_principal(db: AsyncSession, user_id: str = PRINCIPAL_A, tenant_id: str = TENANT_A):
     """Insert a Tenant, Role, User, and TenantPrincipal record."""
     from portal.models.user import Permission as PermModel
     from portal.models.user import Role as RoleModel
     tenant = Tenant(id=tenant_id, name="Test Firm", slug="test-firm")
     db.add(tenant)
-    role = RoleModel(id="role-firm-admin", name=RbacRole.FIRM_ADMIN.value, display_name="Firm Admin")
+    role = RoleModel(id=ROLE_FIRM_ADMIN, name=RbacRole.FIRM_ADMIN.value, display_name="Firm Admin")
     db.add(role)
     user = User(
         id=user_id, email="principal@test.com", tenant_id=tenant_id,
-        role_id="role-firm-admin", hashed_password="x",
+        role_id=ROLE_FIRM_ADMIN, hashed_password="x",
         first_name="Principal", last_name="User",
     )
     db.add(user)
     principal = TenantPrincipal(
-        id="tp-1",
+        id=TP_1,
         tenant_id=tenant_id,
         principal_user_id=user_id,
         establishment_source="test",
@@ -116,8 +133,8 @@ async def _create_approval_required_run(
     db: AsyncSession,
     engine: DurableWorkflowEngine,
     *,
-    tenant_id: str = "tenant-a",
-    created_by: str = "actor-a",
+    tenant_id: str = TENANT_A,
+    created_by: str = ACTOR_A,
     workflow_type: str = "test.approval.wf",
     input_data: dict[str, Any] | None = None,
 ) -> tuple[Mission, Run, DurableOrchestrationAuthority]:
@@ -167,7 +184,7 @@ class TestThreatMatrix:
         _, run, authority = await _create_approval_required_run(db, test_engine)
         actor = _make_current_user()
         approval = await create_approval(
-            db, run_id=run.run_id, tenant_id="tenant-a", actor=actor,
+            db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor,
             decision="APPROVED", authority=authority,
         )
         assert approval.decision == "APPROVED"
@@ -179,44 +196,44 @@ class TestThreatMatrix:
     async def test_ordinary_admin_attempts_approval_denied(self, db, test_engine):
         """User without TenantPrincipal binding is denied even with FIRM_ADMIN role."""
         # Set up tenant but NO tenant_principal record
-        tenant = Tenant(id="tenant-a", name="Test Firm", slug="test-firm")
+        tenant = Tenant(id=TENANT_A, name="Test Firm", slug="test-firm")
         db.add(tenant)
         from portal.models.user import Role as RoleModel
-        role = RoleModel(id="role-firm-admin", name=RbacRole.FIRM_ADMIN.value, display_name="Firm Admin")
+        role = RoleModel(id=ROLE_FIRM_ADMIN, name=RbacRole.FIRM_ADMIN.value, display_name="Firm Admin")
         db.add(role)
-        user = User(id="admin-a", email="admin@test.com", tenant_id="tenant-a", role_id="role-firm-admin", hashed_password="x", first_name="Admin", last_name="User")
+        user = User(id=ADMIN_A, email="admin@test.com", tenant_id=TENANT_A, role_id=ROLE_FIRM_ADMIN, hashed_password="x", first_name="Admin", last_name="User")
         db.add(user)
         await db.flush()
         _, run, authority = await _create_approval_required_run(db, test_engine)
-        actor = _make_current_user(user_id="admin-a")
+        actor = _make_current_user(user_id=ADMIN_A)
         with pytest.raises(NotPrincipalError, match="NOT_TENANT_PRINCIPAL"):
-            await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
+            await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED", authority=authority)
 
     @pytest.mark.asyncio
     async def test_cross_tenant_principal_denied(self, db, test_engine):
         """Principal from tenant-a cannot approve a tenant-b Run."""
-        await _setup_principal(db, user_id="principal-a", tenant_id="tenant-a")
+        await _setup_principal(db, user_id=PRINCIPAL_A, tenant_id=TENANT_A)
         # Create tenant-b
-        tenant_b = Tenant(id="tenant-b", name="Other Firm", slug="other-firm")
+        tenant_b = Tenant(id=TENANT_B, name="Other Firm", slug="other-firm")
         db.add(tenant_b)
-        user_b = User(id="principal-b", email="p2@test.com", tenant_id="tenant-b", role_id="role-firm-admin", hashed_password="x", first_name="P2", last_name="User")
+        user_b = User(id=PRINCIPAL_B, email="p2@test.com", tenant_id=TENANT_B, role_id=ROLE_FIRM_ADMIN, hashed_password="x", first_name="P2", last_name="User")
         db.add(user_b)
-        tp_b = TenantPrincipal(id="tp-b", tenant_id="tenant-b", principal_user_id="principal-b", establishment_source="test")
+        tp_b = TenantPrincipal(id=_uuid("tp-b"), tenant_id=TENANT_B, principal_user_id=PRINCIPAL_B, establishment_source="test")
         db.add(tp_b)
         await db.flush()
         # Create run in tenant-a
-        _, run, authority = await _create_approval_required_run(db, test_engine, tenant_id="tenant-a")
+        _, run, authority = await _create_approval_required_run(db, test_engine, tenant_id=TENANT_A)
         # Principal-b tries to approve tenant-a's run
-        actor_b = _make_current_user(user_id="principal-b", tenant_id="tenant-b")
+        actor_b = _make_current_user(user_id=PRINCIPAL_B, tenant_id=TENANT_B)
         with pytest.raises(NotPrincipalError, match="NOT_TENANT_PRINCIPAL"):
-            await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor_b, decision="APPROVED", authority=authority)
+            await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor_b, decision="APPROVED", authority=authority)
 
     @pytest.mark.asyncio
     async def test_unknown_run_denied(self, db, test_engine):
         await _setup_principal(db)
         actor = _make_current_user()
         with pytest.raises(RunNotFoundError, match="RUN_NOT_FOUND"):
-            await create_approval(db, run_id="nonexistent", tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=DurableOrchestrationAuthority(engine=test_engine))
+            await create_approval(db, run_id=_uuid("run-nonexistent"), tenant_id=TENANT_A, actor=actor, decision="APPROVED", authority=DurableOrchestrationAuthority(engine=test_engine))
 
     @pytest.mark.asyncio
     async def test_run_not_approval_required_denied(self, db, test_engine):
@@ -227,7 +244,7 @@ class TestThreatMatrix:
         await db.flush()
         actor = _make_current_user()
         with pytest.raises(RunNotApprovalRequiredError):
-            await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
+            await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED", authority=authority)
 
     @pytest.mark.asyncio
     async def test_run_with_execution_ref_denied(self, db, test_engine):
@@ -238,29 +255,29 @@ class TestThreatMatrix:
         await db.flush()
         actor = _make_current_user()
         with pytest.raises(RunNotApprovalRequiredError, match="RUN_ALREADY_DISPATCHED"):
-            await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
+            await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED", authority=authority)
 
     @pytest.mark.asyncio
     async def test_duplicate_approval_safe_conflict(self, db, test_engine):
         await _setup_principal(db)
         _, run, authority = await _create_approval_required_run(db, test_engine)
         actor = _make_current_user()
-        approval1 = await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
+        approval1 = await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED", authority=authority)
         assert approval1.status == "PENDING"
         # Second approval attempt should fail
         with pytest.raises(DuplicateApprovalError, match="APPROVAL_ALREADY_EXISTS"):
-            await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
+            await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED", authority=authority)
 
     @pytest.mark.asyncio
     async def test_principal_rejects_run_cancelled_zero_dispatch(self, db, test_engine):
         await _setup_principal(db)
         _, run, authority = await _create_approval_required_run(db, test_engine)
         actor = _make_current_user()
-        approval = await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="REJECTED", authority=authority)
+        approval = await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="REJECTED", authority=authority)
         assert approval.decision == "REJECTED"
         assert approval.status == "REJECTED"
         # Verify run is CANCELLED
-        refreshed_run = await authority.get_run(db, run_id=run.run_id, tenant_id="tenant-a")
+        refreshed_run = await authority.get_run(db, run_id=run.run_id, tenant_id=TENANT_A)
         assert refreshed_run.status == "CANCELLED"
         assert refreshed_run.failure_reason == "PRINCIPAL_REJECTED"
         # Verify no engine dispatch occurred
@@ -274,11 +291,11 @@ class TestThreatMatrix:
         _, run_b, _ = await _create_approval_required_run(db, test_engine, input_data={"x": 2})
         actor = _make_current_user()
         # Approve run_a
-        await create_approval(db, run_id=run_a.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
+        await create_approval(db, run_id=run_a.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED", authority=authority)
         # Try to activate run_b using run_a's approval — the service loads by run_id
         # so this will fail because no approval exists for run_b
         with pytest.raises(ApprovalError, match="APPROVAL_NOT_FOUND"):
-            await consume_approval_and_activate(db, run_id=run_b.run_id, tenant_id="tenant-a", actor=actor, authority=authority)
+            await consume_approval_and_activate(db, run_id=run_b.run_id, tenant_id=TENANT_A, actor=actor, authority=authority)
 
     @pytest.mark.asyncio
     async def test_approval_replay_zero_additional_dispatch(self, db, test_engine):
@@ -286,14 +303,14 @@ class TestThreatMatrix:
         await _setup_principal(db)
         _, run, authority = await _create_approval_required_run(db, test_engine)
         actor = _make_current_user()
-        await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
+        await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED", authority=authority)
         # First activation
-        active_run = await consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, authority=authority)
+        active_run = await consume_approval_and_activate(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, authority=authority)
         assert active_run.status == "ACTIVE"
         assert active_run.execution_ref is not None
         # Replay activation — should fail (approval already CONSUMED)
         with pytest.raises(ApprovalNotConsumableError, match="APPROVAL_ALREADY_CONSUMED"):
-            await consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, authority=authority)
+            await consume_approval_and_activate(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, authority=authority)
 
     @pytest.mark.asyncio
     async def test_two_activation_calls_race_one_winner(self, db, test_engine):
@@ -302,12 +319,12 @@ class TestThreatMatrix:
         await _setup_principal(db)
         _, run, authority = await _create_approval_required_run(db, test_engine)
         actor = _make_current_user()
-        await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
+        await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED", authority=authority)
         # Race two activation calls
         # Since we're using SQLite in-memory, one will win the CONSUMED transition
         results = await asyncio.gather(
-            consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, authority=authority),
-            consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, authority=authority),
+            consume_approval_and_activate(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, authority=authority),
+            consume_approval_and_activate(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, authority=authority),
             return_exceptions=True,
         )
         # At least one should succeed, at least one should fail
@@ -318,7 +335,7 @@ class TestThreatMatrix:
         assert len(successes) >= 1
         # The approval must be CONSUMED after
         # Check the Run is ACTIVE
-        active_run = await authority.get_run(db, run_id=run.run_id, tenant_id="tenant-a")
+        active_run = await authority.get_run(db, run_id=run.run_id, tenant_id=TENANT_A)
         assert active_run.status in ("ACTIVE", "ACTIVATING")
 
     @pytest.mark.asyncio
@@ -330,7 +347,7 @@ class TestThreatMatrix:
         await db.flush()
         actor = _make_current_user()
         with pytest.raises(RunNotApprovalRequiredError):
-            await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
+            await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED", authority=authority)
 
     @pytest.mark.asyncio
     async def test_cancelled_run_denied(self, db, test_engine):
@@ -340,7 +357,7 @@ class TestThreatMatrix:
         await db.flush()
         actor = _make_current_user()
         with pytest.raises(RunNotApprovalRequiredError):
-            await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
+            await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED", authority=authority)
 
     @pytest.mark.asyncio
     async def test_failed_run_denied(self, db, test_engine):
@@ -351,7 +368,7 @@ class TestThreatMatrix:
         await db.flush()
         actor = _make_current_user()
         with pytest.raises(RunNotApprovalRequiredError):
-            await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
+            await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED", authority=authority)
 
     @pytest.mark.asyncio
     async def test_activation_client_changed_payload_rejected(self, db, test_engine):
@@ -359,12 +376,12 @@ class TestThreatMatrix:
         await _setup_principal(db)
         _, run, authority = await _create_approval_required_run(db, test_engine, input_data={"x": 1})
         actor = _make_current_user()
-        await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
+        await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED", authority=authority)
         # Tamper with run input_data_hash
         run.input_data_hash = "tampered_hash"
         await db.flush()
         with pytest.raises(InputHashMismatchError, match="INPUT_HASH_MISMATCH"):
-            await consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, authority=authority)
+            await consume_approval_and_activate(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, authority=authority)
 
     @pytest.mark.asyncio
     async def test_activation_client_changed_workflow_rejected(self, db, test_engine):
@@ -372,12 +389,12 @@ class TestThreatMatrix:
         await _setup_principal(db)
         _, run, authority = await _create_approval_required_run(db, test_engine, input_data={"x": 1})
         actor = _make_current_user()
-        await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
+        await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED", authority=authority)
         # Tamper with run workflow_type — capability will no longer be classified
         run.workflow_type = "unregistered.workflow"
         await db.flush()
         with pytest.raises(CapabilityNotEligibleError):
-            await consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, authority=authority)
+            await consume_approval_and_activate(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, authority=authority)
 
 
 # ── Test-only Activation Acceptance ───────────────────────────────────────────
@@ -396,11 +413,11 @@ class TestActivationAcceptance:
         assert run.execution_ref is None
 
         # Principal approves
-        approval = await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
+        approval = await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED", authority=authority)
         assert approval.status == "PENDING"
 
         # Activate — consume approval, dispatch SAME Run
-        active_run = await consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, authority=authority)
+        active_run = await consume_approval_and_activate(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, authority=authority)
 
         # Verify: Run is now ACTIVE with execution_ref
         assert active_run.status == "ACTIVE"
@@ -429,8 +446,8 @@ class TestActivationAcceptance:
         await _setup_principal(db)
         _, run, authority = await _create_approval_required_run(db, test_engine)
         actor = _make_current_user()
-        await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
-        await consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, authority=authority)
+        await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED", authority=authority)
+        await consume_approval_and_activate(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, authority=authority)
         workflows = test_engine._store.list_workflows()
         assert len(workflows) == 1
 
@@ -439,11 +456,11 @@ class TestActivationAcceptance:
         await _setup_principal(db)
         _, run, authority = await _create_approval_required_run(db, test_engine)
         actor = _make_current_user()
-        await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
-        await consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, authority=authority)
+        await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED", authority=authority)
+        await consume_approval_and_activate(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, authority=authority)
         # Replay attempt
         with pytest.raises(ApprovalNotConsumableError):
-            await consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, authority=authority)
+            await consume_approval_and_activate(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, authority=authority)
         workflows = test_engine._store.list_workflows()
         assert len(workflows) == 1  # Still only 1
 
@@ -458,12 +475,12 @@ class TestActivationAcceptance:
         assert run.status == "APPROVAL_REQUIRED"
 
         # Principal rejects
-        approval = await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="REJECTED", authority=authority)
+        approval = await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="REJECTED", authority=authority)
         assert approval.decision == "REJECTED"
         assert approval.status == "REJECTED"
 
         # Verify: Run is CANCELLED
-        run_after = await authority.get_run(db, run_id=run.run_id, tenant_id="tenant-a")
+        run_after = await authority.get_run(db, run_id=run.run_id, tenant_id=TENANT_A)
         assert run_after.status == "CANCELLED"
         assert run_after.failure_reason == "PRINCIPAL_REJECTED"
 
@@ -477,8 +494,8 @@ class TestActivationAcceptance:
         await _setup_principal(db)
         _, run, authority = await _create_approval_required_run(db, test_engine)
         actor = _make_current_user()
-        await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED", authority=authority)
-        active_run = await consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, authority=authority)
+        await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED", authority=authority)
+        active_run = await consume_approval_and_activate(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, authority=authority)
         assert active_run.status == "ACTIVE"
         assert active_run.execution_ref is not None  # IMPOSSIBLE to be ACTIVE without execution_ref
 

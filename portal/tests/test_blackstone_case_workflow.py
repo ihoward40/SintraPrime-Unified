@@ -12,10 +12,28 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from blackstone.engines import BlackstoneOrchestrator
+from portal.auth.rbac import CurrentUser, Permission, get_current_user
 from portal.database import Base, get_db
 from portal.main import app
 from portal.models.blackstone import BlackstoneEvaluation, EvidenceLedger
 from portal.services.blackstone_service import BlackstoneEvaluationService
+
+
+def _test_user() -> CurrentUser:
+    """Authenticated FIRM_ADMIN identity for endpoint tests.
+
+    7f50bdc0 (security hardening) added get_current_user to the blackstone
+    router; this fixture override restores parity with the other Tier-2
+    endpoint suites (Wave 2B-REM drift repair).
+    """
+    return CurrentUser(
+        {
+            "sub": "11111111-1111-1111-1111-111111111111",
+            "tenant_id": "22222222-2222-2222-2222-222222222222",
+            "role": "FIRM_ADMIN",
+            "permissions": [p.value for p in Permission],
+        }
+    )
 
 client = TestClient(app)
 
@@ -33,8 +51,10 @@ async def db() -> AsyncGenerator[AsyncSession, None]:
     session_maker = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
     async with session_maker() as session:
         app.dependency_overrides[get_db] = lambda: session
+        app.dependency_overrides[get_current_user] = _test_user
         yield session
     app.dependency_overrides.pop(get_db, None)
+    app.dependency_overrides.pop(get_current_user, None)
     await engine.dispose()
 
 

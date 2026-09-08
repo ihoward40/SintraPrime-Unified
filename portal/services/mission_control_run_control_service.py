@@ -124,7 +124,12 @@ async def create_run_control(
 
     now = datetime.now(UTC)
     control = MissionControlRunControl(
-        id=str(uuid.uuid4()),
+        # Canonical UUID object (not str) so the ORM identity-map key matches
+        # the key produced when rows are loaded back through PortableUUID
+        # (whose result processor yields uuid.UUID). Assigning a str here
+        # bifurcates the identity map into two instances of the same row and
+        # makes transition_run_control() return a stale copy (W2A STATE-A/B).
+        id=uuid.uuid4(),
         tenant_id=tenant_id,
         workflow_id=workflow_id,
         command_id=command_id,
@@ -176,7 +181,7 @@ async def create_run_control(
         "last_error": last_error,
     }
     event = MissionControlRunControlEvent(
-        id=str(uuid.uuid4()),
+        id=uuid.uuid4(),
         run_control_id=control.id,
         sequence=1,
         event_type=RunControlEventType.CREATED.value,

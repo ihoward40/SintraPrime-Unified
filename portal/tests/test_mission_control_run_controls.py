@@ -104,9 +104,23 @@ async def _get_or_create_canonical_role(session: AsyncSession) -> Role:
     return role
 
 
+def _deterministic_uuid(label: str) -> str:
+    """Deterministic valid UUID for a legacy fixture label (runs reproducibly)."""
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, "sintraprime-w2a-test:" + label))
+
+
+def tenant_uuid_for(label: str) -> str:
+    return _deterministic_uuid("tenant:" + label)
+
+
+def user_uuid_for(label: str) -> str:
+    return _deterministic_uuid("user:" + label)
+
+
 async def _seed_refs(session: AsyncSession, *, tenant_id: str = "tenant-1") -> tuple[str, str, str]:
-    # 1. Tenant (parent) — use valid UUID strings for PortableUUID compatibility
-    tenant_uuid = str(uuid.uuid4()) if tenant_id == "tenant-1" else tenant_id
+    # 1. Tenant (parent) — canonical UUID strings derived deterministically from
+    #    the legacy label so distinct labels map to distinct valid UUID tenants.
+    tenant_uuid = tenant_uuid_for(tenant_id)
     tenant = Tenant(id=tenant_uuid, name=f"Tenant {tenant_uuid}", slug=tenant_uuid.replace("-", "")[:50])
     session.add(tenant)
     await session.flush()
@@ -114,8 +128,9 @@ async def _seed_refs(session: AsyncSession, *, tenant_id: str = "tenant-1") -> t
     # 2. Canonical role (global; get-or-create, shared across tenants)
     role = await _get_or_create_canonical_role(session)
 
-    # 3. User/principal (child of tenant and role)
-    user_uuid = str(uuid.uuid4())
+    # 3. User/principal (child of tenant and role) — deterministic per tenant
+    #    label so idempotency tests can look the user up without string PKs.
+    user_uuid = user_uuid_for(tenant_id)
     user = User(
         id=user_uuid,
         tenant_id=tenant_uuid,
@@ -888,20 +903,21 @@ async def test_seed_refs_is_idempotent_and_reuses_canonical_role(db: AsyncSessio
         await db.execute(select(func.count()).select_from(UserPermissionAssoc))
     ).scalar_one() == 0
 
-    # 5. Second tenant preserved the correct data model: tenant-2 user exists
-    #    and points at the same global role; tenant-1 remains intact.
-    t2_user = await db.get(User, "user-tenant-2")
+    # 5. Second tenant preserved the correct data model: the tenant-2 user
+    #    exists (deterministic UUID derived from the legacy label) and points
+    #    at the same global role; tenant-1 remains intact.
+    t2_user = await db.get(User, user_uuid_for("tenant-2"))
     assert t2_user is not None
-    assert t2_user.tenant_id == "tenant-2"
+    assert str(t2_user.tenant_id) == tenant_uuid_for("tenant-2")
     assert t2_user.role_id == canonical.id
-    t1_user = await db.get(User, "user-tenant-1")
+    t1_user = await db.get(User, user_uuid_for("tenant-1"))
     assert t1_user is not None
     assert t1_user.role_id == canonical.id
 
     # 6. A role still referenced by users is not removed by any fixture cleanup.
     extra_user = User(
-        id="user-extra",
-        tenant_id="tenant-1",
+        id=user_uuid_for("extra"),
+        tenant_id=tenant_uuid_for("tenant-1"),
         role_id=canonical.id,
         email="user-extra@example.com",
         hashed_password="x",
@@ -928,6 +944,6 @@ async def test_seed_refs_idempotent_under_ordering(db: AsyncSession):
     assert role_count == 1
     user_count = (await db.execute(select(func.count()).select_from(User))).scalar_one()
     assert user_count == 3
-    assert (await db.get(User, "user-tenant-1")) is not None
-    assert (await db.get(User, "user-tenant-2")) is not None
-    assert (await db.get(User, "user-tenant-3")) is not None
+    assert (await db.get(User, user_uuid_for("tenant-1"))) is not None
+    assert (await db.get(User, user_uuid_for("tenant-2"))) is not None
+    assert (await db.get(User, user_uuid_for("tenant-3"))) is not None

@@ -11,10 +11,13 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, func,
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.types import JSON
 
 from ..auth.rbac import CurrentUser, get_current_user
 from ..database import Base, get_db
 from ..models.types import PortableUUID
+
+PortableJSONB = JSON  # portable JSON (native JSONB variant applied per-column)
 
 router = APIRouter()
 
@@ -39,7 +42,12 @@ class Notification(Base):
     resource_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
     resource_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     actor_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    extra_data: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True)
+    # PortableJSONB: native JSONB on PostgreSQL, portable JSON elsewhere —
+    # the Notification model must create on the SQLite Tier-2 lane too
+    # (Wave 2B-REM: JSONB-on-SQLite compile crash in Base.metadata.create_all).
+    extra_data: Mapped[dict | None] = mapped_column(
+        "metadata", PortableJSONB().with_variant(JSONB, "postgresql"), nullable=True
+    )
 
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

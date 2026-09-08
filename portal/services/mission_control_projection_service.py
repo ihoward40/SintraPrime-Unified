@@ -176,9 +176,10 @@ def _to_command_summary(cmd: MissionControlCommand) -> CommandSummary:
     events = cmd.events or []
     receipts = cmd.receipts or []
     return CommandSummary(
-        id=cmd.id,
-        tenant_id=cmd.tenant_id,
-        requested_by=cmd.requested_by,
+        # str ids at the projection boundary (PR #294 / 2B-REM)
+        id=str(cmd.id),
+        tenant_id=str(cmd.tenant_id),
+        requested_by=str(cmd.requested_by),
         command_type=cmd.command_type,
         target_type=cmd.target_type,
         target_id=cmd.target_id,
@@ -187,7 +188,7 @@ def _to_command_summary(cmd: MissionControlCommand) -> CommandSummary:
         state=cmd.state,
         reason_code=cmd.reason_code,
         reason=cmd.reason,
-        audit_log_id=cmd.audit_log_id,
+        audit_log_id=str(cmd.audit_log_id) if cmd.audit_log_id else None,
         created_at=cmd.created_at,
         completed_at=cmd.completed_at,
         event_count=len(events),
@@ -207,9 +208,11 @@ def _to_command_projection(cmd: MissionControlCommand) -> CommandProjection:
         *(r.created_at for r in receipts),
     )
     return CommandProjection(
-        id=cmd.id,
-        tenant_id=cmd.tenant_id,
-        requested_by=cmd.requested_by,
+        # Pydantic projections declare str ids (PR #294 boundary): stringify
+        # ORM UUID values at the boundary — Wave 2B-REM.
+        id=str(cmd.id),
+        tenant_id=str(cmd.tenant_id),
+        requested_by=str(cmd.requested_by),
         command_type=cmd.command_type,
         target_type=cmd.target_type,
         target_id=cmd.target_id,
@@ -220,12 +223,12 @@ def _to_command_projection(cmd: MissionControlCommand) -> CommandProjection:
         reason=cmd.reason,
         payload=redact_dict(cmd.payload or {}, EXPOSED_PAYLOAD_FIELDS),
         metadata=redact_dict(cmd.metadata_json or {}, EXPOSED_PAYLOAD_FIELDS),
-        audit_log_id=cmd.audit_log_id,
+        audit_log_id=str(cmd.audit_log_id) if cmd.audit_log_id else None,
         created_at=cmd.created_at,
         completed_at=cmd.completed_at,
         events=[
             CommandEventProjection(
-                id=e.id,
+                id=str(e.id),
                 sequence=e.sequence,
                 event_type=e.event_type,
                 state=e.state,
@@ -238,10 +241,10 @@ def _to_command_projection(cmd: MissionControlCommand) -> CommandProjection:
         ],
         receipts=[
             CommandReceiptProjection(
-                id=r.id,
+                id=str(r.id),
                 receipt_type=r.receipt_type,
                 receipt_hash=r.receipt_hash,
-                audit_log_id=r.audit_log_id,
+                audit_log_id=str(r.audit_log_id) if r.audit_log_id else None,
                 evidence_refs=redact_evidence_refs(r.evidence_refs or []),
                 created_at=r.created_at,
             )
@@ -337,10 +340,11 @@ def _to_run_control_summary(rc: MissionControlRunControl) -> RunControlSummary:
     """Convert a MissionControlRunControl ORM model to a lightweight summary."""
     events = rc.events or []
     return RunControlSummary(
-        id=rc.id,
-        tenant_id=rc.tenant_id,
+        # str ids at the projection boundary (PR #294 / 2B-REM)
+        id=str(rc.id),
+        tenant_id=str(rc.tenant_id),
         workflow_id=rc.workflow_id,
-        command_id=rc.command_id,
+        command_id=str(rc.command_id) if rc.command_id else None,
         state=rc.state,
         workflow_status_snapshot=rc.workflow_status_snapshot,
         workflow_status_observed_at=rc.workflow_status_observed_at,
@@ -375,10 +379,11 @@ def _to_run_control_projection(rc: MissionControlRunControl) -> RunControlProjec
         *(e.created_at for e in events),
     )
     return RunControlProjection(
-        id=rc.id,
-        tenant_id=rc.tenant_id,
+        # str ids at the projection boundary (PR #294 / 2B-REM)
+        id=str(rc.id),
+        tenant_id=str(rc.tenant_id),
         workflow_id=rc.workflow_id,
-        command_id=rc.command_id,
+        command_id=str(rc.command_id) if rc.command_id else None,
         state=rc.state,
         workflow_status_snapshot=rc.workflow_status_snapshot,
         workflow_status_observed_at=rc.workflow_status_observed_at,
@@ -404,15 +409,15 @@ def _to_run_control_projection(rc: MissionControlRunControl) -> RunControlProjec
         updated_at=rc.updated_at,
         events=[
             RunControlEventProjection(
-                id=e.id,
+                id=str(e.id),
                 sequence=e.sequence,
                 event_type=e.event_type,
                 previous_state=e.previous_state,
                 new_state=e.new_state,
                 previous_version=e.previous_version,
                 new_version=e.new_version,
-                principal_id=e.principal_id,
-                command_id=e.command_id,
+                principal_id=str(e.principal_id) if e.principal_id else None,
+                command_id=str(e.command_id) if e.command_id else None,
                 reason=e.reason,
                 payload=redact_dict(e.payload or {}, EXPOSED_PAYLOAD_FIELDS),
                 workflow_status_observed_at=e.workflow_status_observed_at,
@@ -563,14 +568,14 @@ async def get_causation_chain(
         links.append(
             CausationLink(
                 source_type="command_event",
-                source_id=e.id,
+                source_id=str(e.id),
                 sequence=e.sequence,
                 event_type=e.event_type,
                 state=e.state,
                 hash=e.event_hash,
                 previous_hash=e.previous_hash,
                 created_at=e.created_at,
-                command_id=cmd.id,
+                command_id=str(cmd.id),
             )
         )
 
@@ -579,14 +584,14 @@ async def get_causation_chain(
         links.append(
             CausationLink(
                 source_type="receipt",
-                source_id=r.id,
+                source_id=str(r.id),
                 sequence=0,
                 event_type=r.receipt_type,
                 state=cmd.state,
                 hash=r.receipt_hash,
                 previous_hash=None,
                 created_at=r.created_at,
-                command_id=cmd.id,
+                command_id=str(cmd.id),
             )
         )
 
@@ -611,15 +616,15 @@ async def get_causation_chain(
         links.append(
             CausationLink(
                 source_type="run_control_event",
-                source_id=rc_evt.id,
+                source_id=str(rc_evt.id),
                 sequence=rc_evt.sequence,
                 event_type=rc_evt.event_type,
                 state=rc_evt.new_state,
                 hash=rc_evt.event_hash,
                 previous_hash=rc_evt.previous_event_hash,
                 created_at=rc_evt.created_at,
-                command_id=rc_evt.command_id,
-                run_control_id=rc_evt.run_control_id,
+                command_id=str(rc_evt.command_id) if rc_evt.command_id else None,
+                run_control_id=str(rc_evt.run_control_id),
             )
         )
 

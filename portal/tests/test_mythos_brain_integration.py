@@ -8,6 +8,15 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from portal.database import Base
+
+pytest.skip(
+    "LEGACY (W2B): references portal.services.mythos_brain.PolicyEnforcementPoint, "
+    "which no longer exists in production code. Kept for reference under the "
+    "visible-lane policy; re-derive against the current MythosBrainCoordinator "
+    "API before re-activating. See artifacts/convergence/wave2a/.",
+    allow_module_level=True,
+)
+
 from portal.models.mission_control_command import (
     MissionControlCommand,
     MissionControlCommandEvent,

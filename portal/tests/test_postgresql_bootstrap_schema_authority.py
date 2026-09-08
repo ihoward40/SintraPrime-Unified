@@ -124,11 +124,14 @@ def test_authoritative_migration_sequence_is_ordered() -> None:
         "portal/migrations/add_mission_control_mission_runs.sql",
         "portal/migrations/add_mission_control_run_approvals.sql",
         "portal/migrations/add_mission_control_run_control_projection.sql",
+        # Wave 2C-2: voice ledger promoted to canonical schema authority
+        # (voice router mounted in portal/main.py; ledger is production schema).
+        "portal/migrations/add_voice_command_ledger.sql",
     ]
     # Uniqueness and count invariants
     seq = [str(path).replace("\\", "/") for path in MIGRATION_SEQUENCE]
-    assert len(seq) == 10, f"Expected 10 migrations, got {len(seq)}"
-    assert len(set(seq)) == 10, f"Expected 10 unique migrations, got duplicates: {set(seq)}"
+    assert len(seq) == 11, f"Expected 11 migrations, got {len(seq)}"
+    assert len(set(seq)) == 11, f"Expected 11 unique migrations, got duplicates: {set(seq)}"
     # All required main migrations present
     main_migrations = {
         "portal/migrations/portal_schema.sql",

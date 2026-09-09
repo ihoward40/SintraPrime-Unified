@@ -13,7 +13,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field
 
 from .canonical import canonical_hash
-from .capability_resolver import CanonicalCapability, RegistryView, _status_gate, resolve_capability
+from .capability_resolver import RegistryView, _status_gate, resolve_capability
 from .manifest import MemoryScope
 
 
@@ -158,8 +158,15 @@ def canonicalize_capability_for_hash(raw_id: str, registry: RegistryView) -> tup
     The raw identifier is never hashable; only the trusted canonical id enters
     the identity input, while the trusted registry provenance remains bound.
     """
+    # SP-W4-4-FIX-R1: the resolver-returned CanonicalCapability is the sole source
+    # of canonical identity/provenance. _status_gate is used ONLY to enforce the
+    # refusal state (DISABLED/DORMANT) and its (None) return is never consumed.
     try:
-        resolved: CanonicalCapability = _status_gate(resolve_capability(raw_id, registry))
+        resolved = resolve_capability(raw_id, registry)
+    except Exception as exc:
+        raise CapabilityHashBoundaryError(str(exc)) from exc
+    try:
+        _status_gate(resolved)
     except Exception as exc:
         raise CapabilityHashBoundaryError(str(exc)) from exc
     return (resolved.capability_id, resolved.registry_generation_id, resolved.registry_hash)

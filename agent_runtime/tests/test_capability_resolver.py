@@ -235,6 +235,7 @@ def test_no_production_consumers_changed():
     allowed = ("agent_runtime/manifest.py", "agent_runtime/delegation.py",
                "agent_runtime/registry.py",          # W4-3 migration surface
                "agent_runtime/capability_resolver.py",  # W4-2 resolver (extended in W4-3)
+               "agent_runtime/receipts.py",           # W4-4 hash boundary (SP-W4-4-FIX-R1)
                "agent_runtime/tests/")               # test files
     for path in changed:
         assert any(path.startswith(a) for a in allowed), f"unauthorized change: {path}"

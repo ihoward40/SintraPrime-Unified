@@ -144,3 +144,39 @@ def test_generation_provenance_changes_dependency_hash(registry):
     )
     h2 = envelope_security_hash(base, capability="document.create", registry=changed)
     assert h1 != h2
+
+
+def test_resolved_capability_survives_status_gate(registry):
+    """RESOLVED_CAPABILITY_SURVIVES_STATUS_GATE = PASS (SP-W4-4-FIX-R1 regression).
+
+    Downstream consumer contract: raw alias -> resolver -> status gate ->
+    hash boundary. The resolved CanonicalCapability's semantic identity
+    (canonical id + registry provenance) must survive the whole path
+    unchanged. This is the defect class found by SP-MW-RECONCILE-001:
+    _status_gate returned None and consumers discarded the resolved object.
+    """
+    from agent_runtime.capability_resolver import resolve_capability
+    resolved = resolve_capability("CREATE_DOCUMENT", registry)
+    assert resolved is not None
+    canonical_id, generation_id, registry_hash = canonicalize_capability_for_hash(
+        "CREATE_DOCUMENT", registry
+    )
+    assert canonical_id == resolved.capability_id
+    assert generation_id == resolved.registry_generation_id
+    assert registry_hash == resolved.registry_hash
+
+
+def test_status_gate_does_not_replace_canonical_identity(registry):
+    """STATUS_GATE_DOES_NOT_REPLACE_CANONICAL_IDENTITY = PASS.
+
+    The gate is a refusal filter only. It must never become the source of
+    capability identity — its return value is None by contract, and the
+    identity must come from the resolver's CanonicalCapability.
+    """
+    from agent_runtime.capability_resolver import _status_gate, resolve_capability
+    resolved = resolve_capability("document.create", registry)
+    gate_result = _status_gate(resolved)
+    assert gate_result is None
+    # identity survives the gate untouched
+    canonical_id, _, _ = canonicalize_capability_for_hash("document.create", registry)
+    assert canonical_id == resolved.capability_id == "document.create"

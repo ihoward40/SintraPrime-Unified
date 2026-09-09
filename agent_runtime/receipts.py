@@ -12,6 +12,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from .canonical import canonical_hash
+from .capability_resolver import CanonicalCapability, RegistryView, _status_gate, resolve_capability
 from .manifest import MemoryScope
 
 
@@ -38,6 +40,10 @@ class AgentRuntimeReceipt(BaseModel):
     mission_id: str
     delegation_id: str = ""
     capabilities_used: tuple[str, ...] = ()
+    # W4-4: canonical capability identity is hash input; registry provenance is
+    # retained separately so generation changes remain auditable.
+    capability_registry_generation_id: str = ""
+    capability_registry_hash: str = ""
     tools_used: tuple[str, ...] = ()
     context_hash: str = ""  # §17: stable hash of the audited context package
     provider_calls: int = 0
@@ -139,3 +145,38 @@ class MemoryWriteAuthority:
         # the authority mediates policy and provenance (§22).
         self.persisted.append(record)
         return record
+
+
+class CapabilityHashBoundaryError(ValueError):
+    """Capability could not be trusted before entering a security hash."""
+
+
+def canonicalize_capability_for_hash(raw_id: str, registry: RegistryView) -> tuple[str, str, str]:
+    """Resolve and status-gate a capability before hashing.
+
+    Returns `(canonical_id, registry_generation_id, registry_hash)`.
+    The raw identifier is never hashable; only the trusted canonical id enters
+    the identity input, while the trusted registry provenance remains bound.
+    """
+    try:
+        resolved: CanonicalCapability = _status_gate(resolve_capability(raw_id, registry))
+    except Exception as exc:
+        raise CapabilityHashBoundaryError(str(exc)) from exc
+    return (resolved.capability_id, resolved.registry_generation_id, resolved.registry_hash)
+
+
+def envelope_security_hash(payload: dict, *, capability: str, registry: RegistryView) -> str:
+    """W4-4 envelope hash boundary: canonicalize capability BEFORE hash."""
+    canonical_id, generation_id, registry_hash = canonicalize_capability_for_hash(capability, registry)
+    normalized = dict(payload)
+    normalized["capability_id"] = canonical_id
+    normalized["dependency_context"] = {
+        "registry_generation_id": generation_id,
+        "registry_hash": registry_hash,
+    }
+    return canonical_hash(normalized)
+
+
+def receipt_security_hash(payload: dict, *, capability: str, registry: RegistryView) -> str:
+    """W4-4 receipt hash boundary; same identity/provenance contract."""
+    return envelope_security_hash(payload, capability=capability, registry=registry)

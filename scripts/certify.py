@@ -143,17 +143,23 @@ def main() -> int:
     if summary_match is None:
         dots = 0
         s_count = 0
+        f_count = 0
         for line in stdout.splitlines():
             stripped = line.strip()
             if re.fullmatch(r"[.sFXxXE]+(\s+\[\s*\d+%\])?", stripped):
                 marks = stripped.split("[")[0].strip()
                 dots += marks.count(".")
                 s_count += marks.count("s")
-        if dots:
-            passed, skipped = dots, s_count
-            summary_match = f"{passed} passed (counted from progress dots)" + (
-                f", {skipped} skipped" if skipped else ""
-            )
+                f_count += marks.count("F") + marks.count("X") + marks.count("x") + marks.count("E")
+        if dots or f_count:
+            passed, skipped, failed = dots, s_count, f_count
+            summary_match = f"{passed} passed, {failed} failed, {skipped} skipped (counted from progress marks)"
+
+    # Evidence-integrity guard: a nonzero exit with zero parsed failures means
+    # the parser missed something — never emit failed=0 for a failed run.
+    if proc.returncode != 0 and failed == 0:
+        failed = -1  # explicit "uncounted failures" sentinel; receipt must never claim failed=0 on a failed run
+        summary_match = (summary_match or "") + " [FAILURES PRESENT BUT UNCOUNTED]"
 
     receipt = {
         "run_id": run_id,

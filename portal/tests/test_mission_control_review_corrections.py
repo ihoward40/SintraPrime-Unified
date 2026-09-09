@@ -15,6 +15,7 @@ Covers the PR review corrections:
 
 from __future__ import annotations
 
+import uuid
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime, timedelta
 
@@ -50,6 +51,11 @@ from portal.schemas.mission_control_projection import (
     redact_evidence_refs,
     redact_ref,
 )
+
+
+def _uuid(label: str) -> str:
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, "sintraprime-test:" + label))
+
 
 TENANT_A = "00000000-0000-0000-0000-000000000002"
 TENANT_B = "00000000-0000-0000-0000-000000000003"
@@ -137,12 +143,12 @@ async def test_causation_chain_excludes_cross_tenant_run_control_events(
 
     # Tenant A command
     cmd_a = MissionControlCommand(
-        id="cmd-xtenant-001",
+        id=_uuid("cmd-xtenant-001"),
         tenant_id=TENANT_A,
         requested_by=USER_A,
         command_type="PAUSE_RUN",
         target_type="run",
-        target_id="run-001",
+        target_id=_uuid("run-001"),
         idempotency_key="idem-xtenant-001",
         request_hash="hash-xtenant",
         state="REFUSED",
@@ -154,29 +160,29 @@ async def test_causation_chain_excludes_cross_tenant_run_control_events(
 
     # Tenant B run-control referencing tenant A's command
     rc_b = MissionControlRunControl(
-        id="rc-xtenant-b-001",
+        id=_uuid("rc-xtenant-b-001"),
         tenant_id=TENANT_B,
         workflow_id="wf-b-xtenant",
         state=RunControlState.RUNNING.value,
         workflow_status_snapshot="running",
         state_version=1,
         projection_schema_version=1,
-        command_id="cmd-xtenant-001",  # links to tenant A's command
+        command_id=_uuid("cmd-xtenant-001"),  # links to tenant A's command
     )
     db.add(rc_b)
     await db.flush()
 
     # Run-control event on tenant B's run-control, referencing tenant A's command
     rc_evt_b = MissionControlRunControlEvent(
-        id="rcevt-xtenant-b-001",
-        run_control_id="rc-xtenant-b-001",
+        id=_uuid("rcevt-xtenant-b-001"),
+        run_control_id=_uuid("rc-xtenant-b-001"),
         sequence=1,
         event_type="STATE_TRANSITIONED",
         previous_state="RUNNING",
         new_state="PAUSE_REQUESTED",
         previous_version=1,
         new_version=2,
-        command_id="cmd-xtenant-001",  # links to tenant A's command
+        command_id=_uuid("cmd-xtenant-001"),  # links to tenant A's command
         payload={},
         previous_event_hash=None,
         event_hash="hash-rcevt-b",
@@ -185,7 +191,7 @@ async def test_causation_chain_excludes_cross_tenant_run_control_events(
     await db.flush()
 
     # Tenant A queries causation chain — must NOT see tenant B's event
-    chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id="cmd-xtenant-001")
+    chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id=_uuid("cmd-xtenant-001"))
     assert chain is not None
     # The chain should have 0 run_control_event links from tenant B
     rc_links = [link for link in chain.links if link.source_type == "run_control_event"]
@@ -195,7 +201,7 @@ async def test_causation_chain_excludes_cross_tenant_run_control_events(
 
     # Tenant B's chain (if queried for tenant B's own command would be different)
     # but tenant B cannot access tenant A's command at all
-    chain_b = await get_causation_chain(db, tenant_id=TENANT_B, command_id="cmd-xtenant-001")
+    chain_b = await get_causation_chain(db, tenant_id=TENANT_B, command_id=_uuid("cmd-xtenant-001"))
     assert chain_b is None  # tenant B cannot see tenant A's command
 
 
@@ -207,12 +213,12 @@ async def test_causation_chain_includes_same_tenant_run_control_events(
     from portal.services.mission_control_projection_service import get_causation_chain
 
     cmd = MissionControlCommand(
-        id="cmd-st-001",
+        id=_uuid("cmd-st-001"),
         tenant_id=TENANT_A,
         requested_by=USER_A,
         command_type="PAUSE_RUN",
         target_type="run",
-        target_id="run-001",
+        target_id=_uuid("run-001"),
         idempotency_key="idem-st-001",
         request_hash="hash-st",
         state="REFUSED",
@@ -223,28 +229,28 @@ async def test_causation_chain_includes_same_tenant_run_control_events(
     await db.flush()
 
     rc = MissionControlRunControl(
-        id="rc-st-001",
+        id=_uuid("rc-st-001"),
         tenant_id=TENANT_A,
         workflow_id="wf-st",
         state=RunControlState.RUNNING.value,
         workflow_status_snapshot="running",
         state_version=1,
         projection_schema_version=1,
-        command_id="cmd-st-001",
+        command_id=_uuid("cmd-st-001"),
     )
     db.add(rc)
     await db.flush()
 
     rc_evt = MissionControlRunControlEvent(
-        id="rcevt-st-001",
-        run_control_id="rc-st-001",
+        id=_uuid("rcevt-st-001"),
+        run_control_id=_uuid("rc-st-001"),
         sequence=1,
         event_type="STATE_TRANSITIONED",
         previous_state="RUNNING",
         new_state="PAUSE_REQUESTED",
         previous_version=1,
         new_version=2,
-        command_id="cmd-st-001",
+        command_id=_uuid("cmd-st-001"),
         payload={},
         previous_event_hash=None,
         event_hash="hash-rcevt-st",
@@ -252,11 +258,11 @@ async def test_causation_chain_includes_same_tenant_run_control_events(
     db.add(rc_evt)
     await db.flush()
 
-    chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id="cmd-st-001")
+    chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id=_uuid("cmd-st-001"))
     assert chain is not None
     rc_links = [link for link in chain.links if link.source_type == "run_control_event"]
     assert len(rc_links) == 1
-    assert rc_links[0].source_id == "rcevt-st-001"
+    assert rc_links[0].source_id == _uuid("rcevt-st-001")
 
 
 # ── 2. Sensitive-data redaction ──────────────────────────────────────────────
@@ -268,12 +274,12 @@ async def test_detail_command_redacts_payload(db: AsyncSession):
     from portal.services.mission_control_projection_service import get_command
 
     cmd = MissionControlCommand(
-        id="cmd-redact-001",
+        id=_uuid("cmd-redact-001"),
         tenant_id=TENANT_A,
         requested_by=USER_A,
         command_type="PAUSE_RUN",
         target_type="run",
-        target_id="run-001",
+        target_id=_uuid("run-001"),
         idempotency_key="idem-redact-001",
         request_hash="hash-redact",
         state="REFUSED",
@@ -283,7 +289,7 @@ async def test_detail_command_redacts_payload(db: AsyncSession):
     db.add(cmd)
     await db.flush()
 
-    projection = await get_command(db, tenant_id=TENANT_A, command_id="cmd-redact-001")
+    projection = await get_command(db, tenant_id=TENANT_A, command_id=_uuid("cmd-redact-001"))
     assert projection is not None
     # Sensitive fields must be redacted
     assert projection.payload["secret_key"] == REDACTED
@@ -300,12 +306,12 @@ async def test_detail_command_redacts_event_payload(db: AsyncSession):
     from portal.services.mission_control_projection_service import get_command
 
     cmd = MissionControlCommand(
-        id="cmd-redevt-001",
+        id=_uuid("cmd-redevt-001"),
         tenant_id=TENANT_A,
         requested_by=USER_A,
         command_type="PAUSE_RUN",
         target_type="run",
-        target_id="run-001",
+        target_id=_uuid("run-001"),
         idempotency_key="idem-redevt-001",
         request_hash="hash-redevt",
         state="REFUSED",
@@ -316,8 +322,8 @@ async def test_detail_command_redacts_event_payload(db: AsyncSession):
     await db.flush()
 
     evt = MissionControlCommandEvent(
-        id="evt-redevt-001",
-        command_id="cmd-redevt-001",
+        id=_uuid("evt-redevt-001"),
+        command_id=_uuid("cmd-redevt-001"),
         sequence=1,
         event_type="RECEIVED",
         state="RECEIVED",
@@ -328,7 +334,7 @@ async def test_detail_command_redacts_event_payload(db: AsyncSession):
     db.add(evt)
     await db.flush()
 
-    projection = await get_command(db, tenant_id=TENANT_A, command_id="cmd-redevt-001")
+    projection = await get_command(db, tenant_id=TENANT_A, command_id=_uuid("cmd-redevt-001"))
     assert projection is not None
     assert len(projection.events) == 1
     assert projection.events[0].payload["credential"] == REDACTED
@@ -341,12 +347,12 @@ async def test_detail_command_redacts_evidence_refs(db: AsyncSession):
     from portal.services.mission_control_projection_service import get_command
 
     cmd = MissionControlCommand(
-        id="cmd-redref-001",
+        id=_uuid("cmd-redref-001"),
         tenant_id=TENANT_A,
         requested_by=USER_A,
         command_type="PAUSE_RUN",
         target_type="run",
-        target_id="run-001",
+        target_id=_uuid("run-001"),
         idempotency_key="idem-redref-001",
         request_hash="hash-redref",
         state="REFUSED",
@@ -357,8 +363,8 @@ async def test_detail_command_redacts_evidence_refs(db: AsyncSession):
     await db.flush()
 
     rct = MissionControlCommandReceipt(
-        id="rct-redref-001",
-        command_id="cmd-redref-001",
+        id=_uuid("rct-redref-001"),
+        command_id=_uuid("cmd-redref-001"),
         receipt_type="REFUSAL",
         receipt_hash="hash-rct-redref",
         evidence_refs=["s3://bucket/secret-evidence-1", "s3://bucket/secret-evidence-2"],
@@ -366,7 +372,7 @@ async def test_detail_command_redacts_evidence_refs(db: AsyncSession):
     db.add(rct)
     await db.flush()
 
-    projection = await get_command(db, tenant_id=TENANT_A, command_id="cmd-redref-001")
+    projection = await get_command(db, tenant_id=TENANT_A, command_id=_uuid("cmd-redref-001"))
     assert projection is not None
     assert len(projection.receipts) == 1
     refs = projection.receipts[0].evidence_refs
@@ -380,7 +386,7 @@ async def test_detail_run_control_redacts_sensitive_fields(db: AsyncSession):
     from portal.services.mission_control_projection_service import get_run_control
 
     rc = MissionControlRunControl(
-        id="rc-redact-001",
+        id=_uuid("rc-redact-001"),
         tenant_id=TENANT_A,
         workflow_id="wf-redact",
         state=RunControlState.FAILED.value,
@@ -394,7 +400,7 @@ async def test_detail_run_control_redacts_sensitive_fields(db: AsyncSession):
     db.add(rc)
     await db.flush()
 
-    projection = await get_run_control(db, tenant_id=TENANT_A, run_control_id="rc-redact-001")
+    projection = await get_run_control(db, tenant_id=TENANT_A, run_control_id=_uuid("rc-redact-001"))
     assert projection is not None
     assert projection.last_error == REDACTED
     assert projection.confirmation_ref == REDACTED
@@ -407,7 +413,7 @@ async def test_detail_run_control_redacts_none_sensitive_fields(db: AsyncSession
     from portal.services.mission_control_projection_service import get_run_control
 
     rc = MissionControlRunControl(
-        id="rc-redact-none-001",
+        id=_uuid("rc-redact-none-001"),
         tenant_id=TENANT_A,
         workflow_id="wf-redact-none",
         state=RunControlState.RUNNING.value,
@@ -421,7 +427,7 @@ async def test_detail_run_control_redacts_none_sensitive_fields(db: AsyncSession
     db.add(rc)
     await db.flush()
 
-    projection = await get_run_control(db, tenant_id=TENANT_A, run_control_id="rc-redact-none-001")
+    projection = await get_run_control(db, tenant_id=TENANT_A, run_control_id=_uuid("rc-redact-none-001"))
     assert projection is not None
     assert projection.last_error is None
     assert projection.confirmation_ref is None
@@ -439,12 +445,12 @@ async def test_list_commands_returns_summaries_not_full_projections(
     from portal.services.mission_control_projection_service import list_commands
 
     cmd = MissionControlCommand(
-        id="cmd-summary-001",
+        id=_uuid("cmd-summary-001"),
         tenant_id=TENANT_A,
         requested_by=USER_A,
         command_type="PAUSE_RUN",
         target_type="run",
-        target_id="run-001",
+        target_id=_uuid("run-001"),
         idempotency_key="idem-summary-001",
         request_hash="hash-summary",
         state="REFUSED",
@@ -476,7 +482,7 @@ async def test_list_run_controls_returns_summaries_not_full_projections(
     from portal.services.mission_control_projection_service import list_run_controls
 
     rc = MissionControlRunControl(
-        id="rc-summary-001",
+        id=_uuid("rc-summary-001"),
         tenant_id=TENANT_A,
         workflow_id="wf-summary",
         state=RunControlState.RUNNING.value,
@@ -505,12 +511,12 @@ async def test_list_commands_summary_counts(db: AsyncSession):
     from portal.services.mission_control_projection_service import list_commands
 
     cmd = MissionControlCommand(
-        id="cmd-count-001",
+        id=_uuid("cmd-count-001"),
         tenant_id=TENANT_A,
         requested_by=USER_A,
         command_type="PAUSE_RUN",
         target_type="run",
-        target_id="run-001",
+        target_id=_uuid("run-001"),
         idempotency_key="idem-count-001",
         request_hash="hash-count",
         state="REFUSED",
@@ -523,8 +529,8 @@ async def test_list_commands_summary_counts(db: AsyncSession):
     for seq in range(1, 4):
         db.add(
             MissionControlCommandEvent(
-                id=f"evt-count-{seq}",
-                command_id="cmd-count-001",
+                id=uuid.uuid4(),  # batched PK insert needs the object (sentinel rule)
+                command_id=_uuid("cmd-count-001"),
                 sequence=seq,
                 event_type="RECEIVED",
                 state="RECEIVED",
@@ -537,8 +543,8 @@ async def test_list_commands_summary_counts(db: AsyncSession):
 
     db.add(
         MissionControlCommandReceipt(
-            id="rct-count-001",
-            command_id="cmd-count-001",
+            id=_uuid("rct-count-001"),
+            command_id=_uuid("cmd-count-001"),
             receipt_type="REFUSAL",
             receipt_hash="hash-rct-count",
             evidence_refs=[],
@@ -584,12 +590,12 @@ async def test_get_command_has_freshness(db: AsyncSession):
     from portal.services.mission_control_projection_service import get_command
 
     cmd = MissionControlCommand(
-        id="cmd-fresh-001",
+        id=_uuid("cmd-fresh-001"),
         tenant_id=TENANT_A,
         requested_by=USER_A,
         command_type="PAUSE_RUN",
         target_type="run",
-        target_id="run-001",
+        target_id=_uuid("run-001"),
         idempotency_key="idem-fresh-001",
         request_hash="hash-fresh",
         state="REFUSED",
@@ -599,7 +605,7 @@ async def test_get_command_has_freshness(db: AsyncSession):
     db.add(cmd)
     await db.flush()
 
-    projection = await get_command(db, tenant_id=TENANT_A, command_id="cmd-fresh-001")
+    projection = await get_command(db, tenant_id=TENANT_A, command_id=_uuid("cmd-fresh-001"))
     assert projection is not None
     assert hasattr(projection, "freshness")
     assert projection.freshness is not None
@@ -612,7 +618,7 @@ async def test_get_run_control_has_freshness(db: AsyncSession):
     from portal.services.mission_control_projection_service import get_run_control
 
     rc = MissionControlRunControl(
-        id="rc-fresh-001",
+        id=_uuid("rc-fresh-001"),
         tenant_id=TENANT_A,
         workflow_id="wf-fresh",
         state=RunControlState.RUNNING.value,
@@ -623,7 +629,7 @@ async def test_get_run_control_has_freshness(db: AsyncSession):
     db.add(rc)
     await db.flush()
 
-    projection = await get_run_control(db, tenant_id=TENANT_A, run_control_id="rc-fresh-001")
+    projection = await get_run_control(db, tenant_id=TENANT_A, run_control_id=_uuid("rc-fresh-001"))
     assert projection is not None
     assert hasattr(projection, "freshness")
     assert projection.freshness is not None
@@ -636,12 +642,12 @@ async def test_causation_chain_has_freshness(db: AsyncSession):
     from portal.services.mission_control_projection_service import get_causation_chain
 
     cmd = MissionControlCommand(
-        id="cmd-chainfresh-001",
+        id=_uuid("cmd-chainfresh-001"),
         tenant_id=TENANT_A,
         requested_by=USER_A,
         command_type="PAUSE_RUN",
         target_type="run",
-        target_id="run-001",
+        target_id=_uuid("run-001"),
         idempotency_key="idem-chainfresh-001",
         request_hash="hash-chainfresh",
         state="REFUSED",
@@ -651,7 +657,7 @@ async def test_causation_chain_has_freshness(db: AsyncSession):
     db.add(cmd)
     await db.flush()
 
-    chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id="cmd-chainfresh-001")
+    chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id=_uuid("cmd-chainfresh-001"))
     assert chain is not None
     assert hasattr(chain, "freshness")
     assert chain.freshness is not None
@@ -677,12 +683,12 @@ async def test_causation_chain_has_truncation_metadata(db: AsyncSession):
     from portal.services.mission_control_projection_service import get_causation_chain
 
     cmd = MissionControlCommand(
-        id="cmd-trunc-001",
+        id=_uuid("cmd-trunc-001"),
         tenant_id=TENANT_A,
         requested_by=USER_A,
         command_type="PAUSE_RUN",
         target_type="run",
-        target_id="run-001",
+        target_id=_uuid("run-001"),
         idempotency_key="idem-trunc-001",
         request_hash="hash-trunc",
         state="REFUSED",
@@ -692,7 +698,7 @@ async def test_causation_chain_has_truncation_metadata(db: AsyncSession):
     db.add(cmd)
     await db.flush()
 
-    chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id="cmd-trunc-001")
+    chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id=_uuid("cmd-trunc-001"))
     assert chain is not None
     assert hasattr(chain, "truncated")
     assert hasattr(chain, "total_links")
@@ -706,12 +712,12 @@ async def test_causation_chain_detects_missing_parent(db: AsyncSession):
     from portal.services.mission_control_projection_service import get_causation_chain
 
     cmd = MissionControlCommand(
-        id="cmd-missing-001",
+        id=_uuid("cmd-missing-001"),
         tenant_id=TENANT_A,
         requested_by=USER_A,
         command_type="PAUSE_RUN",
         target_type="run",
-        target_id="run-001",
+        target_id=_uuid("run-001"),
         idempotency_key="idem-missing-001",
         request_hash="hash-missing",
         state="REFUSED",
@@ -724,8 +730,8 @@ async def test_causation_chain_detects_missing_parent(db: AsyncSession):
     # Event 1 with no previous hash (genesis)
     db.add(
         MissionControlCommandEvent(
-            id="evt-missing-1",
-            command_id="cmd-missing-001",
+            id=_uuid("evt-missing-1"),
+            command_id=_uuid("cmd-missing-001"),
             sequence=1,
             event_type="RECEIVED",
             state="RECEIVED",
@@ -739,8 +745,8 @@ async def test_causation_chain_detects_missing_parent(db: AsyncSession):
     # Event 2 referencing a previous hash that doesn't exist in the chain
     db.add(
         MissionControlCommandEvent(
-            id="evt-missing-2",
-            command_id="cmd-missing-001",
+            id=_uuid("evt-missing-2"),
+            command_id=_uuid("cmd-missing-001"),
             sequence=2,
             event_type="EVALUATED",
             state="EVALUATED",
@@ -751,7 +757,7 @@ async def test_causation_chain_detects_missing_parent(db: AsyncSession):
     )
     await db.flush()
 
-    chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id="cmd-missing-001")
+    chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id=_uuid("cmd-missing-001"))
     assert chain is not None
     assert chain.warnings
     assert any("Missing parent" in w for w in chain.warnings)
@@ -763,12 +769,12 @@ async def test_causation_chain_detects_duplicate_hash(db: AsyncSession):
     from portal.services.mission_control_projection_service import get_causation_chain
 
     cmd = MissionControlCommand(
-        id="cmd-dup-001",
+        id=_uuid("cmd-dup-001"),
         tenant_id=TENANT_A,
         requested_by=USER_A,
         command_type="PAUSE_RUN",
         target_type="run",
-        target_id="run-001",
+        target_id=_uuid("run-001"),
         idempotency_key="idem-dup-001",
         request_hash="hash-dup",
         state="REFUSED",
@@ -781,8 +787,8 @@ async def test_causation_chain_detects_duplicate_hash(db: AsyncSession):
     # Two events with the same event_hash
     db.add(
         MissionControlCommandEvent(
-            id="evt-dup-1",
-            command_id="cmd-dup-001",
+            id=_uuid("evt-dup-1"),
+            command_id=_uuid("cmd-dup-001"),
             sequence=1,
             event_type="RECEIVED",
             state="RECEIVED",
@@ -795,8 +801,8 @@ async def test_causation_chain_detects_duplicate_hash(db: AsyncSession):
 
     db.add(
         MissionControlCommandEvent(
-            id="evt-dup-2",
-            command_id="cmd-dup-001",
+            id=_uuid("evt-dup-2"),
+            command_id=_uuid("cmd-dup-001"),
             sequence=2,
             event_type="EVALUATED",
             state="EVALUATED",
@@ -807,7 +813,7 @@ async def test_causation_chain_detects_duplicate_hash(db: AsyncSession):
     )
     await db.flush()
 
-    chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id="cmd-dup-001")
+    chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id=_uuid("cmd-dup-001"))
     assert chain is not None
     assert chain.warnings
     assert any("Duplicate" in w for w in chain.warnings)
@@ -822,12 +828,12 @@ async def test_causation_chain_deterministic_ordering(db: AsyncSession):
     from portal.services.mission_control_projection_service import get_causation_chain
 
     cmd = MissionControlCommand(
-        id="cmd-order-001",
+        id=_uuid("cmd-order-001"),
         tenant_id=TENANT_A,
         requested_by=USER_A,
         command_type="PAUSE_RUN",
         target_type="run",
-        target_id="run-001",
+        target_id=_uuid("run-001"),
         idempotency_key="idem-order-001",
         request_hash="hash-order",
         state="REFUSED",
@@ -840,8 +846,8 @@ async def test_causation_chain_deterministic_ordering(db: AsyncSession):
     # Add events out of order
     db.add(
         MissionControlCommandEvent(
-            id="evt-order-2",
-            command_id="cmd-order-001",
+            id=_uuid("evt-order-2"),
+            command_id=_uuid("cmd-order-001"),
             sequence=2,
             event_type="EVALUATED",
             state="EVALUATED",
@@ -854,8 +860,8 @@ async def test_causation_chain_deterministic_ordering(db: AsyncSession):
 
     db.add(
         MissionControlCommandEvent(
-            id="evt-order-1",
-            command_id="cmd-order-001",
+            id=_uuid("evt-order-1"),
+            command_id=_uuid("cmd-order-001"),
             sequence=1,
             event_type="RECEIVED",
             state="RECEIVED",
@@ -866,7 +872,7 @@ async def test_causation_chain_deterministic_ordering(db: AsyncSession):
     )
     await db.flush()
 
-    chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id="cmd-order-001")
+    chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id=_uuid("cmd-order-001"))
     assert chain is not None
     # Verify deterministic ordering by sequence
     cmd_event_links = [link for link in chain.links if link.source_type == "command_event"]
@@ -901,12 +907,12 @@ async def test_causation_chain_truncation_at_max_links(db: AsyncSession):
     from portal.services.mission_control_projection_service import get_causation_chain
 
     cmd = MissionControlCommand(
-        id="cmd-maxlinks-001",
+        id=_uuid("cmd-maxlinks-001"),
         tenant_id=TENANT_A,
         requested_by=USER_A,
         command_type="PAUSE_RUN",
         target_type="run",
-        target_id="run-001",
+        target_id=_uuid("run-001"),
         idempotency_key="idem-maxlinks-001",
         request_hash="hash-maxlinks",
         state="REFUSED",
@@ -920,8 +926,8 @@ async def test_causation_chain_truncation_at_max_links(db: AsyncSession):
     for seq in range(1, MAX_CAUSATION_LINKS + 10):
         db.add(
             MissionControlCommandEvent(
-                id=f"evt-maxlinks-{seq}",
-                command_id="cmd-maxlinks-001",
+                id=uuid.uuid4(),  # batched PK insert needs the object (sentinel rule)
+                command_id=_uuid("cmd-maxlinks-001"),
                 sequence=seq,
                 event_type="RECEIVED",
                 state="RECEIVED",
@@ -932,7 +938,7 @@ async def test_causation_chain_truncation_at_max_links(db: AsyncSession):
         )
     await db.flush()
 
-    chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id="cmd-maxlinks-001")
+    chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id=_uuid("cmd-maxlinks-001"))
     assert chain is not None
     assert chain.truncated is True
     assert chain.total_links == MAX_CAUSATION_LINKS + 9
@@ -1135,7 +1141,7 @@ class TestCycleDetection:
         links = [
             CausationLink(
                 source_type="command_event",
-                source_id="evt-self-1",
+                source_id=_uuid("evt-self-1"),
                 sequence=1,
                 event_type="RECEIVED",
                 state="RECEIVED",
@@ -1220,7 +1226,7 @@ class TestCycleDetection:
         links = [
             CausationLink(
                 source_type="command_event",
-                source_id="evt-acyclic-1",
+                source_id=_uuid("evt-acyclic-1"),
                 sequence=1,
                 event_type="RECEIVED",
                 state="RECEIVED",
@@ -1229,7 +1235,7 @@ class TestCycleDetection:
             ),
             CausationLink(
                 source_type="command_event",
-                source_id="evt-acyclic-2",
+                source_id=_uuid("evt-acyclic-2"),
                 sequence=2,
                 event_type="EVALUATED",
                 state="EVALUATED",
@@ -1238,7 +1244,7 @@ class TestCycleDetection:
             ),
             CausationLink(
                 source_type="command_event",
-                source_id="evt-acyclic-3",
+                source_id=_uuid("evt-acyclic-3"),
                 sequence=3,
                 event_type="DISPATCHED",
                 state="DISPATCHED",
@@ -1264,7 +1270,7 @@ class TestCycleDetection:
         links = [
             CausationLink(
                 source_type="command_event",
-                source_id="evt-diag-1",
+                source_id=_uuid("evt-diag-1"),
                 sequence=1,
                 event_type="RECEIVED",
                 state="RECEIVED",
@@ -1273,7 +1279,7 @@ class TestCycleDetection:
             ),
             CausationLink(
                 source_type="command_event",
-                source_id="evt-diag-2",
+                source_id=_uuid("evt-diag-2"),
                 sequence=2,
                 event_type="EVALUATED",
                 state="EVALUATED",
@@ -1293,12 +1299,12 @@ class TestCycleDetection:
         from portal.services.mission_control_projection_service import get_causation_chain
 
         cmd = MissionControlCommand(
-            id="cmd-cycle-001",
+            id=_uuid("cmd-cycle-001"),
             tenant_id=TENANT_A,
             requested_by=USER_A,
             command_type="PAUSE_RUN",
             target_type="run",
-            target_id="run-001",
+            target_id=_uuid("run-001"),
             idempotency_key="idem-cycle-001",
             request_hash="hash-cycle",
             state="REFUSED",
@@ -1311,8 +1317,8 @@ class TestCycleDetection:
         # Event 1: hash-A, previous=hash-B
         db.add(
             MissionControlCommandEvent(
-                id="evt-cycle-1",
-                command_id="cmd-cycle-001",
+                id=_uuid("evt-cycle-1"),
+                command_id=_uuid("cmd-cycle-001"),
                 sequence=1,
                 event_type="RECEIVED",
                 state="RECEIVED",
@@ -1326,8 +1332,8 @@ class TestCycleDetection:
         # Event 2: hash-B, previous=hash-A  (creates A <-> B cycle)
         db.add(
             MissionControlCommandEvent(
-                id="evt-cycle-2",
-                command_id="cmd-cycle-001",
+                id=_uuid("evt-cycle-2"),
+                command_id=_uuid("cmd-cycle-001"),
                 sequence=2,
                 event_type="EVALUATED",
                 state="EVALUATED",
@@ -1338,6 +1344,6 @@ class TestCycleDetection:
         )
         await db.flush()
 
-        chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id="cmd-cycle-001")
+        chain = await get_causation_chain(db, tenant_id=TENANT_A, command_id=_uuid("cmd-cycle-001"))
         assert chain is not None
         assert any("Cycle" in w for w in chain.warnings)

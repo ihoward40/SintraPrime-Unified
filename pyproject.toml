@@ -45,6 +45,7 @@ dependencies = [
     "PyJWT>=2.13.0",
     "pyotp>=2.9.0",
     "qrcode>=7.4.2",
+    "pillow>=10.0.0",
     "email-validator>=2.1.0",
     "aiohttp>=3.14.1",
     "apscheduler>=3.10.4",
@@ -229,6 +230,12 @@ known-first-party = ["portal", "operator", "voice_concierge"]
 # Existing violations in active directories, suppressed by path.
 # As violations are fixed in a directory, remove its entry here.
 # See docs/ci/ruff-baseline.md for counts and cleanup priorities.
+#
+# Legacy test modules kept under the Wave-2B visible-lane policy: module-level
+# pytest.skip precedes imports by design, so E402 is expected.
+"portal/tests/test_mythos_brain_integration.py" = ["E402"]
+"portal/tests/test_pr_263_remediation.py" = ["E402"]
+"portal/tests/test_admin_dashboard.py" = ["E402"]
 #
 # Root-level files
 "__init__.py" = ["N999"]

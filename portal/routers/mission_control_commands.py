@@ -43,7 +43,10 @@ COMMAND_PERMISSIONS: dict[CommandType, Permission] = {
 }
 
 COMMAND_TARGET_COMPATIBILITY: dict[CommandType, frozenset[CommandTargetType]] = {
-    CommandType.START_GOVERNED_RUN: frozenset({CommandTargetType.MISSION}),
+    # Restore provenance-verified compatibility from 795bdaf2 ("Harden Mission
+    # Control command idempotency"): START_GOVERNED_RUN accepts both run and
+    # mission targets. The MISSION-only narrowing was an undocumented regression.
+    CommandType.START_GOVERNED_RUN: frozenset({CommandTargetType.RUN, CommandTargetType.MISSION}),
     CommandType.PAUSE_RUN: frozenset({CommandTargetType.RUN}),
     CommandType.RESUME_RUN: frozenset({CommandTargetType.RUN}),
     CommandType.CANCEL_RUN: frozenset({CommandTargetType.RUN}),

@@ -49,6 +49,8 @@ test-results.xml
 coverage/
 .nyc_output/
 artifacts/ci/
+artifacts/test-temp/
+.cert-temp/
 
 # Database
 *.db

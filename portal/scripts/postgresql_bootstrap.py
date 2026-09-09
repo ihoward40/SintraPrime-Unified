@@ -25,6 +25,11 @@ MIGRATION_SEQUENCE = (
     Path("portal/migrations/add_mission_control_mission_runs.sql"),
     Path("portal/migrations/add_mission_control_run_approvals.sql"),
     Path("portal/migrations/add_mission_control_run_control_projection.sql"),
+    # SP-CONVERGE-001 Wave 2C-2: voice command ledger promoted to canonical
+    # schema authority — the voice router is mounted in production
+    # (portal/main.py include_router(voice_commands.router)) and its Tier-2
+    # suite is certified; the ledger is therefore production schema.
+    Path("portal/migrations/add_voice_command_ledger.sql"),
 )
 EXPECTED_TABLES = (
     "tenants",
@@ -59,6 +64,10 @@ EXPECTED_TABLES = (
     "orchestration_budget_usage",
     "orchestration_evidence_references",
     "notifications",
+    # Wave 2C-2: governed voice command ledger (canonical schema authority)
+    "voice_commands",
+    "voice_command_events",
+    "voice_command_receipts",
 )
 
 

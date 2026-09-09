@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import uuid
 
 import pytest
 import pytest_asyncio
@@ -14,6 +15,18 @@ from portal.services.durable_orchestration_authority import (
     DurableOrchestrationAuthority,
 )
 from portal.services.mission_control_capability_policy import CapabilityDecision
+
+
+# PortableUUID boundary (PR #294): identity columns are strict UUID; legacy
+# readable labels in this file are derived to stable UUIDs via uuid5.
+def _uuid(label: str) -> str:
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, "sintraprime-test:" + label))
+
+
+TENANT_A = _uuid("tenant-a")
+TENANT_B = _uuid("tenant-b")
+USER_A = _uuid("user-a")
+USER_B = _uuid("user-b")
 
 
 @pytest_asyncio.fixture
@@ -34,7 +47,7 @@ async def db():
 @pytest.mark.asyncio
 async def test_start_maps_durable_workflow_id_to_execution_ref(db):
     authority = DurableOrchestrationAuthority()
-    mission = await authority.create_mission(db, tenant_id="tenant-a", created_by="user-a")
+    mission = await authority.create_mission(db, tenant_id=TENANT_A, created_by=USER_A)
 
     async def workflow(_context, _input):
         return "ok"
@@ -43,8 +56,8 @@ async def test_start_maps_durable_workflow_id_to_execution_ref(db):
     run = await authority.start_run(
         db,
         mission_id=mission.mission_id,
-        tenant_id="tenant-a",
-        created_by="user-a",
+        tenant_id=TENANT_A,
+        created_by=USER_A,
         workflow_type="test",
         input_data={},
         policy_decision=CapabilityDecision.DIRECT_ALLOWED,
@@ -59,7 +72,7 @@ async def test_start_maps_durable_workflow_id_to_execution_ref(db):
 @pytest.mark.asyncio
 async def test_cancel_routes_using_persisted_execution_ref(db):
     authority = DurableOrchestrationAuthority()
-    mission = await authority.create_mission(db, tenant_id="tenant-a", created_by="user-a")
+    mission = await authority.create_mission(db, tenant_id=TENANT_A, created_by=USER_A)
 
     block = asyncio.Event()
 
@@ -71,13 +84,13 @@ async def test_cancel_routes_using_persisted_execution_ref(db):
     run = await authority.start_run(
         db,
         mission_id=mission.mission_id,
-        tenant_id="tenant-a",
-        created_by="user-a",
+        tenant_id=TENANT_A,
+        created_by=USER_A,
         workflow_type="test",
         input_data={},
         policy_decision=CapabilityDecision.DIRECT_ALLOWED,
     )
-    assert await authority.cancel_run(db, run_id=run.run_id, tenant_id="tenant-a")
+    assert await authority.cancel_run(db, run_id=run.run_id, tenant_id=TENANT_A)
     assert run.status == "CANCELLED"
     block.set()
 
@@ -85,14 +98,14 @@ async def test_cancel_routes_using_persisted_execution_ref(db):
 @pytest.mark.asyncio
 async def test_start_rejects_cross_tenant_mission(db):
     authority = DurableOrchestrationAuthority()
-    mission = await authority.create_mission(db, tenant_id="tenant-a", created_by="user-a")
+    mission = await authority.create_mission(db, tenant_id=TENANT_A, created_by=USER_A)
 
     with pytest.raises(ValueError, match="MISSION_NOT_FOUND"):
         await authority.start_run(
             db,
             mission_id=mission.mission_id,
-            tenant_id="tenant-b",
-            created_by="user-b",
+            tenant_id=TENANT_B,
+            created_by=USER_B,
             workflow_type="missing",
             input_data={},
             policy_decision=CapabilityDecision.DIRECT_ALLOWED,
@@ -102,12 +115,12 @@ async def test_start_rejects_cross_tenant_mission(db):
 @pytest.mark.asyncio
 async def test_approval_required_does_not_start_engine(db):
     authority = DurableOrchestrationAuthority()
-    mission = await authority.create_mission(db, tenant_id="tenant-a", created_by="user-a")
+    mission = await authority.create_mission(db, tenant_id=TENANT_A, created_by=USER_A)
     run = await authority.start_run(
         db,
         mission_id=mission.mission_id,
-        tenant_id="tenant-a",
-        created_by="user-a",
+        tenant_id=TENANT_A,
+        created_by=USER_A,
         workflow_type="not-registered-yet",
         input_data={},
         policy_decision=CapabilityDecision.APPROVAL_REQUIRED,
@@ -119,13 +132,13 @@ async def test_approval_required_does_not_start_engine(db):
 @pytest.mark.asyncio
 async def test_unknown_durable_workflow_never_becomes_active(db):
     authority = DurableOrchestrationAuthority()
-    mission = await authority.create_mission(db, tenant_id="tenant-a", created_by="user-a")
+    mission = await authority.create_mission(db, tenant_id=TENANT_A, created_by=USER_A)
     with pytest.raises(ValueError, match="Unknown workflow type"):
         await authority.start_run(
             db,
             mission_id=mission.mission_id,
-            tenant_id="tenant-a",
-            created_by="user-a",
+            tenant_id=TENANT_A,
+            created_by=USER_A,
             workflow_type="unknown",
             input_data={},
             policy_decision=CapabilityDecision.DIRECT_ALLOWED,

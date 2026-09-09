@@ -281,7 +281,7 @@ class TestRbac:
         from portal.auth.rbac import get_current_user
 
         with pytest.raises(HTTPException) as exc_info:
-            await get_current_user(credentials=None)
+            await get_current_user(request=None, credentials=None)
         assert exc_info.value.status_code == 401
 
     @pytest.mark.asyncio
@@ -293,7 +293,7 @@ class TestRbac:
         mock_creds = MagicMock()
         mock_creds.credentials = "invalid.token.here"
         with pytest.raises(HTTPException) as exc_info:
-            await get_current_user(credentials=mock_creds)
+            await get_current_user(request=None, credentials=mock_creds)
         assert exc_info.value.status_code == 401
 
     @pytest.mark.asyncio
@@ -309,7 +309,7 @@ class TestRbac:
         )
         mock_creds = MagicMock()
         mock_creds.credentials = token
-        user = await get_current_user(credentials=mock_creds)
+        user = await get_current_user(request=None, credentials=mock_creds)
         assert isinstance(user, CurrentUser)
         assert user.user_id == "user-1"
 

@@ -193,6 +193,13 @@ def test_valid_command_target_combinations_are_accepted(
     body = _body(command_type, key=f"compat-{command_type}-{target_type}-1234567890")
     body["target_type"] = target_type
     response = client.post("/api/v1/mission-control/commands", json=body)
+    # START_GOVERNED_RUN + run target reaches the command ledger but cannot
+    # bind a non-UUID run id to a Mission identity column (PR #294 strict
+    # PortableUUID): the command must still be RECORDED (201) and REFUSED.
+    if command_type == "START_GOVERNED_RUN" and target_type == "run":
+        assert response.status_code == 201
+        assert response.json()["state"] == "REFUSED"
+        return
     assert response.status_code == 201
     assert response.json()["state"] == "REFUSED"
 
@@ -259,6 +266,21 @@ async def test_supported_commands_persist_and_refuse(
     db: AsyncSession,
     command_type: str,
 ) -> None:
+    # Expected-behavior change (documented per convergence discipline §39):
+    # Under the Option-5 canonical command path, START_GOVERNED_RUN and
+    # CANCEL_RUN are execution-capable commands, so a non-canonical target id
+    # ("run-123") is refused with INVALID_TARGET (bind-safe UUID boundary)
+    # rather than the Increment-One recording refusal. PAUSE/RESUME/ASSIGN/
+    # REASSIGN remain refusal-only commands (COMMAND_EXECUTION_NOT_ENABLED).
+    expected_reason = {
+        "START_GOVERNED_RUN": "INVALID_TARGET",
+        "CANCEL_RUN": "INVALID_TARGET",
+        "PAUSE_RUN": "COMMAND_EXECUTION_NOT_ENABLED",
+        "RESUME_RUN": "COMMAND_EXECUTION_NOT_ENABLED",
+        "ASSIGN_AGENT": "COMMAND_EXECUTION_NOT_ENABLED",
+        "REASSIGN_AGENT": "COMMAND_EXECUTION_NOT_ENABLED",
+    }[command_type]
+
     response = client.post(
         "/api/v1/mission-control/commands",
         json=_body(command_type, key=f"key-{command_type}-1234567890"),
@@ -267,7 +289,7 @@ async def test_supported_commands_persist_and_refuse(
     assert response.status_code == 201
     body = response.json()
     assert body["state"] == "REFUSED"
-    assert body["reason_code"] == "COMMAND_EXECUTION_NOT_ENABLED"
+    assert body["reason_code"] == expected_reason
     assert body["duplicate"] is False
     assert len(body["event_ids"]) == 3
     assert body["receipt_id"]
@@ -278,8 +300,8 @@ async def test_supported_commands_persist_and_refuse(
     )
     command = result.scalar_one()
     assert command.command_type == command_type
-    assert command.tenant_id == TENANT_ID
-    assert command.requested_by == USER_ID
+    assert str(command.tenant_id) == TENANT_ID
+    assert str(command.requested_by) == USER_ID
     assert command.state == "REFUSED"
 
 
@@ -429,8 +451,8 @@ async def test_tenant_and_actor_come_from_server_context(
     assert response.status_code == 201
     result = await db.execute(select(MissionControlCommand))
     command = result.scalar_one()
-    assert command.tenant_id == TENANT_ID
-    assert command.requested_by == USER_ID
+    assert str(command.tenant_id) == TENANT_ID
+    assert str(command.requested_by) == USER_ID
 
 
 @pytest.mark.asyncio
@@ -466,9 +488,9 @@ async def test_audit_record_and_receipt_are_created(client: TestClient, db: Asyn
 
     receipt_result = await db.execute(select(MissionControlCommandReceipt))
     receipt = receipt_result.scalar_one()
-    assert receipt.id == body["receipt_id"]
+    assert str(receipt.id) == body["receipt_id"]
     assert receipt.receipt_type == "REFUSAL"
-    assert receipt.audit_log_id == body["audit_log_id"]
+    assert str(receipt.audit_log_id) == body["audit_log_id"]
 
 
 @pytest.mark.asyncio

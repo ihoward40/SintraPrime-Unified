@@ -1,4 +1,27 @@
-from unittest.mock import patch
+"""Admin dashboard endpoint tests.
+
+SP-CONVERGE-001 Wave 2B disposition (provenance-verified): this module was
+authored in Phase 24 (e02622fb) with syntactically invalid patching calls
+(``patck``/``patcj``), so it never executed. It targets AdminService methods
+(``get_metrics``, ``get_sessions``, ``get_audit_log``, ``get_performance``)
+and routes (``/admin/dashboard/overview|sessions|audit|performance``) that
+have never existed in production code (zero reference scan, Wave 2B-REM).
+
+The real dashboard surface is portal/admin/dashboard.py
+(``/admin/dashboard``, ``/admin/metrics``). These tests are kept as a
+specification record and skipped until the endpoints are built (Wave 10
+Mission Control 2.0) or the module is removed in a narrow cleanup.
+"""
+
+import pytest
+
+pytest.skip(
+    "Legacy Phase-24 module: targets AdminService endpoints/methods that do "
+    "not exist in production (never executed since e02622fb; see docstring)",
+    allow_module_level=True,
+)
+
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient

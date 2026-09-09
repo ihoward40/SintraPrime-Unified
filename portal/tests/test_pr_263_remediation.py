@@ -5,6 +5,17 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from portal.database import Base
+
+pytest.skip(
+    "LEGACY (W2B): imports EventNodeLinkage/MemoryEntry from "
+    "portal.models.mission_control_outbox; those symbols were removed/renamed "
+    "(EventNodeLinkage now lives as OrchestrationLinkage alias in "
+    "portal/services/remediation_service.py). Kept for reference under the "
+    "visible-lane policy; re-derive before re-activating. See "
+    "artifacts/convergence/wave2a/.",
+    allow_module_level=True,
+)
+
 from portal.models.mission_control_outbox import EventNodeLinkage, MemoryEntry, MissionControlOutbox
 from portal.services.memory_vault import memory_vault
 from portal.services.mythos_brain import MythosBrainCoordinator

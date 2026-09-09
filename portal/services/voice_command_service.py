@@ -239,7 +239,7 @@ async def _finalize(
         user_id=current_user.user_id,
         tenant_id=current_user.tenant_id,
         resource_type="voice_command",
-        resource_id=command_row.id,
+        resource_id=str(command_row.id),  # AuditLog.resource_id is String-bound (2B-REM)
         resource_name=command_row.command_id,
         status="refused" if outcome.receipt.result == "refused" else "success",
         details={
@@ -399,7 +399,9 @@ def _rehydrate_envelope(
 ) -> VoiceCommandEnvelope:
     return create_envelope(
         session_id=command_row.voice_session_id,
-        principal_id=command_row.principal_id,
+        # PortableUUID loads back as uuid.UUID (PR #294 / fa741614 FK
+        # convergence); the envelope contract requires the canonical string.
+        principal_id=str(command_row.principal_id),
         source=VoiceSource(command_row.source),
         raw_transcript=command_row.raw_transcript or "[hash-only retention]",
         normalized_intent=command_row.normalized_intent,

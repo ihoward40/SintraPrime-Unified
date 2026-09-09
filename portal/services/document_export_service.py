@@ -102,8 +102,14 @@ async def export_documents_to_packet(
     evidence_hash = compute_evidence_hash(evidence)
     manifest_hash = compute_manifest_hash(evidence)
 
-    if snapshot_service is not None:
-        snapshot = snapshot_service.create(
+    # Persistence path selection (Wave 2B-REM correction of c3c85a36 drift):
+    # the DB-backed provenance path requires a live session. When the caller
+    # supplies an injected snapshot_service (or no session), use the
+    # in-memory service — the original b91b54be contract that this module's
+    # tests (session=None) certify.
+    if snapshot_service is not None or session is None:
+        svc = snapshot_service or EvidenceSnapshotService()
+        snapshot = svc.create(
             case_id=case_id,
             evidence_hash=evidence_hash,
             manifest_hash=manifest_hash,
@@ -131,8 +137,8 @@ async def export_documents_to_packet(
         evidence=evidence,
     )
 
-    if audit_service is not None:
-        audit = audit_service.create(
+    if audit_service is not None or session is None:
+        audit = (audit_service or AuditService()).create(
             snapshot_id=snapshot.snapshot_id,
             evidence_hash=evidence_hash,
             packet_id=packet.packet_hash,

@@ -1,0 +1,71 @@
+name: Portal Tier-2 Lane
+
+# SP-CONVERGE-001 WAVE 2B (2B-2/2B-3): make the portal control-plane lane
+# visible and path-aware. The default lane does not collect portal/tests
+# (root conftest collect_ignore_glob, PR #98/Issue #97 design); this workflow
+# runs the portal lane explicitly via scripts/certify.py, which sets
+# SINTRAPRIME_TEST_LANES and a per-run repo-local pytest temp root.
+
+on:
+  push:
+    branches: [ main, dev, "fix/**", "feat/**" ]
+    paths:
+      - "portal/**"
+      - "pyproject.toml"
+      - "requirements.txt"
+      - "conftest.py"
+      - "scripts/certify.py"
+      - ".github/workflows/portal-ci.yml"
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "portal/**"
+      - "pyproject.toml"
+      - "requirements.txt"
+      - "conftest.py"
+      - "scripts/certify.py"
+      - ".github/workflows/portal-ci.yml"
+  workflow_dispatch:
+
+jobs:
+  portal-tier2:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sintraprime
+          POSTGRES_PASSWORD: sintraprime
+          POSTGRES_DB: sintraprime_unified
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U sintraprime -d sintraprime_unified"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    env:
+      SINTRAPRIME_TEST_LANES: default,portal
+      DATABASE_URL: postgresql+asyncpg://sintraprime:sintraprime@localhost:5432/sintraprime_unified
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run portal Tier-2 lane (certify wrapper)
+        run: python scripts/certify.py --target portal --name ci-portal-lane
+      - name: Upload portal lane receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: portal-lane-receipt
+          path: |
+            artifacts/cert-receipts/*.json
+            artifacts/cert-receipts/*.stdout.txt
+          if-no-files-found: ignore
+          retention-days: 30

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from collections.abc import AsyncGenerator
 
 import pytest
@@ -22,6 +23,8 @@ from portal.services.permission_provisioning import (
     plan_permission_manifest,
     sync_permission_manifest,
 )
+
+RoleModel = Role
 
 
 @pytest_asyncio.fixture
@@ -46,28 +49,45 @@ async def db() -> AsyncGenerator[AsyncSession, None]:
     await engine.dispose()
 
 
+# PortableUUID boundary (PR #294): identity columns are strict UUID. Legacy
+# readable labels are derived to stable UUIDs via uuid5 (label -> UUID), so
+# fixtures stay deterministic and self-describing in diagnostics.
+def _uuid(label: str) -> str:
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, "sintraprime-test:" + label))
+
+
+def _uuid_obj() -> uuid.UUID:
+    return uuid.uuid4()
+
+
 async def _seed_roles(session: AsyncSession) -> None:
     session.add_all(
         [
-            Role(id="role-super", name="SUPER_ADMIN", display_name="Super Admin", is_system=True),
-            Role(id="role-firm", name="FIRM_ADMIN", display_name="Firm Admin", is_system=True),
-            Role(id="role-attorney", name="ATTORNEY", display_name="Attorney", is_system=True),
-            Role(id="role-paralegal", name="PARALEGAL", display_name="Paralegal", is_system=True),
+            Role(id=_uuid_obj(), name="SUPER_ADMIN", display_name="Super Admin", is_system=True),
+            Role(id=_uuid_obj(), name="FIRM_ADMIN", display_name="Firm Admin", is_system=True),
+            Role(id=_uuid_obj(), name="ATTORNEY", display_name="Attorney", is_system=True),
+            Role(id=_uuid_obj(), name="PARALEGAL", display_name="Paralegal", is_system=True),
             Role(
-                id="role-accountant", name="ACCOUNTANT", display_name="Accountant", is_system=True
+                id=_uuid_obj(), name="ACCOUNTANT", display_name="Accountant", is_system=True
             ),
-            Role(id="role-client", name="CLIENT", display_name="Client", is_system=True),
-            Role(id="role-viewer", name="VIEWER", display_name="Viewer", is_system=True),
-            Role(id="role-custom", name="CUSTOM", display_name="Custom", is_system=False),
+            Role(id=_uuid_obj(), name="CLIENT", display_name="Client", is_system=True),
+            Role(id=_uuid_obj(), name="VIEWER", display_name="Viewer", is_system=True),
+            Role(id=_uuid_obj(), name="CUSTOM", display_name="Custom", is_system=False),
         ]
     )
     await session.flush()
 
 
+async def _role_id_by_name(session: AsyncSession, name: str) -> uuid.UUID:
+    result = await session.execute(select(RoleModel).where(RoleModel.name == name))
+    role = result.scalar_one()
+    return role.id
+
+
 @pytest.mark.asyncio
 async def test_permission_sync_creates_missing_permissions_and_role_grants(db: AsyncSession):
     await _seed_roles(db)
-    db.add(Permission(id="perm-1", name="case:read", resource="case", action="read"))
+    db.add(Permission(id=_uuid("perm-1"), name="case:read", resource="case", action="read"))
     await db.commit()
 
     report = await sync_permission_manifest(db)
@@ -103,17 +123,18 @@ async def test_permission_sync_is_idempotent(db: AsyncSession):
 @pytest.mark.asyncio
 async def test_synced_role_permissions_feed_login_and_refresh_access_tokens(db: AsyncSession):
     await _seed_roles(db)
-    db.add(Tenant(id="tenant-1", name="Acme", slug="acme"))
+    db.add(Tenant(id=_uuid("tenant-1"), name="Acme", slug="acme"))
     await db.commit()
 
     await sync_permission_manifest(db)
     await db.commit()
 
+    attorney_role_id = await _role_id_by_name(db, "ATTORNEY")
     db.add(
         User(
-            id="user-1",
-            tenant_id="tenant-1",
-            role_id="role-attorney",
+            id=_uuid("user-1"),
+            tenant_id=_uuid("tenant-1"),
+            role_id=attorney_role_id,
             email="attorney@example.com",
             hashed_password="hashed-password",
             first_name="Ada",
@@ -126,7 +147,7 @@ async def test_synced_role_permissions_feed_login_and_refresh_access_tokens(db: 
     result = await db.execute(
         select(User)
         .options(selectinload(User.role_ref).selectinload(Role.permissions))
-        .where(User.id == "user-1")
+        .where(User.id == _uuid("user-1"))
     )
     user = result.scalar_one()
 
@@ -146,7 +167,7 @@ async def test_synced_role_permissions_feed_login_and_refresh_access_tokens(db: 
     refreshed_user_result = await db.execute(
         select(User)
         .options(selectinload(User.role_ref).selectinload(Role.permissions))
-        .where(User.id == "user-1")
+        .where(User.id == _uuid("user-1"))
     )
     refreshed_user = refreshed_user_result.scalar_one()
     refreshed_login_response, _refresh_token_2, _family_id_2 = _build_login_response(
@@ -160,16 +181,16 @@ async def test_synced_role_permissions_feed_login_and_refresh_access_tokens(db: 
 @pytest.mark.asyncio
 async def test_permission_sync_preserves_custom_roles(db: AsyncSession):
     await _seed_roles(db)
-    db.add(Permission(id="perm-x", name="custom:read", resource="custom", action="read"))
+    db.add(Permission(id=_uuid("perm-x"), name="custom:read", resource="custom", action="read"))
     await db.flush()
-    db.add(RolePermission(role_id="role-custom", permission_id="perm-x"))
+    db.add(RolePermission(role_id=_uuid("role-custom"), permission_id=_uuid("perm-x")))
     await db.commit()
 
     await sync_permission_manifest(db)
     await db.commit()
 
     custom_grant = await db.execute(
-        select(RolePermission).where(RolePermission.role_id == "role-custom")
+        select(RolePermission).where(RolePermission.role_id == _uuid("role-custom"))
     )
     assert custom_grant.scalar_one_or_none() is not None
 
@@ -177,7 +198,7 @@ async def test_permission_sync_preserves_custom_roles(db: AsyncSession):
 @pytest.mark.asyncio
 async def test_permission_dry_run_returns_same_manifest_hash_without_writes(db: AsyncSession):
     await _seed_roles(db)
-    db.add(Permission(id="perm-2", name="case:update", resource="case", action="update"))
+    db.add(Permission(id=_uuid("perm-2"), name="case:update", resource="case", action="update"))
     await db.commit()
     before_permissions = await db.execute(select(Permission))
     before_roles = await db.execute(select(Role))
@@ -209,7 +230,7 @@ async def test_permission_dry_run_returns_same_manifest_hash_without_writes(db: 
 async def test_permission_sync_flags_ambiguous_system_role_identity(db: AsyncSession):
     db.add(
         Role(
-            id="role-firm-custom",
+            id=_uuid("role-firm-custom"),
             name="FIRM_ADMIN",
             display_name="Firm Admin Custom",
             is_system=False,

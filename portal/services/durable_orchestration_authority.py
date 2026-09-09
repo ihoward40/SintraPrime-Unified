@@ -104,7 +104,12 @@ class DurableOrchestrationAuthority:
             workflow_id = await self.engine.start_workflow(
                 run.workflow_type,
                 input_data,
-                metadata={"mission_id": run.mission_id, "run_id": run.run_id},
+                metadata={
+                    # JSON-safe canonical string form: the durable store
+                    # serializes metadata via json.dumps (Wave 2B-REM).
+                    "mission_id": str(run.mission_id),
+                    "run_id": str(run.run_id),
+                },
                 workflow_id=preallocated_wid,
             )
         except ValueError as exc:

@@ -72,6 +72,19 @@ from portal.services.tenant_principal_service import is_tenant_principal  # noqa
 # Test fixtures
 # ---------------------------------------------------------------------------
 
+# PortableUUID boundary (PR #294): identity columns are strict UUID; legacy
+# readable labels in this file are derived to stable UUIDs via uuid5.
+def _uuid(label: str) -> str:
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, "sintraprime-test:" + label))
+
+
+TENANT_A = _uuid("tenant-a")
+TENANT_EV = _uuid("tenant-ev")
+PRINCIPAL_EV = _uuid("principal-ev")
+PRINCIPAL_A = _uuid("principal-a")
+ROLE_FIRM_ADMIN = _uuid("role-firm-admin")
+
+
 @pytest_asyncio.fixture
 async def db():
     """In-memory test database with all required tables."""
@@ -116,7 +129,7 @@ async def authority(engine):
     return DurableOrchestrationAuthority(engine=engine)
 
 
-def _make_current_user(user_id: str = "principal-a", tenant_id: str = "tenant-a", role: RbacRole = RbacRole.FIRM_ADMIN) -> CurrentUser:
+def _make_current_user(user_id: str = PRINCIPAL_A, tenant_id: str = TENANT_A, role: RbacRole = RbacRole.FIRM_ADMIN) -> CurrentUser:
     payload = {
         "sub": user_id,
         "tenant_id": tenant_id,
@@ -126,21 +139,21 @@ def _make_current_user(user_id: str = "principal-a", tenant_id: str = "tenant-a"
     return CurrentUser(payload)
 
 
-async def _setup_principal(db: AsyncSession, user_id: str = "principal-a", tenant_id: str = "tenant-a"):
+async def _setup_principal(db: AsyncSession, user_id: str = PRINCIPAL_A, tenant_id: str = TENANT_A):
     """Insert Tenant, Role, User, TenantPrincipal records."""
     tenant = Tenant(id=tenant_id, name="Test Firm", slug="test-firm")
     db.add(tenant)
     from portal.models.user import Permission as PermModel
     from portal.models.user import Role as RoleModel
-    role = RoleModel(id="role-firm-admin", name=RbacRole.FIRM_ADMIN.value, display_name="Firm Admin")
+    role = RoleModel(id=ROLE_FIRM_ADMIN, name=RbacRole.FIRM_ADMIN.value, display_name="Firm Admin")
     db.add(role)
     for perm in Permission:
-        p = PermModel(id=str(uuid.uuid4()), name=perm.value, resource="*", action=perm.value)
+        p = PermModel(id=uuid.uuid4(), name=perm.value, resource="*", action=perm.value)
         db.add(p)
-        db.add(RolePermission(role_id="role-firm-admin", permission_id=p.id))
+        db.add(RolePermission(role_id=ROLE_FIRM_ADMIN, permission_id=p.id))
     user = User(
         id=user_id, email="principal@test.com", tenant_id=tenant_id,
-        role_id="role-firm-admin", hashed_password="x",
+        role_id=ROLE_FIRM_ADMIN, hashed_password="x",
         first_name="Test", last_name="Principal",
     )
     db.add(user)
@@ -148,7 +161,7 @@ async def _setup_principal(db: AsyncSession, user_id: str = "principal-a", tenan
     await db.commit()
 
 
-async def _create_production_mission(db: AsyncSession, authority: DurableOrchestrationAuthority, tenant_id: str = "tenant-a", created_by: str = "principal-a") -> Mission:
+async def _create_production_mission(db: AsyncSession, authority: DurableOrchestrationAuthority, tenant_id: str = TENANT_A, created_by: str = PRINCIPAL_A) -> Mission:
     """Create a Mission and bind it to the production legal_workflow capability."""
     mission = await authority.create_mission(db, tenant_id=tenant_id, created_by=created_by)
     # Server-owned capability binding — the Mission's workflow_type is set by
@@ -262,7 +275,7 @@ class TestServerOwnership:
         """resolve_mission_capability returns the server-bound workflow_type."""
         await _setup_principal(db)
         mission = await _create_production_mission(db, authority)
-        cap = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id="tenant-a")
+        cap = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id=TENANT_A)
         assert cap == LEGAL_WORKFLOW_TYPE
 
 
@@ -309,15 +322,15 @@ class TestCanonicalRuntimeAcceptance:
         mission = await _create_production_mission(db, authority)
 
         # START: create Run with server-resolved capability
-        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id="tenant-a")
+        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id=TENANT_A)
         policy = resolve_capability_policy(engine, capability=capability)
         assert policy == CapabilityDecision.APPROVAL_REQUIRED
 
         run = await authority.start_run(
             db,
             mission_id=mission.mission_id,
-            tenant_id="tenant-a",
-            created_by="principal-a",
+            tenant_id=TENANT_A,
+            created_by=PRINCIPAL_A,
             workflow_type=capability,
             input_data={"case_id": "case-001", "practice_area": "trust"},
             policy_decision=policy,
@@ -337,7 +350,7 @@ class TestCanonicalRuntimeAcceptance:
         approval = await create_approval(
             db,
             run_id=run.run_id,
-            tenant_id="tenant-a",
+            tenant_id=TENANT_A,
             actor=actor,
             decision="APPROVED",
         )
@@ -348,7 +361,7 @@ class TestCanonicalRuntimeAcceptance:
         activated_run = await consume_approval_and_activate(
             db,
             run_id=run.run_id,
-            tenant_id="tenant-a",
+            tenant_id=TENANT_A,
             actor=actor,
             authority=authority,
         )
@@ -378,14 +391,14 @@ class TestEngineCallCounts:
     async def test_engine_calls_before_approval_is_zero(self, db, authority, engine):
         await _setup_principal(db)
         mission = await _create_production_mission(db, authority)
-        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id="tenant-a")
+        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id=TENANT_A)
         policy = resolve_capability_policy(engine, capability=capability)
 
         await authority.start_run(
             db,
             mission_id=mission.mission_id,
-            tenant_id="tenant-a",
-            created_by="principal-a",
+            tenant_id=TENANT_A,
+            created_by=PRINCIPAL_A,
             workflow_type=capability,
             input_data={"case_id": "case-cc", "practice_area": "general"},
             policy_decision=policy,
@@ -396,21 +409,21 @@ class TestEngineCallCounts:
     async def test_engine_calls_after_approval_is_one(self, db, authority, engine):
         await _setup_principal(db)
         mission = await _create_production_mission(db, authority)
-        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id="tenant-a")
+        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id=TENANT_A)
         policy = resolve_capability_policy(engine, capability=capability)
 
         run = await authority.start_run(
             db,
             mission_id=mission.mission_id,
-            tenant_id="tenant-a",
-            created_by="principal-a",
+            tenant_id=TENANT_A,
+            created_by=PRINCIPAL_A,
             workflow_type=capability,
             input_data={"case_id": "case-cc2"},
             policy_decision=policy,
         )
         actor = _make_current_user()
-        await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED")
-        await consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, authority=authority)
+        await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED")
+        await consume_approval_and_activate(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, authority=authority)
 
         workflows = engine._store.list_workflows()
         assert len([w for w in workflows if w.workflow_type == LEGAL_WORKFLOW_TYPE]) == 1
@@ -418,21 +431,21 @@ class TestEngineCallCounts:
     async def test_replay_additional_engine_calls_is_zero(self, db, authority, engine):
         await _setup_principal(db)
         mission = await _create_production_mission(db, authority)
-        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id="tenant-a")
+        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id=TENANT_A)
         policy = resolve_capability_policy(engine, capability=capability)
 
         run = await authority.start_run(
             db,
             mission_id=mission.mission_id,
-            tenant_id="tenant-a",
-            created_by="principal-a",
+            tenant_id=TENANT_A,
+            created_by=PRINCIPAL_A,
             workflow_type=capability,
             input_data={"case_id": "case-replay"},
             policy_decision=policy,
         )
         actor = _make_current_user()
-        await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED")
-        await consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, authority=authority)
+        await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED")
+        await consume_approval_and_activate(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, authority=authority)
 
         # Replay: same command should not dispatch again
         with pytest.raises(Exception):
@@ -453,25 +466,25 @@ class TestRejectionAcceptance:
     async def test_rejection_cancels_run_with_zero_dispatch(self, db, authority, engine):
         await _setup_principal(db)
         mission = await _create_production_mission(db, authority)
-        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id="tenant-a")
+        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id=TENANT_A)
         policy = resolve_capability_policy(engine, capability=capability)
 
         run = await authority.start_run(
             db,
             mission_id=mission.mission_id,
-            tenant_id="tenant-a",
-            created_by="principal-a",
+            tenant_id=TENANT_A,
+            created_by=PRINCIPAL_A,
             workflow_type=capability,
             input_data={"case_id": "case-reject"},
             policy_decision=policy,
         )
         actor = _make_current_user()
-        approval = await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="REJECTED")
+        approval = await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="REJECTED")
         assert approval.decision == "REJECTED"
         assert approval.status == "REJECTED"
 
         # Verify Run is CANCELLED
-        cancelled_run = await authority.get_run(db, run_id=run.run_id, tenant_id="tenant-a")
+        cancelled_run = await authority.get_run(db, run_id=run.run_id, tenant_id=TENANT_A)
         assert cancelled_run.status == "CANCELLED"
         assert cancelled_run.failure_reason == "PRINCIPAL_REJECTED"
         assert cancelled_run.execution_ref is None
@@ -491,21 +504,21 @@ class TestReplayAcceptance:
     async def test_duplicate_start_does_not_redispatch(self, db, authority, engine):
         await _setup_principal(db)
         mission = await _create_production_mission(db, authority)
-        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id="tenant-a")
+        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id=TENANT_A)
         policy = resolve_capability_policy(engine, capability=capability)
 
         run = await authority.start_run(
             db,
             mission_id=mission.mission_id,
-            tenant_id="tenant-a",
-            created_by="principal-a",
+            tenant_id=TENANT_A,
+            created_by=PRINCIPAL_A,
             workflow_type=capability,
             input_data={"case_id": "case-dup"},
             policy_decision=policy,
         )
         actor = _make_current_user()
-        await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED")
-        await consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, authority=authority)
+        await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED")
+        await consume_approval_and_activate(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, authority=authority)
 
         workflows_after_first = engine._store.list_workflows()
         count1 = len([w for w in workflows_after_first if w.workflow_type == LEGAL_WORKFLOW_TYPE])
@@ -531,21 +544,21 @@ class TestCancellationAcceptance:
     async def test_cancel_active_run_through_execution_ref(self, db, authority, engine):
         await _setup_principal(db)
         mission = await _create_production_mission(db, authority)
-        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id="tenant-a")
+        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id=TENANT_A)
         policy = resolve_capability_policy(engine, capability=capability)
 
         run = await authority.start_run(
             db,
             mission_id=mission.mission_id,
-            tenant_id="tenant-a",
-            created_by="principal-a",
+            tenant_id=TENANT_A,
+            created_by=PRINCIPAL_A,
             workflow_type=capability,
             input_data={"case_id": "case-cancel"},
             policy_decision=policy,
         )
         actor = _make_current_user()
-        await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED")
-        activated = await consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, authority=authority)
+        await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED")
+        activated = await consume_approval_and_activate(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, authority=authority)
         assert activated.execution_ref is not None
 
         # Cancel through execution_ref. The legal_workflow may complete very
@@ -553,36 +566,36 @@ class TestCancellationAcceptance:
         # truthfully. Both outcomes are valid:
         #   - True: workflow was still running and was cancelled
         #   - False: workflow already completed (truthful refusal)
-        await authority.cancel_run(db, run_id=run.run_id, tenant_id="tenant-a")
+        await authority.cancel_run(db, run_id=run.run_id, tenant_id=TENANT_A)
         # The run should be in CANCELLED or FAILED status depending on timing
-        run_after = await authority.get_run(db, run_id=run.run_id, tenant_id="tenant-a")
+        run_after = await authority.get_run(db, run_id=run.run_id, tenant_id=TENANT_A)
         assert run_after.status in ("CANCELLED", "FAILED")
 
     async def test_cancel_already_completed_returns_truthful_refusal(self, db, authority, engine):
         """If the workflow is already completed, cancellation should not rewrite history."""
         await _setup_principal(db)
         mission = await _create_production_mission(db, authority)
-        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id="tenant-a")
+        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id=TENANT_A)
         policy = resolve_capability_policy(engine, capability=capability)
 
         run = await authority.start_run(
             db,
             mission_id=mission.mission_id,
-            tenant_id="tenant-a",
-            created_by="principal-a",
+            tenant_id=TENANT_A,
+            created_by=PRINCIPAL_A,
             workflow_type=capability,
             input_data={"case_id": "case-completed"},
             policy_decision=policy,
         )
         actor = _make_current_user()
-        await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED")
-        await consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, authority=authority)
+        await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED")
+        await consume_approval_and_activate(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, authority=authority)
 
         # Wait for completion
         await asyncio.sleep(1.0)
 
         # Attempt cancel — may return False if already completed
-        result = await authority.cancel_run(db, run_id=run.run_id, tenant_id="tenant-a")
+        result = await authority.cancel_run(db, run_id=run.run_id, tenant_id=TENANT_A)
         # Either it cancelled a still-running workflow (True) or it truthfully
         # reported the workflow was already gone (False)
         assert result in (True, False)
@@ -599,21 +612,21 @@ class TestRecoveryAcceptance:
         """Simulate: workflow claimed → process stops → recovery autostarts → completes."""
         await _setup_principal(db)
         mission = await _create_production_mission(db, authority)
-        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id="tenant-a")
+        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id=TENANT_A)
         policy = resolve_capability_policy(engine, capability=capability)
 
         run = await authority.start_run(
             db,
             mission_id=mission.mission_id,
-            tenant_id="tenant-a",
-            created_by="principal-a",
+            tenant_id=TENANT_A,
+            created_by=PRINCIPAL_A,
             workflow_type=capability,
             input_data={"case_id": "case-recovery"},
             policy_decision=policy,
         )
         actor = _make_current_user()
-        await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED")
-        activated = await consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, authority=authority)
+        await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED")
+        activated = await consume_approval_and_activate(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, authority=authority)
         assert activated.execution_ref is not None
 
         # Wait for the workflow to complete
@@ -637,46 +650,46 @@ class TestReadModel:
         await _setup_principal(db)
         mission = await _create_production_mission(db, authority)
         assert mission.mission_id is not None
-        assert len(mission.mission_id) == 36  # UUID format
+        assert len(str(mission.mission_id)) == 36  # UUID format
         assert mission.workflow_type == LEGAL_WORKFLOW_TYPE
 
     async def test_no_synthetic_run_ids(self, db, authority, engine):
         await _setup_principal(db)
         mission = await _create_production_mission(db, authority)
-        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id="tenant-a")
+        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id=TENANT_A)
         policy = resolve_capability_policy(engine, capability=capability)
 
         run = await authority.start_run(
             db,
             mission_id=mission.mission_id,
-            tenant_id="tenant-a",
-            created_by="principal-a",
+            tenant_id=TENANT_A,
+            created_by=PRINCIPAL_A,
             workflow_type=capability,
             input_data={"case_id": "case-rm"},
             policy_decision=policy,
         )
         assert run.run_id is not None
-        assert len(run.run_id) == 36  # UUID format
+        assert len(str(run.run_id)) == 36  # UUID format
         assert run.workflow_type == LEGAL_WORKFLOW_TYPE
 
     async def test_no_synthetic_execution_refs(self, db, authority, engine):
         await _setup_principal(db)
         mission = await _create_production_mission(db, authority)
-        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id="tenant-a")
+        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id=TENANT_A)
         policy = resolve_capability_policy(engine, capability=capability)
 
         run = await authority.start_run(
             db,
             mission_id=mission.mission_id,
-            tenant_id="tenant-a",
-            created_by="principal-a",
+            tenant_id=TENANT_A,
+            created_by=PRINCIPAL_A,
             workflow_type=capability,
             input_data={"case_id": "case-er"},
             policy_decision=policy,
         )
         actor = _make_current_user()
-        await create_approval(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, decision="APPROVED")
-        activated = await consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-a", actor=actor, authority=authority)
+        await create_approval(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, decision="APPROVED")
+        activated = await consume_approval_and_activate(db, run_id=run.run_id, tenant_id=TENANT_A, actor=actor, authority=authority)
         assert activated.execution_ref is not None
         # The execution_ref is a real durable engine workflow_id
         wf = engine._store.load_workflow(activated.execution_ref)
@@ -692,36 +705,36 @@ class TestEvidenceChain:
     """Verify evidence correlates tenant, principal, mission, run, approval, execution."""
 
     async def test_full_evidence_correlation(self, db, authority, engine):
-        await _setup_principal(db, user_id="principal-ev", tenant_id="tenant-ev")
-        mission = await _create_production_mission(db, authority, tenant_id="tenant-ev", created_by="principal-ev")
-        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id="tenant-ev")
+        await _setup_principal(db, user_id=PRINCIPAL_EV, tenant_id=TENANT_EV)
+        mission = await _create_production_mission(db, authority, tenant_id=TENANT_EV, created_by=PRINCIPAL_EV)
+        capability = await resolve_mission_capability(db, mission_id=mission.mission_id, tenant_id=TENANT_EV)
         policy = resolve_capability_policy(engine, capability=capability)
 
         run = await authority.start_run(
             db,
             mission_id=mission.mission_id,
-            tenant_id="tenant-ev",
-            created_by="principal-ev",
+            tenant_id=TENANT_EV,
+            created_by=PRINCIPAL_EV,
             workflow_type=capability,
             input_data={"case_id": "case-evidence", "practice_area": "trust"},
             policy_decision=policy,
         )
 
-        actor = _make_current_user(user_id="principal-ev", tenant_id="tenant-ev")
-        approval = await create_approval(db, run_id=run.run_id, tenant_id="tenant-ev", actor=actor, decision="APPROVED")
-        activated = await consume_approval_and_activate(db, run_id=run.run_id, tenant_id="tenant-ev", actor=actor, authority=authority)
+        actor = _make_current_user(user_id=PRINCIPAL_EV, tenant_id=TENANT_EV)
+        approval = await create_approval(db, run_id=run.run_id, tenant_id=TENANT_EV, actor=actor, decision="APPROVED")
+        activated = await consume_approval_and_activate(db, run_id=run.run_id, tenant_id=TENANT_EV, actor=actor, authority=authority)
 
         # Evidence correlation
-        assert mission.tenant_id == "tenant-ev"
-        assert mission.created_by == "principal-ev"
+        assert mission.tenant_id == TENANT_EV
+        assert mission.created_by == PRINCIPAL_EV
         assert mission.workflow_type == LEGAL_WORKFLOW_TYPE
         assert run.mission_id == mission.mission_id
-        assert run.tenant_id == "tenant-ev"
-        assert run.created_by == "principal-ev"
+        assert run.tenant_id == TENANT_EV
+        assert run.created_by == PRINCIPAL_EV
         assert run.workflow_type == LEGAL_WORKFLOW_TYPE
         assert run.input_data_hash is not None
-        assert approval.tenant_id == "tenant-ev"
-        assert approval.principal_user_id == "principal-ev"
+        assert approval.tenant_id == TENANT_EV
+        assert approval.principal_user_id == PRINCIPAL_EV
         assert approval.run_id == run.run_id
         assert approval.mission_id == mission.mission_id
         assert approval.input_data_hash == run.input_data_hash

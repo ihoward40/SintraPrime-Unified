@@ -8,7 +8,6 @@ from enum import StrEnum
 
 from sqlalchemy import (
     JSON,
-    UUID,
     Boolean,
     DateTime,
     Float,
@@ -108,7 +107,7 @@ class OrchestrationRun(Base):
 
     __tablename__ = "orchestration_runs"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("tenants.id"), nullable=False)
     created_by: Mapped[uuid.UUID | None] = mapped_column(PortableUUID, ForeignKey("users.id"), nullable=True)
     objective: Mapped[str] = mapped_column(Text, nullable=False)
@@ -161,8 +160,8 @@ class OrchestrationNode(Base):
 
     __tablename__ = "orchestration_nodes"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, default=lambda: str(uuid.uuid4()))
-    run_id: Mapped[str] = mapped_column(UUID(as_uuid=True), ForeignKey("orchestration_runs.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("orchestration_runs.id", ondelete="CASCADE"), nullable=False)
     node_id: Mapped[str] = mapped_column(String(80), nullable=False)
     sequence: Mapped[int] = mapped_column(Integer, nullable=False)
     role: Mapped[str] = mapped_column(String(40), nullable=False)
@@ -203,8 +202,8 @@ class OrchestrationEvent(Base):
 
     __tablename__ = "orchestration_events"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, default=lambda: str(uuid.uuid4()))
-    run_id: Mapped[str] = mapped_column(UUID(as_uuid=True), ForeignKey("orchestration_runs.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("orchestration_runs.id", ondelete="CASCADE"), nullable=False)
     node_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
     sequence: Mapped[int] = mapped_column(Integer, nullable=False)
     event_type: Mapped[str] = mapped_column(String(80), nullable=False)
@@ -228,7 +227,7 @@ class ProviderDefinition(Base):
 
     __tablename__ = "orchestration_provider_definitions"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
     provider_id: Mapped[str] = mapped_column(String(80), nullable=False)
     model_id: Mapped[str] = mapped_column(String(120), nullable=False)
     display_name: Mapped[str] = mapped_column(String(160), nullable=False)
@@ -262,9 +261,9 @@ class RoutingDecision(Base):
 
     __tablename__ = "orchestration_routing_decisions"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, default=lambda: str(uuid.uuid4()))
-    run_id: Mapped[str] = mapped_column(UUID(as_uuid=True), ForeignKey("orchestration_runs.id", ondelete="CASCADE"), nullable=False)
-    node_pk: Mapped[str | None] = mapped_column(UUID(as_uuid=True), ForeignKey("orchestration_nodes.id", ondelete="CASCADE"), nullable=True)
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("orchestration_runs.id", ondelete="CASCADE"), nullable=False)
+    node_pk: Mapped[uuid.UUID | None] = mapped_column(PortableUUID, ForeignKey("orchestration_nodes.id", ondelete="CASCADE"), nullable=True)
     node_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
     selected_provider_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
     selected_model_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
@@ -289,8 +288,8 @@ class VerificationResult(Base):
 
     __tablename__ = "orchestration_verification_results"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, default=lambda: str(uuid.uuid4()))
-    run_id: Mapped[str] = mapped_column(UUID(as_uuid=True), ForeignKey("orchestration_runs.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("orchestration_runs.id", ondelete="CASCADE"), nullable=False)
     node_id: Mapped[str] = mapped_column(String(80), nullable=False)
     checker_node_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
     verification_status: Mapped[str] = mapped_column(String(40), nullable=False)
@@ -310,8 +309,8 @@ class ReconciliationResult(Base):
 
     __tablename__ = "orchestration_reconciliation_results"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, default=lambda: str(uuid.uuid4()))
-    run_id: Mapped[str] = mapped_column(UUID(as_uuid=True), ForeignKey("orchestration_runs.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("orchestration_runs.id", ondelete="CASCADE"), nullable=False)
     reconciler_node_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
     verified_result: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     supported_inference: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
@@ -329,8 +328,8 @@ class ApprovalRequest(Base):
 
     __tablename__ = "orchestration_approval_requests"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, default=lambda: str(uuid.uuid4()))
-    run_id: Mapped[str] = mapped_column(UUID(as_uuid=True), ForeignKey("orchestration_runs.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("orchestration_runs.id", ondelete="CASCADE"), nullable=False)
     node_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
     requested_action: Mapped[str] = mapped_column(String(160), nullable=False)
     reason: Mapped[str] = mapped_column(Text, nullable=False)
@@ -355,9 +354,9 @@ class OrchestrationLinkage(Base):
 
     __tablename__ = "orchestration_linkages"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, default=lambda: str(uuid.uuid4()))
-    event_id: Mapped[str] = mapped_column(UUID(as_uuid=True), ForeignKey("orchestration_events.id", ondelete="CASCADE"), nullable=False)
-    node_id: Mapped[str] = mapped_column(UUID(as_uuid=True), ForeignKey("orchestration_nodes.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
+    event_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("orchestration_events.id", ondelete="CASCADE"), nullable=False)
+    node_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("orchestration_nodes.id", ondelete="CASCADE"), nullable=False)
     tenant_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("tenants.id"), nullable=False)
     linked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -373,7 +372,7 @@ class PrincipalAuthority(Base):
 
     __tablename__ = "orchestration_principal_authorities"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("tenants.id"), nullable=False)
     user_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("users.id"), nullable=False)
     scope: Mapped[str] = mapped_column(String(80), nullable=False, default="GLOBAL")
@@ -391,8 +390,8 @@ class BudgetUsage(Base):
 
     __tablename__ = "orchestration_budget_usage"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, default=lambda: str(uuid.uuid4()))
-    run_id: Mapped[str] = mapped_column(UUID(as_uuid=True), ForeignKey("orchestration_runs.id", ondelete="CASCADE"), nullable=False, unique=True)
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("orchestration_runs.id", ondelete="CASCADE"), nullable=False, unique=True)
     max_input_tokens: Mapped[int] = mapped_column(Integer, nullable=False)
     max_output_tokens: Mapped[int] = mapped_column(Integer, nullable=False)
     max_provider_cost: Mapped[float] = mapped_column(Float, nullable=False)
@@ -419,8 +418,8 @@ class EvidenceReference(Base):
 
     __tablename__ = "orchestration_evidence_references"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True, default=lambda: str(uuid.uuid4()))
-    run_id: Mapped[str] = mapped_column(UUID(as_uuid=True), ForeignKey("orchestration_runs.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("orchestration_runs.id", ondelete="CASCADE"), nullable=False)
     node_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
     source_type: Mapped[str] = mapped_column(String(60), nullable=False)
     source_uri: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -443,7 +442,7 @@ class MemoryEntry(Base):
 
     __tablename__ = "memory_vault"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(PortableUUID, primary_key=True)
     tenant_id: Mapped[uuid.UUID] = mapped_column(PortableUUID, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
     type: Mapped[str] = mapped_column(String(80), nullable=False)
     content: Mapped[dict] = mapped_column(JSON, nullable=False)

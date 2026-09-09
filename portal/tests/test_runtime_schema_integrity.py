@@ -16,7 +16,14 @@ async def runtime_test_db():
         scheme = "postgresql"
     dsn = f"{scheme}://{parsed.netloc}{parsed.path}"
 
-    conn = await asyncpg.connect(dsn=dsn)
+    # Skip cleanly when the disposable Phase-2 container is not running,
+    # instead of erroring the whole lane (Wave 2B-REM harness fix).
+    import asyncpg.exceptions
+
+    try:
+        conn = await asyncpg.connect(dsn=dsn, timeout=5)
+    except (OSError, asyncpg.exceptions.PostgresError) as exc:
+        pytest.skip(f"runtime test database unavailable ({exc.__class__.__name__})")
     await apply_baseline(conn, ".")
     await apply_migration(conn, ".")
     yield conn

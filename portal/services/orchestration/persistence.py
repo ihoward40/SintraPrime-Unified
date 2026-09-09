@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import uuid
 import logging
+import uuid
 from datetime import UTC, datetime
-
-logger = logging.getLogger(__name__)
 from typing import Any
 
 from sqlalchemy import delete, select
@@ -24,6 +22,8 @@ from portal.models.orchestration import (
     RoutingDecision,
     VerificationResult,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _iso(value: Any) -> str | None:
@@ -50,19 +50,23 @@ async def save_run(db: AsyncSession, run: dict[str, Any]) -> dict[str, Any]:
     Ensures append-only audit integrity by avoiding deletion of existing records.
     """
     from ..remediation_service import remediation
-    
+
     run_id = run["run_id"]
     tenant_id = run["tenant_id"]
-    
+    # OrchestrationRun PK is PortableUUID (PR #294 convergence): bind canonical
+    # UUID objects for ORM identity/binds; keep the dict's string form for the
+    # API projection. (Wave 2B-REM)
+    run_id_uuid = uuid.UUID(str(run_id))
+
     # 1. REMEDIATION: Redact all boundaries before persistence
     run = remediation.redact_boundaries(run)
-    
+
     classification = run.get("classification", {})
     now = datetime.now(UTC)
-    
+
     # Check for existing run
     logger.info(f"[PERSISTENCE] Checking for existing run {run_id} for tenant {tenant_id}")
-    existing_run = await db.get(OrchestrationRun, run_id)
+    existing_run = await db.get(OrchestrationRun, run_id_uuid)
     if existing_run:
         logger.info(f"[PERSISTENCE] Found existing run {run_id}")
         existing_run.status = run.get("status", existing_run.status)
@@ -100,12 +104,12 @@ async def save_run(db: AsyncSession, run: dict[str, Any]) -> dict[str, Any]:
         node_id = node["node_id"]
         # Finding existing node by run_id and node_id (logical ID)
         stmt = select(OrchestrationNode).where(
-            OrchestrationNode.run_id == run_id, 
+            OrchestrationNode.run_id == run_id_uuid,
             OrchestrationNode.node_id == node_id
         )
         res = await db.execute(stmt)
         existing_node = res.scalar_one_or_none()
-        
+
         if existing_node:
             existing_node.status = node.get("status", existing_node.status)
             existing_node.output_artifacts = node.get("output_artifacts", existing_node.output_artifacts)
@@ -120,7 +124,7 @@ async def save_run(db: AsyncSession, run: dict[str, Any]) -> dict[str, Any]:
             db.add(
                 OrchestrationNode(
                     id=node_pk,
-                    run_id=run_id,
+                    run_id=run_id_uuid,
                     node_id=node_id,
                     sequence=sequence,
                     role=node["role"],
@@ -141,7 +145,7 @@ async def save_run(db: AsyncSession, run: dict[str, Any]) -> dict[str, Any]:
                     updated_at=now,
                 )
             )
-        
+
         # Evidence is typically append-only in this context
         for evidence in node.get("evidence", []):
             # Simple check to avoid duplicates if re-saving
@@ -151,10 +155,16 @@ async def save_run(db: AsyncSession, run: dict[str, Any]) -> dict[str, Any]:
     # 3. REMEDIATION: Append-only events and dedicated linkage
     from ...models.orchestration import OrchestrationEvent, OrchestrationLinkage
     for idx, event in enumerate(run.get("events", []), start=1):
-        event_id = event.get("id") or str(uuid.uuid4())
-        
-        # Check if event already exists to maintain append-only idempotency
-        stmt = select(OrchestrationEvent).where(OrchestrationEvent.id == event_id)
+        event_id = event.get("id") or uuid.uuid4()
+
+        # Append-only idempotency keyed on the REAL uniqueness constraint
+        # (run_id, sequence) — not on a synthetic "id" the event dicts never
+        # carry (append_event emits no id). Fixes UNIQUE-violation on re-save
+        # after orchestrator state transitions (Wave 2B-REM).
+        stmt = select(OrchestrationEvent).where(
+            OrchestrationEvent.run_id == run_id_uuid,
+            OrchestrationEvent.sequence == (event.get("sequence") or idx),
+        )
         res = await db.execute(stmt)
         if res.scalar_one_or_none():
             continue
@@ -162,7 +172,7 @@ async def save_run(db: AsyncSession, run: dict[str, Any]) -> dict[str, Any]:
         db.add(
             OrchestrationEvent(
                 id=event_id,
-                run_id=run_id,
+                run_id=run_id_uuid,
                 node_id=event.get("node_id"),
                 sequence=event.get("sequence") or idx,
                 event_type=event["event_type"],
@@ -173,17 +183,17 @@ async def save_run(db: AsyncSession, run: dict[str, Any]) -> dict[str, Any]:
                 created_at=_parse_dt(event.get("created_at")) or now,
             )
         )
-        
+
         # 4. REMEDIATION: Dedicated immutable event-to-node linkage
         if event.get("node_id"):
             # Find the node PK
             stmt = select(OrchestrationNode.id).where(
-                OrchestrationNode.run_id == run_id, 
+                OrchestrationNode.run_id == run_id_uuid,
                 OrchestrationNode.node_id == event["node_id"]
             )
             res = await db.execute(stmt)
             node_pk = res.scalar_one_or_none()
-            
+
             if node_pk:
                 db.add(
                     OrchestrationLinkage(
@@ -197,11 +207,11 @@ async def save_run(db: AsyncSession, run: dict[str, Any]) -> dict[str, Any]:
 
     budget = run.get("budget", {})
     limits = budget.get("limits", {})
-    
-    stmt = select(BudgetUsage).where(BudgetUsage.run_id == run_id)
+
+    stmt = select(BudgetUsage).where(BudgetUsage.run_id == run_id_uuid)
     res = await db.execute(stmt)
     existing_budget = res.scalar_one_or_none()
-    
+
     if existing_budget:
         existing_budget.input_tokens_used = budget.get("input_tokens_used", existing_budget.input_tokens_used)
         existing_budget.output_tokens_used = budget.get("output_tokens_used", existing_budget.output_tokens_used)
@@ -215,7 +225,7 @@ async def save_run(db: AsyncSession, run: dict[str, Any]) -> dict[str, Any]:
         db.add(
             BudgetUsage(
                 id=str(uuid.uuid4()),
-                run_id=run_id,
+                run_id=run_id_uuid,
                 max_input_tokens=limits.get("maximum_input_tokens", 8000),
                 max_output_tokens=limits.get("maximum_output_tokens", 4000),
                 max_provider_cost=limits.get("maximum_provider_cost", 0.0),
@@ -238,10 +248,10 @@ async def save_run(db: AsyncSession, run: dict[str, Any]) -> dict[str, Any]:
 
     for decision in run.get("routing_decisions", []):
         node_id = decision.get("node_id")
-        stmt = select(RoutingDecision).where(RoutingDecision.run_id == run_id, RoutingDecision.node_id == node_id)
+        stmt = select(RoutingDecision).where(RoutingDecision.run_id == run_id_uuid, RoutingDecision.node_id == node_id)
         res = await db.execute(stmt)
         existing_decision = res.scalar_one_or_none()
-        
+
         if existing_decision:
             existing_decision.actual_cost = decision.get("actual_cost", existing_decision.actual_cost)
         else:
@@ -249,7 +259,7 @@ async def save_run(db: AsyncSession, run: dict[str, Any]) -> dict[str, Any]:
             db.add(
                 RoutingDecision(
                     id=str(uuid.uuid4()),
-                    run_id=run_id,
+                    run_id=run_id_uuid,
                     node_pk=None,
                     node_id=node_id,
                     selected_provider_id=selected,
@@ -266,10 +276,10 @@ async def save_run(db: AsyncSession, run: dict[str, Any]) -> dict[str, Any]:
 
     for verification in run.get("verification", []):
         node_id = verification.get("node_id", "checker")
-        stmt = select(VerificationResult).where(VerificationResult.run_id == run_id, VerificationResult.node_id == node_id)
+        stmt = select(VerificationResult).where(VerificationResult.run_id == run_id_uuid, VerificationResult.node_id == node_id)
         res = await db.execute(stmt)
         existing_verification = res.scalar_one_or_none()
-        
+
         if existing_verification:
             existing_verification.verification_status = verification.get("verification_result", existing_verification.verification_status)
             existing_verification.confidence_score = verification.get("confidence_score", existing_verification.confidence_score)
@@ -277,7 +287,7 @@ async def save_run(db: AsyncSession, run: dict[str, Any]) -> dict[str, Any]:
             db.add(
                 VerificationResult(
                     id=str(uuid.uuid4()),
-                    run_id=run_id,
+                    run_id=run_id_uuid,
                     node_id=node_id,
                     checker_node_id=verification.get("checker_node_id"),
                     verification_status=verification.get("verification_result", "unknown"),
@@ -293,10 +303,10 @@ async def save_run(db: AsyncSession, run: dict[str, Any]) -> dict[str, Any]:
 
     reconciliation = run.get("reconciliation")
     if reconciliation:
-        stmt = select(ReconciliationResult).where(ReconciliationResult.run_id == run_id)
+        stmt = select(ReconciliationResult).where(ReconciliationResult.run_id == run_id_uuid)
         res = await db.execute(stmt)
         existing_reconciliation = res.scalar_one_or_none()
-        
+
         if existing_reconciliation:
             existing_reconciliation.verified_result = reconciliation.get("verified_result", existing_reconciliation.verified_result)
             existing_reconciliation.final_confidence = reconciliation.get("final_confidence", existing_reconciliation.final_confidence)
@@ -304,7 +314,7 @@ async def save_run(db: AsyncSession, run: dict[str, Any]) -> dict[str, Any]:
             db.add(
                 ReconciliationResult(
                     id=str(uuid.uuid4()),
-                    run_id=run_id,
+                    run_id=run_id_uuid,
                     reconciler_node_id=reconciliation.get("reconciler_node_id"),
                     verified_result=reconciliation.get("verified_result", {}),
                     supported_inference=reconciliation.get("supported_inference", []),
@@ -322,11 +332,11 @@ async def save_run(db: AsyncSession, run: dict[str, Any]) -> dict[str, Any]:
         res = await db.execute(stmt)
         if res.scalar_one_or_none():
             continue
-            
+
         db.add(
             ApprovalRequest(
                 id=approval_id,
-                run_id=run_id,
+                run_id=run_id_uuid,
                 node_id=approval.get("node_id"),
                 requested_action=approval.get("requested_action", "Approve governed orchestration result"),
                 reason=approval.get("reason", "Approval required by policy"),
@@ -346,10 +356,11 @@ async def save_run(db: AsyncSession, run: dict[str, Any]) -> dict[str, Any]:
 
 
 async def get_run(db: AsyncSession, run_id: str, tenant_id: str) -> dict[str, Any] | None:
+    run_id_uuid = uuid.UUID(str(run_id))  # PortableUUID PK bind (2B-REM)
     result = await db.execute(
         select(OrchestrationRun)
         .options(selectinload(OrchestrationRun.nodes), selectinload(OrchestrationRun.events), selectinload(OrchestrationRun.budget_usage))
-        .where(OrchestrationRun.id == run_id, OrchestrationRun.tenant_id == tenant_id)
+        .where(OrchestrationRun.id == run_id_uuid, OrchestrationRun.tenant_id == tenant_id)
     )
     row = result.scalar_one_or_none()
     if row is None:
@@ -363,6 +374,7 @@ async def get_events(db: AsyncSession, run_id: str, tenant_id: str) -> list[dict
 
 
 async def _delete_existing_projection(db: AsyncSession, run_id: str) -> None:
+    run_id_uuid = uuid.UUID(str(run_id))  # PortableUUID PK bind (2B-REM)
     for model in (
         EvidenceReference,
         BudgetUsage,
@@ -374,20 +386,23 @@ async def _delete_existing_projection(db: AsyncSession, run_id: str) -> None:
         OrchestrationNode,
         OrchestrationRun,
     ):
-        await db.execute(delete(model).where(model.run_id == run_id) if model is not OrchestrationRun else delete(model).where(model.id == run_id))
+        await db.execute(delete(model).where(model.run_id == run_id_uuid) if model is not OrchestrationRun else delete(model).where(model.id == run_id_uuid))
 
 
 async def _run_to_dict(db: AsyncSession, row: OrchestrationRun) -> dict[str, Any]:
     run_id = row.id
-    routing = (await db.execute(select(RoutingDecision).where(RoutingDecision.run_id == run_id))).scalars().all()
-    verification = (await db.execute(select(VerificationResult).where(VerificationResult.run_id == run_id))).scalars().all()
-    reconciliation = (await db.execute(select(ReconciliationResult).where(ReconciliationResult.run_id == run_id))).scalars().first()
-    approvals = (await db.execute(select(ApprovalRequest).where(ApprovalRequest.run_id == run_id))).scalars().all()
+    run_id_uuid = uuid.UUID(str(run_id))  # PortableUUID PK bind (2B-REM)
+    routing = (await db.execute(select(RoutingDecision).where(RoutingDecision.run_id == run_id_uuid))).scalars().all()
+    verification = (await db.execute(select(VerificationResult).where(VerificationResult.run_id == run_id_uuid))).scalars().all()
+    reconciliation = (await db.execute(select(ReconciliationResult).where(ReconciliationResult.run_id == run_id_uuid))).scalars().first()
+    approvals = (await db.execute(select(ApprovalRequest).where(ApprovalRequest.run_id == run_id_uuid))).scalars().all()
 
     return {
-        "run_id": row.id,
-        "tenant_id": row.tenant_id,
-        "created_by": row.created_by,
+        # API projection: canonical string form (the run dict is the wire
+        # contract; the ORM row returns UUID objects under PR #294). 2B-REM
+        "run_id": str(row.id),
+        "tenant_id": str(row.tenant_id),
+        "created_by": str(row.created_by) if row.created_by else None,
         "objective": row.objective,
         "constraints": row.constraints or {},
         "classification": row.classification or {},
@@ -516,9 +531,10 @@ def _approval_to_dict(item: ApprovalRequest) -> dict[str, Any]:
 
 
 def _evidence_reference_from_dict(run_id: str, node_id: str, evidence: dict[str, Any]) -> EvidenceReference:
+    run_id_uuid = uuid.UUID(str(run_id))  # PortableUUID FK bind (2B-REM)
     return EvidenceReference(
-        id=str(uuid.uuid4()),
-        run_id=run_id,
+        id=uuid.uuid4(),
+        run_id=run_id_uuid,
         node_id=node_id,
         source_type=evidence.get("source_type", "mock"),
         source_uri=evidence.get("source_uri"),

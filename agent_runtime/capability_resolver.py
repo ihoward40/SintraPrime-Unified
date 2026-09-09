@@ -226,3 +226,14 @@ def _status_gate(cc: CanonicalCapability) -> None:
         raise ResolutionError("DISABLED_CAPABILITY", cc.capability_id)
     if cc.status == "DORMANT":
         raise ResolutionError("DORMANT_CAPABILITY", cc.capability_id)
+
+
+def resolve_or_refuse(raw_id: str, registry: RegistryView) -> str:
+    """Alias-aware membership helper for security-sensitive consumers (W4-3).
+
+    Returns the CANONICAL id on success; raises ResolutionError otherwise.
+    Raw capability → resolver → canonical id → (caller's existing authority
+    check). Callers MUST NOT keep their own alias-blind membership sets.
+    """
+    cc = resolve_capability(raw_id, registry)
+    return cc.capability_id

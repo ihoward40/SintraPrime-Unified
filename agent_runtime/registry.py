@@ -9,7 +9,6 @@ Certification status is a lifecycle (§14), never a single boolean.
 from __future__ import annotations
 
 from .manifest import (
-    KNOWN_CAPABILITIES,
     MANIFEST_SCHEMA_VERSION,
     AgentManifest,
     CertificationStatus,
@@ -76,8 +75,9 @@ class AgentRegistry:
         errors: list[str] = []
         if manifest.manifest_schema != MANIFEST_SCHEMA_VERSION:
             errors.append(f"unsupported manifest_schema {manifest.manifest_schema}")
+        from agent_runtime.manifest import _resolves_to_known
         for cap in (*manifest.required_capabilities, *manifest.optional_capabilities, *manifest.forbidden_capabilities):
-            if cap not in KNOWN_CAPABILITIES:
+            if not _resolves_to_known(cap):
                 errors.append(f"unknown capability: {cap}")
         overlap = set(manifest.required_capabilities) & set(manifest.forbidden_capabilities)
         if overlap:

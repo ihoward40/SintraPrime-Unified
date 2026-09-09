@@ -14,6 +14,7 @@ Required:
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -26,8 +27,14 @@ def run_acceptance_004_real() -> dict:
     repo_path = str(REPO)
 
     # Create real git worktrees (sequentially, with generous timeout)
+    # Clean up previous runs. Regression fix (W3 §37): a leftover directory
+    # from an earlier crashed run (or a `git worktree remove` that silently
+    # failed on a locked/half-registered worktree) made the first `git
+    # worktree add` fail with "'<path>' already exists". Cleanup must be
+    # belt-and-braces: force-remove registered worktrees, prune, then
+    # delete any still-present directory trees so the base path is truly
+    # empty before this run creates its worktrees.
     worktree_base = REPO.parent / "swarm-004-real-worktrees"
-    # Clean up previous runs
     if worktree_base.exists():
         for wt in worktree_base.iterdir():
             if wt.is_dir():
@@ -36,6 +43,9 @@ def run_acceptance_004_real() -> dict:
                     capture_output=True, timeout=60, cwd=repo_path,
                 )
         subprocess.run(["git", "worktree", "prune"], capture_output=True, timeout=30, cwd=repo_path)
+        for wt in worktree_base.iterdir():
+            if wt.is_dir():
+                shutil.rmtree(wt, ignore_errors=True)
     worktree_base.mkdir(parents=True, exist_ok=True)
 
     # Ensure git identity is set for commits (CI may not have global config)

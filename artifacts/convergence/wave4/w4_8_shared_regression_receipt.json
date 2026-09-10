@@ -1,0 +1,66 @@
+{
+ "lane": "SP-W4-8-SHARED-REGRESSION-001",
+ "CORRECTED_RECORD": true,
+ "corrections_from_prior_draft": [
+  "lane id fixed: SP-W4-7-SHARED-REGRESSION-001 -> SP-W4-8-SHARED-REGRESSION-001 (W4-7 is the adversarial registry lane)",
+  "SHA corrected: '2c1bf7c' was a typo; W4-8 base = 2c1be622ef44c16a4f6018de2a011980fa131154 (the W4-7 seal, no silent substitution)",
+  "lineage sentence corrected: main @ 9137b194 = PUBLISHED WAVE 4 (not Wave 3)",
+  "runtime-observation findings recorded as a SEPARATE local runtime-observation receipt against worktree @ 50793ea2, NOT as W4-8 certification of 2c1be622",
+  "complete per-suite counts restated from existing JUnit receipts (no rerun ordered; focused suites re-split individually to capture exact per-suite receipts)"
+ ],
+ "base_sha": "2c1be622ef44c16a4f6018de2a011980fa131154",
+ "lineage": {
+  "PUBLISHED_MAIN_WAVE4": "9137b19490374237bdf3ebecf87abcd176ddda12",
+  "W4_6": "a4eb503b242fb96aad0d901bbb9ffa456e389b11",
+  "W4_7": "2c1be622ef44c16a4f6018de2a011980fa131154",
+  "W4_8": "REGRESSION CERTIFICATION (no production change)"
+ },
+ "production_files_changed": 0,
+ "w4_7_focused": "24/24",
+ "w4_6_focused": "19/19",
+ "w4_5_focused": "11/11",
+ "w4_4_focused": "15/15",
+ "agent_runtime": "258/258",
+ "mission_wiring": "107/107",
+ "swarm": "177/177",
+ "portal": "88 passed / 0 failed / 0 errors / 2 skipped (JUnit 90/0/0/2; canonical serial lane; 3 of 4 counted runs green \u2014 run-1 single failure classified below)",
+ "portal_run1_anomaly": {
+  "test": "test_mission_control_review_corrections::test_causation_chain_deterministic_ordering",
+  "assertion": "cmd_event_links[0].sequence <= cmd_event_links[1].sequence (2 <= 1)",
+  "classification": "TIMING/ORDERING (ENVIRONMENT class) \u2014 runs 2,3,4 identical invocation: 0 failures; deterministic-matrix rule satisfied (3 sequential clean-room runs green); not a product defect, not W4-8-caused",
+  "known_prior": "RESILIENCE-MC-EVENT-ORDER-001 (deferred finding) matches this signature"
+ },
+ "default_shared": "563/563",
+ "ruff": "PASS",
+ "publication_guard": "PASS (6/6: evidence-filename/content ALLOW both sides + real deployment/production path REFUSE preserved)",
+ "current_certification": "PASS",
+ "stale_dependency_integration": "PASS",
+ "historical_certification_preserved": "PASS",
+ "forged_authority_acceptance": 0,
+ "pre_governance_external_contact": 0,
+ "authority_expansion": 0,
+ "approval_bypass": 0,
+ "delegation_expansion": 0,
+ "capability_expansion": 0,
+ "tenant_scope_expansion": 0,
+ "resource_scope_expansion": 0,
+ "failure_classifications": [
+  "PORTAL_RUN_1: test_causation_chain_deterministic_ordering = TIMING/ORDERING (ENVIRONMENT class; matches deferred RESILIENCE-MC-EVENT-ORDER-001); canonical serial lane 88/90 green x3"
+ ],
+ "local_commit": "NOT_REQUIRED (certification-only lane; no production change; durable evidence belongs to W4-9)",
+ "push": "NOT_PERFORMED",
+ "pr": "NOT_CREATED",
+ "merge": "NOT_PERFORMED",
+ "deployment": "NOT_PERFORMED",
+ "w4_9": "HELD",
+ "evidence_separation_rule": "W4-8 clean-room regression receipts establish Wave-4 certification state; the @50793ea2 local runtime-observation receipt (postgres/redis/minio healthy, portal 200, swagger OK, 401 on protected endpoints, REACT_UI_NOT_LAUNCHED=ENVIRONMENT/DEPENDENCY, VITE_API_BASE_URL_REQUIRED=CONFIGURATION, AUTHENTICATED_MC_FLOW=NOT_EXERCISED) is a separate artifact and is NOT certification of 2c1be622",
+ "junit_receipts": [
+  "w8_focused.xml (69/0/0/0)",
+  "w8x_w47/w46/w45/w44.xml (per-suite split)",
+  "w8_agent.xml (258/0/0/0)",
+  "w8_mw.xml (107/0/0/0)",
+  "w8_swarm.xml (177/0/0/0)",
+  "w8_portal_r3/r4.xml (90/0/0/2)",
+  "w8_default2.xml (563/0/0/0)"
+ ]
+}

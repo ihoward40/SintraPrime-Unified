@@ -15,18 +15,18 @@ def _queue() -> ReconciliationQueue:
 
 
 def _enqueue_kwargs(**over) -> dict:
-    base = dict(
-        mission_id="mission.w5-002", attempt_id="attempt-1", effect_id="effect-1",
-        tenant_id="tenant.default", actor_id="agent.browser.worker",
-        canonical_capability="computer.browser.navigate",
-        canonical_resource="https://example.com",
-        intent_hash="ih-123", intent_timestamp="T0",
-        contact_started_at="T0", contact_evidence_hash="evh-1",
-        last_known_mission_state="EXECUTING",
-        certification_generation="certgen-24fbaf3c8fa1a07d65cf310960e421bf",
-        executor_binding_generation="ebg-44efb071ec7e",
-        reason_code="PROCESS_CRASH_DURING_EXTERNAL_CONTACT",
-    )
+    base = {
+        "mission_id": "mission.w5-002", "attempt_id": "attempt-1", "effect_id": "effect-1",
+        "tenant_id": "tenant.default", "actor_id": "agent.browser.worker",
+        "canonical_capability": "computer.browser.navigate",
+        "canonical_resource": "https://example.com",
+        "intent_hash": "ih-123", "intent_timestamp": "T0",
+        "contact_started_at": "T0", "contact_evidence_hash": "evh-1",
+        "last_known_mission_state": "EXECUTING",
+        "certification_generation": "certgen-24fbaf3c8fa1a07d65cf310960e421bf",
+        "executor_binding_generation": "ebg-44efb071ec7e",
+        "reason_code": "PROCESS_CRASH_DURING_EXTERNAL_CONTACT",
+    }
     base.update(over)
     return base
 

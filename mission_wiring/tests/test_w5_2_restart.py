@@ -34,7 +34,8 @@ def test_case1_crash_before_intent_no_reconciliation_entry():
     h.crash_now(); mgr2=h.reload_manager()
     q=ReconciliationQueue(clock=lambda:"T1")
     c=q.recover_after_restart(mgr2)
-    assert q.list_pending()==[] and c["reconciliation_required"]==0
+    assert q.list_pending()==[]
+    assert c["reconciliation_required"]==0
 
 def test_case2_crash_after_intent_before_contact_deterministic_recovery():
     h=_h(); mgr=h.start_mission({})
@@ -56,7 +57,9 @@ def test_case3_crash_after_contact_started_queued():
         mgr.record_outcome(rec.mission_id, status="UNKNOWN", external_contact_observed=True)
     q=ReconciliationQueue(clock=lambda:"T1"); q.recover_after_restart(mgr)
     p=q.list_pending()
-    assert len(p)==1 and p[0].mission_id==rec.mission_id and p[0].effect_id=="effect-1"
+    assert len(p)==1
+    assert p[0].mission_id==rec.mission_id
+    assert p[0].effect_id=="effect-1"
 
 def test_case4_timeout_during_provider_contact_queued():
     h=_h(); mgr=h.start_mission({})
@@ -107,7 +110,8 @@ def test_case7_queue_persisted_across_restart():
     i1=q1.list_pending()[0]
     q2=ReconciliationQueue(clock=lambda:"T2"); q2.recover_after_restart(h.reload_manager())
     i2=q2.list_pending()[0]
-    assert i1.reconciliation_id==i2.reconciliation_id and len(q2.list_pending())==1
+    assert i1.reconciliation_id==i2.reconciliation_id
+    assert len(q2.list_pending())==1
 
 def test_recovery_census_counts_deterministically():
     h=_h(); mgr=h.start_mission({})
@@ -124,8 +128,10 @@ def test_recovery_census_counts_deterministically():
     mgr.record_intent(r3.mission_id, effect_id="e3")
     mgr.request(**{**_approved_mission_kwargs(),"mission_id":"mission.w5-004"})
     c=restart_census(mgr, queue=None)
-    assert c["terminal_missions"]==1 and c["reconciliation_required"]==1
-    assert c["safe_resumable_missions"]>=1 and c["invalid_or_corrupt_records"]==0
+    assert c["terminal_missions"]==1
+    assert c["reconciliation_required"]==1
+    assert c["safe_resumable_missions"]>=1
+    assert c["invalid_or_corrupt_records"]==0
 
 def _new_mission(mgr, mid):
     rec=mgr.request(**{**_approved_mission_kwargs(),"mission_id":mid})

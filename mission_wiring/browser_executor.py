@@ -28,6 +28,11 @@ from agent_runtime.capability_resolver import (
     load_registry,
     resolve_capability,
 )
+from agent_runtime.executor_binding import (
+    ExecutorBindingError,
+    load_executor_bindings,
+    validate_executor_binding,
+)
 from agent_runtime.manifest import SideEffectClass
 from mission_wiring.approval_service import ApprovalInvalidError, AuthorityApprovalService
 from mission_wiring.envelope import ApprovalState, MissionEnvelope, RequestType
@@ -39,6 +44,11 @@ __all__ = [
     "BrowserEvidence",
     "GovernedBrowserExecutor",
 ]
+
+# W4-5: the stable identity this executor binds under in the registry's
+# executor_bindings data. Execution of a computer.browser.* capability is
+# permitted only if the trusted registry binds that capability to THIS id.
+EXECUTOR_ID = "mission_wiring.browser_executor.GovernedBrowserExecutor"
 
 
 # C1 (SP-MW-RECONCILE-001): the browser capability vocabulary is DERIVED from the
@@ -191,6 +201,7 @@ class GovernedBrowserExecutor:
         self._approval_service = approval_service  # C3: THE one authority validator
         self._evidence: list[BrowserEvidence] = []
         self._actions_used = 0  # C5: per-action budget consumption
+        self._binding_snapshot: Any = None  # W4-5: lazy executor-binding snapshot
 
     def _mechanism(self) -> Any:
         """Build the mechanism lazily — only after _gate has passed for an action."""
@@ -199,6 +210,21 @@ class GovernedBrowserExecutor:
                 raise BrowserActionRefusedError("MECHANISM_ABSENT", "no factory")
             self._c = self._controller_factory()
         return self._c
+
+    def _executor_bindings(self) -> Any:
+        """W4-5: load the capability→executor binding snapshot from the trusted
+        registry view (cached). Fail-closed: any registry integrity failure has
+        already emptied BROWSER_CAPABILITIES and refused in _gate before we reach
+        here, but load_executor_bindings re-derives from the same trusted view so
+        the executor-binding generation is bound to the live registry."""
+        if getattr(self, "_binding_snapshot", None) is None:
+            self._binding_snapshot = load_executor_bindings(_registry_view())
+        return self._binding_snapshot
+
+    @property
+    def executor_binding_generation(self) -> str:
+        """The generation id of the active executor-binding snapshot (W4-6 dependency)."""
+        return self._executor_bindings().executor_binding_generation
 
     # ---- §10 pre-action gate (C1: resolution through the governed registry) ----
     def _gate(self, envelope: MissionEnvelope, capability: str) -> None:
@@ -224,12 +250,21 @@ class GovernedBrowserExecutor:
                 "UNKNOWN_CAPABILITY",
                 f"{capability!r} is not a registry CANONICAL id (aliases are not executable ids here)",
             )
-        if capability not in envelope.requested_capabilities:
-            raise BrowserActionRefusedError(
-                "CAPABILITY_NOT_DELEGATED",
-                f"{capability} not in envelope.requested_capabilities",
+        # W4-5: the registry declares WHAT (resolution, above); it must also declare
+        # HOW — that this canonical capability is performed by THIS executor, at the
+        # SAME registry generation resolution used. REGISTERED != BINDABLE: a
+        # capability that resolves but is bound to no executor (or another executor)
+        # refuses here, before any delegation/approval/mechanism work.
+        try:
+            binding = validate_executor_binding(
+                self._executor_bindings(),
+                capability_id=cc.capability_id,
+                executor_id=EXECUTOR_ID,
+                registry_generation_id=cc.registry_generation_id,
             )
-        cls = BROWSER_CAPABILITIES[capability]
+        except ExecutorBindingError as exc:
+            raise BrowserActionRefusedError(exc.code, f"{capability}: {exc.detail}") from exc
+        self._executor_binding = binding
         if capability not in envelope.requested_capabilities:
             raise BrowserActionRefusedError(
                 "CAPABILITY_NOT_DELEGATED",

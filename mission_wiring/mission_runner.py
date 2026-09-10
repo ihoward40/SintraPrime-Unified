@@ -24,9 +24,15 @@ from typing import Any
 
 from agent_runtime.capability_resolver import ResolutionError, resolve_capability
 from agent_runtime.delegation import DelegationAuthority, DelegationRefusedError
+from agent_runtime.executor_binding import (
+    ExecutorBindingError,
+    load_executor_bindings,
+    validate_executor_binding,
+)
 from agent_runtime.manifest import CertificationStatus
 from agent_runtime.registry import AgentRegistry, UnknownAgentError
 from mission_wiring.browser_executor import (
+    EXECUTOR_ID,
     BrowserActionRefusedError,
     GovernedBrowserExecutor,
     _registry_view,
@@ -161,12 +167,12 @@ class MissionRunner:
         self._emit(ObservedEvent.DELEGATION_CREATED, envelope.mission_id,
                    delegation_id=envelope.delegation_id)
 
-        # 4) execution — routing is RESOLVER-DRIVEN (C1-adjacent): a capability
-        # routes to the browser executor only if the registry says its
-        # side_effect_class comes from the computer.browser.* family AND it
-        # resolves. No raw string-prefix trust.
+        # 4) execution — routing is BINDING-DRIVEN (W4-5): a capability routes to
+        # the browser executor only if the registry's executor_bindings data binds
+        # it to THIS executor, at the same generation resolution used. No raw
+        # string-prefix trust, no private vocabulary, no alias fallback.
+        binding_snapshot = load_executor_bindings(view)
         browser_caps: list[str] = []
-        non_browser: list[str] = []
         for c in envelope.requested_capabilities:
             try:
                 cc = resolve_capability(c, view)
@@ -174,13 +180,19 @@ class MissionRunner:
                 self._decide("REFUSE", "CAPABILITY_NOT_RESOLVABLE", f"{c}: {exc}")
                 self._emit(ObservedEvent.CAPABILITY_DENIED, envelope.mission_id, caps=[c])
                 return self._refuse(envelope, "CAPABILITY_NOT_RESOLVABLE", started_at)
-            if cc.capability_id.startswith("computer.browser."):
-                browser_caps.append(c)
-            else:
-                non_browser.append(c)
-        if non_browser:
-            self._decide("REFUSE", "EXECUTOR_NOT_WIRED", ",".join(non_browser))
-            return self._refuse(envelope, "EXECUTOR_NOT_WIRED", started_at)
+            try:
+                validate_executor_binding(
+                    binding_snapshot,
+                    capability_id=cc.capability_id,
+                    executor_id=EXECUTOR_ID,
+                    registry_generation_id=cc.registry_generation_id,
+                )
+            except ExecutorBindingError as exc:
+                # bound to a different executor (or to no executor): the runner has
+                # no wired handler for it either way => EXECUTOR_NOT_WIRED
+                self._decide("REFUSE", "EXECUTOR_NOT_WIRED", f"{c}: {exc.code}")
+                return self._refuse(envelope, "EXECUTOR_NOT_WIRED", started_at)
+            browser_caps.append(c)
         if self.browser is None:
             self._decide("REFUSE", "BROWSER_EXECUTOR_ABSENT")
             return self._refuse(envelope, "BROWSER_EXECUTOR_ABSENT", started_at)

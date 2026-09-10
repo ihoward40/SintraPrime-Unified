@@ -218,25 +218,36 @@ def test_alias_and_canonical_hash_equivalence_property(reg):
 
 
 def test_no_production_consumers_changed():
-    """Static: the five W4-3 consumers are untouched; resolver is pure addition."""
+    """Static boundary guard.
+
+    History layer (unchanged): the diff from the W4-2 commit (98bc9b70) up to the
+    W4-5 base must never touch systems outside the Wave-4 governed-execution
+    surface. mission_wiring became authorized production surface at the
+    SP-MW-RECONCILE-001 seal, so it is no longer banned; portal/swarm/deploy/CI
+    remain banned.
+
+    Working-tree layer (W4-5): uncommitted changes must stay confined to the
+    authorized W4-5 surface — the new executor-binding layer, the browser
+    executor it wires, and tests.
+    """
     out = NegativeOutcome()
-    # W4-3 contract: diff vs W4-2 commit (98bc9b70) touches ONLY the migration
-    # surface (3 consumers + resolver module + tests). No portal/workflow/deploy.
     r = subprocess.run(["git", "diff", "98bc9b70", "--stat"],
                        capture_output=True, text=True, cwd=str(WT), timeout=30)
     stat = r.stdout
-    for banned in ("portal/", "mission_wiring", "swarm_runtime/", "certify.py",
-                   ".github", "deployment"):
+    for banned in ("portal/", "swarm_runtime/", "certify.py", ".github", "deployment"):
         assert banned not in stat, f"unauthorized production change: {banned}"
-    # working tree: only the new resolver + tests differ from HEAD
+    # working tree: only the W4-5 surface differs from HEAD
     r2 = subprocess.run(["git", "status", "--short"], capture_output=True, text=True, cwd=str(WT), timeout=30)
     changed = [line.split(None, 1)[-1].strip() for line in r2.stdout.splitlines()
-               if line.startswith((" M", "M "))]
-    allowed = ("agent_runtime/manifest.py", "agent_runtime/delegation.py",
-               "agent_runtime/registry.py",          # W4-3 migration surface
-               "agent_runtime/capability_resolver.py",  # W4-2 resolver (extended in W4-3)
-               "agent_runtime/receipts.py",           # W4-4 hash boundary (SP-W4-4-FIX-R1)
-               "agent_runtime/tests/")               # test files
+               if line.startswith((" M", "M ", "A ", "??"))]
+    allowed = ("agent_runtime/executor_binding.py",   # W4-5 HOW layer (new)
+               "agent_runtime/capability_resolver.py",  # resolver lineage
+               "agent_runtime/receipts.py",           # W4-4 hash boundary
+               "agent_runtime/manifest.py", "agent_runtime/delegation.py",
+               "agent_runtime/registry.py",           # W4-3 migration surface
+               "agent_runtime/tests/",
+               "mission_wiring/",                      # W4-5 executor binding wiring + tests
+               "artifacts/")                           # evidence, never runtime
     for path in changed:
         assert any(path.startswith(a) for a in allowed), f"unauthorized change: {path}"
     out.assert_clean()

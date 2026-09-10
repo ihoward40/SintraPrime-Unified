@@ -1,0 +1,128 @@
+{
+ "receipt_type": "WAVE4_FINAL_CERTIFICATION_RECEIPT",
+ "lane": "SP-W4-9-WAVE4-FINAL-CERTIFICATION-RECEIPT-001",
+ "descriptive_only": true,
+ "authority_invariants": {
+  "certification_grants_authority": false,
+  "certification_is_approval": false,
+  "certification_is_delegation": false,
+  "certification_is_capability_grant": false,
+  "certification_not_delegation": false,
+  "certification_not_approval": false,
+  "registered_not_bindable": true,
+  "bindable_not_authorized": true,
+  "carrier_state_not_authority_state": true,
+  "approval_posture_not_approval_granted": true
+ },
+ "lineage": {
+  "PUBLISHED_WAVE4_MAIN": "9137b19490374237bdf3ebecf87abcd176ddda12",
+  "W4_6": "a4eb503b242fb96aad0d901bbb9ffa456e389b11",
+  "W4_7": "2c1be622ef44c16a4f6018de2a011980fa131154",
+  "W4_8": "CERTIFICATION_ONLY (no commit)",
+  "W4_9": "FINAL CERTIFICATION/EVIDENCE PACKAGE (this receipt)"
+ },
+ "dependency_generations": {
+  "manifest_generation": "mgen-w46-1-828fed8d254e64f11ea7ee9e",
+  "capability_registry_generation": "reg-e4a3abfaec68",
+  "authority_policy_generation": "agen-f07e55772207fcc9d6a17b66",
+  "executor_binding_generation": "ebg-44efb071ec7e",
+  "evidence_contract_generation": "egen-d8e7e5759a0a798fa718cb2e",
+  "certification_generation": "certgen-24fbaf3c8fa1a07d65cf310960e421bf"
+ },
+ "implementation_state": "LOCAL_COMMIT",
+ "certification_state": "PUBLICATION_CANDIDATE",
+ "deployment_state": "NOT_DEPLOYED",
+ "integrity_findings": {
+  "authority_expansion": 0,
+  "approval_bypass": 0,
+  "delegation_expansion": 0,
+  "capability_expansion": 0,
+  "tenant_scope_expansion": 0,
+  "resource_scope_expansion": 0,
+  "forged_authority_acceptance": 0,
+  "pre_governance_external_contact": 0
+ },
+ "certification_matrix": {
+  "w4_7_focused": "24/24",
+  "w4_6_focused": "19/19",
+  "w4_5_focused": "11/11",
+  "w4_4_focused": "15/15",
+  "agent_runtime": "258/258",
+  "mission_wiring": "107/107",
+  "swarm": "177/177",
+  "portal": "88 passed / 0 failed / 0 errors / 2 skipped",
+  "default_shared": "563/563",
+  "ruff": "PASS",
+  "publication_guard": "PASS (6/6)"
+ },
+ "deferred_items": {
+  "RESILIENCE-MC-EVENT-ORDER-001": {
+   "state": "DEFERRED",
+   "blocking": false,
+   "classification": "TIMING/ORDERING (ENVIRONMENT class)"
+  },
+  "REACT_UI_LOCAL_NPM_INSTALL": {
+   "state": "ENVIRONMENT/DEPENDENCY",
+   "certification_blocker": false
+  },
+  "AUTHENTICATED_MC_FLOW": {
+   "state": "NOT_EXERCISED",
+   "scope": "OUTSIDE THIS CERTIFICATION CLAIM"
+  }
+ },
+ "hash_basis": "SHA256(EXACT STORED GIT BLOB BYTES)",
+ "evidence": [
+  {
+   "id": "w4_6_cert",
+   "path": "artifacts/convergence/wave4/w4_6_certification.json",
+   "evidence_type": "CERTIFICATION_RECEIPT",
+   "source_lane": "SP-W4-6-CERTIFICATION-GENERATION-001",
+   "supports_claims": [
+    "certification_generation_implemented",
+    "deterministic_canonicalization",
+    "adversarial_matrix_19_19"
+   ],
+   "sha256": "6567689554c96c63ab394e4e00a0d5e01848605a7cb93331cb191a83eebe8f52",
+   "hash_basis": "STORED_GIT_BLOB_BYTES"
+  },
+  {
+   "id": "w4_7_adv",
+   "path": "artifacts/convergence/wave4/w4_7_adversarial_report.json",
+   "evidence_type": "ADVERSARIAL_REPORT",
+   "source_lane": "SP-W4-7-ADVERSARIAL-REGISTRY-001",
+   "supports_claims": [
+    "24_24_attacks_refused",
+    "zero_production_repairs",
+    "negative_outcomes_proven"
+   ],
+   "sha256": "b34f9f9614f599917ffbc5066d1ff8907a3b0cb694932bf535526be369e5c1d6",
+   "hash_basis": "STORED_GIT_BLOB_BYTES"
+  },
+  {
+   "id": "w4_8_regr",
+   "path": "artifacts/convergence/wave4/w4_8_shared_regression_receipt.json",
+   "evidence_type": "SHARED_REGRESSION_RECEIPT",
+   "source_lane": "SP-W4-8-SHARED-REGRESSION-001",
+   "supports_claims": [
+    "full_matrix_green",
+    "portal_run1_classified_timing_ordering",
+    "record_corrections_applied"
+   ],
+   "sha256": "6c4330f9c4ce6c5e5564280a0cef0b415ae3a825f70368b8d9bf86a9b28dc640",
+   "hash_basis": "STORED_GIT_BLOB_BYTES"
+  },
+  {
+   "id": "rt_obs_50793ea2",
+   "path": "artifacts/convergence/wave4/LOCAL_RUNTIME_OBSERVATION_50793ea2.json",
+   "evidence_type": "LOCAL_RUNTIME_OBSERVATION",
+   "source_lane": "LOCAL INTERACTIVE REVIEW @ 50793ea2",
+   "supports_claims": [
+    "separate_observation_only",
+    "certification_authority_NONE"
+   ],
+   "sha256": "f774bfad64d5301366d5abfcd3309f4db3eb55f83dcfdd6df16b07924b78144d",
+   "hash_basis": "STORED_GIT_BLOB_BYTES"
+  }
+ ],
+ "evidence_pointers_verified": 4
+}

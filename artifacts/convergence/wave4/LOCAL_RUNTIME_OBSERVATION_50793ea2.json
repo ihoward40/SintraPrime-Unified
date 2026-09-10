@@ -1,0 +1,19 @@
+{
+ "receipt_type": "LOCAL_RUNTIME_OBSERVATION",
+ "evidence_type": "LOCAL_RUNTIME_OBSERVATION",
+ "certification_authority": "NONE",
+ "observed_worktree_head": "50793ea298466b1a633721e0b5179b370976ad12",
+ "NOT_certification_of": "2c1be622ef44c16a4f6018de2a011980fa131154 (W4-7/W4-8 tree)",
+ "findings": {
+  "PostgreSQL": "healthy",
+  "Redis": "healthy",
+  "MinIO": "healthy",
+  "Portal health endpoint": "200",
+  "Swagger/OpenAPI": "available",
+  "protected endpoints unauthenticated": "401 (correct fail-closed)",
+  "REACT_UI_NOT_LAUNCHED": "ENVIRONMENT/DEPENDENCY",
+  "VITE_API_BASE_URL_REQUIRED": "CONFIGURATION REQUIREMENT",
+  "AUTHENTICATED_MC_FLOW": "NOT_EXERCISED"
+ },
+ "interpretation_guard": "This observation is NOT Wave-4 certification of the current local W4-6/W4-7/W4-8 derivative."
+}

@@ -1,0 +1,18 @@
+{
+ "lane": "SP-W4-5-EXECUTOR-BINDING-001",
+ "base": "f0d5a24eb5513f9c261e7b5256604d3b2990d4aa",
+ "files": {
+  "agent_runtime/executor_binding.py": "8fb97f2b7e4e60c5341492e5204186dd701086c4766acf90834e72157f8960a2",
+  "agent_runtime/tests/test_capability_resolver.py": "3aaca6068b43366dac611e11a388dc7f87dd3b7663bec50b1327d269249b3402",
+  "mission_wiring/browser_executor.py": "5bba255f18483b2eb3d3e8f379c067fc8da23608589cc1b03760b3efddbe2c5e",
+  "mission_wiring/mission_runner.py": "d1331a8203b0038e54aa062b298bd142eed5540bc2adde34961fc76384f439ac",
+  "mission_wiring/tests/test_executor_binding.py": "865daf724e74c313f7afd4680858cd0381871432c40d7bbb69460424c1f8892f"
+ },
+ "junit_sha256": {
+  "w45_core": "df2083a84409355bfb12dc3fbb583e519502561c1475249d0418857c8097a588",
+  "w45_portal": "a3f5719b72f233887001bc34caea2bcc40f514afa7700893394663b379978753",
+  "w45_swarm_final": "18e3ad4cfaf36eea42d593c3c81ed0e168f9ea9f85eef4044ac6b37676f30dd1",
+  "w45_default": "78a7389f628f70d47f36e96b2a6d8cd2b3169940c03fbd4a794d89e5f1052479",
+  "w45_dep": "171af046b2ef6301ad1f815bde58eea9be9f512ec8b38a654d3b52dfce8a29c6"
+ }
+}

@@ -1,0 +1,72 @@
+{
+  "lane": "DOC-JURISDICTION-001",
+  "advertised_claims": [
+    {
+      "file": "README.md",
+      "line": 83,
+      "text": "analyze law across 19 US jurisdictions currently supported (federal court system also covered; expansion to all 50 states is planned, not complete)"
+    },
+    {
+      "file": "README.md",
+      "line": 134,
+      "text": "Trust law analysis (19 jurisdictions) | FUNCTIONAL"
+    },
+    {
+      "file": "README.md",
+      "line": 184,
+      "text": "Trust law limited to 19 US jurisdictions (not all 50 yet)"
+    },
+    {
+      "file": "docs/CLAIMS.md",
+      "line": 72,
+      "text": "Claim: Trust law analysis across 19 U.S. jurisdictions"
+    },
+    {
+      "file": "docs/CLAIMS.md",
+      "line": 77,
+      "text": "Known limitations: 19 jurisdictions only (CA, NY, TX, FL, IL, PA, OH, MI, NC, VA, AZ, CO, WA, OR, MA, MD, NJ, CT, DE); not all 50 states"
+    },
+    {
+      "file": "docs/CLAIMS.md",
+      "line": 175,
+      "text": "Trust law (19 jurisdictions) | 247 | PARTIAL"
+    },
+    {
+      "file": "docs/CAPABILITY_INDEX.md",
+      "line": 15,
+      "text": "Trust-law support | ... FUNCTIONAL | 19 jurisdictions only"
+    }
+  ],
+  "evidence": {
+    "trust_law_modules": [
+      "jurisdiction_analyzer.py (694 lines; named jurisdictions = Delaware, Nevada, Alaska, South Dakota, Wyoming + international Cook Islands/Nevis/Belize/Liechtenstein)",
+      "trust_knowledge_base.py (30+ doctrines; 8 named jurisdictions incl. Cayman Islands; UCC Art. 1-9)",
+      "trust_reasoning_engine.py (UTC-adoption boolean list ~43 states at 521-531; JURISDICTION_SCORES scoring matrix)",
+      "trust_case_law.py (case citations naming IL/CT/NY/NJ/CA/OR/WA/AZ/IN/IA/MO/WI/RI/MA)",
+      "trust_document_generator.py (0 per-state tokens)",
+      "ucc_filing_assistant.py (0 per-state tokens)",
+      "asset_protection_planner.py (Illinois-style land trust mention)"
+    ],
+    "no_per_state_rule_registry": "No file in trust_law/ contains a 19-state rule table. CLAIMS' own 19-state list appears as 2-letter codes nowhere; 16/19 appear as incidental full names (mostly in case-law 'states_followed' lists), not as jurisdiction RULES.",
+    "tests": "trust_law/tests/test_trust_law.py = 73 tests, 73/73 PASS on this worktree (JUnit: tests=73 failures=0 errors=0 skipped=0). Tests exercise: California, Nevada, New York, Texas, Delaware, South Dakota, Wyoming, Cook Islands (8 jurisdictions).",
+    "certified": "No certification artifact/receipt under artifacts/ names trust_law jurisdictions. docs/CLAIMS.md:175 itself marks PARTIAL; CI: pytest.ini testpaths does NOT include trust_law/tests (default lane coverage NO).",
+    "document_generation": "trust_document_generator.py present but has ZERO per-state tokens \u2014 generic templates, no per-jurisdiction generation rules.",
+    "legal_reasoning": "trust_reasoning_engine.py + jurisdiction_analyzer.py provide generic scoring/reasoning; UTC-adoption list is boolean across ~42 states (a data point, not per-state rules)."
+  },
+  "counts": {
+    "ADVERTISED": 19,
+    "ACTUAL_IMPLEMENTED": 8,
+    "ACTUAL_TESTED": 8,
+    "ACTUAL_CERTIFIED": 0
+  },
+  "counts_note": "IMPLEMENTED=TESTED=8: the 8 jurisdictions for which trust_law contains real, test-exercised content (CA, NY, TX, DE, NV, SD, WY, AK + Cook Islands international). ADVERTISED=19 per README/CLAIMS/CAPABILITY_INDEX. The UTC-adoption boolean list (~42 states) is not jurisdiction RULES coverage and is not counted.",
+  "DOCUMENTATION_CREDIBILITY_DEFECT": true,
+  "verdict": "CLAIM_DRIFT_FOUND",
+  "recommended_corrections": [
+    "README.md:83/134/184 + docs/CLAIMS.md:72,77,175 + docs/CAPABILITY_INDEX.md:15: change '19 US jurisdictions' to '8 jurisdictions with implemented and tested trust-law content (CA, NY, TX, DE, NV, SD, WY, AK; Cook Islands offshore)' or similar evidence-backed wording",
+    "docs/CLAIMS.md:175: the '247' test count is stale \u2014 current measured count is 73/73 PASS (test_trust_law.py); update with the current number and date",
+    "docs/CLAIMS.md:79 'CI coverage: UNKNOWN' \u2014 replace with NO (pytest.ini testpaths = tests, portal/tests, voice_concierge/governed/tests; trust_law/tests is not in the default lane)",
+    "docs/CLAIMS.md:77: keep the 'not all 50 states' limitation (accurate and commendably honest)"
+  ],
+  "secret_values_recorded": false
+}

@@ -1,0 +1,47 @@
+{
+ "receipt": "W4_1_REGISTRY_ARTIFACT_INSTALLATION",
+ "generated": "2026-09-09T12:29:03.030558+00:00",
+ "lane": "SP-CONVERGE-ZD-004 / W4-1 (resumed after Wave-3 publication)",
+ "dependency_binding": {
+  "main_sha_containing_wave3": "79deec881544a80105e0b45663740ad0f0fccf17",
+  "wave3_head_ancestor": "482a28e4f5c7d61f4b43bc3369ccb0ed84fd7a4f",
+  "registry_generation_hash": "8926e703e6247417fb9bf0f8c7feac22aa6fd4a5d1ea47b2d9136ca5e5fb3761",
+  "registry_generation_id": "reg-e4a3abfaec68"
+ },
+ "installed_files": {
+  "registry/capabilities/capability_registry.json": {
+   "sha256": "8926e703e6247417fb9bf0f8c7feac22aa6fd4a5d1ea47b2d9136ca5e5fb3761",
+   "byte_identical_to_zd002": true
+  },
+  "registry/capabilities/capability_registry.schema.json": {
+   "sha256": "dea9eab4e4eb741a0f2db8585dda5c183dfd1d9aaa06881c906fe847338e7981",
+   "byte_identical_to_zd002": true
+  },
+  "registry/capabilities/capability_registry_generation.json": {
+   "sha256": "db4a39e0b91208b294990082b77836aaf067d5ba77b076aa68bc594350ea4565",
+   "byte_identical_to_zd002": true
+  }
+ },
+ "gates": {
+  "REGISTRY_SCHEMA_VALID": true,
+  "CANONICAL_CAPABILITY_COUNT": 42,
+  "WAVE3_ALIAS_COUNT": 23,
+  "UNKNOWN_CAPABILITY_IDS": 0,
+  "AMBIGUOUS_ALIASES": 0,
+  "ALIAS_COLLISIONS": 0,
+  "DUPLICATE_CANONICAL_IDS": 0,
+  "WAVE3_MANIFEST_IDS_UNALIASED": [],
+  "ALIAS_COMPLETENESS": "PASS (vs REAL production agent_runtime/manifest.py on main @ 79deec88)",
+  "MANIFEST_IDS_TOTAL": 23,
+  "INVARIANT_EC_IR_ALWAYS_REQUIRED": true,
+  "MANIFEST_CHURN": 0,
+  "PRODUCTION_BEHAVIOR_CHANGE": 0,
+  "AUTHORITY_EXPANSION": 0,
+  "PROVIDER_NAMESPACE_COLLISION": 0,
+  "REGISTRY_GRANTS_NO_AUTHORITY": "TRUE \u2014 vocabulary and policy metadata only; authority still derives from canonical governance root -> Authority Service -> delegation -> mission runtime"
+ },
+ "production_diff_vs_main": "NONE (agent_runtime/, portal/, swarm_runtime/ untouched)",
+ "W4_1": "PASS",
+ "IMPLEMENTATION_EXECUTED": "ARTIFACT_INSTALLATION_ONLY",
+ "W4_2": "NOT AUTHORIZED"
+}

@@ -1,0 +1,132 @@
+{
+  "lane": "SEC-NOVA-EXEC-001",
+  "provenance": "Parent-executed audit after two subagent dispatches failed on provider connection errors (deleg_4a18655e, deleg_469de835). All evidence below was collected directly with rg/AST/file reads against worktree HEAD 05885aa2 (branch feat/wave4-w1-registry-install).",
+  "head": "05885aa2ae4791e1a5fabca9aa4d4941fcf4050d",
+  "raw_hit_inventory": "_sec_hits_raw.json (380 hits across 14 patterns; classified examples below)",
+  "summary_counts": {
+    "TOTAL_PATTERN_HITS": 380,
+    "REAL_DYNAMIC_EXEC_SITES_NON_TEST": 4,
+    "subprocess_hits": 144,
+    "re_compile_hits": 143,
+    "importlib": 12,
+    "__import__": 27,
+    "pickle.loads": 5,
+    "marshal": 1
+  },
+  "findings": [
+    {
+      "id": "SEC-001",
+      "file": "agents/nova/nova_agent.py",
+      "line": 334,
+      "pattern": "exec(",
+      "classification": "MODEL_CONTROLLED (when enabled)",
+      "severity": "HIGH (conditional)",
+      "data_source": "OpenAI chat.completions (model=gpt-4o-mini) response.choices[0].message.content, fence-stripped, lines 289-306",
+      "evidence": "chain: action_type not in _registry (284) -> OPENAI_API_KEY (285) -> openai client (289) -> prompt 'Generate a Python function...dynamic_handler(params)' (290) -> code from response (300) -> ActionSpec(approval_level=HUMAN) (315) -> gate NOVA_ALLOW_DYNAMIC_EXEC != 'true' raises PermissionError (320-328) -> exec(code.strip(), globals(), local_env) (334) -> dynamic_handler attached to _registry (335-338)",
+      "assessment": "Default-deny gate confirmed (320). BUT when NOVA_ALLOW_DYNAMIC_EXEC=true, model output is exec'd with NO human approval, NO capability-registry consultation, and NO sandbox beyond passing globals(). The spec's approval_level=HUMAN (315) is metadata created AFTER the model returns and is never checked before exec — the approval is aspirational, not enforced. exec into globals() pollutes module namespace (unlike the scheduler's dedicated safe_globals).",
+      "registry_bypass": true,
+      "production_reachability": "NOT REACHABLE on production line: rg shows zero non-test importers of agents/nova/nova_agent.py in the repository (only tests/test_scheduler_executor.py). Classified ORPHANED per ZD-001 runtime map."
+    },
+    {
+      "id": "SEC-002",
+      "file": "scheduler/task_executor.py",
+      "line": 195,
+      "pattern": "exec(",
+      "classification": "TRUSTED_INTERNAL with external enablement",
+      "severity": "MEDIUM",
+      "data_source": "execute_python(code: str, context) parameter (line 167-169) — caller-supplied string",
+      "evidence": "gate NOVA_ALLOW_DYNAMIC_EXEC != 'true' raises PermissionError (187-191); exec(textwrap.dedent(code), safe_globals) (195); safe_globals dedicated namespace (192-195). execute_shell (206-224): safe_mode blocked-pattern list (213-218), shlex.split, P0-003 shell=False enforced list-args (221-224).",
+      "assessment": "Gate default-deny confirmed (187). Code comes from the function's caller, NOT directly from model output. REGISTRY-BYPASS CONFIRMED: rg shows NO import of agent_runtime anywhere under scheduler/ (agents/, scheduler/, skill_evolution/, core/universe/ have zero agent_runtime imports). Callers of execute_python/execute_shell outside tests: NONE found (only scheduler/tests + tests/test_scheduler_executor.py + tests/security/test_no_runtime_exec.py reference them) — the executor surface is currently test-only reachable.",
+      "registry_bypass": true
+    },
+    {
+      "id": "SEC-003",
+      "file": "skill_evolution/skill_runner.py",
+      "line": 195,
+      "pattern": "exec(compile(skill.code...)",
+      "classification": "EXTERNALLY_CONTROLLED (skill code) with name-based blocklist",
+      "severity": "MEDIUM",
+      "data_source": "skill.code — SkillVersion.code (core/universe/skill_registry.py:31), a plain string; skill provenance not shown in runner",
+      "evidence": "_check_code_safety(skill.code) blocked-names list (187-189; list at 44-45: __import__, eval(, compile(, exec(, open(, os.system, subprocess, socket); effective_timeout min() cap (191); _build_sandbox_globals(params) (192); exec(compile(...), sandbox) (195); returns sandbox['result'] (196).",
+      "assessment": "Blacklist-based sandbox (substring blocklist) is bypassable (e.g. getattr(__builtins__,'ev'+'al'), base64-decoded exec, os-alias imports via builtins) — substring denial is not a security boundary. Timeout-capped, dedicated sandbox namespace. NO capability-registry consultation: skill_evolution/ has zero agent_runtime imports.",
+      "registry_bypass": true
+    },
+    {
+      "id": "SEC-004",
+      "file": "core/universe/skill_registry.py",
+      "line": 111,
+      "pattern": "compile(skill.code,'<skill>','exec')",
+      "classification": "STATIC_SAFE (compile-only validation)",
+      "severity": "NONE",
+      "data_source": "SkillVersion.code",
+      "evidence": "compile() used ONLY as a syntax validator inside validate() (101-115); result never exec'd here; dangerous-substring rejection at 105-108.",
+      "assessment": "Not an execution path.",
+      "registry_bypass": false
+    },
+    {
+      "id": "SEC-005",
+      "file": "skill_evolution/auto_skill_creator.py",
+      "line": 495,
+      "pattern": "compile(skill.code, ...)",
+      "classification": "STATIC_SAFE (compile-only validation)",
+      "severity": "NONE",
+      "data_source": "skill.code",
+      "evidence": "compile() inside syntax validation (493-497); FORBIDDEN_IN_SKILL substring scan (488-491).",
+      "assessment": "Not an execution path.",
+      "registry_bypass": false
+    },
+    {
+      "id": "SEC-006",
+      "file": "portal/routers/blackstone.py",
+      "line": "82,100,215,233,245,375,391",
+      "pattern": "tenant_id from request body",
+      "classification": "USER_CONTROLLED",
+      "severity": "MEDIUM (tenant isolation integrity)",
+      "data_source": "CaseIntakeRequest.tenant_id / EvaluateRequest.tenant_id — client-supplied request body field",
+      "evidence": "Request models declare optional tenant_id (82, 100); handlers authenticate via Depends(get_current_user) (133, 266) but persist/lookup with request.tenant_id (215, 233, 245, 375, 391) and get_case_status takes tenant_id as a QUERY PARAM (268) without cross-checking against the authenticated principal's tenant.",
+      "assessment": "PROVIDER_AUTHORITY_LEAK (caller-supplied tenant): an authenticated user can write/read under an arbitrary tenant_id string. This is a TENANT_SCOPE_AUTHORITY defect in the portal lane (does not touch agent_runtime/mission_wiring). Contrast: portal/middleware/auth_middleware.py:144 sets request.state.tenant_id from the JWT payload (server-verified token) — the correct pattern exists but is not used by these handlers.",
+      "provider_authority_leak": true
+    },
+    {
+      "id": "SEC-007",
+      "file": "saas/saas_api.py",
+      "line": 226,
+      "pattern": "tenant_id=request.tenant_id",
+      "classification": "USER_CONTROLLED (stub surface)",
+      "severity": "LOW",
+      "data_source": "request body",
+      "evidence": "handler returns hardcoded subscription stub (id='sub_123') with echo of request.tenant_id (223-227); rg shows NO importers of saas/ from portal/orchestration — unreachable from production.",
+      "assessment": "Stub, unreachable; recorded for completeness.",
+      "provider_authority_leak": false
+    },
+    {
+      "id": "SEC-008",
+      "file": "phase18/*, security/*, issue_verifier",
+      "line": "various",
+      "pattern": "exec/eval/shell pattern STRINGS in scanner rule tables",
+      "classification": "SECURITY_SCANNER_SELF",
+      "severity": "NONE",
+      "data_source": "literal rule definitions",
+      "assessment": "Self-referential detection rules, not execution.",
+      "registry_bypass": false
+    }
+  ],
+  "booleans": {
+    "DYNAMIC_EXEC_PRESENT": true,
+    "MODEL_TO_EXEC_PATH": true,
+    "MODEL_TO_SHELL_PATH": false,
+    "MODEL_TO_IMPORT_PATH": false,
+    "MODEL_TO_BROWSER_BYPASS": false,
+    "MODEL_TO_AUTHORITY_BYPASS": false
+  },
+  "MODEL_TO_EXEC_PATH_qualification": "Path EXISTS in code (nova_agent.py 283-345: model output -> exec) but (a) is default-deny via NOVA_ALLOW_DYNAMIC_EXEC and (b) the module has zero production importers on this lineage. It is a real latent MODEL_TO_EXEC path, orphaned from production. The scheduler path (task_executor.py:195) is model-INDEPENDENT (caller-supplied code) but equally registry-bypassed when enabled.",
+  "PROVIDER_AUTHORITY_LEAKS": 1,
+  "PROVIDER_AUTHORITY_LEAKS_detail": [
+    {"id": "SEC-006", "file": "portal/routers/blackstone.py", "severity": "MEDIUM", "summary": "Caller-supplied tenant_id persisted/queried without binding to authenticated principal's tenant"}
+  ],
+  "registry_bypass_summary": "All three live dynamic-execution surfaces (nova dynamic_handler, scheduler execute_python/execute_shell, skill_evolution skill_runner) operate with ZERO consultation of agent_runtime.capability_resolver or registry/capabilities — none of agents/, scheduler/, skill_evolution/, core/universe/ imports agent_runtime. The governed capability registry (W4-1..W4-4) currently covers agent_runtime/mission_wiring paths only.",
+  "verdict": "FINDING",
+  "verdict_detail": "No CRITICAL (no production-reachable model-to-exec path; nova is orphaned and default-deny; scheduler exec is test-only reachable and default-deny; shell path is shell=False + blocklist). One MEDIUM provider-authority leak (caller-supplied tenant in portal blackstone router) and one MEDIUM latent path (nova dynamic exec, gated+orphaned).",
+  "remediation_design": "GOVERNED ACTION/PLUGIN REGISTRY (design only; no code changed): LLM output NEVER executes as code. Model proposes structured {action_type, parameters}; flow = (1) JSON-schema validation of the proposal; (2) Action Registry lookup — action_type must be a REGISTERED handler; unregistered => UNKNOWN_ACTION refusal (this is the dynamic-handler replacement: no generated Python, ever); (3) action_type -> capability_resolver.resolve_capability -> CanonicalCapability (unknown/ambiguous/dormant/disabled/generation-mismatch => REFUSED pre-contact); (4) authority: DelegationAuthority.issue with approval binding validated by AuthorityApprovalService (mission/actor/tenant/capability/resource binding, expiry, exactly-once); (5) registered handler executes with capability-scoped params; (6) MissionReceipt + evidence. Skill execution (skill_evolution) migrates to the same registry: skills become declarative action bundles, not exec'd code; if raw-code skills are retained they must run in a process-isolated sandbox (subprocess/container, no shared globals) with the same capability+authority pre-gate and a written permission manifest per skill.",
+  "secret_values_recorded": false
+}

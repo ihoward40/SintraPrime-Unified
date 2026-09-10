@@ -1,0 +1,16 @@
+{
+  "names": [
+    "DATABASE_URL",
+    "DELEGATION_TTL_HOURS",
+    "SECRET_KEY",
+    "JWT_SECRET",
+    "REDIS_URL",
+    "MINIO_ENDPOINT",
+    "MINIO_ACCESS_KEY",
+    "MINIO_SECRET_KEY",
+    "TWIN_AUTH_TOKEN",
+    "ENVIRONMENT",
+    "PUBLIC_ORIGIN"
+  ],
+  "values": "REDACTED_NOT_RECORDED"
+}

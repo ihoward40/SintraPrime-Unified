@@ -1,0 +1,21 @@
+{
+  "lane": "SP-W4-4-FIX-R1",
+  "step": "REPRODUCTION",
+  "BASE_SHA": "05885aa2ae4791e1a5fabca9aa4d4941fcf4050d",
+  "reproduction_worktree": "C:/Users/admin/SintraPrime-Unified-mw-reconcile (agent_runtime untouched from 05885aa2)",
+  "W4_4_DEFECT_REPRODUCED": true,
+  "FAILING_TESTS": [
+    "agent_runtime/tests/test_w44_hash_boundary.py::test_alias_canonical_envelope_hash_equivalence",
+    "agent_runtime/tests/test_w44_hash_boundary.py::test_alias_canonical_receipt_hash_equivalence",
+    "agent_runtime/tests/test_w44_hash_boundary.py::test_canonical_id_and_registry_provenance_preserved",
+    "agent_runtime/tests/test_w44_hash_boundary.py::test_canonicalization_does_not_authorize",
+    "agent_runtime/tests/test_w44_hash_boundary.py::test_generation_provenance_changes_dependency_hash"
+  ],
+  "JUnit": {"tests": 13, "failures": 5, "errors": 0, "skipped": 0, "exit_code": 1},
+  "FAILURE_CLASS": "IMPLEMENTATION_DEFECT",
+  "root_cause": "receipts.py:165 assigns `_status_gate(resolve_capability(...))` to `resolved`, but _status_gate returns None on success; every ACTIVE-capability hash path raises AttributeError.",
+  "frozen_reconciliation_diff_hash": "5636ac4de22eb1840912383b",
+  "provenance_classification": {
+    "W4-4 @ 05885aa2": "HISTORICALLY_CERTIFIED / LATER_FOUND_DEFECTIVE_UNDER_DOWNSTREAM_INTEGRATION / SUPERSEDED_BY_SP-W4-4-FIX-R1"
+  }
+}

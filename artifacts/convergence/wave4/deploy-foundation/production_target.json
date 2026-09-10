@@ -1,0 +1,13 @@
+{
+  "production_target": "UNKNOWN",
+  "provider": null,
+  "service_project": null,
+  "region": null,
+  "runtime": null,
+  "database": null,
+  "public_url": null,
+  "health_url": null,
+  "deployment_identity": null,
+  "provider_selection_required": true,
+  "reason": "Repository contains multi-cloud placeholder only; no existing infrastructure identifies an actual production target."
+}

@@ -6,16 +6,16 @@ with human-in-the-loop approval for high-stakes operations and an immutable
 audit trail for every action taken.
 """
 
-import hashlib
 import json
 import logging
 import os
 import uuid
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone
+from collections.abc import Callable
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger("nova_agent")
 logger.setLevel(logging.INFO)
@@ -47,11 +47,11 @@ class ActionSpec:
     name: str
     description: str
     category: str
-    required_params: List[str]
-    optional_params: List[str] = field(default_factory=list)
+    required_params: list[str]
+    optional_params: list[str] = field(default_factory=list)
     approval_level: ApprovalLevel = ApprovalLevel.HUMAN
-    handler: Optional[Callable] = None
-    rollback_handler: Optional[Callable] = None
+    handler: Callable | None = None
+    rollback_handler: Callable | None = None
 
 
 @dataclass
@@ -59,19 +59,19 @@ class ExecutionRecord:
     """Record of an executed action."""
     execution_id: str
     action_type: str
-    params: Dict[str, Any]
+    params: dict[str, Any]
     status: str
-    result: Optional[Dict[str, Any]] = None
-    evidence: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
-    user_id: Optional[str] = None
+    result: dict[str, Any] | None = None
+    evidence: dict[str, Any] | None = None
+    error: str | None = None
+    user_id: str | None = None
     approval_status: str = "PENDING"
-    approver_id: Optional[str] = None
-    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    completed_at: Optional[str] = None
-    rolled_back_at: Optional[str] = None
-    prev_hash: Optional[str] = None
-    record_hash: Optional[str] = None
+    approver_id: str | None = None
+    created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
+    completed_at: str | None = None
+    rolled_back_at: str | None = None
+    prev_hash: str | None = None
+    record_hash: str | None = None
 
 
 class NovaAgent:
@@ -84,15 +84,15 @@ class NovaAgent:
 
     def __init__(
         self,
-        user_id: Optional[str] = None,
+        user_id: str | None = None,
         auto_approve_low_risk: bool = True,
-        ledger_path: Optional[str] = None,
+        ledger_path: str | None = None,
     ):
         self.user_id = user_id or "system"
         self.auto_approve_low_risk = auto_approve_low_risk
-        self._registry: Dict[str, ActionSpec] = {}
-        self._executions: List[ExecutionRecord] = []
-        self._approval_queue: List[Dict[str, Any]] = []
+        self._registry: dict[str, ActionSpec] = {}
+        self._executions: list[ExecutionRecord] = []
+        self._approval_queue: list[dict[str, Any]] = []
         self._ledger_path = Path(ledger_path) if ledger_path else Path.cwd() / ".nova" / "ledger.jsonl"
         self._register_default_actions()
         logger.info("NovaAgent initialized for user=%s", self.user_id)
@@ -181,9 +181,9 @@ class NovaAgent:
 
     def _create_default_handler(self, action_type: str) -> Callable:
         """Create a default handler for an action type."""
-        def handler(params: Dict[str, Any]) -> Dict[str, Any]:
+        def handler(params: dict[str, Any]) -> dict[str, Any]:
             logger.info("Executing %s with params: %s", action_type, list(params.keys()))
-            timestamp = datetime.now(timezone.utc).isoformat()
+            timestamp = datetime.now(UTC).isoformat()
 
             if action_type == "SEND_DISPUTE_LETTER":
                 return {
@@ -194,7 +194,7 @@ class NovaAgent:
                     "delivery_estimate": "3-5 business days",
                     "certified": params.get("certified", True),
                 }
-            elif action_type == "FILE_COURT_MOTION":
+            if action_type == "FILE_COURT_MOTION":
                 return {
                     "status": "filed",
                     "filing_id": f"MOT-{uuid.uuid4().hex[:10].upper()}",
@@ -203,7 +203,7 @@ class NovaAgent:
                     "filed_at": timestamp,
                     "confirmation_url": f"https://court-efiling.example.com/filings/{uuid.uuid4().hex[:8]}",
                 }
-            elif action_type == "SUBMIT_CREDIT_DISPUTE":
+            if action_type == "SUBMIT_CREDIT_DISPUTE":
                 return {
                     "status": "submitted",
                     "dispute_id": f"CFPB-{uuid.uuid4().hex[:10].upper()}",
@@ -212,7 +212,7 @@ class NovaAgent:
                     "submitted_at": timestamp,
                     "expected_response": "30 days",
                 }
-            elif action_type == "DRAFT_TRUST_AMENDMENT":
+            if action_type == "DRAFT_TRUST_AMENDMENT":
                 return {
                     "status": "drafted",
                     "document_id": f"TRUST-{uuid.uuid4().hex[:10].upper()}",
@@ -221,7 +221,7 @@ class NovaAgent:
                     "docusign_envelope": f"ENV-{uuid.uuid4().hex[:8]}",
                     "signing_url": f"https://docusign.example.com/sign/{uuid.uuid4().hex[:8]}",
                 }
-            elif action_type == "SEND_DEMAND_LETTER":
+            if action_type == "SEND_DEMAND_LETTER":
                 return {
                     "status": "sent",
                     "message_id": f"DL-{uuid.uuid4().hex[:10].upper()}",
@@ -229,14 +229,14 @@ class NovaAgent:
                     "sent_at": timestamp,
                     "deadline": f"{params.get('deadline_days', 30)} days",
                 }
-            elif action_type == "NOTIFY_CREDITOR":
+            if action_type == "NOTIFY_CREDITOR":
                 return {
                     "status": "logged",
                     "notification_id": f"NCR-{uuid.uuid4().hex[:10].upper()}",
                     "creditor": params.get("creditor_name"),
                     "logged_at": timestamp,
                 }
-            elif action_type == "SCHEDULE_COURT_DATE":
+            if action_type == "SCHEDULE_COURT_DATE":
                 return {
                     "status": "scheduled",
                     "event_id": f"EVT-{uuid.uuid4().hex[:10].upper()}",
@@ -246,7 +246,7 @@ class NovaAgent:
                     "reminder_set": True,
                     "created_at": timestamp,
                 }
-            elif action_type == "GENERATE_AFFIDAVIT":
+            if action_type == "GENERATE_AFFIDAVIT":
                 return {
                     "status": "generated",
                     "document_id": f"AFF-{uuid.uuid4().hex[:10].upper()}",
@@ -255,20 +255,19 @@ class NovaAgent:
                     "notarization_routed": bool(params.get("notary_service")),
                     "pdf_path": f"/documents/affidavits/{uuid.uuid4().hex[:8]}.pdf",
                 }
-            else:
-                return {"status": "completed", "action_type": action_type, "timestamp": timestamp}
+            return {"status": "completed", "action_type": action_type, "timestamp": timestamp}
 
         return handler
 
     def _create_default_rollback(self, action_type: str) -> Callable:
         """Create a default rollback handler."""
-        def rollback(execution_id: str, original_result: Dict[str, Any]) -> Dict[str, Any]:
+        def rollback(execution_id: str, original_result: dict[str, Any]) -> dict[str, Any]:
             logger.info("Rolling back %s execution %s", action_type, execution_id)
             return {
                 "status": "rolled_back",
                 "execution_id": execution_id,
                 "action_type": action_type,
-                "rolled_back_at": datetime.now(timezone.utc).isoformat(),
+                "rolled_back_at": datetime.now(UTC).isoformat(),
                 "original_result": original_result,
             }
         return rollback
@@ -276,8 +275,8 @@ class NovaAgent:
     def execute_action(
         self,
         action_type: str,
-        params: Dict[str, Any],
-        approval_required: Optional[bool] = None,
+        params: dict[str, Any],
+        approval_required: bool | None = None,
     ) -> ExecutionRecord:
         """Central action dispatcher."""
         # If action_type is unknown, try to dynamically generate a handler using LLM
@@ -304,7 +303,7 @@ class NovaAgent:
                         code = code[3:]
                     if code.endswith("```"):
                         code = code[:-3]
-                    
+
                     # Create a dynamic spec
                     spec = ActionSpec(
                         action_type=action_type,
@@ -314,7 +313,7 @@ class NovaAgent:
                         required_params=list(params.keys()),
                         approval_level=ApprovalLevel.HUMAN
                     )
-                    
+
                     # Compile and attach the handler
                     # P0-003: exec gate — default-deny unless explicitly enabled
                     if os.environ.get("NOVA_ALLOW_DYNAMIC_EXEC", "false").lower() != "true":
@@ -330,8 +329,21 @@ class NovaAgent:
                         "Dynamic exec permitted via NOVA_ALLOW_DYNAMIC_EXEC flag (audit: %s)",
                         str(uuid.uuid4())[:8],
                     )
-                    local_env = {}
-                    exec(code.strip(), globals(), local_env)  # noqa: S102
+                    # SEC-NOVA-EXEC-001-R1: restricted namespace — the module's real
+                    # globals() is NEVER exposed to generated code. Restricted builtins
+                    # only (scheduler _SAFE_BUILTINS policy); no __import__, no eval/exec/
+                    # open in the sandbox. NOTE: this restricts the namespace; it is NOT
+                    # a claim of secure arbitrary-Python sandboxing against fully
+                    # hostile code.
+                    safe_builtins = {
+                        k: __builtins__[k] for k in _SAFE_BUILTINS if k in __builtins__
+                    } if isinstance(__builtins__, dict) else {
+                        k: getattr(__builtins__, k) for k in _SAFE_BUILTINS
+                        if hasattr(__builtins__, k)
+                    }
+                    restricted_globals: dict = {"__builtins__": safe_builtins}
+                    local_env: dict = {}
+                    exec(code.strip(), restricted_globals, local_env)
                     if "dynamic_handler" in local_env:
                         spec.handler = local_env["dynamic_handler"]
                         spec.rollback_handler = self._create_default_rollback(action_type)
@@ -342,7 +354,7 @@ class NovaAgent:
                     raise
                 except Exception as e:
                     logger.error("Failed to dynamically generate handler for %s: %s", action_type, e)
-                    raise ValueError(f"Unknown action type: {action_type} and dynamic generation failed.")
+                    raise ValueError(f"Unknown action type: {action_type} and dynamic generation failed.") from e
             else:
                 raise ValueError(f"Unknown action type: {action_type}")
 
@@ -393,7 +405,7 @@ class NovaAgent:
             result = handler(params)
             record.result = result
             record.status = ActionStatus.COMPLETED.value
-            record.completed_at = datetime.now(timezone.utc).isoformat()
+            record.completed_at = datetime.now(UTC).isoformat()
             record.evidence = {
                 "action_type": action_type,
                 "result_summary": result.get("status", "unknown"),
@@ -409,7 +421,7 @@ class NovaAgent:
         self._append_to_ledger(record)
         return record
 
-    def request_human_approval(self, action: str, description: str) -> Dict[str, Any]:
+    def request_human_approval(self, action: str, description: str) -> dict[str, Any]:
         """Create a human approval request."""
         request_id = str(uuid.uuid4())
         request = {
@@ -417,7 +429,7 @@ class NovaAgent:
             "action": action,
             "description": description,
             "status": "PENDING",
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
         }
         self._approval_queue.append(request)
         logger.info("Human approval requested: %s", request_id)
@@ -443,7 +455,7 @@ class NovaAgent:
             result = spec.handler(record.params)
             record.result = result
             record.status = ActionStatus.COMPLETED.value
-            record.completed_at = datetime.now(timezone.utc).isoformat()
+            record.completed_at = datetime.now(UTC).isoformat()
             logger.info("Approved execution %s completed.", execution_id)
             return True
         except Exception as exc:
@@ -463,7 +475,7 @@ class NovaAgent:
         logger.info("Execution %s rejected: %s", execution_id, reason)
         return True
 
-    def log_execution(self, action: str, result: Dict[str, Any], evidence: Dict[str, Any]) -> str:
+    def log_execution(self, action: str, result: dict[str, Any], evidence: dict[str, Any]) -> str:
         """Log an execution to the immutable audit trail."""
         execution_id = str(uuid.uuid4())
         record = ExecutionRecord(
@@ -474,13 +486,13 @@ class NovaAgent:
             result=result,
             evidence=evidence,
             user_id=self.user_id,
-            completed_at=datetime.now(timezone.utc).isoformat(),
+            completed_at=datetime.now(UTC).isoformat(),
         )
         self._executions.append(record)
         self._append_to_ledger(record)
         return execution_id
 
-    def rollback_action(self, execution_id: str) -> Optional[Dict[str, Any]]:
+    def rollback_action(self, execution_id: str) -> dict[str, Any] | None:
         """Reverse a completed action where possible."""
         record = self._find_execution(execution_id)
         if not record or record.status != ActionStatus.COMPLETED.value:
@@ -496,14 +508,14 @@ class NovaAgent:
         try:
             result = spec.rollback_handler(execution_id, record.result or {})
             record.status = ActionStatus.ROLLED_BACK.value
-            record.rolled_back_at = datetime.now(timezone.utc).isoformat()
+            record.rolled_back_at = datetime.now(UTC).isoformat()
             logger.info("Rolled back execution %s", execution_id)
             return result
         except Exception as exc:
             logger.error("Rollback failed for %s: %s", execution_id, exc)
             return None
 
-    def _find_execution(self, execution_id: str) -> Optional[ExecutionRecord]:
+    def _find_execution(self, execution_id: str) -> ExecutionRecord | None:
         for rec in self._executions:
             if rec.execution_id == execution_id:
                 return rec
@@ -517,9 +529,9 @@ class NovaAgent:
 
     def get_execution_history(
         self,
-        user_id: Optional[str] = None,
-        action_type: Optional[str] = None,
-    ) -> List[ExecutionRecord]:
+        user_id: str | None = None,
+        action_type: str | None = None,
+    ) -> list[ExecutionRecord]:
         """Get filtered execution history."""
         results = self._executions
         if user_id:
@@ -529,7 +541,7 @@ class NovaAgent:
         return results
 
     @property
-    def pending_approvals(self) -> List[Dict[str, Any]]:
+    def pending_approvals(self) -> list[dict[str, Any]]:
         """Return list of pending approval requests."""
         return [
             a for a in self._approval_queue
@@ -537,3 +549,15 @@ class NovaAgent:
             or any(r.status == ActionStatus.AWAITING_APPROVAL.value
                    for r in self._executions if r.execution_id == a.get("execution_id"))
         ]
+# P0-003 / SEC-NOVA-EXEC-001-R1: safe-builtin policy reused from scheduler/task_executor.py
+# so dynamic Nova handlers execute in a RESTRICTED namespace, never the real module globals.
+_SAFE_BUILTINS = {
+    "abs", "all", "any", "bin", "bool", "bytes", "callable", "chr",
+    "dict", "dir", "divmod", "enumerate", "filter", "float", "format",
+    "frozenset", "getattr", "hasattr", "hash", "hex", "int", "isinstance",
+    "issubclass", "iter", "len", "list", "map", "max", "min", "next",
+    "oct", "ord", "pow", "print", "range", "repr", "reversed", "round",
+    "set", "slice", "sorted", "str", "sum", "tuple", "type", "zip",
+}
+
+

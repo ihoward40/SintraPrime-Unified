@@ -279,6 +279,8 @@ def test_no_production_consumers_changed():
                   if line.startswith((" M", "M ", "A ", "??"))]
     allowed = ("agent_runtime/executor_binding.py",   # W4-5 HOW layer (new)
                "agent_runtime/certification_generation.py",  # W4-6 dependency-bound certification (new)
+               "agents/nova/",                          # SEC-NOVA-EXEC-001-R1 exec-namespace repair (authorized)
+               "agents/tests/",                         # its regression tests
                "agent_runtime/capability_resolver.py",  # resolver lineage
                "agent_runtime/receipts.py",           # W4-4 hash boundary
                "agent_runtime/manifest.py", "agent_runtime/delegation.py",

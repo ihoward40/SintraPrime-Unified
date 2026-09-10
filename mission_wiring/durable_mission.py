@@ -366,6 +366,7 @@ class DurableMissionManager:
         status: str,
         external_contact_observed: bool,
         detail: str = "",
+        reason_code: str | None = None,
     ) -> EffectOutcome:
         """Durable OUTCOME. status ∈ COMPLETED | FAILED | UNKNOWN.
 
@@ -383,7 +384,8 @@ class DurableMissionManager:
             SideEffectClass.IRREVERSIBLE.value,
         ):
             rec.state = MissionLifecycleState.RECONCILIATION_REQUIRED
-            rec.reconciliation_status = "REQUIRED_UNKNOWN_EXTERNAL_STATE"
+            rec.reconciliation_status = (
+                reason_code or "REQUIRED_UNKNOWN_EXTERNAL_STATE")
             outcome = EffectOutcome(
                 mission_id=rec.mission_id, attempt_id=rec.attempt_id or "",
                 effect_id=rec.effect_id or "", idempotency_key=rec.idempotency_key,

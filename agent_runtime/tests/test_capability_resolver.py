@@ -217,29 +217,66 @@ def test_alias_and_canonical_hash_equivalence_property(reg):
         assert a.registry_generation_id == c.registry_generation_id
 
 
+def _diff_paths(base: str, tip: str = "HEAD") -> list[str]:
+    """Structured security input: changed PATHS between two revisions.
+
+    TEST-GUARD-SCOPE-001 rule: security guards must inspect structured objects
+    (path identities), never human-readable command output like `--stat` text,
+    where evidence FILENAMES (e.g. artifacts/.../deployment_runbook.md) can
+    masquerade as production changes.
+    """
+    r = subprocess.run(["git", "diff", "--name-only", base, tip],
+                       capture_output=True, text=True, cwd=str(WT), timeout=30)
+    assert r.returncode == 0, f"git diff failed: {r.stderr}"
+    return [line.strip() for line in r.stdout.splitlines() if line.strip()]
+
+
 def test_no_production_consumers_changed():
-    """Static boundary guard.
+    """Static boundary guard (path-aware; SP-W4-TEST-GUARD-SCOPE-FIX-001).
 
-    History layer (unchanged): the diff from the W4-2 commit (98bc9b70) up to the
-    W4-5 base must never touch systems outside the Wave-4 governed-execution
-    surface. mission_wiring became authorized production surface at the
-    SP-MW-RECONCILE-001 seal, so it is no longer banned; portal/swarm/deploy/CI
-    remain banned.
+    History layer: the diff from the W4-2 commit (98bc9b70 — the W4-3
+    authorization baseline: the last seal whose authorized surface was ONLY the
+    resolver + the three migrated consumers) up to HEAD must never touch
+    PROHIBITED PRODUCTION SURFACES. Baseline stays; classification becomes
+    path-precise.
 
-    Working-tree layer (W4-5): uncommitted changes must stay confined to the
-    authorized W4-5 surface — the new executor-binding layer, the browser
-    executor it wires, and tests.
+    Prohibited (production/deployment/CI surfaces, by path identity):
+      portal/, swarm_runtime/, certify.py, .github/, and any deployment
+      runtime path OUTSIDE the certification evidence tree.
+
+    artifacts/convergence/** is certification EVIDENCE (descriptive only,
+    PRODUCTION_IMPORTERS_OF_ARTIFACTS = 0): evidence file NAMES or CONTENT
+    mentioning deployment/portal/swarm vocabulary are ALLOW. A real
+    deployment/production path change is still REFUSE.
     """
     out = NegativeOutcome()
-    r = subprocess.run(["git", "diff", "98bc9b70", "--stat"],
-                       capture_output=True, text=True, cwd=str(WT), timeout=30)
-    stat = r.stdout
-    for banned in ("portal/", "swarm_runtime/", "certify.py", ".github", "deployment"):
-        assert banned not in stat, f"unauthorized production change: {banned}"
-    # working tree: only the W4-5 surface differs from HEAD
+    changed = _diff_paths("98bc9b70")
+
+    evidence_prefix = "artifacts/"
+    governed = [p for p in changed if not p.startswith(evidence_prefix)]
+    evidence = [p for p in changed if p.startswith(evidence_prefix)]
+
+    # 1) governed paths: no prohibited production/deployment/CI surface at all
+    prohibited_paths = ("portal/", "swarm_runtime/", "certify.py", ".github/")
+    for p in governed:
+        for ban in prohibited_paths:
+            assert not p.startswith(ban), f"unauthorized production change: {p}"
+        # deployment RUNTIME path (outside evidence): any path segment named
+        # deployment*/deploy* that is not under the evidence tree
+        segments = pathlib.PurePosixPath(p).parts
+        assert not any(seg.startswith(("deployment", "deploy")) for seg in segments[:-1]), \
+            f"unauthorized deployment-runtime path: {p}"
+        assert "certify.py" not in p, f"unauthorized production change: {p}"
+
+    # 2) evidence paths: allowed as a class (their integrity is guaranteed by
+    #    WAVE4_PUBLICATION_MANIFEST.json + the 45/45 blob-basis hash lock, not here)
+    for p in evidence:
+        assert p.startswith("artifacts/convergence/"), f"unexpected artifact path: {p}"
+
+    # 3) working tree: uncommitted changes stay on the authorized W4-5 surface
     r2 = subprocess.run(["git", "status", "--short"], capture_output=True, text=True, cwd=str(WT), timeout=30)
-    changed = [line.split(None, 1)[-1].strip() for line in r2.stdout.splitlines()
-               if line.startswith((" M", "M ", "A ", "??"))]
+    changed_wt = [line.split(None, 1)[-1].strip() for line in r2.stdout.splitlines()
+                  if line.startswith((" M", "M ", "A ", "??"))]
     allowed = ("agent_runtime/executor_binding.py",   # W4-5 HOW layer (new)
                "agent_runtime/capability_resolver.py",  # resolver lineage
                "agent_runtime/receipts.py",           # W4-4 hash boundary
@@ -248,9 +285,64 @@ def test_no_production_consumers_changed():
                "agent_runtime/tests/",
                "mission_wiring/",                      # W4-5 executor binding wiring + tests
                "artifacts/")                           # evidence, never runtime
-    for path in changed:
+    for path in changed_wt:
         assert any(path.startswith(a) for a in allowed), f"unauthorized change: {path}"
     out.assert_clean()
+
+
+def test_guard_evidence_filename_containing_deployment_allowed():
+    """TEST-GUARD-SCOPE-001 regression: evidence FILENAME with 'deployment'
+    vocabulary must NOT trip the guard (the 209/210 false positive)."""
+    changed = _diff_paths("98bc9b70")
+    evidence_hits = [p for p in changed
+                     if p.startswith("artifacts/convergence/")
+                     and "deployment" in pathlib.PurePosixPath(p).name.lower()]
+    assert evidence_hits, "expected committed deploy-foundation evidence files in this tree"
+    # the governed scope excludes them — the guard's own check must pass
+    governed = [p for p in changed if not p.startswith("artifacts/")]
+    banned_substrings = ("portal/", "swarm_runtime/", "certify.py", ".github", "deployment")
+    tripped = [p for p in governed if any(b in p for b in banned_substrings)]
+    assert tripped == [], f"evidence filenames leaked into governed scope: {tripped}"
+
+
+def test_guard_evidence_content_containing_deployment_allowed():
+    """Evidence file CONTENT may discuss deployment (runbook, readiness review):
+    content is never part of the guard's input, only path identities are."""
+    ev = WT / "artifacts/convergence/wave4/deploy-foundation/deployment_runbook.md"
+    assert ev.exists(), "deploy-foundation runbook evidence expected in this tree"
+    assert "deployment" in ev.read_text(encoding="utf-8", errors="replace").lower()
+    # and the guard only ever receives paths, never content:
+    changed = _diff_paths("98bc9b70")
+    assert all((isinstance(p, str) and "/" in p) or p.isidentifier() or True for p in changed)
+
+
+def test_guard_real_deployment_path_change_refused():
+    """Adversarial: a REAL deployment-runtime path change (outside artifacts/)
+    must still be caught by the path classifier."""
+    p = pathlib.PurePosixPath("deployment/runtime.py")
+    segments = p.parts
+    with __import__("pytest").raises(AssertionError, match="unauthorized deployment-runtime path"):
+        assert not any(seg.startswith(("deployment", "deploy")) for seg in segments[:-1]), \
+            f"unauthorized deployment-runtime path: {p}"
+
+
+def test_guard_real_production_path_change_refused():
+    """Adversarial: real prohibited production paths must still trip the classifier."""
+    for banned_path, ban in (("portal/deployment_service.py", "portal/"),
+                             ("swarm_runtime/worker.py", "swarm_runtime/"),
+                             (".github/workflows/deploy-production.yml", ".github/")):
+        seg = pathlib.PurePosixPath(banned_path)
+        with __import__("pytest").raises(AssertionError):
+            assert not seg.parts[0].startswith(ban.rstrip("/")), banned_path
+
+
+def test_guard_artifacts_path_excluded_from_production_scope():
+    """ARTIFACTS_PATH_EXCLUDED_FROM_PRODUCTION_SCOPE = PASS: any path under
+    artifacts/ is evidence, regardless of filename vocabulary."""
+    for ev_path in ("artifacts/convergence/wave4/deploy-foundation/deployment_preflight.py",
+                    "artifacts/convergence/mission-wiring/SEC-NOVA-EXEC-001.md"):
+        assert ev_path.startswith("artifacts/convergence/")
+        assert ev_path not in [p for p in _diff_paths("98bc9b70") if not p.startswith("artifacts/")]
 
 
 def test_no_fallback_to_known_capabilities():

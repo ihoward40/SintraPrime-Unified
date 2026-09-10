@@ -22,7 +22,7 @@ def _fresh_harness() -> FaultInjectionHarness:
     return FaultInjectionHarness()
 
 
-def _make_mission_with_intent(h: FaultInjectionHarness, mgr):
+def _make_mission_with_intent(mgr):
     rec = make_approved_mission(mgr)
     mgr.record_intent(rec.mission_id, effect_id="effect-1")
     return rec
@@ -141,7 +141,7 @@ def test_unknown_consequential_never_auto_retried():
                            external_contact_observed=True)
     assert not any(hasattr(mgr, m) for m in ("retry", "auto_retry", "rerun"))
     # the only exit is explicit reconciliation
-    with pytest.raises(DurableMissionError) as ei:
+    with pytest.raises(DurableMissionError):
         mgr.record_outcome(rec.mission_id, status="COMPLETED",
                            external_contact_observed=True)
 

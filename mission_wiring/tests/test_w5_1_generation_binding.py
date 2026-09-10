@@ -43,7 +43,7 @@ def _recompute(intent) -> str:
 
 
 def _base_hash() -> tuple:
-    mgr, rec, intent = _intent()
+    _, _, intent = _intent()
     return intent, _recompute(intent)
 
 

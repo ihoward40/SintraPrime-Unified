@@ -16,7 +16,6 @@ from mission_wiring.tests.w5_fault_injection import (
 
 def _make(h):
     mgr = h.start_mission({})
-    rec = make = None
     from mission_wiring.tests.w5_fault_injection import make_approved_mission
     rec = make_approved_mission(mgr)
     return mgr, rec

@@ -73,7 +73,7 @@ class SideEffectClass(str, Enum):  # noqa: UP042 - deliberate mirror of Wave-3 S
     IRREVERSIBLE = "IRREVERSIBLE"
 
 
-class MissionLifecycleState(str, Enum):
+class MissionLifecycleState(str, Enum):  # noqa: UP042 - lifecycle states are string-typed per W5-1 contract
     REQUESTED = "REQUESTED"
     AWAITING_APPROVAL = "AWAITING_APPROVAL"
     APPROVED = "APPROVED"

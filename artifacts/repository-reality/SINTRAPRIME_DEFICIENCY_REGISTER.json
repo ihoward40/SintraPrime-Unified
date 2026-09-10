@@ -1,0 +1,197 @@
+{
+  "register": "SINTRAPRIME_DEFICIENCY_REGISTER",
+  "generated": "2026-08-08T06:45:00Z",
+  "commit": "e2ada66e22f7992fec83c884fd6f7aa9329ccb25",
+  "findings": [
+    {
+      "id": "SP-DEF-001",
+      "subsystem": "persistence/mission-control",
+      "severity": "P1",
+      "classification": "BROKEN",
+      "description": "ORM model MissionControlCommand.tenant_id is String(36) but SQL migration creates UUID. PostgreSQL rejects: operator does not exist: uuid = character varying.",
+      "evidence": ["portal/models/mission_control_command.py:30", "portal/migrations/add_mission_control_command_ledger.sql:9", "asyncpg UndefinedFunctionError at runtime"],
+      "dependencies": [],
+      "recommended_action": "REPAIR"
+    },
+    {
+      "id": "SP-DEF-002",
+      "subsystem": "persistence/messaging",
+      "severity": "P1",
+      "classification": "BROKEN",
+      "description": "ORM model Message.body (String) vs SQL schema content (String). ORM content_encrypted as string vs SQL boolean. Application-level message writes fail on PG.",
+      "evidence": ["portal/models/message.py", "portal/migrations/portal_schema.sql", "column body does not exist at runtime"],
+      "dependencies": [],
+      "recommended_action": "REPAIR"
+    },
+    {
+      "id": "SP-DEF-003",
+      "subsystem": "persistence/migrations",
+      "severity": "P1",
+      "classification": "BROKEN",
+      "description": "Migration files reference tables from later files (add_audit_records needs evidence_snapshots). No ordering enforcement. runtime_schema_integrity_2026_07_27 references missing columns.",
+      "evidence": ["portal/migrations/*.sql ordering failures", "6 relation-not-exists errors observed"],
+      "dependencies": [],
+      "recommended_action": "REPAIR"
+    },
+    {
+      "id": "SP-DEF-004",
+      "subsystem": "configuration",
+      "severity": "P1",
+      "classification": "PARTIALLY_WORKING",
+      "description": ".env sets sqlite+aiosqlite; PG default creds fail auth. SQLite hides PG-specific defects (set_config missing, UUID typing).",
+      "evidence": ["portal/config.py:28", ".env DATABASE_URL", "MissingGreenlet / set_config errors on SQLite"],
+      "dependencies": [],
+      "recommended_action": "REPAIR"
+    },
+    {
+      "id": "SP-DEF-005",
+      "subsystem": "persistence/migrations",
+      "severity": "P1",
+      "classification": "MISSING",
+      "description": "Alembic not wired: versions/ empty (0 files). All migrations are hand-rolled SQL with manual ordering.",
+      "evidence": ["portal/alembic/versions/ count = 0"],
+      "dependencies": [],
+      "recommended_action": "REPAIR"
+    },
+    {
+      "id": "SP-DEF-006",
+      "subsystem": "repository-automation",
+      "severity": "P1",
+      "classification": "MISSING",
+      "description": "No sintraprime_smoke runner exists (directive 30). No machine-readable health receipt.",
+      "evidence": ["no smoke script found in portal/scripts"],
+      "dependencies": [],
+      "recommended_action": "IMPLEMENT"
+    },
+    {
+      "id": "SP-DEF-007",
+      "subsystem": "governance",
+      "severity": "P1",
+      "classification": "DISCONNECTED",
+      "description": "GovernanceEngine has zero callers outside governance/ dir. Not enforced at any runtime path.",
+      "evidence": ["grep GovernanceEngine portal/ agents/ core/ = 0 (excluding doctor)"],
+      "dependencies": [],
+      "recommended_action": "REPAIR"
+    },
+    {
+      "id": "SP-DEF-008",
+      "subsystem": "providers",
+      "severity": "P2",
+      "classification": "STUB_ONLY",
+      "description": "Provider registry returns 5 mock providers, 0 real. Header states no external providers connected. No LLM invocation possible.",
+      "evidence": ["portal/services/orchestration/provider_registry.py"],
+      "dependencies": [],
+      "recommended_action": "IMPLEMENT"
+    },
+    {
+      "id": "SP-DEF-009",
+      "subsystem": "workflow",
+      "severity": "P2",
+      "classification": "STUB_ONLY",
+      "description": "Orchestrator uses in-memory RUNS dict; no DB persistence, no restart recovery. Deterministic mock only.",
+      "evidence": ["portal/services/orchestration/orchestrator.py"],
+      "dependencies": [],
+      "recommended_action": "IMPLEMENT"
+    },
+    {
+      "id": "SP-DEF-010",
+      "subsystem": "events",
+      "severity": "P2",
+      "classification": "DISCONNECTED",
+      "description": "core/universe/event_hub/ has 644-line test suite but zero importers outside core/. No runtime event flow.",
+      "evidence": ["core/universe/event_hub/", "grep imports = 0"],
+      "dependencies": [],
+      "recommended_action": "INTEGRATE"
+    },
+    {
+      "id": "SP-DEF-011",
+      "subsystem": "security",
+      "severity": "P2",
+      "classification": "PARTIALLY_WORKING",
+      "description": "JWT HMAC key is 28 bytes (< 32 recommended by RFC 7518). Emits InsecureKeyLengthWarning.",
+      "evidence": ["jwt.api_jwt.py:147 InsecureKeyLengthWarning"],
+      "dependencies": [],
+      "recommended_action": "REPAIR"
+    },
+    {
+      "id": "SP-DEF-012",
+      "subsystem": "testing",
+      "severity": "P2",
+      "classification": "BROKEN",
+      "description": "test_mythos_brain_integration imports PolicyEnforcementPoint (missing); test_pr_263_remediation imports MemoryEntry from wrong module. Both fail collection.",
+      "evidence": ["portal/tests/test_mythos_brain_integration.py", "portal/tests/test_pr_263_remediation.py"],
+      "dependencies": [],
+      "recommended_action": "REPAIR"
+    },
+    {
+      "id": "SP-DEF-013",
+      "subsystem": "messaging",
+      "severity": "P2",
+      "classification": "STUB_ONLY",
+      "description": "mission_control_outbox model exists but no outbox service processes it. Only consumer mythos_brain.py has stale imports.",
+      "evidence": ["portal/models/mission_control_outbox.py", "portal/services/mythos_brain.py"],
+      "dependencies": [],
+      "recommended_action": "IMPLEMENT"
+    },
+    {
+      "id": "SP-DEF-014",
+      "subsystem": "testing",
+      "severity": "P3",
+      "classification": "PARTIALLY_WORKING",
+      "description": "Root conftest collect_ignore_glob excludes portal/, agents/, core/, memory/, orchestration/ etc. Default CI runs only 26 files (Tier 1). 134 test files deferred.",
+      "evidence": ["conftest.py:48-125"],
+      "dependencies": [],
+      "recommended_action": "IMPLEMENT"
+    },
+    {
+      "id": "SP-DEF-015",
+      "subsystem": "memory",
+      "severity": "P3",
+      "classification": "DOCS_ONLY",
+      "description": "No OmniBrain code exists; only planning docs reference it.",
+      "evidence": ["docs/planning/*.md"],
+      "dependencies": [],
+      "recommended_action": "DEFER"
+    },
+    {
+      "id": "SP-DEF-016",
+      "subsystem": "messaging",
+      "severity": "P3",
+      "classification": "DISCONNECTED",
+      "description": "channels/ Slack/Discord adapters not integrated into any runtime path.",
+      "evidence": ["channels/"],
+      "dependencies": [],
+      "recommended_action": "DEFER"
+    },
+    {
+      "id": "SP-DEF-017",
+      "subsystem": "workflow",
+      "severity": "P3",
+      "classification": "MISSING",
+      "description": "workflow_runtime only on unmerged feature branch feat/governed-workflow-runtime (PR #275). Not on origin/main.",
+      "evidence": ["branch inspection"],
+      "dependencies": [],
+      "recommended_action": "DEFER"
+    },
+    {
+      "id": "SP-DEF-018",
+      "subsystem": "mission-control",
+      "severity": "P3",
+      "classification": "PRESENT_BUT_UNVERIFIED",
+      "description": "Run control models/routes exist but no proof pause/resume/cancel actually works.",
+      "evidence": ["portal/models/mission_control_run_control.py", "portal/routers/mission_control.py"],
+      "dependencies": [],
+      "recommended_action": "TEST"
+    },
+    {
+      "id": "SP-DEF-019",
+      "subsystem": "testing",
+      "severity": "P2",
+      "classification": "PARTIALLY_WORKING",
+      "description": "Portal test suite (Tier 2): 66 FAILED / 5 ERROR when executed directly. 41/66 failures are stale auth tests (assert 401 == 200/404/403/201) — tests call endpoints without tokens while app now correctly enforces auth. ~8 are signature drift (get_current_user missing request arg). 5 ERROR from runtime_schema_integrity migration checks.",
+      "evidence": ["portal/tests/ direct pytest run 2026-08-08", "/tmp/portal_pytest_result.txt"],
+      "dependencies": ["SP-DEF-014"],
+      "recommended_action": "REPAIR"
+    }
+  ]
+}

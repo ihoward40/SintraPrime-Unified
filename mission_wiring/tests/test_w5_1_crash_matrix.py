@@ -12,7 +12,6 @@ from mission_wiring.durable_mission import (
     ReconciliationRequiredError,
 )
 from mission_wiring.tests.w5_fault_injection import (
-    CrashInjector,
     FaultInjectionHarness,
     _approved_mission_kwargs,
     make_approved_mission,

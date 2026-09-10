@@ -21,10 +21,7 @@ from __future__ import annotations
 
 import dataclasses
 
-import pytest
-
 from mission_wiring.durable_mission import (
-    DurableMissionError,
     _hash_obj,
 )
 from mission_wiring.tests.w5_fault_injection import (

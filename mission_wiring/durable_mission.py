@@ -46,17 +46,18 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Optional
+from typing import Any
 
 __all__ = [
-    "MissionLifecycleState",
     "DurableMissionError",
+    "DurableMissionManager",
+    "DurableMissionRecord",
     "EffectIntent",
     "EffectOutcome",
-    "DurableMissionRecord",
-    "DurableMissionManager",
+    "MissionLifecycleState",
     "ReconciliationRequiredError",
     "SideEffectClass",
 ]
@@ -64,7 +65,7 @@ __all__ = [
 # Local mirror of the Wave-3 side-effect classes (values identical to
 # agent_runtime.manifest.SideEffectClass) — kept string-based here so the
 # durable record never depends on import order.
-class SideEffectClass(str, Enum):
+class SideEffectClass(str, Enum):  # noqa: UP042 - deliberate mirror of Wave-3 SideEffectClass
     READ_ONLY = "READ_ONLY"
     LOCAL_REVERSIBLE = "LOCAL_REVERSIBLE"
     EXTERNAL_REVERSIBLE = "EXTERNAL_REVERSIBLE"
@@ -165,8 +166,8 @@ class DurableMissionRecord:
     delegation_reference: str = ""
     certification_generation: str = ""
     executor_binding_generation: str = ""
-    intent: Optional[EffectIntent] = None
-    outcome: Optional[EffectOutcome] = None
+    intent: EffectIntent | None = None
+    outcome: EffectOutcome | None = None
     reconciliation_status: str = ""
     receipt_hash: str = ""
     history: list = field(default_factory=list)

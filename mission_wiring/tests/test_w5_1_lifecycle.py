@@ -12,7 +12,6 @@ import pytest
 from mission_wiring.durable_mission import (
     DurableMissionError,
     MissionLifecycleState,
-    ReconciliationRequiredError,
     derive_idempotency_key,
 )
 from mission_wiring.tests.w5_fault_injection import (

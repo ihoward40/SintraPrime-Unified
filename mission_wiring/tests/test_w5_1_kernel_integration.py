@@ -72,7 +72,8 @@ def test_intent_binds_wave4_generations():
     assert intent.executor_binding_generation == "ebg-44efb071ec7e"
     assert intent.approval_reference == "approval-w5-1"
     assert intent.delegation_reference == "deleg-w5-1"
-    import dataclasses, hashlib, json
+    import dataclasses
+
     from mission_wiring.durable_mission import _hash_obj
     # mutate the binding generation post-hoc (frozen dataclass → returns a copy)
     mutated = dataclasses.replace(intent, executor_binding_generation="ebg-CHANGED")

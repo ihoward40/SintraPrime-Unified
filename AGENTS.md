@@ -90,5 +90,6 @@ When the user requests a durable behavior change, record it here or in the relev
 | `legal_authority/AGENTS.md` | Legal authority and jurisdiction rules | Normalized legal authority records, jurisdiction rules, conflicts, effective-date evaluation, provenance |
 | `.mesh/AGENTS.md` | Agent Mesh coordination | Ledger, registry, protocol messages, and transport status |
 | `governance/blackstone/AGENTS.md` | Blackstone Governance Library | Constitutional charter, standards, knowledge core, architecture, certification, registry, casebook |
+| `workflow_runtime/AGENTS.md` | Governed Workflow Runtime (Phase 5A) | Workflow schema, parser, validator, state machine, node executors, budgets, receipts, checkpoints, runner |
 | `voice_concierge/governed/AGENTS.md` | SP-VOICE-001 Governed Voice Operations | Voice command envelope, risk classifier, policy decision, session state machine, confirmation, receipts, feature flags |
 | `docs/orchestration/AGENTS.md` | Adaptive orchestration documentation | Architecture, provider, routing, security, governance, and certification contracts |

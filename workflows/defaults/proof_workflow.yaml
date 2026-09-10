@@ -1,0 +1,82 @@
+# Phase 5A proof workflow — deterministic orchestration around
+# nondeterministic intelligence.
+#
+# START
+#   → Deterministic Context Collection
+#   → Agent Plan
+#   → Agent Implementation
+#   → Deterministic Test
+#   → Fresh-Context Evaluator
+#   → PASS / REPAIR
+#   → Immutable Receipt
+#   → END
+name: proof_workflow
+version: 1
+description: Phase 5A certification proof workflow
+
+policy:
+  authority: engineering
+  approval_mode: inherited
+  isolation: worktree
+  max_parallel_nodes: 1
+
+defaults:
+  provider_class: balanced
+  execution_profile: standard
+
+budget:
+  max_tokens: 500000
+  max_provider_cost: 10.0
+  max_wall_time_seconds: 3600
+  max_agent_calls: 20
+
+model_strategy:
+  initial: economy
+  escalate_after_failures: 2
+  escalation: [balanced, reasoning, frontier]
+
+capabilities:
+  - github.read
+  - repository.write_worktree
+  - tests.execute
+
+nodes:
+  - id: collect_context
+    type: deterministic
+    action: context.collect
+    depends_on: []
+
+  - id: plan
+    type: agent
+    role: planner
+    fresh_context: true
+    depends_on: [collect_context]
+    metadata:
+      objective: Produce a bounded implementation plan
+
+  - id: implement
+    type: agent
+    role: engineer
+    depends_on: [plan]
+    metadata:
+      objective: Implement the planned change
+      input_tokens_estimate: 2000
+      output_tokens_estimate: 1500
+
+  - id: validate
+    type: deterministic
+    action: test.changed_scope
+    depends_on: [implement]
+
+  - id: evaluate
+    type: agent
+    role: evaluator
+    fresh_context: true
+    depends_on: [validate]
+    metadata:
+      objective: Independently evaluate implementation against acceptance criteria
+
+  - id: certify
+    type: deterministic
+    action: validate.immutable_output
+    depends_on: [evaluate]

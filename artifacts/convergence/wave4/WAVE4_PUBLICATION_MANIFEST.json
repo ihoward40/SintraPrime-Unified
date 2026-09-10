@@ -38,7 +38,7 @@
   },
   "artifacts/convergence/mission-wiring/DOC-JURISDICTION-001.json": {
    "class": "SECURITY_RECONNAISSANCE",
-   "sha256": "34e6b02e330c4e6b80379a1118619c81bcf729a0d14d930f72d68d4926278f93"
+   "sha256": "0017bb67e785db402358409134da578d11f4ef4f856affb356c70a4f8d1dfa15"
   },
   "artifacts/convergence/mission-wiring/DOC-JURISDICTION-001.md": {
    "class": "SECURITY_RECONNAISSANCE",
@@ -46,15 +46,15 @@
   },
   "artifacts/convergence/mission-wiring/RECONCILE_EVIDENCE_LOCK.json": {
    "class": "EVIDENCE_LOCK",
-   "sha256": "c32de01eda6f2feb4ef60bccfca57a4ddd6a15640b430431a7b33c8df24520da"
+   "sha256": "448484669c3ae8d296d041f94283194bc4bbe8571a0726886bc17c4bd9670cc3"
   },
   "artifacts/convergence/mission-wiring/RECONCILE_FROZEN_DIFF.json": {
    "class": "EVIDENCE_LOCK",
-   "sha256": "a5cc5455d314c18feff26c3c57fe108e6483ba70ccbf5a3061701f78d0a57210"
+   "sha256": "018d9783eba02be246c9f386581cbb399b31fbc3f90c09ee879742b0b7610205"
   },
   "artifacts/convergence/mission-wiring/RECONCILE_R2_DEVIATION_CLASSIFICATION.json": {
    "class": "EVIDENCE_LOCK",
-   "sha256": "d417ef1b8a105ce2adfd763d20954f0288b56ec9b2769fc2f854b3ba76aed5ae"
+   "sha256": "f1c6bb6befa20ecb0a3cd4069165953b2050358fcc63b0697a4d3df8a17b8b96"
   },
   "artifacts/convergence/mission-wiring/SEC-NOVA-EXEC-001.json": {
    "class": "SECURITY_RECONNAISSANCE",
@@ -66,7 +66,7 @@
   },
   "artifacts/convergence/mission-wiring/SP-MW-PUBLISH-READINESS-001.json": {
    "class": "READINESS_REPORT",
-   "sha256": "cd0722a715c6ccd32046f6e9b6db99b5d061122c3cfd2eddec2fd59b452c1d13"
+   "sha256": "031c83fdfbb45a08883705d8862b54c5036a07cfca4d3915632948e525b82ab3"
   },
   "artifacts/convergence/mission-wiring/SP-MW-PUBLISH-READINESS-001.md": {
    "class": "READINESS_REPORT",
@@ -90,7 +90,7 @@
   },
   "artifacts/convergence/mission-wiring/zd001_mission_wiring_inventory.json": {
    "class": "SECURITY_RECONNAISSANCE",
-   "sha256": "cad65fb17ae066026cf09093d4c9446314ab9dc3a833a9b9e056ee18290318d2"
+   "sha256": "2eb5204cab99f69f531ce7afc3cbe6d511ba7a6e939cf627d1d6b778cb628dc5"
   },
   "artifacts/convergence/wave4/SP-W4-PUBLICATION-READINESS-001.md": {
    "class": "READINESS_REPORT",
@@ -98,27 +98,27 @@
   },
   "artifacts/convergence/wave4/deploy-foundation/db_rollback_certification.json": {
    "class": "DEPLOY_FOUNDATION_EVIDENCE",
-   "sha256": "39bf6d555c49bf2b1efc6e26f66c96cd762b7666e2af6ab912c44f49df38deba"
+   "sha256": "5dc9af432a1d51277d925af25ea8470f7d10439d7b1a9967e9ed268307702621"
   },
   "artifacts/convergence/wave4/deploy-foundation/deployment_preflight.py": {
    "class": "DEPLOY_FOUNDATION_EVIDENCE",
-   "sha256": "51747171433830b7f53497b94761e4a33a7d35fa4278ad08034e6c5949de292b"
+   "sha256": "2c60719a0e5e118cd49cd7bcb1f6a741bfdc3bfbd85b1ccbcab5e6a5352ed7b5"
   },
   "artifacts/convergence/wave4/deploy-foundation/deployment_runbook.md": {
    "class": "DEPLOY_FOUNDATION_EVIDENCE",
-   "sha256": "df0109f9d49f4e3bad3dce7f0cec5aad580a1dedfce3bcd3a7992fdd6a8d9431"
+   "sha256": "88cfbf1e281a2f7b5fd5b343a0dec8afc5702df3bac3def6c0e62a7d89ae4d86"
   },
   "artifacts/convergence/wave4/deploy-foundation/production_target.json": {
    "class": "DEPLOY_FOUNDATION_EVIDENCE",
-   "sha256": "a1fcabfbda2f9b38736ae23061ee9e42d5598146b687bc63b48057c6ab42cfaf"
+   "sha256": "d97e78f466af49a03b71db2eb4a60c143f451b51a7f0e8db80e0b9e4b5b6f976"
   },
   "artifacts/convergence/wave4/deploy-foundation/required_configuration_names.json": {
    "class": "DEPLOY_FOUNDATION_EVIDENCE",
-   "sha256": "83906c090cb4b6a517e7fd0655c218d399b1be912b458be17312267c8b4f1b01"
+   "sha256": "8a79ee1666826a0667192e3ab51d9677e32602fb11a82cded0f0afc4ef832dc0"
   },
   "artifacts/convergence/wave4/deploy-foundation/sp_deploy_foundation_certification.json": {
    "class": "DEPLOY_FOUNDATION_EVIDENCE",
-   "sha256": "141cbe271a70b995a6b7a0d55c0f385df4b40047e88e3dd5566bb8f6c6c35a27"
+   "sha256": "ff2ab71f743abfad18dcb9fd7fdefe6781070fd117accd84ef3d56cfaa811dbe"
   },
   "artifacts/convergence/wave4/deploy-foundation/sp_deploy_foundation_certification.md": {
    "class": "DEPLOY_FOUNDATION_EVIDENCE",
@@ -166,11 +166,11 @@
   },
   "artifacts/convergence/wave4/w4_1_evidence_receipt.json": {
    "class": "EVIDENCE_LOCK",
-   "sha256": "42f05f29efe13d90c09a218ae4d36157198ede9eb8f9804690916974b4fa0415"
+   "sha256": "a6a47ebd9a7c30e97969b6e8854529c4ba25894d1e13653447bcce86f9046304"
   },
   "artifacts/convergence/wave4/w4_1_sequencing_finding.md": {
    "class": "BLOCK_OR_SUPERSESSION_RECORD",
-   "sha256": "42d46064fa0c3e0198603f98c05d3a45b4e11325e196d58e89494f1e66e0f38c"
+   "sha256": "a29e20433d6dc0ce4449b59845c7d5f0409a0458f737dee85dbc1cfdc48665ed"
   },
   "artifacts/convergence/wave4/w4_2_stage_report.md": {
    "class": "LINEAGE_PROOF",
@@ -186,7 +186,7 @@
   },
   "artifacts/convergence/wave4/w4_3_scoping_finding.md": {
    "class": "BLOCK_OR_SUPERSESSION_RECORD",
-   "sha256": "184bf6793143f40c146c3d1f0dc93c0829d0999fd6aa0b59c72dae091acc202e"
+   "sha256": "ab0d8795a5b6403a33513d2c5990dcd694fe68653e2d7197c07c038b6af9efbf"
   },
   "artifacts/convergence/wave4/w4_4_certification.md": {
    "class": "CERTIFICATION_REPORT",
@@ -194,11 +194,11 @@
   },
   "artifacts/convergence/wave4/w4_5_applicability_review.json": {
    "class": "READINESS_REPORT",
-   "sha256": "c89dc9abddad91e2cb3fbda25851459799145a1cf110363a560d14b95a0a0a21"
+   "sha256": "ebe3fba5c2c78d7d790123713f7b3b852682b7fc1e888a13eac85e93655293a3"
   },
   "artifacts/convergence/wave4/w4_5_applicability_review.md": {
    "class": "READINESS_REPORT",
-   "sha256": "def35ef682828f8eb8f71d92f8f357111eab9727b4253ef479d6924708da6329"
+   "sha256": "612e114ea2ecd3e8a1e536c9d603e7f3fe1ded2b3dc4a9d77d3e3eb69e489872"
   },
   "artifacts/convergence/wave4/w4_5_certification.md": {
    "class": "CERTIFICATION_REPORT",
@@ -206,8 +206,9 @@
   },
   "artifacts/convergence/wave4/w4_5_evidence_lock.json": {
    "class": "EVIDENCE_LOCK",
-   "sha256": "ab455885be0825c4e2192c5967de5758703a34fe646dd4c4532bec1c2fee1d7c"
+   "sha256": "43b471cf774c9781527b9d4d636f4adf0139e23850a0d2eeac17467878667cad"
   }
  },
- "evidence_commit_binding": "structural: the evidence commit is the unique child of product_head a589e60c8b61fe4f62f408e1e64be0a8ec4962b5 on branch feat/wave4-capability-runtime (a literal self-reference is cryptographically impossible: the sha covers the manifest content)"
+ "evidence_commit_binding": "structural: the evidence commit is the unique child of product_head a589e60c8b61fe4f62f408e1e64be0a8ec4962b5 on branch feat/wave4-capability-runtime (a literal self-reference is cryptographically impossible: the sha covers the manifest content)",
+ "hash_basis": "sha256 of the STORED git blob (LF-normalized) - the byte basis any remote verifier reads via git cat-file blob; NOT the working-tree CRLF bytes"
 }

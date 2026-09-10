@@ -1,0 +1,293 @@
+{
+  "directive": "SP-MW-PUBLISH-READINESS-001",
+  "A_lineage": {
+    "CURRENT_MAIN_SHA": "79deec881544a80105e0b45663740ad0f0fccf17",
+    "CURRENT_W4_HEAD": "05885aa2ae4791e1a5fabca9aa4d4941fcf4050d",
+    "W4_1_SHA": "51974cca",
+    "W4_2_SHA": "98bc9b70",
+    "W4_3_SHA": "6d5214f2",
+    "W4_4_SHA": "05885aa2",
+    "merge_base_with_main": "79deec88",
+    "remote_commits_not_local": 0,
+    "mission_wiring_on_main": "ABSENT (git ls-tree)",
+    "mission_wiring_on_w4_head": "ABSENT",
+    "zd001_source": "C:/Users/admin/SintraPrime-Unified-sp-zero-dollar-wiring @ cc23293e (mission_wiring UNTRACKED \u2014 never committed anywhere)"
+  },
+  "B_inventory": [
+    {
+      "file": "mission_wiring/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "purpose": "package marker",
+      "role": "NONE",
+      "cls": "REQUIRED_RUNTIME",
+      "pub": "YES"
+    },
+    {
+      "file": "mission_wiring/envelope.py",
+      "sha256": "ee5aa6ae359ad55d210a8961876213167f11a35c1bbbfa50ca1bd0a2607b0cc4",
+      "purpose": "MissionEnvelope typed contract; RequestOrigin/Type; ApprovalState; ResourceScope(url allowlist, max_actions); EnvelopeBudget; envelope_hash via agent_runtime.canonical",
+      "role": "AUTHORITY_CARRIER (fail-closed construction; cannot self-declare approval for consequential types)",
+      "cls": "REQUIRED_SECURITY",
+      "pub": "YES",
+      "note": "W4-4 reconciliation needed: hash_payload lists raw requested_capabilities; must canonicalize via resolver before hashing"
+    },
+    {
+      "file": "mission_wiring/browser_executor.py",
+      "sha256": "2fb4b058831e129e6632c6d78f7c32d4cf21b19b84daeff7835f0e157f7a99b3",
+      "purpose": "GovernedBrowserExecutor: capability gate -> URL scope -> mechanism call -> evidence; wraps operator.BrowserController",
+      "role": "GOVERNED_EXECUTOR",
+      "cls": "REQUIRED_RUNTIME",
+      "pub": "YES",
+      "note": "private BROWSER_CAPABILITIES map (10 ids) DUPLICATES registry vocabulary -> replace with resolver lookup (W4-5)"
+    },
+    {
+      "file": "mission_wiring/receipt.py",
+      "sha256": "6cc5ed387ffde124a15b042dca90b9107b6003971038dca6981138b9a1e74038",
+      "purpose": "MissionReceipt + ObservedEvent taxonomy; receipt_hash via canonical_hash",
+      "role": "EVIDENCE",
+      "cls": "REQUIRED_EVIDENCE",
+      "pub": "YES",
+      "note": "hashes raw capabilities_requested/used -> W4-4 boundary must be applied; coexists with agent_runtime.receipts.AgentRuntimeReceipt (mission-level vs agent-level) -> adapter/convergence decision"
+    },
+    {
+      "file": "mission_wiring/mission_runner.py",
+      "sha256": "0d8d18701577bb86e5d5fdde290bb9e67297ac6ee163dc577e6f31b395222e1e",
+      "purpose": "Hermes-as-coordinator: resolve certified manifest -> delegation via agent_runtime.DelegationAuthority -> browser executor -> receipt",
+      "role": "RUNTIME_COORDINATOR (uses canonical Wave-3 authority; grants none)",
+      "cls": "REQUIRED_RUNTIME",
+      "pub": "MAYBE",
+      "note": "raw startswith('computer.browser.') prefix checks + raw manifest-surface membership -> resolver migration; parent hardcoded 'agent.hermes'"
+    },
+    {
+      "file": "mission_wiring/approval_service.py",
+      "sha256": "0768fd15ef61471239252e3449df79e93d17ed3134fac6986f6456674aa6913e",
+      "purpose": "AuthorityApprovalService: issue/validate/consume approval bindings (mission/actor/tenant/capability/resource, expiry, exactly-once)",
+      "role": "AUTHORITY (approval issuance)",
+      "cls": "REQUIRED_SECURITY",
+      "pub": "MAYBE",
+      "note": "NOT consumed by mission_runner or browser_executor (tests only). Wave-3 DelegationAuthority.consume_approval provides exactly-once but NOT full binding validation. Gap exists on production line; this component fills it but must be wired as THE approval validator, not left parallel"
+    },
+    {
+      "file": "mission_wiring/origin_adapters.py",
+      "sha256": "95e6b13d43e26d7953e4fa23f644125bc6959165c9d45397ee4575a32866beea",
+      "purpose": "normalize 12 execution origins into MissionEnvelope",
+      "role": "ADAPTER",
+      "cls": "OPTIONAL",
+      "pub": "NO (defer; not needed for browser boundary)"
+    },
+    {
+      "file": "mission_wiring/tests/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "cls": "REQUIRED_TEST"
+    },
+    {
+      "file": "mission_wiring/tests/negative_outcome.py",
+      "sha256": "0a0efcbe51fec0801111a39b7319efc7eae0c10f0a208d789a6dcaae3e7c5c19",
+      "cls": "REQUIRED_TEST"
+    },
+    {
+      "file": "mission_wiring/tests/test_approval_service.py",
+      "sha256": "b38bb6e9ace957325bef686ff414c7b99c1404b9d274e09981800f66befe416f",
+      "cls": "REQUIRED_TEST"
+    },
+    {
+      "file": "mission_wiring/tests/test_browser_executor.py",
+      "sha256": "cbe7e43e61f3b03b39fb2266131b2d09a1150ab4df92786e56c1deaa2ba64a31",
+      "cls": "REQUIRED_TEST"
+    },
+    {
+      "file": "mission_wiring/tests/test_envelope.py",
+      "sha256": "9ac2eabe36d39d8d395f71b4de506dc1be2cdcf39392e5a79d305db7cf505e41",
+      "cls": "REQUIRED_TEST"
+    },
+    {
+      "file": "mission_wiring/tests/test_failure_injection.py",
+      "sha256": "f05eb974c08cdd17555c690b4b240b9e745a2a2bc2ccd984fc4f7841e7b7ef9b",
+      "cls": "REQUIRED_TEST"
+    },
+    {
+      "file": "mission_wiring/tests/test_mission_runner.py",
+      "sha256": "cd284ee768a90734a6420864a9cd2414eaf6bc70e27cae381c8d1e82f01aa75d",
+      "cls": "REQUIRED_TEST"
+    },
+    {
+      "file": "mission_wiring/tests/test_origin_adapters.py",
+      "sha256": "dace0cad21dfe9bc6bceb33d3df37f609ea9d713bfba01621ad5f5791565483e",
+      "cls": "REQUIRED_TEST"
+    },
+    {
+      "file": "mission_wiring/tests/test_receipt.py",
+      "sha256": "ef73858298eae0e64eef13538e22b81f1c3c8a50ac5e0193f0916bccdb704215",
+      "cls": "REQUIRED_TEST"
+    },
+    {
+      "file": "mission_wiring/tests/test_zd3_harness_integrity.py",
+      "sha256": "df547621704e98001421a2416b7bbd6be32092f99bed17d9fedf2271b23b5d48",
+      "cls": "EXCLUDED (ZD-001 evidence-lock tests bound to cc23293e artifacts; fail by design on W4 lineage)"
+    },
+    {
+      "file": "mission_wiring/tests/test_zd3_registry_approval_attacks.py",
+      "sha256": "0899ae592c9f25040fe4afffad481420913a1bfc6459b07460367a6841469890",
+      "cls": "EXCLUDED (ZD-001 evidence-lock tests bound to cc23293e artifacts; fail by design on W4 lineage)"
+    },
+    {
+      "file": "mission_wiring/tests/test_zd3_security_attacks.py",
+      "sha256": "428ed3c2fdda5763ca5d143b87f3c603c323b10e160fdca042dac0a16f49f589",
+      "cls": "REQUIRED_TEST"
+    }
+  ],
+  "C_minimal_subset": {
+    "FILES_REQUIRED": [
+      "mission_wiring/__init__.py",
+      "mission_wiring/envelope.py",
+      "mission_wiring/browser_executor.py",
+      "mission_wiring/receipt.py",
+      "mission_wiring/mission_runner.py",
+      "mission_wiring/approval_service.py"
+    ],
+    "FILES_REQUIRED_TESTS": [
+      "test_envelope.py",
+      "test_browser_executor.py",
+      "test_receipt.py",
+      "test_mission_runner.py",
+      "test_approval_service.py",
+      "test_failure_injection.py",
+      "test_zd3_security_attacks.py"
+    ],
+    "FILES_EXCLUDED": [
+      "origin_adapters.py (+test)",
+      "tests/negative_outcome.py (already promoted to agent_runtime/tests in W4-2 \u2014 use that)",
+      "test_zd3_harness_integrity.py",
+      "test_zd3_registry_approval_attacks.py"
+    ],
+    "FILES_REPLACED_BY_WAVE3": [],
+    "FILES_REPLACED_BY_WAVE4": [
+      "browser_executor.BROWSER_CAPABILITIES private map -> registry/capabilities + capability_resolver (W4-1/2)",
+      "raw capability membership in browser_executor/_gate + mission_runner -> resolve_capability (W4-3 pattern)",
+      "envelope/receipt hash of raw capabilities -> agent_runtime.receipts.canonicalize_capability_for_hash (W4-4)"
+    ],
+    "count_production": 6,
+    "count_tests": 7
+  },
+  "D_dependency_graph": {
+    "mission_wiring.browser_executor": [
+      "agent_runtime.manifest.SideEffectClass",
+      "mission_wiring.envelope"
+    ],
+    "mission_wiring.envelope": [
+      "agent_runtime.canonical.canonical_hash"
+    ],
+    "mission_wiring.receipt": [
+      "agent_runtime.canonical.canonical_hash",
+      "mission_wiring.envelope"
+    ],
+    "mission_wiring.mission_runner": [
+      "agent_runtime.delegation.DelegationAuthority",
+      "agent_runtime.manifest",
+      "agent_runtime.registry.AgentRegistry",
+      "mission_wiring.browser_executor",
+      "mission_wiring.envelope",
+      "mission_wiring.receipt"
+    ],
+    "mission_wiring.approval_service": [],
+    "runtime_mechanism": "operator.browser_controller.BrowserController (injected; NOT imported by mission_wiring)",
+    "all_agent_runtime_deps_present_on_w4_lineage": true
+  },
+  "E_authority_overlap": {
+    "SECOND_AUTHORITY_KERNEL_RISK": "LOW",
+    "classification": {
+      "mission_runner": "ADAPTER over canonical agent_runtime.DelegationAuthority (grants nothing; calls authority.issue with require_approval=True)",
+      "envelope": "CARRIER (authority fields explicit; refuses self-declared approval on consequential types)",
+      "browser_executor._gate": "POLICY GATE (trusts envelope.approval_state \u2014 a CARRIER field \u2014 not an authority verifier)",
+      "approval_service": "AUTHORITY-ADJACENT: independent approval binding validator; no production equivalent (Wave-3 consume_approval lacks mission/actor/tenant/capability/resource binding). Currently UNWIRED (tests only) => dormant duplicate risk if published without wiring"
+    },
+    "finding": "browser_executor trusts envelope.approval_state GRANTED/CONSUMED without consulting an authority-issued binding. mission_runner passes approval_reference=envelope.delegation_id (a caller-supplied id) to DelegationAuthority.issue. Not a second kernel, but a CARRIER-TRUST gap: approval must be verified against AuthorityApprovalService (or DelegationAuthority extended) before executor gate passes.",
+    "required_correction": "Wire ONE approval validator into the pre-execution gate; do not publish approval_service as a parallel unwired kernel"
+  },
+  "F_capability_compatibility": {
+    "REGISTRY_CONFLICTS": 0,
+    "registry_covers_all_10_browser_ids": true,
+    "side_effect_class_agreement": "10/10 identical",
+    "ALIAS_CONFLICTS": 0,
+    "MISSION_WIRING_RAW_CAPABILITY_CHECKS": 4,
+    "MISSION_WIRING_PRIVATE_CAPABILITY_REGISTRIES": 1,
+    "MISSION_WIRING_ALIAS_BLIND_CHECKS": 4,
+    "MISSION_WIRING_CAPABILITY_HASHING_SITES": 2,
+    "HASHING_CONFLICTS": "envelope.hash_payload + receipt.hash_payload hash RAW requested_capabilities (pre-W4-4 semantics)",
+    "verdict": "NEEDS_RECONCILIATION (mechanical: swap private map for resolver; apply W4-4 boundary)"
+  },
+  "G_browser_boundary": {
+    "PRE_GOVERNANCE_EXTERNAL_CONTACT": "FALSE within GovernedBrowserExecutor (AST-verified: _gate precedes every self._c.* call; __init__ launches nothing)",
+    "CAVEAT": "operator.BrowserController.__init__ launches Playwright/requests session at construction \u2014 mechanism instantiation is pre-governance if constructed eagerly. Publication plan must inject a LAZY/factory controller so no browser process exists before the first gated call. SEVERITY=MEDIUM (no external navigation occurs, but a browser process launch is pre-governance resource use)",
+    "gate_order_observed": "UNKNOWN_CAPABILITY -> CAPABILITY_NOT_DELEGATED -> APPROVAL_REQUIRED -> SIDE_EFFECT_CLASS_EXCEEDS_MISSION -> BUDGET_EXHAUSTED -> URL_OUT_OF_SCOPE -> execution",
+    "gate_order_directive": "matches directive order",
+    "APPROVAL_BINDING": "WEAK \u2014 envelope.approval_state trusted; needs authority-issued binding check (see E)",
+    "SIDE_EFFECT_BINDING": "PRESENT (10 ids, classes match registry)",
+    "URL_SCOPE_BINDING": "PRESENT (prefix allowlist; empty allowlist = deny all)",
+    "BUDGET_BINDING": "PRESENT but not decremented per action (max_actions checked >0, never consumed) \u2014 FINDING",
+    "RECONCILIATION_SUPPORT": "ABSENT as runtime state; asserted as test doctrine only"
+  },
+  "H_receipt_convergence": {
+    "MISSION_RECEIPT_CONVERGENCE_REQUIRED": true,
+    "detail": "Two receipt models would coexist: agent_runtime.receipts.AgentRuntimeReceipt (agent-level, pydantic) and mission_wiring.receipt.MissionReceipt (mission-level, dataclass). Same hash primitive (canonical_hash) \u2014 no algorithm duplication. Different scope (mission vs agent) \u2014 legitimate layering IF MissionReceipt embeds AgentRuntimeReceipt hashes rather than re-deriving fields. Capability identity: MissionReceipt hashes raw strings -> must route through W4-4 canonicalize_capability_for_hash.",
+    "smallest_strategy": "keep MissionReceipt as mission-level aggregate; add canonical capability_ids + dependency_context via W4-4 boundary; reference AgentRuntimeReceipt hashes in evidence_refs"
+  },
+  "I_side_effect_model": {
+    "navigate": "computer.browser.navigate/READ_ONLY/NEVER_REQUIRED",
+    "read": "computer.browser.read/READ_ONLY",
+    "extract": "computer.browser.extract/READ_ONLY",
+    "screenshot": "computer.browser.screenshot/LOCAL_REVERSIBLE/TIERED",
+    "interact(click/scroll)": "computer.browser.interact/LOCAL_REVERSIBLE/TIERED",
+    "type/form_fill": "computer.browser.form_fill/LOCAL_REVERSIBLE/TIERED (input values hashed not stored)",
+    "upload": "computer.browser.upload/EXTERNAL_REVERSIBLE/TIERED",
+    "download": "computer.browser.download/LOCAL_REVERSIBLE/TIERED",
+    "submit/send/publish/change settings/accept terms/create account": "computer.browser.submit/EXTERNAL_CONSEQUENTIAL/ALWAYS_REQUIRED",
+    "payment/purchase/sign/authorize/delete": "computer.browser.financial_submit/IRREVERSIBLE/ALWAYS_REQUIRED",
+    "credential entry / 2FA / captcha": "NOT MODELED \u2014 GAP: must be its own capability class (credential broker); currently would fall under form_fill (LOCAL_REVERSIBLE) which UNDER-CLASSIFIES secret handling",
+    "executor_methods_implemented": [
+      "navigate",
+      "extract_text",
+      "screenshot",
+      "fill_form",
+      "submit_form"
+    ],
+    "executor_methods_missing": [
+      "read",
+      "interact",
+      "upload",
+      "download",
+      "financial_submit"
+    ]
+  },
+  "J_exactly_once": {
+    "EXACTLY_ONCE_EXTERNAL_EFFECT_SUPPORT": "PARTIAL",
+    "present": "single attempt, no retry loop, bounded FAILED receipt on crash, in-process exactly-once approval consumption",
+    "absent": "no durable UNKNOWN_EXTERNAL_STATE runtime state, no ReconciliationQueue, no cross-process approval persistence (known deferred Wave-5 gap \u2014 remains deferred)"
+  },
+  "K_derivative_test_evidence": {
+    "zd001_worktree_full_suite": "117/117 PASS (DERIVATIVE, cc23293e base)",
+    "overlay_on_w4_lineage_05885aa2": "107/117 PASS; 6 FAIL + 4 ERROR \u2014 ALL 10 in test_zd3_harness_integrity + test_zd3_registry_approval_attacks (ZD-001 evidence-lock tests asserting cc23293e artifacts/PR#302 head/23-alias vocabulary/zd002 artifact paths)",
+    "production_module_tests_on_w4_lineage": "87/87 PASS (envelope 16, browser_executor 14, receipt 11, mission_runner 7, approval_service 15, failure_injection 11, origin_adapters 10, zd3_security_attacks 12 minus excluded) \u2014 0 production-module failures",
+    "classification_of_10_failures": "STALE_EXPECTATION (evidence-lock tests bound to a superseded base) \u2014 not product defects",
+    "status": "DERIVATIVE EVIDENCE \u2014 not production certification"
+  },
+  "L_recommendation": {
+    "outcome": "B",
+    "label": "MISSION_WIRING_REQUIRES_CORRECTIVE_RECONCILIATION_BEFORE_PUBLICATION",
+    "publication_recommendation": "CORRECTION_REQUIRED",
+    "corrections_required_before_publication": [
+      "C1: replace browser_executor.BROWSER_CAPABILITIES private map with capability_resolver lookup against registry (vocabulary already 10/10 identical)",
+      "C2: route envelope/receipt capability hashing through W4-4 canonicalize_capability_for_hash (no raw capability strings in security hashes)",
+      "C3: wire ONE approval validator (AuthorityApprovalService or extended DelegationAuthority) into the executor pre-gate; stop trusting envelope.approval_state as proof",
+      "C4: lazy/factory BrowserController injection so no browser process launches pre-governance",
+      "C5: decrement/enforce max_actions per gated action (budget currently never consumed)",
+      "C6: exclude ZD evidence-lock tests; use agent_runtime/tests/negative_outcome.py (already promoted)"
+    ],
+    "corrections_deferred": [
+      "credential/2FA/captcha capability class (credential broker design)",
+      "durable UNKNOWN_EXTERNAL_STATE + ReconciliationQueue (Wave-5)",
+      "origin_adapters (not needed for browser boundary)"
+    ],
+    "W4_5_state": "BLOCKED_BY_RECONCILIATION"
+  }
+}

@@ -13,8 +13,6 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict
 
-from .manifest import KNOWN_CAPABILITIES
-
 GOVERNANCE_ROOT_ACTOR = "governance"
 MAX_PROVENANCE_DEPTH = 16
 
@@ -129,7 +127,8 @@ class DelegationAuthority:
         authority (§10 AGENT_SELF_GRANT = DENIED)."""
         if actor == parent_agent_id:
             raise DelegationRefusedError("AGENT_SELF_GRANT = DENIED: agents cannot modify their own authority")
-        unknown = sorted(c for c in capabilities if c not in KNOWN_CAPABILITIES)
+        from agent_runtime.manifest import _resolves_to_known
+        unknown = sorted(c for c in capabilities if not _resolves_to_known(c))
         if unknown:
             raise ValueError(f"unknown capabilities cannot be made delegatable: {unknown}")
         self._grantor_of[parent_agent_id] = actor

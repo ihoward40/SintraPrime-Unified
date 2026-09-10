@@ -1,0 +1,28 @@
+{
+  "lane": "SP-DEPLOY-FOUNDATION-001",
+  "repository_current_main": "79deec881544a80105e0b45663740ad0f0fccf17",
+  "deployment_candidate_under_review": "32b5f4a97539146621cf960a0675dda46226b033",
+  "PRODUCTION_TARGET": "UNRESOLVED",
+  "PROVIDER_SELECTION_REQUIRED": true,
+  "DEPLOYMENT_SUBSTRATE": "NOT_DESIGNED \u2014 deploy-production.yml is multi-cloud placeholder (AWS/Azure/GCP TBD)",
+  "NO_DEPLOYMENT": true,
+  "NO_PRODUCTION_MIGRATION": true,
+  "SECRET_VALUES_RECORDED": false,
+  "preflight_exact_sha": "DESIGNED \u2014 refuses non-exact approved SHA",
+  "preflight_certified_lineage": "DESIGNED \u2014 requires approved SHA descendant of 79deec88 via merge-base --is-ancestor",
+  "postflight": "DOCUMENTED, target endpoint unavailable",
+  "application_rollback_ready": "PARTIAL \u2014 procedure documented, no real target/revision history",
+  "database_rollback_ready": "NOT_READY \u2014 disposable execution pending; static chain has no executable destructive DROP/TRUNCATE",
+  "config_rollback_ready": "PARTIAL \u2014 names documented; target/config revision unavailable",
+  "CAN_DOWN_CHAIN_EXECUTE": false,
+  "DATA_DESTRUCTIVE_DOWN_STEPS": [],
+  "REVERSIBLE_WITHOUT_DATA_LOSS": false,
+  "PRODUCTION_DB_ROLLBACK_POLICY": "APP ROLLBACK + FORWARD DATABASE REPAIR",
+  "DEPLOYMENT_READINESS": "NOT_READY",
+  "blockers": [
+    "PRODUCTION_TARGET_UNKNOWN",
+    "PROVIDER_SELECTION_REQUIRED",
+    "DISPOSABLE_DB_DOWN_CHAIN_NOT_EXECUTED",
+    "NO_DEPLOYMENT_SUBSTRATE"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "frozen_reconciliation_diff_hash": "5636ac4de22eb1840912383b3cc895bcd3391ee61a484faf17a70e0f03b17f65",
+  "file_count": 14,
+  "base_at_freeze": "05885aa2ae4791e1a5fabca9aa4d4941fcf4050d",
+  "worktree": "C:/Users/admin/SintraPrime-Unified-mw-reconcile",
+  "status": "FROZEN per Principal Option 2 ruling \u2014 reapply onto corrected W4-4 base after SP-W4-4-FIX-R1 seals",
+  "files": [
+    "mission_wiring/__init__.py",
+    "mission_wiring/approval_service.py",
+    "mission_wiring/browser_executor.py",
+    "mission_wiring/envelope.py",
+    "mission_wiring/mission_runner.py",
+    "mission_wiring/receipt.py",
+    "mission_wiring/tests/__init__.py",
+    "mission_wiring/tests/test_approval_service.py",
+    "mission_wiring/tests/test_browser_executor.py",
+    "mission_wiring/tests/test_envelope.py",
+    "mission_wiring/tests/test_failure_injection.py",
+    "mission_wiring/tests/test_mission_runner.py",
+    "mission_wiring/tests/test_receipt.py",
+    "mission_wiring/tests/test_zd3_security_attacks.py"
+  ]
+}

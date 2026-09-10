@@ -1,0 +1,56 @@
+{
+  "lane": "SP-W4-5-APPLICABILITY-R1",
+  "base": "6d5214f226aa40a03f6fa1e86cb993ce702b9695",
+  "mechanism_availability": "PRESENT",
+  "governed_execution_availability_on_production_main": "NOT_PRESENT",
+  "paths": [
+    {
+      "path": "operator/browser_controller.py",
+      "production_reachable": "NO (only operator package/tests; no production import found)",
+      "authority_aware": "NO",
+      "capability_gated": "NO",
+      "side_effect_classified": "NO",
+      "approval_aware": "NO",
+      "registry_bindable": "NO (without separate adapter/convergence decision)",
+      "canonical_browser_executor": "NO",
+      "role": "low-level mechanism; has navigate/click/type/form-submit and requests fallback"
+    },
+    {
+      "path": "apps/sintraprime/src/automation/browserRunner.ts",
+      "production_reachable": "YES (wired from apps/SintraPrime/features/vlm/src/index.ts)",
+      "authority_aware": "PARTIAL (PolicyGate is wired at app composition, but runner itself has no capability-registry boundary)",
+      "capability_gated": "NO (runner has no registry/resolver binding)",
+      "side_effect_classified": "NO",
+      "approval_aware": "NO (approval UI comment only)",
+      "registry_bindable": "NO (requires governed adapter/convergence)",
+      "canonical_browser_executor": "NO",
+      "role": "legacy/parallel mechanism"
+    },
+    {
+      "path": "apps/SintraPrime/src/browserOperator/l0.ts + runBrowserOperator.ts",
+      "production_reachable": "YES (executePlan imports/calls)",
+      "authority_aware": "NO registry/authority binding found",
+      "capability_gated": "YES for URL safety/SSRF host policy, not mission capability identity",
+      "side_effect_classified": "NO governed capability classification found",
+      "approval_aware": "NO direct approval binding found",
+      "registry_bindable": "NO on current production line",
+      "canonical_browser_executor": "NO (mechanism/policy layer; governed mission adapter absent)",
+      "role": "reachable browser mechanism/policy layer"
+    },
+    {
+      "path": "mission_wiring/browser_executor.py",
+      "production_reachable": "NO (ZD-001 derivative absent from main)",
+      "authority_aware": "YES (governed ZD-001 design)",
+      "capability_gated": "YES",
+      "side_effect_classified": "YES",
+      "approval_aware": "YES",
+      "registry_bindable": "YES",
+      "canonical_browser_executor": "YES (but unpublished)",
+      "role": "correct governed boundary, unavailable on production lineage"
+    }
+  ],
+  "classification": "B",
+  "result": "W4-5 = BLOCKED_BY_MISSION_WIRING_PUBLICATION",
+  "blocker": "GOVERNED_BROWSER_EXECUTOR_NOT_PRESENT_ON_PRODUCTION_LINE",
+  "conclusion": "Do not retrofit authority into operator/browser_controller.py or promote mission_wiring implicitly. A separate reconciliation/publication decision is required."
+}

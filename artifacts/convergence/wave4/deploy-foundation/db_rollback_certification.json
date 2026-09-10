@@ -1,0 +1,28 @@
+{
+  "database": "DISPOSABLE_ONLY_STATIC_CERTIFICATION",
+  "live_database_contacted": false,
+  "migration_chain_files": 15,
+  "migration_chain_sha256": {
+    "add_adaptive_orchestration_domain.sql": "8363e4d3b32ab413ae020ab6f9d5050558d294f63f3886d71e6f80c373316729",
+    "add_audit_records.sql": "7f30635f444de51c1318e90d54bc3a275d3fdaa484eb3508692c687c9c1ab4bb",
+    "add_deadline_evidence_intelligence.sql": "c3e3ac825058523d99b400564a3e9b60ce8cea02d259d0580de28620bd46f682",
+    "add_evidence_snapshots.sql": "baa1588a2f1ce14e062b16a3d50a627707881a32d7f23c58af736be333082d5b",
+    "add_legal_authority_rules.sql": "cc53b1bfc08cba58797f5a0bcb52fc3db9a0c77460b5b192bc0ded5d534c97cf",
+    "add_matter_intelligence.sql": "5e563470ae4e84771e4c8dac8a7e7d6f704b3f80928aaf1bc2b68ab705ef51d2",
+    "add_mission_control_command_ledger.sql": "8898e116f75261c57185c2232803137085fcf6b2f4de2896b49cfe4cebd2bd71",
+    "add_mission_control_mission_runs.sql": "a45bb465ab47df7f0f57f854ad5b6d0ac5310526934a4aa45a82e350c38e8ef6",
+    "add_mission_control_run_approvals.sql": "9bbc27c562efdb89c843e76916dbe57c2397a68775c0c24e12560be6c0df3749",
+    "add_mission_control_run_control_projection.sql": "d9bcb5670b22ea588657f462e38af1b9d123f3be9111d897adf32cea7e78ee5c",
+    "add_tenant_principal.sql": "9eb23974c51a82d27b51da7eb80cafe7266d903b9aa816176911df6e0c0feb96",
+    "add_voice_command_ledger.sql": "5dc5e2842bc30c2ddb2316a05451da8f9ce15d6c11e3634721dcac795f3b171b",
+    "align_orchestration_identity_fk_types.sql": "cabea68f1aa48c5bea9887bf348f39d248ca1f4977e30d89e54239fa97d2681d",
+    "runtime_schema_integrity_2026_07_27.sql": "4dd16ae03b65955ae3b2ecfa9c603f6fe752de809d4ce9fb382146b6ef0ad31d",
+    "runtime_schema_integrity_2026_07_27_down.sql": "c36b6a13a390cef701941b6f2e16ded61f3426a5ee5dedb1b86fee5ad68b9226"
+  },
+  "CAN_DOWN_CHAIN_EXECUTE": false,
+  "CAN_DOWN_CHAIN_EXECUTE_REASON": "No disposable PostgreSQL instance was provisioned in this read-only foundation lane; execution remains pending target-independent disposable DB run.",
+  "DATA_DESTRUCTIVE_DOWN_STEPS": [],
+  "REVERSIBLE_WITHOUT_DATA_LOSS": false,
+  "PRODUCTION_DB_ROLLBACK_POLICY": "APP ROLLBACK + FORWARD DATABASE REPAIR",
+  "status": "PENDING_DISPOSABLE_DB_EXECUTION"
+}

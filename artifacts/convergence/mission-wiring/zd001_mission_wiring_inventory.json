@@ -1,0 +1,101 @@
+{
+  "source_worktree": "C:\\Users\\admin\\SintraPrime-Unified-sp-zero-dollar-wiring",
+  "tracked_in_git": false,
+  "files": [
+    {
+      "file": "mission_wiring/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "lines": 0
+    },
+    {
+      "file": "mission_wiring/approval_service.py",
+      "sha256": "0768fd15ef61471239252e3449df79e93d17ed3134fac6986f6456674aa6913e",
+      "lines": 120
+    },
+    {
+      "file": "mission_wiring/browser_executor.py",
+      "sha256": "2fb4b058831e129e6632c6d78f7c32d4cf21b19b84daeff7835f0e157f7a99b3",
+      "lines": 227
+    },
+    {
+      "file": "mission_wiring/envelope.py",
+      "sha256": "ee5aa6ae359ad55d210a8961876213167f11a35c1bbbfa50ca1bd0a2607b0cc4",
+      "lines": 247
+    },
+    {
+      "file": "mission_wiring/mission_runner.py",
+      "sha256": "0d8d18701577bb86e5d5fdde290bb9e67297ac6ee163dc577e6f31b395222e1e",
+      "lines": 234
+    },
+    {
+      "file": "mission_wiring/origin_adapters.py",
+      "sha256": "95e6b13d43e26d7953e4fa23f644125bc6959165c9d45397ee4575a32866beea",
+      "lines": 100
+    },
+    {
+      "file": "mission_wiring/receipt.py",
+      "sha256": "6cc5ed387ffde124a15b042dca90b9107b6003971038dca6981138b9a1e74038",
+      "lines": 195
+    },
+    {
+      "file": "mission_wiring/tests/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "lines": 0
+    },
+    {
+      "file": "mission_wiring/tests/negative_outcome.py",
+      "sha256": "0a0efcbe51fec0801111a39b7319efc7eae0c10f0a208d789a6dcaae3e7c5c19",
+      "lines": 47
+    },
+    {
+      "file": "mission_wiring/tests/test_approval_service.py",
+      "sha256": "b38bb6e9ace957325bef686ff414c7b99c1404b9d274e09981800f66befe416f",
+      "lines": 240
+    },
+    {
+      "file": "mission_wiring/tests/test_browser_executor.py",
+      "sha256": "cbe7e43e61f3b03b39fb2266131b2d09a1150ab4df92786e56c1deaa2ba64a31",
+      "lines": 255
+    },
+    {
+      "file": "mission_wiring/tests/test_envelope.py",
+      "sha256": "9ac2eabe36d39d8d395f71b4de506dc1be2cdcf39392e5a79d305db7cf505e41",
+      "lines": 156
+    },
+    {
+      "file": "mission_wiring/tests/test_failure_injection.py",
+      "sha256": "f05eb974c08cdd17555c690b4b240b9e745a2a2bc2ccd984fc4f7841e7b7ef9b",
+      "lines": 205
+    },
+    {
+      "file": "mission_wiring/tests/test_mission_runner.py",
+      "sha256": "cd284ee768a90734a6420864a9cd2414eaf6bc70e27cae381c8d1e82f01aa75d",
+      "lines": 196
+    },
+    {
+      "file": "mission_wiring/tests/test_origin_adapters.py",
+      "sha256": "dace0cad21dfe9bc6bceb33d3df37f609ea9d713bfba01621ad5f5791565483e",
+      "lines": 122
+    },
+    {
+      "file": "mission_wiring/tests/test_receipt.py",
+      "sha256": "ef73858298eae0e64eef13538e22b81f1c3c8a50ac5e0193f0916bccdb704215",
+      "lines": 189
+    },
+    {
+      "file": "mission_wiring/tests/test_zd3_harness_integrity.py",
+      "sha256": "df547621704e98001421a2416b7bbd6be32092f99bed17d9fedf2271b23b5d48",
+      "lines": 125
+    },
+    {
+      "file": "mission_wiring/tests/test_zd3_registry_approval_attacks.py",
+      "sha256": "0899ae592c9f25040fe4afffad481420913a1bfc6459b07460367a6841469890",
+      "lines": 236
+    },
+    {
+      "file": "mission_wiring/tests/test_zd3_security_attacks.py",
+      "sha256": "428ed3c2fdda5763ca5d143b87f3c603c323b10e160fdca042dac0a16f49f589",
+      "lines": 304
+    }
+  ]
+}

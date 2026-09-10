@@ -1,0 +1,93 @@
+{
+  "lane": "CONVERGENCE-DUPLICATES-001",
+  "provenance": "Parent-executed inventory after subagent dispatches failed twice on provider connection errors. Evidence: os.listdir, git ls-tree, targeted rg via search_files. Read-only; nothing moved/deleted/modified.",
+  "worktree": "C:/Users/admin/SintraPrime-Unified-w4-registry @ 05885aa2",
+  "families": [
+    {
+      "family": "App directories (case-variant)",
+      "implementations": ["apps/SintraPrime", "apps/sintraprime"],
+      "evidence": "git ls-tree HEAD apps/ tracks BOTH apps/SintraPrime AND apps/sintraprime; Windows FS is case-insensitive so these collide in the working tree",
+      "production_reachable": "PARTIAL — apps/SintraPrime/src/index.ts is an entrypoint; the case-variant pair is a git-level ambiguity",
+      "canonical_candidate": "apps/SintraPrime",
+      "classification": ["CANONICAL: apps/SintraPrime", "DUPLICATE: apps/sintraprime (case-variant git entry)"],
+      "migration_risk": "HIGH (git case-folding on Windows; needs `git mv` on a POSIX runner or explicit two-step rename)",
+      "convergence_priority": "P1"
+    },
+    {
+      "family": "Stripe/payment integrations",
+      "implementations": ["backend/stripe-payments/ (main.py, stripe_client.py, webhook_handler.py, subscription_service.py, airtable_sync.py, routes.py, models/subscription.py, tests)", "phase18/stripe_webhooks/webhook_handler.py (+tests)", "app_builder/stripe_integrator.py", "saas/saas_api.py (hardcoded stub)", "apps/ike-bot/main/src/webhooks/stripe.webhook.ts + routes/webhook.routes.ts", "phase19/revenue_smoke_test/"],
+      "production_reachable": "PARTIAL — portal payment services exist; saas/ has zero production importers (parent-audited); backend/ reachability unknown from this lane",
+      "canonical_candidate": "backend/stripe-payments (most complete surface) pending a dedicated payments convergence lane",
+      "classification": ["CANONICAL candidate: backend/stripe-payments", "DUPLICATE: phase18/stripe_webhooks", "ADAPTER/GENERATOR: app_builder/stripe_integrator", "STUB: saas/saas_api.py", "SEPARATE_PRODUCT: apps/ike-bot webhook", "TEST_ONLY: phase19 revenue smoke"],
+      "migration_risk": "HIGH (payment/revenue changes are restricted: classify-only per standing ZD doctrine)",
+      "convergence_priority": "P1 (revenue) — but corrections must remain classify-only"
+    },
+    {
+      "family": "Browser executors",
+      "implementations": ["operator/browser_controller.py (NO production importers; only operator/ internal + tests)", "apps/SintraPrime/src/automation/browserRunner.ts (wired apps/SintraPrime/src/index.ts:129 + features/vlm)", "apps/SintraPrime/src/browserOperator/l0.ts + runBrowserOperator.ts (wired from executor/executePlan.ts:12-13)", "mission_wiring/browser_executor.py — UNPUBLISHED ZD-001 derivative (not in this worktree; record only)"],
+      "production_reachable": "YES for the two TS surfaces; NO for operator/ (Python)",
+      "canonical_candidate": "mechanism = operator/browser_controller.py (per ZD-001 stage-4 decision); governed boundary = mission_wiring.browser_executor (unpublished)",
+      "classification": ["MECHANISM: operator/browser_controller.py (unreached)", "LEGACY/DUPLICATE: automation/browserRunner.ts", "REACHABLE_MECHANISM: browserOperator/l0.ts + runBrowserOperator.ts", "DERIVATIVE_GOVERNED: mission_wiring (unpublished)"],
+      "migration_risk": "MEDIUM",
+      "convergence_priority": "P0 — governed executor absent from production line; ZD-001 gate trusts envelope.approval_state (carrier field) rather than an authority-issued binding (parent-audited)",
+      "note": "W4-5 = BLOCKED_BY_MISSION_WIRING_PUBLICATION (SP-W4-5-APPLICABILITY-R1 = B)"
+    },
+    {
+      "family": "Agents",
+      "implementations": ["agents/ (chat, nova, sigma, zero, howard_*)", "swarm_runtime/", "orchestration/", "superintelligence/", "phase15-19 agent code"],
+      "production_reachable": "agents/ = NO production importers (parent rg: zero non-test importers of nova; howard agents are approval-gated intake); swarm_runtime/ = YES (certified 125-test lane); orchestration/ = YES (portal Mission Control)",
+      "canonical_candidate": "swarm_runtime/ + orchestration/ (reachable), agent_runtime/ (certified runtime, being wired via Wave 4)",
+      "classification": ["ORPHANED: agents/nova, agents/sigma, agents/zero, superintelligence/", "GOVERNED_RUNTIME: agent_runtime/", "REACHABLE: swarm_runtime/, orchestration/", "PHASE_LEGACY: phase15-19"],
+      "migration_risk": "MED",
+      "convergence_priority": "P1 (multiple agent stacks; only some reachable)"
+    },
+    {
+      "family": "Workflow engines",
+      "implementations": ["orchestration/ (langgraph_engine.py: StateGraph compile; durable_execution.py)", "workflow_builder/", "scheduler/ (task_scheduler + task_executor)", "portal durable workflow engine (portal/services + models/orchestration.py)"],
+      "production_reachable": "orchestration/ YES (portal Mission Control consumes); portal engine YES; scheduler/ = API + executor present but execute_python/shell have no non-test callers (parent-audited); workflow_builder/ reachability UNKNOWN on this pass",
+      "canonical_candidate": "orchestration/ durable execution (canonical mission path); portal MC as projection only",
+      "classification": ["CANONICAL: orchestration/", "DUPLICATE: workflow_builder/ (unknown reach)", "SUPPORT: scheduler/", "PROJECTION: portal Mission Control"],
+      "migration_risk": "MED",
+      "convergence_priority": "P1"
+    },
+    {
+      "family": "Provider routers / inference",
+      "implementations": ["governed_inference/ (16 modules: router, policy, providers, adapters, cache, ledger, escalation — governed control plane)", "local_llm/ (provider.py, ollama_adapter.py)", "local_models/model_router.py", "voice_concierge/governed/providers.py + mock_providers.py", "phase17/llm_wiring/llm_executor.py", "agent_runtime/tool_policy.py (policy, not router)"],
+      "production_reachable": "governed_inference/ YES (all 11 modules reachable per ZD-001 map); others partial/unknown",
+      "canonical_candidate": "governed_inference/ (policy-gated, fail-closed, CI-safe per its AGENTS.md contract)",
+      "classification": ["CANONICAL: governed_inference/", "DUPLICATE/PARALLEL: local_llm/, local_models/, phase17/llm_wiring/", "SUPPORT: voice_concierge/governed (voice-scoped, governed)"],
+      "migration_risk": "LOW-MED",
+      "convergence_priority": "P1"
+    },
+    {
+      "family": "Memory",
+      "implementations": ["memory/ (memory_engine, episodic/semantic/working, memory_api)", "core/universe/memory_system.py + memory_integration.py", "superintelligence/memory_system.py", "agent_protocol/shared_memory.py", "twin_layer/shm_ipc.py (IPC, adjacent)", "agent_runtime (§21-§23 governed memory authority: MemoryScope + MemoryWriteAuthority in receipts.py)"],
+      "production_reachable": "agent_runtime memory authority YES (Wave-3 certified); memory/ reachability UNKNOWN on this pass; core/universe + superintelligence unreachable (parent SEC audit showed zero agent_runtime imports there; ZD map: core/ 0-reachable)",
+      "canonical_candidate": "agent_runtime §21-§23 governed memory authority (policy/provenance/exactly-once) with a persistence adapter; memory/ as storage implementation candidate",
+      "classification": ["CANONICAL_POLICY: agent_runtime (MemoryWriteAuthority)", "DUPLICATE_STORAGE: memory/, core/universe/memory_system.py, superintelligence/memory_system.py, agent_protocol/shared_memory.py, twin_layer/shm_ipc.py"],
+      "migration_risk": "MED",
+      "convergence_priority": "P1"
+    },
+    {
+      "family": "Audit logging",
+      "implementations": ["portal/models/audit.py + portal/models/audit_record.py", "portal/migrations/add_audit_records.sql (immutable trigger)", "phase18/ + superintelligence/self_audit.py + core/universe/security_tests.py (audit-like code)"],
+      "production_reachable": "portal models YES (PostgreSQL-certified chain: audit_records table with immutability trigger)",
+      "canonical_candidate": "portal audit models + migration chain (DB-certified)",
+      "classification": ["CANONICAL: portal/models/audit* + add_audit_records.sql", "DUPLICATE/PARALLEL: superintelligence/self_audit.py, phase18 audit code"],
+      "migration_risk": "LOW",
+      "convergence_priority": "P2"
+    }
+  ],
+  "counts_by_priority": {"P0": 1, "P1": 6, "P2": 1, "P3": 1},
+  "counts_note": "P0 = browser executor governance conflict (governed boundary exists only in unpublished mission_wiring; reachable TS mechanisms ungoverned). P1 = apps case-variant, payments, agents, workflow engines, provider routers, memory. P2 = audit (canonical exists; duplicates are parallel bookkeeping). P3 = root-file clutter.",
+  "root_inventory": {
+    "method": "os.listdir of worktree root (131 entries); shell pipeline failed (MSYS quirk) so no rg-based code/CI reference check was performed this pass",
+    "receipt_phase_files": [
+      "PHASE_1_CLOSURE_REPORT.md", "PHASE_10_COMPLETE.md", "PHASE_11_14_COMPLETE.md", "PHASE_26_WINDOWS_QUICKSTART.md", "PHASE_28A_RECEIPT.md", "PHASE_28B_RECEIPT.md", "PHASE_28C_RECEIPT.md", "PHASE_28D_RECEIPT.md", "PHASE_ZERO_COMPLETION_REPORT.md", "STEP_4_VERIFICATION_RECEIPT.md", "MERGE_RECEIPT_PR_155.md", "P0B_LEGACY_DOCS_SCRUB_RECEIPT.md", "P0_ACTIVE_SURFACE_SCRUB_RECEIPT.md", "VR-001_STEP4_GOVERNANCE_DECISION.md", "WORKTREE_PRESERVATION_REPORT.md", "MASTER_STATUS.md"
+    ],
+    "scripts": ["LAUNCH_HOWARD_RECOVERY_SYSTEM.vbs", "START_HOWARD_RECOVERY_INTAKE_AGENT.bat", "START_HOWARD_RECOVERY_SYSTEM.bat", "setup.bat", "start.bat", "stop.bat", "SETUP_WINDOWS.ps1", "health_check.ps1", "PHASE_11_14_INTEGRATION_ORCHESTRATOR.py"],
+    "classification": "ALL historical-only candidates; SAFE_TO_MOVE_LATER = UNKNOWN pending rg reference check (rg full-tree scans timed out repeatedly on this host; a future lane should run the reference check in short per-file batches)",
+    "future_cleanup_plan": "1) rg each root receipt filename across *.py/*.ts/.github in small batches (avoid multi-pattern timeouts); 2) unreferenced + not CI-referenced => candidate archive under artifacts/historical/ (move, not delete); 3) .bat/.vbs/.ps1 referenced by docs/CI must stay or be re-pointed; 4) execute only under a separate authorized cleanup lane"
+  },
+  "secret_values_recorded": false
+}

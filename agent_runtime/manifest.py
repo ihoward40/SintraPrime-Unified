@@ -66,6 +66,56 @@ KNOWN_CAPABILITIES: frozenset[str] = frozenset(
 )
 
 
+def _resolves_to_known(raw_id: str) -> bool:
+    """W4-3 alias-aware recognition: resolve through the capability resolver
+    when a governed registry artifact is present; fall back to the frozen
+    No legacy vocabulary fallback is permitted. Missing, unavailable, corrupt,
+    or mismatched governed registry state returns False (REGISTRY_NOT_TRUSTED)."""
+    try:
+        from agent_runtime.capability_resolver import (  # lazy: avoid import cycle
+            resolve_capability,
+        )
+    except ImportError:
+        return False  # resolver unavailable is REGISTRY_NOT_TRUSTED
+    reg_path = _registry_artifact_path()
+    if reg_path is None:
+        return False  # missing governed registry is REGISTRY_NOT_TRUSTED
+    try:
+        view = load_registry_cached(reg_path)
+        resolve_capability(raw_id, view)
+        return True
+    except Exception:
+        return False  # corrupt/mismatched/untrusted registry fails closed
+
+
+def _registry_artifact_path():
+    from pathlib import Path
+    for candidate in (
+        Path(__file__).resolve().parent.parent / "registry/capabilities/capability_registry.json",
+        Path.cwd() / "registry/capabilities/capability_registry.json",
+    ):
+        if candidate.exists():
+            return candidate
+    return None
+
+
+_LOAD_CACHE: dict = {}
+
+
+def load_registry_cached(path):
+    """Cache RegistryView per (path, mtime, size) so validators don't reload
+    per capability. Cache invalidates automatically when the artifact changes
+    (mtime/size) — generation-mismatch is still enforced at load time."""
+    from agent_runtime.capability_resolver import load_registry
+    key = (str(path), path.stat().st_mtime_ns, path.stat().st_size)
+    if key not in _LOAD_CACHE:
+        if len(_LOAD_CACHE) > 4:
+            _LOAD_CACHE.clear()
+        _LOAD_CACHE[key] = load_registry(path)
+    return _LOAD_CACHE[key]
+
+
+
 class SideEffectClass(StrEnum):
     """§28 side-effect classification."""
 
@@ -281,7 +331,7 @@ class AgentManifest(BaseModel):
     @field_validator("required_capabilities", "optional_capabilities", "forbidden_capabilities")
     @classmethod
     def _capabilities_known(cls, v: tuple[str, ...]) -> tuple[str, ...]:
-        unknown = [c for c in v if c not in KNOWN_CAPABILITIES]
+        unknown = [c for c in v if not _resolves_to_known(c)]
         if unknown:
             raise ValueError(f"unknown capability ids: {sorted(unknown)} (§13 fail-closed)")
         return v

@@ -1,0 +1,632 @@
+{
+ "registry_generation_id": "reg-e4a3abfaec68",
+ "schema_version": "1.0.0",
+ "created_from": "zd2_capability_registry_spec.md + agent_runtime/manifest.py KNOWN_CAPABILITIES + governed executor + mcp/swarm inventory",
+ "created_at": "2026-09-08T19:47:43.236291+00:00",
+ "capabilities": [
+  {
+   "capability_id": "repository.read",
+   "manifest_layer_ids": [
+    "READ_REPOSITORY"
+   ],
+   "side_effect_class": "READ_ONLY",
+   "approval_policy": "NEVER_REQUIRED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "repository.write",
+   "manifest_layer_ids": [
+    "WRITE_REPOSITORY"
+   ],
+   "side_effect_class": "LOCAL_REVERSIBLE",
+   "approval_policy": "TIERED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "tests.run",
+   "manifest_layer_ids": [
+    "RUN_TESTS"
+   ],
+   "side_effect_class": "LOCAL_REVERSIBLE",
+   "approval_policy": "TIERED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "research.web.search",
+   "manifest_layer_ids": [
+    "SEARCH_WEB"
+   ],
+   "side_effect_class": "READ_ONLY",
+   "approval_policy": "NEVER_REQUIRED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "web.fetch",
+   "manifest_layer_ids": [
+    "FETCH_URL"
+   ],
+   "side_effect_class": "READ_ONLY",
+   "approval_policy": "NEVER_REQUIRED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "memory.read",
+   "manifest_layer_ids": [
+    "READ_MEMORY"
+   ],
+   "side_effect_class": "READ_ONLY",
+   "approval_policy": "TIERED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "memory.write.request",
+   "manifest_layer_ids": [
+    "REQUEST_MEMORY_WRITE"
+   ],
+   "side_effect_class": "LOCAL_REVERSIBLE",
+   "approval_policy": "TIERED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "database.read",
+   "manifest_layer_ids": [
+    "READ_DATABASE"
+   ],
+   "side_effect_class": "READ_ONLY",
+   "approval_policy": "TIERED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "database.write",
+   "manifest_layer_ids": [
+    "WRITE_DATABASE"
+   ],
+   "side_effect_class": "EXTERNAL_REVERSIBLE",
+   "approval_policy": "TIERED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "document.create",
+   "manifest_layer_ids": [
+    "CREATE_DOCUMENT"
+   ],
+   "side_effect_class": "LOCAL_REVERSIBLE",
+   "approval_policy": "NEVER_REQUIRED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "shell.execute",
+   "manifest_layer_ids": [
+    "EXECUTE_SHELL"
+   ],
+   "side_effect_class": "EXTERNAL_CONSEQUENTIAL",
+   "approval_policy": "ALWAYS_REQUIRED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "email.read",
+   "manifest_layer_ids": [
+    "READ_EMAIL"
+   ],
+   "side_effect_class": "READ_ONLY",
+   "approval_policy": "TIERED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "email.draft",
+   "manifest_layer_ids": [
+    "DRAFT_EMAIL"
+   ],
+   "side_effect_class": "LOCAL_REVERSIBLE",
+   "approval_policy": "NEVER_REQUIRED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "email.send",
+   "manifest_layer_ids": [
+    "SEND_EMAIL"
+   ],
+   "side_effect_class": "EXTERNAL_CONSEQUENTIAL",
+   "approval_policy": "ALWAYS_REQUIRED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "vcs.branch.create",
+   "manifest_layer_ids": [
+    "CREATE_GITHUB_BRANCH"
+   ],
+   "side_effect_class": "LOCAL_REVERSIBLE",
+   "approval_policy": "TIERED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "vcs.commit",
+   "manifest_layer_ids": [
+    "CREATE_GITHUB_COMMIT"
+   ],
+   "side_effect_class": "LOCAL_REVERSIBLE",
+   "approval_policy": "TIERED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "vcs.push",
+   "manifest_layer_ids": [
+    "PUSH_GITHUB_BRANCH"
+   ],
+   "side_effect_class": "EXTERNAL_REVERSIBLE",
+   "approval_policy": "ALWAYS_REQUIRED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "vcs.pr.open",
+   "manifest_layer_ids": [
+    "OPEN_PULL_REQUEST"
+   ],
+   "side_effect_class": "EXTERNAL_REVERSIBLE",
+   "approval_policy": "TIERED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "vcs.merge",
+   "manifest_layer_ids": [
+    "MERGE_PULL_REQUEST"
+   ],
+   "side_effect_class": "EXTERNAL_CONSEQUENTIAL",
+   "approval_policy": "ALWAYS_REQUIRED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "infra.deploy",
+   "manifest_layer_ids": [
+    "DEPLOY_SERVICE"
+   ],
+   "side_effect_class": "EXTERNAL_CONSEQUENTIAL",
+   "approval_policy": "ALWAYS_REQUIRED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "content.publish",
+   "manifest_layer_ids": [
+    "PUBLISH_CONTENT"
+   ],
+   "side_effect_class": "EXTERNAL_CONSEQUENTIAL",
+   "approval_policy": "ALWAYS_REQUIRED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "finance.payment.execute",
+   "manifest_layer_ids": [
+    "EXECUTE_PAYMENT"
+   ],
+   "side_effect_class": "IRREVERSIBLE",
+   "approval_policy": "ALWAYS_REQUIRED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "delegation.task",
+   "manifest_layer_ids": [
+    "DELEGATE_TASK"
+   ],
+   "side_effect_class": "LOCAL_REVERSIBLE",
+   "approval_policy": "TIERED",
+   "status": "ACTIVE",
+   "executor_bindings": [],
+   "origin": "wave3-manifest"
+  },
+  {
+   "capability_id": "computer.browser.read",
+   "manifest_layer_ids": [
+    "computer.browser.read"
+   ],
+   "side_effect_class": "READ_ONLY",
+   "approval_policy": "NEVER_REQUIRED",
+   "status": "ACTIVE",
+   "executor_bindings": [
+    {
+     "executor": "mission_wiring.browser_executor.GovernedBrowserExecutor",
+     "status": "CERTIFIED_LOCAL"
+    }
+   ],
+   "origin": "zd001"
+  },
+  {
+   "capability_id": "computer.browser.navigate",
+   "manifest_layer_ids": [
+    "computer.browser.navigate"
+   ],
+   "side_effect_class": "READ_ONLY",
+   "approval_policy": "NEVER_REQUIRED",
+   "status": "ACTIVE",
+   "executor_bindings": [
+    {
+     "executor": "mission_wiring.browser_executor.GovernedBrowserExecutor",
+     "status": "CERTIFIED_LOCAL"
+    }
+   ],
+   "origin": "zd001"
+  },
+  {
+   "capability_id": "computer.browser.screenshot",
+   "manifest_layer_ids": [
+    "computer.browser.screenshot"
+   ],
+   "side_effect_class": "LOCAL_REVERSIBLE",
+   "approval_policy": "TIERED",
+   "status": "ACTIVE",
+   "executor_bindings": [
+    {
+     "executor": "mission_wiring.browser_executor.GovernedBrowserExecutor",
+     "status": "CERTIFIED_LOCAL"
+    }
+   ],
+   "origin": "zd001"
+  },
+  {
+   "capability_id": "computer.browser.extract",
+   "manifest_layer_ids": [
+    "computer.browser.extract"
+   ],
+   "side_effect_class": "READ_ONLY",
+   "approval_policy": "NEVER_REQUIRED",
+   "status": "ACTIVE",
+   "executor_bindings": [
+    {
+     "executor": "mission_wiring.browser_executor.GovernedBrowserExecutor",
+     "status": "CERTIFIED_LOCAL"
+    }
+   ],
+   "origin": "zd001"
+  },
+  {
+   "capability_id": "computer.browser.interact",
+   "manifest_layer_ids": [
+    "computer.browser.interact"
+   ],
+   "side_effect_class": "LOCAL_REVERSIBLE",
+   "approval_policy": "TIERED",
+   "status": "ACTIVE",
+   "executor_bindings": [
+    {
+     "executor": "mission_wiring.browser_executor.GovernedBrowserExecutor",
+     "status": "CERTIFIED_LOCAL"
+    }
+   ],
+   "origin": "zd001"
+  },
+  {
+   "capability_id": "computer.browser.form_fill",
+   "manifest_layer_ids": [
+    "computer.browser.form_fill"
+   ],
+   "side_effect_class": "LOCAL_REVERSIBLE",
+   "approval_policy": "TIERED",
+   "status": "ACTIVE",
+   "executor_bindings": [
+    {
+     "executor": "mission_wiring.browser_executor.GovernedBrowserExecutor",
+     "status": "CERTIFIED_LOCAL"
+    }
+   ],
+   "origin": "zd001"
+  },
+  {
+   "capability_id": "computer.browser.upload",
+   "manifest_layer_ids": [
+    "computer.browser.upload"
+   ],
+   "side_effect_class": "EXTERNAL_REVERSIBLE",
+   "approval_policy": "TIERED",
+   "status": "ACTIVE",
+   "executor_bindings": [
+    {
+     "executor": "mission_wiring.browser_executor.GovernedBrowserExecutor",
+     "status": "CERTIFIED_LOCAL"
+    }
+   ],
+   "origin": "zd001"
+  },
+  {
+   "capability_id": "computer.browser.download",
+   "manifest_layer_ids": [
+    "computer.browser.download"
+   ],
+   "side_effect_class": "LOCAL_REVERSIBLE",
+   "approval_policy": "TIERED",
+   "status": "ACTIVE",
+   "executor_bindings": [
+    {
+     "executor": "mission_wiring.browser_executor.GovernedBrowserExecutor",
+     "status": "CERTIFIED_LOCAL"
+    }
+   ],
+   "origin": "zd001"
+  },
+  {
+   "capability_id": "computer.browser.submit",
+   "manifest_layer_ids": [
+    "computer.browser.submit"
+   ],
+   "side_effect_class": "EXTERNAL_CONSEQUENTIAL",
+   "approval_policy": "ALWAYS_REQUIRED",
+   "status": "ACTIVE",
+   "executor_bindings": [
+    {
+     "executor": "mission_wiring.browser_executor.GovernedBrowserExecutor",
+     "status": "CERTIFIED_LOCAL"
+    }
+   ],
+   "origin": "zd001"
+  },
+  {
+   "capability_id": "computer.browser.financial_submit",
+   "manifest_layer_ids": [
+    "computer.browser.financial_submit"
+   ],
+   "side_effect_class": "IRREVERSIBLE",
+   "approval_policy": "ALWAYS_REQUIRED",
+   "status": "ACTIVE",
+   "executor_bindings": [
+    {
+     "executor": "mission_wiring.browser_executor.GovernedBrowserExecutor",
+     "status": "CERTIFIED_LOCAL"
+    }
+   ],
+   "origin": "zd001"
+  },
+  {
+   "capability_id": "analysis.document.read",
+   "manifest_layer_ids": [],
+   "side_effect_class": "READ_ONLY",
+   "approval_policy": "TIERED",
+   "status": "DORMANT",
+   "executor_bindings": [],
+   "origin": "zd2-mcp-swarm-map"
+  },
+  {
+   "capability_id": "analysis.domain.read",
+   "manifest_layer_ids": [],
+   "side_effect_class": "READ_ONLY",
+   "approval_policy": "TIERED",
+   "status": "DORMANT",
+   "executor_bindings": [],
+   "origin": "zd2-mcp-swarm-map"
+  },
+  {
+   "capability_id": "workflow.schedule",
+   "manifest_layer_ids": [],
+   "side_effect_class": "LOCAL_REVERSIBLE",
+   "approval_policy": "TIERED",
+   "status": "DORMANT",
+   "executor_bindings": [],
+   "origin": "zd2-mcp-swarm-map"
+  },
+  {
+   "capability_id": "skill.execute",
+   "manifest_layer_ids": [],
+   "side_effect_class": "VARIES_FORBIDDEN_WRAPPER",
+   "approval_policy": "TIERED",
+   "status": "DORMANT",
+   "executor_bindings": [],
+   "origin": "zd2-mcp-swarm-map"
+  },
+  {
+   "capability_id": "repo.analyze.read",
+   "manifest_layer_ids": [],
+   "side_effect_class": "READ_ONLY",
+   "approval_policy": "TIERED",
+   "status": "DORMANT",
+   "executor_bindings": [],
+   "origin": "zd2-mcp-swarm-map"
+  },
+  {
+   "capability_id": "database.schema.read",
+   "manifest_layer_ids": [],
+   "side_effect_class": "READ_ONLY",
+   "approval_policy": "TIERED",
+   "status": "DORMANT",
+   "executor_bindings": [],
+   "origin": "zd2-mcp-swarm-map"
+  },
+  {
+   "capability_id": "repo.diff.read",
+   "manifest_layer_ids": [],
+   "side_effect_class": "READ_ONLY",
+   "approval_policy": "TIERED",
+   "status": "DORMANT",
+   "executor_bindings": [],
+   "origin": "zd2-mcp-swarm-map"
+  },
+  {
+   "capability_id": "provider.inference",
+   "manifest_layer_ids": [],
+   "side_effect_class": "READ_ONLY",
+   "approval_policy": "TIERED",
+   "status": "DORMANT",
+   "executor_bindings": [],
+   "origin": "zd2-mcp-swarm-map"
+  },
+  {
+   "capability_id": "repo.write",
+   "manifest_layer_ids": [],
+   "side_effect_class": "LOCAL_REVERSIBLE",
+   "approval_policy": "TIERED",
+   "status": "DORMANT",
+   "executor_bindings": [],
+   "origin": "zd2-mcp-swarm-map"
+  }
+ ],
+ "aliases": [
+  {
+   "alias": "READ_REPOSITORY",
+   "canonical_id": "repository.read"
+  },
+  {
+   "alias": "WRITE_REPOSITORY",
+   "canonical_id": "repository.write"
+  },
+  {
+   "alias": "RUN_TESTS",
+   "canonical_id": "tests.run"
+  },
+  {
+   "alias": "SEARCH_WEB",
+   "canonical_id": "research.web.search"
+  },
+  {
+   "alias": "FETCH_URL",
+   "canonical_id": "web.fetch"
+  },
+  {
+   "alias": "READ_MEMORY",
+   "canonical_id": "memory.read"
+  },
+  {
+   "alias": "REQUEST_MEMORY_WRITE",
+   "canonical_id": "memory.write.request"
+  },
+  {
+   "alias": "READ_DATABASE",
+   "canonical_id": "database.read"
+  },
+  {
+   "alias": "WRITE_DATABASE",
+   "canonical_id": "database.write"
+  },
+  {
+   "alias": "CREATE_DOCUMENT",
+   "canonical_id": "document.create"
+  },
+  {
+   "alias": "EXECUTE_SHELL",
+   "canonical_id": "shell.execute"
+  },
+  {
+   "alias": "READ_EMAIL",
+   "canonical_id": "email.read"
+  },
+  {
+   "alias": "DRAFT_EMAIL",
+   "canonical_id": "email.draft"
+  },
+  {
+   "alias": "SEND_EMAIL",
+   "canonical_id": "email.send"
+  },
+  {
+   "alias": "CREATE_GITHUB_BRANCH",
+   "canonical_id": "vcs.branch.create"
+  },
+  {
+   "alias": "CREATE_GITHUB_COMMIT",
+   "canonical_id": "vcs.commit"
+  },
+  {
+   "alias": "PUSH_GITHUB_BRANCH",
+   "canonical_id": "vcs.push"
+  },
+  {
+   "alias": "OPEN_PULL_REQUEST",
+   "canonical_id": "vcs.pr.open"
+  },
+  {
+   "alias": "MERGE_PULL_REQUEST",
+   "canonical_id": "vcs.merge"
+  },
+  {
+   "alias": "DEPLOY_SERVICE",
+   "canonical_id": "infra.deploy"
+  },
+  {
+   "alias": "PUBLISH_CONTENT",
+   "canonical_id": "content.publish"
+  },
+  {
+   "alias": "EXECUTE_PAYMENT",
+   "canonical_id": "finance.payment.execute"
+  },
+  {
+   "alias": "DELEGATE_TASK",
+   "canonical_id": "delegation.task"
+  }
+ ],
+ "executor_bindings": [
+  {
+   "executor": "mission_wiring.browser_executor.GovernedBrowserExecutor",
+   "capabilities": [
+    "computer.browser.download",
+    "computer.browser.extract",
+    "computer.browser.financial_submit",
+    "computer.browser.form_fill",
+    "computer.browser.interact",
+    "computer.browser.navigate",
+    "computer.browser.read",
+    "computer.browser.screenshot",
+    "computer.browser.submit",
+    "computer.browser.upload"
+   ]
+  }
+ ],
+ "source_hashes": {
+  "agent_runtime_manifest": "4dcc570b1288e17b0f914145dec3ff50dde12d3e1609ac45eb88df2f3e3f99d9",
+  "browser_executor": "2fb4b058831e129e6632c6d78f7c32d4cf21b19b84daeff7835f0e157f7a99b3"
+ },
+ "alias_resolution_rule": "AUTHORITY COMPARISON: resolve alias -> canonical capability id -> policy evaluation. Never compare raw strings from different generations directly.",
+ "invariants": [
+  "capability_id must exist in registry (fail-closed)",
+  "every ACTIVE capability has >=1 executor binding or is DORMANT",
+  "EXTERNAL_CONSEQUENTIAL/IRREVERSIBLE => approval_policy=ALWAYS_REQUIRED (no overrides)",
+  "side_effect_class immutable after first certification; change = new capability id + new generation",
+  "test-only executors can never bind production capability ids",
+  "REGISTRY CHANGE => NEW GENERATION ID => prior certification STALE for that dependency (historically valid, not authoritative)"
+ ],
+ "principal_rulings_applied": {
+  "CAPABILITY_CANONICALIZATION": "ALIAS-BASED / NON-DESTRUCTIVE",
+  "EXECUTE_SKILL": "RESOLVER ONLY / NEVER AUTHORITY",
+  "REGISTRY_STORAGE": "VERSIONED MACHINE-READABLE REPO ARTIFACT (no DB control plane yet)",
+  "DURABILITY": "REUSE DurableWorkflowEngine PRIMITIVES (engine below authority, never deciding it)"
+ }
+}

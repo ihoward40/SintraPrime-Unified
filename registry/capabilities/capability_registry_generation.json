@@ -1,0 +1,7 @@
+{
+ "generation_id": "reg-e4a3abfaec68",
+ "supersedes": null,
+ "change_summary": "initial registry: 23 wave3 capabilities aliased to canonical dotted ids, 10 browser caps, 9 dormant mcp/swarm mappings",
+ "created_at": "2026-09-08T19:47:43.236291+00:00",
+ "prior_certifications_affected": "STALE for dependency: capability vocabulary (historically valid, not authoritative)"
+}

@@ -1,0 +1,25 @@
+{
+  "FROZEN_DIFF_REAPPLIED": true,
+  "frozen_hash_recorded": "5636ac4de22eb1840912383b",
+  "frozen_hash_reproducible_byte_exact": false,
+  "deviations": [
+    {
+      "file": "mission_wiring/tests/test_zd3_security_attacks.py",
+      "deviation": "ruff --fix import ordering + secrets_scan helper placement (during pre-seal lint in W4-4-FIX-R1 lane)",
+      "class": "EXPECTED_CONTEXT_DRIFT (cosmetic lint normalization, no semantic change)",
+      "evidence": "file-set identical to frozen lock (14/14); only intra-file layout differs"
+    },
+    {
+      "file": "mission_wiring/envelope.py",
+      "deviation": "ruff RUF059 rename: cid, gen, rh -> cid, _gen, _rh (unused-var prefix)",
+      "class": "EXPECTED_CONTEXT_DRIFT (cosmetic lint fix, zero behavior change)",
+      "evidence": "single-token rename"
+    },
+    {
+      "file": "agent_runtime/receipts.py + tests (upstream)",
+      "deviation": "SP-W4-4-FIX-R1 sealed commit f9c7faae corrected the W4-4 boundary",
+      "class": "UPSTREAM_W4_4_ADAPTATION (explicitly authorized micro-lane)"
+    }
+  ],
+  "UNAUTHORIZED_SCOPE_EXPANSION": 0
+}

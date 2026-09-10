@@ -17,7 +17,7 @@ from mission_wiring.durable_mission import (
 )
 
 
-class CrashInjector(Exception):
+class CrashInjector(Exception):  # noqa: N818 - fixture exception, not an error type
     """Simulated process crash at a named step."""
 
 
@@ -39,9 +39,8 @@ class FaultInjectionHarness:
             raise CrashInjector(f"crash before persist ({self._crash_step})")
         self.durable[rec.mission_id] = _snapshot(rec)
 
-    def start_mission(self, manager_kwargs: dict) -> DurableMissionManager:
-        mgr = DurableMissionManager(self, clock=lambda: "T0")
-        return mgr
+    def start_mission(self, manager_kwargs: dict) -> DurableMissionManager:  # noqa: ARG002 - reserved for future config
+        return DurableMissionManager(self, clock=lambda: "T0")
 
     def arm_crash(self, step: str) -> None:
         self._crash_arm = "before_persist"
@@ -89,7 +88,7 @@ def _snapshot(rec: DurableMissionRecord) -> dict:
 
 def _restore(snap: dict) -> DurableMissionRecord:
     from mission_wiring.durable_mission import EffectIntent, EffectOutcome
-    rec = DurableMissionRecord(
+    return DurableMissionRecord(
         mission_id=snap["mission_id"], tenant_id=snap["tenant_id"],
         actor_id=snap["actor_id"],
         canonical_capability=snap["canonical_capability"],
@@ -108,19 +107,18 @@ def _restore(snap: dict) -> DurableMissionRecord:
         reconciliation_status=snap.get("reconciliation_status", ""),
         history=list(snap.get("history", [])),
     )
-    return rec
 
 
 # --------------------------------------------------------- standard fixtures --
 
 def _approved_mission_kwargs() -> dict:
-    return dict(
-        mission_id="mission.w5-001", tenant_id="tenant.default",
-        actor_id="agent.browser.worker",
-        canonical_capability="computer.browser.navigate",
-        resource_identity="https://example.com",
-        side_effect_class="EXTERNAL_CONSEQUENTIAL",
-    )
+    return {
+        "mission_id": "mission.w5-001", "tenant_id": "tenant.default",
+        "actor_id": "agent.browser.worker",
+        "canonical_capability": "computer.browser.navigate",
+        "resource_identity": "https://example.com",
+        "side_effect_class": "EXTERNAL_CONSEQUENTIAL",
+    }
 
 
 def make_approved_mission(mgr: DurableMissionManager) -> DurableMissionRecord:

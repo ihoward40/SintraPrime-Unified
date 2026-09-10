@@ -40,8 +40,11 @@ def test_lifecycle_happy_path_and_states():
     assert rec.state is MissionLifecycleState.COMPLETED
     # lifecycle states visited, in order
     hist = [h2["to"] for h2 in rec.history]
-    assert hist == ["AWAITING_APPROVAL", "APPROVED", "EXECUTION_INTENT_RECORDED",
-                    "EXECUTING", "COMPLETED"]
+    assert hist[0] == "AWAITING_APPROVAL"
+    assert hist[1] == "APPROVED"
+    assert hist[2] == "EXECUTION_INTENT_RECORDED"
+    assert hist[3] == "EXECUTING"
+    assert hist[4] == "COMPLETED"
 
 
 def test_idempotency_key_stable_across_recomputation():
@@ -51,7 +54,8 @@ def test_idempotency_key_stable_across_recomputation():
                                 "https://example.com", "effect-1")
     k3 = derive_idempotency_key("mission.x", "computer.browser.navigate",
                                 "https://example.com", "effect-2")
-    assert k1 == k2 and k1 != k3
+    assert k1 == k2
+    assert k1 != k3
     assert k1.startswith("idem-")
 
 
@@ -101,7 +105,8 @@ def test_approval_data_is_bookkeeping_not_authority():
     rec = make_approved_mission(mgr)
     blob = json.dumps(rec.__dict__, default=str)
     assert rec.approval_reference == "approval-w5-1"   # stored as reference only
-    assert "issue(" not in blob and "consume(" not in blob
+    assert "issue(" not in blob
+    assert "consume(" not in blob
     # the manager exposes no approve/consume/delegate methods
     for banned in ("approve", "consume", "delegate", "grant"):
-        assert not hasattr(mgr, banned), banned
+        assert not hasattr(mgr, banned), banned  # PT018-safe: single condition per assert

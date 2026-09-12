@@ -94,6 +94,28 @@ class MissionReceipt:
     envelope_hash: str
     started_at: datetime
     finished_at: datetime
+    task_id: str = ""
+    work_order_id: str = ""
+    actor_id: str = ""
+    scope: str = ""
+    base_sha: str = ""
+    final_sha: str = ""
+    files_read: list[str] = field(default_factory=list)
+    files_written: list[str] = field(default_factory=list)
+    implementation_summary: str = ""
+    facts_found: list[str] = field(default_factory=list)
+    assumptions: list[str] = field(default_factory=list)
+    tests_run: list[str] = field(default_factory=list)
+    test_results: list[str] = field(default_factory=list)
+    known_limitations: list[str] = field(default_factory=list)
+    risks: list[str] = field(default_factory=list)
+    regression_risk: str = ""
+    unrelated_findings: list[str] = field(default_factory=list)
+    next_owner: str = ""
+    do_not_repeat: list[str] = field(default_factory=list)
+    implementer: str = ""
+    reviewer: str = ""
+    certifier: str = ""
 
     def __post_init__(self) -> None:
         if self.result is MissionResult.REFUSED and not self.failure_class:
@@ -102,6 +124,8 @@ class MissionReceipt:
             raise ValueError("FAILED receipts must carry a failure_class")
         if self.finished_at < self.started_at:
             raise ValueError("finished_at before started_at")
+        if self.implementer and self.certifier and self.implementer == self.certifier:
+            raise ValueError("IMPLEMENTER == SOLE_CERTIFIER is invalid")
 
     # ---- §18 hash binding ----
     def hash_payload(self, registry_view: Any = None) -> dict[str, Any]:
@@ -152,6 +176,28 @@ class MissionReceipt:
             "envelope_hash": self.envelope_hash,
             "started_at": self.started_at.isoformat(),
             "finished_at": self.finished_at.isoformat(),
+            "task_id": self.task_id,
+            "work_order_id": self.work_order_id,
+            "actor_id": self.actor_id,
+            "scope": self.scope,
+            "base_sha": self.base_sha,
+            "final_sha": self.final_sha,
+            "files_read": list(self.files_read),
+            "files_written": list(self.files_written),
+            "implementation_summary": self.implementation_summary,
+            "facts_found": list(self.facts_found),
+            "assumptions": list(self.assumptions),
+            "tests_run": list(self.tests_run),
+            "test_results": list(self.test_results),
+            "known_limitations": list(self.known_limitations),
+            "risks": list(self.risks),
+            "regression_risk": self.regression_risk,
+            "unrelated_findings": list(self.unrelated_findings),
+            "next_owner": self.next_owner,
+            "do_not_repeat": list(self.do_not_repeat),
+            "implementer": self.implementer,
+            "reviewer": self.reviewer,
+            "certifier": self.certifier,
         }
 
     def receipt_hash(self) -> str:

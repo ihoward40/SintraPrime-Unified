@@ -307,6 +307,16 @@ class RunControlSummary(BaseModel):
     created_at: datetime | None = None
     updated_at: datetime | None = None
     event_count: int = 0
+    actor_id: str | None = None
+    worker_role: str | None = None
+    parent_coordinator: str | None = None
+    work_order_id: str | None = None
+    write_scope: list[str] = Field(default_factory=list)
+    lease_state: str | None = None
+    last_heartbeat: datetime | None = None
+    test_status: str | None = None
+    authority_source: str | None = None
+    external_effects: int | None = None
 
 
 class RunControlProjection(BaseModel):
@@ -345,6 +355,16 @@ class RunControlProjection(BaseModel):
     updated_at: datetime | None = None
     events: list[RunControlEventProjection] = Field(default_factory=list)
     freshness: FreshnessMeta | None = None
+    actor_id: str | None = None
+    worker_role: str | None = None
+    parent_coordinator: str | None = None
+    work_order_id: str | None = None
+    write_scope: list[str] = Field(default_factory=list)
+    lease_state: str | None = None
+    last_heartbeat: datetime | None = None
+    test_status: str | None = None
+    authority_source: str | None = None
+    external_effects: int | None = None
 
 
 class RunControlListResponse(BaseModel):

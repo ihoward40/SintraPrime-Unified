@@ -9,9 +9,10 @@ If a worker attempts to write outside its owned files:
 """
 from __future__ import annotations
 
+import fnmatch
 import time
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import PurePosixPath
 from typing import Any
 
 
@@ -33,30 +34,39 @@ class OwnershipRegistry:
     """
     def __init__(self) -> None:
         self._ownership: dict[str, set[str]] = {}  # worker_id → set of owned paths
-        self._path_to_owner: dict[str, str] = {}  # path → worker_id
+        self._claims: dict[str, str] = {}  # normalized claim pattern/path → worker_id
         self._violations: list[OwnershipViolation] = []
 
     def register(self, worker_id: str, owned_files: list[str]) -> None:
         """Register a worker's owned files."""
         owned_set = set()
         for path in owned_files:
-            normalized = str(Path(path)).replace("\\", "/")
+            normalized = self._normalize(path)
             owned_set.add(normalized)
-            self._path_to_owner[normalized] = worker_id
+            current_owner = self._claims.get(normalized)
+            if current_owner is not None and current_owner != worker_id:
+                raise ValueError(
+                    f"WRITE_SCOPE_CONFLICT: {normalized} already owned by {current_owner}"
+                )
+            for claimed, owner in self._claims.items():
+                if owner == worker_id:
+                    continue
+                if self._claims_overlap(claimed, normalized):
+                    raise ValueError(
+                        f"WRITE_SCOPE_OVERLAP: {normalized} conflicts with {claimed} ({owner})"
+                    )
+            self._claims[normalized] = worker_id
         self._ownership[worker_id] = owned_set
 
     def can_write(self, worker_id: str, path: str) -> bool:
         """Check if a worker is allowed to write to a path."""
-        normalized = str(Path(path)).replace("\\", "/")
-        owner = self._path_to_owner.get(normalized)
-        if owner is None:
-            # Unclaimed path — allow if worker has no ownership restriction
-            # or if the path is in the worker's owned_files list
-            self._ownership.get(worker_id, set())
-            # If worker has no ownership declared, deny by default
-            # (DENY_UNDECLARED_CAPABILITY = TRUE)
+        normalized = self._normalize(path)
+        matching_owners = {
+            owner for claim, owner in self._claims.items() if self._path_matches_claim(normalized, claim)
+        }
+        if not matching_owners:
             return False
-        return owner == worker_id
+        return matching_owners == {worker_id}
 
     def check_and_record(self, worker_id: str, path: str) -> OwnershipViolation | None:
         """Check write permission and record violation if denied."""
@@ -65,7 +75,7 @@ class OwnershipRegistry:
 
         violation = OwnershipViolation(
             worker_id=worker_id,
-            attempted_path=str(Path(path)).replace("\\", "/"),
+            attempted_path=self._normalize(path),
             owned_paths=list(self._ownership.get(worker_id, set())),
             timestamp=time.time(),
             action="WRITE_DENIED",
@@ -80,7 +90,7 @@ class OwnershipRegistry:
     def to_dict(self) -> dict[str, Any]:
         return {
             "ownership_map": {k: list(v) for k, v in self._ownership.items()},
-            "path_to_owner": self._path_to_owner,
+            "path_to_owner": self._claims,
             "violations": [
                 {
                     "worker_id": v.worker_id,
@@ -93,3 +103,35 @@ class OwnershipRegistry:
                 for v in self._violations
             ],
         }
+
+    @staticmethod
+    def _normalize(path: str) -> str:
+        p = str(PurePosixPath(str(path).replace("\\", "/")))
+        return p.lstrip("./")
+
+    @staticmethod
+    def _path_matches_claim(path: str, claim: str) -> bool:
+        if claim.endswith("/**"):
+            base = claim[:-3].rstrip("/")
+            return path == base or path.startswith(base + "/")
+        if "*" in claim or "?" in claim or "[" in claim:
+            return fnmatch.fnmatch(path, claim)
+        return path == claim
+
+    @classmethod
+    def _claims_overlap(cls, a: str, b: str) -> bool:
+        if a == b:
+            return True
+        if a.endswith("/**"):
+            base = a[:-3].rstrip("/")
+            if b == base or b.startswith(base + "/"):
+                return True
+        if b.endswith("/**"):
+            base = b[:-3].rstrip("/")
+            if a == base or a.startswith(base + "/"):
+                return True
+        if "*" in a and cls._path_matches_claim(b, a):
+            return True
+        if "*" in b and cls._path_matches_claim(a, b):
+            return True
+        return False

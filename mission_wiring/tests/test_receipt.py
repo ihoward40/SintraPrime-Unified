@@ -193,3 +193,13 @@ def test_time_ordering_enforced():
     env = _make_env()
     with pytest.raises(ValueError, match="finished_at before"):
         _make_receipt(env, started_at=_ts(13), finished_at=_ts(12))
+
+
+def test_self_certification_block_enforced():
+    env = _make_env()
+    with pytest.raises(ValueError, match="SOLE_CERTIFIER"):
+        _make_receipt(
+            env,
+            implementer="copilot.engineering.01",
+            certifier="copilot.engineering.01",
+        )

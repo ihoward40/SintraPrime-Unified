@@ -128,6 +128,7 @@ class SwarmController:
         Creates artifact directory and initial status BEFORE the process starts.
         Returns the worker_id.
         """
+        spec.validate_contract()
         # Create initial state
         state = WorkerState.from_spec(self.swarm_id, spec)
         state.status = WorkerStatus.QUEUED

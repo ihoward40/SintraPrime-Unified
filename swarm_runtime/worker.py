@@ -7,9 +7,13 @@ Intermediate states: WAITING_PROVIDER, RETRYING, FAILED_OVER
 from __future__ import annotations
 
 import enum
+import re
 import time
 from dataclasses import asdict, dataclass, field
+from pathlib import Path
 from typing import Any
+
+_ACTOR_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{2,127}$")
 
 
 class WorkerStatus(enum.Enum):
@@ -42,9 +46,56 @@ class WorkerSpec:
     timeout_seconds: int = 120
     expected_artifact_schema: str = "findings"
     heartbeat_interval: int = 10
+    # Canonical WorkOrder envelope bindings (backward compatible optional fields)
+    mission_id: str = ""
+    work_order_id: str = ""
+    actor_id: str = ""
+    owner: str = ""
+    authority_class: str = ""
+    context_hash: str = ""
+    lease_id: str = ""
+    lease_expires_at: float = 0.0
+    parent_coordinator: str = ""
+    authority_source: str = "NONE"
+    control_plane: bool = False
+    execution_posture: str = ""
+    environment: str = ""
+    data_reality: str = ""
+    expected_output: str = ""
+    evidence_required: bool = True
+    dependencies: list[str] = field(default_factory=list)
+    read_allowlist: list[str] = field(default_factory=list)
+    write_allowlist: list[str] = field(default_factory=list)
+    branch: str = ""
+    merge_base: str = ""
+    starting_clean_state: bool = True
 
     def to_dict(self) -> dict:
         return asdict(self)
+
+    def validate_contract(self) -> None:
+        if self.actor_id and not _ACTOR_ID_RE.match(self.actor_id):
+            raise ValueError(f"INVALID_ACTOR_ID: {self.actor_id!r}")
+        if self.actor_id == "hermes.canonical":
+            raise ValueError("WORKER_IMPERSONATION_REFUSED")
+        if self.actor_id == "copilot.engineering.01":
+            if self.parent_coordinator != "hermes.canonical":
+                raise ValueError("COPILOT_PARENT_MISMATCH")
+            if self.authority_source != "NONE":
+                raise ValueError("COPILOT_AUTHORITY_SOURCE_ELEVATION_REFUSED")
+            if self.control_plane:
+                raise ValueError("COPILOT_CONTROL_PLANE_FORBIDDEN")
+        if self.worktree:
+            wt = Path(self.worktree)
+            if not wt.exists():
+                raise ValueError("WORKTREE_NOT_FOUND")
+        if self.owned_files and self.actor_id == "copilot.engineering.01":
+            if not self.worktree:
+                raise ValueError("WRITE_TASK_REQUIRES_ISOLATED_WORKTREE")
+            if not self.starting_clean_state:
+                raise ValueError("WORKTREE_MUST_START_CLEAN")
+            if not self.branch:
+                raise ValueError("WORKTREE_BRANCH_REQUIRED")
 
 
 @dataclass

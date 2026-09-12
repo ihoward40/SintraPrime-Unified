@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import re
 from enum import StrEnum
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -26,6 +26,7 @@ from .canonical import canonical_hash
 MANIFEST_SCHEMA_VERSION = 1
 _AGENT_ID_RE = re.compile(r"^agent\.[a-z0-9]+(\.[a-z0-9]+)*$")
 _SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
+_WORKER_ACTOR_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{2,127}$")
 
 KNOWN_CAPABILITIES: frozenset[str] = frozenset(
     {
@@ -276,6 +277,16 @@ class AgentManifest(BaseModel):
 
     runtime_class: str  # diagnostics only; never identity
     mission_types: tuple[str, ...] = Field(min_length=1)
+    actor_id: str | None = None
+    worker_role: str = ""
+    parent_coordinator: str = ""
+    authority_source: Literal["NONE", "DELEGATED", "PRINCIPAL", "POLICY"] = "DELEGATED"
+    control_plane: bool = False
+    preferred_task_types: tuple[str, ...] = ()
+    max_parallel_tasks: int = Field(default=1, ge=1)
+    write_capable: bool = False
+    review_capable: bool = False
+    worker_metadata: dict[str, Any] = Field(default_factory=dict)
 
     # ── capabilities (§8/§9) ─────────────────────────────────────────────
     required_capabilities: tuple[str, ...] = ()
@@ -321,6 +332,15 @@ class AgentManifest(BaseModel):
             raise ValueError("owner (authority domain) is required (§11)")
         return v
 
+    @field_validator("actor_id")
+    @classmethod
+    def _actor_id_format(cls, v: str | None) -> str | None:
+        if v is None or v == "":
+            return None
+        if not _WORKER_ACTOR_ID_RE.match(v):
+            raise ValueError("actor_id must match canonical worker actor identity grammar")
+        return v
+
     @field_validator("agent_version")
     @classmethod
     def _semver(cls, v: str) -> str:
@@ -347,6 +367,19 @@ class AgentManifest(BaseModel):
     def _governance_readonly_has_no_write(self) -> AgentManifest:
         if self.memory_scope is MemoryScope.GOVERNANCE_READONLY and self.memory_write_requests_allowed:
             raise ValueError("GOVERNANCE_READONLY memory scope forbids write requests")
+        return self
+
+    @model_validator(mode="after")
+    def _copilot_contract(self) -> AgentManifest:
+        if self.actor_id == "copilot.engineering.01":
+            if self.parent_coordinator != "hermes.canonical":
+                raise ValueError("copilot actor requires parent_coordinator=hermes.canonical")
+            if self.authority_source != "NONE":
+                raise ValueError("copilot actor authority_source must remain NONE")
+            if self.control_plane:
+                raise ValueError("copilot actor cannot be control plane")
+            if self.worker_role and self.worker_role != "ENGINEERING_WORKER":
+                raise ValueError("copilot actor role must be ENGINEERING_WORKER")
         return self
 
 

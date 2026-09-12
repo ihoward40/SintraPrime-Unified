@@ -352,6 +352,82 @@ async def test_get_run_control_cross_tenant_returns_none(db: AsyncSession):
 
 
 @pytest.mark.asyncio
+async def test_run_control_projection_copilot_fields_default(db: AsyncSession):
+    from portal.services.mission_control_projection_service import get_run_control
+
+    rc = MissionControlRunControl(
+        id=_uuid("rc-default-001"),
+        tenant_id=TENANT_A,
+        workflow_id="wf-default-001",
+        state=RunControlState.RUNNING.value,
+        workflow_status_snapshot="running",
+        state_version=1,
+        projection_schema_version=1,
+    )
+    db.add(rc)
+    await db.flush()
+
+    projection = await get_run_control(db, tenant_id=TENANT_A, run_control_id=_uuid("rc-default-001"))
+    assert projection is not None
+    assert projection.actor_id is None
+    assert projection.write_scope == []
+    assert projection.authority_source is None
+
+
+@pytest.mark.asyncio
+async def test_run_control_projection_copilot_fields_from_event_payload(db: AsyncSession):
+    from portal.services.mission_control_projection_service import get_run_control
+
+    rc = MissionControlRunControl(
+        id=_uuid("rc-copilot-001"),
+        tenant_id=TENANT_A,
+        workflow_id="wf-copilot-001",
+        state=RunControlState.RUNNING.value,
+        workflow_status_snapshot="running",
+        state_version=1,
+        projection_schema_version=1,
+    )
+    db.add(rc)
+    await db.flush()
+
+    event = MissionControlRunControlEvent(
+        id=_uuid("rce-copilot-001"),
+        run_control_id=_uuid("rc-copilot-001"),
+        sequence=1,
+        event_type="STATE_TRANSITIONED",
+        previous_state="RUNNING",
+        new_state="RUNNING",
+        previous_version=0,
+        new_version=1,
+        event_hash="event-hash-copilot-001",
+        payload={
+            "actor_id": "copilot.engineering.01",
+            "worker_role": "ENGINEERING_WORKER",
+            "parent_coordinator": "hermes.canonical",
+            "work_order_id": "WO-001",
+            "write_scope": ["web/src/pages/mission-control/**"],
+            "lease_state": "ACTIVE",
+            "test_status": "PASS",
+            "authority_source": "NONE",
+            "external_effects": 0,
+        },
+    )
+    db.add(event)
+    await db.flush()
+
+    projection = await get_run_control(db, tenant_id=TENANT_A, run_control_id=_uuid("rc-copilot-001"))
+    assert projection is not None
+    assert projection.actor_id == "copilot.engineering.01"
+    assert projection.worker_role == "ENGINEERING_WORKER"
+    assert projection.parent_coordinator == "hermes.canonical"
+    assert projection.work_order_id == "WO-001"
+    assert projection.write_scope == ["web/src/pages/mission-control/**"]
+    assert projection.lease_state == "ACTIVE"
+    assert projection.authority_source == "NONE"
+    assert projection.external_effects == 0
+
+
+@pytest.mark.asyncio
 async def test_get_causation_chain_cross_tenant_returns_none(db: AsyncSession):
     """Causation chain returns None when command belongs to another tenant."""
     from portal.services.mission_control_projection_service import get_causation_chain

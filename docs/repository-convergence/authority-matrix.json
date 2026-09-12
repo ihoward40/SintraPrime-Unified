@@ -71,6 +71,16 @@
       "concern": "Agent runtime",
       "authority": "UNRESOLVED — convergence required",
       "non_authoritative": "agents/, agent_protocol/, core/universe/"
+    },
+    {
+      "concern": "Canonical worker directory",
+      "authority": "agent_runtime/registry.py + agent_runtime/manifest.py + swarm_runtime/hermes_adapter.py",
+      "non_authoritative": "ad-hoc worker lists in prompts or local scripts"
+    },
+    {
+      "concern": "Preflight write-scope deconfliction",
+      "authority": "swarm_runtime/ownership.py registration conflict checks",
+      "non_authoritative": "post-hoc git merge conflict handling"
     }
   ]
 }

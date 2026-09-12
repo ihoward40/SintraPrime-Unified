@@ -53,6 +53,13 @@ class AgentRegistry:
         errors = self.validate(manifest)
         if errors:
             raise ManifestValidationError(manifest.agent_id, errors)
+        if manifest.actor_id:
+            for existing in self._manifests.values():
+                if existing.actor_id and existing.actor_id == manifest.actor_id:
+                    raise ManifestValidationError(
+                        manifest.agent_id,
+                        [f"duplicate actor_id already registered: {manifest.actor_id}"],
+                    )
         if manifest.agent_id in self._manifests:
             raise DuplicateAgentIdError(f"agent_id already registered: {manifest.agent_id}")
         self._manifests[manifest.agent_id] = manifest
@@ -86,6 +93,22 @@ class AgentRegistry:
             errors.append("missing owner (§11 authority domain required)")
         if manifest.timeout_seconds < 1 or manifest.max_iterations < 1:
             errors.append("invalid budget: timeout_seconds and max_iterations must be >= 1")
+        if manifest.actor_id == "hermes.canonical":
+            errors.append("worker actor may not impersonate hermes.canonical")
+        if manifest.actor_id == "copilot.engineering.01":
+            if manifest.parent_coordinator != "hermes.canonical":
+                errors.append("copilot actor parent must be hermes.canonical")
+            if manifest.authority_source != "NONE":
+                errors.append("copilot actor authority_source cannot be elevated")
+            if manifest.control_plane:
+                errors.append("copilot actor cannot be control plane")
+            if manifest.worker_role and manifest.worker_role != "ENGINEERING_WORKER":
+                errors.append("copilot actor role mismatch")
+        if manifest.parent_coordinator and manifest.parent_coordinator not in {
+            "hermes.canonical",
+            "agent.hermes",
+        }:
+            errors.append(f"unknown parent coordinator: {manifest.parent_coordinator}")
         return errors
 
     def validate_registered(self, agent_id: str) -> list[str]:
@@ -136,6 +159,44 @@ def default_registry() -> AgentRegistry:
     if _default_registry is None:
         _default_registry = AgentRegistry()
     return _default_registry
+
+
+def copilot_engineering_manifest() -> AgentManifest:
+    """Canonical bounded manifest for copilot.engineering.01."""
+    return AgentManifest(
+        agent_id="agent.copilot.engineering.01",
+        agent_version="1.0.0",
+        display_name="Copilot Engineering Worker",
+        description="Bounded engineering worker under hermes.canonical.",
+        owner="sintraprime.principal",
+        runtime_class="swarm_runtime.hermes_adapter.HermesSwarmAdapter",
+        mission_types=("engineering",),
+        actor_id="copilot.engineering.01",
+        worker_role="ENGINEERING_WORKER",
+        parent_coordinator="hermes.canonical",
+        authority_source="NONE",
+        control_plane=False,
+        preferred_task_types=(
+            "CODE_IMPLEMENTATION",
+            "TEST_IMPLEMENTATION",
+            "STATIC_ANALYSIS",
+            "DOCUMENTATION",
+        ),
+        max_parallel_tasks=2,
+        write_capable=True,
+        review_capable=True,
+        required_capabilities=("READ_REPOSITORY", "WRITE_REPOSITORY", "RUN_TESTS"),
+        forbidden_capabilities=("MERGE_PULL_REQUEST", "DEPLOY_SERVICE", "EXECUTE_PAYMENT"),
+        provider_policy={"provider_class": "CODE"},
+        tool_policy={},
+        authority_policy="DELEGATED",
+    )
+
+
+def register_canonical_worker_directory(registry: AgentRegistry) -> None:
+    """Idempotently register canonical worker directory entries."""
+    if "agent.copilot.engineering.01" not in {m.agent_id for m in registry.list()}:
+        registry.register(copilot_engineering_manifest())
 
 
 _default_registry: AgentRegistry | None = None

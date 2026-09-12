@@ -29,6 +29,7 @@ Legacy single-model delegation is preserved through a separate named path
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import time
@@ -53,10 +54,33 @@ class DelegateTask:
     base_sha: str = ""
     read_paths: list[str] = field(default_factory=list)
     write_paths: list[str] = field(default_factory=list)
+    read_allowlist: list[str] = field(default_factory=list)
+    write_allowlist: list[str] = field(default_factory=list)
     expected_artifact: str = "findings"
     timeout_seconds: int = 120
     tenant: str = ""
     mission: str = ""
+    mission_id: str = ""
+    work_order_id: str = ""
+    actor_id: str = ""
+    owner: str = ""
+    authority_class: str = ""
+    context_hash: str = ""
+    lease_id: str = ""
+    lease_expires_at: float = 0.0
+    execution_posture: str = ""
+    environment: str = ""
+    data_reality: str = ""
+    expected_output: str = ""
+    evidence_required: bool = True
+    dependencies: list[str] = field(default_factory=list)
+    parent_coordinator: str = ""
+    authority_source: str = "NONE"
+    control_plane: bool = False
+    branch: str = ""
+    merge_base: str = ""
+    starting_clean_state: bool = True
+    scope: str = ""
     run_context: dict[str, Any] = field(default_factory=dict)
     # Worker class mapping
     worker_class: str = "CodeSearchWorker"
@@ -65,6 +89,10 @@ class DelegateTask:
 
     def to_worker_spec(self, worker_id: str) -> WorkerSpec:
         """Translate to WorkerSpec — no authority widening."""
+        mission_id = self.mission_id or self.mission
+        context_hash = self.context_hash or self._derive_context_hash()
+        read_allowlist = self.read_allowlist or list(self.read_paths)
+        write_allowlist = self.write_allowlist or list(self.write_paths)
         return WorkerSpec(
             worker_id=worker_id,
             role=self.role,
@@ -75,7 +103,51 @@ class DelegateTask:
             owned_files=list(self.write_paths),  # write authority = owned files
             timeout_seconds=self.timeout_seconds,
             expected_artifact_schema=self.expected_artifact,
+            mission_id=mission_id,
+            work_order_id=self.work_order_id or self.task_id,
+            actor_id=self.actor_id,
+            owner=self.owner,
+            authority_class=self.authority_class,
+            context_hash=context_hash,
+            lease_id=self.lease_id,
+            lease_expires_at=self.lease_expires_at,
+            parent_coordinator=self.parent_coordinator,
+            authority_source=self.authority_source,
+            control_plane=self.control_plane,
+            execution_posture=self.execution_posture,
+            environment=self.environment,
+            data_reality=self.data_reality,
+            expected_output=self.expected_output,
+            evidence_required=self.evidence_required,
+            dependencies=list(self.dependencies),
+            read_allowlist=read_allowlist,
+            write_allowlist=write_allowlist,
+            branch=self.branch,
+            merge_base=self.merge_base,
+            starting_clean_state=self.starting_clean_state,
         )
+
+    def validate_scope_binding(self) -> None:
+        mission_id = self.mission_id or self.mission
+        if mission_id and self.run_context.get("mission_id") and self.run_context.get("mission_id") != mission_id:
+            raise ValueError("MISSION_CONTEXT_MISMATCH")
+        if self.context_hash and self.run_context.get("context_hash") and self.run_context.get("context_hash") != self.context_hash:
+            raise ValueError("CONTEXT_HASH_MISMATCH")
+        if not self.context_hash and self.run_context.get("context_hash"):
+            self.context_hash = str(self.run_context["context_hash"])
+        if self.actor_id == "copilot.engineering.01":
+            if self.parent_coordinator != "hermes.canonical":
+                raise ValueError("COPILOT_PARENT_FORGED")
+            if self.authority_source != "NONE":
+                raise ValueError("COPILOT_AUTHORITY_OVERRIDE_REFUSED")
+            if self.control_plane:
+                raise ValueError("COPILOT_CONTROL_PLANE_FORBIDDEN")
+            if self.owner and self.owner != self.actor_id:
+                raise ValueError("COPILOT_OWNER_MISMATCH")
+
+    def _derive_context_hash(self) -> str:
+        payload = json.dumps(self.run_context or {}, sort_keys=True, separators=(",", ":"), default=str)
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 @dataclass
@@ -190,8 +262,10 @@ class HermesSwarmAdapter:
         # Translate DelegateTasks to WorkerSpecs — preserving all semantics
         specs: list[WorkerSpec] = []
         for i, task in enumerate(tasks):
+            task.validate_scope_binding()
             worker_id = task.task_id if task.task_id else f"W{i + 1}"
             spec = task.to_worker_spec(worker_id)
+            spec.validate_contract()
             specs.append(spec)
 
         # Launch all workers through the canonical swarm path

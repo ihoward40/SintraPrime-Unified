@@ -88,6 +88,48 @@ def _latest_source_updated(*candidates: datetime | None) -> datetime | None:
     return latest
 
 
+def _worker_projection_fields(events: list[MissionControlRunControlEvent]) -> dict[str, object]:
+    if not events:
+        return {
+            "actor_id": None,
+            "worker_role": None,
+            "parent_coordinator": None,
+            "work_order_id": None,
+            "write_scope": [],
+            "lease_state": None,
+            "last_heartbeat": None,
+            "test_status": None,
+            "authority_source": None,
+            "external_effects": None,
+        }
+    latest_payload = (events[-1].payload or {}) if isinstance(events[-1].payload, dict) else {}
+    heartbeat = latest_payload.get("last_heartbeat")
+    parsed_heartbeat = None
+    if isinstance(heartbeat, str):
+        try:
+            parsed_heartbeat = datetime.fromisoformat(heartbeat.replace("Z", "+00:00"))
+        except ValueError:
+            parsed_heartbeat = None
+    write_scope = latest_payload.get("write_scope", [])
+    if not isinstance(write_scope, list):
+        write_scope = []
+    external_effects = latest_payload.get("external_effects")
+    if not isinstance(external_effects, int):
+        external_effects = None
+    return {
+        "actor_id": latest_payload.get("actor_id"),
+        "worker_role": latest_payload.get("worker_role"),
+        "parent_coordinator": latest_payload.get("parent_coordinator"),
+        "work_order_id": latest_payload.get("work_order_id"),
+        "write_scope": [str(x) for x in write_scope],
+        "lease_state": latest_payload.get("lease_state"),
+        "last_heartbeat": parsed_heartbeat,
+        "test_status": latest_payload.get("test_status"),
+        "authority_source": latest_payload.get("authority_source"),
+        "external_effects": external_effects,
+    }
+
+
 # ── Intent projection ─────────────────────────────────────────────────────────
 
 
@@ -339,6 +381,7 @@ async def get_run_control(
 def _to_run_control_summary(rc: MissionControlRunControl) -> RunControlSummary:
     """Convert a MissionControlRunControl ORM model to a lightweight summary."""
     events = rc.events or []
+    worker_fields = _worker_projection_fields(events)
     return RunControlSummary(
         # str ids at the projection boundary (PR #294 / 2B-REM)
         id=str(rc.id),
@@ -366,12 +409,23 @@ def _to_run_control_summary(rc: MissionControlRunControl) -> RunControlSummary:
         created_at=rc.created_at,
         updated_at=rc.updated_at,
         event_count=len(events),
+        actor_id=worker_fields["actor_id"],
+        worker_role=worker_fields["worker_role"],
+        parent_coordinator=worker_fields["parent_coordinator"],
+        work_order_id=worker_fields["work_order_id"],
+        write_scope=worker_fields["write_scope"],  # type: ignore[arg-type]
+        lease_state=worker_fields["lease_state"],
+        last_heartbeat=worker_fields["last_heartbeat"],  # type: ignore[arg-type]
+        test_status=worker_fields["test_status"],
+        authority_source=worker_fields["authority_source"],
+        external_effects=worker_fields["external_effects"],  # type: ignore[arg-type]
     )
 
 
 def _to_run_control_projection(rc: MissionControlRunControl) -> RunControlProjection:
     """Convert a MissionControlRunControl ORM model to a redacted detail projection."""
     events = sorted((rc.events or []), key=lambda e: e.sequence)
+    worker_fields = _worker_projection_fields(events)
     generated_at = datetime.now(UTC)
     source_updated_at = _latest_source_updated(
         rc.created_at,
@@ -429,6 +483,16 @@ def _to_run_control_projection(rc: MissionControlRunControl) -> RunControlProjec
             for e in events
         ],
         freshness=classify_freshness(generated_at, source_updated_at),
+        actor_id=worker_fields["actor_id"],
+        worker_role=worker_fields["worker_role"],
+        parent_coordinator=worker_fields["parent_coordinator"],
+        work_order_id=worker_fields["work_order_id"],
+        write_scope=worker_fields["write_scope"],  # type: ignore[arg-type]
+        lease_state=worker_fields["lease_state"],
+        last_heartbeat=worker_fields["last_heartbeat"],  # type: ignore[arg-type]
+        test_status=worker_fields["test_status"],
+        authority_source=worker_fields["authority_source"],
+        external_effects=worker_fields["external_effects"],  # type: ignore[arg-type]
     )
 
 

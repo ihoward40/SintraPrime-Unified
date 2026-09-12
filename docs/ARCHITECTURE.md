@@ -41,6 +41,28 @@
 | Payments             | `backend/stripe-payments/`                         | `legal_integrations` (billing context), `src/payment/` (MISSING) |
 | Agent runtime        | `UNRESOLVED — convergence required`                | `agents/`, `agent_protocol/`, `core/universe`, `superintelligence/` |
 
+## SP-COPILOT-WORKER-001 canonical worker directory (governed)
+
+SintraPrime's governed worker posture now includes a single canonical worker
+directory contract for routing and enforcement metadata. This directory is
+registry-backed and non-authoritative; it does not grant authority by score,
+rank, throughput, or model output.
+
+Primary worker profile:
+
+- `actor_id = copilot.engineering.01`
+- `role = ENGINEERING_WORKER`
+- `parent_coordinator = hermes.canonical`
+- `authority_source = NONE`
+- `control_plane = FALSE`
+
+Enforcement posture:
+
+- One task = one write owner (preflight scope deconfliction before dispatch).
+- Work orders bind actor, lease, context hash, write allowlist, and worktree.
+- Copilot output remains evidence/implementation data, never authority.
+- Claim, lease, and heartbeat are execution integrity controls, not authority.
+
 ## Runtime flow
 
 ```

@@ -1,0 +1,91 @@
+from __future__ import annotations
+
+import uuid
+
+import pytest
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+from portal.database import Base
+from portal.models.mission_control_run_control import (
+    MissionControlRunControl,
+    MissionControlRunControlEvent,
+    RunControlState,
+)
+from portal.services.mission_control_projection_service import get_run_control
+
+
+TENANT_A = "00000000-0000-0000-0000-000000000002"
+
+
+def _uuid(label: str) -> str:
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, "sintraprime-test:" + label))
+
+
+@pytest_asyncio.fixture
+async def db() -> AsyncSession:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
+    async with engine.begin() as conn:
+        await conn.run_sync(
+            lambda sync_conn: Base.metadata.create_all(
+                sync_conn,
+                tables=[
+                    MissionControlRunControl.__table__,
+                    MissionControlRunControlEvent.__table__,
+                ],
+            )
+        )
+    session_maker = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+    async with session_maker() as session:
+        yield session
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_projection_includes_copilot_worker_fields(db: AsyncSession):
+    rc = MissionControlRunControl(
+        id=_uuid("rc-copilot-embedded-001"),
+        tenant_id=TENANT_A,
+        workflow_id="wf-copilot-embedded-001",
+        state=RunControlState.RUNNING.value,
+        workflow_status_snapshot="running",
+        state_version=1,
+        projection_schema_version=1,
+    )
+    db.add(rc)
+    await db.flush()
+
+    event = MissionControlRunControlEvent(
+        id=_uuid("rce-copilot-embedded-001"),
+        run_control_id=rc.id,
+        sequence=1,
+        event_type="STATE_TRANSITIONED",
+        previous_state="RUNNING",
+        new_state="RUNNING",
+        previous_version=0,
+        new_version=1,
+        event_hash="event-hash-copilot-embedded-001",
+        payload={
+            "actor_id": "copilot.engineering.01",
+            "worker_role": "ENGINEERING_WORKER",
+            "parent_coordinator": "hermes.canonical",
+            "work_order_id": "WO-EMBED-001",
+            "write_scope": ["web/src/pages/mission-control/**"],
+            "lease_state": "ACTIVE",
+            "authority_source": "NONE",
+            "external_effects": 0,
+        },
+    )
+    db.add(event)
+    await db.flush()
+
+    projection = await get_run_control(db, tenant_id=TENANT_A, run_control_id=rc.id)
+    assert projection is not None
+    assert projection.actor_id == "copilot.engineering.01"
+    assert projection.worker_role == "ENGINEERING_WORKER"
+    assert projection.parent_coordinator == "hermes.canonical"
+    assert projection.work_order_id == "WO-EMBED-001"
+    assert projection.write_scope == ["web/src/pages/mission-control/**"]
+    assert projection.lease_state == "ACTIVE"
+    assert projection.authority_source == "NONE"
+    assert projection.external_effects == 0

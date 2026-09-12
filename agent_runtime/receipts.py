@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .canonical import canonical_hash
 from .capability_resolver import RegistryView, _status_gate, resolve_capability
@@ -54,6 +54,35 @@ class AgentRuntimeReceipt(BaseModel):
     result: RuntimeOutcome
     evidence_refs: tuple[str, ...] = ()
     error_class: str | None = None  # failure classification, not model output
+    # Structured handoff contract (copilot worker extension)
+    task_id: str = ""
+    work_order_id: str = ""
+    actor_id: str = ""
+    scope: str = ""
+    base_sha: str = ""
+    final_sha: str = ""
+    files_read: tuple[str, ...] = ()
+    files_written: tuple[str, ...] = ()
+    implementation_summary: str = ""
+    facts_found: tuple[str, ...] = ()
+    assumptions: tuple[str, ...] = ()
+    tests_run: tuple[str, ...] = ()
+    test_results: tuple[str, ...] = ()
+    known_limitations: tuple[str, ...] = ()
+    risks: tuple[str, ...] = ()
+    regression_risk: str = ""
+    unrelated_findings: tuple[str, ...] = ()
+    next_owner: str = ""
+    do_not_repeat: tuple[str, ...] = ()
+    implementer: str = ""
+    reviewer: str = ""
+    certifier: str = ""
+
+    @model_validator(mode="after")
+    def _self_certification_block(self) -> "AgentRuntimeReceipt":
+        if self.implementer and self.certifier and self.implementer == self.certifier:
+            raise ValueError("IMPLEMENTER == SOLE_CERTIFIER is invalid")
+        return self
 
 
 class MemoryWriteDeniedError(PermissionError):

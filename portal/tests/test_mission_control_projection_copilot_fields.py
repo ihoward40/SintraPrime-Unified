@@ -89,3 +89,64 @@ async def test_projection_includes_copilot_worker_fields(db: AsyncSession):
     assert projection.lease_state == "ACTIVE"
     assert projection.authority_source == "NONE"
     assert projection.external_effects == 0
+
+
+@pytest.mark.asyncio
+async def test_projection_preserves_worker_fields_across_partial_updates(db: AsyncSession):
+    rc = MissionControlRunControl(
+        id=_uuid("rc-copilot-embedded-002"),
+        tenant_id=TENANT_A,
+        workflow_id="wf-copilot-embedded-002",
+        state=RunControlState.RUNNING.value,
+        workflow_status_snapshot="running",
+        state_version=1,
+        projection_schema_version=1,
+    )
+    db.add(rc)
+    await db.flush()
+
+    initial = MissionControlRunControlEvent(
+        id=_uuid("rce-copilot-embedded-002"),
+        run_control_id=rc.id,
+        sequence=1,
+        event_type="STATE_TRANSITIONED",
+        previous_state="RUNNING",
+        new_state="RUNNING",
+        previous_version=0,
+        new_version=1,
+        event_hash="event-hash-copilot-embedded-002",
+        payload={
+            "actor_id": "copilot.engineering.01",
+            "worker_role": "ENGINEERING_WORKER",
+            "parent_coordinator": "hermes.canonical",
+            "work_order_id": "WO-EMBED-002",
+            "write_scope": ["web/src/pages/mission-control/**"],
+            "lease_state": "ACTIVE",
+            "authority_source": "NONE",
+            "external_effects": 0,
+        },
+    )
+    db.add(initial)
+    await db.flush()
+
+    partial = MissionControlRunControlEvent(
+        id=_uuid("rce-copilot-embedded-003"),
+        run_control_id=rc.id,
+        sequence=2,
+        event_type="STATE_TRANSITIONED",
+        previous_state="RUNNING",
+        new_state="RUNNING",
+        previous_version=1,
+        new_version=2,
+        event_hash="event-hash-copilot-embedded-003",
+        payload={"test_status": "PASS"},
+    )
+    db.add(partial)
+    await db.flush()
+
+    projection = await get_run_control(db, tenant_id=TENANT_A, run_control_id=rc.id)
+    assert projection is not None
+    assert projection.actor_id == "copilot.engineering.01"
+    assert projection.work_order_id == "WO-EMBED-002"
+    assert projection.write_scope == ["web/src/pages/mission-control/**"]
+    assert projection.test_status == "PASS"

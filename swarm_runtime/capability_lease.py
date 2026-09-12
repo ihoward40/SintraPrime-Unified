@@ -215,8 +215,14 @@ class WorkerCapabilityLease:
             return False, "TASK_NOT_ACTIVE"
         if self.actor_id and self.actor_id != actor_id:
             return False, "WRONG_ACTOR_BLOCK"
-        if self.worktree_path and Path(self.worktree_path).resolve() != Path(worktree_path).resolve():
-            return False, "WORKTREE_MISMATCH_BLOCK"
+        if self.worktree_path:
+            try:
+                expected = Path(self.worktree_path).resolve(strict=False)
+                actual = Path(worktree_path).resolve(strict=False)
+            except OSError:
+                return False, "WORKTREE_MISMATCH_BLOCK"
+            if expected != actual:
+                return False, "WORKTREE_MISMATCH_BLOCK"
         if not self.authority_write_permitted:
             return False, "AUTHORITY_POSTURE_WRITE_REFUSED"
         if _contains_path_traversal(target_path):

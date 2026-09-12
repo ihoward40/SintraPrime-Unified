@@ -55,6 +55,13 @@ def test_ownership_glob_overlap_rejected():
         registry.register("qa", ["web/src/App.tsx"])
 
 
+def test_ownership_glob_vs_glob_overlap_rejected():
+    registry = OwnershipRegistry()
+    registry.register("copilot", ["web/**/*.ts"])
+    with pytest.raises(ValueError, match="OVERLAP"):
+        registry.register("qa", ["web/src/*.ts"])
+
+
 def test_write_allowlist_and_lease_gates(tmp_path: Path):
     worktree = tmp_path / "wt"
     worktree.mkdir()

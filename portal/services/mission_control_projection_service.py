@@ -89,60 +89,56 @@ def _latest_source_updated(*candidates: datetime | None) -> datetime | None:
 
 
 def _worker_projection_fields(events: list[MissionControlRunControlEvent]) -> dict[str, object]:
-    if not events:
-        return {
-            "actor_id": None,
-            "worker_role": None,
-            "parent_coordinator": None,
-            "work_order_id": None,
-            "write_scope": [],
-            "lease_state": None,
-            "last_heartbeat": None,
-            "test_status": None,
-            "authority_source": None,
-            "external_effects": None,
-        }
-    worker_keys = {
-        "actor_id",
-        "worker_role",
-        "parent_coordinator",
-        "work_order_id",
-        "write_scope",
-        "lease_state",
-        "last_heartbeat",
-        "test_status",
-        "authority_source",
-        "external_effects",
+    fields: dict[str, object] = {
+        "actor_id": None,
+        "worker_role": None,
+        "parent_coordinator": None,
+        "work_order_id": None,
+        "write_scope": [],
+        "lease_state": None,
+        "last_heartbeat": None,
+        "test_status": None,
+        "authority_source": None,
+        "external_effects": None,
     }
-    latest_payload: dict[str, object] = {}
+    if not events:
+        return fields
+
+    unresolved = set(fields.keys())
     for ev in reversed(events):
         payload = ev.payload if isinstance(ev.payload, dict) else {}
-        if any(k in payload for k in worker_keys):
-            latest_payload = payload
+        if not payload:
+            continue
+        for key in list(unresolved):
+            if key in payload:
+                fields[key] = payload[key]
+                unresolved.discard(key)
+        if not unresolved:
             break
-    heartbeat = latest_payload.get("last_heartbeat")
+
+    heartbeat = fields.get("last_heartbeat")
     parsed_heartbeat = None
     if isinstance(heartbeat, str):
         try:
             parsed_heartbeat = datetime.fromisoformat(heartbeat.replace("Z", "+00:00"))
         except ValueError:
             parsed_heartbeat = None
-    write_scope = latest_payload.get("write_scope", [])
+    write_scope = fields.get("write_scope", [])
     if not isinstance(write_scope, list):
         write_scope = []
-    external_effects = latest_payload.get("external_effects")
+    external_effects = fields.get("external_effects")
     if not isinstance(external_effects, int):
         external_effects = None
     return {
-        "actor_id": latest_payload.get("actor_id"),
-        "worker_role": latest_payload.get("worker_role"),
-        "parent_coordinator": latest_payload.get("parent_coordinator"),
-        "work_order_id": latest_payload.get("work_order_id"),
+        "actor_id": fields.get("actor_id"),
+        "worker_role": fields.get("worker_role"),
+        "parent_coordinator": fields.get("parent_coordinator"),
+        "work_order_id": fields.get("work_order_id"),
         "write_scope": [str(x) for x in write_scope],
-        "lease_state": latest_payload.get("lease_state"),
+        "lease_state": fields.get("lease_state"),
         "last_heartbeat": parsed_heartbeat,
-        "test_status": latest_payload.get("test_status"),
-        "authority_source": latest_payload.get("authority_source"),
+        "test_status": fields.get("test_status"),
+        "authority_source": fields.get("authority_source"),
         "external_effects": external_effects,
     }
 

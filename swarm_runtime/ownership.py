@@ -132,8 +132,24 @@ class OwnershipRegistry:
             base = b[:-3].rstrip("/")
             if a == base or a.startswith(base + "/"):
                 return True
-        if any(tok in a for tok in ("*", "?", "[")) and cls._path_matches_claim(b, a):
+        a_glob = any(tok in a for tok in ("*", "?", "["))
+        b_glob = any(tok in b for tok in ("*", "?", "["))
+        if a_glob and cls._path_matches_claim(b, a):
             return True
-        if any(tok in b for tok in ("*", "?", "[")) and cls._path_matches_claim(a, b):
+        if b_glob and cls._path_matches_claim(a, b):
             return True
+        if a_glob and b_glob:
+            a_prefix = cls._static_prefix(a)
+            b_prefix = cls._static_prefix(b)
+            if a_prefix.startswith(b_prefix) or b_prefix.startswith(a_prefix):
+                return True
         return False
+
+    @staticmethod
+    def _static_prefix(pattern: str) -> str:
+        first_glob = len(pattern)
+        for tok in ("*", "?", "["):
+            idx = pattern.find(tok)
+            if idx != -1:
+                first_glob = min(first_glob, idx)
+        return pattern[:first_glob].rstrip("/")

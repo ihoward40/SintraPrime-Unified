@@ -90,7 +90,6 @@ class WorkerSpec:
             wt = Path(self.worktree)
             if not wt.exists():
                 raise ValueError("WORKTREE_NOT_FOUND")
-        effective_write_scope = list(self.write_allowlist) if self.write_allowlist else list(self.owned_files)
         write_task_indicated = bool(self.write_allowlist or self.owned_files or self.worktree or self.branch)
         if self.actor_id == "copilot.engineering.01" and write_task_indicated:
             if not self.write_allowlist:

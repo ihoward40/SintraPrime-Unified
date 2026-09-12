@@ -215,6 +215,8 @@ class WorkerCapabilityLease:
             return False, "TASK_NOT_ACTIVE"
         if self.actor_id and self.actor_id != actor_id:
             return False, "WRONG_ACTOR_BLOCK"
+        if not self.worktree_path:
+            return False, "WORKTREE_UNBOUND_BLOCK"
         if self.worktree_path:
             try:
                 expected = Path(self.worktree_path).resolve(strict=False)

@@ -277,12 +277,59 @@ class OwnershipRegistry:
                     next_paths.add(base + ("w",))
                 paths = next_paths
                 continue
-            token = re.sub(r"\[([^\]]+)\]", lambda m: m.group(1)[:1] or "x", segment)
-            token = token.replace("?", "x").replace("*", "w")
+            token_options = OwnershipRegistry._segment_witness_options(segment)
             for base in paths:
-                next_paths.add(base + (token,))
+                for token in token_options:
+                    next_paths.add(base + (token,))
             paths = next_paths
         return {"/".join(parts) for parts in paths if parts}
+
+    @staticmethod
+    def _segment_witness_options(segment: str) -> list[str]:
+        options = [""]
+        idx = 0
+        while idx < len(segment):
+            char = segment[idx]
+            if char == "[":
+                end = segment.find("]", idx + 1)
+                if end == -1:
+                    choices = ["x"]
+                    idx += 1
+                else:
+                    choices = OwnershipRegistry._class_samples(segment[idx + 1:end])
+                    idx = end + 1
+            elif char == "*":
+                choices = ["w"]
+                idx += 1
+            elif char == "?":
+                choices = ["x"]
+                idx += 1
+            else:
+                choices = [char]
+                idx += 1
+            options = [prefix + choice for prefix in options for choice in choices][:16]
+        return options or ["w"]
+
+    @staticmethod
+    def _class_samples(class_expr: str) -> list[str]:
+        samples: list[str] = []
+        i = 0
+        while i < len(class_expr):
+            if i + 2 < len(class_expr) and class_expr[i + 1] == "-":
+                start = class_expr[i]
+                end = class_expr[i + 2]
+                if ord(start) <= ord(end):
+                    mid = chr((ord(start) + ord(end)) // 2)
+                    for c in (start, mid, end):
+                        if c not in samples:
+                            samples.append(c)
+                i += 3
+                continue
+            c = class_expr[i]
+            if c not in samples:
+                samples.append(c)
+            i += 1
+        return samples[:3] or ["x"]
 
     @staticmethod
     def _match_parts(path_parts: list[str], claim_parts: list[str]) -> bool:

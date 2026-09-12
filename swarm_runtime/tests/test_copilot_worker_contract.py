@@ -137,6 +137,13 @@ def test_ownership_glob_vs_glob_root_pattern_does_not_overlap_nested_scope():
     assert registry.can_write("qa", "src/main.ts")
 
 
+def test_ownership_glob_character_class_overlap_rejected():
+    registry = OwnershipRegistry()
+    registry.register("copilot", ["src/file[0-9].ts"])
+    with pytest.raises(ValueError, match="OVERLAP"):
+        registry.register("qa", ["src/file[5-7].ts"])
+
+
 def test_write_allowlist_and_lease_gates(tmp_path: Path):
     worktree = tmp_path / "wt"
     worktree.mkdir()
@@ -279,6 +286,24 @@ def test_directory_allowlist_marker_preserved_for_descendants(tmp_path: Path):
     )
     assert allowed is True
     assert code == "PASS"
+
+
+def test_unbound_worktree_lease_rejected_for_write_validation(tmp_path: Path):
+    lease = WorkerCapabilityLease.create(
+        "copilot",
+        actor_id="copilot.engineering.01",
+        allowed_paths=["safe/**"],
+        authority_write_permitted=True,
+        task_active=True,
+        ttl_seconds=30,
+    )
+    blocked, code = lease.validate_write_request(
+        actor_id="copilot.engineering.01",
+        target_path="safe/file.ts",
+        worktree_path=str(tmp_path / "wt"),
+    )
+    assert blocked is False
+    assert code == "WORKTREE_UNBOUND_BLOCK"
 
 
 def test_recursive_pattern_preserved_in_ownership_matching():

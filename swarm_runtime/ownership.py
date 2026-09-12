@@ -9,6 +9,7 @@ If a worker attempts to write outside its owned files:
 """
 from __future__ import annotations
 
+import fnmatch
 import re
 import time
 from dataclasses import dataclass
@@ -117,7 +118,7 @@ class OwnershipRegistry:
             base = claim[:-3].rstrip("/")
             return path == base or path.startswith(base + "/")
         if "*" in claim or "?" in claim or "[" in claim:
-            return PurePosixPath(path).match(claim)
+            return OwnershipRegistry._glob_path_match(path, claim)
         return path == claim
 
     @classmethod
@@ -166,8 +167,6 @@ class OwnershipRegistry:
             return False
         if not cls._segment_counts_overlap(a, b):
             return False
-        if cls._root_glob_overlap(a, b):
-            return True
         if cls._glob_disjoint_by_extension(a, b):
             return False
         if cls._glob_disjoint_by_filename_pattern(a, b):
@@ -217,17 +216,6 @@ class OwnershipRegistry:
         return prefix, suffix
 
     @staticmethod
-    def _root_glob_overlap(a: str, b: str) -> bool:
-        root_ext = re.compile(r"^\*\.([A-Za-z0-9_-]+)$")
-        a_root = root_ext.match(a)
-        b_root = root_ext.match(b)
-        if a_root and b.endswith(f".{a_root.group(1)}"):
-            return True
-        if b_root and a.endswith(f".{b_root.group(1)}"):
-            return True
-        return False
-
-    @staticmethod
     def _segment_counts_overlap(a: str, b: str) -> bool:
         a_min, a_max = OwnershipRegistry._segment_bounds(a)
         b_min, b_max = OwnershipRegistry._segment_bounds(b)
@@ -236,7 +224,7 @@ class OwnershipRegistry:
     @staticmethod
     def _segment_bounds(pattern: str) -> tuple[int, int]:
         if "/" not in pattern:
-            return 1, 10**9
+            return 1, 1
         segments = [s for s in pattern.split("/") if s]
         min_count = 0
         max_count = 0
@@ -248,3 +236,24 @@ class OwnershipRegistry:
             if max_count < 10**9:
                 max_count += 1
         return min_count, max_count
+
+    @staticmethod
+    def _glob_path_match(path: str, claim: str) -> bool:
+        path_parts = [p for p in path.split("/") if p]
+        claim_parts = [p for p in claim.split("/") if p]
+        return OwnershipRegistry._match_parts(path_parts, claim_parts)
+
+    @staticmethod
+    def _match_parts(path_parts: list[str], claim_parts: list[str]) -> bool:
+        if not claim_parts:
+            return not path_parts
+        head = claim_parts[0]
+        if head == "**":
+            if OwnershipRegistry._match_parts(path_parts, claim_parts[1:]):
+                return True
+            return bool(path_parts) and OwnershipRegistry._match_parts(path_parts[1:], claim_parts)
+        if not path_parts:
+            return False
+        if not fnmatch.fnmatchcase(path_parts[0], head):
+            return False
+        return OwnershipRegistry._match_parts(path_parts[1:], claim_parts[1:])

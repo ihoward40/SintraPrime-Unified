@@ -288,7 +288,7 @@ def check_secret_inheritance(
 
 
 def _normalize_path(path: str) -> str:
-    normalized = str(path).replace("\\", "/")
+    normalized = str(PurePosixPath(str(path).replace("\\", "/")))
     if normalized.startswith("./"):
         return normalized[2:]
     return normalized

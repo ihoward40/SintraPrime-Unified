@@ -122,11 +122,12 @@ def test_ownership_glob_vs_glob_disjoint_depth_not_overlap():
     assert registry.can_write("qa", "web/main.ts")
 
 
-def test_ownership_glob_vs_glob_root_pattern_overlap_rejected():
+def test_ownership_glob_vs_glob_root_pattern_does_not_overlap_nested_scope():
     registry = OwnershipRegistry()
     registry.register("copilot", ["*.ts"])
-    with pytest.raises(ValueError, match="OVERLAP"):
-        registry.register("qa", ["src/*.ts"])
+    registry.register("qa", ["src/*.ts"])
+    assert registry.can_write("copilot", "main.ts")
+    assert registry.can_write("qa", "src/main.ts")
 
 
 def test_write_allowlist_and_lease_gates(tmp_path: Path):
@@ -214,6 +215,13 @@ def test_exact_file_allowlist_does_not_allow_descendants(tmp_path: Path):
         worktree_path=str(worktree),
     )
     assert allowed is True
+    assert code == "PASS"
+    allowed_dot, code = lease.validate_write_request(
+        actor_id="copilot.engineering.01",
+        target_path="safe/./file.ts",
+        worktree_path=str(worktree),
+    )
+    assert allowed_dot is True
     assert code == "PASS"
     blocked, code = lease.validate_write_request(
         actor_id="copilot.engineering.01",

@@ -102,7 +102,24 @@ def _worker_projection_fields(events: list[MissionControlRunControlEvent]) -> di
             "authority_source": None,
             "external_effects": None,
         }
-    latest_payload = (events[-1].payload or {}) if isinstance(events[-1].payload, dict) else {}
+    worker_keys = {
+        "actor_id",
+        "worker_role",
+        "parent_coordinator",
+        "work_order_id",
+        "write_scope",
+        "lease_state",
+        "last_heartbeat",
+        "test_status",
+        "authority_source",
+        "external_effects",
+    }
+    latest_payload: dict[str, object] = {}
+    for ev in reversed(events):
+        payload = ev.payload if isinstance(ev.payload, dict) else {}
+        if any(k in payload for k in worker_keys):
+            latest_payload = payload
+            break
     heartbeat = latest_payload.get("last_heartbeat")
     parsed_heartbeat = None
     if isinstance(heartbeat, str):

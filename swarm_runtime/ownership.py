@@ -107,7 +107,9 @@ class OwnershipRegistry:
     @staticmethod
     def _normalize(path: str) -> str:
         p = str(PurePosixPath(str(path).replace("\\", "/")))
-        return p.lstrip("./")
+        if p.startswith("./"):
+            return p[2:]
+        return p
 
     @staticmethod
     def _path_matches_claim(path: str, claim: str) -> bool:

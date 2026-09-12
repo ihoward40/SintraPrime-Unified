@@ -7,10 +7,11 @@ Intermediate states: WAITING_PROVIDER, RETRYING, FAILED_OVER
 from __future__ import annotations
 
 import enum
+import fnmatch
 import re
 import time
 from dataclasses import asdict, dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 _ACTOR_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{2,127}$")
@@ -89,13 +90,21 @@ class WorkerSpec:
             wt = Path(self.worktree)
             if not wt.exists():
                 raise ValueError("WORKTREE_NOT_FOUND")
-        if self.owned_files and self.actor_id == "copilot.engineering.01":
+        effective_write_scope = list(self.write_allowlist) if self.write_allowlist else list(self.owned_files)
+        if self.actor_id == "copilot.engineering.01" and effective_write_scope:
+            if not self.write_allowlist:
+                raise ValueError("WRITE_ALLOWLIST_REQUIRED")
             if not self.worktree:
                 raise ValueError("WRITE_TASK_REQUIRES_ISOLATED_WORKTREE")
             if not self.starting_clean_state:
                 raise ValueError("WORKTREE_MUST_START_CLEAN")
             if not self.branch:
                 raise ValueError("WORKTREE_BRANCH_REQUIRED")
+            if self.owned_files:
+                for owned in self.owned_files:
+                    normalized = _normalize_path(owned)
+                    if not any(_allowlist_match(normalized, pattern) for pattern in self.write_allowlist):
+                        raise ValueError("OWNED_FILE_OUTSIDE_WRITE_ALLOWLIST")
 
 
 @dataclass
@@ -191,3 +200,23 @@ class SwarmEvent:
 
     def to_dict(self) -> dict:
         return asdict(self)
+
+
+def _normalize_path(path: str) -> str:
+    normalized = str(PurePosixPath(str(path).replace("\\", "/")))
+    if normalized.startswith("./"):
+        return normalized[2:]
+    return normalized
+
+
+def _allowlist_match(path: str, pattern: str) -> bool:
+    normalized_pattern = _normalize_path(pattern)
+    if normalized_pattern.endswith("/**"):
+        base = normalized_pattern[:-3].rstrip("/")
+        return path == base or path.startswith(base + "/")
+    if any(tok in normalized_pattern for tok in ("*", "?", "[")):
+        return fnmatch.fnmatchcase(path, normalized_pattern)
+    if normalized_pattern.endswith("/"):
+        base = normalized_pattern.rstrip("/")
+        return path == base or path.startswith(base + "/")
+    return path == normalized_pattern

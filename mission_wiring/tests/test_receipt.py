@@ -203,3 +203,26 @@ def test_self_certification_block_enforced():
             implementer="copilot.engineering.01",
             certifier="copilot.engineering.01",
         )
+
+
+def test_integrity_fields_propagate_into_receipt_payload():
+    env = _make_env()
+    receipt = _make_receipt(
+        env,
+        task_id="TASK-123",
+        work_order_id="WO-123",
+        actor_id="copilot.engineering.01",
+        context_hash="ctx-123",
+        scope="portal/**",
+        implementation_summary="done",
+        base_sha="base-123",
+        final_sha="final-123",
+    )
+    payload = receipt.hash_payload()
+    assert payload["task_id"] == "TASK-123"
+    assert payload["work_order_id"] == "WO-123"
+    assert payload["actor_id"] == "copilot.engineering.01"
+    assert payload["context_hash"] == "ctx-123"
+    assert payload["scope"] == "portal/**"
+    assert payload["base_sha"] == "base-123"
+    assert payload["final_sha"] == "final-123"

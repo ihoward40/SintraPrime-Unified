@@ -7,6 +7,7 @@ import pytest
 from swarm_runtime.capability_lease import WorkerCapabilityLease
 from swarm_runtime.hermes_adapter import DelegateTask
 from swarm_runtime.ownership import OwnershipRegistry
+from swarm_runtime.worker import WorkerSpec
 
 
 def test_delegate_task_maps_workorder_fields():
@@ -311,3 +312,85 @@ def test_recursive_pattern_preserved_in_ownership_matching():
     registry.register("copilot", ["web/**/file.ts"])
     assert registry.can_write("copilot", "web/file.ts")
     assert registry.can_write("copilot", "web/src/file.ts")
+
+
+def _copilot_write_spec(worktree: str, **overrides: object) -> WorkerSpec:
+    data: dict[str, object] = {
+        "worker_id": "w1",
+        "role": "builder",
+        "worker_class": "BuilderWorker",
+        "task": {},
+        "artifact_path": "artifacts/result.json",
+        "actor_id": "copilot.engineering.01",
+        "parent_coordinator": "hermes.canonical",
+        "authority_source": "NONE",
+        "control_plane": False,
+        "worktree": worktree,
+        "branch": "copilot-branch",
+        "starting_clean_state": True,
+        "write_allowlist": ["portal/foo.py"],
+        "owned_files": [],
+    }
+    data.update(overrides)
+    return WorkerSpec(**data)
+
+
+def test_worker_contract_write_scope_uses_allowlist_when_owned_files_empty(tmp_path: Path):
+    spec = _copilot_write_spec(str(tmp_path))
+    spec.validate_contract()
+
+
+def test_worker_contract_refuses_owned_file_outside_allowlist(tmp_path: Path):
+    spec = _copilot_write_spec(
+        str(tmp_path),
+        owned_files=["portal/bar.py"],
+        write_allowlist=["portal/foo.py"],
+    )
+    with pytest.raises(ValueError, match="OWNED_FILE_OUTSIDE_WRITE_ALLOWLIST"):
+        spec.validate_contract()
+
+
+def test_worker_contract_refuses_missing_allowlist_with_owned_files(tmp_path: Path):
+    spec = _copilot_write_spec(
+        str(tmp_path),
+        write_allowlist=[],
+        owned_files=["portal/foo.py"],
+    )
+    with pytest.raises(ValueError, match="WRITE_ALLOWLIST_REQUIRED"):
+        spec.validate_contract()
+
+
+def test_integrity_fields_propagate_delegate_to_worker_spec():
+    task = DelegateTask(
+        task_id="TASK-123",
+        mission_id="MISSION-123",
+        work_order_id="WO-123",
+        description="bounded task",
+        role="builder",
+        worker_class="BuilderWorker",
+        actor_id="copilot.engineering.01",
+        owner="copilot.engineering.01",
+        parent_coordinator="hermes.canonical",
+        authority_source="NONE",
+        authority_class="C3",
+        context_hash="ctx-123",
+        write_allowlist=["portal/foo.py"],
+        lease_id="lease-123",
+        execution_posture="SIMULATED",
+        data_reality="SANDBOX",
+        branch="branch-123",
+        run_context={"mission_id": "MISSION-123", "context_hash": "ctx-123"},
+    )
+    task.validate_scope_binding()
+    spec = task.to_worker_spec("worker-123")
+    assert spec.work_order_id == "WO-123"
+    assert spec.mission_id == "MISSION-123"
+    assert spec.actor_id == "copilot.engineering.01"
+    assert spec.parent_coordinator == "hermes.canonical"
+    assert spec.authority_source == "NONE"
+    assert spec.context_hash == "ctx-123"
+    assert spec.write_allowlist == ["portal/foo.py"]
+    assert spec.worktree == ""
+    assert spec.lease_id == "lease-123"
+    assert spec.execution_posture == "SIMULATED"
+    assert spec.data_reality == "SANDBOX"

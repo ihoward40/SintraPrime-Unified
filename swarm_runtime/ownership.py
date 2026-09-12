@@ -135,9 +135,9 @@ class OwnershipRegistry:
                 return True
         a_glob = any(tok in a for tok in ("*", "?", "["))
         b_glob = any(tok in b for tok in ("*", "?", "["))
-        if a_glob and cls._path_matches_claim(b, a):
+        if a_glob and not b_glob and cls._path_matches_claim(b, a):
             return True
-        if b_glob and cls._path_matches_claim(a, b):
+        if b_glob and not a_glob and cls._path_matches_claim(a, b):
             return True
         if a_glob and b_glob:
             if cls._glob_might_overlap(a, b):

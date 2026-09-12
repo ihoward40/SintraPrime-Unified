@@ -127,7 +127,7 @@ def _worker_projection_fields(events: list[MissionControlRunControlEvent]) -> di
     if not isinstance(write_scope, list):
         write_scope = []
     external_effects = fields.get("external_effects")
-    if not isinstance(external_effects, int):
+    if isinstance(external_effects, bool) or not isinstance(external_effects, int):
         external_effects = None
     return {
         "actor_id": fields.get("actor_id"),

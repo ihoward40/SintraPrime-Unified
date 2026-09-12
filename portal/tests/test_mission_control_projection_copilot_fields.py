@@ -150,3 +150,37 @@ async def test_projection_preserves_worker_fields_across_partial_updates(db: Asy
     assert projection.work_order_id == "WO-EMBED-002"
     assert projection.write_scope == ["web/src/pages/mission-control/**"]
     assert projection.test_status == "PASS"
+
+
+@pytest.mark.asyncio
+async def test_projection_rejects_boolean_external_effects(db: AsyncSession):
+    rc = MissionControlRunControl(
+        id=_uuid("rc-copilot-embedded-003"),
+        tenant_id=TENANT_A,
+        workflow_id="wf-copilot-embedded-003",
+        state=RunControlState.RUNNING.value,
+        workflow_status_snapshot="running",
+        state_version=1,
+        projection_schema_version=1,
+    )
+    db.add(rc)
+    await db.flush()
+
+    event = MissionControlRunControlEvent(
+        id=_uuid("rce-copilot-embedded-004"),
+        run_control_id=rc.id,
+        sequence=1,
+        event_type="STATE_TRANSITIONED",
+        previous_state="RUNNING",
+        new_state="RUNNING",
+        previous_version=0,
+        new_version=1,
+        event_hash="event-hash-copilot-embedded-004",
+        payload={"external_effects": True},
+    )
+    db.add(event)
+    await db.flush()
+
+    projection = await get_run_control(db, tenant_id=TENANT_A, run_control_id=rc.id)
+    assert projection is not None
+    assert projection.external_effects is None

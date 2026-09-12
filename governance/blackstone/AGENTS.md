@@ -43,7 +43,7 @@ This subtree contains the Blackstone Governance Library, a seven-volume constitu
 
 | Path | Scope | Controls |
 |---|---|---|
-| `volume-1-bkgc/` | Constitutional Charter | Enduring principles, articles, amendment procedure |
+| `volume-1-bkgc/` | Constitutional Charter | Enduring principles, articles, amendment procedure, archived historical versions (`archive/`) |
 | `volume-2-bgs/` | Operational Standards | Evidence intake, review protocols, metadata schemas |
 | `volume-3-bkc/` | Knowledge Core | Ontology, taxonomies, knowledge models |
 | `volume-4-bra/` | Reference Architecture | Engines, interfaces, APIs, diagrams |

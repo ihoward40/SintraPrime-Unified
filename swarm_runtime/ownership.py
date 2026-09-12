@@ -168,6 +168,8 @@ class OwnershipRegistry:
             return False
         if cls._glob_disjoint_by_extension(a, b):
             return False
+        if cls._glob_disjoint_by_filename_pattern(a, b):
+            return False
         return True
 
     @staticmethod
@@ -184,6 +186,33 @@ class OwnershipRegistry:
         if not a_match or not b_match:
             return False
         return a_match.group(1) != b_match.group(1)
+
+    @staticmethod
+    def _glob_disjoint_by_filename_pattern(a: str, b: str) -> bool:
+        if "**" in a or "**" in b:
+            return False
+        a_dir, _, a_name = a.rpartition("/")
+        b_dir, _, b_name = b.rpartition("/")
+        if a_dir != b_dir:
+            return False
+        a_parts = OwnershipRegistry._simple_wildcard_parts(a_name)
+        b_parts = OwnershipRegistry._simple_wildcard_parts(b_name)
+        if not a_parts or not b_parts:
+            return False
+        a_prefix, a_suffix = a_parts
+        b_prefix, b_suffix = b_parts
+        if a_suffix != b_suffix:
+            return False
+        return not (a_prefix.startswith(b_prefix) or b_prefix.startswith(a_prefix))
+
+    @staticmethod
+    def _simple_wildcard_parts(name: str) -> tuple[str, str] | None:
+        if "?" in name or "[" in name:
+            return None
+        if name.count("*") != 1:
+            return None
+        prefix, suffix = name.split("*", 1)
+        return prefix, suffix
 
     @staticmethod
     def _segment_counts_overlap(a: str, b: str) -> bool:

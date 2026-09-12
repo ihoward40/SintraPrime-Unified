@@ -131,16 +131,23 @@ def _worker_projection_fields(events: list[MissionControlRunControlEvent]) -> di
     external_effects = fields.get("external_effects")
     if isinstance(external_effects, bool) or not isinstance(external_effects, int):
         external_effects = None
+    actor_id = fields.get("actor_id") if isinstance(fields.get("actor_id"), str) else None
+    worker_role = fields.get("worker_role") if isinstance(fields.get("worker_role"), str) else None
+    parent_coordinator = fields.get("parent_coordinator") if isinstance(fields.get("parent_coordinator"), str) else None
+    work_order_id = fields.get("work_order_id") if isinstance(fields.get("work_order_id"), str) else None
+    lease_state = fields.get("lease_state") if isinstance(fields.get("lease_state"), str) else None
+    test_status = fields.get("test_status") if isinstance(fields.get("test_status"), str) else None
+    authority_source = fields.get("authority_source") if isinstance(fields.get("authority_source"), str) else None
     return {
-        "actor_id": fields.get("actor_id"),
-        "worker_role": fields.get("worker_role"),
-        "parent_coordinator": fields.get("parent_coordinator"),
-        "work_order_id": fields.get("work_order_id"),
+        "actor_id": actor_id,
+        "worker_role": worker_role,
+        "parent_coordinator": parent_coordinator,
+        "work_order_id": work_order_id,
         "write_scope": write_scope,
-        "lease_state": fields.get("lease_state"),
+        "lease_state": lease_state,
         "last_heartbeat": parsed_heartbeat,
-        "test_status": fields.get("test_status"),
-        "authority_source": fields.get("authority_source"),
+        "test_status": test_status,
+        "authority_source": authority_source,
         "external_effects": external_effects,
     }
 

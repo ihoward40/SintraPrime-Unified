@@ -46,6 +46,18 @@ def test_delegate_task_does_not_derive_unbound_context_hash():
     assert spec.context_hash == ""
 
 
+def test_delegate_task_rejects_unbound_context_hash_in_run_context():
+    task = DelegateTask(
+        task_id="WO-ctx-2",
+        description="Scoped task",
+        role="builder",
+        worker_class="BuilderWorker",
+        run_context={"context_hash": "abc"},
+    )
+    with pytest.raises(ValueError, match="CONTEXT_HASH_UNBOUND"):
+        task.validate_scope_binding()
+
+
 def test_delegate_task_rejects_forged_parent():
     task = DelegateTask(
         task_id="WO-2",
@@ -92,6 +104,14 @@ def test_ownership_glob_vs_glob_same_prefix_disjoint_extensions_not_overlap():
     assert registry.can_write("qa", "web/src/main.js")
     assert not registry.can_write("copilot", "web/src/main.js")
     assert not registry.can_write("qa", "web/src/main.ts")
+
+
+def test_ownership_glob_vs_glob_disjoint_literal_prefix_not_overlap():
+    registry = OwnershipRegistry()
+    registry.register("copilot", ["web/src/foo*.ts"])
+    registry.register("qa", ["web/src/bar*.ts"])
+    assert registry.can_write("copilot", "web/src/foobar.ts")
+    assert registry.can_write("qa", "web/src/barbaz.ts")
 
 
 def test_ownership_glob_vs_glob_disjoint_depth_not_overlap():

@@ -131,7 +131,7 @@ class DelegateTask:
         if self.context_hash and self.run_context.get("context_hash") and self.run_context.get("context_hash") != self.context_hash:
             raise ValueError("CONTEXT_HASH_MISMATCH")
         if not self.context_hash and self.run_context.get("context_hash"):
-            self.context_hash = str(self.run_context["context_hash"])
+            raise ValueError("CONTEXT_HASH_UNBOUND")
         if self.actor_id == "copilot.engineering.01":
             if self.parent_coordinator != "hermes.canonical":
                 raise ValueError("COPILOT_PARENT_FORGED")

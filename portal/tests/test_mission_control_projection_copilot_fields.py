@@ -218,3 +218,51 @@ async def test_projection_rejects_non_string_write_scope_entries(db: AsyncSessio
     projection = await get_run_control(db, tenant_id=TENANT_A, run_control_id=rc.id)
     assert projection is not None
     assert projection.write_scope == []
+
+
+@pytest.mark.asyncio
+async def test_projection_rejects_non_string_worker_fields(db: AsyncSession):
+    rc = MissionControlRunControl(
+        id=_uuid("rc-copilot-embedded-005"),
+        tenant_id=TENANT_A,
+        workflow_id="wf-copilot-embedded-005",
+        state=RunControlState.RUNNING.value,
+        workflow_status_snapshot="running",
+        state_version=1,
+        projection_schema_version=1,
+    )
+    db.add(rc)
+    await db.flush()
+
+    event = MissionControlRunControlEvent(
+        id=_uuid("rce-copilot-embedded-006"),
+        run_control_id=rc.id,
+        sequence=1,
+        event_type="STATE_TRANSITIONED",
+        previous_state="RUNNING",
+        new_state="RUNNING",
+        previous_version=0,
+        new_version=1,
+        event_hash="event-hash-copilot-embedded-006",
+        payload={
+            "actor_id": 123,
+            "worker_role": ["ENGINEERING_WORKER"],
+            "parent_coordinator": {"value": "hermes.canonical"},
+            "work_order_id": 999,
+            "lease_state": {"state": "ACTIVE"},
+            "test_status": 1,
+            "authority_source": False,
+        },
+    )
+    db.add(event)
+    await db.flush()
+
+    projection = await get_run_control(db, tenant_id=TENANT_A, run_control_id=rc.id)
+    assert projection is not None
+    assert projection.actor_id is None
+    assert projection.worker_role is None
+    assert projection.parent_coordinator is None
+    assert projection.work_order_id is None
+    assert projection.lease_state is None
+    assert projection.test_status is None
+    assert projection.authority_source is None

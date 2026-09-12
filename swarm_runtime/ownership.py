@@ -130,8 +130,8 @@ class OwnershipRegistry:
             base = b[:-3].rstrip("/")
             if a == base or a.startswith(base + "/"):
                 return True
-        if "*" in a and cls._path_matches_claim(b, a):
+        if any(tok in a for tok in ("*", "?", "[")) and cls._path_matches_claim(b, a):
             return True
-        if "*" in b and cls._path_matches_claim(a, b):
+        if any(tok in b for tok in ("*", "?", "[")) and cls._path_matches_claim(a, b):
             return True
         return False

@@ -315,8 +315,9 @@ def _symlink_escape(target: Path, worktree_path: str) -> bool:
             resolved = candidate.resolve()
         except OSError:
             return True
-        if not str(resolved).startswith(str(base)):
+        if resolved != base and base not in resolved.parents:
             return True
         if candidate.is_symlink():
-            return not str(candidate.resolve()).startswith(str(base))
+            symlink_target = candidate.resolve()
+            return symlink_target != base and base not in symlink_target.parents
     return False

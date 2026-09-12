@@ -295,21 +295,8 @@ def _normalize_path(path: str) -> str:
 
 
 def _path_matches(path: str, allowed: str) -> bool:
-    if allowed.endswith("/**"):
-        base = allowed[:-3].rstrip("/")
-        return path == base or path.startswith(base + "/")
-    if "/**" in allowed:
-        base, _, suffix = allowed.partition("/**")
-        base = base.rstrip("/")
-        if path != base and not path.startswith(base + "/"):
-            return False
-        remainder = path[len(base):].lstrip("/")
-        suffix = suffix.lstrip("/")
-        if not suffix:
-            return True
-        return fnmatch.fnmatch(remainder, suffix)
-    if "*" in allowed or "?" in allowed or "[" in allowed:
-        return PurePosixPath(path).match(allowed)
+    if "**" in allowed or "*" in allowed or "?" in allowed or "[" in allowed:
+        return _glob_path_match(path, allowed)
     if allowed.endswith("/"):
         base = allowed.rstrip("/")
         return path == base or path.startswith(base + "/")
@@ -355,3 +342,24 @@ def _symlink_escape(target: Path, worktree_path: str) -> bool:
         except OSError:
             return True
     return False
+
+
+def _glob_path_match(path: str, claim: str) -> bool:
+    path_parts = [p for p in path.split("/") if p]
+    claim_parts = [p for p in claim.split("/") if p]
+    return _match_parts(path_parts, claim_parts)
+
+
+def _match_parts(path_parts: list[str], claim_parts: list[str]) -> bool:
+    if not claim_parts:
+        return not path_parts
+    head = claim_parts[0]
+    if head == "**":
+        if _match_parts(path_parts, claim_parts[1:]):
+            return True
+        return bool(path_parts) and _match_parts(path_parts[1:], claim_parts)
+    if not path_parts:
+        return False
+    if not fnmatch.fnmatchcase(path_parts[0], head):
+        return False
+    return _match_parts(path_parts[1:], claim_parts[1:])

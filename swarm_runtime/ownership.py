@@ -187,11 +187,13 @@ class OwnershipRegistry:
             return False
         if not cls._segment_counts_overlap(a, b):
             return False
-        if cls._glob_disjoint_by_extension(a, b):
-            return False
-        if cls._glob_disjoint_by_filename_pattern(a, b):
-            return False
-        return True
+        if a.endswith("/**") and b.endswith("/**"):
+            a_base = a[:-3].rstrip("/")
+            b_base = b[:-3].rstrip("/")
+            if cls._is_same_or_parent(a_base, b_base) or cls._is_same_or_parent(b_base, a_base):
+                return True
+        witnesses = cls._glob_witness_paths(a) | cls._glob_witness_paths(b)
+        return any(cls._glob_path_match(path, a) and cls._glob_path_match(path, b) for path in witnesses)
 
     @staticmethod
     def _glob_disjoint_by_extension(a: str, b: str) -> bool:
@@ -262,6 +264,25 @@ class OwnershipRegistry:
         path_parts = [p for p in path.split("/") if p]
         claim_parts = [p for p in claim.split("/") if p]
         return OwnershipRegistry._match_parts(path_parts, claim_parts)
+
+    @staticmethod
+    def _glob_witness_paths(pattern: str) -> set[str]:
+        segments = [s for s in pattern.split("/") if s]
+        paths: set[tuple[str, ...]] = {()}
+        for segment in segments:
+            next_paths: set[tuple[str, ...]] = set()
+            if segment == "**":
+                for base in paths:
+                    next_paths.add(base)
+                    next_paths.add(base + ("w",))
+                paths = next_paths
+                continue
+            token = re.sub(r"\[([^\]]+)\]", lambda m: m.group(1)[:1] or "x", segment)
+            token = token.replace("?", "x").replace("*", "w")
+            for base in paths:
+                next_paths.add(base + (token,))
+            paths = next_paths
+        return {"/".join(parts) for parts in paths if parts}
 
     @staticmethod
     def _match_parts(path_parts: list[str], claim_parts: list[str]) -> bool:

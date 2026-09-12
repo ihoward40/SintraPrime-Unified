@@ -260,6 +260,27 @@ def test_recursive_glob_allows_zero_segment_match(tmp_path: Path):
     assert code == "PASS"
 
 
+def test_directory_allowlist_marker_preserved_for_descendants(tmp_path: Path):
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    lease = WorkerCapabilityLease.create(
+        "copilot",
+        actor_id="copilot.engineering.01",
+        allowed_paths=["safe/"],
+        worktree_path=str(worktree),
+        authority_write_permitted=True,
+        task_active=True,
+        ttl_seconds=30,
+    )
+    allowed, code = lease.validate_write_request(
+        actor_id="copilot.engineering.01",
+        target_path="safe/file.ts",
+        worktree_path=str(worktree),
+    )
+    assert allowed is True
+    assert code == "PASS"
+
+
 def test_recursive_pattern_preserved_in_ownership_matching():
     registry = OwnershipRegistry()
     registry.register("copilot", ["web/**/file.ts"])

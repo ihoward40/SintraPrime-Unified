@@ -360,6 +360,16 @@ def test_worker_contract_refuses_missing_allowlist_with_owned_files(tmp_path: Pa
         spec.validate_contract()
 
 
+def test_worker_contract_refuses_write_indicators_without_allowlist(tmp_path: Path):
+    spec = _copilot_write_spec(
+        str(tmp_path),
+        write_allowlist=[],
+        owned_files=[],
+    )
+    with pytest.raises(ValueError, match="WRITE_ALLOWLIST_REQUIRED"):
+        spec.validate_contract()
+
+
 def test_integrity_fields_propagate_delegate_to_worker_spec():
     task = DelegateTask(
         task_id="TASK-123",

@@ -10,6 +10,7 @@ If a worker attempts to write outside its owned files:
 from __future__ import annotations
 
 import fnmatch
+import re
 import time
 from dataclasses import dataclass
 from pathlib import PurePosixPath
@@ -139,9 +140,7 @@ class OwnershipRegistry:
         if b_glob and cls._path_matches_claim(a, b):
             return True
         if a_glob and b_glob:
-            a_prefix = cls._static_prefix(a)
-            b_prefix = cls._static_prefix(b)
-            if cls._is_same_or_parent(a_prefix, b_prefix) or cls._is_same_or_parent(b_prefix, a_prefix):
+            if cls._glob_might_overlap(a, b):
                 return True
         return False
 
@@ -159,3 +158,27 @@ class OwnershipRegistry:
         if not parent:
             return True
         return child == parent or child.startswith(parent + "/")
+
+    @classmethod
+    def _glob_might_overlap(cls, a: str, b: str) -> bool:
+        a_prefix = cls._static_prefix(a)
+        b_prefix = cls._static_prefix(b)
+        if not (cls._is_same_or_parent(a_prefix, b_prefix) or cls._is_same_or_parent(b_prefix, a_prefix)):
+            return False
+        candidates = cls._glob_probe_paths(a) | cls._glob_probe_paths(b)
+        return any(fnmatch.fnmatch(path, a) and fnmatch.fnmatch(path, b) for path in candidates)
+
+    @staticmethod
+    def _glob_probe_paths(pattern: str) -> set[str]:
+        probes = {
+            pattern,
+            pattern.replace("**", "probe/sub").replace("*", "probe"),
+            pattern.replace("**", "probe").replace("*", "probe"),
+        }
+        cleaned: set[str] = set()
+        for probe in probes:
+            p = probe.replace("?", "x")
+            p = re.sub(r"\[([^\]]+)\]", lambda m: m.group(1)[:1] or "x", p)
+            p = p.replace("//", "/")
+            cleaned.add(p)
+        return cleaned

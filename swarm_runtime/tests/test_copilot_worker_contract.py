@@ -72,6 +72,16 @@ def test_ownership_glob_vs_glob_sibling_prefix_not_overlap():
     assert not registry.can_write("copilot", "web/src2/main.ts")
 
 
+def test_ownership_glob_vs_glob_same_prefix_disjoint_extensions_not_overlap():
+    registry = OwnershipRegistry()
+    registry.register("copilot", ["web/src/*.ts"])
+    registry.register("qa", ["web/src/*.js"])
+    assert registry.can_write("copilot", "web/src/main.ts")
+    assert registry.can_write("qa", "web/src/main.js")
+    assert not registry.can_write("copilot", "web/src/main.js")
+    assert not registry.can_write("qa", "web/src/main.ts")
+
+
 def test_write_allowlist_and_lease_gates(tmp_path: Path):
     worktree = tmp_path / "wt"
     worktree.mkdir()

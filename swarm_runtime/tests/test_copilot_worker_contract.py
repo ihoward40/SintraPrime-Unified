@@ -82,6 +82,14 @@ def test_ownership_glob_vs_glob_same_prefix_disjoint_extensions_not_overlap():
     assert not registry.can_write("qa", "web/src/main.ts")
 
 
+def test_ownership_glob_vs_glob_disjoint_depth_not_overlap():
+    registry = OwnershipRegistry()
+    registry.register("copilot", ["web/*/*.ts"])
+    registry.register("qa", ["web/*.ts"])
+    assert registry.can_write("copilot", "web/src/main.ts")
+    assert registry.can_write("qa", "web/main.ts")
+
+
 def test_write_allowlist_and_lease_gates(tmp_path: Path):
     worktree = tmp_path / "wt"
     worktree.mkdir()
@@ -147,3 +155,31 @@ def test_write_blocked_for_new_file_under_symlinked_parent(tmp_path: Path):
     )
     assert blocked is False
     assert code == "SYMLINK_ESCAPE_BLOCK"
+
+
+def test_exact_file_allowlist_does_not_allow_descendants(tmp_path: Path):
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    lease = WorkerCapabilityLease.create(
+        "copilot",
+        actor_id="copilot.engineering.01",
+        allowed_paths=["safe/file.ts"],
+        worktree_path=str(worktree),
+        authority_write_permitted=True,
+        task_active=True,
+        ttl_seconds=30,
+    )
+    allowed, code = lease.validate_write_request(
+        actor_id="copilot.engineering.01",
+        target_path="safe/file.ts",
+        worktree_path=str(worktree),
+    )
+    assert allowed is True
+    assert code == "PASS"
+    blocked, code = lease.validate_write_request(
+        actor_id="copilot.engineering.01",
+        target_path="safe/file.ts/extra",
+        worktree_path=str(worktree),
+    )
+    assert blocked is False
+    assert code == "OUTSIDE_ALLOWLIST_BLOCK"

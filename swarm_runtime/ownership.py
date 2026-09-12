@@ -9,7 +9,6 @@ If a worker attempts to write outside its owned files:
 """
 from __future__ import annotations
 
-import fnmatch
 import re
 import time
 from dataclasses import dataclass
@@ -118,7 +117,7 @@ class OwnershipRegistry:
             base = claim[:-3].rstrip("/")
             return path == base or path.startswith(base + "/")
         if "*" in claim or "?" in claim or "[" in claim:
-            return fnmatch.fnmatch(path, claim)
+            return PurePosixPath(path).match(claim)
         return path == claim
 
     @classmethod
@@ -165,6 +164,8 @@ class OwnershipRegistry:
         b_prefix = cls._static_prefix(b)
         if not (cls._is_same_or_parent(a_prefix, b_prefix) or cls._is_same_or_parent(b_prefix, a_prefix)):
             return False
+        if not cls._segment_counts_overlap(a, b):
+            return False
         if cls._glob_disjoint_by_extension(a, b):
             return False
         return True
@@ -183,3 +184,23 @@ class OwnershipRegistry:
         if not a_match or not b_match:
             return False
         return a_match.group(1) != b_match.group(1)
+
+    @staticmethod
+    def _segment_counts_overlap(a: str, b: str) -> bool:
+        a_min, a_max = OwnershipRegistry._segment_bounds(a)
+        b_min, b_max = OwnershipRegistry._segment_bounds(b)
+        return max(a_min, b_min) <= min(a_max, b_max)
+
+    @staticmethod
+    def _segment_bounds(pattern: str) -> tuple[int, int]:
+        segments = [s for s in pattern.split("/") if s]
+        min_count = 0
+        max_count = 0
+        for segment in segments:
+            if segment == "**":
+                max_count = 10**9
+                continue
+            min_count += 1
+            if max_count < 10**9:
+                max_count += 1
+        return min_count, max_count

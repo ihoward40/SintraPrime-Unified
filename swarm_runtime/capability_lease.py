@@ -7,12 +7,11 @@ Default: DENY_UNDECLARED_CAPABILITY = TRUE
 """
 from __future__ import annotations
 
-import fnmatch
 import os
 import time
 import uuid
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 # Default environment allowlist for worker subprocesses
@@ -299,8 +298,11 @@ def _path_matches(path: str, allowed: str) -> bool:
         base = allowed[:-3].rstrip("/")
         return path == base or path.startswith(base + "/")
     if "*" in allowed or "?" in allowed or "[" in allowed:
-        return fnmatch.fnmatch(path, allowed)
-    return path == allowed or path.startswith(allowed.rstrip("/") + "/")
+        return PurePosixPath(path).match(allowed)
+    if allowed.endswith("/"):
+        base = allowed.rstrip("/")
+        return path == base or path.startswith(base + "/")
+    return path == allowed
 
 
 def _contains_path_traversal(path: str) -> bool:

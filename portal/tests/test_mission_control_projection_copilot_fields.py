@@ -184,3 +184,37 @@ async def test_projection_rejects_boolean_external_effects(db: AsyncSession):
     projection = await get_run_control(db, tenant_id=TENANT_A, run_control_id=rc.id)
     assert projection is not None
     assert projection.external_effects is None
+
+
+@pytest.mark.asyncio
+async def test_projection_rejects_non_string_write_scope_entries(db: AsyncSession):
+    rc = MissionControlRunControl(
+        id=_uuid("rc-copilot-embedded-004"),
+        tenant_id=TENANT_A,
+        workflow_id="wf-copilot-embedded-004",
+        state=RunControlState.RUNNING.value,
+        workflow_status_snapshot="running",
+        state_version=1,
+        projection_schema_version=1,
+    )
+    db.add(rc)
+    await db.flush()
+
+    event = MissionControlRunControlEvent(
+        id=_uuid("rce-copilot-embedded-005"),
+        run_control_id=rc.id,
+        sequence=1,
+        event_type="STATE_TRANSITIONED",
+        previous_state="RUNNING",
+        new_state="RUNNING",
+        previous_version=0,
+        new_version=1,
+        event_hash="event-hash-copilot-embedded-005",
+        payload={"write_scope": ["web/src/**", None]},
+    )
+    db.add(event)
+    await db.flush()
+
+    projection = await get_run_control(db, tenant_id=TENANT_A, run_control_id=rc.id)
+    assert projection is not None
+    assert projection.write_scope == []

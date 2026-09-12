@@ -126,6 +126,8 @@ def _worker_projection_fields(events: list[MissionControlRunControlEvent]) -> di
     write_scope = fields.get("write_scope", [])
     if not isinstance(write_scope, list):
         write_scope = []
+    elif not all(isinstance(x, str) for x in write_scope):
+        write_scope = []
     external_effects = fields.get("external_effects")
     if isinstance(external_effects, bool) or not isinstance(external_effects, int):
         external_effects = None
@@ -134,7 +136,7 @@ def _worker_projection_fields(events: list[MissionControlRunControlEvent]) -> di
         "worker_role": fields.get("worker_role"),
         "parent_coordinator": fields.get("parent_coordinator"),
         "work_order_id": fields.get("work_order_id"),
-        "write_scope": [str(x) for x in write_scope],
+        "write_scope": write_scope,
         "lease_state": fields.get("lease_state"),
         "last_heartbeat": parsed_heartbeat,
         "test_status": fields.get("test_status"),

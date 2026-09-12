@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 import time
 import uuid
+import fnmatch
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -297,6 +298,16 @@ def _path_matches(path: str, allowed: str) -> bool:
     if allowed.endswith("/**"):
         base = allowed[:-3].rstrip("/")
         return path == base or path.startswith(base + "/")
+    if "/**" in allowed:
+        base, _, suffix = allowed.partition("/**")
+        base = base.rstrip("/")
+        if path != base and not path.startswith(base + "/"):
+            return False
+        remainder = path[len(base):].lstrip("/")
+        suffix = suffix.lstrip("/")
+        if not suffix:
+            return True
+        return fnmatch.fnmatch(remainder, suffix)
     if "*" in allowed or "?" in allowed or "[" in allowed:
         return PurePosixPath(path).match(allowed)
     if allowed.endswith("/"):

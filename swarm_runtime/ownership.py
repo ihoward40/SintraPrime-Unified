@@ -164,8 +164,8 @@ class OwnershipRegistry:
         b_prefix = cls._static_prefix(b)
         if not (cls._is_same_or_parent(a_prefix, b_prefix) or cls._is_same_or_parent(b_prefix, a_prefix)):
             return False
-        if not cls._segment_counts_overlap(a, b):
-            return False
+        if cls._root_glob_overlap(a, b):
+            return True
         if cls._glob_disjoint_by_extension(a, b):
             return False
         if cls._glob_disjoint_by_filename_pattern(a, b):
@@ -215,21 +215,12 @@ class OwnershipRegistry:
         return prefix, suffix
 
     @staticmethod
-    def _segment_counts_overlap(a: str, b: str) -> bool:
-        a_min, a_max = OwnershipRegistry._segment_bounds(a)
-        b_min, b_max = OwnershipRegistry._segment_bounds(b)
-        return max(a_min, b_min) <= min(a_max, b_max)
-
-    @staticmethod
-    def _segment_bounds(pattern: str) -> tuple[int, int]:
-        segments = [s for s in pattern.split("/") if s]
-        min_count = 0
-        max_count = 0
-        for segment in segments:
-            if segment == "**":
-                max_count = 10**9
-                continue
-            min_count += 1
-            if max_count < 10**9:
-                max_count += 1
-        return min_count, max_count
+    def _root_glob_overlap(a: str, b: str) -> bool:
+        root_ext = re.compile(r"^\*\.([A-Za-z0-9_-]+)$")
+        a_root = root_ext.match(a)
+        b_root = root_ext.match(b)
+        if a_root and b.endswith(f".{a_root.group(1)}"):
+            return True
+        if b_root and a.endswith(f".{b_root.group(1)}"):
+            return True
+        return False

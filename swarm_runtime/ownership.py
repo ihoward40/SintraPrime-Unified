@@ -141,7 +141,7 @@ class OwnershipRegistry:
         if a_glob and b_glob:
             a_prefix = cls._static_prefix(a)
             b_prefix = cls._static_prefix(b)
-            if a_prefix.startswith(b_prefix) or b_prefix.startswith(a_prefix):
+            if cls._is_same_or_parent(a_prefix, b_prefix) or cls._is_same_or_parent(b_prefix, a_prefix):
                 return True
         return False
 
@@ -153,3 +153,9 @@ class OwnershipRegistry:
             if idx != -1:
                 first_glob = min(first_glob, idx)
         return pattern[:first_glob].rstrip("/")
+
+    @staticmethod
+    def _is_same_or_parent(parent: str, child: str) -> bool:
+        if not parent:
+            return True
+        return child == parent or child.startswith(parent + "/")

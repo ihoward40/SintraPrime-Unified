@@ -34,6 +34,18 @@ def test_delegate_task_maps_workorder_fields():
     assert spec.write_allowlist == ["web/src/pages/mission-control/**"]
 
 
+def test_delegate_task_does_not_derive_unbound_context_hash():
+    task = DelegateTask(
+        task_id="WO-ctx-1",
+        description="Scoped task",
+        role="builder",
+        worker_class="BuilderWorker",
+        run_context={"mission_id": "M-ctx"},
+    )
+    spec = task.to_worker_spec("WO-ctx-1")
+    assert spec.context_hash == ""
+
+
 def test_delegate_task_rejects_forged_parent():
     task = DelegateTask(
         task_id="WO-2",

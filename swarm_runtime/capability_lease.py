@@ -325,4 +325,22 @@ def _symlink_escape(target: Path, worktree_path: str) -> bool:
         resolved = candidate.resolve(strict=False)
     except OSError:
         return True
-    return resolved != base and base not in resolved.parents
+    if resolved != base and base not in resolved.parents:
+        return True
+    try:
+        relative = candidate.relative_to(base)
+    except ValueError:
+        return True
+    probe = base
+    for part in relative.parts:
+        probe = probe / part
+        if not probe.exists():
+            break
+        try:
+            if probe.is_symlink():
+                symlink_target = probe.resolve()
+                if symlink_target != base and base not in symlink_target.parents:
+                    return True
+        except OSError:
+            return True
+    return False

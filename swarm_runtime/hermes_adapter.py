@@ -29,8 +29,6 @@ Legacy single-model delegation is preserved through a separate named path
 """
 from __future__ import annotations
 
-import hashlib
-import json
 import os
 import time
 from dataclasses import dataclass, field
@@ -90,7 +88,6 @@ class DelegateTask:
     def to_worker_spec(self, worker_id: str) -> WorkerSpec:
         """Translate to WorkerSpec — no authority widening."""
         mission_id = self.mission_id or self.mission
-        context_hash = self.context_hash or self._derive_context_hash()
         read_allowlist = self.read_allowlist or list(self.read_paths)
         write_allowlist = self.write_allowlist or list(self.write_paths)
         return WorkerSpec(
@@ -108,7 +105,7 @@ class DelegateTask:
             actor_id=self.actor_id,
             owner=self.owner,
             authority_class=self.authority_class,
-            context_hash=context_hash,
+            context_hash=self.context_hash,
             lease_id=self.lease_id,
             lease_expires_at=self.lease_expires_at,
             parent_coordinator=self.parent_coordinator,
@@ -144,11 +141,6 @@ class DelegateTask:
                 raise ValueError("COPILOT_CONTROL_PLANE_FORBIDDEN")
             if self.owner and self.owner != self.actor_id:
                 raise ValueError("COPILOT_OWNER_MISMATCH")
-
-    def _derive_context_hash(self) -> str:
-        payload = json.dumps(self.run_context or {}, sort_keys=True, separators=(",", ":"), default=str)
-        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
-
 
 @dataclass
 class SwarmResult:

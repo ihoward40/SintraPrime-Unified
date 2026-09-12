@@ -79,6 +79,13 @@ def test_ownership_glob_overlap_rejected():
         registry.register("qa", ["web/src/App.tsx"])
 
 
+def test_ownership_recursive_directory_overlap_rejected():
+    registry = OwnershipRegistry()
+    registry.register("copilot", ["web/**"])
+    with pytest.raises(ValueError, match="OVERLAP"):
+        registry.register("qa", ["web/src/**"])
+
+
 def test_ownership_glob_vs_glob_overlap_rejected():
     registry = OwnershipRegistry()
     registry.register("copilot", ["web/**/*.ts"])
@@ -251,3 +258,10 @@ def test_recursive_glob_allows_zero_segment_match(tmp_path: Path):
     )
     assert allowed is True
     assert code == "PASS"
+
+
+def test_recursive_pattern_preserved_in_ownership_matching():
+    registry = OwnershipRegistry()
+    registry.register("copilot", ["web/**/file.ts"])
+    assert registry.can_write("copilot", "web/file.ts")
+    assert registry.can_write("copilot", "web/src/file.ts")

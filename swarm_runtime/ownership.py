@@ -107,7 +107,22 @@ class OwnershipRegistry:
 
     @staticmethod
     def _normalize(path: str) -> str:
-        p = str(PurePosixPath(str(path).replace("\\", "/")))
+        raw = str(path).replace("\\", "/")
+        if any(tok in raw for tok in ("*", "?", "[")):
+            parts: list[str] = []
+            for segment in raw.split("/"):
+                if segment in ("", "."):
+                    continue
+                if segment == "..":
+                    if parts and parts[-1] not in ("..", "**"):
+                        parts.pop()
+                    else:
+                        parts.append(segment)
+                    continue
+                parts.append(segment)
+            p = "/".join(parts)
+        else:
+            p = str(PurePosixPath(raw))
         if p.startswith("./"):
             return p[2:]
         return p
@@ -125,6 +140,11 @@ class OwnershipRegistry:
     def _claims_overlap(cls, a: str, b: str) -> bool:
         if a == b:
             return True
+        if a.endswith("/**") and b.endswith("/**"):
+            a_base = a[:-3].rstrip("/")
+            b_base = b[:-3].rstrip("/")
+            if cls._is_same_or_parent(a_base, b_base) or cls._is_same_or_parent(b_base, a_base):
+                return True
         if a.endswith("/**"):
             base = a[:-3].rstrip("/")
             if b == base or b.startswith(base + "/"):

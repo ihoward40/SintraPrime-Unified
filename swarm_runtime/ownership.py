@@ -165,20 +165,21 @@ class OwnershipRegistry:
         b_prefix = cls._static_prefix(b)
         if not (cls._is_same_or_parent(a_prefix, b_prefix) or cls._is_same_or_parent(b_prefix, a_prefix)):
             return False
-        candidates = cls._glob_probe_paths(a) | cls._glob_probe_paths(b)
-        return any(fnmatch.fnmatch(path, a) and fnmatch.fnmatch(path, b) for path in candidates)
+        if cls._glob_disjoint_by_extension(a, b):
+            return False
+        return True
 
     @staticmethod
-    def _glob_probe_paths(pattern: str) -> set[str]:
-        probes = {
-            pattern,
-            pattern.replace("**", "probe/sub").replace("*", "probe"),
-            pattern.replace("**", "probe").replace("*", "probe"),
-        }
-        cleaned: set[str] = set()
-        for probe in probes:
-            p = probe.replace("?", "x")
-            p = re.sub(r"\[([^\]]+)\]", lambda m: m.group(1)[:1] or "x", p)
-            p = p.replace("//", "/")
-            cleaned.add(p)
-        return cleaned
+    def _glob_disjoint_by_extension(a: str, b: str) -> bool:
+        if "**" in a or "**" in b:
+            return False
+        a_dir, _, a_name = a.rpartition("/")
+        b_dir, _, b_name = b.rpartition("/")
+        if a_dir != b_dir:
+            return False
+        ext_pattern = re.compile(r"^\*\.([A-Za-z0-9_-]+)$")
+        a_match = ext_pattern.match(a_name)
+        b_match = ext_pattern.match(b_name)
+        if not a_match or not b_match:
+            return False
+        return a_match.group(1) != b_match.group(1)

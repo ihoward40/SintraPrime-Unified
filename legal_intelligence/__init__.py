@@ -5,88 +5,16 @@ One for All and All for One — the complete AI law firm replacement.
 Covers every major practice area, court system, and government agency.
 """
 
-from legal_intelligence.practice_areas import (
-    PracticeArea,
-    LegalMatter,
-    PracticeAreaRouter,
-    LEGAL_STANDARDS,
-)
-from legal_intelligence.court_navigator import (
-    CourtNavigator,
-    CourtRecommendation,
-    FilingRequirements,
-    CourtFiling,
-    TimelineEstimate,
-    JurisdictionAnalysis,
-)
-from legal_intelligence.motion_drafting_engine import (
-    MotionDraftingEngine,
-    LegalDocument,
-    ComplianceReport,
-    MOTION_TEMPLATES,
-)
-from legal_intelligence.contract_intelligence import (
-    ContractIntelligence,
-    ContractAnalysis,
-    RedFlag,
-    NegotiationStrategy,
-    EnforceabilityReport,
-    ContractSummary,
-    RED_FLAG_PATTERNS,
-)
-from legal_intelligence.criminal_defense_engine import (
-    CriminalDefenseEngine,
-    ChargeAnalysis,
-    DefenseStrategy,
-    FourthAmendmentAnalysis,
-    PleaAnalysis,
-    SentencingRange,
-)
-from legal_intelligence.civil_rights_engine import (
-    CivilRightsEngine,
-    Section1983Analysis,
-    EmploymentDiscriminationAnalysis,
-    ADAAnalysis,
-    FirstAmendmentAnalysis,
-    DamagesEstimate,
-    QualifiedImmunityAnalysis,
-)
-from legal_intelligence.immigration_engine import (
-    ImmigrationEngine,
-    VisaOption,
-    GreenCardOption,
-    NaturalizationAnalysis,
-    RemovalDefenseStrategy,
-    AsylumAnalysis,
-    DACAAnalysis,
-    I9ComplianceReport,
-    WaiverStrategy,
-)
-from legal_intelligence.legal_research_engine import (
-    LegalResearchEngine,
-    CaseCitation,
-    CitationHistory,
-    AnalogousCase,
-    RuleSynthesis,
-    LegalMemo,
-    StatuteReference,
-    LegislativeHistory,
-    LANDMARK_CASES,
-)
-from legal_intelligence.government_navigation import (
-    GovernmentNavigator,
-    FOIARequest,
-    BenefitsAnalysis,
-    AppealStrategy,
-    ComplianceChecklist,
-    ContractingStrategy,
-)
-from legal_intelligence.transaction_capacity_gate import (
-    TransactionCapacityGate,
-    TransactionCapacityGateError,
-    TheoryClassification,
-    GateDecision,
-)
+from legal_intelligence.practice_areas import PracticeArea, LegalMatter, PracticeAreaRouter, LEGAL_STANDARDS
+from legal_intelligence.court_navigator import CourtNavigator, CourtRecommendation, FilingRequirements, CourtFiling, TimelineEstimate, JurisdictionAnalysis
+from legal_intelligence.motion_drafting_engine import MotionDraftingEngine, LegalDocument, ComplianceReport, MOTION_TEMPLATES
+from legal_intelligence.contract_intelligence import ContractIntelligence, ContractAnalysis, RedFlag, NegotiationStrategy, EnforceabilityReport, ContractSummary, RED_FLAG_PATTERNS
+from legal_intelligence.criminal_defense_engine import CriminalDefenseEngine, ChargeAnalysis, DefenseStrategy, FourthAmendmentAnalysis, PleaAnalysis, SentencingRange
+from legal_intelligence.civil_rights_engine import CivilRightsEngine, Section1983Analysis, EmploymentDiscriminationAnalysis, ADAAnalysis, FirstAmendmentAnalysis, DamagesEstimate, QualifiedImmunityAnalysis
+from legal_intelligence.immigration_engine import ImmigrationEngine, VisaOption, GreenCardOption, NaturalizationAnalysis, RemovalDefenseStrategy, AsylumAnalysis, DACAAnalysis, I9ComplianceReport, WaiverStrategy
+from legal_intelligence.legal_research_engine import LegalResearchEngine, CaseCitation, CitationHistory, AnalogousCase, RuleSynthesis, LegalMemo, StatuteReference, LegislativeHistory, LANDMARK_CASES
+from legal_intelligence.government_navigation import GovernmentNavigator, FOIARequest, BenefitsAnalysis, AppealStrategy, ComplianceChecklist, ContractingStrategy
+from legal_intelligence.transaction_capacity_gate import TransactionCapacityGate, TransactionCapacityGateError, TheoryClassification, GateDecision
 from legal_intelligence.rare_legal_levers import RareLegalLeverageEngine, LegalLever
 from legal_intelligence.procedural_traps import ProceduralTrapScanner, ProceduralTrap
 from legal_intelligence.ike_advantage import IKEAdvantageEngine, AdvantageControl, TreasuryStep
@@ -100,6 +28,10 @@ from legal_intelligence.capital_risk import CapitalRiskEngine, CapitalRiskReport
 from legal_intelligence.capital_servicing import CapitalServicingEngine, ServicingReport
 from legal_intelligence.capital_dashboard import CapitalDashboardEngine, CapitalDashboardReport
 from legal_intelligence.decision_journal import DecisionJournalHashChain, DecisionJournalEntry
+from legal_intelligence.hash_anchor import HashAnchorEngine, AnchorReceipt, AnchorReport
+from legal_intelligence.workout_recovery import WorkoutRecoveryEngine, RecoveryScenario
+from legal_intelligence.collateral_monitor import CollateralMonitorEngine, CollateralMonitorReport
+from legal_intelligence.capital_audit import CapitalAuditEngine, CapitalAuditReport
 
 __all__ = [
     "PracticeArea", "LegalMatter", "PracticeAreaRouter", "LEGAL_STANDARDS",
@@ -124,8 +56,12 @@ __all__ = [
     "CapitalServicingEngine", "ServicingReport",
     "CapitalDashboardEngine", "CapitalDashboardReport",
     "DecisionJournalHashChain", "DecisionJournalEntry",
+    "HashAnchorEngine", "AnchorReceipt", "AnchorReport",
+    "WorkoutRecoveryEngine", "RecoveryScenario",
+    "CollateralMonitorEngine", "CollateralMonitorReport",
+    "CapitalAuditEngine", "CapitalAuditReport",
 ]
 
-__version__ = "1.4.0"
+__version__ = "1.5.0"
 __author__ = "SintraPrime Legal Intelligence"
-__description__ = "Legal intelligence with transaction-capacity, leverage, procedure, evidence, private-capital, servicing, dashboard, and tamper-evident governance controls"
+__description__ = "Legal intelligence with transaction-capacity, leverage, private-capital, servicing, collateral, audit, and tamper-evident governance controls"

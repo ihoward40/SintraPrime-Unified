@@ -47,6 +47,8 @@ from legal_intelligence.capital_committee_decisions import CapitalCommitteeDecis
 from legal_intelligence.capital_action_tracker import CapitalActionTrackerEngine, CapitalAction, ActionStatusReport
 from legal_intelligence.capital_outcome_review import CapitalOutcomeReviewEngine, OutcomeReview, MetricOutcome
 from legal_intelligence.capital_lessons_learned import CapitalLessonsLearnedEngine, CapitalLesson
+from legal_intelligence.capital_control_validation import CapitalControlValidationEngine, ControlObservation, ControlValidationReport
+from legal_intelligence.capital_rule_registry import CapitalRuleRegistryEngine, CapitalRuleRecord, RuleRegistryDecision
 
 __all__ = [
     "PracticeArea", "LegalMatter", "PracticeAreaRouter", "LEGAL_STANDARDS",
@@ -90,8 +92,10 @@ __all__ = [
     "CapitalActionTrackerEngine", "CapitalAction", "ActionStatusReport",
     "CapitalOutcomeReviewEngine", "OutcomeReview", "MetricOutcome",
     "CapitalLessonsLearnedEngine", "CapitalLesson",
+    "CapitalControlValidationEngine", "ControlObservation", "ControlValidationReport",
+    "CapitalRuleRegistryEngine", "CapitalRuleRecord", "RuleRegistryDecision",
 ]
 
-__version__ = "2.2.0"
+__version__ = "2.3.0"
 __author__ = "SintraPrime Legal Intelligence"
-__description__ = "Legal intelligence with decision-effectiveness review and institutional learning, formal committee disposition, action follow-through, management risk trends, monthly governance packs, governed capital cases, SLA enforcement, time-limited overrides, centralized policy, escalation, early-warning surveillance, continuity, stress, audit, and tamper-evident governance controls"
+__description__ = "Legal intelligence with control validation and governed rule-performance monitoring, decision-effectiveness review and institutional learning, formal committee disposition, action follow-through, management risk trends, monthly governance packs, governed capital cases, SLA enforcement, time-limited overrides, centralized policy, escalation, early-warning surveillance, continuity, stress, audit, and tamper-evident governance controls"

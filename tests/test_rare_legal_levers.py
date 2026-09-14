@@ -43,7 +43,7 @@ def test_related_party_sale_lever_is_post_disposition_candidate_not_merits_findi
     }
     levers = RareLegalLeverageEngine().suggest(ctx)
     lever = next(item for item in levers if item.lever_id == "LEV-UCC-9-615F")
-    assert "relationship" in lever.evidence_needed
+    assert "buyer identity" in lever.evidence_needed
     assert "Low price alone" in lever.caveat
 
 

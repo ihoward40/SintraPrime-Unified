@@ -37,6 +37,8 @@ from legal_intelligence.capital_continuity import CapitalContinuityEngine, Conti
 from legal_intelligence.capital_stress import CapitalStressEngine, StressResult
 from legal_intelligence.capital_policy_engine import CapitalPolicyEngine, CapitalPolicy, PolicyEvaluation
 from legal_intelligence.capital_early_warning import CapitalEarlyWarningEngine, EarlyWarningSignal, EarlyWarningReport
+from legal_intelligence.policy_change_control import PolicyChangeControlEngine, PolicyChangeRequest, PolicyChangeDecision
+from legal_intelligence.capital_escalation import CapitalEscalationEngine, EscalationSignal, EscalationDecision
 
 __all__ = [
     "PracticeArea", "LegalMatter", "PracticeAreaRouter", "LEGAL_STANDARDS",
@@ -70,8 +72,10 @@ __all__ = [
     "CapitalStressEngine", "StressResult",
     "CapitalPolicyEngine", "CapitalPolicy", "PolicyEvaluation",
     "CapitalEarlyWarningEngine", "EarlyWarningSignal", "EarlyWarningReport",
+    "PolicyChangeControlEngine", "PolicyChangeRequest", "PolicyChangeDecision",
+    "CapitalEscalationEngine", "EscalationSignal", "EscalationDecision",
 ]
 
-__version__ = "1.7.0"
+__version__ = "1.8.0"
 __author__ = "SintraPrime Legal Intelligence"
-__description__ = "Legal intelligence with centralized capital policy, early-warning surveillance, continuity, stress, audit, and tamper-evident governance controls"
+__description__ = "Legal intelligence with centralized capital policy, governed policy changes, automated escalation, early-warning surveillance, continuity, stress, audit, and tamper-evident governance controls"

@@ -41,6 +41,8 @@ from legal_intelligence.policy_change_control import PolicyChangeControlEngine, 
 from legal_intelligence.capital_escalation import CapitalEscalationEngine, EscalationSignal, EscalationDecision
 from legal_intelligence.capital_case_management import CapitalCaseManagementEngine, CapitalCase
 from legal_intelligence.capital_override import CapitalOverrideEngine, CapitalOverride
+from legal_intelligence.capital_risk_trends import CapitalRiskTrendsEngine, RiskTrendPoint, RiskTrendReport
+from legal_intelligence.capital_committee_pack import CapitalCommitteePackEngine, CommitteePack
 
 __all__ = [
     "PracticeArea", "LegalMatter", "PracticeAreaRouter", "LEGAL_STANDARDS",
@@ -78,8 +80,10 @@ __all__ = [
     "CapitalEscalationEngine", "EscalationSignal", "EscalationDecision",
     "CapitalCaseManagementEngine", "CapitalCase",
     "CapitalOverrideEngine", "CapitalOverride",
+    "CapitalRiskTrendsEngine", "RiskTrendPoint", "RiskTrendReport",
+    "CapitalCommitteePackEngine", "CommitteePack",
 ]
 
-__version__ = "1.9.0"
+__version__ = "2.0.0"
 __author__ = "SintraPrime Legal Intelligence"
-__description__ = "Legal intelligence with governed capital cases, SLA enforcement, time-limited overrides, centralized policy, escalation, early-warning surveillance, continuity, stress, audit, and tamper-evident governance controls"
+__description__ = "Legal intelligence with management risk trends, monthly committee governance packs, governed capital cases, SLA enforcement, time-limited overrides, centralized policy, escalation, early-warning surveillance, continuity, stress, audit, and tamper-evident governance controls"

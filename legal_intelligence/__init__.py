@@ -35,6 +35,8 @@ from legal_intelligence.capital_audit import CapitalAuditEngine, CapitalAuditRep
 from legal_intelligence.capital_custody import CapitalCustodyEngine, CustodyDecision, CustodyRoleAssignment
 from legal_intelligence.capital_continuity import CapitalContinuityEngine, ContinuityReport
 from legal_intelligence.capital_stress import CapitalStressEngine, StressResult
+from legal_intelligence.capital_policy_engine import CapitalPolicyEngine, CapitalPolicy, PolicyEvaluation
+from legal_intelligence.capital_early_warning import CapitalEarlyWarningEngine, EarlyWarningSignal, EarlyWarningReport
 
 __all__ = [
     "PracticeArea", "LegalMatter", "PracticeAreaRouter", "LEGAL_STANDARDS",
@@ -66,8 +68,10 @@ __all__ = [
     "CapitalCustodyEngine", "CustodyDecision", "CustodyRoleAssignment",
     "CapitalContinuityEngine", "ContinuityReport",
     "CapitalStressEngine", "StressResult",
+    "CapitalPolicyEngine", "CapitalPolicy", "PolicyEvaluation",
+    "CapitalEarlyWarningEngine", "EarlyWarningSignal", "EarlyWarningReport",
 ]
 
-__version__ = "1.6.0"
+__version__ = "1.7.0"
 __author__ = "SintraPrime Legal Intelligence"
-__description__ = "Legal intelligence with transaction-capacity, leverage, private-capital, servicing, collateral, continuity, stress, audit, and tamper-evident governance controls"
+__description__ = "Legal intelligence with centralized capital policy, early-warning surveillance, continuity, stress, audit, and tamper-evident governance controls"

@@ -89,94 +89,37 @@ from legal_intelligence.transaction_capacity_gate import (
 )
 from legal_intelligence.rare_legal_levers import RareLegalLeverageEngine, LegalLever
 from legal_intelligence.procedural_traps import ProceduralTrapScanner, ProceduralTrap
-from legal_intelligence.ike_advantage import (
-    IKEAdvantageEngine,
-    AdvantageControl,
-    TreasuryStep,
-)
-from legal_intelligence.private_capital import (
-    PrivateCapitalEngine,
-    CapitalDecision,
-    CapitalFinding,
-    CapitalReport,
-)
+from legal_intelligence.ike_advantage import IKEAdvantageEngine, AdvantageControl, TreasuryStep
+from legal_intelligence.private_capital import PrivateCapitalEngine, CapitalDecision, CapitalFinding, CapitalReport
+from legal_intelligence.capital_ledger import CapitalLedgerEngine, CapitalLedgerEntry, LedgerLine, FacilitySnapshot
+from legal_intelligence.credit_committee import CreditCommitteeEngine, CreditDecision
+from legal_intelligence.receivables import ReceivablesEngine, Receivable, BorrowingBaseReport
+from legal_intelligence.related_party import RelatedPartyEngine, RelatedPartyReport
+from legal_intelligence.private_capital_docs import PrivateCapitalDocsEngine, DocumentTemplateSpec
+from legal_intelligence.capital_risk import CapitalRiskEngine, CapitalRiskReport
 
 __all__ = [
-    "PracticeArea",
-    "LegalMatter",
-    "PracticeAreaRouter",
-    "LEGAL_STANDARDS",
-    "CourtNavigator",
-    "CourtRecommendation",
-    "FilingRequirements",
-    "CourtFiling",
-    "TimelineEstimate",
-    "JurisdictionAnalysis",
-    "MotionDraftingEngine",
-    "LegalDocument",
-    "ComplianceReport",
-    "MOTION_TEMPLATES",
-    "ContractIntelligence",
-    "ContractAnalysis",
-    "RedFlag",
-    "NegotiationStrategy",
-    "EnforceabilityReport",
-    "ContractSummary",
-    "RED_FLAG_PATTERNS",
-    "CriminalDefenseEngine",
-    "ChargeAnalysis",
-    "DefenseStrategy",
-    "FourthAmendmentAnalysis",
-    "PleaAnalysis",
-    "SentencingRange",
-    "CivilRightsEngine",
-    "Section1983Analysis",
-    "EmploymentDiscriminationAnalysis",
-    "ADAAnalysis",
-    "FirstAmendmentAnalysis",
-    "DamagesEstimate",
-    "QualifiedImmunityAnalysis",
-    "ImmigrationEngine",
-    "VisaOption",
-    "GreenCardOption",
-    "NaturalizationAnalysis",
-    "RemovalDefenseStrategy",
-    "AsylumAnalysis",
-    "DACAAnalysis",
-    "I9ComplianceReport",
-    "WaiverStrategy",
-    "LegalResearchEngine",
-    "CaseCitation",
-    "CitationHistory",
-    "AnalogousCase",
-    "RuleSynthesis",
-    "LegalMemo",
-    "StatuteReference",
-    "LegislativeHistory",
-    "LANDMARK_CASES",
-    "GovernmentNavigator",
-    "FOIARequest",
-    "BenefitsAnalysis",
-    "AppealStrategy",
-    "ComplianceChecklist",
-    "ContractingStrategy",
-    "TransactionCapacityGate",
-    "TransactionCapacityGateError",
-    "TheoryClassification",
-    "GateDecision",
-    "RareLegalLeverageEngine",
-    "LegalLever",
-    "ProceduralTrapScanner",
-    "ProceduralTrap",
-    "IKEAdvantageEngine",
-    "AdvantageControl",
-    "TreasuryStep",
-    "PrivateCapitalEngine",
-    "CapitalDecision",
-    "CapitalFinding",
-    "CapitalReport",
+    "PracticeArea", "LegalMatter", "PracticeAreaRouter", "LEGAL_STANDARDS",
+    "CourtNavigator", "CourtRecommendation", "FilingRequirements", "CourtFiling", "TimelineEstimate", "JurisdictionAnalysis",
+    "MotionDraftingEngine", "LegalDocument", "ComplianceReport", "MOTION_TEMPLATES",
+    "ContractIntelligence", "ContractAnalysis", "RedFlag", "NegotiationStrategy", "EnforceabilityReport", "ContractSummary", "RED_FLAG_PATTERNS",
+    "CriminalDefenseEngine", "ChargeAnalysis", "DefenseStrategy", "FourthAmendmentAnalysis", "PleaAnalysis", "SentencingRange",
+    "CivilRightsEngine", "Section1983Analysis", "EmploymentDiscriminationAnalysis", "ADAAnalysis", "FirstAmendmentAnalysis", "DamagesEstimate", "QualifiedImmunityAnalysis",
+    "ImmigrationEngine", "VisaOption", "GreenCardOption", "NaturalizationAnalysis", "RemovalDefenseStrategy", "AsylumAnalysis", "DACAAnalysis", "I9ComplianceReport", "WaiverStrategy",
+    "LegalResearchEngine", "CaseCitation", "CitationHistory", "AnalogousCase", "RuleSynthesis", "LegalMemo", "StatuteReference", "LegislativeHistory", "LANDMARK_CASES",
+    "GovernmentNavigator", "FOIARequest", "BenefitsAnalysis", "AppealStrategy", "ComplianceChecklist", "ContractingStrategy",
+    "TransactionCapacityGate", "TransactionCapacityGateError", "TheoryClassification", "GateDecision",
+    "RareLegalLeverageEngine", "LegalLever", "ProceduralTrapScanner", "ProceduralTrap",
+    "IKEAdvantageEngine", "AdvantageControl", "TreasuryStep",
+    "PrivateCapitalEngine", "CapitalDecision", "CapitalFinding", "CapitalReport",
+    "CapitalLedgerEngine", "CapitalLedgerEntry", "LedgerLine", "FacilitySnapshot",
+    "CreditCommitteeEngine", "CreditDecision",
+    "ReceivablesEngine", "Receivable", "BorrowingBaseReport",
+    "RelatedPartyEngine", "RelatedPartyReport",
+    "PrivateCapitalDocsEngine", "DocumentTemplateSpec",
+    "CapitalRiskEngine", "CapitalRiskReport",
 ]
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 __author__ = "SintraPrime Legal Intelligence"
 __description__ = "Legal intelligence with transaction-capacity, leverage, procedure, evidence, and private-capital controls"

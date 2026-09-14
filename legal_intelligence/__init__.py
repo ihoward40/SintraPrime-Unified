@@ -32,6 +32,9 @@ from legal_intelligence.hash_anchor import HashAnchorEngine, AnchorReceipt, Anch
 from legal_intelligence.workout_recovery import WorkoutRecoveryEngine, RecoveryScenario
 from legal_intelligence.collateral_monitor import CollateralMonitorEngine, CollateralMonitorReport
 from legal_intelligence.capital_audit import CapitalAuditEngine, CapitalAuditReport
+from legal_intelligence.capital_custody import CapitalCustodyEngine, CustodyDecision, CustodyRoleAssignment
+from legal_intelligence.capital_continuity import CapitalContinuityEngine, ContinuityReport
+from legal_intelligence.capital_stress import CapitalStressEngine, StressResult
 
 __all__ = [
     "PracticeArea", "LegalMatter", "PracticeAreaRouter", "LEGAL_STANDARDS",
@@ -60,8 +63,11 @@ __all__ = [
     "WorkoutRecoveryEngine", "RecoveryScenario",
     "CollateralMonitorEngine", "CollateralMonitorReport",
     "CapitalAuditEngine", "CapitalAuditReport",
+    "CapitalCustodyEngine", "CustodyDecision", "CustodyRoleAssignment",
+    "CapitalContinuityEngine", "ContinuityReport",
+    "CapitalStressEngine", "StressResult",
 ]
 
-__version__ = "1.5.0"
+__version__ = "1.6.0"
 __author__ = "SintraPrime Legal Intelligence"
-__description__ = "Legal intelligence with transaction-capacity, leverage, private-capital, servicing, collateral, audit, and tamper-evident governance controls"
+__description__ = "Legal intelligence with transaction-capacity, leverage, private-capital, servicing, collateral, continuity, stress, audit, and tamper-evident governance controls"

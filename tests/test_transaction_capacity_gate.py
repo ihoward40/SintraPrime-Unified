@@ -7,6 +7,7 @@ from legal_intelligence.transaction_capacity_gate import (
     TransactionCapacityGate,
     TransactionCapacityGateError,
 )
+from legal_intelligence.rare_legal_levers import RareLegalLeverageEngine
 
 
 def _uacc_records_context():
@@ -18,6 +19,7 @@ def _uacc_records_context():
     """
     return {
         "transaction_type": "secured_auto_finance",
+        "jurisdiction": ["New Jersey"],
         "parties": [
             {"name": "consumer", "capacity": "consumer_obligor"},
             {"name": "United Auto Credit Corporation", "capacity": "secured_creditor_or_servicer"},
@@ -37,7 +39,11 @@ def _uacc_records_context():
             "retail_installment_contract",
             "account_history_partial",
             "repossession_or_chargeoff_history",
+            "disposition_occurred",
+            "credit_reporting",
+            "consumer_report",
         ],
+        "facts": ["vehicle", "repossession_sale", "seller_arranged_credit"],
         "output_purpose": "records_demand",
         "theories": [
             {
@@ -157,3 +163,14 @@ def test_deposit_account_control_requires_bank_control_evidence():
     report = gate.evaluate("SEND_DEMAND_LETTER", {"transaction_context": context})
     assert report.decision == GateDecision.BLOCK
     assert any(f.code == "TC012_DEPOSIT_CONTROL" for f in report.findings)
+
+
+def test_uacc_context_surfaces_underused_legal_levers_without_turning_them_into_merits_findings():
+    levers = RareLegalLeverageEngine().suggest(_uacc_records_context())
+    ids = {lever.lever_id for lever in levers}
+    assert "LEV-UCC-9-210" in ids
+    assert "LEV-UCC-9-616" in ids
+    assert "LEV-UCC-9-602" in ids
+    assert "LEV-NJ-DEFICIENCY-PRESUMPTION" in ids
+    assert "LEV-FTC-HOLDER-RULE" in ids
+    assert "LEV-REGV-1022-43" in ids

@@ -94,6 +94,12 @@ from legal_intelligence.ike_advantage import (
     AdvantageControl,
     TreasuryStep,
 )
+from legal_intelligence.private_capital import (
+    PrivateCapitalEngine,
+    CapitalDecision,
+    CapitalFinding,
+    CapitalReport,
+)
 
 __all__ = [
     "PracticeArea",
@@ -165,8 +171,12 @@ __all__ = [
     "IKEAdvantageEngine",
     "AdvantageControl",
     "TreasuryStep",
+    "PrivateCapitalEngine",
+    "CapitalDecision",
+    "CapitalFinding",
+    "CapitalReport",
 ]
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 __author__ = "SintraPrime Legal Intelligence"
-__description__ = "Legal intelligence with transaction-capacity, leverage, procedure, and evidence controls"
+__description__ = "Legal intelligence with transaction-capacity, leverage, procedure, evidence, and private-capital controls"

@@ -97,6 +97,9 @@ from legal_intelligence.receivables import ReceivablesEngine, Receivable, Borrow
 from legal_intelligence.related_party import RelatedPartyEngine, RelatedPartyReport
 from legal_intelligence.private_capital_docs import PrivateCapitalDocsEngine, DocumentTemplateSpec
 from legal_intelligence.capital_risk import CapitalRiskEngine, CapitalRiskReport
+from legal_intelligence.capital_servicing import CapitalServicingEngine, ServicingReport
+from legal_intelligence.capital_dashboard import CapitalDashboardEngine, CapitalDashboardReport
+from legal_intelligence.decision_journal import DecisionJournalHashChain, DecisionJournalEntry
 
 __all__ = [
     "PracticeArea", "LegalMatter", "PracticeAreaRouter", "LEGAL_STANDARDS",
@@ -118,8 +121,11 @@ __all__ = [
     "RelatedPartyEngine", "RelatedPartyReport",
     "PrivateCapitalDocsEngine", "DocumentTemplateSpec",
     "CapitalRiskEngine", "CapitalRiskReport",
+    "CapitalServicingEngine", "ServicingReport",
+    "CapitalDashboardEngine", "CapitalDashboardReport",
+    "DecisionJournalHashChain", "DecisionJournalEntry",
 ]
 
-__version__ = "1.3.0"
+__version__ = "1.4.0"
 __author__ = "SintraPrime Legal Intelligence"
-__description__ = "Legal intelligence with transaction-capacity, leverage, procedure, evidence, and private-capital controls"
+__description__ = "Legal intelligence with transaction-capacity, leverage, procedure, evidence, private-capital, servicing, dashboard, and tamper-evident governance controls"

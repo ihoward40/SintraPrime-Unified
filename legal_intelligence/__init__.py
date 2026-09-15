@@ -53,6 +53,8 @@ from legal_intelligence.capital_rule_dependency import CapitalRuleDependencyEngi
 from legal_intelligence.capital_champion_challenger import CapitalChampionChallengerEngine, RuleTestObservation, RulePerformance, ChampionChallengerReport
 from legal_intelligence.capital_data_quality import CapitalDataQualityEngine, DataQualitySnapshot, DataQualityReport
 from legal_intelligence.capital_drift_monitor import CapitalDriftMonitorEngine, DriftFeatureObservation, DriftFeatureResult, DriftMonitorReport
+from legal_intelligence.capital_data_lineage import CapitalDataLineageEngine, DataLineageRecord, DataLineageReport, LineageStep
+from legal_intelligence.capital_data_remediation import CapitalDataRemediationEngine, DataRemediationCase, DataRemediationDecision
 
 __all__ = [
     "PracticeArea", "LegalMatter", "PracticeAreaRouter", "LEGAL_STANDARDS",
@@ -102,8 +104,10 @@ __all__ = [
     "CapitalChampionChallengerEngine", "RuleTestObservation", "RulePerformance", "ChampionChallengerReport",
     "CapitalDataQualityEngine", "DataQualitySnapshot", "DataQualityReport",
     "CapitalDriftMonitorEngine", "DriftFeatureObservation", "DriftFeatureResult", "DriftMonitorReport",
+    "CapitalDataLineageEngine", "DataLineageRecord", "DataLineageReport", "LineageStep",
+    "CapitalDataRemediationEngine", "DataRemediationCase", "DataRemediationDecision",
 ]
 
-__version__ = "2.5.0"
+__version__ = "2.6.0"
 __author__ = "SintraPrime Legal Intelligence"
-__description__ = "Legal intelligence with governed data-quality and drift monitoring, champion/challenger shadow testing, rule dependency mapping, control validation, institutional learning, committee follow-through, centralized policy, escalation, stress, audit, and tamper-evident governance controls"
+__description__ = "Legal intelligence with governed data lineage and controlled remediation, data-quality and drift monitoring, champion/challenger testing, rule dependency mapping, control validation, institutional learning, committee follow-through, centralized policy, escalation, stress, audit, and tamper-evident governance controls"

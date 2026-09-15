@@ -55,6 +55,8 @@ from legal_intelligence.capital_data_quality import CapitalDataQualityEngine, Da
 from legal_intelligence.capital_drift_monitor import CapitalDriftMonitorEngine, DriftFeatureObservation, DriftFeatureResult, DriftMonitorReport
 from legal_intelligence.capital_data_lineage import CapitalDataLineageEngine, DataLineageRecord, DataLineageReport, LineageStep
 from legal_intelligence.capital_data_remediation import CapitalDataRemediationEngine, DataRemediationCase, DataRemediationDecision
+from legal_intelligence.capital_data_contracts import CapitalDataContractsEngine, DataContract, DataContractField, DataContractValidation, DatasetConformanceReport
+from legal_intelligence.capital_replay_certification import CapitalReplayCertificationEngine, ReplayCertificationRequest, ReplayCertificationReport, ReplayInputRef
 
 __all__ = [
     "PracticeArea", "LegalMatter", "PracticeAreaRouter", "LEGAL_STANDARDS",
@@ -106,8 +108,10 @@ __all__ = [
     "CapitalDriftMonitorEngine", "DriftFeatureObservation", "DriftFeatureResult", "DriftMonitorReport",
     "CapitalDataLineageEngine", "DataLineageRecord", "DataLineageReport", "LineageStep",
     "CapitalDataRemediationEngine", "DataRemediationCase", "DataRemediationDecision",
+    "CapitalDataContractsEngine", "DataContract", "DataContractField", "DataContractValidation", "DatasetConformanceReport",
+    "CapitalReplayCertificationEngine", "ReplayCertificationRequest", "ReplayCertificationReport", "ReplayInputRef",
 ]
 
-__version__ = "2.6.0"
+__version__ = "2.7.0"
 __author__ = "SintraPrime Legal Intelligence"
-__description__ = "Legal intelligence with governed data lineage and controlled remediation, data-quality and drift monitoring, champion/challenger testing, rule dependency mapping, control validation, institutional learning, committee follow-through, centralized policy, escalation, stress, audit, and tamper-evident governance controls"
+__description__ = "Legal intelligence with governed source-data contracts and independent replay certification, data lineage and controlled remediation, data-quality and drift monitoring, champion/challenger testing, rule dependency mapping, control validation, institutional learning, committee follow-through, centralized policy, escalation, stress, audit, and tamper-evident governance controls"

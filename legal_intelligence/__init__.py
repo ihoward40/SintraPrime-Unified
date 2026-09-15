@@ -51,6 +51,8 @@ from legal_intelligence.capital_control_validation import CapitalControlValidati
 from legal_intelligence.capital_rule_registry import CapitalRuleRegistryEngine, CapitalRuleRecord, RuleRegistryDecision
 from legal_intelligence.capital_rule_dependency import CapitalRuleDependencyEngine, RuleDependency, RuleDependencyReport
 from legal_intelligence.capital_champion_challenger import CapitalChampionChallengerEngine, RuleTestObservation, RulePerformance, ChampionChallengerReport
+from legal_intelligence.capital_data_quality import CapitalDataQualityEngine, DataQualitySnapshot, DataQualityReport
+from legal_intelligence.capital_drift_monitor import CapitalDriftMonitorEngine, DriftFeatureObservation, DriftFeatureResult, DriftMonitorReport
 
 __all__ = [
     "PracticeArea", "LegalMatter", "PracticeAreaRouter", "LEGAL_STANDARDS",
@@ -98,8 +100,10 @@ __all__ = [
     "CapitalRuleRegistryEngine", "CapitalRuleRecord", "RuleRegistryDecision",
     "CapitalRuleDependencyEngine", "RuleDependency", "RuleDependencyReport",
     "CapitalChampionChallengerEngine", "RuleTestObservation", "RulePerformance", "ChampionChallengerReport",
+    "CapitalDataQualityEngine", "DataQualitySnapshot", "DataQualityReport",
+    "CapitalDriftMonitorEngine", "DriftFeatureObservation", "DriftFeatureResult", "DriftMonitorReport",
 ]
 
-__version__ = "2.4.0"
+__version__ = "2.5.0"
 __author__ = "SintraPrime Legal Intelligence"
-__description__ = "Legal intelligence with governed rule dependency mapping and champion/challenger shadow testing, control validation and rule-performance monitoring, decision-effectiveness review, institutional learning, committee follow-through, centralized policy, escalation, stress, audit, and tamper-evident governance controls"
+__description__ = "Legal intelligence with governed data-quality and drift monitoring, champion/challenger shadow testing, rule dependency mapping, control validation, institutional learning, committee follow-through, centralized policy, escalation, stress, audit, and tamper-evident governance controls"

@@ -49,6 +49,8 @@ from legal_intelligence.capital_outcome_review import CapitalOutcomeReviewEngine
 from legal_intelligence.capital_lessons_learned import CapitalLessonsLearnedEngine, CapitalLesson
 from legal_intelligence.capital_control_validation import CapitalControlValidationEngine, ControlObservation, ControlValidationReport
 from legal_intelligence.capital_rule_registry import CapitalRuleRegistryEngine, CapitalRuleRecord, RuleRegistryDecision
+from legal_intelligence.capital_rule_dependency import CapitalRuleDependencyEngine, RuleDependency, RuleDependencyReport
+from legal_intelligence.capital_champion_challenger import CapitalChampionChallengerEngine, RuleTestObservation, RulePerformance, ChampionChallengerReport
 
 __all__ = [
     "PracticeArea", "LegalMatter", "PracticeAreaRouter", "LEGAL_STANDARDS",
@@ -94,8 +96,10 @@ __all__ = [
     "CapitalLessonsLearnedEngine", "CapitalLesson",
     "CapitalControlValidationEngine", "ControlObservation", "ControlValidationReport",
     "CapitalRuleRegistryEngine", "CapitalRuleRecord", "RuleRegistryDecision",
+    "CapitalRuleDependencyEngine", "RuleDependency", "RuleDependencyReport",
+    "CapitalChampionChallengerEngine", "RuleTestObservation", "RulePerformance", "ChampionChallengerReport",
 ]
 
-__version__ = "2.3.0"
+__version__ = "2.4.0"
 __author__ = "SintraPrime Legal Intelligence"
-__description__ = "Legal intelligence with control validation and governed rule-performance monitoring, decision-effectiveness review and institutional learning, formal committee disposition, action follow-through, management risk trends, monthly governance packs, governed capital cases, SLA enforcement, time-limited overrides, centralized policy, escalation, early-warning surveillance, continuity, stress, audit, and tamper-evident governance controls"
+__description__ = "Legal intelligence with governed rule dependency mapping and champion/challenger shadow testing, control validation and rule-performance monitoring, decision-effectiveness review, institutional learning, committee follow-through, centralized policy, escalation, stress, audit, and tamper-evident governance controls"

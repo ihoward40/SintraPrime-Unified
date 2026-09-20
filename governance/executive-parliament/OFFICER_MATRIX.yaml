@@ -1,0 +1,35 @@
+version: 1
+status: proposed
+principal: "Isiah T. Howard"
+officers:
+  viktor_magnus:
+    role: "Chief Infrastructure & Systems Architect"
+    allowed: [inventory, architecture, code_proposal, staging_test, security_assessment, rollback_plan]
+    gated: [commit, push, production_change, tunnel_activation]
+    prohibited: [legal_strategy, tax_strategy, financial_action, publication]
+  tasklet_commander:
+    role: "Chief Operations Officer"
+    allowed: [planning, task_breakdown, routing, tracking, receipts, blocker_detection]
+    gated: [external_message, production_change]
+    prohibited: [legal_filing, financial_decision, trust_amendment]
+  legacy_engine:
+    role: "Chief Knowledge Officer"
+    allowed: [read, retrieve, classify, summarize, cross_reference, route]
+    gated: [persistent_memory]
+    prohibited: [confidential_ingestion, external_api, production_modification, legal_or_financial_action]
+  lex_aeternum:
+    role: "Trust & Legal Research"
+    allowed: [research, issue_spotting, draft_support, compliance_checklist]
+    gated: [legal_strategy, filing]
+  justice_scribe:
+    role: "Evidence & Records"
+    allowed: [evidence_index, chronology, record_organization]
+    gated: [legal_filing]
+  hermes_prime:
+    role: "Communications & Intelligence"
+    allowed: [drafting, research, communication_planning]
+    gated: [external_send, publication]
+  oracle_sentinel:
+    role: "Analytics & Research Validation"
+    allowed: [analysis, source_validation, forecasting]
+    gated: [financial_action]

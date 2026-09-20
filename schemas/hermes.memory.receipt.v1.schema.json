@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sintraprime.local/schemas/hermes.memory.receipt.v1.schema.json",
+  "title": "Hermes Governed Memory Receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipt_id",
+    "operation_id",
+    "operation_type",
+    "tenant_id",
+    "actor_id",
+    "profile",
+    "runtime_version",
+    "started_at",
+    "completed_at",
+    "outcome",
+    "source_ids",
+    "note_ids",
+    "diagnostic_codes",
+    "previous_receipt_hash",
+    "receipt_hash"
+  ],
+  "properties": {
+    "schema_version": { "const": "hermes.memory.receipt.v1" },
+    "receipt_id": { "type": "string", "pattern": "^rcpt_[0-9a-fA-F-]{36}$" },
+    "operation_id": { "type": "string", "pattern": "^op_[0-9a-fA-F-]{36}$" },
+    "operation_type": {
+      "enum": ["ingest", "query", "lint", "quarantine", "resolution", "access", "migration", "deletion"]
+    },
+    "tenant_id": { "type": "string", "pattern": "^tenant_[A-Za-z0-9][A-Za-z0-9._-]{2,127}$" },
+    "matter_id": { "type": ["string", "null"], "pattern": "^matter_[A-Za-z0-9][A-Za-z0-9._-]{2,127}$" },
+    "actor_id": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "profile": {
+      "enum": ["hermes-librarian", "hermes-research", "hermes-content", "hermes-client-ops", "system"]
+    },
+    "runtime_version": { "type": "string", "minLength": 1, "maxLength": 100 },
+    "started_at": { "type": "string", "format": "date-time" },
+    "completed_at": { "type": "string", "format": "date-time" },
+    "outcome": { "enum": ["succeeded", "denied", "quarantined", "rejected", "failed", "idempotent_noop"] },
+    "source_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^src_[a-f0-9]{64}$" }
+    },
+    "note_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^note_[0-9a-fA-F-]{36}$" }
+    },
+    "contradiction_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^contra_[0-9a-fA-F-]{36}$" }
+    },
+    "diagnostic_codes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 100 }
+    },
+    "output_hash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "previous_receipt_hash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "receipt_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "human_authority_id": { "type": ["string", "null"], "maxLength": 200 },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["string", "number", "integer", "boolean", "null"]
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "operation_type": { "enum": ["resolution", "deletion"] } },
+        "required": ["operation_type"]
+      },
+      "then": {
+        "required": ["human_authority_id"],
+        "properties": { "human_authority_id": { "type": "string", "minLength": 1 } }
+      }
+    }
+  ]
+}

@@ -202,3 +202,54 @@ def pytest_configure(config):
 def pytest_collectstart(collector):
     """Re-register integrations namespace package before each file is collected."""
     _register_integrations()
+
+
+# ---------------------------------------------------------------------------
+# G0-R4.1 (SP-RC-EXECUTION-SAFETY-UNBLOCK-001): certification network guard.
+# Default-deny outbound network for certification execution. Activated ONLY when
+# SINTRAPRIME_CERT_NET_GUARD=1 (set by scripts/certify.py). Loopback traffic is
+# allowed; every other outbound connect/sendto raises a clear, loud error so a
+# forgotten mock becomes a visible certification failure, never a live call.
+# This is test-infrastructure only; no application behavior is modified.
+# ---------------------------------------------------------------------------
+import os as _os
+import socket as _socket
+
+if _os.environ.get("SINTRAPRIME_CERT_NET_GUARD") == "1":
+    _LOOPBACK_HOSTS = {"127.0.0.1", "::1", "0.0.0.0", "localhost"}
+    _GUARD_NOTICE = ("[SINTRAPRIME-CERT-NET-GUARD] outbound network denied "
+                     "certification policy (default-deny; loopback only). "
+                     "Destination: {dest!r}. If this test legitimately needs an "
+                     "external service it must be classified and sandboxed.")
+
+    def _is_loopback(dest):
+        host = dest[0] if isinstance(dest, tuple) else dest
+        if not isinstance(host, str):
+            return True  # AF_UNIX / non-INET targets: allow
+        return host in _LOOPBACK_HOSTS or host.startswith("127.") or host.endswith(".localhost")
+
+    class _GuardedSocket(_socket.socket):
+        def connect(self, address):
+            if not _is_loopback(address):
+                raise ConnectionAbortedError(_GUARD_NOTICE.format(dest=address))
+            return super().connect(address)
+
+        def connect_ex(self, address):
+            if not _is_loopback(address):
+                raise ConnectionAbortedError(_GUARD_NOTICE.format(dest=address))
+            return super().connect_ex(address)
+
+        def sendto(self, data, address=None):
+            if address is not None and not _is_loopback(address):
+                raise ConnectionAbortedError(_GUARD_NOTICE.format(dest=address))
+            return super().sendto(data, address) if address is not None else super().sendto(data)
+
+    _REAL_CREATE_CONNECTION = _socket.create_connection
+
+    def _guarded_create_connection(address, *a, **kw):
+        if not _is_loopback(address):
+            raise ConnectionAbortedError(_GUARD_NOTICE.format(dest=address))
+        return _REAL_CREATE_CONNECTION(address, *a, **kw)
+
+    _socket.socket = _GuardedSocket
+    _socket.create_connection = _guarded_create_connection

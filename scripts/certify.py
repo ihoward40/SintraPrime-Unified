@@ -201,10 +201,19 @@ def main() -> int:
     env["TMPDIR"] = env["TEMP"] = env["TMP"] = str(tmp_for_children)
     env["PYTHONPATH"] = str(ROOT)
     env["SINTRAPRIME_TEST_LANES"] = LANE_ENV[args.target]
+    # G0-R4.1: default-deny outbound network for certification execution (loopback allowed).
+    env["SINTRAPRIME_CERT_NET_GUARD"] = "1"
 
     started = datetime.now(UTC).isoformat()
     t0 = time.monotonic()
-    proc = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, env=env)
+    # G0-R4.1 ER-003: per-test timeout (pytest-timeout) + lane wall-clock cap.
+    # A timeout is a clear certification failure, never a silent cancellation.
+    cmd = cmd + ["--timeout=120", "--timeout-method=thread"]
+    try:
+        proc = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, env=env, timeout=1800)
+    except subprocess.TimeoutExpired:
+        print(f"[certify] LANE WALL-CLOCK TIMEOUT (1800s) on target {args.target!r}: CERTIFICATION FAILURE")
+        return 3
     duration = time.monotonic() - t0
     finished = datetime.now(UTC).isoformat()
 

@@ -53,9 +53,9 @@ BLOCKED_BY_IMPORT, BLOCKED_BY_SERVICE, NO_TESTS_FOUND, REVIEW_REQUIRED.
 **Blocked specific test files (recorded, NOT fixed in G0-R3):**
 | File | Lane | Blocker | Status |
 |------|------|----------|--------|
-| `backend/lead-router/tests/test_router.py` | C | `ImportError: No module named 'models'` (local package import path) | BLOCKED_BY_IMPORT → RC-001 |
-| `phase19/revenue_smoke_test/test_config.py` | C | `ImportError: No module named 'test_config'` (sibling import) | BLOCKED_BY_IMPORT → RC-002 |
-| `phase19/trust_compliance_gateway/tests/test_trust_compliance_gateway.py` | C | `ImportError: No module named 'tool_registry'` (missing/unordered import) | BLOCKED_BY_IMPORT → RC-003 |
+| `backend/lead-router/tests/test_router.py` | C | `No module named 'models'` (TEST_IMPORT_PATH) | COLLECTED — fixed via conftest sys.path (RC-001) |
+| `phase19/revenue_smoke_test/test_config.py` | C | `No module named 'test_config'` (TEST_PACKAGE_LAYOUT) | COLLECTED — fixed via phase19/conftest sys.path (RC-002) |
+| `phase19/trust_compliance_gateway/tests/test_trust_compliance_gateway.py` | C | `No module named 'tool_registry'` (TEST_IMPORT_PATH) | COLLECTED — fixed via conftest sys.path (RC-003) |
 
 ### Resolved during provisioning (dependency gaps, now collected)
 - `discord` (third-party) missing → provisioned `discord.py` (discord-py 2.7.1) → `core/tests/test_slack_integration.py` + `core/universe/tests/test_discord_integration.py` now COLLECTED.
@@ -65,33 +65,37 @@ BLOCKED_BY_IMPORT, BLOCKED_BY_SERVICE, NO_TESTS_FOUND, REVIEW_REQUIRED.
 ### G0-R3 findings (record only; do not fix here)
 | ID | Lane | Module | Evidence | Blocker class | Likely owner |
 |----|------|--------|----------|---------------|-------------|
-| RC-001 | C | backend/lead-router | `No module named 'models'` at import of test_router.py | import/packaging defect | backend owner (G1) |
-| RC-002 | C | phase19/revenue_smoke_test | `No module named 'test_config'` at import | import/packaging defect | phase19 owner (G1) |
-| RC-003 | C | phase19/trust_compliance_gateway | `No module named 'tool_registry'` at import | import/packaging defect | phase19 owner (G1) |
+| RC-001 | C | backend/lead-router | `No module named 'models'` → classified TEST_IMPORT_PATH; fixed via package conftest sys.path (no source change) | RESOLVED (G0-R3.1, test-infra) |
+| RC-002 | C | phase19/revenue_smoke_test | `No module named 'test_config'` → classified TEST_PACKAGE_LAYOUT; fixed via phase19/conftest sys.path (no source change) | RESOLVED (G0-R3.1, test-infra) |
+| RC-003 | C | phase19/trust_compliance_gateway | `No module named 'tool_registry'` → classified TEST_IMPORT_PATH; fixed via package conftest sys.path (no source change) | RESOLVED (G0-R3.1, test-infra) |
 
 ### Final state
 ```
-G0_RUNTIME_COLLECTION        = BLOCKED   (3 specific test files fail import; 31/31 modules otherwise collect)
-RUNTIME_COLLECTION_VERIFIED  = FALSE     (not all mandatory modules error-free; RC-001..003 open)
+G0_RUNTIME_COLLECTION        = PASS      (all four lanes collect with 0 errors; RC-001..003 resolved in G0-R3.1)
+RUNTIME_COLLECTION_VERIFIED  = TRUE      (all mandatory release-bearing modules represented; RC-001..003 clear; no new errors)
 BASE_SHA_VERIFIED            = TRUE      (c0c29a0e; 4830c25 still absent)
 ENVIRONMENT_PROVISIONED      = TRUE      (deps installed via uv; Postgres/Redis not started — not required for collection)
 FOUR_LANES_IMPLEMENTED       = TRUE      (conftest 'release' gate + certify.py 4 RC targets + --collect-only)
 ALL_RELEASE_MODULES_ADDRESSED= TRUE      (every release module assigned to ≥1 lane or flagged REVIEW_REQUIRED)
 AUTH_IDENTITY_COLLECTION     = COLLECTED (99 files, portal+tests)
 TENANT_DATA_COLLECTION       = COLLECTED (66 files, portal/tests)
-EXECUTION_CORRECTNESS_COLLECTION = PARTIAL (31 modules collected; 3 files BLOCKED_BY_IMPORT)
+EXECUTION_CORRECTNESS_COLLECTION = COLLECTED (31 modules, 0 collection errors; RC-001..003 resolved via test-runner path config)
 RELEASE_CERT_COLLECTION      = COLLECTED (28 files, tests/ + scripts/ci/tests)
 APPLICATION_SOURCE_MUTATION  = NONE
-TEST_INFRA_MUTATION          = conftest.py (release lane gate), scripts/certify.py (4 RC lanes + --collect-only)
+TEST_INFRA_MUTATION          = conftest.py (release lane gate), scripts/certify.py (4 RC lanes + --collect-only), 3 package conftest.py (backend/lead-router, trust_compliance_gateway, phase19) for sys.path insertion
 COMMIT_CREATED               = TRUE (on rc/g0r3-collection, test-infra only)
 PUSH_PERFORMED               = FALSE
 REALITY_GATE                 = CLOSED
 ```
 
-**Strict-bar note:** the acceptance criterion "all mandatory release-bearing modules represented
-in successful collection" is not fully met because 3 files error on import. These are isolated
-local import/packaging defects (RC-001..003), not environment or dependency gaps, and are
-explicitly OUT of G0-R3 scope. Clearing them in G1 flips `execution_correctness` to COLLECTED
-and `RUNTIME_COLLECTION_VERIFIED` to TRUE. The decisive G0-R2 concern — that the default lane
-went green while the entire execution/payment/durable-mission surface was invisible — is now
-resolved: that surface is collected and represented.
+**Strict-bar note (updated G0-R3.1):** the acceptance criterion "all mandatory release-bearing
+modules represented in successful collection" is now MET. RC-001..003 were all classified as
+`TEST_IMPORT_PATH` / `TEST_PACKAGE_LAYOUT` (runner-path-config defects, not application defects)
+and cleared in G0-R3.1 by adding three `conftest.py` sys.path insertions — no application or
+test-logic source was modified. All four lanes (`auth_identity`, `tenant_data`,
+`execution_correctness`, `release_cert`) now collect with **0 errors** and every mandatory
+release-bearing module is represented. `RUNTIME_COLLECTION_VERIFIED = TRUE`. The decisive G0-R2
+concern — that the default lane went green while the entire execution/payment/durable-mission
+surface was invisible — is resolved: that surface is collected and represented. Execution
+(running the suites) remains separately authorized and will additionally require PostgreSQL/Redis
+only for the lanes that need them.

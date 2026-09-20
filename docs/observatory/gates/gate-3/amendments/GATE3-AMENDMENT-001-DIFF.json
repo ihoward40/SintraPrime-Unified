@@ -1,0 +1,51 @@
+{
+  "amendment": "GATE3-AMENDMENT-001",
+  "original_manifest_hash": "3e0e65c9bf4983690e76ab248c88bc9e96ab23e1e3badcdd329c89334cb8471f",
+  "replacement_manifest_hash": "fc841662e1abace80fc9ae5eff720a07584a46f3083af35877da30003322609f",
+  "original_manifest_file_available": false,
+  "regeneration_reason": "Include migration backfill test output, correct artifact-count reporting, and refresh test evidence",
+  "gate_3_decision_changed": false,
+  "source_code_changed": false,
+  "migration_files_changed": false,
+  "test_outputs_changed": true,
+  "test_count": {
+    "original": 151,
+    "replacement": 152,
+    "difference": 1,
+    "explanation": "test_migration_backfill.py added to captured full-suite output"
+  },
+  "added_files": [
+    "evidence/tests/full-suite-output.txt",
+    "evidence/tests/kill-switch-sqlite-output.txt",
+    "evidence/tests/kill-switch-pg-output.txt"
+  ],
+  "removed_files": [],
+  "modified_files": [
+    {
+      "path": "gate-3-evidence-manifest.json",
+      "change": "regenerated with updated artifact list and test output; hash changed"
+    }
+  ],
+  "unchanged_files": [
+    "evidence/migrations/migration-file-hashes.json",
+    "evidence/sqlite/schema-inventory.json",
+    "evidence/postgresql/schema-inventory.json"
+  ],
+  "original_artifact_hashes": {
+    "status": "unavailable",
+    "reason": "original manifest file was overwritten and not backed up; only the digest was recorded in prior chat output"
+  },
+  "replacement_artifact_hashes": {
+    "gate-3-evidence-manifest.json": "fc841662e1abace80fc9ae5eff720a07584a46f3083af35877da30003322609f",
+    "evidence/migrations/migration-file-hashes.json": "__MANIFEST_DERIVED__",
+    "evidence/sqlite/schema-inventory.json": "__MANIFEST_DERIVED__",
+    "evidence/postgresql/schema-inventory.json": "__MANIFEST_DERIVED__",
+    "evidence/tests/full-suite-output.txt": "__MANIFEST_DERIVED__",
+    "evidence/tests/kill-switch-sqlite-output.txt": "__MANIFEST_DERIVED__",
+    "evidence/tests/kill-switch-pg-output.txt": "__MANIFEST_DERIVED__"
+  },
+  "notes": [
+    "Artifact count is 7: the manifest itself plus six evidence artifacts. The acceptance report is a peer governance document, not an evidence artifact.",
+    "Exact replacement artifact hashes are recorded in the authoritative manifest file."
+  ]
+}

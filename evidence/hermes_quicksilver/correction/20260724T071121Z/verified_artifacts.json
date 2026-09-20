@@ -1,0 +1,47 @@
+{
+  "run_id": "20260724T071121Z",
+  "files": [
+    {
+      "path": "docs/architecture/HERMES_QUICKSILVER_GAP_ANALYSIS.md",
+      "exists": true,
+      "bytes": 12274,
+      "sha256": "21176adf1262298b92d61ce1f56d2cbef4dd0c215fe001188baa3467d45ed059"
+    },
+    {
+      "path": "docs/implementation/HERMES_QUICKSILVER_PREPARATION_REPORT.md",
+      "exists": true,
+      "bytes": 12718,
+      "sha256": "01254536fee388dfd04f9585227b349bba560ff705672caff265614451abffd7"
+    },
+    {
+      "path": "evidence/hermes_quicksilver/rejected/INVALID_PREPARATION_GATE_REPORT.md",
+      "exists": true,
+      "bytes": 3638,
+      "sha256": "6084d41175e0fbd9f3cd7a416db6a6f40ca7a4251fe29fd480a21b6bb40d60dd"
+    },
+    {
+      "path": "evidence/hermes_quicksilver/rejected/INVALID_PREPARATION_GATE_REPORT_FINDINGS.md",
+      "exists": true,
+      "bytes": 1862,
+      "sha256": "4ceca31c93263975e2a990106f8d09f67005f0e5283cbd357ab60be80dadad01"
+    },
+    {
+      "path": "evidence/hermes_quicksilver/correction/20260724T071121Z/narrow_test_suite_report.json",
+      "exists": true,
+      "bytes": 11883,
+      "sha256": "ae373b2315b3cba5b8a56e579d0f645d6a4130bb0a0387e7c9e8b7dabfe45b74"
+    },
+    {
+      "path": "evidence/hermes_quicksilver/correction/20260724T071121Z/source_symbol_evidence.json",
+      "exists": true,
+      "bytes": 4137,
+      "sha256": "fa6bb08fe788450748ebca8da80b81c7723b5608156b897df6d85b482d094825"
+    },
+    {
+      "path": "evidence/hermes_quicksilver/correction/20260724T071121Z/environment.json",
+      "exists": true,
+      "bytes": 841,
+      "sha256": "285dc155dbd672540869f135409bffde1d7845101247db1657cdf499e1e9c350"
+    }
+  ]
+}

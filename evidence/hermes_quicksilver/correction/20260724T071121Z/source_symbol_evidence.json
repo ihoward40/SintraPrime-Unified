@@ -1,0 +1,128 @@
+{
+  "run_id": "20260724T071121Z",
+  "hermes_repo": "<HERMES_SOURCE>",
+  "capabilities": [
+    {
+      "capability": "Profile routing",
+      "source_file": "C:\\Users\\admin\\AppData\\Local\\hermes\\hermes-agent\\gateway\\profile_routing.py",
+      "source_exists": true,
+      "symbols_searched": [
+        "ProfileRoute",
+        "parse_profile_routes",
+        "match_profile_route"
+      ],
+      "symbols_found": [
+        "ProfileRoute",
+        "parse_profile_routes",
+        "match_profile_route"
+      ]
+    },
+    {
+      "capability": "Approval / dangerous command",
+      "source_file": "C:\\Users\\admin\\AppData\\Local\\hermes\\hermes-agent\\tools\\approval.py",
+      "source_exists": true,
+      "symbols_searched": [
+        "detect_dangerous_command",
+        "request_approval",
+        "set_current_session_key"
+      ],
+      "symbols_found": [
+        "detect_dangerous_command",
+        "set_current_session_key"
+      ]
+    },
+    {
+      "capability": "Approval deny rules",
+      "source_file": "C:\\Users\\admin\\AppData\\Local\\hermes\\hermes-agent\\tools\\approval.py",
+      "source_exists": true,
+      "symbols_searched": [
+        "DANGEROUS_PATTERNS",
+        "PERMANENT_ALLOWLIST"
+      ],
+      "symbols_found": [
+        "DANGEROUS_PATTERNS"
+      ]
+    },
+    {
+      "capability": "Approval isolation",
+      "source_file": "C:\\Users\\admin\\AppData\\Local\\hermes\\hermes-agent\\acp_adapter\\permissions.py",
+      "source_exists": true,
+      "symbols_searched": [],
+      "symbols_found": []
+    },
+    {
+      "capability": "Approval redaction",
+      "source_file": "C:\\Users\\admin\\AppData\\Local\\hermes\\hermes-agent\\agent\\redact.py",
+      "source_exists": true,
+      "symbols_searched": [
+        "redact_sensitive_text"
+      ],
+      "symbols_found": [
+        "redact_sensitive_text"
+      ]
+    },
+    {
+      "capability": "TUI approval redaction",
+      "source_file": "C:\\Users\\admin\\AppData\\Local\\hermes\\hermes-agent\\gateway\\tui_approval.py",
+      "source_exists": false,
+      "symbols_searched": [],
+      "symbols_found": []
+    },
+    {
+      "capability": "Session persistence",
+      "source_file": "C:\\Users\\admin\\AppData\\Local\\hermes\\hermes-agent\\gateway\\session.py",
+      "source_exists": true,
+      "symbols_searched": [],
+      "symbols_found": []
+    },
+    {
+      "capability": "Session stale guard",
+      "source_file": "C:\\Users\\admin\\AppData\\Local\\hermes\\hermes-agent\\gateway\\session.py",
+      "source_exists": true,
+      "symbols_searched": [],
+      "symbols_found": []
+    },
+    {
+      "capability": "Checkpoint resumption",
+      "source_file": "C:\\Users\\admin\\AppData\\Local\\hermes\\hermes-agent\\hermes_cli\\checkpoints.py",
+      "source_exists": true,
+      "symbols_searched": [],
+      "symbols_found": []
+    },
+    {
+      "capability": "Provider fallback",
+      "source_file": "C:\\Users\\admin\\AppData\\Local\\hermes\\hermes-agent\\hermes_cli\\fallback_cmd.py",
+      "source_exists": true,
+      "symbols_searched": [],
+      "symbols_found": []
+    },
+    {
+      "capability": "Secret scope",
+      "source_file": "C:\\Users\\admin\\AppData\\Local\\hermes\\hermes-agent\\agent\\secret_scope.py",
+      "source_exists": true,
+      "symbols_searched": [],
+      "symbols_found": []
+    },
+    {
+      "capability": "Session export",
+      "source_file": "C:\\Users\\admin\\AppData\\Local\\hermes\\hermes-agent\\hermes_cli\\session_export.py",
+      "source_exists": true,
+      "symbols_searched": [
+        "render_sessions_export",
+        "iter_user_prompt_records"
+      ],
+      "symbols_found": [
+        "render_sessions_export",
+        "iter_user_prompt_records"
+      ]
+    },
+    {
+      "capability": "Gateway restart/recovery",
+      "source_file": "C:\\Users\\admin\\AppData\\Local\\hermes\\hermes-agent\\gateway\\restart.py",
+      "source_exists": true,
+      "symbols_searched": [],
+      "symbols_found": []
+    }
+  ],
+  "quicksilver_worktree": "<WORKTREE>"
+}

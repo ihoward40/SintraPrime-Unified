@@ -1,0 +1,94 @@
+{
+  "result_id": "67829546-7939-422f-8680-9dcc994ee6c7",
+  "utility_id": "WS8-CMRD-001",
+  "calculator_version": "0.1.0",
+  "calculation_mode": "SCENARIO_ARITHMETIC",
+  "generated_at": "2026-09-24T06:28:44.465428+00:00",
+  "calculation": {
+    "value": "2026-10-24",
+    "method": "30 calendar days; start day exclude",
+    "intermediate_steps": [
+      "2026-09-25",
+      "2026-09-26",
+      "2026-09-27",
+      "2026-09-28",
+      "2026-09-29",
+      "2026-09-30",
+      "2026-10-01",
+      "2026-10-02",
+      "2026-10-03",
+      "2026-10-04",
+      "2026-10-05",
+      "2026-10-06",
+      "2026-10-07",
+      "2026-10-08",
+      "2026-10-09",
+      "2026-10-10",
+      "2026-10-11",
+      "2026-10-12",
+      "2026-10-13",
+      "2026-10-14",
+      "2026-10-15",
+      "2026-10-16",
+      "2026-10-17",
+      "2026-10-18",
+      "2026-10-19",
+      "2026-10-20",
+      "2026-10-21",
+      "2026-10-22",
+      "2026-10-23",
+      "2026-10-24"
+    ],
+    "days_remaining_as_of": "2026-09-24",
+    "days_remaining": 30,
+    "falls_on_weekend": true,
+    "falls_on_supplied_holiday": false,
+    "adjusted_date": null
+  },
+  "user_inputs": {
+    "mailing_date": "2026-09-24",
+    "delivery_date": null,
+    "trigger": "mailing",
+    "period": 30,
+    "day_type": "calendar",
+    "start_day": "exclude",
+    "jurisdiction": "NJ",
+    "holidays": [],
+    "today": "2026-09-24"
+  },
+  "assumptions": [
+    "The selected event and counting convention are user-defined scenario inputs.",
+    "No weekend/holiday adjustment is applied."
+  ],
+  "governing_authority": [],
+  "authority_effective_date": null,
+  "exceptions_limitations": [
+    "This is scenario arithmetic, not a legal deadline.",
+    "Calculated date based on the rule selected. Verify the governing statute, regulation, contract, court rule, or notice before relying on the date."
+  ],
+  "evidence_used": [],
+  "missing_evidence": [
+    "Original notice or contract",
+    "Envelope or mailing receipt",
+    "Delivery/tracking history",
+    "Applicable governing rule"
+  ],
+  "result_confidence": "LOW",
+  "confidence_reasons": [
+    "Arithmetic inputs are complete; governing rule and evidence are unverified."
+  ],
+  "next_procedural_step": "Verify the triggering event and counting rule against the governing source.",
+  "ike_service_route": null,
+  "chronology": [
+    {
+      "date": "2026-09-24",
+      "event": "mailing date",
+      "source": "user input"
+    },
+    {
+      "date": "2026-10-24",
+      "event": "scenario calculated date",
+      "source": "arithmetic only"
+    }
+  ]
+}

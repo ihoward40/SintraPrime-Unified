@@ -82,6 +82,7 @@ When the user requests a durable behavior change, record it here or in the relev
 
 | Path | Scope | Controls |
 |---|---|---|
+| `ws8_cmrd/AGENTS.md` | WS8-CMRD-001 standalone scenario arithmetic and replay | Phase 1 contract, manifest, export and authority boundary |
 | `portal/AGENTS.md` | Client portal (FastAPI) | Auth, models, routes, services, middleware, SSO, WebSocket, DB schema, portal-level tests |
 | `portal/routers/AGENTS.md` | API route handlers | Router modules and their tests; delegates business logic to `services/` |
 | `agents/AGENTS.md` | Autonomous agent system | Nova, Sigma, Zero, Chat, Howard agents (Howard is approval-gated — evidence-intake only) |

@@ -81,3 +81,26 @@ __pycache__/
 *.log
 logs/
 e2e_test.db
+
+
+# Local confidential / operational stores (never commit)
+clients/
+matters/
+trust/
+beneficiaries/
+reports/private/
+artifacts/private/
+evidence/private/
+tax-operations/
+_quarantine_*/
+
+# Sensitive operational documents
+**/credit-reports/*.pdf
+**/evidence/drafts/*.pdf
+**/tax/**/*.pdf
+**/bank/**/*.pdf
+
+# Local backup / diagnostic noise
+*.backup-*
+.bandit-new-findings.json
+pytest_report.txt

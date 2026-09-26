@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import threading
 from hashlib import sha256
-from typing import Dict, List, Optional
 
-from ..canonical.jcs import canonical_bytes
+from ..canonical.jcs import canonical_bytes, state_sha256
 from ..contracts.contracts import semantic_contract_sha256
-from ..canonical.jcs import state_sha256
 from ..engine.types import DecisionResult
 from ..policy.policy import PolicyDecision
 
@@ -18,8 +15,8 @@ SCHEMA_VERSION = "sp-decision-receipt-v1"
 
 def build_receipt(*, decision_id: str, run_id: str, state: dict, contract_raw: dict,
                   result: DecisionResult, policy: PolicyDecision,
-                  timestamps: Optional[dict] = None) -> dict:
-    receipt = {
+                  timestamps: dict | None = None) -> dict:
+    return {
         "schema_version": SCHEMA_VERSION,
         "decision_id": decision_id,
         "run_id": run_id,
@@ -53,7 +50,6 @@ def build_receipt(*, decision_id: str, run_id: str, state: dict, contract_raw: d
         "latency_ms": result.latency_ms,
         "timestamps": timestamps or {},
     }
-    return receipt
 
 
 def entry_hash(entry: dict) -> str:
@@ -87,7 +83,7 @@ class Ledger:
     """
 
     def __init__(self) -> None:
-        self._entries: List[dict] = []
+        self._entries: list[dict] = []
         self._lock = threading.Lock()
 
     def append(self, receipt: dict) -> dict:
@@ -113,5 +109,5 @@ class Ledger:
     def __len__(self) -> int:
         return len(self._entries)
 
-    def entries(self) -> List[dict]:
+    def entries(self) -> list[dict]:
         return [dict(e) for e in self._entries]

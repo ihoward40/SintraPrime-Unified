@@ -17,14 +17,12 @@ Failure mapping (fail-closed):
 
 from __future__ import annotations
 
-import json
 import time
-from typing import Any, Dict, Optional
 
 from ...contracts.contracts import DecisionContract
 from ...engine.types import Answer, DecisionResult, Primitive, ResultKind
-from ..config import get_provider_config
 from ..coerce import coerce_number
+from ..config import get_provider_config
 
 _DEFAULT_BASE_URL = "https://ai-gateway.vercel.com"  # documented Gateway root
 _RAW_PRIMITIVE_NAMES = {"choice": "Choice", "score": "Score", "boolean": "Noul"}  # provider-local
@@ -33,8 +31,8 @@ _RAW_PRIMITIVE_NAMES = {"choice": "Choice", "score": "Score", "boolean": "Noul"}
 class JevDecisionProvider:
     name = "jev"
 
-    def __init__(self, *, base_url: Optional[str] = None, api_key: Optional[str] = None,
-                 model: Optional[str] = None, timeout_s: Optional[float] = None,
+    def __init__(self, *, base_url: str | None = None, api_key: str | None = None,
+                 model: str | None = None, timeout_s: float | None = None,
                  transport=None) -> None:
         cfg = get_provider_config()
         self.base_url = (base_url or cfg.jev_base_url or _DEFAULT_BASE_URL).rstrip("/")
@@ -48,7 +46,7 @@ class JevDecisionProvider:
     # -- transport seam (injectable for deterministic tests) ----------------
 
     @staticmethod
-    def _httpx_transport(url: str, payload: dict, api_key: Optional[str], timeout_s: float) -> dict:
+    def _httpx_transport(url: str, payload: dict, api_key: str | None, timeout_s: float) -> dict:
         import httpx  # optional dependency; only needed for live use
 
         headers = {"content-type": "application/json"}
@@ -56,9 +54,9 @@ class JevDecisionProvider:
             headers["authorization"] = f"Bearer {api_key}"
         resp = httpx.post(url, json=payload, headers=headers, timeout=timeout_s)
         if resp.status_code in (429,) or resp.status_code >= 500:
-            raise TransportFault(f"http_{resp.status_code}")
+            raise TransportFaultError(f"http_{resp.status_code}")
         if resp.status_code >= 400:
-            raise ResponseFault(f"http_{resp.status_code}")
+            raise ResponseFaultError(f"http_{resp.status_code}")
         return resp.json()
 
     # -- evaluation ---------------------------------------------------------
@@ -76,9 +74,9 @@ class JevDecisionProvider:
         url = f"{self.base_url}/v1/systemone"
         try:
             raw = self._transport(url, payload, self.api_key, self.timeout_s)
-        except TransportFault as e:
+        except TransportFaultError as e:
             return self._result(ResultKind.UNAVAILABLE, started, reason=str(e))
-        except ResponseFault as e:
+        except ResponseFaultError as e:
             return self._result(ResultKind.ERROR, started, reason=str(e))
         except Exception as e:  # connection/DNS/timeout and any other transport fault
             return self._result(ResultKind.UNAVAILABLE, started, reason=f"transport: {type(e).__name__}")
@@ -89,8 +87,8 @@ class JevDecisionProvider:
         if not isinstance(raw_answers, dict):
             return self._result(ResultKind.ERROR, started, reason="malformed: missing answers")
 
-        answers: Dict[str, Answer] = {}
-        raw_names: Dict[str, str] = {}
+        answers: dict[str, Answer] = {}
+        raw_names: dict[str, str] = {}
         contract_qs = {q.name: q for q in contract.questions}
         for qname, raw_a in raw_answers.items():
             q = contract_qs.get(qname)
@@ -99,10 +97,9 @@ class JevDecisionProvider:
                                     reason=f"contract_mismatch: unknown question {qname!r}")
             if not isinstance(raw_a, dict):
                 return self._result(ResultKind.ERROR, started, reason=f"malformed: answer {qname!r}")
-            ptype = raw_a.get("type")
             try:
                 primitive_key, ans = self._normalize_answer(q, raw_a)
-            except _SchemaMismatch as e:
+            except _SchemaMismatchError as e:
                 return self._result(ResultKind.ERROR, started, reason=str(e))
             raw_names[qname] = _RAW_PRIMITIVE_NAMES[primitive_key]
             answers[qname] = ans
@@ -140,19 +137,19 @@ class JevDecisionProvider:
         confidence_raw = raw_a.get("confidence")
         confidence, conf_err = (None, None) if confidence_raw is None else coerce_number(confidence_raw, "confidence")
         if conf_err:
-            raise _SchemaMismatch(conf_err)
+            raise _SchemaMismatchError(conf_err)
         # ---- native Choice -> choice
         if ptype == "choice":
             if q.primitive is not Primitive.CHOICE:
-                raise _SchemaMismatch(f"primitive mismatch on {q.name}: choice vs contract")
+                raise _SchemaMismatchError(f"primitive mismatch on {q.name}: choice vs contract")
             probs = raw_a.get("probabilities")
             if not isinstance(probs, dict) or not probs:
-                raise _SchemaMismatch(f"missing_distribution on {q.name}")
+                raise _SchemaMismatchError(f"missing_distribution on {q.name}")
             sel = raw_a.get("choice")
             if sel is None:
                 sel = max(probs, key=lambda k: probs[k])
             if q.choices and sel not in q.choices:
-                raise _SchemaMismatch(f"contract_mismatch: {sel!r} not a contract choice on {q.name}")
+                raise _SchemaMismatchError(f"contract_mismatch: {sel!r} not a contract choice on {q.name}")
             ordered = sorted(probs.items(), key=lambda kv: kv[1], reverse=True)
             top1 = ordered[0]
             top2 = ordered[1] if len(ordered) > 1 else (None, 0.0)
@@ -168,12 +165,12 @@ class JevDecisionProvider:
         # ---- native Score -> score
         if ptype == "score":
             if q.primitive is not Primitive.SCORE:
-                raise _SchemaMismatch(f"primitive mismatch on {q.name}: score vs contract")
+                raise _SchemaMismatchError(f"primitive mismatch on {q.name}: score vs contract")
             if "score" not in raw_a:
-                raise _SchemaMismatch(f"malformed: score missing on {q.name}")
+                raise _SchemaMismatchError(f"malformed: score missing on {q.name}")
             sv, sv_err = coerce_number(raw_a["score"], "score")
             if sv_err:
-                raise _SchemaMismatch(sv_err)
+                raise _SchemaMismatchError(sv_err)
             ans = Answer(
                 question=q.name, primitive=Primitive.SCORE,
                 score_value=sv,
@@ -183,13 +180,13 @@ class JevDecisionProvider:
         # ---- native Noul / SDK boolean -> boolean
         if ptype in ("noul", "boolean"):
             if q.primitive is not Primitive.BOOLEAN:
-                raise _SchemaMismatch(f"primitive mismatch on {q.name}: boolean vs contract")
+                raise _SchemaMismatchError(f"primitive mismatch on {q.name}: boolean vs contract")
             prob = raw_a.get("probability", raw_a.get("noul"))
             if prob is None:
-                raise _SchemaMismatch(f"malformed: probability missing on {q.name}")
+                raise _SchemaMismatchError(f"malformed: probability missing on {q.name}")
             pv, pv_err = coerce_number(prob, "probability")
             if pv_err:
-                raise _SchemaMismatch(pv_err)
+                raise _SchemaMismatchError(pv_err)
             ans = Answer(
                 question=q.name, primitive=Primitive.BOOLEAN,
                 value=pv >= 0.5, probability=pv,
@@ -197,16 +194,16 @@ class JevDecisionProvider:
             )
             return "boolean", ans
         # ---- unknown provider primitive: fail closed
-        raise _SchemaMismatch(f"unknown_primitive {ptype!r} on {q.name}")
+        raise _SchemaMismatchError(f"unknown_primitive {ptype!r} on {q.name}")
 
 
-class TransportFault(Exception):
+class TransportFaultError(Exception):
     pass
 
 
-class ResponseFault(Exception):
+class ResponseFaultError(Exception):
     pass
 
 
-class _SchemaMismatch(Exception):
+class _SchemaMismatchError(Exception):
     pass

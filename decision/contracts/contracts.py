@@ -8,7 +8,7 @@ Semantic changes (choices, thresholds, risk, questions) MUST move it.
 from __future__ import annotations
 
 from hashlib import sha256
-from typing import Any, Dict
+from typing import Any
 
 from ..canonical.jcs import canonical_bytes
 from ..engine.types import DecisionContract, Primitive, Question, Risk
@@ -16,14 +16,14 @@ from ..engine.types import DecisionContract, Primitive, Question, Risk
 _ALLOWED_TOP_KEYS = {"contract_id", "version", "risk", "questions"}
 
 
-def _normalize_question(name: str, q: Dict[str, Any]) -> Dict[str, Any]:
+def _normalize_question(name: str, q: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(q, dict):
         raise ValueError(f"question {name!r} must be a mapping")
     ptype = q.get("type")
     mapping = {"choice": "choice", "score": "score", "boolean": "boolean"}
     if ptype not in mapping:
         raise ValueError(f"question {name!r}: unsupported primitive type {ptype!r}")
-    out: Dict[str, Any] = {"type": mapping[ptype]}
+    out: dict[str, Any] = {"type": mapping[ptype]}
     if ptype == "choice":
         choices = q.get("choices")
         if not isinstance(choices, list) or not choices:
@@ -40,7 +40,7 @@ def _normalize_question(name: str, q: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
-def normalize_contract(raw: Dict[str, Any]) -> Dict[str, Any]:
+def normalize_contract(raw: dict[str, Any]) -> dict[str, Any]:
     """Parse/validate/strip non-semantic metadata -> normalized structure."""
     if not isinstance(raw, dict):
         raise ValueError("contract must be a mapping")
@@ -70,7 +70,7 @@ def normalize_contract(raw: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def contract_from_raw(raw: Dict[str, Any]) -> DecisionContract:
+def contract_from_raw(raw: dict[str, Any]) -> DecisionContract:
     norm = normalize_contract(raw)
     qs = []
     for n, q in norm["questions"].items():
@@ -93,11 +93,11 @@ def contract_from_raw(raw: Dict[str, Any]) -> DecisionContract:
     )
 
 
-def semantic_contract_sha256(raw: Dict[str, Any]) -> str:
+def semantic_contract_sha256(raw: dict[str, Any]) -> str:
     return sha256(canonical_bytes(normalize_contract(raw))).hexdigest()
 
 
-def load_contract_text(text: str) -> Dict[str, Any]:
+def load_contract_text(text: str) -> dict[str, Any]:
     """Parse YAML or JSON contract text into raw dict (yaml.safe_load)."""
     import json
 

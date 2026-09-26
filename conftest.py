@@ -212,8 +212,8 @@ def pytest_collectstart(collector):
 # forgotten mock becomes a visible certification failure, never a live call.
 # This is test-infrastructure only; no application behavior is modified.
 # ---------------------------------------------------------------------------
-import os as _os
-import socket as _socket
+import os as _os  # noqa: E402 -- net-guard block must follow lane setup
+import socket as _socket  # noqa: E402 -- net-guard block must follow lane setup
 
 if _os.environ.get("SINTRAPRIME_CERT_NET_GUARD") == "1":
     _LOOPBACK_HOSTS = {"127.0.0.1", "::1", "0.0.0.0", "localhost"}

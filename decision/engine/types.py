@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Dict, Optional
+from enum import StrEnum
+from typing import Any
 
 
-class Primitive(str, Enum):
+class Primitive(StrEnum):
     """Canonical Decision Fabric primitives. Provider terminology is forbidden here."""
 
     CHOICE = "choice"
@@ -15,7 +15,7 @@ class Primitive(str, Enum):
     BOOLEAN = "boolean"
 
 
-class ResultKind(str, Enum):
+class ResultKind(StrEnum):
     """First-class result kinds. ABSTAIN may never become success/execution."""
 
     DECISION = "DECISION"
@@ -24,7 +24,7 @@ class ResultKind(str, Enum):
     UNAVAILABLE = "UNAVAILABLE"
 
 
-class Risk(str, Enum):
+class Risk(StrEnum):
     LOW = "LOW"
     ELEVATED = "ELEVATED"
     CONSEQUENTIAL = "CONSEQUENTIAL"
@@ -57,21 +57,21 @@ class Answer:
     question: str
     primitive: Primitive
     # choice
-    selected: Optional[str] = None
-    distribution: Optional[Dict[str, float]] = None
-    runner_up: Optional[str] = None
-    runner_up_probability: Optional[float] = None
-    margin: Optional[float] = None
+    selected: str | None = None
+    distribution: dict[str, float] | None = None
+    runner_up: str | None = None
+    runner_up_probability: float | None = None
+    margin: float | None = None
     # score
-    score_value: Optional[float] = None
+    score_value: float | None = None
     # boolean
-    value: Optional[bool] = None
-    probability: Optional[float] = None  # boolean P(true) / choice top prob
+    value: bool | None = None
+    probability: float | None = None  # boolean P(true) / choice top prob
     # separate axes (never merged with probability)
-    confidence: Optional[float] = None
+    confidence: float | None = None
 
     def to_dict(self) -> dict:
-        d: Dict[str, Any] = {
+        d: dict[str, Any] = {
             "question": self.question,
             "primitive": self.primitive.value,
         }
@@ -95,12 +95,12 @@ class Answer:
 @dataclass(frozen=True)
 class DecisionResult:
     kind: ResultKind
-    answers: Dict[str, Answer] = field(default_factory=dict)
+    answers: dict[str, Answer] = field(default_factory=dict)
     provider: str = ""
     model: str = ""
-    raw_primitive_names: Dict[str, str] = field(default_factory=dict)
-    provider_request_id: Optional[str] = None
-    latency_ms: Optional[float] = None
+    raw_primitive_names: dict[str, str] = field(default_factory=dict)
+    provider_request_id: str | None = None
+    latency_ms: float | None = None
     reason: str = ""
 
     @property

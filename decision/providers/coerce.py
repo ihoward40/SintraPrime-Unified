@@ -12,10 +12,10 @@ float()/int() on provider-supplied scalars are caught here.
 
 from __future__ import annotations
 
-from typing import Any, Optional, Tuple
+from typing import Any
 
 
-def coerce_number(value: Any, field: str) -> Tuple[Optional[float], Optional[str]]:
+def coerce_number(value: Any, field: str) -> tuple[float | None, str | None]:
     """Coerce a provider-supplied scalar to float.
 
     Returns (value, None) on success, (None, reason) on failure.

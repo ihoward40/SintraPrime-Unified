@@ -10,7 +10,7 @@ every case: R1-FROZEN-CONTRACT (the verified R1 conformance semantics).
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 
 # Expectation classes per directive:
 # EXPECTED_DECISION | EXPECTED_FALLBACK | EXPECTED_HERMES_REVIEW
@@ -33,7 +33,7 @@ class ShadowCase:
     case_id: str
     category: str                 # A..P per directive
     expectation: str              # expectation class
-    state: Dict[str, Any]         # canonical decision state (may carry _mock_ fault/answer scripting)
+    state: dict[str, Any]         # canonical decision state (may carry _mock_ fault/answer scripting)
     contract_raw: dict
     ground_truth_source: str = "R1-FROZEN-CONTRACT (verified 57/57 conformance semantics @ 002273bf)"
     ground_truth_version: str = "R2S-REGISTRY-2 (v1 + malformed-confidence class correction, documented)"
@@ -41,7 +41,7 @@ class ShadowCase:
     note: str = ""
 
 
-def _choice_ans(sel, probs, conf=0.9):
+def _choice_ans(_sel, probs, conf=0.9):
     return {"probabilities": probs, "confidence": conf}
 
 

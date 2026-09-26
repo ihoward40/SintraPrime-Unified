@@ -193,7 +193,7 @@ def main() -> int:
         f"--basetemp={basetemp}",
         "-p",
         "no:cacheprovider",
-        *((["--collect-only"] if args.collect_only else [])),
+        *(["--collect-only"] if args.collect_only else []),
         *args.pytest_args,
     ]
 
@@ -208,7 +208,7 @@ def main() -> int:
     t0 = time.monotonic()
     # G0-R4.1 ER-003: per-test timeout (pytest-timeout) + lane wall-clock cap.
     # A timeout is a clear certification failure, never a silent cancellation.
-    cmd = cmd + ["--timeout=120", "--timeout-method=thread"]
+    cmd = [*cmd, "--timeout=120", "--timeout-method=thread"]
     try:
         proc = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, env=env, timeout=1800)
     except subprocess.TimeoutExpired:

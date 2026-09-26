@@ -8,7 +8,6 @@ illustrative mechanics, never production authority (frozen directive §8).
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from ..engine.types import DecisionResult, ResultKind, Risk
 

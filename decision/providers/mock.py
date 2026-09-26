@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional
-
 from ..canonical.jcs import state_sha256
 from ..contracts.contracts import DecisionContract
 from ..engine.types import Answer, DecisionResult, Primitive, ResultKind
@@ -52,8 +50,8 @@ class MockDecisionProvider:
                 model=self.model,
                 reason="mock abstain requested",
             )
-        answers: Dict[str, Answer] = {}
-        scripted: Optional[dict] = state.get("_mock_answers")
+        answers: dict[str, Answer] = {}
+        scripted: dict | None = state.get("_mock_answers")
         if scripted and not isinstance(scripted, dict):
             return DecisionResult(kind=ResultKind.ERROR, provider=self.name, model=self.model,
                                   reason="schema_mismatch: _mock_answers not a mapping")

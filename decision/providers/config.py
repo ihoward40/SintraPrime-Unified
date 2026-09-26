@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Optional
 
 _DEFAULT_PROVIDER = "mock"
 _DEFAULT_SHADOW_ONLY = "1"
@@ -23,7 +22,7 @@ class DecisionConfig:
     timeout_ms: int
     jev_base_url: str
     jev_model: str
-    jev_api_key: Optional[str]  # from env only, never from source
+    jev_api_key: str | None  # from env only, never from source
     overrides: dict
 
 

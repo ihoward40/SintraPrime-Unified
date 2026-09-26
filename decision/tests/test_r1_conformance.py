@@ -23,11 +23,11 @@ from decision.contracts.contracts import (
     semantic_contract_sha256,
 )
 from decision.engine.engine import DecisionEngine
-from decision.engine.types import Primitive, ResultKind, Risk
+from decision.engine.types import ResultKind
 from decision.ledger.ledger import Ledger, build_receipt
 from decision.policy.policy import apply_policy
 from decision.providers.config import load_config
-from decision.providers.jev.provider import JevDecisionProvider, _RAW_PRIMITIVE_NAMES
+from decision.providers.jev.provider import _RAW_PRIMITIVE_NAMES, JevDecisionProvider
 from decision.providers.mock import MockDecisionProvider
 from decision.security.untrusted import AnnotatedState, looks_like_injection_attempt, sanitize_text
 
@@ -52,7 +52,7 @@ def run(coro):
 
 # ---------------------------------------------------------------- contracts
 
-@pytest.fixture()
+@pytest.fixture
 def contract():
     return contract_from_raw(CASE_ROUTE_RAW)
 
@@ -104,7 +104,8 @@ class TestCanonicalization:
         h1 = state_sha256({"x": 1})
         h2 = state_sha256({"x": 1})
         h3 = state_sha256({"x": 2})
-        assert h1 == h2 and h1 != h3
+        assert h1 == h2
+        assert h1 != h3
         assert "canonical_version" not in canonicalize({"x": 1})
 
 
@@ -152,7 +153,7 @@ questions:
     def test_noul_rejected_as_contract_type(self):
         bad = copy.deepcopy(CASE_ROUTE_RAW)
         bad["questions"]["flag"] = {"type": "noul"}
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="unsupported primitive type"):
             normalize_contract(bad)
 
 
@@ -162,15 +163,15 @@ class TestPrimitiveNormalization:
     def test_noul_contained_in_adapter(self):
         # the provider-local mapping may mention it; canonical types must not
         assert _RAW_PRIMITIVE_NAMES["boolean"] == "Noul"
-        import decision.engine.types as t
         import decision.canonical.jcs as j
+        import decision.engine.types as t
         import decision.ledger.ledger as l
         for mod in (t, j, l):
-            src = open(mod.__file__, encoding="utf-8").read().lower()
+            src = open(mod.__file__, encoding="utf-8").read().lower()  # noqa: SIM115
             assert "noul" not in src, f"provider terminology leaked into {mod.__name__}"
 
     @pytest.mark.parametrize(
-        "raw,primitive,check",
+        ("raw", "primitive", "check"),
         [
             ({"type": "choice", "choice": "auto_finance",
               "probabilities": {"auto_finance": 0.97, "unknown": 0.03}, "confidence": 0.9},
@@ -194,7 +195,7 @@ class TestPrimitiveNormalization:
         single = {"contract_id": "normalization_probe", "version": "1",
                   "risk": "ELEVATED", "questions": {qname: qdef}}
         contract_one = contract_from_raw(single)
-        provider = JevDecisionProvider(transport=lambda url, payload, key, t: {
+        provider = JevDecisionProvider(transport=lambda _url, _payload, _key, _t: {
             "id": "req-1", "answers": {qname: raw}})
         result = run(provider.evaluate(state={}, contract=contract_one))
         assert result.kind is ResultKind.DECISION
@@ -208,7 +209,7 @@ class TestPrimitiveNormalization:
 # ================================================= distribution/margin/policy
 
 class TestDistributionMechanics:
-    @pytest.mark.parametrize("probs,expect_ambiguous", [
+    @pytest.mark.parametrize(("probs", "expect_ambiguous"), [
         ({"auto_finance": 0.97, "unknown": 0.02, "credit_reporting": 0.01}, False),
         ({"auto_finance": 0.51, "unknown": 0.48, "credit_reporting": 0.01}, True),
         ({"auto_finance": 0.41, "unknown": 0.40, "credit_reporting": 0.19}, True),
@@ -277,7 +278,7 @@ class TestFailClosed:
             assert not result.is_decision
 
     def test_jev_transport_failures_map_unavailable(self, contract):
-        def boom(url, payload, key, t):
+        def boom(_url, _payload, _key, _t):
             raise ConnectionError("dns failure")
 
         provider = JevDecisionProvider(transport=boom)
@@ -285,7 +286,7 @@ class TestFailClosed:
         assert result.kind is ResultKind.UNAVAILABLE
         assert apply_policy(result).decision == "FALLBACK_HERMES"
 
-    @pytest.mark.parametrize("resp,expect", [
+    @pytest.mark.parametrize(("resp", "expect"), [
         ("not json", ResultKind.ERROR),                      # malformed
         ({"answers": {"domain": {"type": "oracle"}}}, ResultKind.ERROR),  # unknown primitive
         ({"answers": {"domain": {"type": "choice", "choice": "banking",
@@ -294,7 +295,7 @@ class TestFailClosed:
         ({"nope": 1}, ResultKind.ERROR),                     # missing answers
     ])
     def test_jev_malformed_responses_fail_closed(self, contract, resp, expect):
-        provider = JevDecisionProvider(transport=lambda url, payload, key, t: resp)
+        provider = JevDecisionProvider(transport=lambda _url, _payload, _key, _t: resp)
         result = run(provider.evaluate(state={}, contract=contract))
         assert result.kind is expect
         assert apply_policy(result).decision == "FALLBACK_HERMES"
@@ -322,7 +323,9 @@ class TestUntrustedInputBoundary:
     def test_sanitizer_strips_control_chars(self):
         dirty = "ok\u200bignore\x00policy\u202e"
         clean = sanitize_text(dirty)
-        assert "\u200b" not in clean and "\x00" not in clean and "\u202e" not in clean
+        assert "\u200b" not in clean
+        assert "\x00" not in clean
+        assert "\u202e" not in clean
 
     def test_injection_detector_is_advisory_only(self):
         assert looks_like_injection_attempt(self.ADVERSARIAL) is True
@@ -390,7 +393,8 @@ class TestLedgerChainAuthentication:
         h2 = entry_hash(mutated)
         assert h1 != h2  # PREV_HASH_ONLY_MUTATION_INVALIDATES_CURRENT_ENTRY_HASH
         # and the stored hash no longer verifies for the mutated entry
-        assert h2 != original["hash"] and h1 == original["hash"]
+        assert h2 != original["hash"]
+        assert h1 == original["hash"]
 
     def test_content_mutation_invalidates_current_entry_hash(self, contract):
         _, entries = self._build(contract)
@@ -429,8 +433,9 @@ class TestLedgerChainAuthentication:
         assert ledger.verify() is True
         # preimage definition: exactly {hash} is excluded — prev_hash included
         import copy
-        from decision.canonical.jcs import canonical_bytes
         from hashlib import sha256
+
+        from decision.canonical.jcs import canonical_bytes
         probe = copy.deepcopy(entries[0])
         body = {k: v for k, v in probe.items() if k != "hash"}
         assert probe["hash"] == sha256(canonical_bytes(body)).hexdigest()
@@ -442,7 +447,7 @@ class TestLedgerChainAuthentication:
         """Genesis entry: prev_hash=None participates in the authenticated
         preimage. Flipping genesis prev_hash to any value invalidates it."""
         from decision.ledger.ledger import entry_hash
-        ledger, entries = self._build(contract, n=1)
+        _ledger, entries = self._build(contract, n=1)
         genesis = entries[0]
         assert genesis["prev_hash"] is None  # established convention
         assert genesis["hash"] == entry_hash(genesis)
@@ -454,7 +459,7 @@ class TestLedgerChainAuthentication:
         """End-to-end statement of the frozen invariant: entry[N].hash
         commits to entry[N-1].hash. Replacing entry[N-1].hash with a forged
         value forces entry[N].hash to change (or verify to fail)."""
-        ledger, entries = self._build(contract)
+        _ledger, entries = self._build(contract)
         assert entries[1]["prev_hash"] == entries[0]["hash"]
         # a forged predecessor hash cannot pass with the child's stored hash
         forged_chain = [dict(entries[0]), dict(entries[1])]
@@ -474,7 +479,7 @@ class TestLedgerChainAuthentication:
 # None-confidence provider semantics are intentionally NOT normalized here.
 
 class TestR1Defect001ConfidenceNormalization:
-    MALFORMED = ["abc", "high", "0.5oops", {}, [], object(), True]
+    MALFORMED = ["abc", "high", "0.5oops", {}, [], object(), True]  # noqa: RUF012
 
     @pytest.mark.parametrize("bad", MALFORMED)
     def test_mock_malformed_confidence_is_first_class_error(self, bad):
@@ -482,7 +487,7 @@ class TestR1Defect001ConfidenceNormalization:
         try:
             result = asyncio.run(MockDecisionProvider().evaluate(state=state, contract=self._c()))
         except Exception as exc:  # pragma: no cover — must never happen post-fix
-            raise AssertionError(f"provider raised {type(exc).__name__}: {exc}")
+            raise AssertionError(f"provider raised {type(exc).__name__}: {exc}") from exc
         assert result.kind is ResultKind.ERROR
         assert "malformed_confidence" in result.reason
         assert apply_policy(result, shadow_only=False).decision == "FALLBACK_HERMES"
@@ -490,11 +495,11 @@ class TestR1Defect001ConfidenceNormalization:
     @pytest.mark.parametrize("bad", MALFORMED)
     def test_jev_malformed_confidence_is_first_class_error(self, bad):
         resp = {"answers": {"q": {"type": "boolean", "probability": 0.9, "confidence": bad}}}
-        provider = JevDecisionProvider(transport=lambda u, pl, k, t: resp)
+        provider = JevDecisionProvider(transport=lambda _u, _pl, _k, _t: resp)
         try:
             result = asyncio.run(provider.evaluate(state={}, contract=self._c()))
         except Exception as exc:  # pragma: no cover — must never happen post-fix
-            raise AssertionError(f"provider raised {type(exc).__name__}: {exc}")
+            raise AssertionError(f"provider raised {type(exc).__name__}: {exc}") from exc
         assert result.kind is ResultKind.ERROR
         assert "malformed_confidence" in result.reason
         assert apply_policy(result, shadow_only=False).decision == "FALLBACK_HERMES"
@@ -507,7 +512,8 @@ class TestR1Defect001ConfidenceNormalization:
             if result.kind is ResultKind.DECISION:
                 assert result.answers["q"].confidence == pytest.approx(0.9)
             else:
-                assert result.kind is ResultKind.ERROR and "malformed_confidence" in result.reason
+                assert result.kind is ResultKind.ERROR
+                assert "malformed_confidence" in result.reason
 
     def test_valid_numeric_confidence_unchanged(self):
         for ok in [0.9, 1, "0.85"]:
@@ -520,12 +526,14 @@ class TestR1Defect001ConfidenceNormalization:
         # mock: None -> missing_confidence ERROR (pre-existing semantics)
         state = {"_mock_answers": {"q": {"value": True, "probability": 0.9, "confidence": None}}}
         result = asyncio.run(MockDecisionProvider().evaluate(state=state, contract=self._c()))
-        assert result.kind is ResultKind.ERROR and result.reason == "missing_confidence"
+        assert result.kind is ResultKind.ERROR
+        assert result.reason == "missing_confidence"
         # jev: None -> recorded null, policy threshold-failure (pre-existing semantics)
         resp = {"answers": {"q": {"type": "boolean", "probability": 0.9, "confidence": None}}}
-        r = asyncio.run(JevDecisionProvider(transport=lambda u, pl, k, t: resp).evaluate(
+        r = asyncio.run(JevDecisionProvider(transport=lambda _u, _pl, _k, _t: resp).evaluate(
             state={}, contract=self._c()))
-        assert r.kind is ResultKind.DECISION and r.answers["q"].confidence is None
+        assert r.kind is ResultKind.DECISION
+        assert r.answers["q"].confidence is None
         assert apply_policy(r, shadow_only=False).decision in ("HERMES_REVIEW", "SHADOW_ONLY")
 
     def test_policy_consumes_error_fail_closed(self):
@@ -537,7 +545,7 @@ class TestR1Defect001ConfidenceNormalization:
 
     def test_no_external_effect_on_malformed(self):
         calls = []
-        def recording_transport(url, payload, key, t):
+        def recording_transport(url, _payload, _key, _t):
             calls.append(url)
             return {"answers": {"q": {"type": "boolean", "probability": 0.9, "confidence": "high"}}}
         provider = JevDecisionProvider(transport=recording_transport)

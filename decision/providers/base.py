@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from ..canonical.jcs import state_sha256
 from ..contracts.contracts import DecisionContract
 from ..engine.types import DecisionResult
+
 
 @runtime_checkable
 class DecisionProvider(Protocol):

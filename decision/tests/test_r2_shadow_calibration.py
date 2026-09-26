@@ -1,23 +1,21 @@
 """R2 shadow calibration test suite — directive-conformant calibration run.
 
-Categories A–P, expectation registry, metrics, fail-closed gating, replay,
+Categories A-P, expectation registry, metrics, fail-closed gating, replay,
 equivalence, confidence characterization, adversarial boundary.
 """
 
 from __future__ import annotations
 
 import asyncio
-import hashlib
 
 import pytest
 
-from decision.calibration.harness import run_shadow_dataset, summarize
-from decision.calibration.shadow_cases import JEV_SHADOW_CASES, build_cases, MULTI
-from decision.canonical.jcs import sha256_canonical, state_sha256
-from decision.contracts.contracts import contract_from_raw, semantic_contract_sha256
+from decision.calibration.harness import run_shadow_dataset
+from decision.calibration.shadow_cases import MULTI, build_cases
+from decision.canonical.jcs import state_sha256
+from decision.contracts.contracts import contract_from_raw
 from decision.engine.engine import DecisionEngine
 from decision.engine.types import ResultKind
-from decision.ledger.ledger import Ledger
 from decision.policy.policy import apply_policy
 from decision.providers.config import load_config
 from decision.providers.jev.provider import JevDecisionProvider
@@ -25,7 +23,8 @@ from decision.providers.mock import MockDecisionProvider
 from decision.security.untrusted import sanitize_text
 
 CFG = load_config(env={})
-assert CFG.provider == "mock" and CFG.shadow_only  # R2 precondition
+assert CFG.provider == "mock"
+assert CFG.shadow_only
 
 MULTI_C = contract_from_raw(MULTI)
 
@@ -43,7 +42,9 @@ class TestDatasetRegistry:
 
     def test_ground_truth_attribution_present(self):
         for c in build_cases():
-            assert c.ground_truth_source and c.ground_truth_version and c.ground_truth_owner
+            assert c.ground_truth_source
+            assert c.ground_truth_version
+            assert c.ground_truth_owner
 
 
 # --------------------------------------------------- calibration execution
@@ -93,7 +94,7 @@ class TestShadowCalibration:
         assert rows[0]["actual_kind"] == "DECISION"
         assert rows[0]["actual_policy"] in ("SHADOW_ONLY", "HERMES_REVIEW")
         # contract was not altered: answers derived from contract, not text
-        r = metrics["_rows"][0]
+        metrics["_rows"][0]
 
     def test_near_tie_goes_to_review(self, metrics):
         rows = [r for r in metrics["_rows"] if r["case_id"] == "B01-near-tie"]
@@ -102,7 +103,8 @@ class TestShadowCalibration:
     def test_unknown_primitive_fails_closed(self, metrics):
         for cid in ("G01-unknown-primitive", "O01-unknown-type", "G03-contract-mismatch"):
             rows = [r for r in metrics["_rows"] if r["case_id"] == cid]
-            assert rows and rows[0]["actual_policy"] == "FALLBACK_HERMES", cid
+            assert rows, cid
+            assert rows[0]["actual_policy"] == "FALLBACK_HERMES", cid
 
 
 # ------------------------------------------- confidence characterization
@@ -144,7 +146,7 @@ class TestConfidenceCharacterization:
                 "probabilities": {"auto_finance": 0.99, "unknown": 0.01}, "confidence": None},
                 "needs_human_review": {"type": "noul", "probability": 0.1, "confidence": 0.9},
                 "priority": {"type": "score", "score": 1.0, "confidence": 0.9}}}
-        p = JevDecisionProvider(transport=lambda u, pl, k, t: resp)
+        p = JevDecisionProvider(transport=lambda _u, _pl, _k, _t: resp)
         r = asyncio.run(p.evaluate(state={}, contract=MULTI_C))
         assert r.kind is ResultKind.DECISION
         assert r.answers["domain"].confidence is None  # recorded, not silently normalized
@@ -155,11 +157,11 @@ class TestConfidenceCharacterization:
 # --------------------------------------------- replay & semantic equivalence
 
 class TestReplayAndEquivalence:
-    def test_replay_semantic_identity_with_distinct_receipts(self, contract=MULTI_C):
+    def test_replay_semantic_identity_with_distinct_receipts(self):
         engine = DecisionEngine(MockDecisionProvider(), shadow_only=True)
         state = {"case": "replay-me"}
-        r1 = asyncio.run(engine.evaluate(state=state, contract=contract))
-        r2 = asyncio.run(engine.evaluate(state=state, contract=contract))
+        r1 = asyncio.run(engine.evaluate(state=state, contract=MULTI_C))
+        r2 = asyncio.run(engine.evaluate(state=state, contract=MULTI_C))
         # semantic output identical
         a1, a2 = r1[0].answers, r2[0].answers
         assert a1["domain"].selected == a2["domain"].selected
@@ -206,18 +208,19 @@ class TestR2UntrustedBoundary:
 class TestShadowOnlyInvariant:
     def test_effective_defaults(self):
         cfg = load_config(env={})
-        assert cfg.provider == "mock" and cfg.shadow_only is True
+        assert cfg.provider == "mock"
+        assert cfg.shadow_only is True
 
     def test_shadow_off_attempt_is_provenance_event(self):
         cfg = load_config(env={"SINTRAPRIME_DECISION_SHADOW_ONLY": "0"})
         assert cfg.shadow_only is False
         assert "shadow_only_disabled" in cfg.overrides  # cannot happen silently
 
-    def test_shadow_engine_never_routes(self, contract=MULTI_C):
+    def test_shadow_engine_never_routes(self):
         engine = DecisionEngine(MockDecisionProvider(), shadow_only=True)
-        result, policy, receipt = asyncio.run(engine.evaluate(state={"x": 1}, contract=contract))
+        _result, policy, _receipt = asyncio.run(engine.evaluate(state={"x": 1}, contract=MULTI_C))
         assert policy.decision == "SHADOW_ONLY"
         for _ in range(10):  # even across many runs
-            result, policy, _ = asyncio.run(engine.evaluate(state={"x": 2}, contract=contract))
+            _result, policy, _ = asyncio.run(engine.evaluate(state={"x": 2}, contract=MULTI_C))
             assert policy.decision == "SHADOW_ONLY"
             assert policy.decision not in ("AUTO_ROUTE_CANDIDATE", "EXECUTE")

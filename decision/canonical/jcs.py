@@ -15,7 +15,6 @@ Pin notes (directive section 10):
 
 from __future__ import annotations
 
-import json
 import math
 import re
 from hashlib import sha256

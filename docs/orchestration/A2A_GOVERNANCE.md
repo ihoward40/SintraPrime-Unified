@@ -18,6 +18,7 @@ The A2A transport now separates **internal collaboration** from **external actio
 - Pending governed dispatch intent can be persisted to `A2A_OUTBOX_STORE` (default `var/a2a_outbox.jsonl`). Restart revalidation checks approval presence/status, registry profile, tenant scope, recipient, and payload hash before an item can become `validated`; no external execution is enabled by this store.
 - `ExecutionWorker` processes validated outbox records in dry-run mode by default. It derives an idempotency key, revalidates immediately, prevents terminal-record replay, enforces retry limits, and moves permanent failures to `dlq`; no external executor is called unless a future explicitly reviewed enablement changes the fail-closed defaults.
 - Audit, approval, and outbox JSONL writes now use a cross-process `fcntl` lock, fsync, and monotonic sequence numbers. Each store exposes an integrity check that rejects malformed historical lines or sequence gaps; normal reads may ignore only a final partial line.
+- Redis delivery now tracks persistent in-flight envelopes, supports explicit `ack`, visibility-timeout `reclaim`, retry counters, and a DLQ after retry exhaustion. Delivery IDs derive from message IDs, retry state survives requeue, and delivery/reclaim/DLQ events can be audit-linked; external intent remains rejected.
 - Autonomous self-improvement, deployment, publishing, filing, payments, and third-party contact remain disabled for the default orchestrator profile.
 
 ## Evidence classifications
@@ -58,6 +59,7 @@ Changing even one character after approval causes the content hash check to fail
 | Durable outbox / restart revalidation | PATCH C5 PARTIAL | Pending intent persistence, revalidation, blocked states, and audit links are test-backed; execution worker, idempotent delivery, and production restart proof remain pending |
 | Dry-run execution worker / delivery semantics | PATCH C6 PARTIAL | Dry-run worker, idempotency, retry limits, DLQ, and no-side-effect tests are present; production executor, Redis ACK/DLQ integration, and external enablement remain blocked |
 | Multi-process audit / JSONL integrity | PATCH C7 PARTIAL | Cross-process locks, sequence numbers, strict integrity checks, and concurrent-writer tests are present; production filesystem and multi-host guarantees remain pending |
+| Redis ACK / retry / DLQ | PATCH C8 PARTIAL | In-flight tracking, ack, reclaim, retry limits, DLQ, retry-state persistence, and FakeRedis tests are present; live Redis/ACL/consumer-group production validation remains pending |
 | Durable append-only audit storage | PARTIAL / PATCH B IN PROGRESS | Local JSONL append + fsync and fresh-store recovery are tested; production durable-volume and multi-process guarantees remain pending |
 | Restart persistence and bypass-resistance integration test | PENDING | Fresh-store recovery is covered; production restart/revalidation and raw transport bypass tests remain pending |
 | Broad external-action enablement | BLOCKED BY DEFAULT | Requires explicit approval and a reviewed agent profile |

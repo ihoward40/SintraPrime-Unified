@@ -48,6 +48,53 @@ class BriefSecurityEvent:
 
 
 @dataclass(frozen=True)
+class BriefExecutionState:
+    """GOD-1X execution-backend visibility for Mission Control (Phase 15).
+
+    Surfaces real subprocess execution reality without fabricating activity:
+    every field is an observed count or a hard zero. Material backend
+    exceptions (failures, timeouts, cancellations, denied executions, external-
+    effect blocks) are surfaced; routine subprocess transitions are NOT.
+    """
+
+    running_workers: int = 0
+    queued_tasks: int = 0
+    worktree_ownership_claims: int = 0
+    execution_failures: int = 0
+    timeouts: int = 0
+    cancellations: int = 0
+    orphan_process_findings: int = 0
+    external_effect_blocked: int = 0
+    denied_executions: int = 0
+
+
+def build_execution_state(
+    *,
+    running_workers: int = 0,
+    queued_tasks: int = 0,
+    worktree_ownership_claims: int = 0,
+    execution_failures: int = 0,
+    timeouts: int = 0,
+    cancellations: int = 0,
+    orphan_process_findings: int = 0,
+    external_effect_blocked: int = 0,
+    denied_executions: int = 0,
+) -> BriefExecutionState:
+    """Aggregate observed execution-backend facts into the brief contract."""
+    return BriefExecutionState(
+        running_workers=running_workers,
+        queued_tasks=queued_tasks,
+        worktree_ownership_claims=worktree_ownership_claims,
+        execution_failures=execution_failures,
+        timeouts=timeouts,
+        cancellations=cancellations,
+        orphan_process_findings=orphan_process_findings,
+        external_effect_blocked=external_effect_blocked,
+        denied_executions=denied_executions,
+    )
+
+
+@dataclass(frozen=True)
 class PrincipalBrief:
     schema_version: str
     generated_at: datetime
@@ -61,6 +108,7 @@ class PrincipalBrief:
     authority_expirations: list[dict]     # {authority_id, expires_at}
     memory_change_summary: Mapping[str, int]
     recommended_principal_decisions: list[dict]  # proposals + provenance; never executable
+    execution_state: BriefExecutionState | None = None  # GOD-1X backend visibility
 
     def to_dict(self) -> dict:
         from dataclasses import asdict
@@ -78,6 +126,7 @@ def build_brief(
     authority_expirations: Sequence[Mapping[str, object]],
     memory_change_summary: Mapping[str, int],
     recommended_principal_decisions: Sequence[Mapping[str, object]],
+    execution_state: BriefExecutionState | None = None,
     now: datetime | None = None,
 ) -> PrincipalBrief:
     """Aggregate pre-collected facts into the versioned brief.
@@ -102,4 +151,5 @@ def build_brief(
         authority_expirations=[dict(x) for x in authority_expirations],
         memory_change_summary=dict(memory_change_summary),
         recommended_principal_decisions=[dict(x) for x in recommended_principal_decisions],
+        execution_state=execution_state,
     )

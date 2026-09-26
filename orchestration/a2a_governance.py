@@ -37,6 +37,7 @@ class ApprovalReceipt:
     delivery_method: str = "agent-message"
     receipt_id: str = field(default_factory=lambda: uuid.uuid4().hex)
     sender_agent_id: str = ""
+    tenant_id: str = "default"
     expires_at: float = 0.0
     signature: str = ""
 
@@ -91,6 +92,7 @@ def _approval_material(receipt: ApprovalReceipt) -> str:
         "delivery_method": receipt.delivery_method,
         "receipt_id": receipt.receipt_id,
         "sender_agent_id": receipt.sender_agent_id,
+        "tenant_id": receipt.tenant_id,
         "expires_at": receipt.expires_at,
     }, sort_keys=True, separators=(",", ":"))
 
@@ -102,6 +104,7 @@ def issue_approval(
     sender_agent_id: str,
     recipient: str,
     final_content_hash: str,
+    tenant_id: str = "default",
     attachment_hashes: tuple[str, ...] = (),
     delivery_method: str = "agent-message",
     expires_at: float,
@@ -115,19 +118,22 @@ def issue_approval(
         attachment_hashes=tuple(attachment_hashes),
         delivery_method=delivery_method,
         sender_agent_id=sender_agent_id,
+        tenant_id=tenant_id,
         expires_at=expires_at,
     )
     signature = hmac.new(_approval_secret(), _approval_material(receipt).encode(), hashlib.sha256).hexdigest()
     return ApprovalReceipt(**{**asdict(receipt), "signature": signature})
 
 
-def verify_approval(receipt: ApprovalReceipt, *, sender_agent_id: str) -> None:
+def verify_approval(receipt: ApprovalReceipt, *, sender_agent_id: str, tenant_id: str = "default") -> None:
     if not receipt.signature:
         raise PermissionError("Dispatch blocked: unsigned approval receipt")
     if not receipt.approved_by or not receipt.approved_output_id:
         raise PermissionError("Dispatch blocked: approval identity is incomplete")
     if not receipt.sender_agent_id or receipt.sender_agent_id != sender_agent_id:
         raise PermissionError("Dispatch blocked: approved sender does not match")
+    if not receipt.tenant_id or receipt.tenant_id != tenant_id:
+        raise PermissionError("Dispatch blocked: approval tenant scope does not match")
     if not receipt.delivery_method:
         raise PermissionError("Dispatch blocked: approval delivery method is required")
     if not receipt.expires_at or receipt.expires_at <= time.time():
@@ -143,6 +149,7 @@ def validate_dispatch(
     recipient: str,
     external_action: bool,
     sender_agent_id: str | None = None,
+    tenant_id: str = "default",
     approval: ApprovalReceipt | None = None,
     claims: list[EvidenceClaim] | None = None,
     attachment_hashes: list[str] | None = None,
@@ -167,7 +174,7 @@ def validate_dispatch(
         raise PermissionError("Dispatch blocked: user approval receipt required")
     if sender_agent_id is None:
         raise PermissionError("Dispatch blocked: sender identity is required")
-    verify_approval(approval, sender_agent_id=sender_agent_id)
+    verify_approval(approval, sender_agent_id=sender_agent_id, tenant_id=tenant_id)
     if approval.recipient != recipient:
         raise PermissionError("Dispatch blocked: approved recipient does not match")
     if approval.final_content_hash != output_hash:

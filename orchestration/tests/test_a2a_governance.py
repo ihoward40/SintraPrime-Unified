@@ -14,6 +14,7 @@ from orchestration.a2a_governance import (
 from orchestration.a2a_audit import A2AAuditStore
 from orchestration.a2a_protocol import A2AProtocol, Message, MessageBus, MessageType
 from orchestration.agent_policy import AgentPolicy
+from orchestration.agent_identity import AgentPrincipal
 from orchestration.orchestration_api import SendMessageRequest, send_agent_message
 
 
@@ -201,7 +202,7 @@ async def test_api_external_action_is_blocked_and_audited(tmp_path, monkeypatch)
     from fastapi import HTTPException
 
     with pytest.raises(HTTPException) as error:
-        await send_agent_message(request, A2AProtocol(), None, audit, AgentPolicy())
+        await send_agent_message(request, A2AProtocol(), None, audit, AgentPolicy(), AgentPrincipal("dispatch_desk", "tenant-a"))
 
     assert error.value.status_code == 403
     records = audit.read()
@@ -220,7 +221,7 @@ async def test_api_internal_dispatch_records_lifecycle(tmp_path, monkeypatch):
         payload={"task": "verify"},
     )
 
-    result = await send_agent_message(request, A2AProtocol(), None, audit, AgentPolicy())
+    result = await send_agent_message(request, A2AProtocol(), None, audit, AgentPolicy(), AgentPrincipal("orchestrator", "tenant-a"))
 
     assert result.delivered is True
     assert [record["status"] for record in audit.read()] == ["accepted", "delivered"]
@@ -239,3 +240,35 @@ async def test_raw_memory_transport_rejects_external_intent():
 
     with pytest.raises(PermissionError, match="raw transport"):
         await bus.publish(message)
+
+
+def test_agent_token_authentication_binds_tenant(monkeypatch):
+    import json
+    from orchestration.agent_identity import authenticate_agent
+
+    monkeypatch.setenv("A2A_AGENT_CREDENTIALS", json.dumps({"token-a": {"agent_id": "orchestrator", "tenant_id": "tenant-a"}}))
+    principal = authenticate_agent("token-a", "tenant-a")
+    assert principal == AgentPrincipal("orchestrator", "tenant-a")
+    with pytest.raises(PermissionError, match="tenant scope"):
+        authenticate_agent("token-a", "tenant-b")
+
+
+@pytest.mark.asyncio
+async def test_api_sender_mismatch_is_audited(tmp_path):
+    audit = A2AAuditStore(str(tmp_path / "audit.jsonl"))
+    request = SendMessageRequest(
+        from_agent="orchestrator",
+        to_agent="blackstone_verifier",
+        message_type="REQUEST",
+        payload={"task": "verify"},
+    )
+    with pytest.raises(Exception):
+        await send_agent_message(
+            request,
+            A2AProtocol(),
+            None,
+            audit,
+            AgentPolicy(),
+            AgentPrincipal("justice_scribe", "tenant-a"),
+        )
+    assert audit.read()[0]["reason_code"] == "identity_mismatch"

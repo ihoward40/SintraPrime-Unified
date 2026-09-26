@@ -21,7 +21,7 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, Field
 
 from .a2a_protocol import A2AProtocol, MessageType, Priority, Message
@@ -34,6 +34,7 @@ from .a2a_governance import (
     validate_dispatch,
 )
 from .a2a_audit import A2AAuditStore
+from .agent_identity import AgentPrincipal, authenticate_agent
 from .agent_policy import AgentPolicy
 from .redis_a2a import RedisA2ATransport
 from .durable_execution import (
@@ -104,6 +105,36 @@ def get_agent_policy() -> AgentPolicy:
     if _agent_policy is None:
         _agent_policy = AgentPolicy()
     return _agent_policy
+
+
+def get_agent_principal(
+    x_a2a_agent_token: str | None = Header(default=None),
+    x_a2a_tenant_id: str | None = Header(default=None),
+) -> AgentPrincipal:
+    try:
+        return authenticate_agent(x_a2a_agent_token, x_a2a_tenant_id)
+    except PermissionError as exc:
+        try:
+            audit_store = get_a2a_audit()
+            empty_hash = content_hash({})
+            audit_store.append(DispatchAudit(
+                mission_id=uuid.uuid4().hex,
+                objective="AUTHENTICATION",
+                agents_used=("unknown",),
+                sources_used=(),
+                claims_verified=(),
+                risks_flagged=(),
+                user_approval="no",
+                external_action_taken=False,
+                final_output_hash=empty_hash,
+                payload_hash=empty_hash,
+                status="blocked",
+                reason_code="identity_authentication_failed",
+                reason_detail=str(exc),
+            ))
+        except Exception:
+            logger.exception("Unable to audit failed A2A authentication")
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
 
 
 def get_checkpointer() -> InMemoryCheckpointer:
@@ -354,6 +385,7 @@ async def send_agent_message(
     redis_a2a: RedisA2ATransport = Depends(get_redis_a2a),
     audit_store: A2AAuditStore = Depends(get_a2a_audit),
     agent_policy: AgentPolicy = Depends(get_agent_policy),
+    principal: AgentPrincipal = Depends(get_agent_principal),
 ) -> SendMessageResponse:
     """Send an A2A message between agents.
 
@@ -383,8 +415,25 @@ async def send_agent_message(
     claims: list[EvidenceClaim] = []
     approval = None
     final_hash = content_hash(req.payload)
+    if principal.agent_id != req.from_agent:
+        audit_store.append(DispatchAudit(
+            mission_id=msg.correlation_id,
+            objective=msg.message_type.value,
+            agents_used=(principal.agent_id, req.from_agent, req.to_agent),
+            sources_used=(),
+            claims_verified=(),
+            risks_flagged=(),
+            user_approval="no",
+            external_action_taken=req.external_action,
+            final_output_hash=final_hash,
+            payload_hash=final_hash,
+            status="blocked",
+            reason_code="identity_mismatch",
+            reason_detail="Authenticated principal does not match from_agent.",
+        ))
+        raise HTTPException(status_code=403, detail="Dispatch blocked: sender identity mismatch")
     try:
-        agent_policy.authorize_sender(req.from_agent)
+        agent_policy.authorize_sender(principal.agent_id)
     except PermissionError as exc:
         audit_store.append(DispatchAudit(
             mission_id=msg.correlation_id,
@@ -437,6 +486,7 @@ async def send_agent_message(
             recipient=req.to_agent,
             external_action=req.external_action,
             sender_agent_id=req.from_agent,
+            tenant_id=principal.tenant_id,
             approval=approval,
             claims=claims,
             attachment_hashes=req.attachment_hashes,

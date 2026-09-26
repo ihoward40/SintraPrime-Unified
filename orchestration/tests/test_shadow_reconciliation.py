@@ -9,7 +9,7 @@ from orchestration.a2a_governance import ApprovalReceipt, DispatchAudit
 from orchestration.approval_store import ApprovalStore
 from orchestration.outbox import DurableOutbox
 from orchestration.persistence import ShadowMismatchError
-from orchestration.shadow_reconciliation import ShadowLifecycleRecorder, ShadowMismatchStore, ShadowMirror, reconcile_records
+from orchestration.shadow_reconciliation import AuthoritativeShadowWriter, ShadowLifecycleRecorder, ShadowMismatchStore, ShadowMirror, reconcile_records
 
 
 def test_mirror_success_and_durable_mismatch(tmp_path):
@@ -57,6 +57,20 @@ def test_concrete_jsonl_stores_emit_lifecycle_observations(tmp_path):
     outbox.enqueue(receipt_id=receipt.receipt_id, sender_agent_id="a", tenant_id="t1", recipient="b", payload_hash="h")
     areas = {item["lifecycle_area"] for item in recorder.observations}
     assert {"audit_event", "approval_issued", "outbox_intent"} <= areas
+
+
+def test_authoritative_shadow_writer_requires_both_stores(tmp_path):
+    store = ShadowMismatchStore(str(tmp_path / "mismatch.jsonl"))
+    writer = AuthoritativeShadowWriter(store, enabled=True)
+    assert writer.write(tenant_id="t1", lifecycle_area="audit", local_write=lambda: {"id": "a"}, postgres_write=lambda: {"id": "a"}) == {"id": "a"}
+    with pytest.raises(ShadowMismatchError):
+        writer.write(tenant_id="t1", lifecycle_area="approval", local_write=lambda: {"id": "a"}, postgres_write=lambda: (_ for _ in ()).throw(ConnectionError("postgres down")))
+    assert store.read()[0]["certification_blocked"] is True
+
+
+def test_local_mode_does_not_require_postgres(tmp_path):
+    writer = AuthoritativeShadowWriter(ShadowMismatchStore(str(tmp_path / "mismatch.jsonl")), enabled=False)
+    assert writer.write(tenant_id="t1", lifecycle_area="local", local_write=lambda: {"ok": True}, postgres_write=lambda: (_ for _ in ()).throw(AssertionError("not called"))) == {"ok": True}
 
 
 @pytest.mark.parametrize("area,local,postgres", [

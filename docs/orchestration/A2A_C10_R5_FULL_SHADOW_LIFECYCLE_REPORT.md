@@ -18,11 +18,12 @@
 - Reconciliation reports for missing JSONL records, missing PostgreSQL records, divergent records, and certification-blocking status.
 - Coverage for audit, approval, outbox, Redis delivery, hash/state drift, and database-write failures.
 - Observation hooks wired into JSONL audit, approval, outbox, Redis audit, and dry-run worker paths while preserving JSONL defaults.
+- Environment-gated `AuthoritativeShadowWriter` now requires both local and PostgreSQL callbacks to succeed and compares their resulting state; write failure or divergence creates a durable blocking mismatch.
 
 ## Validation
 
 ```text
-C10-R5 shadow reconciliation tests: 15 passed
+C10-R5/R5B shadow reconciliation tests: 18 passed
 Complete repository suite: all collected tests passed, exit code 0
 ```
 

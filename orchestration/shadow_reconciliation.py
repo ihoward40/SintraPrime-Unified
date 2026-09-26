@@ -101,6 +101,26 @@ class ShadowMirror:
         raise AssertionError("unreachable")
 
 
+class AuthoritativeShadowWriter:
+    """Require both stores to accept a lifecycle write when shadow mode is on."""
+
+    def __init__(self, mismatch_store: ShadowMismatchStore, *, enabled: bool | None = None):
+        self.mismatch_store = mismatch_store
+        self.enabled = (os.getenv("A2A_PERSISTENCE_SHADOW", "false").lower() in {"1", "true", "yes", "on"}) if enabled is None else enabled
+        self.mirror = ShadowMirror(mismatch_store)
+
+    def write(self, *, tenant_id: str, lifecycle_area: str, local_write: Callable[[], Any], postgres_write: Callable[[], Any]) -> Any:
+        if not self.enabled:
+            return local_write()
+        return self.mirror.mirror(tenant_id=tenant_id, lifecycle_area=lifecycle_area, local_write=local_write, postgres_write=postgres_write)
+
+    async def write_async(self, *, tenant_id: str, lifecycle_area: str, local_write: Callable[[], Any], postgres_write: Callable[[], Any]) -> Any:
+        if not self.enabled:
+            value = local_write()
+            return await value if inspect.isawaitable(value) else value
+        return await self.mirror.mirror_async(tenant_id=tenant_id, lifecycle_area=lifecycle_area, local_write=local_write, postgres_write=postgres_write)
+
+
 def reconcile_records(*, local: Iterable[dict[str, Any]], postgres: Iterable[dict[str, Any]], key: str = "idempotency_key") -> dict[str, Any]:
     left = {str(row.get(key)): row for row in local if row.get(key) is not None}
     right = {str(row.get(key)): row for row in postgres if row.get(key) is not None}

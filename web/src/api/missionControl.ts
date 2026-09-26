@@ -355,3 +355,29 @@ export interface RealTimeMetrics {
 export async function getRealTimeMetrics(): Promise<RealTimeMetrics> {
   return getJson<RealTimeMetrics>('/api/v1/mission-control/real-time-metrics');
 }
+
+// ── SP-GOD0-MISSION-CONTROL-001: Principal Brief (sp-principal-brief-v1) ───────
+
+export interface PrincipalBrief {
+  schema_version: 'sp-principal-brief-v1';
+  generated_at: string;
+  available: boolean;
+  unavailable_reason: string | null;
+  active_missions: string[];
+  agents: Record<string, unknown>[];
+  blocked_agents: string[];
+  pending_approvals: Record<string, unknown>[];
+  external_effect_attempts: Record<string, unknown>[];
+  security_events: Record<string, unknown>[];
+  recent_receipt_ids: string[];
+  authority_expirations: Record<string, unknown>[];
+  memory_change_summary: Record<string, number>;
+  /** Proposals with provenance. NEVER consumable as approvals. */
+  recommended_principal_decisions: Record<string, unknown>[];
+}
+
+/** Fetch the Principal Brief. Read-only; requires MISSION_COMMAND_READ. */
+export async function getPrincipalBrief(): Promise<PrincipalBrief> {
+  const { data } = await axios.get(`${API_BASE}/api/v1/mission-control/principal-brief`);
+  return data;
+}

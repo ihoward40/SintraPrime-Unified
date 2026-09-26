@@ -1,0 +1,193 @@
+{
+  "task_id": "SP-SYSTEM-ONE-DECISION-FABRIC-001-R1-LGR-FIX",
+  "parent_verification": "SP-SYSTEM-ONE-DECISION-FABRIC-001-R1-IV-A",
+  "blocking_finding": "CHAIN_LINKAGE_CLASS_B",
+  "created_utc": "2026-09-26T18:05:09Z",
+  "note": "Delta manifest only. The original r1-recovery-file-sha256.txt and its recorded hashes are preserved UNCHANGED as historical evidence of the pre-remediation delivery. This delta supersedes it for future verification of the REMEDIATED tree.",
+  "pre_rem_ediation_hashes": {
+    "decision/ledger/ledger.py": "01d82e9f33a60d589b5e31c11f18cd8b74c5e1d3f2ee983daf437c1c2762fd21",
+    "decision/tests/test_r1_conformance.py": "48efe6b6bad4285ac6d4b3e0771620b4d6f6d65c8bdd9c66d7fcb5014fdf27ca",
+    "r1-recovery-file-sha256.txt": "72ee4d92a9928137ca5a2c8802f872eb90e3c33f33621cad63c38627686c463e"
+  },
+  "post_rem_ediation_hashes": {
+    "decision/ledger/ledger.py": "8592fb54b9aca7a08f0956e86718c93fdef57c42b229114e532641577fc5d42d",
+    "decision/tests/test_r1_conformance.py": "19647f22fc3f289d4d867faa53955c601b7f2b1bb7c014b4556a7775b0c961cd"
+  },
+  "semantic_probe": {
+    "original_entry_hash": "f9d39cc206886ace78bef62d661f643b9f7135e11204b8f8c684acd9c3b7c5e4",
+    "mutated_prev_only_hash": "fc5294a75684e9aef7a241196888ce435822a88e57a5dc4ce239dd7c6a0a9f8f",
+    "h1_ne_h2": true
+  },
+  "files": [
+    {
+      "path": "decision/AGENTS.md",
+      "bytes": 2350,
+      "sha256": "4eb1c3a9fb37cbee7b6253c2fa13055a6694c74dc46f452457c38254097da8fd"
+    },
+    {
+      "path": "decision/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/canonical/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/canonical/jcs.py",
+      "bytes": 6504,
+      "sha256": "cefe767ca6ad0e60da69fe3fbce992dedeb2e6f0892c3e453bf794c6f7e8a9e4"
+    },
+    {
+      "path": "decision/contracts/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/contracts/contracts.py",
+      "bytes": 4129,
+      "sha256": "7c02eb1711b69d2c236e618f4b21a4bf0e8cf5e53159c6720bdb0ca06d847573"
+    },
+    {
+      "path": "decision/engine/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/engine/engine.py",
+      "bytes": 1441,
+      "sha256": "58a536e8b65f5972098aa7376a40d947ce9e038d3035f1d8b3d3072a2d2bfd2d"
+    },
+    {
+      "path": "decision/engine/types.py",
+      "bytes": 2998,
+      "sha256": "24dfabe7dd68254747a4c610435b52bd0343dbf4053670ef68a09c91415e8389"
+    },
+    {
+      "path": "decision/ledger/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/ledger/ledger.py",
+      "bytes": 4311,
+      "sha256": "8592fb54b9aca7a08f0956e86718c93fdef57c42b229114e532641577fc5d42d"
+    },
+    {
+      "path": "decision/policy/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/policy/policy.py",
+      "bytes": 2602,
+      "sha256": "4d86df134782c19a881575eb6b0d1fcace3dcca53b591fff181329a77e556b34"
+    },
+    {
+      "path": "decision/providers/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/providers/base.py",
+      "bytes": 1095,
+      "sha256": "1fa04411c529c8bed72600d8f2958070e56b833582e675971ae06d21dc9b719a"
+    },
+    {
+      "path": "decision/providers/config.py",
+      "bytes": 2591,
+      "sha256": "39aba59041240626b594447d26ccba8d24dd7d2955b182b7e026d5c78c319201"
+    },
+    {
+      "path": "decision/providers/mock.py",
+      "bytes": 6156,
+      "sha256": "53799930846dd468cec7edd5c924b3a82702644729b64f1a99b40f8c76c5c560"
+    },
+    {
+      "path": "decision/providers/jev/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/providers/jev/provider.py",
+      "bytes": 9441,
+      "sha256": "5487b6bb6816770c23a2dae6b2fc51f72eaca4a61c677a611ce81872bd75a615"
+    },
+    {
+      "path": "decision/security/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/security/untrusted.py",
+      "bytes": 2338,
+      "sha256": "9c0933a9823cb04faca30751eaf79eb2573261535c847e933ddf7630bb8f2302"
+    },
+    {
+      "path": "decision/tests/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/tests/test_r1_conformance.py",
+      "bytes": 24081,
+      "sha256": "19647f22fc3f289d4d867faa53955c601b7f2b1bb7c014b4556a7775b0c961cd"
+    },
+    {
+      "path": "artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/TRANSFER_MANIFEST.json",
+      "bytes": 6033,
+      "sha256": "f11b49fec9ed9c1f5a5461cf0a1dc8e0759a724a2f87eb3dd04940b565b90cfe"
+    },
+    {
+      "path": "artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/architecture.md",
+      "bytes": 3755,
+      "sha256": "d6383306eb80d488ca915a1a8a90ad392cb73a848f7eb8422f388365f58e3663"
+    },
+    {
+      "path": "artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/artifact-0-provenance-freeze.md",
+      "bytes": 4590,
+      "sha256": "9ad49f915cf5c6e3bb3a05a8b8abecbbb8833f0e4c4377d94e7c932c650685d4"
+    },
+    {
+      "path": "artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/canonicalization.md",
+      "bytes": 2163,
+      "sha256": "3435478d9755b1fc47e5f6ff01b04b249b7d5f219c3b5b798e194ccfc7205028"
+    },
+    {
+      "path": "artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/failure-matrix.md",
+      "bytes": 3013,
+      "sha256": "6869496bd529619c68025721c29cbfacb128a4d22b66839943a893f21b165247"
+    },
+    {
+      "path": "artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/manifest.json",
+      "bytes": 3458,
+      "sha256": "abc8f96b5cb4602187dbed187045da42efd00c779c05911a332e365c1a020de3"
+    },
+    {
+      "path": "artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/prior-lane-supersession.md",
+      "bytes": 2755,
+      "sha256": "28adb9275255287615b2c3127160524e9fc11830af0c4504a6c45bf9376a272f"
+    },
+    {
+      "path": "artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/provider-contract.md",
+      "bytes": 2732,
+      "sha256": "9e0e683315cc1c3b720e77d0c0834c807f2f2e7061442779e67cfe08d9d5893b"
+    },
+    {
+      "path": "artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/r1-recovery-file-sha256.txt",
+      "bytes": 3974,
+      "sha256": "72ee4d92a9928137ca5a2c8802f872eb90e3c33f33621cad63c38627686c463e"
+    },
+    {
+      "path": "artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/security-boundary.md",
+      "bytes": 3105,
+      "sha256": "32f4d06f2ae6ae86129c769597265ff91add1e8fe65727b21943069a035405e4"
+    },
+    {
+      "path": "artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/test-results.json",
+      "bytes": 7080,
+      "sha256": "570b4f2dee3d66006bf372782f40056cebe46ed07d05039ff077a4cdc59aca27"
+    }
+  ]
+}

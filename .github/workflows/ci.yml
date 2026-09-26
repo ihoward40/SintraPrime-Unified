@@ -23,13 +23,13 @@ jobs:
         run: python scripts/ci/report_test_inventory.py
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results
           path: test-results.xml
       - name: Upload test inventory
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-inventory
           path: artifacts/ci/test-inventory.json
@@ -178,7 +178,7 @@ jobs:
           PY
       - name: Upload PostgreSQL race log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pg-race-log
           path: /tmp/pg_race.log
@@ -242,7 +242,7 @@ jobs:
           ! grep -q 'SKIPPED' /tmp/postgresql-bootstrap-certification.log
       - name: Upload PostgreSQL bootstrap certification log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: postgresql-bootstrap-certification-log
           path: /tmp/postgresql-bootstrap-certification.log
@@ -281,7 +281,7 @@ jobs:
         run: set -o pipefail && python -m pytest portal/tests/test_auth_tenant_rbac_certification.py -q | tee /tmp/auth-tenant-rbac-certification.log
       - name: Upload certification log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: auth-tenant-rbac-certification-log
           path: /tmp/auth-tenant-rbac-certification.log
@@ -300,7 +300,7 @@ jobs:
         run: set -o pipefail && python -m pytest portal/tests/test_audit_correlation_non_http_certification.py -q | tee /tmp/audit-correlation-non-http-certification.log
       - name: Upload certification log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: audit-correlation-non-http-certification-log
           path: /tmp/audit-correlation-non-http-certification.log
@@ -319,7 +319,7 @@ jobs:
         run: set -o pipefail && python -m pytest portal/tests/test_http_correlation_ws_hardening_certification.py -q | tee /tmp/http-correlation-ws-hardening-certification.log
       - name: Upload certification log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: http-correlation-ws-hardening-certification-log
           path: /tmp/http-correlation-ws-hardening-certification.log

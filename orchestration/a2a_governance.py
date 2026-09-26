@@ -151,6 +151,7 @@ def validate_dispatch(
     sender_agent_id: str | None = None,
     tenant_id: str = "default",
     approval: ApprovalReceipt | None = None,
+    approval_store: Any | None = None,
     claims: list[EvidenceClaim] | None = None,
     attachment_hashes: list[str] | None = None,
 ) -> str:
@@ -183,6 +184,8 @@ def validate_dispatch(
         raise PermissionError("Dispatch blocked: attachment hashes do not match approval")
     if not approval.approved_output_id:
         raise ValueError("Dispatch blocked: approved_output_id is required")
+    if approval_store is not None:
+        approval_store.verify_and_consume(approval)
 
     return output_hash
 

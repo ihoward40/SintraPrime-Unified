@@ -14,6 +14,7 @@ The A2A transport now separates **internal collaboration** from **external actio
 - Raw in-memory and Redis transport seams reject messages that declare external-action intent. This is a Patch C slice, not full bypass certification.
 - External approval receipts are now HMAC-bound to the sender, recipient, canonical content hash, attachment hashes, delivery method, receipt ID, and expiry. Set `A2A_APPROVAL_HMAC_SECRET` through deployment secret management; never place it in the registry or source control.
 - The HTTP A2A boundary now authenticates opaque agent tokens from `A2A_AGENT_CREDENTIALS`, binds the principal to `agent_id` and `tenant_id`, rejects body/principal mismatches, and audits failed authentication attempts. Credentials must be provisioned through deployment secret management.
+- Approval lifecycle events are persisted to `A2A_APPROVAL_STORE` (default `var/a2a_approvals.jsonl`) with fsync-backed issued/used/expired/revoked states. Receipts are one-time and must exist in the durable store before a future external dispatch path can consume them.
 - Autonomous self-improvement, deployment, publishing, filing, payments, and third-party contact remain disabled for the default orchestrator profile.
 
 ## Evidence classifications
@@ -50,6 +51,7 @@ Changing even one character after approval causes the content hash check to fail
 | Agent registry | PATCH A COMPLETE / PATCH C PARTIAL | Runtime sender policy is enforced at the HTTP boundary; all raw-seam and restart-revalidation coverage remains pending |
 | Trusted approval receipts | PATCH C2 PARTIAL | Server-issued HMAC verification, sender binding, and expiry checks are test-backed; durable issuance, revocation, and authenticated identity remain pending |
 | Authenticated identity / tenant scope | PATCH C3 PARTIAL | Token-to-agent/tenant binding and mismatch auditing are test-backed; production identity provider integration remains pending |
+| Durable approval lifecycle | PATCH C4 PARTIAL | Restart-safe issued/used/revoked/expired store and lifecycle audit are test-backed; production approval authority and external dispatch integration remain blocked |
 | Durable append-only audit storage | PARTIAL / PATCH B IN PROGRESS | Local JSONL append + fsync and fresh-store recovery are tested; production durable-volume and multi-process guarantees remain pending |
 | Restart persistence and bypass-resistance integration test | PENDING | Fresh-store recovery is covered; production restart/revalidation and raw transport bypass tests remain pending |
 | Broad external-action enablement | BLOCKED BY DEFAULT | Requires explicit approval and a reviewed agent profile |

@@ -36,6 +36,7 @@ from .a2a_governance import (
 from .a2a_audit import A2AAuditStore
 from .agent_identity import AgentPrincipal, authenticate_agent
 from .agent_policy import AgentPolicy
+from .approval_store import ApprovalStore
 from .redis_a2a import RedisA2ATransport
 from .durable_execution import (
     DurableWorkflowEngine,
@@ -62,6 +63,7 @@ _a2a: Optional[A2AProtocol] = None
 _redis_a2a: Optional[RedisA2ATransport] = None
 _a2a_audit: Optional[A2AAuditStore] = None
 _agent_policy: Optional[AgentPolicy] = None
+_approval_store: Optional[ApprovalStore] = None
 _checkpointer: Optional[InMemoryCheckpointer] = None
 
 
@@ -135,6 +137,13 @@ def get_agent_principal(
         except Exception:
             logger.exception("Unable to audit failed A2A authentication")
         raise HTTPException(status_code=401, detail=str(exc)) from exc
+
+
+def get_approval_store(audit_store: A2AAuditStore = Depends(get_a2a_audit)) -> ApprovalStore:
+    global _approval_store
+    if _approval_store is None:
+        _approval_store = ApprovalStore(audit_store=audit_store)
+    return _approval_store
 
 
 def get_checkpointer() -> InMemoryCheckpointer:
@@ -386,6 +395,7 @@ async def send_agent_message(
     audit_store: A2AAuditStore = Depends(get_a2a_audit),
     agent_policy: AgentPolicy = Depends(get_agent_policy),
     principal: AgentPrincipal = Depends(get_agent_principal),
+    approval_store: ApprovalStore = Depends(get_approval_store),
 ) -> SendMessageResponse:
     """Send an A2A message between agents.
 
@@ -488,6 +498,7 @@ async def send_agent_message(
             sender_agent_id=req.from_agent,
             tenant_id=principal.tenant_id,
             approval=approval,
+            approval_store=approval_store,
             claims=claims,
             attachment_hashes=req.attachment_hashes,
         )

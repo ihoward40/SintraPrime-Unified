@@ -15,6 +15,7 @@ from orchestration.a2a_audit import A2AAuditStore
 from orchestration.a2a_protocol import A2AProtocol, Message, MessageBus, MessageType
 from orchestration.agent_policy import AgentPolicy
 from orchestration.agent_identity import AgentPrincipal
+from orchestration.approval_store import ApprovalStore
 from orchestration.orchestration_api import SendMessageRequest, send_agent_message
 
 
@@ -251,6 +252,42 @@ def test_agent_token_authentication_binds_tenant(monkeypatch):
     assert principal == AgentPrincipal("orchestrator", "tenant-a")
     with pytest.raises(PermissionError, match="tenant scope"):
         authenticate_agent("token-a", "tenant-b")
+
+
+def test_approval_store_survives_restart_and_consumes_once(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2A_APPROVAL_HMAC_SECRET", "test-secret")
+    receipt = issue_approval(
+        approved_by="user-1",
+        approved_output_id="out-1",
+        sender_agent_id="sender",
+        recipient="counsel",
+        final_content_hash=content_hash({"body": "approved"}),
+        expires_at=9999999999,
+    )
+    path = tmp_path / "approvals.jsonl"
+    ApprovalStore(str(path)).issue(receipt)
+    ApprovalStore(str(path)).verify_and_consume(receipt)
+    with pytest.raises(PermissionError, match="already been used"):
+        ApprovalStore(str(path)).verify_and_consume(receipt)
+
+
+def test_approval_store_revoke_and_lifecycle_audit(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2A_APPROVAL_HMAC_SECRET", "test-secret")
+    receipt = issue_approval(
+        approved_by="user-1",
+        approved_output_id="out-2",
+        sender_agent_id="sender",
+        recipient="counsel",
+        final_content_hash=content_hash({"body": "approved"}),
+        expires_at=9999999999,
+    )
+    audit = A2AAuditStore(str(tmp_path / "audit.jsonl"))
+    store = ApprovalStore(str(tmp_path / "approvals.jsonl"), audit_store=audit)
+    store.issue(receipt)
+    store.revoke(receipt.receipt_id, "manual review")
+    with pytest.raises(PermissionError, match="revoked"):
+        store.verify_and_consume(receipt)
+    assert [record["status"] for record in audit.read()] == ["issued", "revoked"]
 
 
 @pytest.mark.asyncio

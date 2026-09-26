@@ -1,6 +1,6 @@
 """R2 shadow calibration harness.
 
-Executes the controlled shadow dataset (categories A–P + Jev synthetic cases),
+Executes the controlled shadow dataset (categories A-P + Jev synthetic cases),
 records per-case provenance rows, computes the directive-mandated metric set,
 and enforces the fail-closed gating rules. SHADOW_ONLY throughout — no live
 provider, no production routing, no external effects.
@@ -9,18 +9,13 @@ provider, no production routing, no external effects.
 from __future__ import annotations
 
 import asyncio
-import hashlib
-import json
-from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from dataclasses import dataclass
 
-from ..canonical.jcs import canonical_bytes, state_sha256
+from ..canonical.jcs import state_sha256
 from ..contracts.contracts import contract_from_raw, semantic_contract_sha256
 from ..engine.engine import DecisionEngine
 from ..engine.types import ResultKind
-from ..ledger.ledger import build_receipt
 from ..policy.policy import apply_policy
-from ..providers.config import load_config
 from ..providers.jev.provider import JevDecisionProvider
 from ..providers.mock import MockDecisionProvider
 from .shadow_cases import JEV_SHADOW_CASES, build_cases
@@ -89,7 +84,7 @@ def _run_case(case, provider, engine) -> CaseResult:
             receipt_hash="DEFECT-ISOLATED", run_id=case.case_id + "-defect",
             timestamp="", provider_mode=provider.name, shadow_only=True,
             note="R1_DEFECT: provider raised " + type(exc).__name__ + " on " + case.note)
-    
+
     exp_kinds = _KIND_FOR[case.expectation]
     exp_policies = _policy_expectation(case)
     kind_ok = result.kind in exp_kinds
@@ -113,17 +108,17 @@ def _run_case(case, provider, engine) -> CaseResult:
 
 def _jev_provider_for(resp):
     if resp == "TIMEOUT":
-        def transport(url, payload, key, t):
+        def transport(_url, _payload, _key, _t):
             raise TimeoutError("shadow timeout")
     else:
-        def transport(url, payload, key, t, resp=resp):
+        def transport(_url, _payload, _key, _t, resp=resp):
             return resp
     return JevDecisionProvider(transport=transport)
 
 
 def run_shadow_dataset() -> dict:
     """Execute the full shadow dataset. Returns the metrics + case rows."""
-    rows: List[CaseResult] = []
+    rows: list = []
     engine = DecisionEngine(MockDecisionProvider(), shadow_only=True)
     mock_provider = MockDecisionProvider()
     cases = build_cases()
@@ -133,13 +128,14 @@ def run_shadow_dataset() -> dict:
         rows.append(_run_case(case, mock_provider, engine))
 
     # Jev adapter shadow cases (synthetic transport; no live calls)
-    jev_contract = contract_from_raw(MULTI := {
+    _jev_contract_raw = {
         "contract_id": "shadow_route", "version": "1", "risk": "ELEVATED",
         "questions": {
             "domain": {"type": "choice", "choices": ["credit_reporting", "auto_finance", "unknown"]},
             "needs_human_review": {"type": "boolean"},
             "priority": {"type": "score", "min": 0, "max": 3},
-        }})
+        }}
+    jev_contract = contract_from_raw(_jev_contract_raw)
     for jc in JEV_SHADOW_CASES:
         provider = _jev_provider_for(jc["transport_response"])
         try:
@@ -168,7 +164,7 @@ def run_shadow_dataset() -> dict:
         rows.append(CaseResult(
             case_id=jc["case_id"], category=jc["category"], expectation=exp,
             actual_kind=result.kind.value, actual_policy=policy.decision, match=match,
-            input_hash=state_sha256({}), contract_hash=semantic_contract_sha256(MULTI),
+            input_hash=state_sha256({}), contract_hash=semantic_contract_sha256(_jev_contract_raw),
             receipt_hash=receipt.get("hash", ""), run_id=receipt.get("run_id", ""),
             timestamp="", provider_mode="jev(shadow)", shadow_only=True,
             note=jc.get("note", "")))
@@ -176,7 +172,7 @@ def run_shadow_dataset() -> dict:
     return summarize(rows)
 
 
-def summarize(rows: List[CaseResult]) -> dict:
+def summarize(rows: list) -> dict:
     metrics = {
         "TOTAL_CASES": len(rows),
         "DECISION_MATCHES": 0, "FALLBACK_MATCHES": 0, "REVIEW_MATCHES": 0, "REJECTION_MATCHES": 0,

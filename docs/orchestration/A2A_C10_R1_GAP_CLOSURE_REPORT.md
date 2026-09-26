@@ -36,6 +36,16 @@ C10-R1 closed the Redis persistence proof gap for the tested local AOF topology.
 
 No external action was enabled or attempted. No email, filing, publishing, deployment, payment, or third-party contact occurred. Dispatch Desk remains blocked and all registry profiles retain `can_send_external=false`.
 
+## Complete-suite validation
+
+After installing the repository's missing test-environment dependencies (`python-dotenv`, `PyJWT`, `structlog`, `pydantic-settings`, `SQLAlchemy`, `asyncpg`, `pyotp`, `qrcode`, `bcrypt`, `email-validator`, `python-multipart`, and PyYAML), the complete command below passed with all collected tests green:
+
+```bash
+python -m pytest -q
+```
+
+The run reached 100% completion with no failures. Warnings remain for deprecated Starlette/httpx usage, pytest collection naming, short test JWT keys, and a deprecated class-scoped fixture; none caused test failure.
+
 ## Decision
 
 `PARTIAL` is the only safe result. Do not proceed to production executor enablement or Dispatch Desk activation until the remaining deployment-specific gates are proven.

@@ -1,0 +1,161 @@
+{
+  "task_id": "SP-SYSTEM-ONE-DECISION-FABRIC-001-R2S",
+  "note": "R2S hash manifest; R2-original evidence remains untouched in worktree-r2",
+  "files": [
+    {
+      "path": "decision/AGENTS.md",
+      "bytes": 2403,
+      "sha256": "5b8f425d06e04f3b5836c8c38f03d8ba71f4ab075f482a452ca370978d61f3b4"
+    },
+    {
+      "path": "decision/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/calibration/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/calibration/harness.py",
+      "bytes": 9502,
+      "sha256": "11c4072adc98d78f3a054e88d4aa47c3b92cb5e677954a42bf77aba86f6558aa"
+    },
+    {
+      "path": "decision/calibration/shadow_cases.py",
+      "bytes": 14153,
+      "sha256": "0d594916df53c89cedfea756253a5b77807174820b9c09980b834f5a986c77fd"
+    },
+    {
+      "path": "decision/canonical/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/canonical/jcs.py",
+      "bytes": 6692,
+      "sha256": "a242d1c61390d7d226c03de2968ae8c1b0247f5249eacb246150602a2876edfc"
+    },
+    {
+      "path": "decision/contracts/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/contracts/contracts.py",
+      "bytes": 4241,
+      "sha256": "d81ea35e0242d39776439236119437e1acceb7e45eb21a1e697975af231c2f38"
+    },
+    {
+      "path": "decision/engine/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/engine/engine.py",
+      "bytes": 1477,
+      "sha256": "2a616cf80c9cbbf0dcd3ecfa05e019227d84b0d08fffe242872e394f7b30ad15"
+    },
+    {
+      "path": "decision/engine/types.py",
+      "bytes": 3106,
+      "sha256": "d1a81c4e5b172ed9b35091bdbef7e21c9f7f7f8bf7c173fcc3ce84c0bd3913f9"
+    },
+    {
+      "path": "decision/ledger/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/ledger/ledger.py",
+      "bytes": 4428,
+      "sha256": "3dc7d3a3dac374708ea9d8d8019931ea027715f300327b5ca2863e7181222c84"
+    },
+    {
+      "path": "decision/policy/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/policy/policy.py",
+      "bytes": 2664,
+      "sha256": "936969f035ac953e8edc1e59895832cfd16d3a40991b9354ef8cedd65073e6eb"
+    },
+    {
+      "path": "decision/providers/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/providers/base.py",
+      "bytes": 1125,
+      "sha256": "8db30299532acebaebe283a32b72e6343ddcfaf84e52fe875fcc011d26d5fbee"
+    },
+    {
+      "path": "decision/providers/coerce.py",
+      "bytes": 1758,
+      "sha256": "be00e5c7c2acfe8e12f18ae9f3650fa87180f8ef1f577eda0818150b6deaec69"
+    },
+    {
+      "path": "decision/providers/config.py",
+      "bytes": 2660,
+      "sha256": "25f056b63d75a4d3abd942ac3230622b85bbfc029404d615920204db042b51ee"
+    },
+    {
+      "path": "decision/providers/mock.py",
+      "bytes": 7603,
+      "sha256": "f64537e7e9cd968dd4af3a1c9b42b79cbcfa161ffcff9ead800d12b7f8e0d15e"
+    },
+    {
+      "path": "decision/providers/jev/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/providers/jev/provider.py",
+      "bytes": 9782,
+      "sha256": "c4d0e7028d5f01e31e6f873ce7267b648b6403fd049f3965f1a6ec13bb655b17"
+    },
+    {
+      "path": "decision/security/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/security/untrusted.py",
+      "bytes": 2401,
+      "sha256": "757a58060ea2e85e9a57ff1b4db98dd6c897c3088329e3d682d70046967c46de"
+    },
+    {
+      "path": "decision/tests/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "decision/tests/test_r1_conformance.py",
+      "bytes": 29692,
+      "sha256": "976718ca022082c9b6da75b3234bcdc15c651d81be4c8c3b20c4578d05c8c837"
+    },
+    {
+      "path": "decision/tests/test_r2_shadow_calibration.py",
+      "bytes": 11136,
+      "sha256": "43264deb1ab530aaa79f796ff6919ef607c6a19a730cb993e8fd2fc586504052"
+    },
+    {
+      "path": "artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R2-SUPERSEDING/artifact-0-provenance-freeze.md",
+      "bytes": 2497,
+      "sha256": "e239ddb69c8f930e92bbe8b21dbe5dceca0560af6f393336afdf86dbc3503151"
+    },
+    {
+      "path": "artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R2-SUPERSEDING/calibration-summary.json",
+      "bytes": 2844,
+      "sha256": "ce802260f56afadf7fe65d62de6766fd6339e776c857929a0fed4b8098782dd9"
+    },
+    {
+      "path": "artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R2-SUPERSEDING/execution-results.json",
+      "bytes": 24520,
+      "sha256": "9054e29e0c20e8bc46d7b83921bcfae1ac5a98a9134d60a5a60dc37aaaed6094"
+    }
+  ]
+}

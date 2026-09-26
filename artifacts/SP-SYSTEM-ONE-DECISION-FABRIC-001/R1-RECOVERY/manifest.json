@@ -1,0 +1,55 @@
+{
+  "task_id": "SP-SYSTEM-ONE-DECISION-FABRIC-001-R1-RECOVERY",
+  "artifact": "R1-RECOVERY evidence manifest",
+  "status": "IMPLEMENTATION_DELIVERED / UNKNOWN / UNVERIFIED",
+  "no_pass_claim": true,
+  "worktree": {
+    "path": "C:/Users/howar/SintraPrime-Unified-decision-fabric-r1-recovery/worktree",
+    "branch": "feat/sp-system-one-decision-fabric-001-r1-recovery",
+    "baseline": "be6f07cf6c6ed0f9e0596aac548d7d1e7f74ca3b",
+    "baseline_is_exact": true,
+    "artifact_0": "artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/artifact-0-provenance-freeze.md",
+    "artifact_0_sha256": "9ad49f915cf5c6e3bb3a05a8b8abecbbb8833f0e4c4377d94e7c932c650685d4"
+  },
+  "superseded_prior_lane": {
+    "classification": "SUPERSEDED / NOT_PROVEN",
+    "receipt": "fabric:agent-resolution-r1-provenance-reconciliation-implementat-f8fd",
+    "prior_artifact_0_hash_not_inherited": true,
+    "prior_test_results_not_inherited": true
+  },
+  "test_evidence": {
+    "command": ".venv-r1/Scripts/python.exe -m pytest decision/tests/ (repo root)",
+    "venv": "Python 3.11.16, pytest 9.1.1, pyyaml 6.0.3 (isolated; no global mutation)",
+    "runs": 4,
+    "collection_count": 49,
+    "pass_count": 49,
+    "fail_count": 0,
+    "skip_count": 0,
+    "deterministic": true,
+    "governed_collection": {
+      "pytest_ini_testpaths_includes_decision_tests": true,
+      "full_suite_collection_count_with_decision": 542,
+      "pre_existing_unrelated_collection_errors": 10,
+      "pre_existing_errors_note": "all 10 errors are missing-optional-dependency (pydantic etc.) imports in tests/ that ALSO fail at the untouched baseline be6f07cf checkout with the same interpreter; they pre-date this lane and are out of R1 scope"
+    }
+  },
+  "coverage_map": {
+    "canonicalization_jcs": ["key order", "whitespace", "0", "-0", "0.1", "exponent forms", "integral/float equivalence", "Unicode UTF-16 ordering", "semantic change sensitivity"],
+    "contract_hashing": ["formatting-insensitive", "comment-insensitive", "semantic-change-sensitive", "noul-rejected-as-type"],
+    "primitive_normalization": ["Choice->choice", "Score->score", "Noul->boolean", "SDK boolean->boolean", "noul containment in core modules"],
+    "distribution": ["0.97/0.02", "0.51/0.48", "0.41/0.40/0.19", "margin=top1-top2", "full distribution retained", "argmax insufficient for authorization"],
+    "abstention": ["first-class ABSTAIN", "cannot convert to success/route"],
+    "fail_closed": ["timeout", "connection", "dns", "429", "500", "malformed", "unknown primitive", "missing confidence", "missing distribution", "schema mismatch", "contract mismatch", "all -> FALLBACK_HERMES"],
+    "untrusted_input": ["adversarial text stays data", "control/bidi sanitization", "detection advisory-only"],
+    "ledger": ["deterministic receipts", "required fields incl. provider_request_id + latency_ms", "hash chain", "tamper detection"],
+    "configuration": ["mock default", "shadow-only default", "unknown provider -> mock", "live requires explicit config", "base-url override provenance event", "documented gateway default"]
+  },
+  "prohibited_actions_confirmed_absent": [
+    "live steering", "production routing", "production thresholds",
+    "autonomous execution", "browser control", "legal determinations",
+    "correspondence", "financial action", "SP-DEC-013..020"
+  ],
+  "unresolved_blockers": [],
+  "verification_authority": "independent verifier only",
+  "created_utc": "2026-09-26T15:40:00Z"
+}

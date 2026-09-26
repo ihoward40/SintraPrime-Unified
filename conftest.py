@@ -79,64 +79,70 @@ collect_ignore_glob = [
     # Tier 2 — Portal (needs .[portal]) — included only via SINTRAPRIME_TEST_LANES
     *(set() if "portal" in _ACTIVE_LANES else ["portal/*"]),
     # Tier 3 — Predictive (needs .[predictive])
-    *(set() if "predictive" in _ACTIVE_LANES else ["predictive/*"]),
+    *(set() if ("predictive" in _ACTIVE_LANES or "release" in _ACTIVE_LANES) else ["predictive/*"]),
     # Tier 4 — Integrations (needs .[integrations])
-    *(set() if "integrations" in _ACTIVE_LANES else ["integrations/*"]),
-    # Tier 5 — Deferred (transitive imports unverified)
-    "backend/*",
-    "core/*",
-    "agents/*",
-    "agent_protocol/*",
-    "ai_compliance/*",
-    "app_builder/*",
-    "artifacts/*",
-    "channels/*",
-    "claude_code/*",
-    "cross_platform/*",
-    "developer_experience/*",
-    "docket/*",
-    "emotional_intelligence/*",
-    "esignature/*",
-    "federal_agencies/*",
-    "financial_mastery/*",
-    "governance/*",
-    "legal_integrations/*",
-    "legal_intelligence/*",
-    "life_governance/*",
-    "local_llm/*",
-    "local_models/*",
-    "mcp_server/*",
-    "memory/*",
-    "multimodal/*",
-    "observability/*",
-    "orchestration/*",
-    "packages/*",
-    "parl/*",
-    "performance/*",
-    "phase15/*",
-    "phase16/*",
-    "phase17/*",
-    "phase18/*",
-    "phase19/*",
-    "rag/*",
-    "saas/*",
-    "scheduler/*",
-    "secure_execution/*",
-    "security/*",
-    "skill_evolution/*",
-    "superintelligence/*",
-    "trust_law/*",
-    "twin_layer/*",
-    "voice/__init__.py",
-    "voice/legal_nlp.py",
-    "voice/persona.py",
-    "voice/response_formatter.py",
-    "voice/speech_processor.py",
-    "voice/voice_api.py",
-    "voice/voice_engine.py",
-    "voice/wake_word.py",
-    "voice/tests/*",
-    "workflow_builder/*",
+    *(set() if ("integrations" in _ACTIVE_LANES or "release" in _ACTIVE_LANES) else ["integrations/*"]),
+    # Tier 5 — Deferred (transitive imports unverified). SUPPRESSED when the
+    # 'release' lane is active so the RC release-test universe (G0-R3,
+    # SP-RC-RUNTIME-COLLECTION-VERIFY-001) can collect these modules.
+    *(set() if "release" in _ACTIVE_LANES else [
+        "backend/*",
+        "core/*",
+        "agents/*",
+        "agent_protocol/*",
+        "ai_compliance/*",
+        "app_builder/*",
+        "artifacts/*",
+        "channels/*",
+        "claude_code/*",
+        "cross_platform/*",
+        "developer_experience/*",
+        "docket/*",
+        "emotional_intelligence/*",
+        "esignature/*",
+        "federal_agencies/*",
+        "financial_mastery/*",
+        "governance/*",
+        "integrations/*",
+        "legal_integrations/*",
+        "legal_intelligence/*",
+        "life_governance/*",
+        "local_llm/*",
+        "local_models/*",
+        "mcp_server/*",
+        "memory/*",
+        "multimodal/*",
+        "observability/*",
+        "orchestration/*",
+        "packages/*",
+        "parl/*",
+        "performance/*",
+        "phase15/*",
+        "phase16/*",
+        "phase17/*",
+        "phase18/*",
+        "phase19/*",
+        "rag/*",
+        "saas/*",
+        "scheduler/*",
+        "secure_execution/*",
+        "security/*",
+        "skill_evolution/*",
+        "superintelligence/*",
+        "trust_law/*",
+        "twin_layer/*",
+        "voice/__init__.py",
+        "voice/legal_nlp.py",
+        "voice/persona.py",
+        "voice/response_formatter.py",
+        "voice/speech_processor.py",
+        "voice/voice_api.py",
+        "voice/voice_engine.py",
+        "voice/wake_word.py",
+        "voice/tests/*",
+        "workflow_builder/*",
+    ]),
+
 ]
 
 # Both integrations directories that need to be in the namespace package
@@ -196,3 +202,54 @@ def pytest_configure(config):
 def pytest_collectstart(collector):
     """Re-register integrations namespace package before each file is collected."""
     _register_integrations()
+
+
+# ---------------------------------------------------------------------------
+# G0-R4.1 (SP-RC-EXECUTION-SAFETY-UNBLOCK-001): certification network guard.
+# Default-deny outbound network for certification execution. Activated ONLY when
+# SINTRAPRIME_CERT_NET_GUARD=1 (set by scripts/certify.py). Loopback traffic is
+# allowed; every other outbound connect/sendto raises a clear, loud error so a
+# forgotten mock becomes a visible certification failure, never a live call.
+# This is test-infrastructure only; no application behavior is modified.
+# ---------------------------------------------------------------------------
+import os as _os  # noqa: E402 -- net-guard block must follow lane setup
+import socket as _socket  # noqa: E402 -- net-guard block must follow lane setup
+
+if _os.environ.get("SINTRAPRIME_CERT_NET_GUARD") == "1":
+    _LOOPBACK_HOSTS = {"127.0.0.1", "::1", "0.0.0.0", "localhost"}
+    _GUARD_NOTICE = ("[SINTRAPRIME-CERT-NET-GUARD] outbound network denied "
+                     "certification policy (default-deny; loopback only). "
+                     "Destination: {dest!r}. If this test legitimately needs an "
+                     "external service it must be classified and sandboxed.")
+
+    def _is_loopback(dest):
+        host = dest[0] if isinstance(dest, tuple) else dest
+        if not isinstance(host, str):
+            return True  # AF_UNIX / non-INET targets: allow
+        return host in _LOOPBACK_HOSTS or host.startswith("127.") or host.endswith(".localhost")
+
+    class _GuardedSocket(_socket.socket):
+        def connect(self, address):
+            if not _is_loopback(address):
+                raise ConnectionAbortedError(_GUARD_NOTICE.format(dest=address))
+            return super().connect(address)
+
+        def connect_ex(self, address):
+            if not _is_loopback(address):
+                raise ConnectionAbortedError(_GUARD_NOTICE.format(dest=address))
+            return super().connect_ex(address)
+
+        def sendto(self, data, address=None):
+            if address is not None and not _is_loopback(address):
+                raise ConnectionAbortedError(_GUARD_NOTICE.format(dest=address))
+            return super().sendto(data, address) if address is not None else super().sendto(data)
+
+    _REAL_CREATE_CONNECTION = _socket.create_connection
+
+    def _guarded_create_connection(address, *a, **kw):
+        if not _is_loopback(address):
+            raise ConnectionAbortedError(_GUARD_NOTICE.format(dest=address))
+        return _REAL_CREATE_CONNECTION(address, *a, **kw)
+
+    _socket.socket = _GuardedSocket
+    _socket.create_connection = _guarded_create_connection

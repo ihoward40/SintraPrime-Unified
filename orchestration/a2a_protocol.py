@@ -18,6 +18,8 @@ from dataclasses import dataclass, field
 from enum import Enum, IntEnum
 from typing import Any, Callable, Dict, List, Optional, Set
 
+from .a2a_governance import DispatchAudit, content_hash
+
 logger = logging.getLogger(__name__)
 
 
@@ -319,12 +321,13 @@ class MessageBus:
 
     BROADCAST_TOPIC = "*"
 
-    def __init__(self) -> None:
+    def __init__(self, audit_store: Any | None = None) -> None:
         self._queues: Dict[str, PriorityMessageQueue] = {}
         self._subscriptions: Dict[str, List[Subscription]] = {}  # topic -> subs
         self._message_log: List[Message] = []
         self._max_log_size = 10000
         self._lock = asyncio.Lock()
+        self.audit_store = audit_store
 
     def _agent_queue(self, agent_id: str) -> PriorityMessageQueue:
         if agent_id not in self._queues:
@@ -334,6 +337,16 @@ class MessageBus:
     async def publish(self, msg: Message) -> None:
         """Publish a message to the bus."""
         if is_external_intent(msg):
+            if self.audit_store is not None:
+                payload_hash = content_hash(msg.payload)
+                self.audit_store.append(DispatchAudit(
+                    mission_id=msg.correlation_id, objective="RAW_TRANSPORT",
+                    agents_used=(msg.from_agent, msg.to_agent), sources_used=(),
+                    claims_verified=(), risks_flagged=(), user_approval="no",
+                    external_action_taken=True, final_output_hash=payload_hash,
+                    payload_hash=payload_hash, status="blocked",
+                    reason_code="raw_external_intent", reason_detail="Memory transport rejected external intent",
+                ))
             raise PermissionError("Dispatch blocked: raw transport cannot carry external-action intent")
         async with self._lock:
             if len(self._message_log) >= self._max_log_size:

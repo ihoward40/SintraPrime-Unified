@@ -55,6 +55,7 @@ class RedisA2ATransport:
 
     async def send(self, message: Message) -> None:
         if is_external_intent(message):
+            await self._audit(message, "blocked", "Redis transport rejected external intent")
             raise PermissionError("Dispatch blocked: raw Redis transport cannot carry external-action intent")
         if message.to_agent == "*":
             raise ValueError("Redis transport supports direct delivery only")
@@ -69,6 +70,7 @@ class RedisA2ATransport:
         _, raw = result
         message = Message.from_dict(json.loads(raw))
         if is_external_intent(message):
+            await self._audit(message, "blocked", "Redis transport rejected external intent")
             raise PermissionError("Dispatch blocked: raw Redis message contains external-action intent")
         if message.is_expired():
             await self._audit(message, "expired", "message TTL elapsed before receive")

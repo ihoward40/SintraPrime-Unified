@@ -85,3 +85,27 @@ def test_audit_store_persists_records(tmp_path):
 
     store.append(DispatchAudit(**record))
     assert store.read()[0]["mission_id"] == "run-1"
+
+
+def test_agent_registry_contains_named_specialists_with_safe_defaults():
+    import json
+    from pathlib import Path
+
+    registry_path = Path(__file__).parents[2] / "orchestration" / "agent_registry.json"
+    registry = json.loads(registry_path.read_text())
+    agents = {agent["agent_id"]: agent for agent in registry["agents"]}
+    expected = {
+        "orchestrator",
+        "blackstone_verifier",
+        "justice_scribe",
+        "source_hunter",
+        "trust_vault_clerk",
+        "sintraprime_builder",
+        "covenant_auditor",
+        "dispatch_desk",
+    }
+    assert expected <= agents.keys()
+    assert all(agent["requires_user_approval"] for agent in agents.values())
+    assert all(not agent["can_send_external"] for agent in agents.values())
+    assert all(agent["evidence_required"] and agent["audit_required"] for agent in agents.values())
+    assert agents["dispatch_desk"]["status"] == "blocked"

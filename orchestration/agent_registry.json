@@ -16,6 +16,111 @@
       "audit_required": true,
       "last_verified": null,
       "proof": []
+    },
+    {
+      "agent_id": "blackstone_verifier",
+      "agent_name": "Blackstone Verifier",
+      "role": "evidence_verification",
+      "status": "planned",
+      "allowed_actions": ["classify_claim", "verify_source", "flag_risk", "request_review"],
+      "forbidden_actions": ["send_external_message", "file_document", "publish", "deploy", "move_money"],
+      "requires_user_approval": true,
+      "can_send_external": false,
+      "can_modify_files": false,
+      "evidence_required": true,
+      "audit_required": true,
+      "last_verified": null,
+      "proof": []
+    },
+    {
+      "agent_id": "justice_scribe",
+      "agent_name": "Justice Scribe",
+      "role": "drafting",
+      "status": "planned",
+      "allowed_actions": ["draft_internal_output", "request_review", "share_evidence_reference"],
+      "forbidden_actions": ["send_external_message", "file_document", "publish", "deploy", "move_money"],
+      "requires_user_approval": true,
+      "can_send_external": false,
+      "can_modify_files": false,
+      "evidence_required": true,
+      "audit_required": true,
+      "last_verified": null,
+      "proof": []
+    },
+    {
+      "agent_id": "source_hunter",
+      "agent_name": "Source Hunter",
+      "role": "research",
+      "status": "planned",
+      "allowed_actions": ["search_sources", "collect_evidence_reference", "request_review"],
+      "forbidden_actions": ["send_external_message", "file_document", "publish", "deploy", "move_money"],
+      "requires_user_approval": true,
+      "can_send_external": false,
+      "can_modify_files": false,
+      "evidence_required": true,
+      "audit_required": true,
+      "last_verified": null,
+      "proof": []
+    },
+    {
+      "agent_id": "trust_vault_clerk",
+      "agent_name": "Trust Vault Clerk",
+      "role": "evidence_intake",
+      "status": "planned",
+      "allowed_actions": ["index_evidence", "create_internal_packet", "share_evidence_reference"],
+      "forbidden_actions": ["send_external_message", "file_document", "publish", "deploy", "move_money", "delete_evidence"],
+      "requires_user_approval": true,
+      "can_send_external": false,
+      "can_modify_files": false,
+      "evidence_required": true,
+      "audit_required": true,
+      "last_verified": null,
+      "proof": []
+    },
+    {
+      "agent_id": "sintraprime_builder",
+      "agent_name": "SintraPrime Builder",
+      "role": "implementation",
+      "status": "planned",
+      "allowed_actions": ["draft_patch", "run_tests", "request_review"],
+      "forbidden_actions": ["send_external_message", "publish", "deploy", "merge", "move_money"],
+      "requires_user_approval": true,
+      "can_send_external": false,
+      "can_modify_files": false,
+      "evidence_required": true,
+      "audit_required": true,
+      "last_verified": null,
+      "proof": []
+    },
+    {
+      "agent_id": "covenant_auditor",
+      "agent_name": "Covenant Auditor",
+      "role": "audit_and_compliance",
+      "status": "planned",
+      "allowed_actions": ["inspect_audit_record", "verify_policy", "flag_bypass", "request_review"],
+      "forbidden_actions": ["send_external_message", "file_document", "publish", "deploy", "move_money", "rewrite_audit_history"],
+      "requires_user_approval": true,
+      "can_send_external": false,
+      "can_modify_files": false,
+      "evidence_required": true,
+      "audit_required": true,
+      "last_verified": null,
+      "proof": []
+    },
+    {
+      "agent_id": "dispatch_desk",
+      "agent_name": "Dispatch Desk",
+      "role": "external_delivery_candidate",
+      "status": "blocked",
+      "allowed_actions": ["prepare_dispatch_draft", "validate_approval_receipt"],
+      "forbidden_actions": ["send_external_message", "file_document", "publish", "deploy", "move_money", "contact_third_party"],
+      "requires_user_approval": true,
+      "can_send_external": false,
+      "can_modify_files": false,
+      "evidence_required": true,
+      "audit_required": true,
+      "last_verified": null,
+      "proof": []
     }
   ],
   "policy": {
@@ -23,6 +128,12 @@
     "unsupported_claims_default": "blocked",
     "approval_receipt_required": true,
     "audit_required": true,
-    "autonomous_self_improvement": false
+    "autonomous_self_improvement": false,
+    "dispatch_desk_enablement_requires": [
+      "registry_completion",
+      "durable_audit_verification",
+      "restart_persistence_proof",
+      "bypass_resistance_tests"
+    ]
   }
 }

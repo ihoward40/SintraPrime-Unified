@@ -359,7 +359,7 @@ export async function getRealTimeMetrics(): Promise<RealTimeMetrics> {
 // ── SP-GOD0-MISSION-CONTROL-001: Principal Brief (sp-principal-brief-v1) ───────
 
 export interface PrincipalBrief {
-  schema_version: 'sp-principal-brief-v1';
+  schema_version: 'sp-principal-brief-v2';
   generated_at: string;
   available: boolean;
   unavailable_reason: string | null;

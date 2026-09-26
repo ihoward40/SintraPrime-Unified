@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timezone
 
 # The brief schema version this service guarantees.
-BRIEF_SCHEMA_VERSION = "sp-principal-brief-v1"
+BRIEF_SCHEMA_VERSION = "sp-principal-brief-v2"
 
 
 @dataclass(frozen=True)

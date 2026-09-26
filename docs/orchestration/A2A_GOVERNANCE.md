@@ -62,6 +62,7 @@ Changing even one character after approval causes the content hash check to fail
 | Multi-process audit / JSONL integrity | PATCH C7 PARTIAL | Cross-process locks, sequence numbers, strict integrity checks, and concurrent-writer tests are present; production filesystem and multi-host guarantees remain pending |
 | Redis ACK / retry / DLQ | PATCH C8 PARTIAL | In-flight tracking, ack, reclaim, retry limits, DLQ, retry-state persistence, and FakeRedis tests are present; live Redis/ACL/consumer-group production validation remains pending |
 | Bypass-resistance red-team harness | PATCH C9 PARTIAL | Unauthorized seams and misuse cases are test-backed with no external side effects; full production route inventory and live-service red-team validation remain pending |
+| C10 production validation evidence | PARTIAL | Local runtime identity/store checks, live-local Redis ACL/ACK/reclaim/DLQ, and the C9 matrix pass; production Redis persistence/topology, identity provider, multi-host filesystem, and deployed route inventory remain unproven |
 | Durable append-only audit storage | PARTIAL / PATCH B IN PROGRESS | Local JSONL append + fsync and fresh-store recovery are tested; production durable-volume and multi-process guarantees remain pending |
 | Restart persistence and bypass-resistance integration test | PENDING | Fresh-store recovery is covered; production restart/revalidation and raw transport bypass tests remain pending |
 | Broad external-action enablement | BLOCKED BY DEFAULT | Requires explicit approval and a reviewed agent profile |

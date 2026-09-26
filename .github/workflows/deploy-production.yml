@@ -13,7 +13,7 @@ jobs:
     if: ${{ github.event.inputs.target_cloud == 'aws' || github.event.inputs.target_cloud == 'all' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Deploy to AWS ECS
         run: |
           # TBD: AWS production deploy steps
@@ -23,7 +23,7 @@ jobs:
     if: ${{ github.event.inputs.target_cloud == 'azure' || github.event.inputs.target_cloud == 'all' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Deploy to Azure App Service
         run: |
           # TBD: Azure production deploy steps
@@ -33,7 +33,7 @@ jobs:
     if: ${{ github.event.inputs.target_cloud == 'gcp' || github.event.inputs.target_cloud == 'all' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Deploy to GCP Cloud Run
         run: |
           # TBD: GCP production deploy steps

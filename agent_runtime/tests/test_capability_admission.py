@@ -17,6 +17,14 @@ def registry():
 def test_registry_is_deny_by_default(registry):
     assert all(item.admission_state != AdmissionState.ADMITTED for item in registry.list())
     assert {EffectClass.E0, EffectClass.E1, EffectClass.E2} <= {item.effect_class for item in registry.list()}
+    assert len(registry.list()) >= 20
+    assert registry.resolve("external.reversible").admission_state == AdmissionState.REVOKED
+
+
+def test_inventory_candidates_are_shadow_only(registry):
+    for item in registry.list():
+        if item.effect_class in {EffectClass.E0, EffectClass.E1}:
+            assert item.admission_state == AdmissionState.SHADOW_ONLY
 
 
 def test_shadow_only_candidate_denied(registry):

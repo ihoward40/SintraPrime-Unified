@@ -157,8 +157,14 @@ class SwarmActivationAdapter:
         event: EventEnvelope,
         decision: EventPolicyDecision,
         worker_specs: list[Any],  # list[WorkerSpec]
+        envelopes: list[Any] | None = None,  # list[AuthorityEnvelope]
     ) -> DispatchOutcome:
-        """Submit approved event's worker specs to SwarmController."""
+        """Submit approved event's worker specs to SwarmController.
+
+        When ``envelopes`` are supplied, each spec is admitted through the GOD-1X
+        governed gate (controller.launch_governed); otherwise the legacy
+        controller.launch path is used (policy-gated event dispatch).
+        """
         if not decision.allow:
             return DispatchOutcome(
                 event=event,
@@ -166,14 +172,17 @@ class SwarmActivationAdapter:
                 status=EventDispatchStatus.BLOCKED,
             )
 
-        # Submit each worker spec to the controller
         launched: list[str] = []
-        for spec in worker_specs:
+        for i, spec in enumerate(worker_specs):
             # Bind identity from event
             if not spec.base_sha:
                 spec.base_sha = event.payload.get("base_sha", "")
-            wid = self._controller.launch(spec)
-            launched.append(wid)
+            if envelopes is not None and i < len(envelopes):
+                wid = self._controller.launch_governed(spec.to_execution_request(spec.worker_id, "event-authority", spec.base_sha or "ctx-default"), envelopes[i])
+                launched.append(wid.execution_id if hasattr(wid, "execution_id") else spec.worker_id)
+            else:
+                wid = self._controller.launch(spec)
+                launched.append(wid)
 
         return DispatchOutcome(
             event=event,

@@ -92,7 +92,7 @@ def normalize_brief(raw: dict) -> dict:
         "active_missions", "agents", "blocked_agents", "pending_approvals",
         "external_effect_attempts", "security_events", "recent_receipt_ids",
         "authority_expirations", "memory_change_summary",
-        "recommended_principal_decisions",
+        "recommended_principal_decisions", "execution_state",
     }
     return {k: raw.get(k) for k in allowed}
 

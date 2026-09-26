@@ -303,6 +303,7 @@ class PrincipalBriefResponse(BaseModel):
     authority_expirations: list[dict] = Field(default_factory=list)
     memory_change_summary: dict = Field(default_factory=dict)
     recommended_principal_decisions: list[dict] = Field(default_factory=list)
+    execution_state: dict | None = None  # GOD-1X backend visibility (Phase 15)
 
 
 @router.get("/principal-brief", response_model=PrincipalBriefResponse)

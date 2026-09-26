@@ -1,0 +1,11 @@
+# SP-SYSTEM-ONE-DECISION-FABRIC-001 — governed evidence byte-stability policy
+#
+# Authorized by: SP-SYSTEM-ONE-DECISION-FABRIC-001-R1-EOL (Principal directive)
+# Purpose: the SHA-256 identities recorded in the R1 evidence artifacts are part
+# of the governance record. Git must not transform these bytes on checkout
+# regardless of core.autocrlf or workstation EOL settings.
+#
+# Scope is deliberately NARROW: only the Decision Fabric evidence tree.
+# No repository-wide binary policy. Source/text EOL handling unchanged.
+
+artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/** -text

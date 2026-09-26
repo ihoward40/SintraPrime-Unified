@@ -12,10 +12,14 @@ Usage:
   python scripts/certify.py --target portal --name portal-after-fix
   python scripts/certify.py --target swarm -k artifact_store
 
-Targets:
-  default  tests/ + voice_concierge/governed/tests/   (Tier 1, 651 tests)
+Targets (G0-R3 RC lanes added):
+  default  tests/ + voice_concierge/governed/tests/   (Tier 1)
   portal   portal/tests/                              (Tier 2)
   swarm    swarm_runtime/tests/                       (Tier 3)
+  auth_identity  tests/ + portal/tests/ + portal/sso/tests/   (RC lane A)
+  tenant_data     portal/tests/                             (RC lane B)
+  execution_correctness  all release-bearing module test dirs (RC lane C)
+  release_cert    tests/ + scripts/ci/tests/                  (RC lane D)
 
 Temp policy:
   artifacts/test-temp/<run_id>/       pytest --basetemp + child-process TMP
@@ -48,6 +52,83 @@ TARGETS: dict[str, list[str]] = {
     "default": ["tests/", "voice_concierge/governed/tests/"],
     "portal": ["portal/tests/"],
     "swarm": ["swarm_runtime/tests/"],
+    # G0-R3 RC certification lanes (SP-RC-RUNTIME-COLLECTION-VERIFY-001)
+    "auth_identity": ["tests/", "portal/tests/", "portal/sso/tests/"],
+    "tenant_data": ["portal/tests/"],
+    "execution_correctness": [
+        "tests/",
+        "agent_runtime/tests",
+        "agents/chat/tests",
+        "agents/sigma/tests",
+        "agents/tests",
+        "agents/zero/tests",
+        "app_builder/tests",
+        "backend/lead-router/tests",
+        "backend/stripe-payments/tests",
+        "blackstone/bra/tests",
+        "blackstone/tests",
+        "channels/tests",
+        "core/tests",
+        "core/universe",
+        "core/universe/ml",
+        "core/universe/tests",
+        "cross_platform/tests",
+        "governance/tests",
+        "integrations/airtable_crm/tests",
+        "integrations/banking/tests",
+        "integrations/case_law/tests",
+        "local_llm/tests",
+        "local_models/tests",
+        "mcp_server/tests",
+        "mission_wiring/tests",
+        "observability/tests",
+        "operator/tests",
+        "orchestration/tests",
+        "performance/tests",
+        "phase15/competitor_intel/tests",
+        "phase15/cpa_partnership/tests",
+        "phase15/lead_nurture/tests",
+        "phase15/realtime_alerts/tests",
+        "phase15/windows_exe/tests",
+        "phase16/advanced_analytics/tests",
+        "phase16/confidential_computing/tests",
+        "phase16/contract_redline/tests",
+        "phase16/hierarchical_orchestration/tests",
+        "phase16/jurisdiction_engine/tests",
+        "phase16/mobile_app/tests",
+        "phase16/moe_router/tests",
+        "phase16/multi_tenant/tests",
+        "phase16/multimodal_court/tests",
+        "phase16/parl_core/tests",
+        "phase16/precedent_ai/tests",
+        "phase16/stripe_billing/tests",
+        "phase17/benchmarks/tests",
+        "phase17/integration_tests/tests",
+        "phase17/llm_wiring/tests",
+        "phase17/windows_deploy/tests",
+        "phase18/ikeos_integration/tests",
+        "phase18/legal_simulation/tests",
+        "phase18/mobile_app/tests",
+        "phase18/security/tests",
+        "phase18/self_healing_ci/tests",
+        "phase18/stripe_webhooks/tests",
+        "phase18/verification/tests",
+        "phase19/revenue_smoke_test",
+        "phase19/revenue_smoke_test/tests",
+        "phase19/trust_compliance_gateway/tests",
+        "portal/routers/tests",
+        "portal/sso/tests",
+        "portal/tests",
+        "predictive/tests",
+        "scheduler/tests",
+        "secure_execution/tests",
+        "security/tests",
+        "swarm_runtime/tests",
+        "trust_law/tests",
+        "voice_concierge/governed/tests",
+        "workflow_builder/tests",
+    ],
+    "release_cert": ["tests/", "scripts/ci/tests/"],
 }
 
 # Visible-lane mapping (Wave 2B): the root conftest only un-ignores a Tier-2/3
@@ -56,6 +137,10 @@ LANE_ENV: dict[str, str] = {
     "default": "default",
     "portal": "default,portal",
     "swarm": "default,swarm",
+    "auth_identity": "default,portal,release",
+    "tenant_data": "default,portal,release",
+    "execution_correctness": "default,release",
+    "release_cert": "default",
 }
 
 
@@ -78,6 +163,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--target", choices=sorted(TARGETS), default="default")
     ap.add_argument("--name", default=None, help="optional human run name for the receipt")
+    ap.add_argument("--collect-only", action="store_true", help="pass --collect-only to pytest (collection verification only)")
     ap.add_argument("pytest_args", nargs="*", help="extra pytest args appended verbatim")
     args = ap.parse_args()
 
@@ -107,6 +193,7 @@ def main() -> int:
         f"--basetemp={basetemp}",
         "-p",
         "no:cacheprovider",
+        *((["--collect-only"] if args.collect_only else [])),
         *args.pytest_args,
     ]
 
@@ -114,10 +201,19 @@ def main() -> int:
     env["TMPDIR"] = env["TEMP"] = env["TMP"] = str(tmp_for_children)
     env["PYTHONPATH"] = str(ROOT)
     env["SINTRAPRIME_TEST_LANES"] = LANE_ENV[args.target]
+    # G0-R4.1: default-deny outbound network for certification execution (loopback allowed).
+    env["SINTRAPRIME_CERT_NET_GUARD"] = "1"
 
     started = datetime.now(UTC).isoformat()
     t0 = time.monotonic()
-    proc = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, env=env)
+    # G0-R4.1 ER-003: per-test timeout (pytest-timeout) + lane wall-clock cap.
+    # A timeout is a clear certification failure, never a silent cancellation.
+    cmd = cmd + ["--timeout=120", "--timeout-method=thread"]
+    try:
+        proc = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, env=env, timeout=1800)
+    except subprocess.TimeoutExpired:
+        print(f"[certify] LANE WALL-CLOCK TIMEOUT (1800s) on target {args.target!r}: CERTIFICATION FAILURE")
+        return 3
     duration = time.monotonic() - t0
     finished = datetime.now(UTC).isoformat()
 

@@ -1,0 +1,34 @@
+# SP-SYSTEM-ONE-DECISION-FABRIC-001-R1-RECOVERY — byte-size + SHA-256 inventory
+# transfer-readiness evidence (directive section 24); verifier must recompute
+4eb1c3a9fb37cbee7b6253c2fa13055a6694c74dc46f452457c38254097da8fd      2350  decision/AGENTS.md
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855         0  decision/__init__.py
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855         0  decision/canonical/__init__.py
+cefe767ca6ad0e60da69fe3fbce992dedeb2e6f0892c3e453bf794c6f7e8a9e4      6504  decision/canonical/jcs.py
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855         0  decision/contracts/__init__.py
+7c02eb1711b69d2c236e618f4b21a4bf0e8cf5e53159c6720bdb0ca06d847573      4129  decision/contracts/contracts.py
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855         0  decision/engine/__init__.py
+58a536e8b65f5972098aa7376a40d947ce9e038d3035f1d8b3d3072a2d2bfd2d      1441  decision/engine/engine.py
+24dfabe7dd68254747a4c610435b52bd0343dbf4053670ef68a09c91415e8389      2998  decision/engine/types.py
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855         0  decision/ledger/__init__.py
+01d82e9f33a60d589b5e31c11f18cd8b74c5e1d3f2ee983daf437c1c2762fd21      3630  decision/ledger/ledger.py
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855         0  decision/policy/__init__.py
+4d86df134782c19a881575eb6b0d1fcace3dcca53b591fff181329a77e556b34      2602  decision/policy/policy.py
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855         0  decision/providers/__init__.py
+1fa04411c529c8bed72600d8f2958070e56b833582e675971ae06d21dc9b719a      1095  decision/providers/base.py
+39aba59041240626b594447d26ccba8d24dd7d2955b182b7e026d5c78c319201      2591  decision/providers/config.py
+53799930846dd468cec7edd5c924b3a82702644729b64f1a99b40f8c76c5c560      6156  decision/providers/mock.py
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855         0  decision/providers/jev/__init__.py
+5487b6bb6816770c23a2dae6b2fc51f72eaca4a61c677a611ce81872bd75a615      9441  decision/providers/jev/provider.py
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855         0  decision/security/__init__.py
+9c0933a9823cb04faca30751eaf79eb2573261535c847e933ddf7630bb8f2302      2338  decision/security/untrusted.py
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855         0  decision/tests/__init__.py
+48efe6b6bad4285ac6d4b3e0771620b4d6f6d65c8bdd9c66d7fcb5014fdf27ca     18696  decision/tests/test_r1_conformance.py
+d6383306eb80d488ca915a1a8a90ad392cb73a848f7eb8422f388365f58e3663      3755  artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/architecture.md
+9ad49f915cf5c6e3bb3a05a8b8abecbbb8833f0e4c4377d94e7c932c650685d4      4590  artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/artifact-0-provenance-freeze.md
+3435478d9755b1fc47e5f6ff01b04b249b7d5f219c3b5b798e194ccfc7205028      2163  artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/canonicalization.md
+6869496bd529619c68025721c29cbfacb128a4d22b66839943a893f21b165247      3013  artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/failure-matrix.md
+abc8f96b5cb4602187dbed187045da42efd00c779c05911a332e365c1a020de3      3458  artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/manifest.json
+28adb9275255287615b2c3127160524e9fc11830af0c4504a6c45bf9376a272f      2755  artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/prior-lane-supersession.md
+9e0e683315cc1c3b720e77d0c0834c807f2f2e7061442779e67cfe08d9d5893b      2732  artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/provider-contract.md
+32f4d06f2ae6ae86129c769597265ff91add1e8fe65727b21943069a035405e4      3105  artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/security-boundary.md
+570b4f2dee3d66006bf372782f40056cebe46ed07d05039ff077a4cdc59aca27      7080  artifacts/SP-SYSTEM-ONE-DECISION-FABRIC-001/R1-RECOVERY/test-results.json

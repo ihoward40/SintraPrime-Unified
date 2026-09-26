@@ -19,9 +19,23 @@ class A2AAuditStore:
         line = json.dumps(audit_dict(record), sort_keys=True)
         with self._lock, self.path.open("a", encoding="utf-8") as stream:
             stream.write(line + "\n")
+            stream.flush()
+            os.fsync(stream.fileno())
 
     def read(self) -> list[dict]:
         if not self.path.exists():
             return []
-        with self.path.open(encoding="utf-8") as stream:
-            return [json.loads(line) for line in stream if line.strip()]
+        lines = self.path.read_text(encoding="utf-8").splitlines()
+        records: list[dict] = []
+        for index, line in enumerate(lines):
+            if not line.strip():
+                continue
+            try:
+                records.append(json.loads(line))
+            except json.JSONDecodeError:
+                if index == len(lines) - 1:
+                    # A final partial write can be safely ignored; prior
+                    # corruption must remain visible instead of disappearing.
+                    continue
+                raise
+        return records

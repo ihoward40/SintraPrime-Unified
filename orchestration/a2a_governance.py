@@ -55,6 +55,9 @@ class DispatchAudit:
     external_action_taken: bool
     final_output_hash: str
     status: str
+    payload_hash: str = ""
+    reason_code: str | None = None
+    reason_detail: str | None = None
     timestamp: float = field(default_factory=time.time)
     audit_id: str = field(default_factory=lambda: uuid.uuid4().hex)
 

@@ -267,7 +267,7 @@ known-first-party = ["portal", "operator", "voice_concierge"]
 "tests/**" = ["ARG002", "F401", "F811", "F841", "N802", "N999", "PT009", "PT011", "PT027", "RUF059"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "portal/tests", "voice_concierge/governed/tests"]
+testpaths = ["tests", "portal/tests", "voice_concierge/governed/tests", "orchestration/tests"]
 python_files = "test_*.py"
 asyncio_mode = "auto"
 addopts = "-m 'not experimental'"
@@ -311,4 +311,3 @@ include = [
     "scheduler/task_queue.py",
     "scheduler/recurring_tasks.py",
 ]
-

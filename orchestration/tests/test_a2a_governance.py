@@ -5,11 +5,14 @@ import pytest
 from orchestration.a2a_governance import (
     ApprovalReceipt,
     ClaimStatus,
+    DispatchAudit,
     EvidenceClaim,
     content_hash,
     validate_dispatch,
 )
 from orchestration.a2a_audit import A2AAuditStore
+from orchestration.a2a_protocol import A2AProtocol
+from orchestration.orchestration_api import SendMessageRequest, send_agent_message
 
 
 def test_internal_message_can_be_sent_without_approval():
@@ -81,10 +84,32 @@ def test_audit_store_persists_records(tmp_path):
         "final_output_hash": "abc",
         "status": "done",
     }
-    from orchestration.a2a_governance import DispatchAudit
-
     store.append(DispatchAudit(**record))
     assert store.read()[0]["mission_id"] == "run-1"
+
+
+def test_audit_store_survives_fresh_store_reconstruction(tmp_path):
+    path = tmp_path / "audit.jsonl"
+    first = A2AAuditStore(str(path))
+    first.append(DispatchAudit(
+        mission_id="restart-run",
+        objective="REQUEST",
+        agents_used=("a", "b"),
+        sources_used=(),
+        claims_verified=(),
+        risks_flagged=(),
+        user_approval="not required",
+        external_action_taken=False,
+        final_output_hash="hash-1",
+        payload_hash="hash-1",
+        status="delivered",
+    ))
+
+    second = A2AAuditStore(str(path))
+    records = second.read()
+    assert records[0]["mission_id"] == "restart-run"
+    assert records[0]["payload_hash"] == "hash-1"
+    assert records[0]["status"] == "delivered"
 
 
 def test_agent_registry_contains_named_specialists_with_safe_defaults():
@@ -109,3 +134,44 @@ def test_agent_registry_contains_named_specialists_with_safe_defaults():
     assert all(not agent["can_send_external"] for agent in agents.values())
     assert all(agent["evidence_required"] and agent["audit_required"] for agent in agents.values())
     assert agents["dispatch_desk"]["status"] == "blocked"
+
+
+@pytest.mark.asyncio
+async def test_api_external_action_is_blocked_and_audited(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2A_BACKEND", "memory")
+    audit = A2AAuditStore(str(tmp_path / "audit.jsonl"))
+    request = SendMessageRequest(
+        from_agent="dispatch_desk",
+        to_agent="third_party",
+        message_type="REQUEST",
+        payload={"action": "send_external_message"},
+        external_action=True,
+    )
+
+    from fastapi import HTTPException
+
+    with pytest.raises(HTTPException) as error:
+        await send_agent_message(request, A2AProtocol(), None, audit)
+
+    assert error.value.status_code == 403
+    records = audit.read()
+    assert records[0]["status"] == "blocked"
+    assert records[0]["reason_code"] == "external_actions_disabled"
+
+
+@pytest.mark.asyncio
+async def test_api_internal_dispatch_records_lifecycle(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2A_BACKEND", "memory")
+    audit = A2AAuditStore(str(tmp_path / "audit.jsonl"))
+    request = SendMessageRequest(
+        from_agent="orchestrator",
+        to_agent="blackstone_verifier",
+        message_type="REQUEST",
+        payload={"task": "verify"},
+    )
+
+    result = await send_agent_message(request, A2AProtocol(), None, audit)
+
+    assert result.delivered is True
+    assert [record["status"] for record in audit.read()] == ["accepted", "delivered"]
+    assert audit.read()[0]["payload_hash"] == audit.read()[1]["payload_hash"]

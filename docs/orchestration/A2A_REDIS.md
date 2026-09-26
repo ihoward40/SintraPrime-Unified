@@ -60,4 +60,4 @@ await transport.send(Message(
 message = await transport.receive("research", timeout=10)
 ```
 
-Redis lists provide at-least-once queue delivery. Consumers should make handlers idempotent using `message_id` or an application-level idempotency key. The HTTP endpoint should be placed behind the project’s existing authentication and tenant boundary before exposing it outside a trusted internal network.
+The current Redis adapter uses destructive list pop semantics: it is a best-effort transport, not a production-certified at-least-once queue. Consumers should make handlers idempotent using `message_id` or an application-level idempotency key. Reliable acknowledgements, retry/DLQ behavior, Redis ACLs, authentication, and tenant isolation remain hardening work. The HTTP endpoint must be placed behind authentication and tenant controls before exposure outside a trusted internal network.

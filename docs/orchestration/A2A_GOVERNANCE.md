@@ -44,8 +44,8 @@ Changing even one character after approval causes the content hash check to fail
 | Evidence gate | DONE | Unsupported/risky claim test |
 | Content and attachment hash binding | DONE | Governance validator and mismatch test |
 | Agent registry | PATCH A COMPLETE | `orchestration/agent_registry.json` plus registry-completeness test |
-| Durable append-only audit storage | PENDING | A future storage adapter should persist `DispatchAudit` records |
-| Restart persistence and bypass-resistance integration test | PENDING | Requires the production runtime and persistence owner |
+| Durable append-only audit storage | PARTIAL / PATCH B IN PROGRESS | Local JSONL append + fsync and fresh-store recovery are tested; production durable-volume and multi-process guarantees remain pending |
+| Restart persistence and bypass-resistance integration test | PENDING | Fresh-store recovery is covered; production restart/revalidation and raw transport bypass tests remain pending |
 | Broad external-action enablement | BLOCKED BY DEFAULT | Requires explicit approval and a reviewed agent profile |
 
 The implementation status intentionally distinguishes technical enforcement from rules that only exist in documentation. No agent collaboration capability should be treated as production-complete until it has **proof, enforcement, and an audit trail**.

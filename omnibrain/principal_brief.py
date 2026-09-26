@@ -12,8 +12,8 @@ Design rules:
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
-from datetime import datetime
+from dataclasses import dataclass
+from datetime import UTC, datetime
 
 SCHEMA_VERSION = "sp-principal-brief-v1"
 
@@ -86,8 +86,7 @@ def build_brief(
     sources (receipts, gateway, memory guard). This function only shapes the
     contract so Mission Control has one stable schema to consume.
     """
-    now = now or datetime.now()
-    active = [a for a in agents if a.status == "ACTIVE"]
+    now = now or datetime.now(UTC)
     return PrincipalBrief(
         schema_version=SCHEMA_VERSION,
         generated_at=now,

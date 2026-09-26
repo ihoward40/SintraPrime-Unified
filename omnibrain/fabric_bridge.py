@@ -100,7 +100,7 @@ class FabricAdvisor:
             result, policy, receipt = asyncio.get_event_loop().run_until_complete(
                 self._engine.evaluate(state=state, contract=self._contract, run_id=self._run_id)
             )
-        except Exception as exc:  # noqa: BLE001 — advisory must never propagate failure
+        except Exception as exc:  # advisory must never propagate failure
             return FabricAdvice(
                 advice_class="ADVISORY_UNAVAILABLE",
                 detail=f"fabric unavailable: {type(exc).__name__}",

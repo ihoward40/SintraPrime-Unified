@@ -14,10 +14,10 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 
-class RelationType(str, Enum):
+class RelationType(StrEnum):
     CREATED_BY = "CREATED_BY"
     AUTHORIZED_BY = "AUTHORIZED_BY"
     DERIVED_FROM = "DERIVED_FROM"
@@ -30,7 +30,7 @@ class RelationType(str, Enum):
     RELATES_TO = "RELATES_TO"
 
 
-class NodeType(str, Enum):
+class NodeType(StrEnum):
     PRINCIPAL = "PRINCIPAL"
     MISSION = "MISSION"
     AUTHORITY_ENVELOPE = "AUTHORITY_ENVELOPE"

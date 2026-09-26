@@ -72,7 +72,6 @@ def test_no_root_chain_spawn_denied():
     """An agent whose authority has no chain to the governance root cannot
     spawn children — even if it asks nicely and a model agrees."""
     auth = _auth()
-    rogue = _manifest("agent.rogue")
     with pytest.raises(DelegationRefusedError, match="no chain to the governance root"):
         auth.issue(parent_agent="agent.rogue", child_manifest=_manifest("agent.worker"),
                    delegation_id="D-3", mission_id="M-1",
@@ -105,7 +104,7 @@ def test_model_output_cannot_authorize_delegation():
     auth.set_delegatable("agent.parent", {"CREATE_DOCUMENT"}, actor="governance")
     child = _manifest("agent.worker")
     # fabricated approval reference from "model output" -> REFUSED
-    with pytest.raises(DelegationRefusedError, match="APPROVAL_REPLAYED|MISSING_APPROVAL|not delegable"):
+    with pytest.raises(DelegationRefusedError, match="APPROVAL_REPLAYED"):
         auth.issue(parent_agent="agent.parent", child_manifest=child,
                    delegation_id="D-6", mission_id="M-1",
                    capabilities=["CREATE_DOCUMENT"], tenant="t1", ttl_seconds=60,

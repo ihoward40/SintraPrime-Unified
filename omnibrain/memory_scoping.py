@@ -24,10 +24,10 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 
-class MemoryScopeClass(str, Enum):
+class MemoryScopeClass(StrEnum):
     MISSION_MEMORY = "MISSION_MEMORY"
     AGENT_WORKING_MEMORY = "AGENT_WORKING_MEMORY"
     LONG_TERM_SYSTEM_MEMORY = "LONG_TERM_SYSTEM_MEMORY"
@@ -36,7 +36,7 @@ class MemoryScopeClass(str, Enum):
     EXTERNAL_REFERENCE_MEMORY = "EXTERNAL_REFERENCE_MEMORY"
 
 
-class MemoryRetrievalDenied(PermissionError):
+class MemoryRetrievalDeniedError(PermissionError):
     """Fail-closed denial. NOT a system failure — an authorization outcome."""
 
 
@@ -51,10 +51,10 @@ class MemoryScopeEnvelope:
     is_principal: bool = False
 
     @classmethod
-    def child_of(cls, parent: "MemoryScopeEnvelope", *, agent_id: str,
+    def child_of(cls, parent: MemoryScopeEnvelope, *, agent_id: str,
                  mission_ids: Iterable[str] = (),
                  data_scopes: Iterable[str] = (),
-                 evidence_scopes: Iterable[str] = ()) -> "MemoryScopeEnvelope":
+                 evidence_scopes: Iterable[str] = ()) -> MemoryScopeEnvelope:
         """Subset invariant: a child's scopes can only shrink, never grow."""
         return cls(
             agent_id=agent_id,

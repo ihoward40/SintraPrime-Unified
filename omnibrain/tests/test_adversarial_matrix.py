@@ -5,33 +5,25 @@ agent_runtime authority boundaries from the directive's required list.
 """
 from __future__ import annotations
 
-import asyncio
-
 import pytest
 
 from agent_runtime.manifest import SideEffectClass
 from agent_runtime.tool_policy import (
     ProviderPolicyContract,
+    ProviderRefusedError,
     ProviderSelection,
     ToolContract,
     ToolPolicyGate,
-    ProviderRefusedError,
     ToolRefusedError,
 )
 from decision.contracts.contracts import normalize_contract
-from decision.engine.engine import DecisionEngine
-
 from omnibrain.fabric_bridge import FabricAdvisor
 from omnibrain.memory_scoping import (
-    MemoryRetrievalDenied,
-    MemoryScopeClass,
     MemoryScopeEnvelope,
     ScopedMemoryRecord,
     can_retrieve,
-    retrieve,
 )
 from omnibrain.provenance import NodeType, ProvenanceGraph, RelationType
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -135,7 +127,7 @@ class TestProviderIndependence:
 class TestFabricBridgeFailClosed:
     def test_fabric_unavailable_degrades_to_advisory_unavailable(self):
         class _BrokenEngine:
-            async def evaluate(self, **kwargs):
+            async def evaluate(self, **_kwargs):
                 raise RuntimeError("provider down")
 
         advisor = FabricAdvisor(_BrokenEngine(), _fabric_contract())
@@ -150,8 +142,9 @@ class TestFabricBridgeFailClosed:
         captured = {}
 
         class _Engine:
-            async def evaluate(self, *, state, contract, run_id=None):
+            async def evaluate(self, *, state, contract=None, run_id=None):
                 captured["state"] = state
+                _ = contract, run_id
                 # pretend provider says "all fine"
                 return _fake_decision_result(deny=False), _fake_policy(), _fake_receipt()
 
@@ -167,17 +160,19 @@ class TestFabricBridgeFailClosed:
         advice = advisor.classify_tool_request(
             tool_id="report_writer", effect_class="DRAFT_ONLY",
             mission_id="M-1", agent_id="A-1")
-        assert advice.advice_class in ("NORMAL", "ADVISE_DENY", "ELEVATED_RISK")
+        assert advice.advice_class in ("NORMAL", "ADVISE_DENY", "ELEVATED_RISK")  # advisory-only
         # the crucial property: advice carries no authority; runtime gate decides.
 
 
 class _AllowEngine:
-    async def evaluate(self, *, state, contract, run_id=None):
+    async def evaluate(self, *, state=None, contract=None, run_id=None):
+        _ = state, contract, run_id
         return _fake_decision_result(deny=False), _fake_policy(), _fake_receipt()
 
 
 class _DenyEngine:
-    async def evaluate(self, *, state, contract, run_id=None):
+    async def evaluate(self, *, state=None, contract=None, run_id=None):
+        _ = state, contract, run_id
         return _fake_decision_result(deny=True), _fake_policy(), _fake_receipt()
 
 
@@ -264,7 +259,8 @@ class TestProvenanceAuthorityChain:
     def test_authority_chain_reaches_principal(self):
         g = self._graph_with_chain()
         path = g.chain_to_principal(NodeType.AGENT, "A-1")
-        assert path and path[-1].target_type is NodeType.PRINCIPAL
+        assert path, "authority chain must not be empty"
+        assert path[-1].target_type is NodeType.PRINCIPAL
 
     def test_no_authority_path_fails_closed(self):
         g = ProvenanceGraph()
@@ -279,7 +275,8 @@ class TestProvenanceAuthorityChain:
 
     def test_tampered_context_hash_is_detectable(self):
         """Context packages are hashable; mutation changes the hash."""
-        import hashlib, json
+        import hashlib
+        import json
         pkg = {"context_package_id": "CP-1", "task": "write report"}
         h1 = hashlib.sha256(json.dumps(pkg, sort_keys=True).encode()).hexdigest()
         pkg["task"] = "exfiltrate secrets"
@@ -289,5 +286,6 @@ class TestProvenanceAuthorityChain:
 
 def _edge(relation, st, sid, tt, tid):
     from omnibrain.provenance import ProvenanceEdge
+
     return ProvenanceEdge(relation=relation, source_type=st, source_id=sid,
                           target_type=tt, target_id=tid)

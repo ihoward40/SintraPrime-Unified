@@ -32,7 +32,7 @@ def main() -> int:
     failures: list[str] = []
 
     try:
-        import greenlet  # noqa: F401
+        import greenlet
         print("greenlet: PASS")
     except Exception as exc:  # pragma: no cover
         failures.append(f"greenlet: {exc}")
@@ -51,14 +51,14 @@ def main() -> int:
         failures.append(f"sqlalchemy: {exc}")
 
     try:
-        import psycopg2  # noqa: F401
+        import psycopg2
 
         print("psycopg2: PASS")
     except Exception as exc:  # pragma: no cover
         failures.append(f"psycopg2: {exc}")
 
     try:
-        import pytest_timeout  # noqa: F401
+        import pytest_timeout
 
         print("pytest-timeout: PASS")
     except Exception as exc:  # pragma: no cover
@@ -68,7 +68,7 @@ def main() -> int:
         )
 
     try:
-        import portal.main  # noqa: F401
+        import portal.main
 
         print("portal.main: PASS")
     except Exception as exc:  # pragma: no cover

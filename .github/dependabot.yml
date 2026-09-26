@@ -1,0 +1,20 @@
+# Dependabot configuration (SP-AGENT0-CI-BASELINE-RECOVERY-001 Gate 4).
+# Before this file, GitHub's default security-updater job failed with an
+# infrastructure error (GITHUB_REGISTRIES_PROXY parse failure) on every run.
+# Declaring an explicit config makes the updater deterministic. Version-pin policy
+# remains governed: dependency upgrades still require bounded justification per
+# SP-AGENT0-CI-BASELINE-RECOVERY-001 Gate 4; this file only scopes the updater.
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

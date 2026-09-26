@@ -1,11 +1,12 @@
 """WS8-CMRD-001 scenario arithmetic. No legal rule presets."""
 from __future__ import annotations
-from datetime import date, datetime, timedelta, timezone
-from pathlib import Path
+
 import argparse
 import json
-import uuid
 import re
+import uuid
+from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
 
 VERSION = "0.1.0"
 NOTICE = "Calculated date based on the rule selected. Verify the governing statute, regulation, contract, court rule, or notice before relying on the date."
@@ -54,7 +55,7 @@ def calculate(*, mailing_date: str | None, delivery_date: str | None,
     return {
         "result_id": str(uuid.uuid4()), "utility_id": "WS8-CMRD-001",
         "calculator_version": VERSION, "calculation_mode": "SCENARIO_ARITHMETIC",
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "calculation": {"value": due.isoformat(), "method": f"{period} {day_type} days; start day {start_day}",
                         "intermediate_steps": [d.isoformat() for d in counted],
                         "days_remaining_as_of": reference.isoformat(),
@@ -137,7 +138,7 @@ def main() -> None:
     result = calculate(mailing_date=args.mailing_date, delivery_date=args.delivery_date,
                        trigger=args.trigger, period=args.period, day_type=args.day_type,
                        start_day=args.start_day, jurisdiction=args.jurisdiction,
-                       holidays=args.holidays if args.day_type == "business" else args.holidays,
+                       holidays=args.holidays,
                        today=args.today)
     args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(f"Scenario date: {result['calculation']['value']} | export: {args.output}")

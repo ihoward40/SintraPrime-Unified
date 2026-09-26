@@ -8,6 +8,7 @@ from orchestration.a2a_governance import (
     DispatchAudit,
     EvidenceClaim,
     content_hash,
+    issue_approval,
     validate_dispatch,
 )
 from orchestration.a2a_audit import A2AAuditStore
@@ -39,36 +40,84 @@ def test_unsupported_claim_blocks_dispatch():
         )
 
 
-def test_content_hash_mismatch_blocks_external_action():
-    approval = ApprovalReceipt(
+def test_content_hash_mismatch_blocks_external_action(monkeypatch):
+    monkeypatch.setenv("A2A_APPROVAL_HMAC_SECRET", "test-secret")
+    approval = issue_approval(
         approved_by="user-1",
         approved_output_id="out-1",
+        sender_agent_id="sender",
         recipient="counsel",
         final_content_hash=content_hash({"body": "approved"}),
+        expires_at=9999999999,
     )
     with pytest.raises(PermissionError, match="content hash"):
         validate_dispatch(
             payload={"body": "changed after approval"},
             recipient="counsel",
             external_action=True,
+            sender_agent_id="sender",
             approval=approval,
         )
 
 
-def test_matching_approval_passes():
+def test_matching_approval_passes(monkeypatch):
+    monkeypatch.setenv("A2A_APPROVAL_HMAC_SECRET", "test-secret")
     payload = {"body": "approved"}
     result = validate_dispatch(
         payload=payload,
         recipient="counsel",
         external_action=True,
-        approval=ApprovalReceipt(
+        sender_agent_id="sender",
+        approval=issue_approval(
             approved_by="user-1",
             approved_output_id="out-1",
+            sender_agent_id="sender",
             recipient="counsel",
             final_content_hash=content_hash(payload),
+            expires_at=9999999999,
         ),
     )
     assert result == content_hash(payload)
+
+
+def test_forged_matching_approval_is_rejected(monkeypatch):
+    monkeypatch.setenv("A2A_APPROVAL_HMAC_SECRET", "test-secret")
+    forged = ApprovalReceipt(
+        approved_by="user-1",
+        approved_output_id="out-1",
+        sender_agent_id="sender",
+        recipient="counsel",
+        final_content_hash=content_hash({"body": "approved"}),
+        expires_at=9999999999,
+    )
+    with pytest.raises(PermissionError, match="unsigned approval"):
+        validate_dispatch(
+            payload={"body": "approved"},
+            recipient="counsel",
+            external_action=True,
+            sender_agent_id="sender",
+            approval=forged,
+        )
+
+
+def test_expired_signed_approval_is_rejected(monkeypatch):
+    monkeypatch.setenv("A2A_APPROVAL_HMAC_SECRET", "test-secret")
+    expired = issue_approval(
+        approved_by="user-1",
+        approved_output_id="out-1",
+        sender_agent_id="sender",
+        recipient="counsel",
+        final_content_hash=content_hash({"body": "approved"}),
+        expires_at=1,
+    )
+    with pytest.raises(PermissionError, match="expired"):
+        validate_dispatch(
+            payload={"body": "approved"},
+            recipient="counsel",
+            external_action=True,
+            sender_agent_id="sender",
+            approval=expired,
+        )
 
 
 def test_audit_store_persists_records(tmp_path):

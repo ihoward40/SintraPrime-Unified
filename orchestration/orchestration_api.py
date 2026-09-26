@@ -436,6 +436,7 @@ async def send_agent_message(
             payload=req.payload,
             recipient=req.to_agent,
             external_action=req.external_action,
+            sender_agent_id=req.from_agent,
             approval=approval,
             claims=claims,
             attachment_hashes=req.attachment_hashes,

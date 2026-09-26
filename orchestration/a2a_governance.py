@@ -7,7 +7,9 @@ an approval receipt, evidence references, and an unchanged content hash.
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
+import os
 import time
 import uuid
 from dataclasses import asdict, dataclass, field
@@ -34,6 +36,9 @@ class ApprovalReceipt:
     approved_at: float = field(default_factory=time.time)
     delivery_method: str = "agent-message"
     receipt_id: str = field(default_factory=lambda: uuid.uuid4().hex)
+    sender_agent_id: str = ""
+    expires_at: float = 0.0
+    signature: str = ""
 
 
 @dataclass(frozen=True)
@@ -68,11 +73,76 @@ def content_hash(payload: dict[str, Any]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def _approval_secret() -> bytes:
+    secret = os.getenv("A2A_APPROVAL_HMAC_SECRET")
+    if not secret:
+        raise PermissionError("Dispatch blocked: approval signing key is not configured")
+    return secret.encode("utf-8")
+
+
+def _approval_material(receipt: ApprovalReceipt) -> str:
+    return json.dumps({
+        "approved_by": receipt.approved_by,
+        "approved_output_id": receipt.approved_output_id,
+        "recipient": receipt.recipient,
+        "final_content_hash": receipt.final_content_hash,
+        "attachment_hashes": list(receipt.attachment_hashes),
+        "approved_at": receipt.approved_at,
+        "delivery_method": receipt.delivery_method,
+        "receipt_id": receipt.receipt_id,
+        "sender_agent_id": receipt.sender_agent_id,
+        "expires_at": receipt.expires_at,
+    }, sort_keys=True, separators=(",", ":"))
+
+
+def issue_approval(
+    *,
+    approved_by: str,
+    approved_output_id: str,
+    sender_agent_id: str,
+    recipient: str,
+    final_content_hash: str,
+    attachment_hashes: tuple[str, ...] = (),
+    delivery_method: str = "agent-message",
+    expires_at: float,
+) -> ApprovalReceipt:
+    """Issue a signed approval; callers cannot forge a valid receipt without the server key."""
+    receipt = ApprovalReceipt(
+        approved_by=approved_by,
+        approved_output_id=approved_output_id,
+        recipient=recipient,
+        final_content_hash=final_content_hash,
+        attachment_hashes=tuple(attachment_hashes),
+        delivery_method=delivery_method,
+        sender_agent_id=sender_agent_id,
+        expires_at=expires_at,
+    )
+    signature = hmac.new(_approval_secret(), _approval_material(receipt).encode(), hashlib.sha256).hexdigest()
+    return ApprovalReceipt(**{**asdict(receipt), "signature": signature})
+
+
+def verify_approval(receipt: ApprovalReceipt, *, sender_agent_id: str) -> None:
+    if not receipt.signature:
+        raise PermissionError("Dispatch blocked: unsigned approval receipt")
+    if not receipt.approved_by or not receipt.approved_output_id:
+        raise PermissionError("Dispatch blocked: approval identity is incomplete")
+    if not receipt.sender_agent_id or receipt.sender_agent_id != sender_agent_id:
+        raise PermissionError("Dispatch blocked: approved sender does not match")
+    if not receipt.delivery_method:
+        raise PermissionError("Dispatch blocked: approval delivery method is required")
+    if not receipt.expires_at or receipt.expires_at <= time.time():
+        raise PermissionError("Dispatch blocked: approval receipt is expired")
+    expected = hmac.new(_approval_secret(), _approval_material(receipt).encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, receipt.signature):
+        raise PermissionError("Dispatch blocked: approval signature is invalid")
+
+
 def validate_dispatch(
     *,
     payload: dict[str, Any],
     recipient: str,
     external_action: bool,
+    sender_agent_id: str | None = None,
     approval: ApprovalReceipt | None = None,
     claims: list[EvidenceClaim] | None = None,
     attachment_hashes: list[str] | None = None,
@@ -95,6 +165,9 @@ def validate_dispatch(
 
     if approval is None:
         raise PermissionError("Dispatch blocked: user approval receipt required")
+    if sender_agent_id is None:
+        raise PermissionError("Dispatch blocked: sender identity is required")
+    verify_approval(approval, sender_agent_id=sender_agent_id)
     if approval.recipient != recipient:
         raise PermissionError("Dispatch blocked: approved recipient does not match")
     if approval.final_content_hash != output_hash:

@@ -1,8 +1,6 @@
 """SP-GOD1-SWARMS-001 Phase 20 — swarm lifecycle audit events."""
 from __future__ import annotations
 
-import pytest
-
 from omnibrain.swarms import make_swarm_identity
 
 
@@ -14,17 +12,19 @@ class TestSwarmLifecycleAudit:
             coordinator_agent_id="agent.coordinator",
             member_agent_ids={"agent.w1", "agent.w2"})
         # every field the audit event requires is present on the identity
-        assert ident.swarm_id and ident.mission_id and ident.authority_id
+        assert ident.swarm_id
+        assert ident.mission_id
+        assert ident.authority_id
         assert ident.principal_origin == "principal"
         assert ident.coordinator_agent_id
         assert ident.member_agent_ids
 
     def test_audit_trail_records_swarm_events(self):
-        from governance.audit_trail import AuditTrail
-
-        import tempfile
         import inspect
+        import tempfile
         from pathlib import Path
+
+        from governance.audit_trail import AuditTrail
         tmp = Path(tempfile.mkdtemp())
         kwargs = {"db_path": tmp / "audit.db"} if "db_path" in inspect.signature(
             AuditTrail.__init__).parameters else {}

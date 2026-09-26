@@ -25,6 +25,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from .a2a_protocol import A2AProtocol, MessageType, Priority, Message
+from .redis_a2a import RedisA2ATransport
 from .durable_execution import (
     DurableWorkflowEngine,
     WorkflowStatus,
@@ -47,6 +48,7 @@ logger = logging.getLogger(__name__)
 
 _engine: Optional[DurableWorkflowEngine] = None
 _a2a: Optional[A2AProtocol] = None
+_redis_a2a: Optional[RedisA2ATransport] = None
 _checkpointer: Optional[InMemoryCheckpointer] = None
 
 
@@ -69,6 +71,13 @@ def get_a2a() -> A2AProtocol:
     if _a2a is None:
         _a2a = A2AProtocol()
     return _a2a
+
+
+def get_redis_a2a() -> RedisA2ATransport:
+    global _redis_a2a
+    if _redis_a2a is None:
+        _redis_a2a = RedisA2ATransport()
+    return _redis_a2a
 
 
 def get_checkpointer() -> InMemoryCheckpointer:
@@ -150,12 +159,19 @@ class SendMessageRequest(BaseModel):
     payload: Dict[str, Any] = Field(default_factory=dict)
     priority: str = Field("NORMAL", description="One of: LOW, NORMAL, HIGH, CRITICAL")
     ttl: Optional[float] = Field(None, description="Time to live in seconds")
+    correlation_id: Optional[str] = None
+    headers: Dict[str, Any] = Field(default_factory=dict)
 
 
 class SendMessageResponse(BaseModel):
     message_id: str
     correlation_id: str
     delivered: bool
+
+
+class ReceiveMessageResponse(BaseModel):
+    message: Optional[Dict[str, Any]]
+    received: bool
 
 
 class LangGraphRunRequest(BaseModel):
@@ -305,8 +321,13 @@ async def get_agent_registry(
 async def send_agent_message(
     req: SendMessageRequest,
     a2a: A2AProtocol = Depends(get_a2a),
+    redis_a2a: RedisA2ATransport = Depends(get_redis_a2a),
 ) -> SendMessageResponse:
-    """Send an A2A message between agents."""
+    """Send an A2A message between agents.
+
+    ``A2A_BACKEND=redis`` makes delivery cross-process. The default remains
+    the in-memory bus for embedded deployments and unit tests.
+    """
     try:
         msg_type = MessageType(req.message_type)
     except ValueError:
@@ -324,13 +345,46 @@ async def send_agent_message(
         payload=req.payload,
         priority=priority,
         ttl=req.ttl,
+        correlation_id=req.correlation_id or uuid.uuid4().hex,
+        headers=req.headers,
     )
-    await a2a.bus.publish(msg)
+    if os.getenv("A2A_BACKEND", "memory").lower() == "redis":
+        try:
+            await redis_a2a.send(msg)
+        except Exception as exc:
+            logger.exception("Redis A2A delivery failed")
+            raise HTTPException(status_code=503, detail="Agent messaging backend unavailable") from exc
+    else:
+        await a2a.bus.publish(msg)
 
     return SendMessageResponse(
         message_id=msg.message_id,
         correlation_id=msg.correlation_id,
         delivered=True,
+    )
+
+
+@router.get("/agents/{agent_id}/messages/receive", response_model=ReceiveMessageResponse)
+async def receive_agent_message(
+    agent_id: str,
+    timeout: int = 5,
+    redis_a2a: RedisA2ATransport = Depends(get_redis_a2a),
+) -> ReceiveMessageResponse:
+    """Receive one cross-process message for an agent (Redis backend only)."""
+    if os.getenv("A2A_BACKEND", "memory").lower() != "redis":
+        raise HTTPException(status_code=409, detail="Set A2A_BACKEND=redis to use HTTP receive")
+    if timeout < 0 or timeout > 30:
+        raise HTTPException(status_code=400, detail="timeout must be between 0 and 30 seconds")
+    try:
+        message = await redis_a2a.receive(agent_id, timeout=timeout)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Redis A2A receive failed")
+        raise HTTPException(status_code=503, detail="Agent messaging backend unavailable") from exc
+    return ReceiveMessageResponse(
+        message=message.to_dict() if message else None,
+        received=message is not None,
     )
 
 

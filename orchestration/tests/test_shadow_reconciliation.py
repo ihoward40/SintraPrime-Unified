@@ -4,8 +4,12 @@ import asyncio
 
 import pytest
 
+from orchestration.a2a_audit import A2AAuditStore
+from orchestration.a2a_governance import ApprovalReceipt, DispatchAudit
+from orchestration.approval_store import ApprovalStore
+from orchestration.outbox import DurableOutbox
 from orchestration.persistence import ShadowMismatchError
-from orchestration.shadow_reconciliation import ShadowMismatchStore, ShadowMirror, reconcile_records
+from orchestration.shadow_reconciliation import ShadowLifecycleRecorder, ShadowMismatchStore, ShadowMirror, reconcile_records
 
 
 def test_mirror_success_and_durable_mismatch(tmp_path):
@@ -40,6 +44,19 @@ def test_reconciliation_reports_missing_and_divergent_records():
     assert report["missing_in_jsonl"] == ["c"]
     assert report["divergent"] == ["a"]
     assert report["certification_blocked"] is True
+
+
+def test_concrete_jsonl_stores_emit_lifecycle_observations(tmp_path):
+    recorder = ShadowLifecycleRecorder()
+    audit = A2AAuditStore(str(tmp_path / "audit.jsonl"), shadow_recorder=recorder)
+    audit.append(DispatchAudit("m1", "TEST", ("a",), (), (), (), "none", False, "h", "ok"))
+    approval = ApprovalStore(str(tmp_path / "approval.jsonl"), shadow_recorder=recorder)
+    receipt = ApprovalReceipt("u", "o", "b", "h", sender_agent_id="a", tenant_id="t1", expires_at=9999999999)
+    approval.issue(receipt)
+    outbox = DurableOutbox(str(tmp_path / "outbox.jsonl"), shadow_recorder=recorder)
+    outbox.enqueue(receipt_id=receipt.receipt_id, sender_agent_id="a", tenant_id="t1", recipient="b", payload_hash="h")
+    areas = {item["lifecycle_area"] for item in recorder.observations}
+    assert {"audit_event", "approval_issued", "outbox_intent"} <= areas
 
 
 @pytest.mark.parametrize("area,local,postgres", [

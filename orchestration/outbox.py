@@ -14,9 +14,10 @@ from .jsonl_store import append_jsonl, integrity_check, read_jsonl
 class DurableOutbox:
     STATUSES = {"pending", "validated", "blocked", "dispatched", "failed", "expired", "dlq"}
 
-    def __init__(self, path: str | None = None, audit_store: Any | None = None):
+    def __init__(self, path: str | None = None, audit_store: Any | None = None, shadow_recorder: Any | None = None):
         self.path = Path(path or os.getenv("A2A_OUTBOX_STORE", "var/a2a_outbox.jsonl"))
         self.audit_store = audit_store
+        self.shadow_recorder = shadow_recorder
 
     def _append(self, event: dict[str, Any]) -> None:
         append_jsonl(self.path, event)
@@ -74,6 +75,8 @@ class DurableOutbox:
             "created_at": time.time(),
         }
         self._append(record)
+        if self.shadow_recorder is not None:
+            self.shadow_recorder.record(tenant_id=tenant_id, lifecycle_area="outbox_intent", state=record)
         return outbox_id
 
     def get(self, outbox_id: str) -> dict[str, Any] | None:
@@ -86,6 +89,8 @@ class DurableOutbox:
         if reason:
             updated["reason"] = reason
         self._append(updated)
+        if self.shadow_recorder is not None:
+            self.shadow_recorder.record(tenant_id=str(updated.get("tenant_id", "default")), lifecycle_area=f"outbox_{status}", state=updated)
         if status in {"blocked", "failed", "expired", "dlq"}:
             self._audit(updated, status, reason)
 
@@ -163,6 +168,8 @@ class DurableOutbox:
         updated["retry_count"] = retry_count
         updated["updated_at"] = time.time()
         self._append(updated)
+        if self.shadow_recorder is not None:
+            self.shadow_recorder.record(tenant_id=str(updated.get("tenant_id", "default")), lifecycle_area="outbox_retry", state=updated)
 
     def mark_dispatched(self, outbox_id: str) -> None:
         record = self.get(outbox_id)

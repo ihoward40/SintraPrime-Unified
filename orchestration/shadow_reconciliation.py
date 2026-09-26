@@ -46,6 +46,19 @@ class ShadowMismatchStore:
         return integrity_check(self.path)
 
 
+class ShadowLifecycleRecorder:
+    """Records concrete lifecycle observations for shadow integration."""
+
+    def __init__(self, *, mismatch_store: ShadowMismatchStore | None = None):
+        self.mismatch_store = mismatch_store
+        self.observations: list[dict[str, Any]] = []
+
+    def record(self, *, tenant_id: str, lifecycle_area: str, state: Any) -> dict[str, Any]:
+        observation = {"tenant_id": tenant_id, "lifecycle_area": lifecycle_area, "state": state, "observed_at": time.time()}
+        self.observations.append(observation)
+        return observation
+
+
 class ShadowMirror:
     """Mirror one lifecycle write to two stores and compare normalized results."""
 

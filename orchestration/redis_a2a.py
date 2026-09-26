@@ -16,10 +16,11 @@ from .a2a_protocol import Message, is_external_intent
 class RedisA2ATransport:
     """Point-to-point A2A delivery with persistent in-flight and DLQ state."""
 
-    def __init__(self, redis_url: str | None = None, namespace: str | None = None, audit_store: Any | None = None):
+    def __init__(self, redis_url: str | None = None, namespace: str | None = None, audit_store: Any | None = None, shadow_recorder: Any | None = None):
         self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379/0")
         self.namespace = namespace or os.getenv("A2A_REDIS_NAMESPACE", "sintraprime:a2a")
         self.audit_store = audit_store
+        self.shadow_recorder = shadow_recorder
         self._redis: Redis | None = None
 
     @property
@@ -40,6 +41,8 @@ class RedisA2ATransport:
         return f"{self.namespace}:dlq:{self.inbox_key(agent_id).rsplit(':', 1)[-1]}"
 
     async def _audit(self, message: Message, status: str, reason: str | None = None) -> None:
+        if self.shadow_recorder is not None:
+            self.shadow_recorder.record(tenant_id=str(message.headers.get("tenant_id", "default")), lifecycle_area=f"redis_{status}", state={"message_id": message.message_id, "from_agent": message.from_agent, "to_agent": message.to_agent, "status": status, "reason": reason, "payload_hash": message.headers.get("final_content_hash", "")})
         if self.audit_store is None:
             return
         self.audit_store.append(DispatchAudit(

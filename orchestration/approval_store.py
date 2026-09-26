@@ -13,9 +13,10 @@ from .jsonl_store import append_jsonl, integrity_check, read_jsonl
 class ApprovalStore:
     """Append-only JSONL approval event log reconstructed on every read."""
 
-    def __init__(self, path: str | None = None, audit_store: Any | None = None):
+    def __init__(self, path: str | None = None, audit_store: Any | None = None, shadow_recorder: Any | None = None):
         self.path = Path(path or os.getenv("A2A_APPROVAL_STORE", "var/a2a_approvals.jsonl"))
         self.audit_store = audit_store
+        self.shadow_recorder = shadow_recorder
 
     @staticmethod
     def _receipt_dict(receipt: ApprovalReceipt) -> dict[str, Any]:
@@ -27,6 +28,8 @@ class ApprovalStore:
         append_jsonl(self.path, event)
 
     def _record_lifecycle(self, receipt: ApprovalReceipt, status: str, reason: str | None = None) -> None:
+        if self.shadow_recorder is not None:
+            self.shadow_recorder.record(tenant_id=receipt.tenant_id, lifecycle_area=f"approval_{status}", state={"receipt_id": receipt.receipt_id, "status": status, "recipient": receipt.recipient, "final_content_hash": receipt.final_content_hash, "reason": reason})
         if self.audit_store is None:
             return
         self.audit_store.append(DispatchAudit(

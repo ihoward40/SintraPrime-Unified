@@ -1,6 +1,6 @@
 # C10-R5 Full Shadow Lifecycle Report
 
-**Status:** PARTIAL — durable mismatch ledger, mirror coordinator, reconciliation report, and lifecycle mismatch coverage implemented; wiring the coordinator into every concrete store/Redis lifecycle call remains pending.
+**Status:** PARTIAL — durable mismatch ledger, mirror coordinator, reconciliation report, and concrete lifecycle observation hooks implemented; full PostgreSQL dual-write authority integration remains pending.
 
 ## Implemented in this slice
 
@@ -17,6 +17,7 @@
 - Fail-closed mirror write and comparison behavior.
 - Reconciliation reports for missing JSONL records, missing PostgreSQL records, divergent records, and certification-blocking status.
 - Coverage for audit, approval, outbox, Redis delivery, hash/state drift, and database-write failures.
+- Observation hooks wired into JSONL audit, approval, outbox, Redis audit, and dry-run worker paths while preserving JSONL defaults.
 
 ## Validation
 
@@ -32,6 +33,6 @@ run directly and passed.
 
 ## Remaining integration boundary
 
-The coordinator is a reusable control-plane primitive, but it is not yet wired into every existing `A2AAuditStore`, `ApprovalStore`, `DurableOutbox`, Redis delivery audit hook, and worker transition. Therefore this phase must remain `PARTIAL`; it must not be described as full lifecycle dual-write certification.
+The concrete stores now emit tenant-scoped lifecycle observations, but the observations are not yet connected to PostgreSQL writes for every lifecycle operation, and full reconciliation of live JSONL/PostgreSQL projections is not yet automatic. Therefore this phase must remain `PARTIAL`; it must not be described as full lifecycle dual-write certification.
 
 External actions remain blocked, Dispatch Desk remains blocked, and no `can_send_external=true` profile exists.

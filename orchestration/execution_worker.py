@@ -18,6 +18,7 @@ class ExecutionWorker:
         max_retries: int = 3,
         dry_run: bool = True,
         executor: Callable[[dict[str, Any]], Any] | None = None,
+        shadow_recorder: Any | None = None,
     ):
         self.outbox = outbox
         self.approval_store = approval_store
@@ -25,6 +26,11 @@ class ExecutionWorker:
         self.max_retries = max_retries
         self.dry_run = dry_run
         self.executor = executor
+        self.shadow_recorder = shadow_recorder
+
+    def _record_shadow(self, record: dict[str, Any], status: str, tenant_id: str) -> None:
+        if self.shadow_recorder is not None:
+            self.shadow_recorder.record(tenant_id=tenant_id, lifecycle_area=f"worker_{status}", state={"outbox_id": record.get("outbox_id"), "status": status, "idempotency_key": record.get("idempotency_key")})
 
     @staticmethod
     def idempotency_key(record: dict[str, Any]) -> str:
@@ -53,6 +59,7 @@ class ExecutionWorker:
         current["idempotency_key"] = key
         if self.dry_run or os.getenv("A2A_EXTERNAL_ACTIONS_ENABLED", "false").lower() != "true":
             self.outbox.mark_blocked(outbox_id, "external execution disabled; dry-run only")
+            self._record_shadow(current, "blocked", tenant_id)
             return {"outbox_id": outbox_id, "status": "blocked", "idempotency_key": key, "dry_run": True}
         if not self.executor:
             self.outbox.mark_blocked(outbox_id, "no execution adapter configured")

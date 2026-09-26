@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "status_values": ["planned", "active", "disabled", "blocked"],
+  "agents": [
+    {
+      "agent_id": "orchestrator",
+      "agent_name": "SintraPrime Orchestrator",
+      "role": "coordination",
+      "status": "active",
+      "allowed_actions": ["delegate_internal_task", "request_review", "share_evidence_reference"],
+      "forbidden_actions": ["send_external_message", "file_document", "publish", "deploy", "move_money"],
+      "requires_user_approval": true,
+      "can_send_external": false,
+      "can_modify_files": false,
+      "evidence_required": true,
+      "audit_required": true,
+      "last_verified": null,
+      "proof": []
+    }
+  ],
+  "policy": {
+    "external_actions_default": "blocked",
+    "unsupported_claims_default": "blocked",
+    "approval_receipt_required": true,
+    "audit_required": true,
+    "autonomous_self_improvement": false
+  }
+}

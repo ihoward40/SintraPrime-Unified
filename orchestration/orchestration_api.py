@@ -25,6 +25,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from .a2a_protocol import A2AProtocol, MessageType, Priority, Message
+from .a2a_governance import (
+    ApprovalReceipt,
+    ClaimStatus,
+    DispatchAudit,
+    EvidenceClaim,
+    validate_dispatch,
+)
+from .a2a_audit import A2AAuditStore
 from .redis_a2a import RedisA2ATransport
 from .durable_execution import (
     DurableWorkflowEngine,
@@ -49,6 +57,7 @@ logger = logging.getLogger(__name__)
 _engine: Optional[DurableWorkflowEngine] = None
 _a2a: Optional[A2AProtocol] = None
 _redis_a2a: Optional[RedisA2ATransport] = None
+_a2a_audit: Optional[A2AAuditStore] = None
 _checkpointer: Optional[InMemoryCheckpointer] = None
 
 
@@ -78,6 +87,13 @@ def get_redis_a2a() -> RedisA2ATransport:
     if _redis_a2a is None:
         _redis_a2a = RedisA2ATransport()
     return _redis_a2a
+
+
+def get_a2a_audit() -> A2AAuditStore:
+    global _a2a_audit
+    if _a2a_audit is None:
+        _a2a_audit = A2AAuditStore()
+    return _a2a_audit
 
 
 def get_checkpointer() -> InMemoryCheckpointer:
@@ -161,6 +177,10 @@ class SendMessageRequest(BaseModel):
     ttl: Optional[float] = Field(None, description="Time to live in seconds")
     correlation_id: Optional[str] = None
     headers: Dict[str, Any] = Field(default_factory=dict)
+    external_action: bool = Field(False, description="True when this message requests an external side effect")
+    approval: Optional[Dict[str, Any]] = Field(None, description="Approval receipt for an external action")
+    claims: List[Dict[str, Any]] = Field(default_factory=list)
+    attachment_hashes: List[str] = Field(default_factory=list)
 
 
 class SendMessageResponse(BaseModel):
@@ -322,6 +342,7 @@ async def send_agent_message(
     req: SendMessageRequest,
     a2a: A2AProtocol = Depends(get_a2a),
     redis_a2a: RedisA2ATransport = Depends(get_redis_a2a),
+    audit_store: A2AAuditStore = Depends(get_a2a_audit),
 ) -> SendMessageResponse:
     """Send an A2A message between agents.
 
@@ -348,6 +369,31 @@ async def send_agent_message(
         correlation_id=req.correlation_id or uuid.uuid4().hex,
         headers=req.headers,
     )
+    try:
+        approval = None
+        if req.approval:
+            approval_data = dict(req.approval)
+            approval_data["attachment_hashes"] = tuple(approval_data.get("attachment_hashes", []))
+            approval = ApprovalReceipt(**approval_data)
+        claims = [
+            EvidenceClaim(
+                claim=str(claim.get("claim", "")),
+                status=ClaimStatus(claim.get("status", "UNVERIFIED")),
+                source_refs=tuple(claim.get("source_refs", [])),
+            )
+            for claim in req.claims
+        ]
+        final_hash = validate_dispatch(
+            payload=req.payload,
+            recipient=req.to_agent,
+            external_action=req.external_action,
+            approval=approval,
+            claims=claims,
+            attachment_hashes=req.attachment_hashes,
+        )
+        msg.headers["final_content_hash"] = final_hash
+    except (PermissionError, ValueError) as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     if os.getenv("A2A_BACKEND", "memory").lower() == "redis":
         try:
             await redis_a2a.send(msg)
@@ -356,6 +402,19 @@ async def send_agent_message(
             raise HTTPException(status_code=503, detail="Agent messaging backend unavailable") from exc
     else:
         await a2a.bus.publish(msg)
+
+    audit_store.append(DispatchAudit(
+        mission_id=msg.correlation_id,
+        objective=msg.message_type.value,
+        agents_used=(req.from_agent, req.to_agent),
+        sources_used=tuple(source for claim in claims for source in claim.source_refs),
+        claims_verified=tuple(claim.claim for claim in claims if claim.status == ClaimStatus.PROVEN),
+        risks_flagged=tuple(claim.claim for claim in claims if claim.status in {ClaimStatus.RISKY, ClaimStatus.UNSUPPORTED}),
+        user_approval="yes" if approval else ("not required" if not req.external_action else "no"),
+        external_action_taken=req.external_action,
+        final_output_hash=final_hash,
+        status="done",
+    ))
 
     return SendMessageResponse(
         message_id=msg.message_id,

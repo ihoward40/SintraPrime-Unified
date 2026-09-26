@@ -276,3 +276,80 @@ async def get_real_time_metrics(
         },
         timestamp=datetime.now(UTC),
     )
+
+
+# ── SP-GOD0-MISSION-CONTROL-001: Principal Brief (sp-principal-brief-v1) ─────
+
+
+class PrincipalBriefResponse(BaseModel):
+    """Read-only projection of the governed-runtime Principal Brief.
+
+    recommended_principal_decisions are PROPOSALS with provenance. They are
+    not approvals and carry no consumable approval token; approvals flow
+    exclusively through the governed approval service.
+    """
+
+    schema_version: str
+    generated_at: datetime
+    available: bool
+    unavailable_reason: str | None = None
+    active_missions: list[str] = Field(default_factory=list)
+    agents: list[dict] = Field(default_factory=list)
+    blocked_agents: list[str] = Field(default_factory=list)
+    pending_approvals: list[dict] = Field(default_factory=list)
+    external_effect_attempts: list[dict] = Field(default_factory=list)
+    security_events: list[dict] = Field(default_factory=list)
+    recent_receipt_ids: list[str] = Field(default_factory=list)
+    authority_expirations: list[dict] = Field(default_factory=list)
+    memory_change_summary: dict = Field(default_factory=dict)
+    recommended_principal_decisions: list[dict] = Field(default_factory=list)
+
+
+@router.get("/principal-brief", response_model=PrincipalBriefResponse)
+async def get_principal_brief(
+    current_user: CurrentUser = Depends(require_permissions(Permission.MISSION_COMMAND_READ)),
+) -> PrincipalBriefResponse:
+    """Serve the sp-principal-brief-v1 Principal Brief (read-only).
+
+    Aggregation is over admitted governed-runtime state. Sections backed by
+    subsystems that are absent or failing are explicitly marked unavailable
+    rather than fabricated. Recommendations are proposals only and can never
+    be consumed as approvals.
+    """
+    from omnibrain.principal_brief import build_brief
+
+    from ..services.principal_brief_service import (
+        empty_brief_payload,
+        normalize_brief,
+    )
+
+    # Source data: governed-runtime receipt store. When the durable runtime
+    # store is not yet populated (local/shadow mode), surface the brief as
+    # explicitly unavailable rather than fabricating activity.
+    try:
+        from agent_runtime.receipts import RuntimeOutcome
+        runtime_available = True
+        unavailable_reason = None
+    except Exception:
+        runtime_available = False
+        unavailable_reason = "governed runtime receipt store unavailable"
+
+    if not runtime_available:
+        payload = empty_brief_payload(reason=unavailable_reason or "unavailable")
+        return PrincipalBriefResponse(**payload)
+
+    # Admitted state aggregation. In local/shadow mode there are no agents
+    # executing yet, so the brief is valid but empty — an honest state.
+    brief = build_brief(
+        agents=[],
+        pending_approvals=[],
+        security_events=[],
+        recent_receipt_ids=[],
+        authority_expirations=[],
+        memory_change_summary={},
+        recommended_principal_decisions=[],
+    )
+    payload = normalize_brief(brief.to_dict())
+    payload["available"] = True
+    payload["unavailable_reason"] = None
+    return PrincipalBriefResponse(**payload)

@@ -12,6 +12,7 @@ import {
   CausationChain,
 } from '../../api/missionControl';
 import { missionControlSections } from './sections';
+import { PrincipalBriefSection } from './PrincipalBriefSection';
 
 type SurfaceData =
   | { kind: 'intents'; data: CommandListResponse }

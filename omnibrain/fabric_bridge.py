@@ -97,13 +97,46 @@ class FabricAdvisor:
             "agent_id": agent_id,
         }
         try:
-            result, policy, receipt = asyncio.get_event_loop().run_until_complete(
-                self._engine.evaluate(state=state, contract=self._contract, run_id=self._run_id)
-            )
+            # Run on a dedicated thread with a FRESH event loop: the caller may
+
+            # have torn down the main-thread loop (e.g. pytest-asyncio), and a
+
+            # missing current loop is an environment artifact the advisor must
+
+            # absorb, not propagate.
+
+            import concurrent.futures
+
+
+            def _execute():
+
+                loop = asyncio.new_event_loop()
+
+                try:
+
+                    asyncio.set_event_loop(loop)
+
+                    return loop.run_until_complete(
+
+                        self._engine.evaluate(state=state, contract=self._contract, run_id=self._run_id)
+
+                    )
+
+                finally:
+
+                    asyncio.set_event_loop(None)
+
+                    loop.close()
+
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+
+                result, policy, receipt = pool.submit(_execute).result(timeout=30)
+
         except Exception as exc:  # advisory must never propagate failure
             return FabricAdvice(
                 advice_class="ADVISORY_UNAVAILABLE",
-                detail=f"fabric unavailable: {type(exc).__name__}",
+                detail=f"fabric unavailable: {type(exc).__name__}: {exc}",
                 provider_failed=True,
             )
         # Non-DECISION results (errors) are already mapped by the fabric policy

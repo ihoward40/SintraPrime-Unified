@@ -1,11 +1,16 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
 
-from agent_runtime.capability_admission import AdmissionDeniedError, AdmissionState, CapabilityAdmissionRegistry, EffectClass, arguments_hash
+from agent_runtime.capability_admission import (
+    AdmissionDeniedError,
+    AdmissionState,
+    CapabilityAdmissionRegistry,
+    EffectClass,
+    arguments_hash,
+)
 
 ROOT = Path(__file__).parents[1]
 
@@ -41,7 +46,15 @@ def test_closed_classes_cannot_be_admitted(registry):
 def test_explicit_admission_requires_all_authority_intersections(registry):
     entry = registry.resolve("external.read")
     registry._entries[entry.capability_id] = type(entry)(**{**entry.__dict__, "admission_state": AdmissionState.ADMITTED, "resource_scope": ("account:1",)})
-    common = dict(capability_id="external.read", agent_authorized=True, mission_authorized=True, resource="account:1/inbox", environment="sandbox", approval_satisfied=True, preconditions_pass=True)
+    common = {
+        "capability_id": "external.read",
+        "agent_authorized": True,
+        "mission_authorized": True,
+        "resource": "account:1/inbox",
+        "environment": "sandbox",
+        "approval_satisfied": True,
+        "preconditions_pass": True,
+    }
     assert registry.require(**common).status == "ADMITTED"
     for field in ("agent_authorized", "mission_authorized", "approval_satisfied", "preconditions_pass"):
         denied = dict(common); denied[field] = False
@@ -51,7 +64,15 @@ def test_explicit_admission_requires_all_authority_intersections(registry):
 def test_resource_and_static_effect_ceiling_fail_closed(registry):
     entry = registry.resolve("external.read")
     registry._entries[entry.capability_id] = type(entry)(**{**entry.__dict__, "admission_state": AdmissionState.ADMITTED, "resource_scope": ("account:1",)})
-    args = dict(capability_id="external.read", agent_authorized=True, mission_authorized=True, resource="account:2", environment="sandbox", approval_satisfied=True, preconditions_pass=True)
+    args = {
+        "capability_id": "external.read",
+        "agent_authorized": True,
+        "mission_authorized": True,
+        "resource": "account:2",
+        "environment": "sandbox",
+        "approval_satisfied": True,
+        "preconditions_pass": True,
+    }
     with pytest.raises(AdmissionDeniedError, match="RESOURCE_SCOPE_DENIED"): registry.require(**args)
     args["resource"] = "account:1"
     with pytest.raises(AdmissionDeniedError, match="STATIC_EFFECT_CLASS_MISMATCH"):

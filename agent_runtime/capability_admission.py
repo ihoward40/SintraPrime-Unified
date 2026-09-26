@@ -10,7 +10,7 @@ import hashlib
 import json
 import time
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
@@ -81,7 +81,7 @@ class CapabilityAdmissionRegistry:
             self.register(entry)
 
     @classmethod
-    def from_json(cls, path: str | Path) -> "CapabilityAdmissionRegistry":
+    def from_json(cls, path: str | Path) -> CapabilityAdmissionRegistry:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
         return cls(tuple(CapabilityAdmission(
             capability_id=item["capability_id"], tool_id=item["tool_id"], operation=item["operation"],

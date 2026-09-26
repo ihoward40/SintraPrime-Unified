@@ -7,6 +7,7 @@ from typing import Dict, Optional
 from ..canonical.jcs import state_sha256
 from ..contracts.contracts import DecisionContract
 from ..engine.types import Answer, DecisionResult, Primitive, ResultKind
+from .coerce import coerce_number
 
 
 class MockDecisionProvider:
@@ -75,9 +76,14 @@ class MockDecisionProvider:
                     return DecisionResult(kind=ResultKind.ERROR, provider=self.name, model=self.model,
                                           reason="missing_distribution")
                 conf = s.get("confidence", 0.9)
-                if conf is None:
+                conf_val, conf_err = coerce_number(conf, "confidence")
+                if conf_err:
+                    return DecisionResult(kind=ResultKind.ERROR, provider=self.name, model=self.model,
+                                          reason=conf_err)
+                if conf_val is None:
                     return DecisionResult(kind=ResultKind.ERROR, provider=self.name, model=self.model,
                                           reason="missing_confidence")
+                conf = conf_val
                 sel = max(probs, key=lambda k: probs[k])
                 if q.choices and sel not in q.choices:
                     return DecisionResult(kind=ResultKind.ERROR, provider=self.name, model=self.model,
@@ -99,24 +105,40 @@ class MockDecisionProvider:
             elif q.primitive is Primitive.SCORE:
                 if s is None:
                     s = {"score": 0.0, "confidence": 0.5}
+                sv, sv_err = coerce_number(s.get("score", 0.0), "score")
+                if sv_err:
+                    return DecisionResult(kind=ResultKind.ERROR, provider=self.name, model=self.model,
+                                          reason=sv_err)
+                cv, cv_err = coerce_number(s.get("confidence"), "confidence")
+                if cv_err:
+                    return DecisionResult(kind=ResultKind.ERROR, provider=self.name, model=self.model,
+                                          reason=cv_err)
                 answers[q.name] = Answer(
                     question=q.name,
                     primitive=Primitive.SCORE,
-                    score_value=float(s.get("score", 0.0)),
-                    confidence=None if s.get("confidence") is None else float(s["confidence"]),
+                    score_value=sv if sv is not None else 0.0,
+                    confidence=cv,
                 )
             else:  # boolean
                 if s is None:
                     s = {"value": False, "probability": 0.5, "confidence": 0.5}
-                if s.get("confidence") is None:
+                cv, cv_err = coerce_number(s.get("confidence"), "confidence")
+                if cv_err:
+                    return DecisionResult(kind=ResultKind.ERROR, provider=self.name, model=self.model,
+                                          reason=cv_err)
+                if cv is None:
                     return DecisionResult(kind=ResultKind.ERROR, provider=self.name, model=self.model,
                                           reason="missing_confidence")
+                pv, pv_err = coerce_number(s.get("probability", 0.5), "probability")
+                if pv_err:
+                    return DecisionResult(kind=ResultKind.ERROR, provider=self.name, model=self.model,
+                                          reason=pv_err)
                 answers[q.name] = Answer(
                     question=q.name,
                     primitive=Primitive.BOOLEAN,
                     value=bool(s.get("value")),
-                    probability=float(s.get("probability", 0.5)),
-                    confidence=float(s["confidence"]),
+                    probability=pv if pv is not None else 0.5,
+                    confidence=cv,
                 )
         return DecisionResult(
             kind=ResultKind.DECISION,

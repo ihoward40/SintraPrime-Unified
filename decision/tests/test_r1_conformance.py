@@ -466,6 +466,91 @@ class TestLedgerChainAuthentication:
         assert entry_hash(forged_chain[1]) != forged_chain[1]["hash"]
 
 
+
+
+# ============================================ R1.1 — R1-DEFECT-001 regression
+# SP-SYSTEM-ONE-DECISION-FABRIC-001-R1.1: malformed/non-coercible confidence
+# must normalize to a first-class ERROR result — never an escaping exception.
+# None-confidence provider semantics are intentionally NOT normalized here.
+
+class TestR1Defect001ConfidenceNormalization:
+    MALFORMED = ["abc", "high", "0.5oops", {}, [], object(), True]
+
+    @pytest.mark.parametrize("bad", MALFORMED)
+    def test_mock_malformed_confidence_is_first_class_error(self, bad):
+        state = {"_mock_answers": {"q": {"value": True, "probability": 0.9, "confidence": bad}}}
+        try:
+            result = asyncio.run(MockDecisionProvider().evaluate(state=state, contract=self._c()))
+        except Exception as exc:  # pragma: no cover — must never happen post-fix
+            raise AssertionError(f"provider raised {type(exc).__name__}: {exc}")
+        assert result.kind is ResultKind.ERROR
+        assert "malformed_confidence" in result.reason
+        assert apply_policy(result, shadow_only=False).decision == "FALLBACK_HERMES"
+
+    @pytest.mark.parametrize("bad", MALFORMED)
+    def test_jev_malformed_confidence_is_first_class_error(self, bad):
+        resp = {"answers": {"q": {"type": "boolean", "probability": 0.9, "confidence": bad}}}
+        provider = JevDecisionProvider(transport=lambda u, pl, k, t: resp)
+        try:
+            result = asyncio.run(provider.evaluate(state={}, contract=self._c()))
+        except Exception as exc:  # pragma: no cover — must never happen post-fix
+            raise AssertionError(f"provider raised {type(exc).__name__}: {exc}")
+        assert result.kind is ResultKind.ERROR
+        assert "malformed_confidence" in result.reason
+        assert apply_policy(result, shadow_only=False).decision == "FALLBACK_HERMES"
+
+    def test_malformed_confidence_prefix_suffix_variants(self):
+        for bad in [" 0.9 ", "0.9oops", "oops0.9", "0,9"]:
+            state = {"_mock_answers": {"q": {"value": True, "probability": 0.9, "confidence": bad}}}
+            result = asyncio.run(MockDecisionProvider().evaluate(state=state, contract=self._c()))
+            # " 0.9 " may legitimately coerce via strip(); all others must ERROR
+            if result.kind is ResultKind.DECISION:
+                assert result.answers["q"].confidence == pytest.approx(0.9)
+            else:
+                assert result.kind is ResultKind.ERROR and "malformed_confidence" in result.reason
+
+    def test_valid_numeric_confidence_unchanged(self):
+        for ok in [0.9, 1, "0.85"]:
+            state = {"_mock_answers": {"q": {"value": True, "probability": 0.9, "confidence": ok}}}
+            result = asyncio.run(MockDecisionProvider().evaluate(state=state, contract=self._c()))
+            assert result.kind is ResultKind.DECISION
+            assert result.answers["q"].confidence == pytest.approx(0.85 if ok == "0.85" else float(ok))
+
+    def test_none_confidence_behavior_unchanged(self):
+        # mock: None -> missing_confidence ERROR (pre-existing semantics)
+        state = {"_mock_answers": {"q": {"value": True, "probability": 0.9, "confidence": None}}}
+        result = asyncio.run(MockDecisionProvider().evaluate(state=state, contract=self._c()))
+        assert result.kind is ResultKind.ERROR and result.reason == "missing_confidence"
+        # jev: None -> recorded null, policy threshold-failure (pre-existing semantics)
+        resp = {"answers": {"q": {"type": "boolean", "probability": 0.9, "confidence": None}}}
+        r = asyncio.run(JevDecisionProvider(transport=lambda u, pl, k, t: resp).evaluate(
+            state={}, contract=self._c()))
+        assert r.kind is ResultKind.DECISION and r.answers["q"].confidence is None
+        assert apply_policy(r, shadow_only=False).decision in ("HERMES_REVIEW", "SHADOW_ONLY")
+
+    def test_policy_consumes_error_fail_closed(self):
+        state = {"_mock_answers": {"q": {"value": True, "probability": 0.9, "confidence": "high"}}}
+        result = asyncio.run(MockDecisionProvider().evaluate(state=state, contract=self._c()))
+        policy = apply_policy(result, shadow_only=False)  # even with shadow OFF
+        assert policy.decision == "FALLBACK_HERMES"
+        assert policy.provider_failed is True
+
+    def test_no_external_effect_on_malformed(self):
+        calls = []
+        def recording_transport(url, payload, key, t):
+            calls.append(url)
+            return {"answers": {"q": {"type": "boolean", "probability": 0.9, "confidence": "high"}}}
+        provider = JevDecisionProvider(transport=recording_transport)
+        result = asyncio.run(provider.evaluate(state={}, contract=self._c()))
+        assert result.kind is ResultKind.ERROR
+        assert len(calls) == 1  # exactly the shadow request; no retry/external mutation
+
+    @staticmethod
+    def _c():
+        return contract_from_raw({"contract_id": "c", "version": "1", "risk": "LOW",
+                                  "questions": {"q": {"type": "boolean"}}})
+
+
 # ============================================================ configuration
 
 class TestConfigurationDefaults:

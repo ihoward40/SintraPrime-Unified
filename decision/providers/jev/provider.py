@@ -24,6 +24,7 @@ from typing import Any, Dict, Optional
 from ...contracts.contracts import DecisionContract
 from ...engine.types import Answer, DecisionResult, Primitive, ResultKind
 from ..config import get_provider_config
+from ..coerce import coerce_number
 
 _DEFAULT_BASE_URL = "https://ai-gateway.vercel.com"  # documented Gateway root
 _RAW_PRIMITIVE_NAMES = {"choice": "Choice", "score": "Score", "boolean": "Noul"}  # provider-local
@@ -136,7 +137,10 @@ class JevDecisionProvider:
 
     def _normalize_answer(self, q, raw_a: dict):
         ptype = raw_a.get("type")
-        confidence = raw_a.get("confidence")
+        confidence_raw = raw_a.get("confidence")
+        confidence, conf_err = (None, None) if confidence_raw is None else coerce_number(confidence_raw, "confidence")
+        if conf_err:
+            raise _SchemaMismatch(conf_err)
         # ---- native Choice -> choice
         if ptype == "choice":
             if q.primitive is not Primitive.CHOICE:
@@ -158,7 +162,7 @@ class JevDecisionProvider:
                 distribution={k: float(v) for k, v in probs.items()},
                 runner_up=top2[0], runner_up_probability=float(top2[1]),
                 margin=float(top1[1]) - float(top2[1]),
-                confidence=None if confidence is None else float(confidence),
+                confidence=confidence,
             )
             return "choice", ans
         # ---- native Score -> score
@@ -167,10 +171,13 @@ class JevDecisionProvider:
                 raise _SchemaMismatch(f"primitive mismatch on {q.name}: score vs contract")
             if "score" not in raw_a:
                 raise _SchemaMismatch(f"malformed: score missing on {q.name}")
+            sv, sv_err = coerce_number(raw_a["score"], "score")
+            if sv_err:
+                raise _SchemaMismatch(sv_err)
             ans = Answer(
                 question=q.name, primitive=Primitive.SCORE,
-                score_value=float(raw_a["score"]),
-                confidence=None if confidence is None else float(confidence),
+                score_value=sv,
+                confidence=confidence,
             )
             return "score", ans
         # ---- native Noul / SDK boolean -> boolean
@@ -180,10 +187,13 @@ class JevDecisionProvider:
             prob = raw_a.get("probability", raw_a.get("noul"))
             if prob is None:
                 raise _SchemaMismatch(f"malformed: probability missing on {q.name}")
+            pv, pv_err = coerce_number(prob, "probability")
+            if pv_err:
+                raise _SchemaMismatch(pv_err)
             ans = Answer(
                 question=q.name, primitive=Primitive.BOOLEAN,
-                value=float(prob) >= 0.5, probability=float(prob),
-                confidence=None if confidence is None else float(confidence),
+                value=pv >= 0.5, probability=pv,
+                confidence=confidence,
             )
             return "boolean", ans
         # ---- unknown provider primitive: fail closed

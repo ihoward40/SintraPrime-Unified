@@ -1,15 +1,14 @@
 """Durable governed dispatch outbox with restart-time revalidation."""
 from __future__ import annotations
 
-import json
 import os
 import time
 import uuid
 from pathlib import Path
-from threading import Lock
 from typing import Any
 
 from .a2a_governance import DispatchAudit
+from .jsonl_store import append_jsonl, integrity_check, read_jsonl
 
 
 class DurableOutbox:
@@ -18,24 +17,20 @@ class DurableOutbox:
     def __init__(self, path: str | None = None, audit_store: Any | None = None):
         self.path = Path(path or os.getenv("A2A_OUTBOX_STORE", "var/a2a_outbox.jsonl"))
         self.audit_store = audit_store
-        self._lock = Lock()
 
     def _append(self, event: dict[str, Any]) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        with self._lock, self.path.open("a", encoding="utf-8") as stream:
-            stream.write(json.dumps(event, sort_keys=True) + "\n")
-            stream.flush()
-            os.fsync(stream.fileno())
+        append_jsonl(self.path, event)
 
     def _records(self) -> dict[str, dict[str, Any]]:
         if not self.path.exists():
             return {}
         records: dict[str, dict[str, Any]] = {}
-        for line in self.path.read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                event = json.loads(line)
-                records[event["outbox_id"]] = event
+        for event in read_jsonl(self.path):
+            records[event["outbox_id"]] = event
         return records
+
+    def integrity_check(self) -> dict:
+        return integrity_check(self.path)
 
     def _audit(self, record: dict[str, Any], status: str, reason: str | None = None) -> None:
         if self.audit_store is None:

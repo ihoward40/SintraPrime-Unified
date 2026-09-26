@@ -403,6 +403,44 @@ def test_worker_enforces_retry_limit_and_dlq(tmp_path, monkeypatch):
     assert second["status"] == "dlq"
 
 
+def test_concurrent_jsonl_writers_preserve_sequence_integrity(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+
+    store = A2AAuditStore(str(tmp_path / "audit.jsonl"))
+
+    def append(index):
+        store.append(DispatchAudit(
+            mission_id=f"concurrent-{index}", objective="REQUEST", agents_used=("a", "b"),
+            sources_used=(), claims_verified=(), risks_flagged=(), user_approval="not required",
+            external_action_taken=False, final_output_hash=str(index), status="delivered",
+        ))
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(append, range(40)))
+    result = store.integrity_check()
+    assert result["records"] == 40
+    assert result["last_sequence"] == 40
+
+
+def test_approval_and_outbox_integrity_checks(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2A_APPROVAL_HMAC_SECRET", "test-secret")
+    payload_hash = content_hash({"body": "approved"})
+    receipt = issue_approval(
+        approved_by="user-1", approved_output_id="integrity", sender_agent_id="orchestrator",
+        recipient="blackstone_verifier", tenant_id="tenant-a", final_content_hash=payload_hash,
+        expires_at=9999999999,
+    )
+    approvals = ApprovalStore(str(tmp_path / "approvals.jsonl"))
+    approvals.issue(receipt)
+    outbox = DurableOutbox(str(tmp_path / "outbox.jsonl"))
+    outbox.enqueue(
+        receipt_id=receipt.receipt_id, sender_agent_id="orchestrator", tenant_id="tenant-a",
+        recipient="blackstone_verifier", payload_hash=payload_hash,
+    )
+    assert approvals.integrity_check()["records"] == 1
+    assert outbox.integrity_check()["records"] == 1
+
+
 @pytest.mark.asyncio
 async def test_api_sender_mismatch_is_audited(tmp_path):
     audit = A2AAuditStore(str(tmp_path / "audit.jsonl"))

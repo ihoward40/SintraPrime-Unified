@@ -9,8 +9,9 @@ Covers:
 """
 from __future__ import annotations
 
-import pytest
 from datetime import UTC, datetime
+
+import pytest
 
 from portal.services.principal_brief_service import (
     BRIEF_SCHEMA_VERSION,
@@ -18,7 +19,6 @@ from portal.services.principal_brief_service import (
     normalize_brief,
     recommendation_is_proposal_only,
 )
-
 
 # ---------------------------------------------------------------------------
 # Contract shape
@@ -106,7 +106,6 @@ class TestStrictApprovalProvenance:
         from agent_runtime.delegation import Delegation, DelegationAuthority
         from agent_runtime.manifest import AgentManifest
 
-        auth = DelegationAuthority(strict_approval_provenance=True)
         past = datetime.now(UTC) - timedelta(hours=1)
         d = Delegation(
             delegation_id="D-X", parent_agent="agent.parent",

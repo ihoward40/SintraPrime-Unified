@@ -3,14 +3,374 @@
   "mission": "SP-GOD2-REAL-WORLD-AGENCY-001",
   "default_state": "UNREVIEWED",
   "capabilities": [
-    {"capability_id":"external.read","tool_id":"external","operation":"read","effect_class":"EXTERNAL_READ_ONLY","admission_state":"SHADOW_ONLY","authorized_environments":["local","sandbox"],"resource_scope":[],"approval_policy":"REQUIRED","rollback_policy":"NONE","idempotency_policy":"REQUIRED","verification_policy":"REQUIRED","owner":"agent_3_governed_runtime"},
-    {"capability_id":"external.draft","tool_id":"external","operation":"draft","effect_class":"EXTERNAL_DRAFT_ONLY","admission_state":"SHADOW_ONLY","authorized_environments":["local","sandbox"],"resource_scope":[],"approval_policy":"REQUIRED","rollback_policy":"NONE","idempotency_policy":"REQUIRED","verification_policy":"REQUIRED","owner":"agent_3_governed_runtime"},
-    {"capability_id":"external.reversible","tool_id":"external","operation":"reversible","effect_class":"EXTERNAL_REVERSIBLE_LOW_RISK","admission_state":"SHADOW_ONLY","authorized_environments":["local","sandbox"],"resource_scope":[],"approval_policy":"REQUIRED","rollback_policy":"REQUIRED","idempotency_policy":"REQUIRED","verification_policy":"REQUIRED","owner":"agent_3_governed_runtime"},
-    {"capability_id":"external.irreversible","tool_id":"external","operation":"irreversible","effect_class":"EXTERNAL_IRREVERSIBLE","admission_state":"REVOKED","authorized_environments":["local"],"approval_policy":"REQUIRED","owner":"agent_3_governed_runtime","revocation_reason":"GOD-2 closed class"},
-    {"capability_id":"financial.execute","tool_id":"financial","operation":"execute","effect_class":"FINANCIAL","admission_state":"REVOKED","authorized_environments":["local"],"approval_policy":"REQUIRED","owner":"agent_3_governed_runtime","revocation_reason":"GOD-2 closed class"},
-    {"capability_id":"legal.submit","tool_id":"legal","operation":"submit","effect_class":"LEGAL_REGULATORY_SUBMISSION","admission_state":"REVOKED","authorized_environments":["local"],"approval_policy":"REQUIRED","owner":"agent_3_governed_runtime","revocation_reason":"GOD-2 closed class"},
-    {"capability_id":"credential.mutate","tool_id":"credential","operation":"mutate","effect_class":"CREDENTIAL_AUTH_MUTATION","admission_state":"REVOKED","authorized_environments":["local"],"approval_policy":"REQUIRED","owner":"agent_3_governed_runtime","revocation_reason":"GOD-2 closed class"},
-    {"capability_id":"deployment.execute","tool_id":"deployment","operation":"execute","effect_class":"DEPLOYMENT_INFRASTRUCTURE","admission_state":"REVOKED","authorized_environments":["local"],"approval_policy":"REQUIRED","owner":"agent_3_governed_runtime","revocation_reason":"GOD-2 closed class"},
-    {"capability_id":"security.privilege_mutate","tool_id":"security","operation":"privilege_mutate","effect_class":"SECURITY_PRIVILEGE_MUTATION","admission_state":"REVOKED","authorized_environments":["local"],"approval_policy":"REQUIRED","owner":"agent_3_governed_runtime","revocation_reason":"GOD-2 closed class"}
-  ]
+    {
+      "capability_id": "external.read",
+      "tool_id": "external",
+      "operation": "read",
+      "effect_class": "EXTERNAL_READ_ONLY",
+      "admission_state": "SHADOW_ONLY",
+      "authorized_environments": [
+        "local",
+        "sandbox"
+      ],
+      "resource_scope": [],
+      "approval_policy": "REQUIRED",
+      "rollback_policy": "NONE",
+      "idempotency_policy": "REQUIRED",
+      "verification_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime"
+    },
+    {
+      "capability_id": "external.draft",
+      "tool_id": "external",
+      "operation": "draft",
+      "effect_class": "EXTERNAL_DRAFT_ONLY",
+      "admission_state": "SHADOW_ONLY",
+      "authorized_environments": [
+        "local",
+        "sandbox"
+      ],
+      "resource_scope": [],
+      "approval_policy": "REQUIRED",
+      "rollback_policy": "NONE",
+      "idempotency_policy": "REQUIRED",
+      "verification_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime"
+    },
+    {
+      "capability_id": "external.reversible",
+      "tool_id": "external",
+      "operation": "reversible",
+      "effect_class": "EXTERNAL_REVERSIBLE_LOW_RISK",
+      "admission_state": "REVOKED",
+      "authorized_environments": [
+        "local",
+        "sandbox"
+      ],
+      "resource_scope": [],
+      "approval_policy": "REQUIRED",
+      "rollback_policy": "REQUIRED",
+      "idempotency_policy": "REQUIRED",
+      "verification_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "revocation_reason": "E2 closed pending separate operation-specific approval"
+    },
+    {
+      "capability_id": "external.irreversible",
+      "tool_id": "external",
+      "operation": "irreversible",
+      "effect_class": "EXTERNAL_IRREVERSIBLE",
+      "admission_state": "REVOKED",
+      "authorized_environments": [
+        "local"
+      ],
+      "approval_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "revocation_reason": "GOD-2 closed class"
+    },
+    {
+      "capability_id": "financial.execute",
+      "tool_id": "financial",
+      "operation": "execute",
+      "effect_class": "FINANCIAL",
+      "admission_state": "REVOKED",
+      "authorized_environments": [
+        "local"
+      ],
+      "approval_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "revocation_reason": "GOD-2 closed class"
+    },
+    {
+      "capability_id": "legal.submit",
+      "tool_id": "legal",
+      "operation": "submit",
+      "effect_class": "LEGAL_REGULATORY_SUBMISSION",
+      "admission_state": "REVOKED",
+      "authorized_environments": [
+        "local"
+      ],
+      "approval_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "revocation_reason": "GOD-2 closed class"
+    },
+    {
+      "capability_id": "credential.mutate",
+      "tool_id": "credential",
+      "operation": "mutate",
+      "effect_class": "CREDENTIAL_AUTH_MUTATION",
+      "admission_state": "REVOKED",
+      "authorized_environments": [
+        "local"
+      ],
+      "approval_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "revocation_reason": "GOD-2 closed class"
+    },
+    {
+      "capability_id": "deployment.execute",
+      "tool_id": "deployment",
+      "operation": "execute",
+      "effect_class": "DEPLOYMENT_INFRASTRUCTURE",
+      "admission_state": "REVOKED",
+      "authorized_environments": [
+        "local"
+      ],
+      "approval_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "revocation_reason": "GOD-2 closed class"
+    },
+    {
+      "capability_id": "security.privilege_mutate",
+      "tool_id": "security",
+      "operation": "privilege_mutate",
+      "effect_class": "SECURITY_PRIVILEGE_MUTATION",
+      "admission_state": "REVOKED",
+      "authorized_environments": [
+        "local"
+      ],
+      "approval_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "revocation_reason": "GOD-2 closed class"
+    },
+    {
+      "capability_id": "a2a.read_messages",
+      "tool_id": "a2a",
+      "operation": "read_messages",
+      "effect_class": "EXTERNAL_READ_ONLY",
+      "authorized_environments": [
+        "local",
+        "sandbox"
+      ],
+      "resource_scope": [],
+      "approval_policy": "REQUIRED",
+      "rollback_policy": "NONE",
+      "idempotency_policy": "REQUIRED",
+      "verification_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "admission_state": "SHADOW_ONLY"
+    },
+    {
+      "capability_id": "a2a.draft_message",
+      "tool_id": "a2a",
+      "operation": "draft_message",
+      "effect_class": "EXTERNAL_DRAFT_ONLY",
+      "authorized_environments": [
+        "local",
+        "sandbox"
+      ],
+      "resource_scope": [],
+      "approval_policy": "REQUIRED",
+      "rollback_policy": "NONE",
+      "idempotency_policy": "REQUIRED",
+      "verification_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "admission_state": "SHADOW_ONLY"
+    },
+    {
+      "capability_id": "evidence_vault.read",
+      "tool_id": "evidence_vault",
+      "operation": "read",
+      "effect_class": "EXTERNAL_READ_ONLY",
+      "authorized_environments": [
+        "local",
+        "sandbox"
+      ],
+      "resource_scope": [],
+      "approval_policy": "REQUIRED",
+      "rollback_policy": "NONE",
+      "idempotency_policy": "REQUIRED",
+      "verification_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "admission_state": "SHADOW_ONLY"
+    },
+    {
+      "capability_id": "evidence_vault.draft_index",
+      "tool_id": "evidence_vault",
+      "operation": "draft_index",
+      "effect_class": "EXTERNAL_DRAFT_ONLY",
+      "authorized_environments": [
+        "local",
+        "sandbox"
+      ],
+      "resource_scope": [],
+      "approval_policy": "REQUIRED",
+      "rollback_policy": "NONE",
+      "idempotency_policy": "REQUIRED",
+      "verification_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "admission_state": "SHADOW_ONLY"
+    },
+    {
+      "capability_id": "repository.read_state",
+      "tool_id": "repository",
+      "operation": "read_state",
+      "effect_class": "EXTERNAL_READ_ONLY",
+      "authorized_environments": [
+        "local",
+        "sandbox"
+      ],
+      "resource_scope": [],
+      "approval_policy": "REQUIRED",
+      "rollback_policy": "NONE",
+      "idempotency_policy": "REQUIRED",
+      "verification_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "admission_state": "SHADOW_ONLY"
+    },
+    {
+      "capability_id": "repository.draft_change",
+      "tool_id": "repository",
+      "operation": "draft_change",
+      "effect_class": "EXTERNAL_DRAFT_ONLY",
+      "authorized_environments": [
+        "local",
+        "sandbox"
+      ],
+      "resource_scope": [],
+      "approval_policy": "REQUIRED",
+      "rollback_policy": "NONE",
+      "idempotency_policy": "REQUIRED",
+      "verification_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "admission_state": "SHADOW_ONLY"
+    },
+    {
+      "capability_id": "redis.read_status",
+      "tool_id": "redis",
+      "operation": "read_status",
+      "effect_class": "EXTERNAL_READ_ONLY",
+      "authorized_environments": [
+        "local",
+        "sandbox"
+      ],
+      "resource_scope": [],
+      "approval_policy": "REQUIRED",
+      "rollback_policy": "NONE",
+      "idempotency_policy": "REQUIRED",
+      "verification_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "admission_state": "SHADOW_ONLY"
+    },
+    {
+      "capability_id": "redis.draft_delivery",
+      "tool_id": "redis",
+      "operation": "draft_delivery",
+      "effect_class": "EXTERNAL_DRAFT_ONLY",
+      "authorized_environments": [
+        "local",
+        "sandbox"
+      ],
+      "resource_scope": [],
+      "approval_policy": "REQUIRED",
+      "rollback_policy": "NONE",
+      "idempotency_policy": "REQUIRED",
+      "verification_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "admission_state": "SHADOW_ONLY"
+    },
+    {
+      "capability_id": "postgres.read_governance",
+      "tool_id": "postgres",
+      "operation": "read_governance",
+      "effect_class": "EXTERNAL_READ_ONLY",
+      "authorized_environments": [
+        "local",
+        "sandbox"
+      ],
+      "resource_scope": [],
+      "approval_policy": "REQUIRED",
+      "rollback_policy": "NONE",
+      "idempotency_policy": "REQUIRED",
+      "verification_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "admission_state": "SHADOW_ONLY"
+    },
+    {
+      "capability_id": "postgres.draft_reconciliation",
+      "tool_id": "postgres",
+      "operation": "draft_reconciliation",
+      "effect_class": "EXTERNAL_DRAFT_ONLY",
+      "authorized_environments": [
+        "local",
+        "sandbox"
+      ],
+      "resource_scope": [],
+      "approval_policy": "REQUIRED",
+      "rollback_policy": "NONE",
+      "idempotency_policy": "REQUIRED",
+      "verification_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "admission_state": "SHADOW_ONLY"
+    },
+    {
+      "capability_id": "dispatch.read_queue",
+      "tool_id": "dispatch_desk",
+      "operation": "read_queue",
+      "effect_class": "EXTERNAL_READ_ONLY",
+      "authorized_environments": [
+        "local",
+        "sandbox"
+      ],
+      "resource_scope": [],
+      "approval_policy": "REQUIRED",
+      "rollback_policy": "NONE",
+      "idempotency_policy": "REQUIRED",
+      "verification_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "admission_state": "SHADOW_ONLY"
+    },
+    {
+      "capability_id": "dispatch.draft_packet",
+      "tool_id": "dispatch_desk",
+      "operation": "draft_packet",
+      "effect_class": "EXTERNAL_DRAFT_ONLY",
+      "authorized_environments": [
+        "local",
+        "sandbox"
+      ],
+      "resource_scope": [],
+      "approval_policy": "REQUIRED",
+      "rollback_policy": "NONE",
+      "idempotency_policy": "REQUIRED",
+      "verification_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "admission_state": "SHADOW_ONLY"
+    },
+    {
+      "capability_id": "connector.read_metadata",
+      "tool_id": "future_connector",
+      "operation": "read_metadata",
+      "effect_class": "EXTERNAL_READ_ONLY",
+      "authorized_environments": [
+        "local",
+        "sandbox"
+      ],
+      "resource_scope": [],
+      "approval_policy": "REQUIRED",
+      "rollback_policy": "NONE",
+      "idempotency_policy": "REQUIRED",
+      "verification_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "admission_state": "SHADOW_ONLY"
+    },
+    {
+      "capability_id": "connector.draft_payload",
+      "tool_id": "future_connector",
+      "operation": "draft_payload",
+      "effect_class": "EXTERNAL_DRAFT_ONLY",
+      "authorized_environments": [
+        "local",
+        "sandbox"
+      ],
+      "resource_scope": [],
+      "approval_policy": "REQUIRED",
+      "rollback_policy": "NONE",
+      "idempotency_policy": "REQUIRED",
+      "verification_policy": "REQUIRED",
+      "owner": "agent_3_governed_runtime",
+      "admission_state": "SHADOW_ONLY"
+    }
+  ],
+  "inventory_version": 2
 }

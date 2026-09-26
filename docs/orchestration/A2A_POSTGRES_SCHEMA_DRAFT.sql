@@ -101,6 +101,7 @@ CREATE TABLE a2a_outbox_current_state (
     lease_until TIMESTAMPTZ,
     claim_version BIGINT NOT NULL DEFAULT 0,
     version BIGINT NOT NULL DEFAULT 1,
+    reason TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (tenant_id, outbox_id),

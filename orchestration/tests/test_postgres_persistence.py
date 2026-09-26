@@ -82,6 +82,21 @@ def test_shadow_mismatch_is_fail_closed():
     assert seen[0]["entity"] == "approval"
 
 
+@pytest.mark.parametrize(
+    "entity,local,postgres",
+    [
+        ("audit_missing", {"event_id": "e1", "status": "blocked"}, None),
+        ("approval_state", {"receipt_id": "r1", "status": "issued"}, {"receipt_id": "r1", "status": "used"}),
+        ("outbox_state", {"outbox_id": "o1", "status": "pending"}, {"outbox_id": "o1", "status": "dispatched"}),
+        ("payload_hash", {"payload_hash": "hash-a"}, {"payload_hash": "hash-b"}),
+        ("tenant_scope", {"tenant_id": "tenant-a"}, {"tenant_id": "tenant-b"}),
+    ],
+)
+def test_shadow_mismatch_cases_block_certification(entity, local, postgres):
+    with pytest.raises(ShadowMismatchError):
+        ShadowComparator().compare(entity=entity, local=local, postgres=postgres)
+
+
 @pytest.mark.asyncio
 async def test_postgres_approval_consumption_is_one_time(receipt):
     row = {"status": "issued", "expires_at": datetime.now(timezone.utc).replace(microsecond=0) + timedelta(hours=1), "sender_agent_id": "orchestrator", "recipient": "worker", "final_content_hash": "hash"}

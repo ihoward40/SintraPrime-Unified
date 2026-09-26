@@ -15,7 +15,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-SCHEMA_VERSION = "sp-principal-brief-v1"
+SCHEMA_VERSION = "sp-principal-brief-v2"
 
 
 @dataclass(frozen=True)

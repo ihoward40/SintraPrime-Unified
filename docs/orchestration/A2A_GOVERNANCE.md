@@ -16,6 +16,7 @@ The A2A transport now separates **internal collaboration** from **external actio
 - The HTTP A2A boundary now authenticates opaque agent tokens from `A2A_AGENT_CREDENTIALS`, binds the principal to `agent_id` and `tenant_id`, rejects body/principal mismatches, and audits failed authentication attempts. Credentials must be provisioned through deployment secret management.
 - Approval lifecycle events are persisted to `A2A_APPROVAL_STORE` (default `var/a2a_approvals.jsonl`) with fsync-backed issued/used/expired/revoked states. Receipts are one-time and must exist in the durable store before a future external dispatch path can consume them.
 - Pending governed dispatch intent can be persisted to `A2A_OUTBOX_STORE` (default `var/a2a_outbox.jsonl`). Restart revalidation checks approval presence/status, registry profile, tenant scope, recipient, and payload hash before an item can become `validated`; no external execution is enabled by this store.
+- `ExecutionWorker` processes validated outbox records in dry-run mode by default. It derives an idempotency key, revalidates immediately, prevents terminal-record replay, enforces retry limits, and moves permanent failures to `dlq`; no external executor is called unless a future explicitly reviewed enablement changes the fail-closed defaults.
 - Autonomous self-improvement, deployment, publishing, filing, payments, and third-party contact remain disabled for the default orchestrator profile.
 
 ## Evidence classifications
@@ -54,6 +55,7 @@ Changing even one character after approval causes the content hash check to fail
 | Authenticated identity / tenant scope | PATCH C3 PARTIAL | Token-to-agent/tenant binding and mismatch auditing are test-backed; production identity provider integration remains pending |
 | Durable approval lifecycle | PATCH C4 PARTIAL | Restart-safe issued/used/revoked/expired store and lifecycle audit are test-backed; production approval authority and external dispatch integration remain blocked |
 | Durable outbox / restart revalidation | PATCH C5 PARTIAL | Pending intent persistence, revalidation, blocked states, and audit links are test-backed; execution worker, idempotent delivery, and production restart proof remain pending |
+| Dry-run execution worker / delivery semantics | PATCH C6 PARTIAL | Dry-run worker, idempotency, retry limits, DLQ, and no-side-effect tests are present; production executor, Redis ACK/DLQ integration, and external enablement remain blocked |
 | Durable append-only audit storage | PARTIAL / PATCH B IN PROGRESS | Local JSONL append + fsync and fresh-store recovery are tested; production durable-volume and multi-process guarantees remain pending |
 | Restart persistence and bypass-resistance integration test | PENDING | Fresh-store recovery is covered; production restart/revalidation and raw transport bypass tests remain pending |
 | Broad external-action enablement | BLOCKED BY DEFAULT | Requires explicit approval and a reviewed agent profile |

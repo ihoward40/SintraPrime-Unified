@@ -13,7 +13,7 @@ from .a2a_governance import DispatchAudit
 
 
 class DurableOutbox:
-    STATUSES = {"pending", "validated", "blocked", "dispatched", "failed", "expired"}
+    STATUSES = {"pending", "validated", "blocked", "dispatched", "failed", "expired", "dlq"}
 
     def __init__(self, path: str | None = None, audit_store: Any | None = None):
         self.path = Path(path or os.getenv("A2A_OUTBOX_STORE", "var/a2a_outbox.jsonl"))
@@ -91,7 +91,7 @@ class DurableOutbox:
         if reason:
             updated["reason"] = reason
         self._append(updated)
-        if status in {"blocked", "failed", "expired"}:
+        if status in {"blocked", "failed", "expired", "dlq"}:
             self._audit(updated, status, reason)
 
     def revalidate(
@@ -146,6 +146,28 @@ class DurableOutbox:
         if record is None:
             raise KeyError(outbox_id)
         self._transition(record, "failed", reason)
+
+    def mark_blocked(self, outbox_id: str, reason: str) -> None:
+        record = self.get(outbox_id)
+        if record is None:
+            raise KeyError(outbox_id)
+        self._transition(record, "blocked", reason)
+
+    def mark_dlq(self, outbox_id: str, reason: str) -> None:
+        record = self.get(outbox_id)
+        if record is None:
+            raise KeyError(outbox_id)
+        self._transition(record, "dlq", reason)
+
+    def mark_retry_pending(self, outbox_id: str, retry_count: int) -> None:
+        record = self.get(outbox_id)
+        if record is None:
+            raise KeyError(outbox_id)
+        updated = dict(record)
+        updated["status"] = "pending"
+        updated["retry_count"] = retry_count
+        updated["updated_at"] = time.time()
+        self._append(updated)
 
     def mark_dispatched(self, outbox_id: str) -> None:
         record = self.get(outbox_id)

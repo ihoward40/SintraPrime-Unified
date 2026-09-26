@@ -17,6 +17,7 @@ from orchestration.agent_policy import AgentPolicy
 from orchestration.agent_identity import AgentPrincipal
 from orchestration.approval_store import ApprovalStore
 from orchestration.outbox import DurableOutbox
+from orchestration.execution_worker import ExecutionWorker
 from orchestration.orchestration_api import SendMessageRequest, send_agent_message
 
 
@@ -354,6 +355,52 @@ def test_outbox_blocks_payload_and_tenant_drift(tmp_path, monkeypatch):
     with pytest.raises(PermissionError, match="payload hash"):
         outbox.revalidate(outbox_id, approval_store=ApprovalStore(str(approvals_path)),
                           agent_policy=AgentPolicy(), payload_hash="changed", tenant_id="tenant-a")
+
+
+def _worker_fixture(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2A_APPROVAL_HMAC_SECRET", "test-secret")
+    payload_hash = content_hash({"body": "approved"})
+    receipt = issue_approval(
+        approved_by="user-1", approved_output_id="worker", sender_agent_id="orchestrator",
+        recipient="blackstone_verifier", tenant_id="tenant-a", final_content_hash=payload_hash,
+        expires_at=9999999999,
+    )
+    approvals = ApprovalStore(str(tmp_path / "approvals.jsonl"))
+    approvals.issue(receipt)
+    outbox = DurableOutbox(str(tmp_path / "outbox.jsonl"))
+    outbox_id = outbox.enqueue(
+        receipt_id=receipt.receipt_id, sender_agent_id="orchestrator", tenant_id="tenant-a",
+        recipient="blackstone_verifier", payload_hash=payload_hash,
+    )
+    return approvals, outbox, outbox_id, payload_hash
+
+
+def test_worker_is_dry_run_and_idempotent(tmp_path, monkeypatch):
+    approvals, outbox, outbox_id, payload_hash = _worker_fixture(tmp_path, monkeypatch)
+    calls = []
+    worker = ExecutionWorker(
+        outbox=outbox, approval_store=approvals, agent_policy=AgentPolicy(),
+        executor=lambda record: calls.append(record),
+    )
+    result = worker.run_once(outbox_id, payload_hash=payload_hash, tenant_id="tenant-a")
+    assert result["status"] == "blocked"
+    assert result["dry_run"] is True
+    assert calls == []
+    with pytest.raises(PermissionError, match="terminal"):
+        worker.run_once(outbox_id, payload_hash=payload_hash, tenant_id="tenant-a")
+
+
+def test_worker_enforces_retry_limit_and_dlq(tmp_path, monkeypatch):
+    approvals, outbox, outbox_id, payload_hash = _worker_fixture(tmp_path, monkeypatch)
+    monkeypatch.setenv("A2A_EXTERNAL_ACTIONS_ENABLED", "true")
+    worker = ExecutionWorker(
+        outbox=outbox, approval_store=approvals, agent_policy=AgentPolicy(),
+        max_retries=2, dry_run=False, executor=lambda record: (_ for _ in ()).throw(RuntimeError("downstream")),
+    )
+    first = worker.run_once(outbox_id, payload_hash=payload_hash, tenant_id="tenant-a")
+    second = worker.run_once(outbox_id, payload_hash=payload_hash, tenant_id="tenant-a")
+    assert first["status"] == "pending"
+    assert second["status"] == "dlq"
 
 
 @pytest.mark.asyncio

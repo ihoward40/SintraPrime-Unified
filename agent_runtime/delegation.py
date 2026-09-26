@@ -53,7 +53,12 @@ class DelegationAuthority:
     §10 no self-grant: an agent can never grant or extend its own authority.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *, strict_approval_provenance: bool = False) -> None:
+        # SP-OMNIBRAIN-RUNTIME-001: strict approval provenance requires
+        # approval references to be governance-registered before consumption.
+        # Unregistered references (e.g. fabricated provider output) are refused.
+        self._strict_approval_provenance = strict_approval_provenance
+        self._registered_approvals: set[str] = set()
         self._delegatable: dict[str, frozenset[str]] = {}
         # §10+: authority provenance — agent_id -> agent that granted its
         # delegatable authority. Root = GOVERNANCE_ROOT_ACTOR (§6: resolved
@@ -137,6 +142,14 @@ class DelegationAuthority:
     def delegatable(self, parent_agent_id: str) -> frozenset[str]:
         return self._delegatable.get(parent_agent_id, frozenset())
 
+    def register_issued_approval(self, approval_reference: str) -> None:
+        """SP-OMNIBRAIN-RUNTIME-001: register a Principal/governance-issued
+        approval reference. Required before consumption when
+        strict_approval_provenance is enabled. Registration is governance-only;
+        agents can never register their own approvals through this surface."""
+        with self._approval_locks_guard:
+            self._registered_approvals.add(approval_reference)
+
     def consume_approval(self, approval_reference: str) -> bool:
         """§7/§9: exactly-once approval consumption. Returns True when this
         call is the FIRST consumer; False if already consumed. Thread-safe
@@ -149,6 +162,10 @@ class DelegationAuthority:
         with self._approval_locks_guard:
             lock = self._approval_locks.setdefault(approval_reference, threading.Lock())
         with lock:
+            if self._strict_approval_provenance and (
+                approval_reference not in self._registered_approvals
+            ):
+                return False  # fabricated/unregistered approval -> not consumable
             if approval_reference in self._consumed_approvals:
                 return False
             self._consumed_approvals.add(approval_reference)

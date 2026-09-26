@@ -11,7 +11,8 @@ from orchestration.a2a_governance import (
     validate_dispatch,
 )
 from orchestration.a2a_audit import A2AAuditStore
-from orchestration.a2a_protocol import A2AProtocol
+from orchestration.a2a_protocol import A2AProtocol, Message, MessageBus, MessageType
+from orchestration.agent_policy import AgentPolicy
 from orchestration.orchestration_api import SendMessageRequest, send_agent_message
 
 
@@ -151,12 +152,12 @@ async def test_api_external_action_is_blocked_and_audited(tmp_path, monkeypatch)
     from fastapi import HTTPException
 
     with pytest.raises(HTTPException) as error:
-        await send_agent_message(request, A2AProtocol(), None, audit)
+        await send_agent_message(request, A2AProtocol(), None, audit, AgentPolicy())
 
     assert error.value.status_code == 403
     records = audit.read()
     assert records[0]["status"] == "blocked"
-    assert records[0]["reason_code"] == "external_actions_disabled"
+    assert records[0]["reason_code"] == "sender_policy_blocked"
 
 
 @pytest.mark.asyncio
@@ -170,8 +171,22 @@ async def test_api_internal_dispatch_records_lifecycle(tmp_path, monkeypatch):
         payload={"task": "verify"},
     )
 
-    result = await send_agent_message(request, A2AProtocol(), None, audit)
+    result = await send_agent_message(request, A2AProtocol(), None, audit, AgentPolicy())
 
     assert result.delivered is True
     assert [record["status"] for record in audit.read()] == ["accepted", "delivered"]
     assert audit.read()[0]["payload_hash"] == audit.read()[1]["payload_hash"]
+
+
+@pytest.mark.asyncio
+async def test_raw_memory_transport_rejects_external_intent():
+    bus = MessageBus()
+    message = Message(
+        from_agent="orchestrator",
+        to_agent="dispatch_desk",
+        message_type=MessageType.REQUEST,
+        payload={"action": "send_external_message"},
+    )
+
+    with pytest.raises(PermissionError, match="raw transport"):
+        await bus.publish(message)

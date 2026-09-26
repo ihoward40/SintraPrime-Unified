@@ -10,6 +10,8 @@ The A2A transport now separates **internal collaboration** from **external actio
 - Attachment hashes must match the approved receipt.
 - Every message carries a final content hash in its headers for auditability.
 - Agent permissions are described in [`orchestration/agent_registry.json`](../../orchestration/agent_registry.json), including the orchestrator plus Blackstone Verifier, Justice Scribe, Source Hunter, Trust Vault Clerk, SintraPrime Builder, Covenant Auditor, and the blocked Dispatch Desk candidate.
+- The HTTP dispatch boundary now loads that registry through `orchestration/agent_policy.py`; unknown, planned, disabled, and blocked sender profiles fail closed.
+- Raw in-memory and Redis transport seams reject messages that declare external-action intent. This is a Patch C slice, not full bypass certification.
 - Autonomous self-improvement, deployment, publishing, filing, payments, and third-party contact remain disabled for the default orchestrator profile.
 
 ## Evidence classifications
@@ -43,7 +45,7 @@ Changing even one character after approval causes the content hash check to fail
 | Approval gate for external messages | DONE | `orchestration/tests/test_a2a_governance.py` |
 | Evidence gate | DONE | Unsupported/risky claim test |
 | Content and attachment hash binding | DONE | Governance validator and mismatch test |
-| Agent registry | PATCH A COMPLETE | `orchestration/agent_registry.json` plus registry-completeness test |
+| Agent registry | PATCH A COMPLETE / PATCH C PARTIAL | Runtime sender policy is enforced at the HTTP boundary; all raw-seam and restart-revalidation coverage remains pending |
 | Durable append-only audit storage | PARTIAL / PATCH B IN PROGRESS | Local JSONL append + fsync and fresh-store recovery are tested; production durable-volume and multi-process guarantees remain pending |
 | Restart persistence and bypass-resistance integration test | PENDING | Fresh-store recovery is covered; production restart/revalidation and raw transport bypass tests remain pending |
 | Broad external-action enablement | BLOCKED BY DEFAULT | Requires explicit approval and a reviewed agent profile |

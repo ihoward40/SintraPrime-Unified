@@ -34,6 +34,7 @@ from .a2a_governance import (
     validate_dispatch,
 )
 from .a2a_audit import A2AAuditStore
+from .agent_policy import AgentPolicy
 from .redis_a2a import RedisA2ATransport
 from .durable_execution import (
     DurableWorkflowEngine,
@@ -59,6 +60,7 @@ _engine: Optional[DurableWorkflowEngine] = None
 _a2a: Optional[A2AProtocol] = None
 _redis_a2a: Optional[RedisA2ATransport] = None
 _a2a_audit: Optional[A2AAuditStore] = None
+_agent_policy: Optional[AgentPolicy] = None
 _checkpointer: Optional[InMemoryCheckpointer] = None
 
 
@@ -95,6 +97,13 @@ def get_a2a_audit() -> A2AAuditStore:
     if _a2a_audit is None:
         _a2a_audit = A2AAuditStore()
     return _a2a_audit
+
+
+def get_agent_policy() -> AgentPolicy:
+    global _agent_policy
+    if _agent_policy is None:
+        _agent_policy = AgentPolicy()
+    return _agent_policy
 
 
 def get_checkpointer() -> InMemoryCheckpointer:
@@ -344,6 +353,7 @@ async def send_agent_message(
     a2a: A2AProtocol = Depends(get_a2a),
     redis_a2a: RedisA2ATransport = Depends(get_redis_a2a),
     audit_store: A2AAuditStore = Depends(get_a2a_audit),
+    agent_policy: AgentPolicy = Depends(get_agent_policy),
 ) -> SendMessageResponse:
     """Send an A2A message between agents.
 
@@ -373,6 +383,25 @@ async def send_agent_message(
     claims: list[EvidenceClaim] = []
     approval = None
     final_hash = content_hash(req.payload)
+    try:
+        agent_policy.authorize_sender(req.from_agent)
+    except PermissionError as exc:
+        audit_store.append(DispatchAudit(
+            mission_id=msg.correlation_id,
+            objective=msg.message_type.value,
+            agents_used=(req.from_agent, req.to_agent),
+            sources_used=(),
+            claims_verified=(),
+            risks_flagged=(),
+            user_approval="no",
+            external_action_taken=req.external_action,
+            final_output_hash=final_hash,
+            payload_hash=final_hash,
+            status="blocked",
+            reason_code="sender_policy_blocked",
+            reason_detail=str(exc),
+        ))
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     try:
         if req.approval:
             approval_data = dict(req.approval)

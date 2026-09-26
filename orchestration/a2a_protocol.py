@@ -135,6 +135,16 @@ class Message:
         return self.timestamp < other.timestamp  # earlier first if equal priority
 
 
+def is_external_intent(message: Message) -> bool:
+    """Detect external-action intent at raw transport boundaries."""
+    action = str(message.payload.get("action", ""))
+    return bool(
+        message.headers.get("external_action")
+        or message.payload.get("external_action")
+        or action in {"send_external_message", "file_document", "publish", "deploy", "move_money"}
+    )
+
+
 # ---------------------------------------------------------------------------
 # Priority Message Queue
 # ---------------------------------------------------------------------------
@@ -323,6 +333,8 @@ class MessageBus:
 
     async def publish(self, msg: Message) -> None:
         """Publish a message to the bus."""
+        if is_external_intent(msg):
+            raise PermissionError("Dispatch blocked: raw transport cannot carry external-action intent")
         async with self._lock:
             if len(self._message_log) >= self._max_log_size:
                 self._message_log.pop(0)

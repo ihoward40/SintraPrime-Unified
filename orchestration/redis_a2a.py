@@ -7,7 +7,7 @@ from typing import Any
 
 from redis.asyncio import Redis
 
-from .a2a_protocol import Message
+from .a2a_protocol import Message, is_external_intent
 
 
 class RedisA2ATransport:
@@ -36,6 +36,8 @@ class RedisA2ATransport:
 
     async def send(self, message: Message) -> None:
         """Enqueue a direct message for the target agent."""
+        if is_external_intent(message):
+            raise PermissionError("Dispatch blocked: raw Redis transport cannot carry external-action intent")
         if message.to_agent == "*":
             raise ValueError("Redis transport supports direct delivery only")
         await self.redis.rpush(self.inbox_key(message.to_agent), json.dumps(message.to_dict()))
@@ -49,6 +51,8 @@ class RedisA2ATransport:
             return None
         _, raw = result
         message = Message.from_dict(json.loads(raw))
+        if is_external_intent(message):
+            raise PermissionError("Dispatch blocked: raw Redis message contains external-action intent")
         return None if message.is_expired() else message
 
     async def close(self) -> None:

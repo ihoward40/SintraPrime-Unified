@@ -97,7 +97,7 @@ DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
                         "properties": {
                             "link_type": {
                                 "type": "string",
-                                "enum": ["contract", "state", "receipt", "run", "evidence"],
+                                "enum": list(ALLOWED_TRACE_LINK_TYPES),
                             },
                             "target_id": {"type": "string"},
                             "target_ref": {"type": "string"},

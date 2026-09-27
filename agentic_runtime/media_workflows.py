@@ -33,12 +33,12 @@ class MediaWorkflowPolicy:
     def admit(self, job: MediaJob) -> tuple[bool, str]:
         if not job.workflow_id.strip():
             return False, "MISSING_WORKFLOW_ID"
+        if job.local_only and job.external_provider:
+            return False, "LOCAL_ONLY_CONFLICT"
         if job.external_provider and not self.allow_external:
             return False, "EXTERNAL_PROVIDER_REQUIRES_APPROVAL"
         if job.estimated_cost_usd < 0:
             return False, "INVALID_COST"
         if job.estimated_cost_usd > self.max_cost_usd:
             return False, "COST_LIMIT_EXCEEDED"
-        if job.local_only and job.external_provider:
-            return False, "LOCAL_ONLY_CONFLICT"
         return True, "ADMITTED"

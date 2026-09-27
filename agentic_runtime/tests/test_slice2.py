@@ -91,3 +91,9 @@ def test_comfyui_policy_cannot_be_bypassed():
     with pytest.raises(PermissionError):
         adapter.run(job)
     assert called == []
+
+
+def test_media_local_only_conflict_is_specific():
+    policy = MediaWorkflowPolicy(allow_external=True)
+    job = MediaJob(MediaKind.IMAGE, "wf", {}, local_only=True, external_provider="cloud")
+    assert policy.admit(job) == (False, "LOCAL_ONLY_CONFLICT")

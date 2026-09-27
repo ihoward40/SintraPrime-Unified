@@ -866,6 +866,32 @@ class TestActivityExecutor:
             )
 
     @pytest.mark.asyncio
+    async def test_activity_authority_context_requires_approved_workflow_type(self):
+        store = DurableStore()
+        store.save_workflow(WorkflowRecord(
+            workflow_id="wf6", workflow_type="t", status=WorkflowStatus.RUNNING, state={}
+        ))
+        executor = ActivityExecutor(store)
+
+        async def my_activity():
+            return "ok"
+
+        with pytest.raises(PermissionError, match="ACTIVITY_WORKFLOW_TYPE_BINDING_REQUIRED"):
+            await executor.run(
+                "wf6",
+                "act",
+                my_activity,
+                workflow_type="t",
+                authority_context={
+                    "principal_id": "principal-a",
+                    "tenant_id": "tenant-a",
+                    "capability_lease_id": "lease-a",
+                    "approved_workflow_type": "",
+                },
+                activity_action_hash="any",
+            )
+
+    @pytest.mark.asyncio
     async def test_workflow_context_binds_activity_action_hash(self):
         store = DurableStore()
         store.save_workflow(WorkflowRecord(

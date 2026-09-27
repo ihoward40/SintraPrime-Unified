@@ -865,8 +865,10 @@ class ActivityExecutor:
         required = ("principal_id", "tenant_id", "capability_lease_id")
         if not all(str(authority_context.get(key, "")).strip() for key in required):
             raise PermissionError("ACTIVITY_AUTHORITY_CONTEXT_REQUIRED")
-        approved_workflow_type = authority_context.get("approved_workflow_type")
-        if approved_workflow_type and workflow_type and approved_workflow_type != workflow_type:
+        approved_workflow_type = str(authority_context.get("approved_workflow_type", "")).strip()
+        if not approved_workflow_type:
+            raise PermissionError("ACTIVITY_WORKFLOW_TYPE_BINDING_REQUIRED")
+        if workflow_type and approved_workflow_type != workflow_type:
             raise PermissionError("ACTIVITY_WORKFLOW_TYPE_MISMATCH")
         if not activity_action_hash:
             raise PermissionError("ACTIVITY_ACTION_HASH_REQUIRED")

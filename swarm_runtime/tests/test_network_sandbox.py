@@ -182,7 +182,8 @@ def test_launch_governed_policy_receipt_level() -> None:
     assert receipt["result"]["network_enforcement_level"] == "policy_enforced"
 
 
-def test_launch_governed_os_unavailable_denied() -> None:
+def test_launch_governed_os_unavailable_denied(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("swarm_runtime.network_sandbox._probe_os_netns", lambda: False)
     saved = _set_env(ENFORCEMENT="os_enforced")
     try:
         ctrl = SwarmController(swarm_id="net2", repo_path=str(REPO), run_dir=str(WORKDIR / "run"))

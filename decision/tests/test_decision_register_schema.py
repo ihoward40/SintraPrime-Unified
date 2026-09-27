@@ -41,6 +41,9 @@ def test_decision_register_traceability_links_require_targets():
         "run",
         "evidence",
     }
+    rule = links["items"]["allOf"][0]
+    assert set(rule["if"]["properties"]["link_type"]["enum"]) == {"contract", "state", "receipt"}
+    assert rule["then"]["required"] == ["sha256"]
 
 
 def test_decision_register_storage_model_relations_and_traceability():
@@ -50,6 +53,9 @@ def test_decision_register_storage_model_relations_and_traceability():
     assert "decision_register_entries" in tables
     assert "decision_register_relations" in tables
     assert "decision_register_traceability_links" in tables
+    assert "receipt_hash TEXT NOT NULL UNIQUE" in tables["decision_register_entries"]
+    assert "prev_receipt_hash TEXT" in tables["decision_register_entries"]
+    assert "UNIQUE(decision_id, run_id)" not in tables["decision_register_entries"]
     assert "FOREIGN KEY(source_register_id)" in tables["decision_register_relations"]
     assert "FOREIGN KEY(target_register_id)" in tables["decision_register_relations"]
     assert "FOREIGN KEY(register_id)" in tables["decision_register_traceability_links"]

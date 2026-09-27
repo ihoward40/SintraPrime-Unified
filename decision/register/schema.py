@@ -89,6 +89,12 @@ DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
                             "target_ref": {"type": "string"},
                             "sha256": {"type": "string", "minLength": 64, "maxLength": 64},
                         },
+                        "allOf": [
+                            {
+                                "if": {"properties": {"link_type": {"enum": ["contract", "state", "receipt"]}}},
+                                "then": {"required": ["sha256"]},
+                            }
+                        ],
                     },
                 },
             },
@@ -113,8 +119,7 @@ CREATE TABLE IF NOT EXISTS decision_register_entries (
     policy_risk TEXT NOT NULL,
     receipt_hash TEXT NOT NULL UNIQUE,
     prev_receipt_hash TEXT,
-    payload_json TEXT NOT NULL,
-    UNIQUE(decision_id, run_id)
+    payload_json TEXT NOT NULL
 )
 """.strip(),
         "decision_register_relations": """

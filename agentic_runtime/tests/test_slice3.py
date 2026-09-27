@@ -47,10 +47,11 @@ def test_rollback_is_denied_without_approval():
 
 def test_rollback_verifies_restored_ref():
     state = {"ref": "head"}
+    changed_ranges = []
     executor = GovernedRollbackExecutor(
         authorize=lambda *_: True,
         current_ref=lambda: state["ref"],
-        changed_files=lambda *_: ["x.py"],
+        changed_files=lambda before, after: changed_ranges.append((before, after)) or ["x.py"],
         restore_ref=lambda ref: state.update(ref=ref) is None,
         record=lambda *_: None,
     )
@@ -59,6 +60,7 @@ def test_rollback_verifies_restored_ref():
     result = executor.rollback(cp, reason="regression")
     assert result.ok
     assert state["ref"] == cp.ref
+    assert changed_ranges == [("base", "head"), ("later", "head")]
 
 
 def test_model_requires_observed_context_and_benchmark_evidence():

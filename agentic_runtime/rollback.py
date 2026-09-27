@@ -50,7 +50,7 @@ class GovernedRollbackExecutor:
             self.record("rollback_denied", context)
             return RollbackResult(checkpoint.checkpoint_id, checkpoint.ref, (), False)
         before = self.current_ref()
-        impacted = tuple(sorted(set(self.changed_files(checkpoint.ref, before))))
+        impacted = tuple(sorted(set(self.changed_files(before, checkpoint.ref))))
         ok = bool(self.restore_ref(checkpoint.ref))
         after = self.current_ref()
         verified = ok and after == checkpoint.ref

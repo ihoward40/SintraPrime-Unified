@@ -86,7 +86,6 @@ class GovernedExecutionLoop:
             return results
 
         failure = verification
-        self.circuit_breaker.record(False)
         for attempt in range(1, self.max_heal_attempts + 1):
             self.circuit_breaker.assert_closed()
             repair_action = self.repair(failure, attempt)

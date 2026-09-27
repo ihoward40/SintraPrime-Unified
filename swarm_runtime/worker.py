@@ -98,13 +98,15 @@ class WorkerState:
 
     @classmethod
     def from_spec(cls, swarm_id: str, spec: WorkerSpec) -> WorkerState:
+        task = dict(spec.task)
+        task.setdefault("worker_timeout_seconds", spec.timeout_seconds)
         return cls(
             swarm_id=swarm_id,
             worker_id=spec.worker_id,
             role=spec.role,
             base_sha=spec.base_sha,
             worktree=spec.worktree,
-            task=spec.task,
+            task=task,
             expected_artifact=spec.expected_artifact_schema,
             artifact_path=spec.artifact_path,
             owned_files=spec.owned_files,

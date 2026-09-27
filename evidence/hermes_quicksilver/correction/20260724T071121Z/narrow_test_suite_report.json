@@ -1,0 +1,148 @@
+{
+  "run_id": "20260724T071121Z",
+  "hermes_repo": "<HERMES_SOURCE>",
+  "quicksilver_worktree": "<WORKTREE>",
+  "python_version": "3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]",
+  "test_results": [
+    {
+      "test_file": "tests/gateway/test_profile_routing.py",
+      "command": "C:\\Python314\\python.exe -m pytest tests/gateway/test_profile_routing.py -q",
+      "working_directory": "<HERMES_SOURCE>",
+      "environment_python": "3.14.0",
+      "start_time": "2026-07-24T07:11:21.180861+00:00",
+      "end_time": "2026-07-24T07:11:31.250921+00:00",
+      "exit_code": 0,
+      "summary_line": "32 passed in 4.80s"
+    },
+    {
+      "test_file": "tests/acp/test_approval_isolation.py",
+      "command": "C:\\Python314\\python.exe -m pytest tests/acp/test_approval_isolation.py -q",
+      "working_directory": "<HERMES_SOURCE>",
+      "environment_python": "3.14.0",
+      "start_time": "2026-07-24T07:11:31.254368+00:00",
+      "end_time": "2026-07-24T07:11:55.341531+00:00",
+      "exit_code": 0,
+      "summary_line": "8 passed in 20.01s"
+    },
+    {
+      "test_file": "tests/tools/test_approval_deny_rules.py",
+      "command": "C:\\Python314\\python.exe -m pytest tests/tools/test_approval_deny_rules.py -q",
+      "working_directory": "<HERMES_SOURCE>",
+      "environment_python": "3.14.0",
+      "start_time": "2026-07-24T07:11:55.350393+00:00",
+      "end_time": "2026-07-24T07:12:01.703150+00:00",
+      "exit_code": 0,
+      "summary_line": "19 passed in 2.75s"
+    },
+    {
+      "test_file": "tests/gateway/test_approval_prompt_redaction.py",
+      "command": "C:\\Python314\\python.exe -m pytest tests/gateway/test_approval_prompt_redaction.py -q",
+      "working_directory": "<HERMES_SOURCE>",
+      "environment_python": "3.14.0",
+      "start_time": "2026-07-24T07:12:01.706770+00:00",
+      "end_time": "2026-07-24T07:12:14.956603+00:00",
+      "exit_code": 2,
+      "summary_line": "1 error in 8.73s"
+    },
+    {
+      "test_file": "tests/gateway/test_tui_approval_redaction.py",
+      "command": "C:\\Python314\\python.exe -m pytest tests/gateway/test_tui_approval_redaction.py -q",
+      "working_directory": "<HERMES_SOURCE>",
+      "environment_python": "3.14.0",
+      "start_time": "2026-07-24T07:12:14.960875+00:00",
+      "end_time": "2026-07-24T07:12:30.681410+00:00",
+      "exit_code": 1,
+      "summary_line": "1 failed, 5 passed in 11.42s"
+    },
+    {
+      "test_file": "tests/gateway/test_async_session_store.py",
+      "command": "C:\\Python314\\python.exe -m pytest tests/gateway/test_async_session_store.py -q",
+      "working_directory": "<HERMES_SOURCE>",
+      "environment_python": "3.14.0",
+      "start_time": "2026-07-24T07:12:30.686503+00:00",
+      "end_time": "2026-07-24T07:12:43.881686+00:00",
+      "exit_code": 0,
+      "summary_line": "5 passed in 8.89s"
+    },
+    {
+      "test_file": "tests/gateway/test_session_store_runtime_stale_guard.py",
+      "command": "C:\\Python314\\python.exe -m pytest tests/gateway/test_session_store_runtime_stale_guard.py -q",
+      "working_directory": "<HERMES_SOURCE>",
+      "environment_python": "3.14.0",
+      "start_time": "2026-07-24T07:12:43.888757+00:00",
+      "end_time": "2026-07-24T07:12:52.053585+00:00",
+      "exit_code": 0,
+      "summary_line": "12 passed in 3.03s"
+    },
+    {
+      "test_file": "tests/integration/test_checkpoint_resumption.py",
+      "command": "C:\\Python314\\python.exe -m pytest tests/integration/test_checkpoint_resumption.py -q",
+      "working_directory": "<HERMES_SOURCE>",
+      "environment_python": "3.14.0",
+      "start_time": "2026-07-24T07:12:52.059250+00:00",
+      "end_time": "2026-07-24T07:12:58.458099+00:00",
+      "exit_code": 5,
+      "summary_line": ""
+    },
+    {
+      "test_file": "tests/run_agent/test_provider_fallback.py",
+      "command": "C:\\Python314\\python.exe -m pytest tests/run_agent/test_provider_fallback.py -q",
+      "working_directory": "<HERMES_SOURCE>",
+      "environment_python": "3.14.0",
+      "start_time": "2026-07-24T07:12:58.463343+00:00",
+      "end_time": "2026-07-24T07:13:31.648450+00:00",
+      "exit_code": 1,
+      "summary_line": "17 failed, 6 passed in 29.16s"
+    },
+    {
+      "test_file": "tests/agent/test_secret_scope.py",
+      "command": "C:\\Python314\\python.exe -m pytest tests/agent/test_secret_scope.py -q",
+      "working_directory": "<HERMES_SOURCE>",
+      "environment_python": "3.14.0",
+      "start_time": "2026-07-24T07:13:31.652463+00:00",
+      "end_time": "2026-07-24T07:13:36.157854+00:00",
+      "exit_code": 0,
+      "summary_line": "13 passed in 1.63s"
+    },
+    {
+      "test_file": "tests/hermes_cli/test_session_export.py",
+      "command": "C:\\Python314\\python.exe -m pytest tests/hermes_cli/test_session_export.py -q",
+      "working_directory": "<HERMES_SOURCE>",
+      "environment_python": "3.14.0",
+      "start_time": "2026-07-24T07:13:36.161337+00:00",
+      "end_time": "2026-07-24T07:13:42.919864+00:00",
+      "exit_code": 0,
+      "summary_line": "10 passed in 3.35s"
+    },
+    {
+      "test_file": "tests/hermes_cli/test_session_export_html.py",
+      "command": "C:\\Python314\\python.exe -m pytest tests/hermes_cli/test_session_export_html.py -q",
+      "working_directory": "<HERMES_SOURCE>",
+      "environment_python": "3.14.0",
+      "start_time": "2026-07-24T07:13:42.923638+00:00",
+      "end_time": "2026-07-24T07:13:47.091797+00:00",
+      "exit_code": 0,
+      "summary_line": "3 passed in 1.38s"
+    },
+    {
+      "test_file": "tests/hermes_cli/test_session_export_md.py",
+      "command": "C:\\Python314\\python.exe -m pytest tests/hermes_cli/test_session_export_md.py -q",
+      "working_directory": "<HERMES_SOURCE>",
+      "environment_python": "3.14.0",
+      "start_time": "2026-07-24T07:13:47.097641+00:00",
+      "end_time": "2026-07-24T07:13:51.140352+00:00",
+      "exit_code": 0,
+      "summary_line": "7 passed in 1.42s"
+    },
+    {
+      "test_file": "tests/hermes_cli/test_gateway_restart_loop.py",
+      "command": "C:\\Python314\\python.exe -m pytest tests/hermes_cli/test_gateway_restart_loop.py -q",
+      "working_directory": "<HERMES_SOURCE>",
+      "environment_python": "3.14.0",
+      "start_time": "2026-07-24T07:13:51.143536+00:00",
+      "end_time": "2026-07-24T07:14:05.765418+00:00",
+      "exit_code": 0,
+      "summary_line": "65 passed in 11.75s"
+    }
+  ]
+}

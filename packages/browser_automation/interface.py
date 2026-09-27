@@ -37,7 +37,10 @@ class FilingEngine:
     """Minimal autonomous browser filing engine with auditable artifacts."""
 
     def __init__(self, *, screenshot_root: str = "audit") -> None:
-        self._screenshot_root = screenshot_root.strip("/")
+        normalized_root = screenshot_root.strip("/")
+        if not normalized_root:
+            raise ValueError("screenshot_root must not be empty")
+        self._screenshot_root = normalized_root
 
     def capture_signature(self, signer_name: str, payload: dict[str, Any]) -> str:
         canonical_payload = json.dumps(payload, sort_keys=True, separators=(",", ":"))
@@ -45,11 +48,7 @@ class FilingEngine:
         return f"sig-{fingerprint}"
 
     def file(self, request: FilingRequest) -> FilingResult:
-        target = (
-            FilingTarget.UCC
-            if request.filing_type.lower().startswith("ucc")
-            else FilingTarget.COURT
-        )
+        target = self._resolve_target(request.filing_type)
         filing_id = f"filing-{uuid4().hex}"
         signature_id = self.capture_signature(request.signer_name, request.payload)
         screenshots = self._build_screenshot_trail(filing_id, target)
@@ -74,3 +73,12 @@ class FilingEngine:
             f"{self._screenshot_root}/{target.value}/{filing_id}/{index:02d}-{step}.png"
             for index, step in enumerate(steps, 1)
         ]
+
+    @staticmethod
+    def _resolve_target(filing_type: str) -> FilingTarget:
+        normalized_type = filing_type.lower()
+        if normalized_type.startswith("ucc"):
+            return FilingTarget.UCC
+        if normalized_type.startswith("court"):
+            return FilingTarget.COURT
+        raise ValueError(f"unsupported filing type: {filing_type}")

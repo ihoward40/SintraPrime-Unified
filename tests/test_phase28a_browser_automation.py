@@ -70,3 +70,13 @@ def test_file_submits_supported_variants(filing_type: str) -> None:
 def test_custom_audit_root_is_used() -> None:
     result = FilingEngine(screenshot_root="screens").file(_request("ucc-1"))
     assert all(path.startswith("screens/") for path in result.screenshots)
+
+
+def test_empty_screenshot_root_rejected() -> None:
+    with pytest.raises(ValueError, match="screenshot_root must not be empty"):
+        FilingEngine(screenshot_root="/")
+
+
+def test_unsupported_filing_type_rejected() -> None:
+    with pytest.raises(ValueError, match="unsupported filing type: other"):
+        FilingEngine().file(_request("other"))

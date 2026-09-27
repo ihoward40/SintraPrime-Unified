@@ -83,6 +83,7 @@ class AsyncJobQueue:
         current = as_of or datetime.now(UTC)
         running_hold_until = current + timedelta(days=36500)
         with sqlite3.connect(self._db_path) as conn:
+            conn.execute("BEGIN IMMEDIATE")
             row = conn.execute(
                 """
                 UPDATE async_jobs
@@ -106,7 +107,9 @@ class AsyncJobQueue:
                 ),
             ).fetchone()
             if row is None:
+                conn.commit()
                 return None
+            conn.commit()
         return self.get(row[0])
 
     def mark_completed(self, task_id: str, *, result: dict[str, Any]) -> AsyncJob:
@@ -128,8 +131,6 @@ class AsyncJobQueue:
         job = self.get(task_id)
         if job is None:
             raise KeyError(task_id)
-        if job.status is not JobStatus.RUNNING:
-            raise ValueError("job must be running before it can fail")
         now = datetime.now(UTC)
         attempts = job.attempts
         status = JobStatus.FAILED
@@ -140,14 +141,23 @@ class AsyncJobQueue:
             run_after = now + timedelta(seconds=delay)
 
         with sqlite3.connect(self._db_path) as conn:
-            conn.execute(
+            updated = conn.execute(
                 """
                 UPDATE async_jobs
                 SET status = ?, last_error = ?, run_after = ?, updated_at = ?
-                WHERE task_id = ?
+                WHERE task_id = ? AND status = ?
                 """,
-                (status.value, error, run_after.isoformat(), now.isoformat(), task_id),
-            )
+                (
+                    status.value,
+                    error,
+                    run_after.isoformat(),
+                    now.isoformat(),
+                    task_id,
+                    JobStatus.RUNNING.value,
+                ),
+            ).rowcount
+        if updated == 0:
+            raise ValueError("job must be running before it can fail")
         if status is JobStatus.FAILED:
             self._emit_webhook(task_id, "failed", {"error": error})
         return self.get(task_id)

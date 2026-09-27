@@ -166,7 +166,6 @@ __all__ = [
     "check_secret_inheritance",
     "is_swarm_eligible",
     "make_execution_id",
-    "network_sandbox",
     "redact_secrets",
     "terminate_process_tree",
 ]

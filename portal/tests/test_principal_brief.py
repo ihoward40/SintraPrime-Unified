@@ -161,6 +161,32 @@ def test_runtime_execution_state_helper_surfaces_unexpected_errors(monkeypatch: 
         build_runtime_execution_state()
 
 
+def test_runtime_execution_state_helper_falls_closed_on_resolution_oserror(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _BrokenSandbox:
+        def resolve(self) -> dict[str, object]:
+            raise OSError("probe unavailable")
+
+        def brief_fields(self, _resolved: dict[str, object]) -> dict[str, object]:
+            raise AssertionError("brief_fields should not run when resolve fails")
+
+    class _BrokenModule:
+        class NetworkSandbox:
+            @classmethod
+            def from_config(cls):
+                return _BrokenSandbox()
+
+    monkeypatch.setattr(
+        _SERVICE.importlib,
+        "import_module",
+        lambda name: object() if name == "swarm_runtime" else _BrokenModule(),
+    )
+    state = build_runtime_execution_state()
+    assert state.network_enforcement_level == "unavailable_fail_closed"
+    assert state.network_sandbox_available is False
+
+
 def test_runtime_execution_state_helper_falls_back_only_when_module_absent(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import importlib
 import importlib.util
+import subprocess
 import sys
 import types
 from dataclasses import dataclass, field
@@ -178,7 +179,10 @@ def build_runtime_execution_state():
         return build_execution_state()
     else:
         network_sandbox = importlib.import_module("swarm_runtime.network_sandbox")
-    sandbox = network_sandbox.NetworkSandbox.from_config()
-    return build_execution_state(
-        **sandbox.brief_fields(sandbox.resolve()),
-    )
+    try:
+        sandbox = network_sandbox.NetworkSandbox.from_config()
+        return build_execution_state(
+            **sandbox.brief_fields(sandbox.resolve()),
+        )
+    except (OSError, subprocess.SubprocessError):
+        return build_execution_state()

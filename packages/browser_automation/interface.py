@@ -7,6 +7,7 @@ from enum import StrEnum
 from hashlib import sha256
 from pathlib import PurePosixPath
 from typing import Any
+from uuid import UUID
 from uuid import uuid4
 
 
@@ -47,7 +48,7 @@ class FilingEngine:
 
     def capture_signature(self, signer_name: str, payload: dict[str, Any]) -> str:
         canonical_payload = json.dumps(
-            payload, sort_keys=True, separators=(",", ":"), default=str
+            self._canonicalize(payload), sort_keys=True, separators=(",", ":")
         )
         fingerprint = sha256(f"{signer_name}|{canonical_payload}".encode("utf-8")).hexdigest()[:16]
         return f"sig-{fingerprint}"
@@ -91,3 +92,17 @@ class FilingEngine:
         if normalized_type.startswith("court"):
             return FilingTarget.COURT
         raise ValueError(f"unsupported filing type: {normalized_type}")
+
+    @classmethod
+    def _canonicalize(cls, value: Any) -> Any:
+        if isinstance(value, dict):
+            return {str(key): cls._canonicalize(item) for key, item in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [cls._canonicalize(item) for item in value]
+        if isinstance(value, datetime):
+            return value.astimezone(UTC).isoformat()
+        if isinstance(value, UUID):
+            return str(value)
+        if isinstance(value, StrEnum):
+            return value.value
+        return value

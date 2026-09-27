@@ -103,7 +103,8 @@ class AsyncJobQueue:
                 WHERE task_id = (
                     SELECT task_id
                     FROM async_jobs
-                    WHERE status IN (:status_pending, :status_retrying) AND run_after <= :ready_at
+                    WHERE status IN (:status_pending, :status_retrying, :status_running)
+                      AND run_after <= :ready_at
                     ORDER BY created_at ASC
                     LIMIT 1
                 )
@@ -115,6 +116,7 @@ class AsyncJobQueue:
                     "updated_at": current.isoformat(),
                     "status_pending": JobStatus.PENDING.value,
                     "status_retrying": JobStatus.RETRYING.value,
+                    "status_running": JobStatus.RUNNING.value,
                     "ready_at": current.isoformat(),
                 },
             ).fetchone()

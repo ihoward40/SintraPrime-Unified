@@ -27,6 +27,19 @@ def test_validate_strips_filing_type_whitespace() -> None:
     assert result.is_valid is True
 
 
+def test_validate_allows_falsy_non_string_required_values() -> None:
+    result = ExecutionBridge().validate(
+        document="Hello",
+        filing_type="court",
+        metadata={
+            "case_number": 0,
+            "court_name": "District",
+            "filing_party": False,
+        },
+    )
+    assert result.is_valid is True
+
+
 def test_validate_hash_uses_normalized_document() -> None:
     bridge = ExecutionBridge()
     left = bridge.validate(document="  Hello  ", filing_type="ucc-1", metadata=_ucc_metadata())

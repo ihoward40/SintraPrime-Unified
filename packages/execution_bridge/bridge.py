@@ -44,7 +44,16 @@ class ExecutionBridge:
         normalized_document = document.strip()
         normalized_type = filing_type.strip().lower()
         required = self._required_fields.get(normalized_type, ())
-        missing = [key for key in required if not metadata.get(key)]
+        missing = []
+        for key in required:
+            if key not in metadata:
+                missing.append(key)
+                continue
+            value = metadata[key]
+            if value is None:
+                missing.append(key)
+            elif isinstance(value, str) and not value.strip():
+                missing.append(key)
         messages: list[str] = []
         if not normalized_document:
             messages.append("document is empty")

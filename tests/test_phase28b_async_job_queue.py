@@ -130,3 +130,15 @@ def test_mark_failed_requires_running_state(queue: AsyncJobQueue) -> None:
     job = queue.submit({"kind": "ucc"})
     with pytest.raises(ValueError, match="job must be running"):
         queue.mark_failed(job.task_id, error="nope")
+
+
+def test_webhook_failure_bubbles_after_completion_commit(tmp_path) -> None:
+    queue = AsyncJobQueue(
+        db_path=tmp_path / "jobs.sqlite",
+        webhook_sender=lambda *_args: (_ for _ in ()).throw(RuntimeError("webhook down")),
+    )
+    job = queue.submit({"kind": "ucc"}, callback_url="https://callback")
+    queue.claim_next_ready()
+    with pytest.raises(RuntimeError, match="webhook down"):
+        queue.mark_completed(job.task_id, result={"ok": True})
+    assert queue.get(job.task_id).status is JobStatus.COMPLETED

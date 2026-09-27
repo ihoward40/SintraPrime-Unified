@@ -1,6 +1,6 @@
-import { Suspense, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { PointerLockControls, Text } from '@react-three/drei';
+import { PointerLockControls } from '@react-three/drei';
 import * as THREE from 'three';
 import {
   GRAPHICS_PRESETS,
@@ -46,15 +46,6 @@ function DistrictBuilding({ district }: { district: TownWorldState['districts'][
         <boxGeometry args={[district.scale.x * .82, .28, district.scale.z * .82]} />
         <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1.4} />
       </mesh>
-      <Text
-        position={[0, district.scale.y * .08, district.scale.z / 2 + .06]}
-        fontSize={Math.max(.65, district.scale.x / 18)}
-        color={color}
-        anchorX="center"
-        anchorY="middle"
-      >
-        {district.label}
-      </Text>
     </group>
   );
 }
@@ -161,6 +152,44 @@ function TownHallInterior() {
   );
 }
 
+function FirstPersonMovement() {
+  const keys = useRef(new Set<string>());
+  const direction = useMemo(() => new THREE.Vector3(), []);
+  const forward = useMemo(() => new THREE.Vector3(), []);
+  const right = useMemo(() => new THREE.Vector3(), []);
+
+  useEffect(() => {
+    const down = (event: KeyboardEvent) => keys.current.add(event.code);
+    const up = (event: KeyboardEvent) => keys.current.delete(event.code);
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    return () => {
+      window.removeEventListener('keydown', down);
+      window.removeEventListener('keyup', up);
+    };
+  }, []);
+
+  useFrame(({ camera }, delta) => {
+    direction.set(0, 0, 0);
+    camera.getWorldDirection(forward);
+    forward.y = 0;
+    forward.normalize();
+    right.crossVectors(forward, camera.up).normalize();
+    if (keys.current.has('KeyW')) direction.add(forward);
+    if (keys.current.has('KeyS')) direction.sub(forward);
+    if (keys.current.has('KeyD')) direction.add(right);
+    if (keys.current.has('KeyA')) direction.sub(right);
+    if (direction.lengthSq() > 0) {
+      direction.normalize().multiplyScalar(Math.min(delta, .05) * 8);
+      camera.position.add(direction);
+      camera.position.y = 4.2;
+      camera.position.x = THREE.MathUtils.clamp(camera.position.x, -72, 72);
+      camera.position.z = THREE.MathUtils.clamp(camera.position.z, -72, 72);
+    }
+  });
+  return null;
+}
+
 function TownScene({ world, preset }: { world: TownWorldState; preset: GraphicsPreset }) {
   const quality = GRAPHICS_PRESETS[preset];
   const night = world.environment.timeOfDay < 6 || world.environment.timeOfDay > 18;
@@ -194,6 +223,7 @@ function TownScene({ world, preset }: { world: TownWorldState; preset: GraphicsP
       {world.activity.slice(0, quality.trafficLimit).map((flow, index) => (
         <DataFlow key={flow.id} flow={flow} index={index} />
       ))}
+      <FirstPersonMovement />
       <PointerLockControls selector="#mc3d-enter-world" />
     </>
   );

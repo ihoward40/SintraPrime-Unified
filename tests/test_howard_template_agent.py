@@ -26,17 +26,41 @@ def test_agent_passport_template_registered_matches_file_schema():
 def test_agent_passport_template_file_sections():
     payload = _load_agent_passport_template_file()
 
-    for key in ("case_name", "evidence_type", "title", "source"):
-        assert key in payload
-    assert {"role", "jurisdictions", "approval_level", "constraints"} <= set(payload["authority"])
-    assert {"success_rate", "average_cycle_time_hours", "sla_compliance_rate", "period"} <= set(
-        payload["performance"]
-    )
-    assert {"overall", "components", "last_updated"} <= set(payload["trust_score"])
-    assert {
+    assert set(payload) == {
+        "case_name",
+        "evidence_type",
+        "title",
+        "source",
+        "date_found",
+        "agent_id",
+        "agent_name",
+        "identity",
+        "portfolio",
+        "authority",
+        "competencies",
+        "integrations",
+        "performance",
+        "trust_score",
+        "notes",
+    }
+    assert set(payload["identity"]) == {"agent_type", "version", "owner", "status"}
+    assert set(payload["portfolio"]) == {"domains", "products", "active_programs"}
+    assert set(payload["authority"]) == {"role", "jurisdictions", "approval_level", "constraints"}
+    assert set(payload["performance"]) == {
+        "success_rate",
+        "average_cycle_time_hours",
+        "sla_compliance_rate",
+        "period",
+    }
+    assert set(payload["trust_score"]) == {"overall", "components", "last_updated"}
+    assert set(payload["trust_score"]["components"]) == {
         "identity_confidence",
         "authority_compliance",
         "competency_reliability",
         "integration_health",
         "performance_consistency",
-    } <= set(payload["trust_score"]["components"])
+    }
+    assert len(payload["competencies"]) == 1
+    assert set(payload["competencies"][0]) == {"name", "proficiency", "last_validated"}
+    assert len(payload["integrations"]) == 1
+    assert set(payload["integrations"][0]) == {"name", "type", "status"}

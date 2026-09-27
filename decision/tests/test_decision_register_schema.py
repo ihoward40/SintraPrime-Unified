@@ -1,4 +1,5 @@
 import copy
+import sqlite3
 
 import pytest
 from jsonschema import Draft202012Validator, FormatChecker, ValidationError
@@ -86,9 +87,16 @@ def test_decision_register_storage_model_relations_and_traceability():
     assert "prev_receipt_hash TEXT" in tables["decision_register_entries"]
     assert "UNIQUE(decision_id, run_id)" not in tables["decision_register_entries"]
     assert "UNIQUE(source_register_id, target_register_id, relation_type)" in tables["decision_register_relations"]
+    assert "CHECK(length(contract_semantic_sha256) = 64" in tables["decision_register_entries"]
+    assert "CHECK(length(state_sha256) = 64" in tables["decision_register_entries"]
+    assert "CHECK(length(receipt_hash) = 64" in tables["decision_register_entries"]
     assert "FOREIGN KEY(source_register_id)" in tables["decision_register_relations"]
     assert "FOREIGN KEY(target_register_id)" in tables["decision_register_relations"]
     assert "FOREIGN KEY(register_id)" in tables["decision_register_traceability_links"]
+    assert "CHECK(link_type IN ('contract', 'state', 'receipt', 'run', 'evidence'))" in tables[
+        "decision_register_traceability_links"
+    ]
+    assert "CHECK(sha256 IS NULL OR (length(sha256) = 64" in tables["decision_register_traceability_links"]
     assert "CHECK(link_type NOT IN ('contract', 'state', 'receipt') OR sha256 IS NOT NULL)" in tables[
         "decision_register_traceability_links"
     ]
@@ -139,3 +147,93 @@ def test_schema_rejects_non_hex_sha256_values():
     payload["traceability"]["receipt_hash"] = "g" * 64
     with pytest.raises(ValidationError):
         _VALIDATOR.validate(payload)
+
+
+def test_storage_constraints_reject_invalid_hashes_and_link_rules():
+    conn = sqlite3.connect(":memory:")
+    conn.execute("PRAGMA foreign_keys = ON")
+    for ddl in DECISION_REGISTER_STORAGE_MODEL["tables"].values():
+        conn.execute(ddl)
+
+    valid_entry = (
+        "REG-1",
+        DECISION_REGISTER_SCHEMA_VERSION,
+        "DEC-1",
+        "RUN-1",
+        "2026-01-01T00:00:00Z",
+        "a" * 64,
+        "b" * 64,
+        "DECISION",
+        "SHADOW_ONLY",
+        "ELEVATED",
+        "c" * 64,
+        None,
+        "{}",
+    )
+    conn.execute(
+        """
+        INSERT INTO decision_register_entries (
+            register_id, schema_version, decision_id, run_id, recorded_at,
+            contract_semantic_sha256, state_sha256, result_kind, policy_decision,
+            policy_risk, receipt_hash, prev_receipt_hash, payload_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        valid_entry,
+    )
+
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            """
+            INSERT INTO decision_register_entries (
+                register_id, schema_version, decision_id, run_id, recorded_at,
+                contract_semantic_sha256, state_sha256, result_kind, policy_decision,
+                policy_risk, receipt_hash, prev_receipt_hash, payload_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "REG-2",
+                DECISION_REGISTER_SCHEMA_VERSION,
+                "DEC-1",
+                "RUN-1",
+                "2026-01-01T00:00:01Z",
+                "a" * 64,
+                "Z" * 64,
+                "DECISION",
+                "SHADOW_ONLY",
+                "ELEVATED",
+                "d" * 64,
+                None,
+                "{}",
+            ),
+        )
+
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            """
+            INSERT INTO decision_register_traceability_links (
+                register_id, link_type, target_id, target_ref, sha256, metadata_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            ("REG-1", "contract", "C-1", None, None, "{}", "2026-01-01T00:00:02Z"),
+        )
+
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            """
+            INSERT INTO decision_register_traceability_links (
+                register_id, link_type, target_id, target_ref, sha256, metadata_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            ("REG-1", "invalid", "X-1", None, None, "{}", "2026-01-01T00:00:03Z"),
+        )
+
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            """
+            INSERT INTO decision_register_traceability_links (
+                register_id, link_type, target_id, target_ref, sha256, metadata_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            ("REG-1", "run", "RUN-2", None, "z" * 64, "{}", "2026-01-01T00:00:04Z"),
+        )
+    conn.close()

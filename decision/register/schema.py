@@ -128,7 +128,14 @@ CREATE TABLE IF NOT EXISTS decision_register_entries (
     policy_risk TEXT NOT NULL,
     receipt_hash TEXT NOT NULL UNIQUE,
     prev_receipt_hash TEXT,
-    payload_json TEXT NOT NULL
+    payload_json TEXT NOT NULL,
+    CHECK(length(contract_semantic_sha256) = 64 AND contract_semantic_sha256 NOT GLOB '*[^0-9A-Fa-f]*'),
+    CHECK(length(state_sha256) = 64 AND state_sha256 NOT GLOB '*[^0-9A-Fa-f]*'),
+    CHECK(length(receipt_hash) = 64 AND receipt_hash NOT GLOB '*[^0-9A-Fa-f]*'),
+    CHECK(
+        prev_receipt_hash IS NULL
+        OR (length(prev_receipt_hash) = 64 AND prev_receipt_hash NOT GLOB '*[^0-9A-Fa-f]*')
+    )
 )
 """.strip(),
         "decision_register_relations": """
@@ -154,6 +161,8 @@ CREATE TABLE IF NOT EXISTS decision_register_traceability_links (
     metadata_json TEXT,
     created_at TEXT NOT NULL,
     FOREIGN KEY(register_id) REFERENCES decision_register_entries(register_id),
+    CHECK(link_type IN ('contract', 'state', 'receipt', 'run', 'evidence')),
+    CHECK(sha256 IS NULL OR (length(sha256) = 64 AND sha256 NOT GLOB '*[^0-9A-Fa-f]*')),
     CHECK(link_type NOT IN ('contract', 'state', 'receipt') OR sha256 IS NOT NULL)
 )
 """.strip(),

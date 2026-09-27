@@ -67,7 +67,7 @@ Provides the governed multi-agent runtime introduced for Agent Commons Increment
 - `POST /orchestration/supervisor/runs/{id}/approve`
 - `POST /orchestration/supervisor/runs/{id}/reject`
 - `GET /orchestration/supervisor/runs/{id}/trace`
-- `GET /orchestration/agents/{id}/health`
+- `GET /orchestration/commons/agents/{id}/health`
 
 The default runtime registers deterministic mock builder/reviewer agents plus an OpenAI Responses-backed supervisor identity that degrades safely to mock planning when no API key is configured.
 

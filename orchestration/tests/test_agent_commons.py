@@ -326,7 +326,7 @@ def test_commons_api_records_manual_thread_messages_and_health(tmp_path: Path):
     )
     assert mismatched.status_code == 400
 
-    health = client.get("/orchestration/agents/builder-agent/health", headers=headers)
+    health = client.get("/orchestration/commons/agents/builder-agent/health", headers=headers)
     assert health.status_code == 200
     assert health.json()["status"] in {"healthy", "degraded"}
 

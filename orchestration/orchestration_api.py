@@ -642,7 +642,7 @@ async def get_supervisor_run_trace(
     return trace
 
 
-@router.get("/agents/{agent_id}/health")
+@router.get("/commons/agents/{agent_id}/health")
 async def get_agent_health(
     agent_id: str,
     principal: Principal = Depends(get_commons_principal),

@@ -392,7 +392,7 @@ class AgentCommonsStore:
 
     @staticmethod
     def _dumps(value: Any) -> str:
-        return json.dumps(value or {}, sort_keys=True)
+        return json.dumps({} if value is None else value, sort_keys=True)
 
     def _fetchone(self, conn: sqlite3.Connection, query: str, params: Sequence[Any]) -> dict[str, Any] | None:
         row = conn.execute(query, params).fetchone()
@@ -803,14 +803,14 @@ class AgentCommonsStore:
                 conn.commit()
                 self._close_if_needed(conn)
                 return self._row_to_run(existing)
-        conn.execute(
-            "INSERT OR IGNORE INTO agent_runs(run_id, tenant_id, workspace_id, channel_id, thread_id, task_id, agent_id, role, status, parent_run_id, correlation_id, idempotency_key, context_json, output_json, tool_calls_json, rationale, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (
-                run["run_id"], tenant_id, workspace_id, channel_id, thread_id, task_id, agent_id, role,
-                run["status"], parent_run_id, correlation_id, idempotency_key, self._dumps(context), self._dumps({}), self._dumps([]), None, now, now,
-            ),
-        )
         if idempotency_key:
+            conn.execute(
+                "INSERT OR IGNORE INTO agent_runs(run_id, tenant_id, workspace_id, channel_id, thread_id, task_id, agent_id, role, status, parent_run_id, correlation_id, idempotency_key, context_json, output_json, tool_calls_json, rationale, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    run["run_id"], tenant_id, workspace_id, channel_id, thread_id, task_id, agent_id, role,
+                    run["status"], parent_run_id, correlation_id, idempotency_key, self._dumps(context), self._dumps({}), self._dumps([]), None, now, now,
+                ),
+            )
             existing = self._fetchone(
                 conn,
                 "SELECT * FROM agent_runs WHERE tenant_id = ? AND idempotency_key = ?",
@@ -926,6 +926,19 @@ class AgentCommonsStore:
                 self._close_if_needed(conn)
                 return self._row_to_approval(existing)
         now = utc_now()
+        current = self._fetchone(
+            conn,
+            "SELECT * FROM approvals WHERE approval_id = ? AND tenant_id = ?",
+            (approval_id, tenant_id),
+        )
+        if not current:
+            conn.commit()
+            self._close_if_needed(conn)
+            raise CommonsError("Approval not found")
+        if current["status"] != "PENDING":
+            conn.commit()
+            self._close_if_needed(conn)
+            raise IdempotencyConflictError("Approval already decided")
         conn.execute(
             "UPDATE approvals SET status = ?, decision = ?, approver = ?, reason = ?, idempotency_key = ?, decided_at = ? WHERE approval_id = ? AND tenant_id = ?",
             ("APPROVED" if decision == "approve" else "REJECTED", decision, approver, reason, idempotency_key, now, approval_id, tenant_id),
@@ -1458,7 +1471,7 @@ class SupervisorAgent:
                     channel_id=channel_id,
                     thread_id=thread["thread_id"],
                     task_id=thread["task_id"],
-                    run_id=builder_result["run"]["run_id"],
+                    run_id=reviewer_result["run"]["run_id"],
                     requested_by=self.supervisor_adapter.agent_id,
                     reason="Material disagreement escalated to owner.",
                 )
@@ -1470,7 +1483,7 @@ class SupervisorAgent:
                     task_id=thread["task_id"],
                     status="BLOCKED",
                     actor=self.supervisor_adapter.agent_id,
-                    run_id=builder_result["run"]["run_id"],
+                    run_id=reviewer_result["run"]["run_id"],
                     details={"objective": objective, "owner_decision_required": True, "notes": "Reviewer raised material disagreement.", "approval_id": approval["approval_id"]},
                 )
             else:
@@ -1482,7 +1495,7 @@ class SupervisorAgent:
                     task_id=thread["task_id"],
                     status="CLOSED",
                     actor=self.supervisor_adapter.agent_id,
-                    run_id=builder_result["run"]["run_id"],
+                    run_id=reviewer_result["run"]["run_id"],
                     details={"objective": objective, "notes": "Builder and reviewer completed without material disagreement."},
                 )
             return self.store.get_thread(thread["thread_id"], principal.tenant_id) or thread

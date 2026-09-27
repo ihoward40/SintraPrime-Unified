@@ -139,7 +139,7 @@ CREATE TABLE IF NOT EXISTS decision_register_entries (
     receipt_hash TEXT NOT NULL UNIQUE,
     prev_receipt_hash TEXT,
     payload_json TEXT NOT NULL,
-    CHECK(schema_version = 'sp-decision-register-v1'),
+    CHECK(schema_version = '{DECISION_REGISTER_SCHEMA_VERSION}'),
     CHECK(recorded_at GLOB '????-??-??T??:??:??Z'),
     CHECK(length(contract_semantic_sha256) = 64 AND contract_semantic_sha256 NOT GLOB '*[^0-9A-Fa-f]*'),
     CHECK(length(state_sha256) = 64 AND state_sha256 NOT GLOB '*[^0-9A-Fa-f]*'),

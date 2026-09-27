@@ -49,7 +49,7 @@ class ExecutionBridge:
         if not normalized_document:
             messages.append("document is empty")
         if normalized_type not in self._required_fields:
-            messages.append(f"unsupported filing type: {filing_type}")
+            messages.append(f"unsupported filing type: {normalized_type}")
         document_hash = sha256(normalized_document.encode("utf-8")).hexdigest()
         return ValidationResult(
             is_valid=not missing and not messages,
@@ -78,7 +78,7 @@ class ExecutionBridge:
         }
         jurisdiction = str(metadata.get("jurisdiction") or "").strip() or "unknown"
         return FilingPayload(
-            filing_type=filing_type.lower(),
+            filing_type=filing_type.strip().lower(),
             document_hash=validation.document_hash,
             jurisdiction=jurisdiction,
             transformed_fields=transformed,
@@ -87,7 +87,7 @@ class ExecutionBridge:
     def estimate_cost(self, *, filing_type: str, rush: bool = False) -> int:
         normalized_type = filing_type.strip().lower()
         if normalized_type not in self._base_fees:
-            raise ValueError(f"unsupported filing type: {filing_type}")
+            raise ValueError(f"unsupported filing type: {normalized_type}")
         base = self._base_fees[normalized_type]
         return int(base * 1.5) if rush else base
 

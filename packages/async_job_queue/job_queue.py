@@ -216,22 +216,31 @@ class AsyncJobQueue:
 
     def _ensure_schema(self) -> None:
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
+        migration_path = (
+            Path(__file__).resolve().parents[2]
+            / "database"
+            / "migrations"
+            / "003_async_fulfillment.sql"
+        )
         with sqlite3.connect(self._db_path) as conn:
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS async_jobs(
-                    task_id TEXT PRIMARY KEY,
-                    status TEXT NOT NULL,
-                    payload TEXT NOT NULL,
-                    attempts INTEGER NOT NULL DEFAULT 0,
-                    last_error TEXT,
-                    callback_url TEXT,
-                    run_after TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            if migration_path.exists():
+                conn.executescript(migration_path.read_text(encoding="utf-8"))
+            else:
+                conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS async_jobs(
+                        task_id TEXT PRIMARY KEY,
+                        status TEXT NOT NULL,
+                        payload TEXT NOT NULL,
+                        attempts INTEGER NOT NULL DEFAULT 0,
+                        last_error TEXT,
+                        callback_url TEXT,
+                        run_after TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """
                 )
-                """
-            )
             conn.execute(
                 """
                 CREATE INDEX IF NOT EXISTS idx_async_jobs_ready

@@ -469,6 +469,86 @@ class StaticAnalysisWorker(BaseWorker):
         return 0
 
 
+class _HealthTrackedInferenceProvider:
+    """Wraps a governed provider with swarm health persistence."""
+
+    def __init__(self, provider: Any, router: Any, store: Any | None) -> None:
+        self._provider = provider
+        self._router = router
+        self._store = store
+        caps = provider.capabilities()
+        if self._router.get_health(caps.provider) is None:
+            self._router.register_provider(caps.provider, model=caps.model)
+
+    def capabilities(self) -> Any:
+        return self._provider.capabilities()
+
+    def estimate_cost(self, request: Any) -> Any:
+        return self._provider.estimate_cost(request)
+
+    def current_limits(self) -> Any:
+        return self._provider.current_limits()
+
+    def health(self) -> Any:
+        from governed_inference.contracts import ProviderHealth as GovernedProviderHealth
+
+        base = self._provider.health()
+        tracked = self._router.get_health(self.capabilities().provider)
+        if tracked is None:
+            return base
+        available = tracked.is_available()
+        reason = base.reason
+        if reason is None and not available:
+            reason = f"swarm_{tracked.state.value}"
+        return GovernedProviderHealth(
+            reachable=base.reachable,
+            healthy=base.healthy and available,
+            circuit_open=(not available) or base.circuit_open,
+            reason=reason,
+            checked_at=base.checked_at,
+        )
+
+    def invoke(self, request: Any) -> Any:
+        return self._invoke_with_health("invoke", request)
+
+    def invoke_stream(self, request: Any) -> Any:
+        return self._invoke_with_health("invoke_stream", request)
+
+    def _invoke_with_health(self, method: str, request: Any) -> Any:
+        from governed_inference.contracts import InferenceError, ProviderErrorKind
+
+        provider_name = self.capabilities().provider
+        started = time.perf_counter()
+        try:
+            result = getattr(self._provider, method)(request)
+        except InferenceError as exc:
+            if exc.kind in {
+                ProviderErrorKind.TIMEOUT_FIRST_BYTE,
+                ProviderErrorKind.TIMEOUT_PROGRESS,
+            }:
+                self._router.mark_timeout(provider_name)
+            else:
+                self._router.mark_failure(provider_name)
+            self._persist()
+            raise
+        except Exception:
+            self._router.mark_failure(provider_name)
+            self._persist()
+            raise
+        latency_seconds = max(
+            float(getattr(result, "latency_ms", 0)) / 1000.0,
+            time.perf_counter() - started,
+            0.001,
+        )
+        self._router.mark_success(provider_name, response_time=latency_seconds)
+        self._persist()
+        return result
+
+    def _persist(self) -> None:
+        if self._store is not None:
+            self._store.save(self._router._providers)
+
+
 class ModelReasoningWorker(BaseWorker):
     """LLM-based reasoning worker with provider failover.
 
@@ -489,37 +569,27 @@ class ModelReasoningWorker(BaseWorker):
         from governed_inference.contracts import (
             InferencePolicy,
             PerRequestPolicy,
-            ProviderErrorKind,
-            QualityFloor,
-            RouteTier,
         )
-        from governed_inference.providers import MockProvider
         from governed_inference.router import GovernedInferenceRouter
+        from swarm_runtime.health_persistence import ProviderHealthStore
+        from swarm_runtime.provider_router import ProviderRouter
 
         from .inference_adapter import (
             SwarmInferenceAdapter,
             WorkerInferenceRequest,
         )
 
-        # Provider objects cannot be serialized through the worker spec JSON.
-        # subprocess receives a declarative fixture and constructs only the
-        # approved deterministic providers here.
-        provider_fixtures = self.state.task.get("provider_fixtures") or [
-            {"name": "deterministic-local", "fail_times": 0}
-        ]
-        providers = [
-            MockProvider(
-                name=str(fixture.get("name", "deterministic-local")),
-                model=str(fixture.get("model", "deterministic")),
-                route_tier=RouteTier.LOCAL_PRIVATE,
-                capabilities=("summarization", "classification", "extraction"),
-                fail_times=int(fixture.get("fail_times", 0)),
-                error_kind=ProviderErrorKind(fixture.get("error_kind", "transient")),
-                estimated_cost_usd=0,
-                quality=QualityFloor(str(fixture.get("quality", "standard"))),
-            )
-            for fixture in provider_fixtures
-        ]
+        health_router = ProviderRouter()
+        health_store = ProviderHealthStore(
+            self.state.task.get("provider_health_store_dir") or self.store.swarm_dir()
+        )
+        provider_timeout_seconds = self._provider_timeout_seconds()
+        providers = self._build_governed_providers(
+            provider_timeout_seconds=provider_timeout_seconds,
+            health_router=health_router,
+            health_store=health_store,
+        )
+        health_store.apply_to_router(health_router)
         priority_source = self.state.task.get("governed_provider_priority") or {}
         policy = InferencePolicy(
             provider_priority={str(key): int(value) for key, value in priority_source.items()},
@@ -528,7 +598,7 @@ class ModelReasoningWorker(BaseWorker):
                 max_output_tokens=int(self.state.task.get("max_output_tokens", 2000)),
                 max_attempts=int(self.state.task.get("max_attempts", 3)),
                 max_attempts_per_provider=int(self.state.task.get("max_attempts_per_provider", 1)),
-                timeout_seconds=int(self.state.task.get("timeout_seconds", 60)),
+                timeout_seconds=provider_timeout_seconds,
             ),
         )
         router = GovernedInferenceRouter(providers, policy=policy)
@@ -562,9 +632,164 @@ class ModelReasoningWorker(BaseWorker):
             "final_provider": result.provider,
             "final_model": result.model,
             "attempt_log": adapter.get_attempt_log(),
+            "worker_timeout_seconds": self._worker_timeout_seconds(),
+            "configured_provider_timeout_seconds": provider_timeout_seconds,
+            "provider_health": health_router.all_health(),
+            "provider_health_store_path": str(Path(health_store.store_dir) / "provider_health.json"),
         }
         self._heartbeat("completed", 1, 0)
         return 0
+
+    def _worker_timeout_seconds(self) -> int:
+        raw = self.state.task.get("worker_timeout_seconds", 120)
+        return max(2, int(raw))
+
+    def _provider_timeout_seconds(self) -> int:
+        worker_timeout = self._worker_timeout_seconds()
+        requested = int(self.state.task.get("timeout_seconds", 60))
+        return max(1, min(requested, worker_timeout - 1))
+
+    def _build_governed_providers(
+        self,
+        *,
+        provider_timeout_seconds: int,
+        health_router: Any,
+        health_store: Any,
+    ) -> list[Any]:
+        provider_configs = self.state.task.get("governed_providers")
+        if provider_configs:
+            configs = list(provider_configs)
+        else:
+            provider_fixtures = self.state.task.get("provider_fixtures")
+            if provider_fixtures:
+                configs = [
+                    {
+                        "kind": "mock",
+                        "name": fixture.get("name", "deterministic-local"),
+                        "model": fixture.get("model", "deterministic"),
+                        "quality": fixture.get("quality", "standard"),
+                        "fail_times": fixture.get("fail_times", 0),
+                        "error_kind": fixture.get("error_kind", "transient"),
+                    }
+                    for fixture in provider_fixtures
+                ]
+            else:
+                configs = self._default_governed_provider_configs()
+        return [
+            _HealthTrackedInferenceProvider(
+                self._build_governed_provider(config, provider_timeout_seconds),
+                health_router,
+                health_store,
+            )
+            for config in configs
+        ]
+
+    def _default_governed_provider_configs(self) -> list[dict[str, Any]]:
+        configs: list[dict[str, Any]] = [
+            {
+                "kind": "ollama",
+                "base_url": self.state.task.get("ollama_base_url")
+                or os.getenv("OLLAMA_BASE_URL")
+                or "http://localhost:11434",
+                "model": self.state.task.get("ollama_model", "llama3"),
+            }
+        ]
+        if os.getenv("DEEPSEEK_API_KEY"):
+            configs.append(
+                {
+                    "kind": "deepseek",
+                    "api_key": os.getenv("DEEPSEEK_API_KEY"),
+                    "model": self.state.task.get("deepseek_model", "deepseek-chat"),
+                }
+            )
+        if os.getenv("OPENAI_API_KEY"):
+            configs.append(
+                {
+                    "kind": "openai",
+                    "api_key": os.getenv("OPENAI_API_KEY"),
+                    "model": self.state.task.get("openai_model", "gpt-4o-mini"),
+                }
+            )
+        if os.getenv("ANTHROPIC_API_KEY"):
+            configs.append(
+                {
+                    "kind": "anthropic",
+                    "api_key": os.getenv("ANTHROPIC_API_KEY"),
+                    "model": self.state.task.get(
+                        "anthropic_model",
+                        "claude-3-5-sonnet-20241022",
+                    ),
+                }
+            )
+        return configs
+
+    def _build_governed_provider(
+        self,
+        config: dict[str, Any],
+        provider_timeout_seconds: int,
+    ) -> Any:
+        from governed_inference.adapters import (
+            AnthropicProvider,
+            DeepSeekProvider,
+            OllamaProvider,
+            OpenAIProvider,
+        )
+        from governed_inference.contracts import ProviderErrorKind, QualityFloor, RouteTier
+        from governed_inference.providers import MockProvider
+
+        kind = str(config.get("kind", "mock")).strip().lower()
+        if kind == "mock":
+            capabilities = tuple(
+                config.get(
+                    "capabilities",
+                    ("summarization", "classification", "extraction", "drafting", "coding", "reasoning"),
+                )
+            )
+            return MockProvider(
+                name=str(config.get("name", "deterministic-local")),
+                model=str(config.get("model", "deterministic")),
+                route_tier=RouteTier(str(config.get("route_tier", RouteTier.LOCAL_PRIVATE.value))),
+                capabilities=capabilities,
+                fail_times=int(config.get("fail_times", 0)),
+                error_kind=ProviderErrorKind(str(config.get("error_kind", ProviderErrorKind.TRANSIENT.value))),
+                estimated_cost_usd=config.get("estimated_cost_usd", 0),
+                quality=QualityFloor(str(config.get("quality", QualityFloor.STANDARD.value))),
+                cloud=bool(config.get("cloud", False)),
+                paid=bool(config.get("paid", False)),
+            )
+        if kind == "ollama":
+            return OllamaProvider(
+                base_url=str(config.get("base_url", "http://localhost:11434")),
+                model=str(config.get("model", "llama3")),
+                timeout_seconds=provider_timeout_seconds,
+                quality=QualityFloor(str(config.get("quality", QualityFloor.STANDARD.value))),
+            )
+        if kind == "deepseek":
+            return DeepSeekProvider(
+                api_key=config.get("api_key"),
+                model=str(config.get("model", "deepseek-chat")),
+                timeout_seconds=provider_timeout_seconds,
+                quality=QualityFloor(str(config.get("quality", QualityFloor.STANDARD.value))),
+            )
+        if kind == "openai":
+            return OpenAIProvider(
+                api_key=config.get("api_key"),
+                model=str(config.get("model", "gpt-4o-mini")),
+                timeout_seconds=provider_timeout_seconds,
+                quality=QualityFloor(str(config.get("quality", QualityFloor.STANDARD.value))),
+                estimated_cost_usd=config.get("estimated_cost_usd"),
+                pricing_known=bool(config.get("pricing_known", False)),
+            )
+        if kind == "anthropic":
+            return AnthropicProvider(
+                api_key=config.get("api_key"),
+                model=str(config.get("model", "claude-3-5-sonnet-20241022")),
+                timeout_seconds=provider_timeout_seconds,
+                quality=QualityFloor(str(config.get("quality", QualityFloor.HIGH.value))),
+                estimated_cost_usd=config.get("estimated_cost_usd"),
+                pricing_known=bool(config.get("pricing_known", False)),
+            )
+        raise ValueError(f"unsupported governed provider kind: {kind}")
 
 
 class BreakerWorker(BaseWorker):

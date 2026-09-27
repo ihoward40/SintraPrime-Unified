@@ -72,7 +72,7 @@ def test_autoheal_records_unavailable_and_denied_terminal_states():
         max_heal_attempts=1,
     )
     denied = GovernedExecutionLoop(
-        authorize=lambda _action, context: context["mode"] == ExecutionMode.BUILD,
+        authorize=lambda _action, context: "repair_mode" not in context,
         execute=lambda action: StepResult(action, True),
         verify=lambda: StepResult("verify", False, "test"),
         repair=lambda *_args: "fix tests",
@@ -85,6 +85,22 @@ def test_autoheal_records_unavailable_and_denied_terminal_states():
 
     assert unavailable_results[-1].output == "REPAIR_UNAVAILABLE"
     assert denied_results[-1].output == "REPAIR_DENIED_BY_POLICY"
+
+
+def test_autoheal_records_circuit_open_terminal_state():
+    loop = GovernedExecutionLoop(
+        authorize=lambda *_args: True,
+        execute=lambda action: StepResult(action, True),
+        verify=lambda: StepResult("verify", False, "test"),
+        repair=lambda *_args: "fix tests",
+        record=lambda *_args: None,
+        max_heal_attempts=2,
+        circuit_breaker=CircuitBreaker(1),
+    )
+
+    results = loop.run(["build feature"], ExecutionMode.BUILD)
+
+    assert results[-1].output == "REPAIR_CIRCUIT_OPEN"
 
 
 def test_media_external_provider_fails_closed():

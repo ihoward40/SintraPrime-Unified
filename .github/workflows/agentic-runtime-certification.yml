@@ -36,7 +36,19 @@ jobs:
         run: |
           python -m pip install -U pip
           if [ -f requirements.txt ]; then python -m pip install -r requirements.txt; fi
-          python -m pip install ".[test]"
+          if python - <<'PY'
+import pathlib
+import tomllib
+
+pyproject = pathlib.Path("pyproject.toml")
+if not pyproject.exists():
+    raise SystemExit(1)
+data = tomllib.loads(pyproject.read_text())
+raise SystemExit(0 if "test" in data.get("project", {}).get("optional-dependencies", {}) else 1)
+PY
+          then
+            python -m pip install ".[test]"
+          fi
           python -m pip install pytest
       - name: Run canonical certification harness
         run: python scripts/certify.py --quiet

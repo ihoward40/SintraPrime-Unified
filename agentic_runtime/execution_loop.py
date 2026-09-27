@@ -87,7 +87,18 @@ class GovernedExecutionLoop:
 
         failure = verification
         for attempt in range(1, self.max_heal_attempts + 1):
-            self.circuit_breaker.assert_closed()
+            try:
+                self.circuit_breaker.assert_closed()
+            except RuntimeError:
+                results.append(
+                    StepResult(
+                        action="autoheal",
+                        ok=False,
+                        output="REPAIR_CIRCUIT_OPEN",
+                        attempt=attempt,
+                    )
+                )
+                break
             repair_action = self.repair(failure, attempt)
             if not repair_action:
                 results.append(
@@ -99,7 +110,12 @@ class GovernedExecutionLoop:
                     )
                 )
                 break
-            context = {"mode": ExecutionMode.AUTOHEAL.value, "action": repair_action, "attempt": attempt}
+            context = {
+                "mode": mode.value,
+                "repair_mode": ExecutionMode.AUTOHEAL.value,
+                "action": repair_action,
+                "attempt": attempt,
+            }
             if not self.authorize(repair_action, context):
                 self.record("repair_denied", context)
                 results.append(

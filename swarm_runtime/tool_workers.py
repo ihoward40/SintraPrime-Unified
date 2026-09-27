@@ -529,8 +529,11 @@ class _HealthTrackedInferenceProvider:
         started = time.perf_counter()
         try:
             result = getattr(self._provider, method)(request)
-            if method == "invoke_stream" and hasattr(result, "__iter__"):
-                return self._wrap_stream_with_health(provider_name, result, started)
+            if method == "invoke_stream":
+                if hasattr(result, "__iter__"):
+                    return self._wrap_stream_with_health(provider_name, result, started)
+                if hasattr(result, "__aiter__"):
+                    return self._wrap_async_stream_with_health(provider_name, result, started)
         except InferenceError as exc:
             if exc.kind in {
                 ProviderErrorKind.TIMEOUT_FIRST_BYTE,
@@ -564,6 +567,43 @@ class _HealthTrackedInferenceProvider:
         def _iterator() -> Any:
             try:
                 yield from stream_result
+            except InferenceError as exc:
+                if exc.kind in {
+                    ProviderErrorKind.TIMEOUT_FIRST_BYTE,
+                    ProviderErrorKind.TIMEOUT_PROGRESS,
+                }:
+                    self._router.mark_timeout(provider_name)
+                else:
+                    self._router.mark_failure(provider_name)
+                self._persist()
+                raise
+            except asyncio.CancelledError:
+                self._persist()
+                raise
+            except Exception:
+                self._router.mark_failure(provider_name)
+                self._persist()
+                raise
+            self._router.mark_success(
+                provider_name,
+                response_time=max(time.perf_counter() - started, 0.001),
+            )
+            self._persist()
+
+        return _iterator()
+
+    def _wrap_async_stream_with_health(
+        self,
+        provider_name: str,
+        stream_result: Any,
+        started: float,
+    ) -> Any:
+        from governed_inference.contracts import InferenceError, ProviderErrorKind
+
+        async def _iterator() -> Any:
+            try:
+                async for item in stream_result:
+                    yield item
             except InferenceError as exc:
                 if exc.kind in {
                     ProviderErrorKind.TIMEOUT_FIRST_BYTE,

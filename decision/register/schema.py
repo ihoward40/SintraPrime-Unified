@@ -198,10 +198,14 @@ CREATE TABLE IF NOT EXISTS decision_register_traceability_links (
     ),
     CHECK(link_type IN ({_SQL_ALLOWED_TRACE_LINK_TYPES})),
     CHECK(
-        (link_type IN ({_SQL_HASHED_TRACE_LINK_TYPES}) AND sha256 IS NOT NULL)
+        (
+            link_type IN ({_SQL_HASHED_TRACE_LINK_TYPES})
+            AND sha256 IS NOT NULL
+            AND length(sha256) = 64
+            AND sha256 NOT GLOB '*[^0-9A-Fa-f]*'
+        )
         OR (link_type IN ({_SQL_NON_HASHED_TRACE_LINK_TYPES}) AND sha256 IS NULL)
-    ),
-    CHECK(sha256 IS NULL OR (length(sha256) = 64 AND sha256 NOT GLOB '*[^0-9A-Fa-f]*'))
+    )
 )
 """.strip(),
     },

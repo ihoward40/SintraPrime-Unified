@@ -131,8 +131,9 @@ def test_decision_register_storage_model_relations_and_traceability():
     assert f"OR (link_type IN ({_sql_enum(NON_HASHED_TRACE_LINK_TYPES)}) AND sha256 IS NULL)" in tables[
         "decision_register_traceability_links"
     ]
-    assert "CHECK(sha256 IS NULL OR (length(sha256) = 64" in tables["decision_register_traceability_links"]
-    assert f"(link_type IN ({_sql_enum(HASHED_TRACE_LINK_TYPES)}) AND sha256 IS NOT NULL)" in tables[
+    assert "AND length(sha256) = 64" in tables["decision_register_traceability_links"]
+    assert "AND sha256 NOT GLOB '*[^0-9A-Fa-f]*'" in tables["decision_register_traceability_links"]
+    assert f"link_type IN ({_sql_enum(HASHED_TRACE_LINK_TYPES)})" in tables[
         "decision_register_traceability_links"
     ]
     indexes = storage["indexes"]
@@ -260,6 +261,31 @@ def test_storage_constraints_reject_invalid_hashes_and_link_rules():
                 "{}",
             ),
         )
+        with pytest.raises(sqlite3.IntegrityError):
+            conn.execute(
+                """
+                INSERT INTO decision_register_entries (
+                    register_id, schema_version, decision_id, run_id, recorded_at,
+                    contract_semantic_sha256, state_sha256, result_kind, policy_decision,
+                    policy_risk, receipt_hash, prev_receipt_hash, payload_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "REG-1-DUP",
+                    DECISION_REGISTER_SCHEMA_VERSION,
+                    "DEC-9",
+                    "RUN-9",
+                    "2026-01-01T00:00:01Z",
+                    "a" * 64,
+                    "b" * 64,
+                    "DECISION",
+                    "SHADOW_ONLY",
+                    "ELEVATED",
+                    "c" * 64,
+                    None,
+                    "{}",
+                ),
+            )
     conn.execute(
         """
         INSERT INTO decision_register_entries (

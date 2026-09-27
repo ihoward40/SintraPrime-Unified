@@ -1,8 +1,8 @@
 {
   "case": {
     "case_id": "C-0001",
-    "client_name": "Isiah Howard",
-    "email": "isiah@example.com",
+    "client_name": "Demo Client",
+    "email": "client@example.dev",
     "tier": "audit",
     "status": "intake",
     "scorecard_total": null,
@@ -47,8 +47,8 @@
   ],
   "evidence_items": [
     {
-      "file_name": "Howard Isiah - CFPB Complaint Response - UACC - 16504360002.pdf",
-      "file_path": "clients/isiah-howard/correspondence/",
+      "file_name": "Demo Client - CFPB Complaint Response - UACC - 16504360002.pdf",
+      "file_path": "clients/demo-client/correspondence/",
       "date": "2022-10-26",
       "sender": "UACC Compliance Department",
       "account_referenced": "UACC/Vroom auto loan — CFPB Case No. 221011-9546852",

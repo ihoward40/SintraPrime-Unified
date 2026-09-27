@@ -313,7 +313,7 @@ class TestScorecard:
 
 class TestNormalizeClientName:
     def test_simple(self):
-        assert normalize_client_name("Isiah Howard") == "isiah-howard"
+        assert normalize_client_name("Demo Client") == "demo-client"
 
     def test_extra_spaces(self):
         assert normalize_client_name("  John   Doe  ") == "john-doe"
@@ -330,8 +330,8 @@ class TestNormalizeClientName:
 
 class TestBuildCaseFolderPath:
     def test_simple(self):
-        path = build_case_folder_path("clients", "Isiah Howard")
-        assert path == "clients/isiah-howard"
+        path = build_case_folder_path("clients", "Demo Client")
+        assert path == "clients/demo-client"
 
     def test_custom_base(self):
         path = build_case_folder_path("/data/cases", "Jane Doe")
@@ -340,12 +340,12 @@ class TestBuildCaseFolderPath:
 
 class TestBuildEvidenceFolderPath:
     def test_intake(self):
-        path = build_evidence_folder_path("clients", "Isiah Howard", "intake")
-        assert path == "clients/isiah-howard/intake"
+        path = build_evidence_folder_path("clients", "Demo Client", "intake")
+        assert path == "clients/demo-client/intake"
 
     def test_credit_reports(self):
-        path = build_evidence_folder_path("clients", "Isiah Howard", "credit-reports")
-        assert path == "clients/isiah-howard/credit-reports"
+        path = build_evidence_folder_path("clients", "Demo Client", "credit-reports")
+        assert path == "clients/demo-client/credit-reports"
 
     def test_output(self):
         path = build_evidence_folder_path("/data", "Jane Doe", "output")
@@ -388,7 +388,7 @@ class TestCreateReceipt:
     def test_with_explicit_id(self):
         receipt = create_receipt(
             case_id="C-0001",
-            actor="Isiah",
+            actor="Analyst",
             action="document_cataloged",
             receipt_id="R-EXPLICIT-001",
         )
@@ -400,10 +400,10 @@ class TestCreateReceipt:
             actor="System",
             action="evidence_scanned",
             details={"files_found": 12, "ocr_needed": 3},
-            file_path="/clients/isiah-howard/evidence/",
+            file_path="/clients/demo-client/evidence/",
         )
         assert receipt.details["files_found"] == 12
-        assert receipt.file_path == "/clients/isiah-howard/evidence/"
+        assert receipt.file_path == "/clients/demo-client/evidence/"
 
 
 # ── Fixture Loading ──────────────────────────────────────────────────────────
@@ -426,7 +426,7 @@ class TestClient0001Fixture:
         case_data = fixture_data["case"]
         case = ClientCase(**case_data)
         assert case.case_id == "C-0001"
-        assert case.client_name == "Isiah Howard"
+        assert case.client_name == "Demo Client"
         assert case.tier == ServiceTier.AUDIT
 
     def test_credit_accounts_loaded(self, fixture_data):

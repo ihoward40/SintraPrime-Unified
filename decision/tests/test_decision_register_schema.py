@@ -28,6 +28,9 @@ def test_decision_register_traceability_links_require_targets():
     traceability = DECISION_REGISTER_ENTRY_SCHEMA["properties"]["traceability"]
     assert "receipt_hash" in traceability["required"]
     assert "links" in traceability["required"]
+    prev_hash = traceability["properties"]["prev_receipt_hash"]
+    assert prev_hash["anyOf"][0]["type"] == "null"
+    assert prev_hash["anyOf"][1] == {"type": "string", "minLength": 64, "maxLength": 64}
     links = traceability["properties"]["links"]
     assert links["minItems"] == 1
     assert set(links["items"]["required"]) == {"link_type", "target_id"}

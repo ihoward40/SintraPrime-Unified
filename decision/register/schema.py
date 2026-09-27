@@ -68,7 +68,12 @@ DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
             "required": ["receipt_hash", "links"],
             "properties": {
                 "receipt_hash": {"type": "string", "minLength": 64, "maxLength": 64},
-                "prev_receipt_hash": {"type": ["string", "null"], "minLength": 64, "maxLength": 64},
+                "prev_receipt_hash": {
+                    "anyOf": [
+                        {"type": "null"},
+                        {"type": "string", "minLength": 64, "maxLength": 64},
+                    ]
+                },
                 "links": {
                     "type": "array",
                     "minItems": 1,

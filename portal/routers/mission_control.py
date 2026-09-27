@@ -281,6 +281,22 @@ async def get_real_time_metrics(
 # ── SP-GOD0-MISSION-CONTROL-001: Principal Brief (sp-principal-brief-v1) ─────
 
 
+class BriefExecutionStateResponse(BaseModel):
+    running_workers: int = 0
+    queued_tasks: int = 0
+    worktree_ownership_claims: int = 0
+    execution_failures: int = 0
+    timeouts: int = 0
+    cancellations: int = 0
+    orphan_process_findings: int = 0
+    external_effect_blocked: int = 0
+    denied_executions: int = 0
+    network_policy_status: str = "deny"
+    network_enforcement_level: str = "unavailable_fail_closed"
+    network_sandbox_available: bool = False
+    network_certification: str = "unavailable"
+
+
 class PrincipalBriefResponse(BaseModel):
     """Read-only projection of the governed-runtime Principal Brief.
 
@@ -303,7 +319,7 @@ class PrincipalBriefResponse(BaseModel):
     authority_expirations: list[dict] = Field(default_factory=list)
     memory_change_summary: dict = Field(default_factory=dict)
     recommended_principal_decisions: list[dict] = Field(default_factory=list)
-    execution_state: dict | None = None  # GOD-1X backend visibility (Phase 15)
+    execution_state: BriefExecutionStateResponse | None = None  # GOD-1X backend visibility (Phase 15)
 
 
 @router.get("/principal-brief", response_model=PrincipalBriefResponse)
@@ -317,7 +333,8 @@ async def get_principal_brief(
     rather than fabricated. Recommendations are proposals only and can never
     be consumed as approvals.
     """
-    from omnibrain.principal_brief import build_brief
+    from omnibrain.principal_brief import build_brief, build_execution_state
+    from swarm_runtime.network_sandbox import NetworkSandbox
 
     from ..services.principal_brief_service import (
         empty_brief_payload,
@@ -341,6 +358,9 @@ async def get_principal_brief(
 
     # Admitted state aggregation. In local/shadow mode there are no agents
     # executing yet, so the brief is valid but empty — an honest state.
+    sandbox = NetworkSandbox.from_config()
+    resolved = sandbox.resolve()
+    execution_state = build_execution_state(**sandbox.brief_fields(resolved))
     brief = build_brief(
         agents=[],
         pending_approvals=[],
@@ -349,6 +369,7 @@ async def get_principal_brief(
         authority_expirations=[],
         memory_change_summary={},
         recommended_principal_decisions=[],
+        execution_state=execution_state,
     )
     payload = normalize_brief(brief.to_dict())
     payload["available"] = True

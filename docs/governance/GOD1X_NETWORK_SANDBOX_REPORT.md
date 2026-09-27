@@ -34,48 +34,68 @@ policy as OS.
 
 Resolution (`NetworkSandbox.resolve()`) never upgrades posture:
 - `POLICY_ONLY` → level `policy_enforced` (always available).
-- `OS_ENFORCED` → probes a throwaway child for `unshare(CLONE_NEWNET)`; if the
-  capability is absent it FAILS CLOSED (`unavailable_fail_closed`), never downgrades.
+- `OS_ENFORCED` → probes a throwaway child with the same libc-based `unshare +
+  no_new_privs + drop-caps` launch hook used for real workers; if the capability
+  or hardening sequence is absent it FAILS CLOSED (`unavailable_fail_closed`),
+  never downgrades.
 - `CONTAINER_NETWORK_NONE` → asserts OS-level (`os_enforced`) only when
-  `SWARM_NETWORK_CONTAINER=none` is declared; otherwise unavailable.
+  `SWARM_NETWORK_CONTAINER=none` is declared **and**
+  `SWARM_NETWORK_CONTAINER_VERIFIED_BY=<trusted component>` identifies the
+  orchestration/runtime component that verified the boundary; otherwise unavailable.
 - `UNAVAILABLE_FAIL_CLOSED` → denies all executions.
 
 ## 3. Configuration (added)
 
-`SWARM_NETWORK_ENFORCEMENT = policy | os | container | unavailable_fail_closed`
-(default `policy`). `SWARM_NETWORK_CONTAINER = none` declares a net=none container.
+`SWARM_NETWORK_ENFORCEMENT = policy_only | os_enforced | container_network_none |
+unavailable_fail_closed` (default `policy_only`). Backward-compatible aliases
+`policy`, `os`, and `container` are also accepted. `SWARM_NETWORK_CONTAINER = none`
+declares a net=none container, and `SWARM_NETWORK_CONTAINER_VERIFIED_BY` names the
+trusted component that verified that boundary.
 `SWARM_NETWORK_MODE = deny` is the invariant (no network admission path exists).
 
 ## 4. Fail-closed guarantees
 
-- `launch_governed` resolves the sandbox **before** admitting. If `fail_closed`,
-  the execution is DENIED with reason `NETWORK_SANDBOX_UNAVAILABLE` and the
-  receipt records `network_enforcement_level = unavailable_fail_closed`.
+- `launch_governed` resolves the sandbox only after the pure admission /
+  filesystem / secret-boundary checks pass. If `fail_closed`, the execution is
+  DENIED with reason `NETWORK_SANDBOX_UNAVAILABLE` and the receipt records
+  `network_enforcement_level = unavailable_fail_closed`.
+- Denied authority/env/filesystem requests short-circuit before the sandbox probe,
+  so denied work cannot spawn probe subprocesses.
 - Network execution classes remain denied at the admission gate (unchanged).
 - Proxy / network-escape environment variables (`HTTP(S)_PROXY`, `ALL_PROXY`,
   `GIT_PROXY_COMMAND`, `PIP_INDEX_URL`, …) are stripped from every governed
   worker environment — defense-in-depth even in `POLICY_ONLY`.
 - On Linux with a capable kernel, the worker child is launched inside a fresh
-  network namespace via `preexec_fn` (no effect on the controller process).
+  network namespace via `preexec_fn`, then immediately drops namespace-reentry
+  capabilities before worker-controlled Python executes (no effect on the
+  controller process). If the real child launch fails, the governed receipt is
+  terminal `FAILED`; the system does not claim OS enforcement for that worker.
 
-## 5. Tests (`swarm_runtime/tests/test_network_sandbox.py`, 10 tests)
+## 5. Tests (`swarm_runtime/tests/test_network_sandbox.py`)
 
 - networked execution class is denied
 - shell-based network escape is denied (shell requires explicit authority)
 - env-based proxy escape is denied (vars stripped from worker env)
 - `OS_ENFORCED` unavailable → fails closed (platform-independent)
+- probe uses isolated Python startup and sanitized environment
+- documented config aliases normalize to the canonical settings
 - CI fallback (`POLICY_ONLY`) does **not** claim OS enforcement
 - receipts distinguish `policy_enforced` vs `unavailable_fail_closed`
-- `CONTAINER_NETWORK_NONE` asserts OS-level containment
+- `CONTAINER_NETWORK_NONE` requires explicit verification and never installs the
+  Linux `preexec_fn`
 - unknown enforcement string → fail closed
 - live `launch_governed` receipt carries `network_enforcement_level`
+- denied authority requests do not spawn the probe
+- worker spawn / preexec failure becomes a terminal governed receipt
+- namespace hardening hook applies capability drop before worker code
 
 ## 6. Mission Control brief state (`omnibrain/principal_brief.py`)
 
 `BriefExecutionState` gains four observed fields (additive, schema-compatible):
 `network_policy_status` (`deny`), `network_enforcement_level`,
 `network_sandbox_available`, `network_certification`. These surface the real
-posture — never "os_enforced" unless actually established.
+posture — never "os_enforced" unless actually established, and unobserved portal
+defaults fail closed until the route passes a resolved runtime posture.
 
 ## 7. Certification status
 

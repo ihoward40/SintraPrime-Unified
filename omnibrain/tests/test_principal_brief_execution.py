@@ -46,12 +46,12 @@ def test_brief_carries_execution_state_additively() -> None:
 
 
 def test_execution_state_network_fields_default_and_roundtrip() -> None:
-    # Defaults: deny policy, policy-level enforcement, available, policy_only cert.
+    # Defaults: deny policy, but unobserved/omitted containment must fail closed.
     s = build_execution_state()
     assert s.network_policy_status == "deny"
-    assert s.network_enforcement_level == "policy_enforced"
-    assert s.network_sandbox_available is True
-    assert s.network_certification == "policy_only"
+    assert s.network_enforcement_level == "unavailable_fail_closed"
+    assert s.network_sandbox_available is False
+    assert s.network_certification == "unavailable"
 
     # Explicit OS-equivalent posture is carried into the brief contract.
     s2 = build_execution_state(

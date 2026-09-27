@@ -219,18 +219,6 @@ class SwarmController:
             status="DENIED",
         )
 
-        # Phase 9 / SP-GOD1X-OS-NETWORK-SANDBOX-001 — network containment posture
-        sandbox = NetworkSandbox.from_config()
-        sandbox_resolved = sandbox.resolve()
-        result.network_enforcement_level = sandbox_resolved["enforcement_level"]
-        if sandbox_resolved["fail_closed"]:
-            result.rejection_reasons = ["NETWORK_SANDBOX_UNAVAILABLE"]
-            result.severity = "security"
-            self._denied_count += 1
-            self.execution_results[execution_id] = result
-            self._record_governed_receipt(request, envelope, result)
-            return result
-
         decision = self.gate.admit(request, envelope)
         if not decision.allowed:
             result.rejection_reasons = decision.reasons
@@ -265,8 +253,6 @@ class SwarmController:
 
         # Phase 4 — environment boundary (no secret inheritance)
         governed_env, secret_check = build_governed_environment(request)
-        # SP-GOD1X-OS-NETWORK-SANDBOX-001 — strip proxy / network-escape env vars
-        governed_env = sandbox.strip_proxy_env(governed_env)
         if not secret_check["clean"]:
             result.status = "DENIED"
             result.rejection_reasons = ["SECRET_INHERITANCE_DETECTED:" + ",".join(secret_check["leaked"])]
@@ -275,6 +261,21 @@ class SwarmController:
             self.execution_results[execution_id] = result
             self._record_governed_receipt(request, envelope, result)
             return result
+
+        # Phase 9 / SP-GOD1X-OS-NETWORK-SANDBOX-001 — network containment posture.
+        # Resolve only after pure admission checks so denied authority requests
+        # never spawn the probe subprocess.
+        sandbox = NetworkSandbox.from_config()
+        sandbox_resolved = sandbox.resolve()
+        result.network_enforcement_level = sandbox_resolved["enforcement_level"]
+        if sandbox_resolved["fail_closed"]:
+            result.rejection_reasons = ["NETWORK_SANDBOX_UNAVAILABLE"]
+            result.severity = "security"
+            self._denied_count += 1
+            self.execution_results[execution_id] = result
+            self._record_governed_receipt(request, envelope, result)
+            return result
+        governed_env = sandbox.strip_proxy_env(governed_env)
 
         # Build a WorkerSpec from the governed request
         spec = WorkerSpec(
@@ -310,9 +311,21 @@ class SwarmController:
         }
         self._governed_contexts[request.agent_id] = governed_context
         self._governed_requests[request.agent_id] = request
-        self._launch_worker(spec, state, governed_context)
-        result.status = "RUNNING"
         self.execution_results[execution_id] = result
+        try:
+            self._launch_worker(spec, state, governed_context)
+        except Exception as exc:
+            result.completed_at = time.time()
+            result.status = "FAILED"
+            result.termination_reason = "WORKER_LAUNCH_FAILED"
+            result.severity = "material"
+            result.rejection_reasons = [f"WORKER_LAUNCH_FAILED:{exc}"]
+            if sandbox_resolved["enforcement_level"] == "os_enforced":
+                result.network_enforcement_level = "unavailable_fail_closed"
+            self._cleanup_governed_launch_failure(request.agent_id)
+            self._record_governed_receipt(request, envelope, result)
+            return result
+        result.status = "RUNNING"
         self._record_governed_receipt(request, envelope, result)
         return result
 
@@ -372,6 +385,12 @@ class SwarmController:
             )
         except OSError:
             pass
+
+    def _cleanup_governed_launch_failure(self, worker_id: str) -> None:
+        self.processes.pop(worker_id, None)
+        self._start_times.pop(worker_id, None)
+        self._governed_contexts.pop(worker_id, None)
+        self._governed_requests.pop(worker_id, None)
 
     def revoke(self, agent_id: str, reason: str = "AUTHORITY_REVOKED") -> str:
         """Revoke an active or queued governed execution (Phase 13).
@@ -489,6 +508,7 @@ class SwarmController:
                 worker_id=spec.worker_id, event="WORKER_LAUNCH_FAILED",
                 details={"error": str(e)},
             ))
+            raise
 
     def _write_worker_script(self, spec: WorkerSpec, _state: WorkerState) -> Path:
         """Write a standalone runner script for the worker subprocess."""

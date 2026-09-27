@@ -1,25 +1,17 @@
-"""SP-GOD1X-OS-NETWORK-SANDBOX-001 enforcement tests.
-
-Proves:
-  * networked execution class is denied (policy layer intact)
-  * shell-based network escape is denied (shell requires explicit authority)
-  * env-based proxy escape is denied (proxy vars stripped from worker env)
-  * sandbox unavailable fails closed (os_enforced w/o capability => DENY)
-  * CI fallback (default) does NOT claim OS enforcement
-  * receipts distinguish policy-enforced vs OS-enforced/unavailable denial
-  * container network=none asserts OS-level containment
-"""
+"""SP-GOD1X-OS-NETWORK-SANDBOX-001 enforcement tests."""
 
 from __future__ import annotations
 
 import json
 import os
 import shutil
+import subprocess
 import tempfile
 from pathlib import Path
 
 import pytest
 
+import swarm_runtime.network_sandbox as network_sandbox
 from swarm_runtime.controller import SwarmController
 from swarm_runtime.governed_execution import (
     AuthorityEnvelope,
@@ -49,27 +41,48 @@ def _gov_workdir_fixture() -> None:
     shutil.rmtree(d, ignore_errors=True)
 
 
-def _env() -> AuthorityEnvelope:
-    return AuthorityEnvelope(
-        mission_id="M1", swarm_id="S1", task_id="T1", agent_id="cs1",
-        authority_id="A1", role_id="R1", context_package_id="C1",
-        mission_active=True, swarm_authorized=True,
-        task_ready=True, agent_authorized=True,
-        authority_valid=True, context_valid=True,
-        role_allowed=True, resource_allowed=True, revoked=False,
-    )
+def _env(agent_id: str = "cs1", **overrides: bool) -> AuthorityEnvelope:
+    base = {
+        "mission_id": "M1",
+        "swarm_id": "S1",
+        "task_id": "T1",
+        "agent_id": agent_id,
+        "authority_id": "A1",
+        "role_id": "R1",
+        "context_package_id": "C1",
+        "mission_active": True,
+        "swarm_authorized": True,
+        "task_ready": True,
+        "agent_authorized": True,
+        "authority_valid": True,
+        "context_valid": True,
+        "role_allowed": True,
+        "resource_allowed": True,
+        "revoked": False,
+    }
+    base.update(overrides)
+    return AuthorityEnvelope(**base)
 
 
-def _safe_request(work: Path, effect_class: str = "read_only_inspection") -> ExecutionRequest:
+def _safe_request(work: Path, agent_id: str = "cs1", effect_class: str = "read_only_inspection") -> ExecutionRequest:
     return ExecutionRequest(
-        execution_request_id="req-1", mission_id="M1", swarm_id="S1",
-        task_id="T1", agent_id="cs1", authority_id="A1",
-        context_package_id="C1", role_id="R1",
-        working_directory=str(work), timeout_seconds=120,
-        effect_class=effect_class, worker_class="CodeSearchWorker",
-        task_params={"target": "swarm_runtime"}, artifact_path="findings.json",
+        execution_request_id=f"req-{agent_id}",
+        mission_id="M1",
+        swarm_id="S1",
+        task_id="T1",
+        agent_id=agent_id,
+        authority_id="A1",
+        context_package_id="C1",
+        role_id="R1",
+        working_directory=str(work),
+        timeout_seconds=120,
+        effect_class=effect_class,
+        worker_class="CodeSearchWorker",
+        task_params={"target": "swarm_runtime"},
+        artifact_path="findings.json",
         owned_files=[str(work / "findings.json")],
-        read_paths=[str(work)], write_paths=[str(work / "findings.json")],
+        read_paths=[str(work)],
+        write_paths=[str(work / "findings.json")],
     )
 
 
@@ -78,7 +91,10 @@ def _set_env(**kw):
     for k, v in kw.items():
         key = "SWARM_NETWORK_" + k
         saved[key] = os.environ.get(key)
-        os.environ[key] = v
+        if v is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = v
     return saved
 
 
@@ -100,13 +116,36 @@ def test_policy_only_default_enforcement() -> None:
     assert sb.certification_status(r) == "policy_only"
 
 
+@pytest.mark.parametrize(
+    ("configured", "expected"),
+    [
+        ("policy", NetworkSandboxMode.POLICY_ONLY),
+        ("policy_only", NetworkSandboxMode.POLICY_ONLY),
+        ("os", NetworkSandboxMode.OS_ENFORCED),
+        ("os_enforced", NetworkSandboxMode.OS_ENFORCED),
+        ("container", NetworkSandboxMode.CONTAINER_NETWORK_NONE),
+        ("container_network_none", NetworkSandboxMode.CONTAINER_NETWORK_NONE),
+    ],
+)
+def test_documented_aliases_are_accepted(configured: str, expected: NetworkSandboxMode) -> None:
+    saved = _set_env(ENFORCEMENT=configured)
+    try:
+        assert NetworkSandbox.from_config().mode is expected
+    finally:
+        _restore_env(saved)
+
+
 def test_proxy_env_strip_removes_known_vars() -> None:
     sb = NetworkSandbox.from_config()
     dirty = {
-        "PATH": "/usr/bin", "HTTP_PROXY": "http://evil:8080",
-        "HTTPS_PROXY": "https://evil:8443", "ALL_PROXY": "socks://evil:1080",
-        "no_proxy": "localhost", "GIT_PROXY_COMMAND": "nc -X",
+        "PATH": "/usr/bin",
+        "HTTP_PROXY": "http://evil:8080",
+        "HTTPS_PROXY": "https://evil:8443",
+        "ALL_PROXY": "socks://evil:1080",
+        "NO_PROXY": "localhost",
+        "GIT_PROXY_COMMAND": "nc -X",
         "PIP_INDEX_URL": "http://evil/simple",
+        "npm_config_https_proxy": "https://evil/npm",
     }
     clean = sb.strip_proxy_env(dirty)
     for var in PROXY_ENV_VARS:
@@ -114,13 +153,38 @@ def test_proxy_env_strip_removes_known_vars() -> None:
     assert clean["PATH"] == "/usr/bin"
 
 
-def test_os_enforced_unavailable_fails_closed() -> None:
+def test_probe_uses_isolated_python_and_sanitized_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+
+    def _fake_run(cmd, **kwargs):
+        captured["cmd"] = cmd
+        captured["env"] = kwargs["env"]
+
+        class _Result:
+            returncode = 0
+
+        return _Result()
+
+    monkeypatch.setattr(network_sandbox.platform, "system", lambda: "Linux")
+    monkeypatch.setattr(network_sandbox.subprocess, "run", _fake_run)
+    monkeypatch.setenv("PYTHONPATH", "/tmp/evil")
+    monkeypatch.setenv("LD_PRELOAD", "/tmp/malice.so")
+    monkeypatch.setenv("HOME", "/home/copilot")
+    assert network_sandbox._probe_os_netns() is True
+    assert captured["cmd"][1:3] == ["-I", "-S"]
+    env = captured["env"]
+    assert "PYTHONPATH" not in env
+    assert "LD_PRELOAD" not in env
+    assert env["HOME"] == "/home/copilot"
+
+
+def test_os_enforced_unavailable_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
     saved = _set_env(ENFORCEMENT="os_enforced")
+    monkeypatch.setattr(network_sandbox, "_probe_os_netns", lambda: False)
     try:
         sb = NetworkSandbox.from_config()
         assert sb.mode is NetworkSandboxMode.OS_ENFORCED
         r = sb.resolve()
-        # On Windows and unprivileged Linux CI the OS capability is absent.
         assert r["fail_closed"] is True
         assert r["enforcement_level"] == "unavailable_fail_closed"
         assert r["available"] is False
@@ -128,28 +192,71 @@ def test_os_enforced_unavailable_fails_closed() -> None:
         _restore_env(saved)
 
 
-def test_container_network_none_asserts_os() -> None:
-    saved = _set_env(ENFORCEMENT="container_network_none", CONTAINER="none")
+@pytest.mark.parametrize("system_name", ["Windows", "Darwin"])
+def test_non_linux_os_enforced_fails_closed(system_name: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    saved = _set_env(ENFORCEMENT="os_enforced")
+    monkeypatch.setattr(network_sandbox.platform, "system", lambda: system_name)
     try:
-        sb = NetworkSandbox.from_config()
-        r = sb.resolve()
-        assert r["effective_level"] == "os"
-        assert r["enforcement_level"] == "os_enforced"
-        assert r["available"] is True
-        assert sb.certification_status(r) == "certified"
-    finally:
-        _restore_env(saved)
-
-
-def test_unknown_enforcement_fails_closed() -> None:
-    saved = _set_env(ENFORCEMENT="not_a_real_mode")
-    try:
-        sb = NetworkSandbox.from_config()
-        assert sb.mode is NetworkSandboxMode.UNAVAILABLE_FAIL_CLOSED
-        r = sb.resolve()
+        r = NetworkSandbox.from_config().resolve()
         assert r["fail_closed"] is True
+        assert r["available"] is False
     finally:
         _restore_env(saved)
+
+
+def test_python311_without_os_unshare_still_uses_shared_hook(monkeypatch: pytest.MonkeyPatch) -> None:
+    saved = _set_env(ENFORCEMENT="os_enforced")
+    monkeypatch.setattr(network_sandbox.platform, "system", lambda: "Linux")
+    monkeypatch.setattr(network_sandbox, "_probe_os_netns", lambda: True)
+    monkeypatch.delattr(network_sandbox.os, "unshare", raising=False)
+    try:
+        sb = NetworkSandbox.from_config()
+        kwargs = sb.popen_kwargs(sb.resolve())
+        assert kwargs["preexec_fn"] is network_sandbox._apply_linux_os_sandbox
+    finally:
+        _restore_env(saved)
+
+
+def test_container_network_none_requires_verified_boundary() -> None:
+    saved = _set_env(ENFORCEMENT="container_network_none", CONTAINER="none", CONTAINER_VERIFIED_BY=None)
+    try:
+        r = NetworkSandbox.from_config().resolve()
+        assert r["fail_closed"] is True
+        assert r["verification_component"] == "unverified_container_declaration"
+    finally:
+        _restore_env(saved)
+
+
+def test_container_network_none_skips_preexec(monkeypatch: pytest.MonkeyPatch) -> None:
+    saved = _set_env(
+        ENFORCEMENT="container_network_none",
+        CONTAINER="none",
+        CONTAINER_VERIFIED_BY="orchestrator",
+    )
+    monkeypatch.setattr(network_sandbox.platform, "system", lambda: "Linux")
+    try:
+        sb = NetworkSandbox.from_config()
+        resolved = sb.resolve()
+        assert resolved["available"] is True
+        assert resolved["enforcement_level"] == "os_enforced"
+        assert sb.popen_kwargs(resolved) == {}
+    finally:
+        _restore_env(saved)
+
+
+def test_namespace_escape_hardening_runs_after_unshare(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[str] = []
+    sentinel = object()
+    monkeypatch.setattr(network_sandbox.platform, "system", lambda: "Linux")
+    monkeypatch.setattr(network_sandbox, "_load_libc", lambda: sentinel)
+    monkeypatch.setattr(network_sandbox, "_linux_unshare_netns", lambda libc: calls.append(f"unshare:{libc is sentinel}"))
+    monkeypatch.setattr(
+        network_sandbox,
+        "_linux_drop_namespace_escape_capabilities",
+        lambda libc: calls.append(f"drop:{libc is sentinel}"),
+    )
+    network_sandbox._apply_linux_os_sandbox()
+    assert calls == ["unshare:True", "drop:True"]
 
 
 def test_networked_execution_class_denied_with_sandbox() -> None:
@@ -163,11 +270,29 @@ def test_networked_execution_class_denied_with_sandbox() -> None:
 def test_shell_network_escape_denied() -> None:
     gate = ExecutionAdmissionGate()
     req = _safe_request(WORKDIR)
-    req.shell = True  # would allow a `curl` network escape
-    req.environment_policy = {}  # no explicit shell authority
+    req.shell = True
+    req.environment_policy = {}
     decision = gate.admit(req, _env())
     assert decision.allowed is False
     assert "SHELL_EXECUTION_REQUIRES_EXPLICIT_AUTHORITY" in decision.reasons
+
+
+def test_denied_authority_does_not_probe_before_admission(monkeypatch: pytest.MonkeyPatch) -> None:
+    saved = _set_env(ENFORCEMENT="os_enforced")
+
+    def _probe() -> bool:
+        raise AssertionError("probe should not run before admission denial")
+
+    monkeypatch.setattr(network_sandbox, "_probe_os_netns", _probe)
+    try:
+        ctrl = SwarmController(swarm_id="net-deny", repo_path=str(REPO), run_dir=str(WORKDIR / "run"))
+        req = _safe_request(WORKDIR)
+        res = ctrl.launch_governed(req, _env(revoked=True))
+        assert res.status == "DENIED"
+        assert "AUTHORITY_REVOKED" in res.rejection_reasons
+        assert res.network_enforcement_level == "unobserved"
+    finally:
+        _restore_env(saved)
 
 
 def test_launch_governed_policy_receipt_level() -> None:
@@ -182,8 +307,9 @@ def test_launch_governed_policy_receipt_level() -> None:
     assert receipt["result"]["network_enforcement_level"] == "policy_enforced"
 
 
-def test_launch_governed_os_unavailable_denied() -> None:
+def test_launch_governed_os_unavailable_denied(monkeypatch: pytest.MonkeyPatch) -> None:
     saved = _set_env(ENFORCEMENT="os_enforced")
+    monkeypatch.setattr(network_sandbox, "_probe_os_netns", lambda: False)
     try:
         ctrl = SwarmController(swarm_id="net2", repo_path=str(REPO), run_dir=str(WORKDIR / "run"))
         req = _safe_request(WORKDIR)
@@ -195,12 +321,49 @@ def test_launch_governed_os_unavailable_denied() -> None:
         _restore_env(saved)
 
 
-def test_receipt_distinguishes_levels() -> None:
+def test_worker_spawn_failure_becomes_terminal_receipt(monkeypatch: pytest.MonkeyPatch) -> None:
+    def _boom(*_args, **_kwargs):
+        raise RuntimeError("spawn failed")
+
+    monkeypatch.setattr("swarm_runtime.controller.subprocess.Popen", _boom)
+    ctrl = SwarmController(swarm_id="net-fail", repo_path=str(REPO), run_dir=str(WORKDIR / "run"))
+    req = _safe_request(WORKDIR, agent_id="boom1")
+    res = ctrl.launch_governed(req, _env(agent_id="boom1"))
+    assert res.status == "FAILED"
+    assert res.termination_reason == "WORKER_LAUNCH_FAILED"
+    assert res.rejection_reasons == ["WORKER_LAUNCH_FAILED:spawn failed"]
+    assert "boom1" not in ctrl._governed_contexts
+    receipt = json.loads((ctrl.store.worker_dir("boom1") / "governed_receipt.json").read_text(encoding="utf-8"))
+    assert receipt["result"]["status"] == "FAILED"
+    assert receipt["result"]["termination_reason"] == "WORKER_LAUNCH_FAILED"
+
+
+def test_post_probe_preexec_failure_does_not_claim_os_enforcement(monkeypatch: pytest.MonkeyPatch) -> None:
+    saved = _set_env(ENFORCEMENT="os_enforced")
+    monkeypatch.setattr(network_sandbox, "_probe_os_netns", lambda: True)
+
+    def _boom(*_args, **_kwargs):
+        raise subprocess.SubprocessError("Exception occurred in preexec_fn.")
+
+    monkeypatch.setattr("swarm_runtime.controller.subprocess.Popen", _boom)
+    try:
+        ctrl = SwarmController(swarm_id="net-preexec", repo_path=str(REPO), run_dir=str(WORKDIR / "run"))
+        req = _safe_request(WORKDIR, agent_id="preexec1")
+        res = ctrl.launch_governed(req, _env(agent_id="preexec1"))
+        assert res.status == "FAILED"
+        assert res.network_enforcement_level == "unavailable_fail_closed"
+        assert res.rejection_reasons == ["WORKER_LAUNCH_FAILED:Exception occurred in preexec_fn."]
+    finally:
+        _restore_env(saved)
+
+
+def test_receipt_distinguishes_levels(monkeypatch: pytest.MonkeyPatch) -> None:
     c1 = SwarmController(swarm_id="net3a", repo_path=str(REPO), run_dir=str(WORKDIR / "run_a"))
     r1 = c1.launch_governed(_safe_request(WORKDIR / "a"), _env())
     c1.wait()
 
     saved = _set_env(ENFORCEMENT="os_enforced")
+    monkeypatch.setattr(network_sandbox, "_probe_os_netns", lambda: False)
     try:
         c2 = SwarmController(swarm_id="net3b", repo_path=str(REPO), run_dir=str(WORKDIR / "run_b"))
         r2 = c2.launch_governed(_safe_request(WORKDIR / "b"), _env())
@@ -210,6 +373,17 @@ def test_receipt_distinguishes_levels() -> None:
     assert r1.network_enforcement_level == "policy_enforced"
     assert r2.network_enforcement_level == "unavailable_fail_closed"
     assert r1.network_enforcement_level != r2.network_enforcement_level
-    # Neither case may falsely claim OS enforcement.
-    assert r1.network_enforcement_level != "os_enforced"
-    assert r2.network_enforcement_level != "os_enforced"
+
+
+@pytest.mark.skipif(
+    os.environ.get("SINTRAPRIME_RUN_NETNS_INTEGRATION") != "1",
+    reason="set SINTRAPRIME_RUN_NETNS_INTEGRATION=1 to run host-dependent netns integration",
+)
+def test_guarded_live_probe_matches_resolution() -> None:
+    saved = _set_env(ENFORCEMENT="os_enforced")
+    try:
+        sandbox = NetworkSandbox.from_config()
+        resolved = sandbox.resolve()
+        assert resolved["available"] is network_sandbox._probe_os_netns()
+    finally:
+        _restore_env(saved)

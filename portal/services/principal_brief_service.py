@@ -20,6 +20,21 @@ from datetime import UTC, datetime, timezone
 
 # The brief schema version this service guarantees.
 BRIEF_SCHEMA_VERSION = "sp-principal-brief-v2"
+DEFAULT_EXECUTION_STATE = {
+    "running_workers": 0,
+    "queued_tasks": 0,
+    "worktree_ownership_claims": 0,
+    "execution_failures": 0,
+    "timeouts": 0,
+    "cancellations": 0,
+    "orphan_process_findings": 0,
+    "external_effect_blocked": 0,
+    "denied_executions": 0,
+    "network_policy_status": "deny",
+    "network_enforcement_level": "unavailable_fail_closed",
+    "network_sandbox_available": False,
+    "network_certification": "unavailable",
+}
 
 
 @dataclass(frozen=True)
@@ -73,6 +88,7 @@ def empty_brief_payload(*, reason: str) -> dict:
         "authority_expirations": [],
         "memory_change_summary": {},
         "recommended_principal_decisions": [],
+        "execution_state": dict(DEFAULT_EXECUTION_STATE),
     }
 
 
@@ -94,7 +110,10 @@ def normalize_brief(raw: dict) -> dict:
         "authority_expirations", "memory_change_summary",
         "recommended_principal_decisions", "execution_state",
     }
-    return {k: raw.get(k) for k in allowed}
+    normalized = {k: raw.get(k) for k in allowed}
+    if not normalized.get("execution_state"):
+        normalized["execution_state"] = dict(DEFAULT_EXECUTION_STATE)
+    return normalized
 
 
 def recommendation_is_proposal_only(recommendation: dict) -> bool:
@@ -106,3 +125,17 @@ def recommendation_is_proposal_only(recommendation: dict) -> bool:
     """
     forbidden = {"approval_reference", "approval_token", "approval_id"}
     return not (set(recommendation) & forbidden)
+
+
+def build_runtime_execution_state():
+    """Resolve the current governed-runtime containment posture for the brief."""
+    from omnibrain.principal_brief import build_execution_state
+    from swarm_runtime.network_sandbox import NetworkSandbox
+
+    try:
+        sandbox = NetworkSandbox.from_config()
+        return build_execution_state(
+            **sandbox.brief_fields(sandbox.resolve()),
+        )
+    except Exception:
+        return build_execution_state()

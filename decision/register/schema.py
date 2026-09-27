@@ -147,8 +147,8 @@ CREATE TABLE IF NOT EXISTS decision_register_relations (
     target_register_id TEXT NOT NULL,
     relation_type TEXT NOT NULL,
     created_at TEXT NOT NULL,
-    FOREIGN KEY(source_register_id) REFERENCES decision_register_entries(register_id),
-    FOREIGN KEY(target_register_id) REFERENCES decision_register_entries(register_id),
+    FOREIGN KEY(source_register_id) REFERENCES decision_register_entries(register_id) ON DELETE CASCADE,
+    FOREIGN KEY(target_register_id) REFERENCES decision_register_entries(register_id) ON DELETE CASCADE,
     CHECK(relation_type IN ('depends_on', 'supersedes', 'references', 'derived_from')),
     UNIQUE(source_register_id, target_register_id, relation_type)
 )
@@ -163,7 +163,7 @@ CREATE TABLE IF NOT EXISTS decision_register_traceability_links (
     sha256 TEXT,
     metadata_json TEXT,
     created_at TEXT NOT NULL,
-    FOREIGN KEY(register_id) REFERENCES decision_register_entries(register_id),
+    FOREIGN KEY(register_id) REFERENCES decision_register_entries(register_id) ON DELETE CASCADE,
     CHECK(link_type IN ('contract', 'state', 'receipt', 'run', 'evidence')),
     CHECK(sha256 IS NULL OR (length(sha256) = 64 AND sha256 NOT GLOB '*[^0-9A-Fa-f]*')),
     CHECK(link_type NOT IN ('contract', 'state', 'receipt') OR sha256 IS NOT NULL)

@@ -95,9 +95,15 @@ def test_decision_register_storage_model_relations_and_traceability():
     assert "CHECK(length(contract_semantic_sha256) = 64" in tables["decision_register_entries"]
     assert "CHECK(length(state_sha256) = 64" in tables["decision_register_entries"]
     assert "CHECK(length(receipt_hash) = 64" in tables["decision_register_entries"]
-    assert "FOREIGN KEY(source_register_id)" in tables["decision_register_relations"]
-    assert "FOREIGN KEY(target_register_id)" in tables["decision_register_relations"]
-    assert "FOREIGN KEY(register_id)" in tables["decision_register_traceability_links"]
+    assert "FOREIGN KEY(source_register_id) REFERENCES decision_register_entries(register_id) ON DELETE CASCADE" in tables[
+        "decision_register_relations"
+    ]
+    assert "FOREIGN KEY(target_register_id) REFERENCES decision_register_entries(register_id) ON DELETE CASCADE" in tables[
+        "decision_register_relations"
+    ]
+    assert "FOREIGN KEY(register_id) REFERENCES decision_register_entries(register_id) ON DELETE CASCADE" in tables[
+        "decision_register_traceability_links"
+    ]
     assert "CHECK(link_type IN ('contract', 'state', 'receipt', 'run', 'evidence'))" in tables[
         "decision_register_traceability_links"
     ]
@@ -247,6 +253,14 @@ def test_storage_constraints_reject_invalid_hashes_and_link_rules():
         """,
         ("REG-1", "REG-3", ALLOWED_RELATION_TYPES[0], "2026-01-01T00:00:06Z"),
     )
+    conn.execute(
+        """
+        INSERT INTO decision_register_traceability_links (
+            register_id, link_type, target_id, target_ref, sha256, metadata_json, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        ("REG-3", "receipt", "REC-3", None, "f" * 64, "{}", "2026-01-01T00:00:06Z"),
+    )
     with pytest.raises(sqlite3.IntegrityError):
         conn.execute(
             """
@@ -304,4 +318,15 @@ def test_storage_constraints_reject_invalid_hashes_and_link_rules():
             """,
             ("REG-1", "run", "RUN-2", None, "z" * 64, "{}", "2026-01-01T00:00:04Z"),
         )
+    conn.execute("DELETE FROM decision_register_entries WHERE register_id = ?", ("REG-3",))
+    relation_count = conn.execute(
+        "SELECT COUNT(*) FROM decision_register_relations WHERE source_register_id = ? OR target_register_id = ?",
+        ("REG-3", "REG-3"),
+    ).fetchone()[0]
+    trace_link_count = conn.execute(
+        "SELECT COUNT(*) FROM decision_register_traceability_links WHERE register_id = ?",
+        ("REG-3",),
+    ).fetchone()[0]
+    assert relation_count == 0
+    assert trace_link_count == 0
     conn.close()

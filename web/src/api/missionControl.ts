@@ -378,6 +378,5 @@ export interface PrincipalBrief {
 
 /** Fetch the Principal Brief. Read-only; requires MISSION_COMMAND_READ. */
 export async function getPrincipalBrief(): Promise<PrincipalBrief> {
-  const { data } = await axios.get(`${API_BASE}/api/v1/mission-control/principal-brief`);
-  return data;
+  return getJson<PrincipalBrief>('/api/v1/mission-control/principal-brief');
 }

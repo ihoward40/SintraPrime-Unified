@@ -13,6 +13,9 @@ import {
   CancellationControlStatus,
 } from '../../api/missionControl';
 import './MissionControlTown.css';
+import Town3DRenderer from './three/Town3DRenderer';
+import { chooseGraphicsPreset, type GraphicsPreset } from './three/townWorld';
+import { projectMissionControlToTown } from './three/missionControlTownAdapter';
 
 type District = {
   id: string;
@@ -48,6 +51,17 @@ export default function MissionControlTown() {
   const [gate, setGate] = useState<CancellationControlStatus | null>(null);
   const [selected, setSelected] = useState('town-hall');
   const [telemetry, setTelemetry] = useState<'loading' | 'live' | 'degraded'>('loading');
+  const [show3D, setShow3D] = useState(false);
+  const [graphicsPreset, setGraphicsPreset] = useState<GraphicsPreset>('lite');
+
+  useEffect(() => {
+    const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+    setGraphicsPreset(chooseGraphicsPreset({
+      hardwareConcurrency: navigator.hardwareConcurrency,
+      deviceMemoryGb: memory,
+      renderer: '',
+    }));
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -70,6 +84,14 @@ export default function MissionControlTown() {
     [selected],
   );
   const SelectedIcon = selectedDistrict.icon;
+  const world = useMemo(
+    () => projectMissionControlToTown(summary, brief, graphicsPreset),
+    [summary, brief, graphicsPreset],
+  );
+
+  if (show3D) {
+    return <Town3DRenderer world={world} preset={graphicsPreset} onExit={() => setShow3D(false)} />;
+  }
 
   return (
     <div className="mc-town-shell">
@@ -80,6 +102,9 @@ export default function MissionControlTown() {
           <p className="mc-town-doctrine">Observability should increase faster than authority.</p>
         </div>
         <div className="mc-town-live">
+          <button className="mc-town-enter3d" type="button" onClick={() => setShow3D(true)}>
+            ENTER 3D · {graphicsPreset.toUpperCase()}
+          </button>
           <Radio className={telemetry} />
           <div><small>TELEMETRY</small><strong>{telemetry.toUpperCase()}</strong></div>
         </div>

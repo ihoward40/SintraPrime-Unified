@@ -1152,7 +1152,7 @@ class TestDurableWorkflowEngine:
         assert wf.status in (WorkflowStatus.COMPLETED, WorkflowStatus.RUNNING)
 
     @pytest.mark.asyncio
-    async def test_start_rejects_authority_context_without_authority_required_flag(self):
+    async def test_start_ignores_authority_context_without_authority_required_flag(self):
         engine = DurableWorkflowEngine()
 
         async def my_workflow(ctx, data):
@@ -1163,19 +1163,27 @@ class TestDurableWorkflowEngine:
             )
 
         engine.register_workflow("test_wf", my_workflow)
-        with pytest.raises(ValueError, match="AUTHORITY_REQUIRED_FLAG_REQUIRED"):
-            await engine.start_workflow(
-                "test_wf",
-                {"input": "data"},
-                metadata={
-                    "authority_context": {
-                        "principal_id": "principal-a",
-                        "tenant_id": "tenant-a",
-                        "capability_lease_id": "lease-a",
-                        "approved_workflow_type": "test_wf",
-                    }
-                },
-            )
+        wf_id = await engine.start_workflow(
+            "test_wf",
+            {"input": "data"},
+            metadata={
+                "authority_context": {
+                    "principal_id": "principal-a",
+                    "tenant_id": "tenant-a",
+                    "capability_lease_id": "lease-a",
+                    "approved_workflow_type": "test_wf",
+                }
+            },
+        )
+        await asyncio.sleep(0.2)
+        wf = engine.get_workflow(wf_id)
+        assert wf is not None
+        assert wf.status == WorkflowStatus.COMPLETED
+        assert "authority_context" not in (wf.metadata or {})
+        assert "authority_context_audit" in (wf.metadata or {})
+        scheduled = [h for h in engine.get_history(wf_id) if h.event_type == HistoryEventType.ACTIVITY_SCHEDULED]
+        assert len(scheduled) == 1
+        assert scheduled[0].payload["authority_bound"] is False
 
     @pytest.mark.asyncio
     async def test_cancel_workflow(self):

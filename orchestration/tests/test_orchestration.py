@@ -1178,6 +1178,7 @@ class TestDurableWorkflowEngine:
         assert wf.status == WorkflowStatus.COMPLETED
         assert "authority_context" not in (wf.metadata or {})
         assert "authority_context_audit" in (wf.metadata or {})
+        assert wf.metadata["authority_context_audit"]["source"] == "legacy-audit-note"
         scheduled = [h for h in engine.get_history(wf_id) if h.event_type == HistoryEventType.ACTIVITY_SCHEDULED]
         assert len(scheduled) == 1
         assert scheduled[0].payload["authority_bound"] is False

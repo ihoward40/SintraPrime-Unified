@@ -1086,7 +1086,15 @@ class DurableWorkflowEngine:
             sensitive_authority_keys = {"principal_id", "tenant_id", "capability_lease_id", "approved_workflow_type"}
             if isinstance(audit_context, dict) and sensitive_authority_keys.intersection(audit_context.keys()):
                 raise ValueError("AUTHORITY_REQUIRED_FLAG_REQUIRED")
-            metadata["authority_context_audit"] = {"stripped": True}
+            if isinstance(audit_context, dict):
+                sanitized = {
+                    key: value
+                    for key, value in audit_context.items()
+                    if isinstance(value, (str, int, float, bool)) or value is None
+                }
+                metadata["authority_context_audit"] = sanitized or {"stripped": True}
+            else:
+                metadata["authority_context_audit"] = {"stripped": True}
             metadata.pop("authority_context", None)
         if metadata.get("authority_required", False):
             authority_context = metadata.get("authority_context")

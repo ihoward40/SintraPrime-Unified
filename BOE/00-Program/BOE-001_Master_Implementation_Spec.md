@@ -30,9 +30,9 @@ Every BOE artifact must either enable a decision, support a decision, execute a 
 ## Sprint 1 Build Order
 
 1. `BOE/00-Program/BOE-001_Master_Implementation_Spec.md`
-2. `BOE/01-Decision-Register/DRS-001.md`
+2. Planned deliverable: `BOE/01-Decision-Register/DRS-001.md`
 3. Decision Register schema
-4. `BOE/02-Agent-Passports/AOP-001.md`
+4. Planned deliverable: `BOE/02-Agent-Passports/AOP-001.md`
 5. Agent Passport template
 6. Portfolio Registry
 7. Weekly Life Board packet

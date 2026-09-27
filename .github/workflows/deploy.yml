@@ -41,4 +41,5 @@ jobs:
           if [ -n "${RAW_SECRET_KEY}" ]; then printf "SECRET_KEY=%s\n" "${RAW_SECRET_KEY}" >> /tmp/deploy-build.env; fi
           if [ -n "${RAW_TWIN_AUTH_TOKEN}" ]; then printf "TWIN_AUTH_TOKEN=%s\n" "${RAW_TWIN_AUTH_TOKEN}" >> /tmp/deploy-build.env; fi
 
+          docker compose --env-file /tmp/deploy-build.env config > /dev/null
           docker compose --env-file /tmp/deploy-build.env build

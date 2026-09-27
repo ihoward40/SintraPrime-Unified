@@ -448,6 +448,23 @@ class AgentCommonsStore:
         self._close_if_needed(conn)
         return str(existing["resource_id"]) if existing else final_resource_id
 
+    def release_idempotency_reservation(
+        self,
+        scope: str,
+        tenant_id: str,
+        key: str,
+        *,
+        expected_resource_id: str,
+    ) -> None:
+        conn = self._connect()
+        conn.execute("BEGIN IMMEDIATE")
+        conn.execute(
+            "DELETE FROM idempotency_keys WHERE scope = ? AND tenant_id = ? AND key = ? AND resource_id = ?",
+            (scope, tenant_id, key, expected_resource_id),
+        )
+        conn.commit()
+        self._close_if_needed(conn)
+
     def create_workspace(self, tenant_id: str, name: str, metadata: dict[str, Any] | None = None, community_id: str | None = None) -> dict[str, Any]:
         workspace_id = uuid.uuid4().hex
         record = {
@@ -787,14 +804,32 @@ class AgentCommonsStore:
                 self._close_if_needed(conn)
                 return self._row_to_run(existing)
         conn.execute(
+            "INSERT OR IGNORE INTO agent_runs(run_id, tenant_id, workspace_id, channel_id, thread_id, task_id, agent_id, role, status, parent_run_id, correlation_id, idempotency_key, context_json, output_json, tool_calls_json, rationale, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                run["run_id"], tenant_id, workspace_id, channel_id, thread_id, task_id, agent_id, role,
+                run["status"], parent_run_id, correlation_id, idempotency_key, self._dumps(context), self._dumps({}), self._dumps([]), None, now, now,
+            ),
+        )
+        if idempotency_key:
+            existing = self._fetchone(
+                conn,
+                "SELECT * FROM agent_runs WHERE tenant_id = ? AND idempotency_key = ?",
+                (tenant_id, idempotency_key),
+            )
+            conn.commit()
+            self._close_if_needed(conn)
+            if existing:
+                return self._row_to_run(existing)
+        else:
+            conn.execute(
             "INSERT INTO agent_runs(run_id, tenant_id, workspace_id, channel_id, thread_id, task_id, agent_id, role, status, parent_run_id, correlation_id, idempotency_key, context_json, output_json, tool_calls_json, rationale, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 run["run_id"], tenant_id, workspace_id, channel_id, thread_id, task_id, agent_id, role,
                 run["status"], parent_run_id, correlation_id, idempotency_key, self._dumps(context), self._dumps({}), self._dumps([]), None, now, now,
             ),
         )
-        conn.commit()
-        self._close_if_needed(conn)
+            conn.commit()
+            self._close_if_needed(conn)
         return run
 
     def complete_agent_run(
@@ -883,6 +918,10 @@ class AgentCommonsStore:
                     conn.commit()
                     self._close_if_needed(conn)
                     raise IdempotencyConflictError("Idempotency key is already bound to a different approval")
+                if existing["decision"] != decision:
+                    conn.commit()
+                    self._close_if_needed(conn)
+                    raise IdempotencyConflictError("Idempotent approval replay must keep the same decision")
                 conn.commit()
                 self._close_if_needed(conn)
                 return self._row_to_approval(existing)
@@ -974,8 +1013,8 @@ class AgentCommonsStore:
         return {
             "run": run,
             "thread": thread,
-            "trace": [event for event in (thread or {}).get("task_events", []) if event.get("run_id") in {None, run_id}],
-            "messages": [message for message in (thread or {}).get("messages", []) if message.get("trace", {}).get("run_id") in {None, run_id}],
+            "trace": [event for event in (thread or {}).get("task_events", []) if event.get("run_id") == run_id],
+            "messages": [message for message in (thread or {}).get("messages", []) if message.get("trace", {}).get("run_id") == run_id],
         }
 
     def _append_ledger(self, event: dict[str, Any]) -> None:
@@ -1327,100 +1366,41 @@ class SupervisorAgent:
                     existing = self.store.get_thread(existing_thread_id, principal.tenant_id)
                 if existing:
                     return existing
-        thread = self.store.create_thread(
-            principal.tenant_id,
-            workspace_id,
-            channel_id,
-            thread_title or objective,
-            metadata={"objective": objective, "builder_capability": builder_capability, "reviewer_capability": reviewer_capability},
-        )
-        if idempotency_key:
-            finalized_thread_id = self.store.finalize_idempotency(
-                "objective",
+        try:
+            thread = self.store.create_thread(
                 principal.tenant_id,
-                idempotency_key,
-                expected_resource_id=reservation_id or thread["thread_id"],
-                final_resource_id=thread["thread_id"],
+                workspace_id,
+                channel_id,
+                thread_title or objective,
+                metadata={"objective": objective, "builder_capability": builder_capability, "reviewer_capability": reviewer_capability},
             )
-            if finalized_thread_id != thread["thread_id"]:
-                existing = self.store.get_thread(finalized_thread_id, principal.tenant_id)
-                if existing:
-                    return existing
-        self.store.add_participant(principal.tenant_id, workspace_id, channel_id, thread["thread_id"], principal.principal_id, "human", principal.role, principal.principal_id)
-        self.store.add_participant(principal.tenant_id, workspace_id, channel_id, thread["thread_id"], self.supervisor_adapter.agent_id, "agent", "supervisor", self.supervisor_adapter.display_name)
-        self.store.add_message(
-            tenant_id=principal.tenant_id,
-            workspace_id=workspace_id,
-            channel_id=channel_id,
-            thread_id=thread["thread_id"],
-            task_id=thread["task_id"],
-            sender=principal.principal_id,
-            recipients=[self.supervisor_adapter.agent_id],
-            correlation_id=uuid.uuid4().hex,
-            lifecycle_status="ASSIGNED",
-            payload={"objective": objective, "acceptance_criteria": acceptance_criteria or []},
-            evidence=[],
-            trace={"agent": self.supervisor_adapter.agent_id, "agent_role": "supervisor"},
-        )
-        self.store.add_task_event(
-            tenant_id=principal.tenant_id,
-            workspace_id=workspace_id,
-            channel_id=channel_id,
-            thread_id=thread["thread_id"],
-            task_id=thread["task_id"],
-            status="ASSIGNED",
-            actor=principal.principal_id,
-            details={"objective": objective, "to_agent": self.supervisor_adapter.agent_id, "notes": "Owner objective submitted."},
-        )
-        context = self.context_builder.build(principal.tenant_id, thread["thread_id"])
-        plan = self.supervisor_adapter.invoke(
-            {"run_id": thread["task_id"], "objective": objective, "acceptance_criteria": acceptance_criteria or [], "builder_capability": builder_capability, "reviewer_capability": reviewer_capability},
-            context,
-        )
-        builder = self._find_agent(builder_capability)
-        reviewer = self._find_agent(reviewer_capability, role="reviewer")
-        builder_result = await self._delegate(
-            tenant_id=principal.tenant_id,
-            workspace_id=workspace_id,
-            channel_id=channel_id,
-            thread_id=thread["thread_id"],
-            task_id=thread["task_id"],
-            sender=self.supervisor_adapter.agent_id,
-            target=builder,
-            objective=plan.output["builder_task"]["objective"],
-            acceptance_criteria=plan.output["builder_task"]["acceptance_criteria"],
-            correlation_id=uuid.uuid4().hex,
-            trace={"agent_path": [self.supervisor_adapter.agent_id], "parent_run_id": None},
-            idempotency_key=f"{thread['thread_id']}:builder",
-            context=context,
-        )
-        reviewer_context = self.context_builder.build(principal.tenant_id, thread["thread_id"])
-        reviewer_result = await self._delegate(
-            tenant_id=principal.tenant_id,
-            workspace_id=workspace_id,
-            channel_id=channel_id,
-            thread_id=thread["thread_id"],
-            task_id=thread["task_id"],
-            sender=self.supervisor_adapter.agent_id,
-            target=reviewer,
-            objective=plan.output["review_task"]["objective"],
-            acceptance_criteria=plan.output["review_task"]["acceptance_criteria"],
-            correlation_id=builder_result["run"]["correlation_id"],
-            trace={"agent_path": [self.supervisor_adapter.agent_id], "parent_run_id": builder_result["run"]["run_id"]},
-            idempotency_key=f"{thread['thread_id']}:reviewer",
-            context={**reviewer_context, "builder_output": builder_result["invocation"].output},
-        )
-        disagreement = bool(reviewer_result["invocation"].output.get("material_disagreement"))
-        if disagreement:
-            approval = self.store.create_approval(
+            if idempotency_key:
+                finalized_thread_id = self.store.finalize_idempotency(
+                    "objective",
+                    principal.tenant_id,
+                    idempotency_key,
+                    expected_resource_id=reservation_id or thread["thread_id"],
+                    final_resource_id=thread["thread_id"],
+                )
+                if finalized_thread_id != thread["thread_id"]:
+                    existing = self.store.get_thread(finalized_thread_id, principal.tenant_id)
+                    if existing:
+                        return existing
+            self.store.add_participant(principal.tenant_id, workspace_id, channel_id, thread["thread_id"], principal.principal_id, "human", principal.role, principal.principal_id)
+            self.store.add_participant(principal.tenant_id, workspace_id, channel_id, thread["thread_id"], self.supervisor_adapter.agent_id, "agent", "supervisor", self.supervisor_adapter.display_name)
+            self.store.add_message(
                 tenant_id=principal.tenant_id,
                 workspace_id=workspace_id,
                 channel_id=channel_id,
                 thread_id=thread["thread_id"],
                 task_id=thread["task_id"],
-                run_id=builder_result["run"]["run_id"],
-                requested_by=self.supervisor_adapter.agent_id,
-                reason="Material disagreement escalated to owner.",
+                sender=principal.principal_id,
+                recipients=[self.supervisor_adapter.agent_id],
+                correlation_id=uuid.uuid4().hex,
+                lifecycle_status="ASSIGNED",
+                payload={"objective": objective, "acceptance_criteria": acceptance_criteria or []},
+                evidence=[],
+                trace={"agent": self.supervisor_adapter.agent_id, "agent_role": "supervisor"},
             )
             self.store.add_task_event(
                 tenant_id=principal.tenant_id,
@@ -1428,24 +1408,93 @@ class SupervisorAgent:
                 channel_id=channel_id,
                 thread_id=thread["thread_id"],
                 task_id=thread["task_id"],
-                status="BLOCKED",
-                actor=self.supervisor_adapter.agent_id,
-                run_id=builder_result["run"]["run_id"],
-                details={"objective": objective, "owner_decision_required": True, "notes": "Reviewer raised material disagreement.", "approval_id": approval["approval_id"]},
+                status="ASSIGNED",
+                actor=principal.principal_id,
+                details={"objective": objective, "to_agent": self.supervisor_adapter.agent_id, "notes": "Owner objective submitted."},
             )
-        else:
-            self.store.add_task_event(
+            context = self.context_builder.build(principal.tenant_id, thread["thread_id"])
+            plan = self.supervisor_adapter.invoke(
+                {"run_id": thread["task_id"], "objective": objective, "acceptance_criteria": acceptance_criteria or [], "builder_capability": builder_capability, "reviewer_capability": reviewer_capability},
+                context,
+            )
+            builder = self._find_agent(builder_capability)
+            reviewer = self._find_agent(reviewer_capability, role="reviewer")
+            builder_result = await self._delegate(
                 tenant_id=principal.tenant_id,
                 workspace_id=workspace_id,
                 channel_id=channel_id,
                 thread_id=thread["thread_id"],
                 task_id=thread["task_id"],
-                status="CLOSED",
-                actor=self.supervisor_adapter.agent_id,
-                run_id=builder_result["run"]["run_id"],
-                details={"objective": objective, "notes": "Builder and reviewer completed without material disagreement."},
+                sender=self.supervisor_adapter.agent_id,
+                target=builder,
+                objective=plan.output["builder_task"]["objective"],
+                acceptance_criteria=plan.output["builder_task"]["acceptance_criteria"],
+                correlation_id=uuid.uuid4().hex,
+                trace={"agent_path": [self.supervisor_adapter.agent_id], "parent_run_id": None},
+                idempotency_key=f"{thread['thread_id']}:builder",
+                context=context,
             )
-        return self.store.get_thread(thread["thread_id"], principal.tenant_id) or thread
+            reviewer_context = self.context_builder.build(principal.tenant_id, thread["thread_id"])
+            reviewer_result = await self._delegate(
+                tenant_id=principal.tenant_id,
+                workspace_id=workspace_id,
+                channel_id=channel_id,
+                thread_id=thread["thread_id"],
+                task_id=thread["task_id"],
+                sender=self.supervisor_adapter.agent_id,
+                target=reviewer,
+                objective=plan.output["review_task"]["objective"],
+                acceptance_criteria=plan.output["review_task"]["acceptance_criteria"],
+                correlation_id=builder_result["run"]["correlation_id"],
+                trace={"agent_path": [self.supervisor_adapter.agent_id], "parent_run_id": builder_result["run"]["run_id"]},
+                idempotency_key=f"{thread['thread_id']}:reviewer",
+                context={**reviewer_context, "builder_output": builder_result["invocation"].output},
+            )
+            disagreement = bool(reviewer_result["invocation"].output.get("material_disagreement"))
+            if disagreement:
+                approval = self.store.create_approval(
+                    tenant_id=principal.tenant_id,
+                    workspace_id=workspace_id,
+                    channel_id=channel_id,
+                    thread_id=thread["thread_id"],
+                    task_id=thread["task_id"],
+                    run_id=builder_result["run"]["run_id"],
+                    requested_by=self.supervisor_adapter.agent_id,
+                    reason="Material disagreement escalated to owner.",
+                )
+                self.store.add_task_event(
+                    tenant_id=principal.tenant_id,
+                    workspace_id=workspace_id,
+                    channel_id=channel_id,
+                    thread_id=thread["thread_id"],
+                    task_id=thread["task_id"],
+                    status="BLOCKED",
+                    actor=self.supervisor_adapter.agent_id,
+                    run_id=builder_result["run"]["run_id"],
+                    details={"objective": objective, "owner_decision_required": True, "notes": "Reviewer raised material disagreement.", "approval_id": approval["approval_id"]},
+                )
+            else:
+                self.store.add_task_event(
+                    tenant_id=principal.tenant_id,
+                    workspace_id=workspace_id,
+                    channel_id=channel_id,
+                    thread_id=thread["thread_id"],
+                    task_id=thread["task_id"],
+                    status="CLOSED",
+                    actor=self.supervisor_adapter.agent_id,
+                    run_id=builder_result["run"]["run_id"],
+                    details={"objective": objective, "notes": "Builder and reviewer completed without material disagreement."},
+                )
+            return self.store.get_thread(thread["thread_id"], principal.tenant_id) or thread
+        except Exception:
+            if idempotency_key and reservation_id:
+                self.store.release_idempotency_reservation(
+                    "objective",
+                    principal.tenant_id,
+                    idempotency_key,
+                    expected_resource_id=reservation_id,
+                )
+            raise
 
     def decide_run(
         self,

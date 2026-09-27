@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import concurrent.futures
 from pathlib import Path
 
 import pytest
@@ -96,6 +97,70 @@ async def test_material_disagreement_creates_owner_approval_request(tmp_path: Pa
     assert thread["lifecycle_status"] == "BLOCKED"
     assert thread["approvals"]
     assert thread["approvals"][0]["status"] == "PENDING"
+
+
+def test_start_agent_run_is_idempotent_under_concurrency(tmp_path: Path):
+    store = AgentCommonsStore(db_path=str(tmp_path / "commons.db"), ledger_dir=tmp_path / "ledger")
+    workspace = store.create_workspace("tenant-a", "Workspace A")
+    channel = store.create_channel("tenant-a", workspace["workspace_id"], "general")
+    thread = store.create_thread("tenant-a", workspace["workspace_id"], channel["channel_id"], "Concurrent Thread")
+
+    def start() -> str:
+        run = store.start_agent_run(
+            tenant_id="tenant-a",
+            workspace_id=workspace["workspace_id"],
+            channel_id=channel["channel_id"],
+            thread_id=thread["thread_id"],
+            task_id=thread["task_id"],
+            agent_id="builder-agent",
+            role="worker",
+            correlation_id="corr-1",
+            context={"thread_history": []},
+            idempotency_key="same-run",
+        )
+        return run["run_id"]
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        first, second = [future.result() for future in [pool.submit(start), pool.submit(start)]]
+
+    assert first == second
+
+
+@pytest.mark.asyncio
+async def test_objective_idempotency_reservation_releases_after_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    store = AgentCommonsStore(db_path=str(tmp_path / "commons.db"), ledger_dir=tmp_path / "ledger")
+    proto = A2AProtocol()
+    supervisor = SupervisorAgent(store, protocol=proto)
+    supervisor.register_adapter(MockAgentAdapter("builder-agent", "Builder Agent", "worker", ["build"]))
+    supervisor.register_adapter(MockAgentAdapter("reviewer-agent", "Reviewer Agent", "reviewer", ["review"]))
+    workspace = store.create_workspace("tenant-a", "Governed Workspace")
+    channel = store.create_channel("tenant-a", workspace["workspace_id"], "deliveries")
+
+    original = store.create_thread
+
+    def explode(*_args, **_kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(store, "create_thread", explode)
+    with pytest.raises(RuntimeError):
+        await supervisor.submit_objective(
+            principal=Principal("tenant-a", "owner-1", "owner"),
+            workspace_id=workspace["workspace_id"],
+            channel_id=channel["channel_id"],
+            objective="Will fail once",
+            idempotency_key="retryable-key",
+        )
+
+    monkeypatch.setattr(store, "create_thread", original)
+    thread = await supervisor.submit_objective(
+        principal=Principal("tenant-a", "owner-1", "owner"),
+        workspace_id=workspace["workspace_id"],
+        channel_id=channel["channel_id"],
+        objective="Will fail once",
+        idempotency_key="retryable-key",
+    )
+
+    assert thread["thread_id"]
 
 
 def test_agent_commons_persistence_survives_restart(tmp_path: Path):

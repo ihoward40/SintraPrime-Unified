@@ -1101,6 +1101,40 @@ class TestDurableWorkflowEngine:
         assert wf.status in (WorkflowStatus.COMPLETED, WorkflowStatus.RUNNING)
 
     @pytest.mark.asyncio
+    async def test_authority_context_is_not_applied_without_authority_required_flag(self):
+        engine = DurableWorkflowEngine()
+
+        async def my_workflow(ctx, data):
+            return await ctx.execute_activity(
+                "step_1",
+                lambda: {"processed": True},
+                retry_policy=RetryPolicy(max_attempts=1, jitter=False),
+            )
+
+        engine.register_workflow("test_wf", my_workflow)
+        wf_id = await engine.start_workflow(
+            "test_wf",
+            {"input": "data"},
+            metadata={
+                "authority_context": {
+                    "principal_id": "principal-a",
+                    "tenant_id": "tenant-a",
+                    "capability_lease_id": "lease-a",
+                    "approved_workflow_type": "test_wf",
+                }
+            },
+        )
+
+        await asyncio.sleep(0.2)
+        wf = engine.get_workflow(wf_id)
+        assert wf is not None
+        assert wf.status == WorkflowStatus.COMPLETED
+        scheduled = [h for h in engine.get_history(wf_id) if h.event_type == HistoryEventType.ACTIVITY_SCHEDULED]
+        assert len(scheduled) == 1
+        assert scheduled[0].payload["authority_bound"] is False
+        assert scheduled[0].payload["capability_lease_id"] is None
+
+    @pytest.mark.asyncio
     async def test_cancel_workflow(self):
         engine = DurableWorkflowEngine()
         store = engine._store

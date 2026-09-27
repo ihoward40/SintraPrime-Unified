@@ -1228,10 +1228,11 @@ class DurableWorkflowEngine:
         authority_context = None
         authority_required = False
         if wf and isinstance(wf.metadata, dict):
-            raw_context = wf.metadata.get("authority_context")
-            if isinstance(raw_context, dict):
-                authority_context = raw_context
-            authority_required = bool(wf.metadata.get("authority_required", False) or authority_context is not None)
+            authority_required = bool(wf.metadata.get("authority_required", False))
+            if authority_required:
+                raw_context = wf.metadata.get("authority_context")
+                if isinstance(raw_context, dict):
+                    authority_context = raw_context
         func = self._registered[workflow_type]
         ctx = WorkflowContext(
             workflow_id=workflow_id,

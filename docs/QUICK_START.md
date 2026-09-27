@@ -22,7 +22,7 @@ pip install -r requirements.txt
 # Python (default CI-equivalent)
 python -m pytest --tb=short -q
 
-# Python (local full-suite safety lane; keeps per-test hangs bounded)
+# Python (local full-suite safety lane; requires pytest-timeout and keeps per-test hangs bounded)
 python -m pytest --tb=short -q --timeout=120 --timeout-method=thread
 
 # Security certification suites (PRs #214–#217)

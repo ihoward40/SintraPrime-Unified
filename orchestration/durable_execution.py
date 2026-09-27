@@ -1084,7 +1084,12 @@ class DurableWorkflowEngine:
         if "authority_context" in metadata and not metadata.get("authority_required", False):
             audit_context = metadata.get("authority_context")
             if isinstance(audit_context, dict):
-                metadata["authority_context_audit"] = dict(audit_context)
+                metadata["authority_context_audit"] = {
+                    "stripped": True,
+                    "provided_fields": sorted(audit_context.keys()),
+                }
+            else:
+                metadata["authority_context_audit"] = {"stripped": True}
             metadata.pop("authority_context", None)
         if metadata.get("authority_required", False):
             authority_context = metadata.get("authority_context")

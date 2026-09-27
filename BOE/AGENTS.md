@@ -28,4 +28,4 @@ Define the Executive Foundation artifacts for the Howard Life Institution, inclu
 
 | Path | Scope | Controls |
 |---|---|---|
-| `01-Decision-Register/` | Decision record standards and register assets | Record structure, identifiers, lifecycle, and traceability requirements |
+| `01-Decision-Register/AGENTS.md` | Decision record standards and register assets | Record structure, identifiers, lifecycle, and traceability requirements |

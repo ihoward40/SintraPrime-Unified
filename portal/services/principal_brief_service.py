@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+import types
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timezone
 from functools import lru_cache
@@ -134,7 +135,15 @@ def recommendation_is_proposal_only(recommendation: dict) -> bool:
 @lru_cache(maxsize=1)
 def _load_network_sandbox_module():
     module_path = Path(__file__).resolve().parents[2] / "swarm_runtime" / "network_sandbox.py"
-    spec = importlib.util.spec_from_file_location("portal_runtime_network_sandbox", module_path)
+    package_name = "swarm_runtime"
+    module_name = f"{package_name}.network_sandbox"
+    package = sys.modules.get(package_name)
+    if package is None:
+        package = types.ModuleType(package_name)
+        package.__path__ = [str(module_path.parent)]
+        package.__package__ = package_name
+        sys.modules[package_name] = package
+    spec = importlib.util.spec_from_file_location(module_name, module_path)
     if spec is None or spec.loader is None:
         raise ModuleNotFoundError("swarm_runtime.network_sandbox")
     module = sys.modules.get(spec.name)

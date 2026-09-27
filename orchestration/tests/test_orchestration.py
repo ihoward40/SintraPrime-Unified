@@ -700,6 +700,7 @@ from orchestration.durable_execution import (
     SagaCompensator,
     WorkflowContext,
     DurableWorkflowEngine,
+    _compute_activity_action_hash,
 )
 
 
@@ -796,6 +797,25 @@ class TestRetryPolicy:
 
 
 class TestActivityExecutor:
+    @staticmethod
+    def _authority_context() -> dict[str, str]:
+        return {
+            "principal_id": "principal-a",
+            "tenant_id": "tenant-a",
+            "capability_lease_id": "lease-a",
+            "approved_workflow_type": "t",
+        }
+
+    @staticmethod
+    def _action_hash(activity_name: str) -> str:
+        return _compute_activity_action_hash(
+            workflow_id="wf1",
+            workflow_type="t",
+            activity_name=activity_name,
+            args=(),
+            kwargs={},
+        )
+
     @pytest.mark.asyncio
     async def test_successful_activity(self):
         store = DurableStore()
@@ -807,7 +827,14 @@ class TestActivityExecutor:
         async def my_activity():
             return {"value": 42}
 
-        result = await executor.run("wf1", "fetch_data", my_activity)
+        result = await executor.run(
+            "wf1",
+            "fetch_data",
+            my_activity,
+            workflow_type="t",
+            authority_context=self._authority_context(),
+            activity_action_hash=self._action_hash("fetch_data"),
+        )
         assert result["value"] == 42
 
     @pytest.mark.asyncio
@@ -826,7 +853,21 @@ class TestActivityExecutor:
             return "ok"
 
         policy = RetryPolicy(max_attempts=3, initial_interval=0.01, jitter=False)
-        result = await executor.run("wf2", "flaky", flaky_activity, retry_policy=policy)
+        result = await executor.run(
+            "wf2",
+            "flaky",
+            flaky_activity,
+            retry_policy=policy,
+            workflow_type="t",
+            authority_context=self._authority_context(),
+            activity_action_hash=_compute_activity_action_hash(
+                workflow_id="wf2",
+                workflow_type="t",
+                activity_name="flaky",
+                args=(),
+                kwargs={},
+            ),
+        )
         assert result == "ok"
 
     @pytest.mark.asyncio
@@ -842,7 +883,21 @@ class TestActivityExecutor:
 
         policy = RetryPolicy(max_attempts=2, initial_interval=0.01, jitter=False)
         with pytest.raises(RuntimeError, match="failed after"):
-            await executor.run("wf3", "fail_act", always_fail, retry_policy=policy)
+            await executor.run(
+                "wf3",
+                "fail_act",
+                always_fail,
+                retry_policy=policy,
+                workflow_type="t",
+                authority_context=self._authority_context(),
+                activity_action_hash=_compute_activity_action_hash(
+                    workflow_id="wf3",
+                    workflow_type="t",
+                    activity_name="fail_act",
+                    args=(),
+                    kwargs={},
+                ),
+            )
 
     @pytest.mark.asyncio
     async def test_activity_authority_context_requires_principal_tenant_and_lease(self):

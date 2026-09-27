@@ -861,7 +861,7 @@ class ActivityExecutor:
         activity_action_hash: Optional[str],
     ) -> None:
         if authority_context is None:
-            return
+            raise PermissionError("ACTIVITY_AUTHORITY_CONTEXT_REQUIRED")
         required = ("principal_id", "tenant_id", "capability_lease_id")
         if not all(str(authority_context.get(key, "")).strip() for key in required):
             raise PermissionError("ACTIVITY_AUTHORITY_CONTEXT_REQUIRED")

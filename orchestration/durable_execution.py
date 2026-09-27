@@ -1081,7 +1081,14 @@ class DurableWorkflowEngine:
 
         wf_id = workflow_id or uuid.uuid4().hex
         metadata = dict(metadata or {})
-        if "authority_context" in metadata and not metadata.get("authority_required", False):
+        raw_authority_required = metadata.get("authority_required", False)
+        if isinstance(raw_authority_required, str):
+            authority_required = raw_authority_required.strip().lower() in {"1", "true", "yes", "on"}
+        else:
+            authority_required = bool(raw_authority_required)
+        metadata["authority_required"] = authority_required
+
+        if "authority_context" in metadata and not authority_required:
             audit_context = metadata.get("authority_context")
             sensitive_authority_keys = {"principal_id", "tenant_id", "capability_lease_id", "approved_workflow_type"}
             if isinstance(audit_context, dict) and sensitive_authority_keys.intersection(audit_context.keys()):
@@ -1096,7 +1103,7 @@ class DurableWorkflowEngine:
             else:
                 metadata["authority_context_audit"] = {"stripped": True}
             metadata.pop("authority_context", None)
-        if metadata.get("authority_required", False):
+        if authority_required:
             authority_context = metadata.get("authority_context")
             if not isinstance(authority_context, dict):
                 raise ValueError("AUTHORITY_CONTEXT_REQUIRED")

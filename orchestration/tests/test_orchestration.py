@@ -1120,6 +1120,37 @@ class TestDurableWorkflowEngine:
             )
 
     @pytest.mark.asyncio
+    async def test_start_normalizes_string_authority_required_flag(self):
+        engine = DurableWorkflowEngine()
+
+        async def my_workflow(ctx, data):
+            return await ctx.execute_activity(
+                "step_1",
+                lambda: {"processed": True},
+                retry_policy=RetryPolicy(max_attempts=1, jitter=False),
+            )
+
+        engine.register_workflow("test_wf", my_workflow)
+        wf_id = await engine.start_workflow(
+            "test_wf",
+            {"input": "data"},
+            metadata={
+                "authority_required": "true",
+                "authority_context": {
+                    "principal_id": "principal-a",
+                    "tenant_id": "tenant-a",
+                    "capability_lease_id": "lease-a",
+                    "approved_workflow_type": "test_wf",
+                },
+            },
+        )
+        await asyncio.sleep(0.2)
+        wf = engine.get_workflow(wf_id)
+        assert wf is not None
+        assert wf.status == WorkflowStatus.COMPLETED
+        assert wf.metadata["authority_required"] is True
+
+    @pytest.mark.asyncio
     async def test_start_and_complete_workflow(self):
         engine = DurableWorkflowEngine()
 

@@ -6,6 +6,8 @@ on:
       - feat/sp-mc3d-001-town
     paths:
       - web/package.json
+      - web/src/pages/mission-control/MissionControlTown.tsx
+      - web/src/pages/mission-control/three/**
       - .github/workflows/sp-mc3d-renderer-admission.yml
 
 permissions:

@@ -529,7 +529,7 @@ class _HealthTrackedInferenceProvider:
         started = time.perf_counter()
         try:
             result = getattr(self._provider, method)(request)
-            if method == "invoke_stream" and hasattr(result, "__iter__") and not hasattr(result, "provider"):
+            if method == "invoke_stream" and hasattr(result, "__iter__"):
                 return self._wrap_stream_with_health(provider_name, result, started)
         except InferenceError as exc:
             if exc.kind in {

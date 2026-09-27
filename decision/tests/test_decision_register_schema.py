@@ -6,9 +6,12 @@ from jsonschema import Draft202012Validator, FormatChecker, ValidationError
 
 from decision.register.schema import (
     ALLOWED_RELATION_TYPES,
+    ALLOWED_TRACE_LINK_TYPES,
     DECISION_REGISTER_ENTRY_SCHEMA,
     DECISION_REGISTER_SCHEMA_VERSION,
     DECISION_REGISTER_STORAGE_MODEL,
+    HASHED_TRACE_LINK_TYPES,
+    NON_HASHED_TRACE_LINK_TYPES,
     SHA256_HEX_PATTERN,
 )
 
@@ -33,6 +36,10 @@ def _entry_with_link(link_type: str, include_sha256: bool) -> dict:
         "policy": {"decision": "SHADOW_ONLY", "risk": "ELEVATED"},
         "traceability": {"receipt_hash": "d" * 64, "links": [link]},
     }
+
+
+def _sql_enum(values: tuple[str, ...]) -> str:
+    return ", ".join(f"'{value}'" for value in values)
 
 
 def test_decision_register_entry_required_fields():
@@ -64,15 +71,9 @@ def test_decision_register_traceability_links_require_targets():
     links = traceability["properties"]["links"]
     assert links["minItems"] == 1
     assert set(links["items"]["required"]) == {"link_type", "target_id"}
-    assert set(links["items"]["properties"]["link_type"]["enum"]) == {
-        "contract",
-        "state",
-        "receipt",
-        "run",
-        "evidence",
-    }
+    assert set(links["items"]["properties"]["link_type"]["enum"]) == set(ALLOWED_TRACE_LINK_TYPES)
     rule = links["items"]["allOf"][0]
-    assert set(rule["if"]["properties"]["link_type"]["enum"]) == {"contract", "state", "receipt"}
+    assert set(rule["if"]["properties"]["link_type"]["enum"]) == set(HASHED_TRACE_LINK_TYPES)
     assert rule["then"]["required"] == ["sha256"]
     assert rule["else"] == {"not": {"required": ["sha256"]}}
 
@@ -86,11 +87,12 @@ def test_decision_register_storage_model_relations_and_traceability():
     assert "decision_register_traceability_links" in tables
     assert "schema_version TEXT NOT NULL" in tables["decision_register_entries"]
     assert "CHECK(schema_version = 'sp-decision-register-v1')" in tables["decision_register_entries"]
+    assert "CHECK(recorded_at GLOB '????-??-??T??:??:??Z')" in tables["decision_register_entries"]
     assert "receipt_hash TEXT NOT NULL UNIQUE" in tables["decision_register_entries"]
     assert "prev_receipt_hash TEXT" in tables["decision_register_entries"]
     assert "UNIQUE(decision_id, run_id)" not in tables["decision_register_entries"]
     assert "UNIQUE(source_register_id, target_register_id, relation_type)" in tables["decision_register_relations"]
-    assert "CHECK(relation_type IN ('depends_on', 'supersedes', 'references', 'derived_from'))" in tables[
+    assert f"CHECK(relation_type IN ({_sql_enum(ALLOWED_RELATION_TYPES)}))" in tables[
         "decision_register_relations"
     ]
     assert "CHECK(length(contract_semantic_sha256) = 64" in tables["decision_register_entries"]
@@ -105,15 +107,15 @@ def test_decision_register_storage_model_relations_and_traceability():
     assert "FOREIGN KEY(register_id) REFERENCES decision_register_entries(register_id) ON DELETE CASCADE" in tables[
         "decision_register_traceability_links"
     ]
-    assert "CHECK(link_type IN ('contract', 'state', 'receipt', 'run', 'evidence'))" in tables[
+    assert f"CHECK(link_type IN ({_sql_enum(ALLOWED_TRACE_LINK_TYPES)}))" in tables[
         "decision_register_traceability_links"
     ]
     assert "CHECK(" in tables["decision_register_traceability_links"]
-    assert "OR (link_type IN ('run', 'evidence') AND sha256 IS NULL)" in tables[
+    assert f"OR (link_type IN ({_sql_enum(NON_HASHED_TRACE_LINK_TYPES)}) AND sha256 IS NULL)" in tables[
         "decision_register_traceability_links"
     ]
     assert "CHECK(sha256 IS NULL OR (length(sha256) = 64" in tables["decision_register_traceability_links"]
-    assert "(link_type IN ('contract', 'state', 'receipt') AND sha256 IS NOT NULL)" in tables[
+    assert f"(link_type IN ({_sql_enum(HASHED_TRACE_LINK_TYPES)}) AND sha256 IS NOT NULL)" in tables[
         "decision_register_traceability_links"
     ]
     indexes = storage["indexes"]
@@ -228,6 +230,31 @@ def test_storage_constraints_reject_invalid_hashes_and_link_rules():
                 "SHADOW_ONLY",
                 "ELEVATED",
                 "d" * 64,
+                None,
+                "{}",
+            ),
+        )
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            """
+            INSERT INTO decision_register_entries (
+                register_id, schema_version, decision_id, run_id, recorded_at,
+                contract_semantic_sha256, state_sha256, result_kind, policy_decision,
+                policy_risk, receipt_hash, prev_receipt_hash, payload_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "REG-2B",
+                DECISION_REGISTER_SCHEMA_VERSION,
+                "DEC-1",
+                "RUN-2",
+                "2026-01-01T00:00:00+00:00",
+                "a" * 64,
+                "b" * 64,
+                "DECISION",
+                "SHADOW_ONLY",
+                "ELEVATED",
+                "f" * 64,
                 None,
                 "{}",
             ),

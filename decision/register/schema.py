@@ -7,6 +7,14 @@ from typing import Any
 DECISION_REGISTER_SCHEMA_VERSION = "sp-decision-register-v1"
 SHA256_HEX_PATTERN = r"^[0-9a-fA-F]{64}$"
 ALLOWED_RELATION_TYPES = ("depends_on", "supersedes", "references", "derived_from")
+HASHED_TRACE_LINK_TYPES = ("contract", "state", "receipt")
+NON_HASHED_TRACE_LINK_TYPES = ("run", "evidence")
+ALLOWED_TRACE_LINK_TYPES = HASHED_TRACE_LINK_TYPES + NON_HASHED_TRACE_LINK_TYPES
+
+_SQL_ALLOWED_RELATION_TYPES = ", ".join(f"'{value}'" for value in ALLOWED_RELATION_TYPES)
+_SQL_HASHED_TRACE_LINK_TYPES = ", ".join(f"'{value}'" for value in HASHED_TRACE_LINK_TYPES)
+_SQL_NON_HASHED_TRACE_LINK_TYPES = ", ".join(f"'{value}'" for value in NON_HASHED_TRACE_LINK_TYPES)
+_SQL_ALLOWED_TRACE_LINK_TYPES = ", ".join(f"'{value}'" for value in ALLOWED_TRACE_LINK_TYPES)
 
 DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -99,7 +107,7 @@ DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
                             {
                                 "if": {
                                     "required": ["link_type"],
-                                    "properties": {"link_type": {"enum": ["contract", "state", "receipt"]}},
+                                    "properties": {"link_type": {"enum": list(HASHED_TRACE_LINK_TYPES)}},
                                 },
                                 "then": {"required": ["sha256"]},
                                 "else": {"not": {"required": ["sha256"]}},
@@ -116,7 +124,7 @@ DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
 DECISION_REGISTER_STORAGE_MODEL = {
     "schema_version": DECISION_REGISTER_SCHEMA_VERSION,
     "tables": {
-        "decision_register_entries": """
+        "decision_register_entries": f"""
 CREATE TABLE IF NOT EXISTS decision_register_entries (
     register_id TEXT PRIMARY KEY,
     schema_version TEXT NOT NULL,
@@ -132,6 +140,7 @@ CREATE TABLE IF NOT EXISTS decision_register_entries (
     prev_receipt_hash TEXT,
     payload_json TEXT NOT NULL,
     CHECK(schema_version = 'sp-decision-register-v1'),
+    CHECK(recorded_at GLOB '????-??-??T??:??:??Z'),
     CHECK(length(contract_semantic_sha256) = 64 AND contract_semantic_sha256 NOT GLOB '*[^0-9A-Fa-f]*'),
     CHECK(length(state_sha256) = 64 AND state_sha256 NOT GLOB '*[^0-9A-Fa-f]*'),
     CHECK(length(receipt_hash) = 64 AND receipt_hash NOT GLOB '*[^0-9A-Fa-f]*'),
@@ -141,7 +150,7 @@ CREATE TABLE IF NOT EXISTS decision_register_entries (
     )
 )
 """.strip(),
-        "decision_register_relations": """
+        "decision_register_relations": f"""
 CREATE TABLE IF NOT EXISTS decision_register_relations (
     relation_id INTEGER PRIMARY KEY AUTOINCREMENT,
     source_register_id TEXT NOT NULL,
@@ -150,11 +159,11 @@ CREATE TABLE IF NOT EXISTS decision_register_relations (
     created_at TEXT NOT NULL,
     FOREIGN KEY(source_register_id) REFERENCES decision_register_entries(register_id) ON DELETE CASCADE,
     FOREIGN KEY(target_register_id) REFERENCES decision_register_entries(register_id) ON DELETE CASCADE,
-    CHECK(relation_type IN ('depends_on', 'supersedes', 'references', 'derived_from')),
+    CHECK(relation_type IN ({_SQL_ALLOWED_RELATION_TYPES})),
     UNIQUE(source_register_id, target_register_id, relation_type)
 )
 """.strip(),
-        "decision_register_traceability_links": """
+        "decision_register_traceability_links": f"""
 CREATE TABLE IF NOT EXISTS decision_register_traceability_links (
     link_id INTEGER PRIMARY KEY AUTOINCREMENT,
     register_id TEXT NOT NULL,
@@ -165,10 +174,10 @@ CREATE TABLE IF NOT EXISTS decision_register_traceability_links (
     metadata_json TEXT,
     created_at TEXT NOT NULL,
     FOREIGN KEY(register_id) REFERENCES decision_register_entries(register_id) ON DELETE CASCADE,
-    CHECK(link_type IN ('contract', 'state', 'receipt', 'run', 'evidence')),
+    CHECK(link_type IN ({_SQL_ALLOWED_TRACE_LINK_TYPES})),
     CHECK(
-        (link_type IN ('contract', 'state', 'receipt') AND sha256 IS NOT NULL)
-        OR (link_type IN ('run', 'evidence') AND sha256 IS NULL)
+        (link_type IN ({_SQL_HASHED_TRACE_LINK_TYPES}) AND sha256 IS NOT NULL)
+        OR (link_type IN ({_SQL_NON_HASHED_TRACE_LINK_TYPES}) AND sha256 IS NULL)
     ),
     CHECK(sha256 IS NULL OR (length(sha256) = 64 AND sha256 NOT GLOB '*[^0-9A-Fa-f]*'))
 )

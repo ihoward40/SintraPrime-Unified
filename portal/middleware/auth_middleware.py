@@ -66,11 +66,14 @@ PUBLIC_CONTROLLED_PREFIXES = (
 
 def is_public_path(path: str, method: str | None = None) -> bool:
     if method:
-        if path in PUBLIC_GET_EXACT_PATHS or any(path.startswith(prefix) for prefix in PUBLIC_GET_PREFIX_PATHS):
+        if method == "GET" and (
+            path in PUBLIC_GET_EXACT_PATHS
+            or any(path.startswith(prefix) for prefix in PUBLIC_GET_PREFIX_PATHS)
+        ):
             return True
         if (method, path) in PUBLIC_METHOD_PATHS:
             return True
-        if any(path.startswith(prefix) for prefix in PUBLIC_CONTROLLED_PREFIXES):
+        if method == "GET" and any(path.startswith(prefix) for prefix in PUBLIC_CONTROLLED_PREFIXES):
             return True
     return path in PUBLIC_EXACT_PATHS or any(path.startswith(prefix) for prefix in PUBLIC_PREFIX_PATHS)
 

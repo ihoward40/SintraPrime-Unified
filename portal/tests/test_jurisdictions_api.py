@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
+from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
 import portal.routers.jurisdictions as jurisdiction_router
 from legal_authority.repository import LegalAuthorityRepository
+from portal.auth.jwt_handler import create_access_token
+from portal.auth.rbac import Role
 from portal.main import create_app
 from portal.services.jurisdiction_rule_service import JurisdictionRuleService
 
@@ -119,6 +122,16 @@ def _temp_service(tmp_path):
     return JurisdictionRuleService(LegalAuthorityRepository(root=root))
 
 
+def _authorized_headers(extra_headers: dict[str, str] | None = None) -> dict[str, str]:
+    token = create_access_token(
+        user_id=str(uuid4()),
+        tenant_id=str(uuid4()),
+        role=Role.ATTORNEY.value,
+        permissions=[],
+    )
+    return {"Authorization": "Bearer " + token, **(extra_headers or {})}
+
+
 def test_phase_2a_review_queue_requires_authorization(tmp_path):
     original = jurisdiction_router.service
     jurisdiction_router.service = _temp_service(tmp_path)
@@ -151,14 +164,16 @@ def test_phase_2a_review_and_challenge_write_endpoints_are_controlled(tmp_path):
             "/legal-rules/NJ-TRUST-CERTIFICATION/submit-review",
             json={"findings": "submit"},
         )
-        assert no_auth.status_code == 403
+        assert no_auth.status_code == 401
 
         submit = c.post(
             "/legal-rules/NJ-TRUST-CERTIFICATION/submit-review",
-            headers={
-                "X-Reviewer-Role": "LEGAL_RESEARCHER",
-                "X-Reviewer-Identity": "researcher@example.test",
-            },
+            headers=_authorized_headers(
+                {
+                    "X-Reviewer-Role": "LEGAL_RESEARCHER",
+                    "X-Reviewer-Identity": "researcher@example.test",
+                }
+            ),
             json={"findings": "ready for attorney review"},
         )
         assert submit.status_code == 200
@@ -166,20 +181,24 @@ def test_phase_2a_review_and_challenge_write_endpoints_are_controlled(tmp_path):
 
         non_attorney = c.post(
             "/legal-rules/NJ-TRUST-CERTIFICATION/reviews",
-            headers={
-                "X-Reviewer-Role": "LEGAL_RESEARCHER",
-                "X-Reviewer-Identity": "researcher@example.test",
-            },
+            headers=_authorized_headers(
+                {
+                    "X-Reviewer-Role": "LEGAL_RESEARCHER",
+                    "X-Reviewer-Identity": "researcher@example.test",
+                }
+            ),
             json={"review_status": "APPROVED", "findings": "approve", "digital_signature": "sig"},
         )
         assert non_attorney.status_code == 400
 
         challenge = c.post(
             "/legal-rules/NJ-UCC-DEBTOR-NAMING-TRUSTS/challenges",
-            headers={
-                "X-Reviewer-Role": "LICENSED_ATTORNEY",
-                "X-Reviewer-Identity": "attorney@example.test",
-            },
+            headers=_authorized_headers(
+                {
+                    "X-Reviewer-Role": "LICENSED_ATTORNEY",
+                    "X-Reviewer-Identity": "attorney@example.test",
+                }
+            ),
             json={
                 "challenge_type": "EFFECTIVE_DATE",
                 "issue": "Confirm current transition rule dates.",
@@ -202,12 +221,20 @@ def test_phase_2a_stale_authority_and_refresh_endpoint(tmp_path):
         assert stale.status_code == 200
         assert any(item["source_availability_status"] == "LOCATOR_ONLY" for item in stale.json())
 
+        unauthenticated_refresh = c.post(
+            "/legal-authorities/NJ-UTC-2015-276/refresh-metadata",
+            json={"supplied_hash": "phase2a-test-hash", "source_available": True},
+        )
+        assert unauthenticated_refresh.status_code == 401
+
         refreshed = c.post(
             "/legal-authorities/NJ-UTC-2015-276/refresh-metadata",
-            headers={
-                "X-Reviewer-Role": "LEGAL_RESEARCHER",
-                "X-Reviewer-Identity": "researcher@example.test",
-            },
+            headers=_authorized_headers(
+                {
+                    "X-Reviewer-Role": "LEGAL_RESEARCHER",
+                    "X-Reviewer-Identity": "researcher@example.test",
+                }
+            ),
             json={"supplied_hash": "phase2a-test-hash", "source_available": True},
         )
         assert refreshed.status_code == 200

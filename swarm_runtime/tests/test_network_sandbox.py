@@ -128,9 +128,10 @@ def test_os_enforced_unavailable_fails_closed() -> None:
         _restore_env(saved)
 
 
-def test_container_network_none_asserts_os() -> None:
+def test_container_network_none_asserts_os(monkeypatch: pytest.MonkeyPatch) -> None:
     saved = _set_env(ENFORCEMENT="container_network_none", CONTAINER="none")
     try:
+        monkeypatch.setattr("swarm_runtime.network_sandbox._container_network_none_verified", lambda: True)
         sb = NetworkSandbox.from_config()
         r = sb.resolve()
         assert r["effective_level"] == "os"

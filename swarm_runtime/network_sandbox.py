@@ -85,6 +85,26 @@ def _probe_os_netns() -> bool:
         return False
 
 
+def _container_network_none_verified() -> bool:
+    """Verify the current runtime appears network-disabled (fail-closed)."""
+    if platform.system() != "Linux":
+        return False
+    try:
+        # A `--network=none` runtime should expose only loopback.
+        interfaces = [name for name in os.listdir("/sys/class/net") if name != "lo"]
+        if interfaces:
+            return False
+        # And it should not have a default route.
+        with open("/proc/net/route", encoding="utf-8") as route_file:
+            for line in route_file.readlines()[1:]:
+                fields = line.split()
+                if len(fields) > 1 and fields[1] == "00000000":
+                    return False
+        return True
+    except OSError:
+        return False
+
+
 @dataclass
 class NetworkSandbox:
     """Resolved network-containment posture for one execution backend."""
@@ -131,7 +151,7 @@ class NetworkSandbox:
                 "fail_closed": True,
             }
         if self.mode is NetworkSandboxMode.CONTAINER_NETWORK_NONE:
-            if self.container_declared:
+            if self.container_declared and _container_network_none_verified():
                 return {
                     "effective_level": "os",
                     "enforcement_level": "os_enforced",

@@ -155,7 +155,7 @@ class PricingCalculator:
         if tier == "enterprise":
             return {"tier": tier, "monthly": None, "annual": None, "billing": "custom"}
 
-        annual_price = int(monthly_price * 11)  # 2 months free for annual
+        annual_price = int(monthly_price * 11)  # 1 month free for annual
 
         return {
             "tier": tier,

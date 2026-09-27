@@ -784,9 +784,9 @@ class ActivityExecutor:
             event_type=HistoryEventType.ACTIVITY_SCHEDULED,
             activity_name=name,
             payload={
-                "authority_bound": authority_context is not None,
-                "capability_lease_id": authority_context.get("capability_lease_id") if authority_context else None,
-                "activity_action_hash": activity_action_hash if authority_context else None,
+                "authority_bound": authority_required,
+                "capability_lease_id": authority_context.get("capability_lease_id") if authority_required and authority_context else None,
+                "activity_action_hash": activity_action_hash if authority_required else None,
             },
         ))
 

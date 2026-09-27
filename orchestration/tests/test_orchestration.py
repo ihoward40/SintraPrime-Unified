@@ -834,6 +834,7 @@ class TestActivityExecutor:
             workflow_type="t",
             authority_context=self._authority_context(),
             activity_action_hash=self._action_hash("fetch_data"),
+            authority_required=True,
         )
         assert result["value"] == 42
 
@@ -867,6 +868,7 @@ class TestActivityExecutor:
                 args=(),
                 kwargs={},
             ),
+            authority_required=True,
         )
         assert result == "ok"
 
@@ -897,6 +899,7 @@ class TestActivityExecutor:
                     args=(),
                     kwargs={},
                 ),
+                authority_required=True,
             )
 
     @pytest.mark.asyncio
@@ -918,6 +921,7 @@ class TestActivityExecutor:
                 workflow_type="t",
                 authority_context={"tenant_id": "tenant-a"},
                 activity_action_hash="any",
+                authority_required=True,
             )
 
     @pytest.mark.asyncio
@@ -944,6 +948,7 @@ class TestActivityExecutor:
                     "approved_workflow_type": "",
                 },
                 activity_action_hash="any",
+                authority_required=True,
             )
 
     @pytest.mark.asyncio

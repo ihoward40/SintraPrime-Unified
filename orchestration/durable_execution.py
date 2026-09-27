@@ -863,7 +863,7 @@ class ActivityExecutor:
         activity_action_hash: Optional[str],
         authority_required: bool,
     ) -> None:
-        if authority_context is None and not authority_required:
+        if not authority_required:
             return
         if authority_context is None:
             raise PermissionError("ACTIVITY_AUTHORITY_CONTEXT_REQUIRED")

@@ -90,6 +90,8 @@ class ModelPromotionGate:
 
     def admit(self, results: Iterable[BenchmarkResult], *, required_suites: Iterable[str]) -> tuple[bool, str]:
         materialized = list(results)
+        if not materialized:
+            return False, "MISSING_BENCHMARK_EVIDENCE"
         if len({result.model_id for result in materialized}) > 1:
             return False, "MIXED_MODEL_EVIDENCE"
         by_suite: dict[str, BenchmarkResult] = {r.suite: r for r in materialized}

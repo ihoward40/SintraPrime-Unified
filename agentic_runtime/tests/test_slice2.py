@@ -68,7 +68,12 @@ def test_promotion_requires_evidence_and_floor():
     ok, reason = gate.admit([BenchmarkResult("m", "reasoning", .9, "receipt-1")], required_suites=["reasoning"])
     assert ok
     assert reason == "PROMOTED"
-    assert gate.admit([], required_suites=["reasoning"])[0] is False
+    assert gate.admit([], required_suites=["reasoning"]) == (False, "MISSING_BENCHMARK_EVIDENCE")
+
+
+def test_promotion_requires_at_least_one_benchmark():
+    gate = ModelPromotionGate(.8)
+    assert gate.admit([], required_suites=[]) == (False, "MISSING_BENCHMARK_EVIDENCE")
 
 
 def test_promotion_rejects_mixed_model_evidence():

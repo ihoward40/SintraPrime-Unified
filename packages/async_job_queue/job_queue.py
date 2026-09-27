@@ -9,6 +9,8 @@ from pathlib import Path
 from typing import Any, Callable
 from uuid import uuid4
 
+RUNNING_LEASE_DAYS = 36500
+
 
 class JobStatus(StrEnum):
     PENDING = "pending"
@@ -81,7 +83,7 @@ class AsyncJobQueue:
 
     def claim_next_ready(self, *, as_of: datetime | None = None) -> AsyncJob | None:
         current = as_of or datetime.now(UTC)
-        running_hold_until = current + timedelta(days=36500)
+        running_hold_until = current + timedelta(days=RUNNING_LEASE_DAYS)
         with sqlite3.connect(self._db_path) as conn:
             conn.execute("BEGIN IMMEDIATE")
             row = conn.execute(
@@ -128,19 +130,28 @@ class AsyncJobQueue:
         return self.get(task_id)
 
     def mark_failed(self, task_id: str, *, error: str) -> AsyncJob:
-        job = self.get(task_id)
-        if job is None:
-            raise KeyError(task_id)
         now = datetime.now(UTC)
-        attempts = job.attempts
         status = JobStatus.FAILED
         run_after = now
-        if attempts < self._retry_policy.max_attempts:
-            status = JobStatus.RETRYING
-            delay = self._retry_policy.delay_for_attempt(attempts)
-            run_after = now + timedelta(seconds=delay)
-
         with sqlite3.connect(self._db_path) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                """
+                SELECT attempts, status FROM async_jobs WHERE task_id = ?
+                """,
+                (task_id,),
+            ).fetchone()
+            if row is None:
+                conn.commit()
+                raise KeyError(task_id)
+            attempts, current_status = row
+            if JobStatus(current_status) is not JobStatus.RUNNING:
+                conn.commit()
+                raise ValueError("job must be running before it can fail")
+            if attempts < self._retry_policy.max_attempts:
+                status = JobStatus.RETRYING
+                delay = self._retry_policy.delay_for_attempt(attempts)
+                run_after = now + timedelta(seconds=delay)
             updated = conn.execute(
                 """
                 UPDATE async_jobs
@@ -156,6 +167,7 @@ class AsyncJobQueue:
                     JobStatus.RUNNING.value,
                 ),
             ).rowcount
+            conn.commit()
         if updated == 0:
             raise ValueError("job must be running before it can fail")
         if status is JobStatus.FAILED:

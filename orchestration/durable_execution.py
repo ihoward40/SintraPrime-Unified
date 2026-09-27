@@ -1212,10 +1212,8 @@ class DurableWorkflowEngine:
         ))
 
         wf = self._store.load_workflow(workflow_id)
-        if wf is None:
-            raise RuntimeError(f"Workflow record missing: {workflow_id}")
         authority_context = None
-        if isinstance(wf.metadata, dict):
+        if wf and isinstance(wf.metadata, dict):
             raw_context = wf.metadata.get("authority_context")
             if isinstance(raw_context, dict):
                 authority_context = raw_context
@@ -1233,6 +1231,10 @@ class DurableWorkflowEngine:
             else:
                 result = func(ctx, input_data)
 
+            if wf is None:
+                wf = self._store.load_workflow(workflow_id)
+            if wf is None:
+                raise RuntimeError(f"Workflow record missing: {workflow_id}")
             wf.status = WorkflowStatus.COMPLETED
             wf.state["_result"] = result
             wf.completed_at = time.time()
@@ -1244,6 +1246,10 @@ class DurableWorkflowEngine:
             ))
         except Exception as exc:
             logger.exception("Workflow %s failed: %s", workflow_id, exc)
+            if wf is None:
+                wf = self._store.load_workflow(workflow_id)
+            if wf is None:
+                raise RuntimeError(f"Workflow record missing: {workflow_id}") from exc
             wf.status = WorkflowStatus.FAILED
             wf.error = str(exc)
             self._store.save_workflow(wf)

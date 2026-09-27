@@ -4,17 +4,19 @@ The transport is injected so this module can be tested without network access
 and cannot bypass MediaWorkflowPolicy.
 """
 from __future__ import annotations
-from typing import Any, Callable, Dict
+
+from collections.abc import Callable
+from typing import Any
 
 from .media_workflows import MediaJob, MediaWorkflowPolicy
 
 
 class GovernedComfyUIAdapter:
-    def __init__(self, policy: MediaWorkflowPolicy, submit: Callable[[Dict[str, Any]], Dict[str, Any]]):
+    def __init__(self, policy: MediaWorkflowPolicy, submit: Callable[[dict[str, Any]], dict[str, Any]]):
         self.policy = policy
         self.submit = submit
 
-    def run(self, job: MediaJob) -> Dict[str, Any]:
+    def run(self, job: MediaJob) -> dict[str, Any]:
         admitted, reason = self.policy.admit(job)
         if not admitted:
             raise PermissionError(reason)

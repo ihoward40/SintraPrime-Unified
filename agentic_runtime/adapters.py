@@ -1,7 +1,9 @@
 """Adapters binding agentic_runtime to existing SintraPrime machinery."""
 from __future__ import annotations
+
 import uuid
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
 from agents.nova.approval_gateway import ApprovalGateway, ApprovalStatus
 from agents.nova.execution_ledger import ExecutionLedger, LedgerEntry
@@ -17,11 +19,11 @@ class ApprovalGatewayAdapter:
     provide a resolver for an already-approved request or configure the
     existing gateway's own auto-approval policy.
     """
-    def __init__(self, gateway: ApprovalGateway, resolver: Optional[Callable[[Any], bool]] = None):
+    def __init__(self, gateway: ApprovalGateway, resolver: Callable[[Any], bool] | None = None):
         self.gateway = gateway
         self.resolver = resolver
 
-    def __call__(self, action: str, context: Dict[str, Any]) -> bool:
+    def __call__(self, action: str, context: dict[str, Any]) -> bool:
         request = self.gateway.submit_for_approval(
             action=action,
             metadata={"description": action, "params": context, "agentic_runtime": True},
@@ -35,12 +37,12 @@ class ApprovalGatewayAdapter:
 
 
 class ExecutionLedgerAdapter:
-    def __init__(self, ledger: ExecutionLedger, *, user_id: str = "agentic_runtime", case_id: Optional[str] = None):
+    def __init__(self, ledger: ExecutionLedger, *, user_id: str = "agentic_runtime", case_id: str | None = None):
         self.ledger = ledger
         self.user_id = user_id
         self.case_id = case_id
 
-    def __call__(self, event: str, payload: Dict[str, Any]) -> None:
+    def __call__(self, event: str, payload: dict[str, Any]) -> None:
         self.ledger.append(LedgerEntry(
             entry_id=str(uuid.uuid4()),
             action_id=str(payload.get("action_id", uuid.uuid4())),

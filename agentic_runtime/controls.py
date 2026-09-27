@@ -1,7 +1,8 @@
 """Execution budgets, checkpoints, manifests, receipts and promotion gates."""
 from __future__ import annotations
+
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Callable, Dict, Iterable, List, Optional
 
 
 @dataclass
@@ -39,7 +40,7 @@ class Checkpoint:
 class ChangedFileManifest:
     before_ref: str
     after_ref: str
-    files: List[str] = field(default_factory=list)
+    files: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -88,7 +89,7 @@ class ModelPromotionGate:
         self.minimum_score = minimum_score
 
     def admit(self, results: Iterable[BenchmarkResult], *, required_suites: Iterable[str]) -> tuple[bool, str]:
-        by_suite: Dict[str, BenchmarkResult] = {r.suite: r for r in results}
+        by_suite: dict[str, BenchmarkResult] = {r.suite: r for r in results}
         for suite in required_suites:
             result = by_suite.get(suite)
             if result is None:

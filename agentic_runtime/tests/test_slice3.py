@@ -1,4 +1,3 @@
-import pytest
 
 from agentic_runtime.capabilities import ModelCapabilityRegistry
 from agentic_runtime.controls import BenchmarkResult, ModelPromotionGate
@@ -27,7 +26,7 @@ def test_rollback_is_denied_without_approval():
     executor = GovernedRollbackExecutor(
         authorize=lambda *_: False,
         current_ref=lambda: "head",
-        changed_files=lambda a, b: ["x.py"],
+        changed_files=lambda *_: ["x.py"],
         restore_ref=lambda ref: restored.append(ref) or True,
         record=lambda *_: None,
     )
@@ -42,7 +41,7 @@ def test_rollback_verifies_restored_ref():
     executor = GovernedRollbackExecutor(
         authorize=lambda *_: True,
         current_ref=lambda: state["ref"],
-        changed_files=lambda a, b: ["x.py"],
+        changed_files=lambda *_: ["x.py"],
         restore_ref=lambda ref: state.update(ref=ref) is None,
         record=lambda *_: None,
     )

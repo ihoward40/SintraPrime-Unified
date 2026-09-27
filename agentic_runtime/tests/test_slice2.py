@@ -1,11 +1,14 @@
 import pytest
 
-from agentic_runtime.capabilities import CapabilityProfile, ModelCapabilityRegistry
+from agentic_runtime.comfyui_adapter import GovernedComfyUIAdapter
 from agentic_runtime.context_pack import ContextItem, ContextPackBuilder
 from agentic_runtime.controls import (
-    BenchmarkResult, CircuitBreaker, ExecutionBudget, ModelPromotionGate, TestDeltaReceipt,
+    BenchmarkResult,
+    CircuitBreaker,
+    ExecutionBudget,
+    ModelPromotionGate,
+    TestDeltaReceipt,
 )
-from agentic_runtime.comfyui_adapter import GovernedComfyUIAdapter
 from agentic_runtime.media_workflows import MediaJob, MediaKind, MediaWorkflowPolicy
 
 
@@ -45,7 +48,8 @@ def test_test_delta_detects_regression():
 def test_promotion_requires_evidence_and_floor():
     gate = ModelPromotionGate(.8)
     ok, reason = gate.admit([BenchmarkResult("m", "reasoning", .9, "receipt-1")], required_suites=["reasoning"])
-    assert ok and reason == "PROMOTED"
+    assert ok
+    assert reason == "PROMOTED"
     assert gate.admit([], required_suites=["reasoning"])[0] is False
 
 

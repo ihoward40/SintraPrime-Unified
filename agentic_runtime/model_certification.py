@@ -1,7 +1,8 @@
 """Evidence-first model capability certification."""
 from __future__ import annotations
-from dataclasses import dataclass, field
-from typing import Callable, Dict, Iterable, List, Mapping, Sequence
+
+from collections.abc import Iterable, Sequence
+from dataclasses import dataclass
 
 from .capabilities import CapabilityProfile, ModelCapabilityRegistry
 from .controls import BenchmarkResult, ModelPromotionGate

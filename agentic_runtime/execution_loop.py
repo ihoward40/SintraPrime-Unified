@@ -4,14 +4,15 @@ No raw execution authority lives here. Authorization, execution, verification,
 repair generation and evidence recording are injected from SintraPrime.
 """
 from __future__ import annotations
+
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Callable, Iterable, List, Optional
+from enum import StrEnum
 
 from .controls import CircuitBreaker, ExecutionBudget
 
 
-class ExecutionMode(str, Enum):
+class ExecutionMode(StrEnum):
     BUILD = "build"
     AUTOHEAL = "autoheal"
     JANITOR = "janitor"
@@ -22,7 +23,7 @@ class StepResult:
     action: str
     ok: bool
     output: str = ""
-    changed_files: List[str] = field(default_factory=list)
+    changed_files: list[str] = field(default_factory=list)
     attempt: int = 1
     input_tokens: int = 0
     output_tokens: int = 0
@@ -36,11 +37,11 @@ class GovernedExecutionLoop:
         authorize: Callable[[str, dict], bool],
         execute: Callable[[str], StepResult],
         verify: Callable[[], StepResult],
-        repair: Callable[[StepResult, int], Optional[str]],
+        repair: Callable[[StepResult, int], str | None],
         record: Callable[[str, dict], None],
         max_heal_attempts: int = 3,
-        budget: Optional[ExecutionBudget] = None,
-        circuit_breaker: Optional[CircuitBreaker] = None,
+        budget: ExecutionBudget | None = None,
+        circuit_breaker: CircuitBreaker | None = None,
     ) -> None:
         if max_heal_attempts < 0:
             raise ValueError("max_heal_attempts cannot be negative")
@@ -61,8 +62,8 @@ class GovernedExecutionLoop:
                 cost_usd=result.cost_usd,
             )
 
-    def run(self, actions: Iterable[str], mode: ExecutionMode = ExecutionMode.BUILD) -> List[StepResult]:
-        results: List[StepResult] = []
+    def run(self, actions: Iterable[str], mode: ExecutionMode = ExecutionMode.BUILD) -> list[StepResult]:
+        results: list[StepResult] = []
         for action in actions:
             context = {"mode": mode.value, "action": action}
             if not self.authorize(action, context):

@@ -1,11 +1,11 @@
 """Governed contract for ComfyUI-style image/video/audio/3D workflows."""
 from __future__ import annotations
+
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Dict, List, Optional
+from enum import StrEnum
 
 
-class MediaKind(str, Enum):
+class MediaKind(StrEnum):
     IMAGE = "image"
     VIDEO = "video"
     AUDIO = "audio"
@@ -16,11 +16,11 @@ class MediaKind(str, Enum):
 class MediaJob:
     kind: MediaKind
     workflow_id: str
-    inputs: Dict[str, str]
+    inputs: dict[str, str]
     local_only: bool = True
-    external_provider: Optional[str] = None
+    external_provider: str | None = None
     estimated_cost_usd: float = 0.0
-    output_paths: List[str] = field(default_factory=list)
+    output_paths: list[str] = field(default_factory=list)
 
 
 class MediaWorkflowPolicy:

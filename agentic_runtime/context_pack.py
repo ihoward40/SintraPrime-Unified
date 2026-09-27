@@ -1,7 +1,8 @@
 """Bounded, provenance-aware context packaging for long-context models."""
 from __future__ import annotations
+
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Iterable, List
 
 
 @dataclass(frozen=True)
@@ -16,7 +17,7 @@ class ContextItem:
 
 @dataclass
 class ContextPack:
-    items: List[ContextItem] = field(default_factory=list)
+    items: list[ContextItem] = field(default_factory=list)
     token_budget: int = 0
 
     @property

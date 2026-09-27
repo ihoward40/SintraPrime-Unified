@@ -1,9 +1,10 @@
 """Approval-gated checkpoint and rollback execution."""
 from __future__ import annotations
-from dataclasses import dataclass
-from typing import Callable, Iterable, Sequence
 
-from .controls import Checkpoint, ChangedFileManifest
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
+
+from .controls import ChangedFileManifest, Checkpoint
 
 
 @dataclass(frozen=True)

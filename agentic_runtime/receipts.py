@@ -1,9 +1,10 @@
 """Canonical cryptographically referenced execution receipts."""
 from __future__ import annotations
-from dataclasses import asdict, dataclass, field
+
 import hashlib
 import json
-from typing import Any, Dict, List, Optional
+from dataclasses import asdict, dataclass, field
+from typing import Any
 
 
 @dataclass
@@ -12,15 +13,15 @@ class ExecutionReceipt:
     base_ref: str
     head_ref: str
     status: str
-    changed_files: List[str] = field(default_factory=list)
-    tests: Dict[str, Any] = field(default_factory=dict)
-    model_evidence: Dict[str, Any] = field(default_factory=dict)
-    budget: Dict[str, Any] = field(default_factory=dict)
-    ledger_entry_hash: Optional[str] = None
+    changed_files: list[str] = field(default_factory=list)
+    tests: dict[str, Any] = field(default_factory=dict)
+    model_evidence: dict[str, Any] = field(default_factory=dict)
+    budget: dict[str, Any] = field(default_factory=dict)
+    ledger_entry_hash: str | None = None
     previous_receipt_hash: str = ""
     receipt_hash: str = ""
 
-    def canonical_payload(self) -> Dict[str, Any]:
+    def canonical_payload(self) -> dict[str, Any]:
         data = asdict(self)
         data["receipt_hash"] = ""
         return data

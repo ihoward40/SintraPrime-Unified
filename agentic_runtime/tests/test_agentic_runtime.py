@@ -12,11 +12,17 @@ def test_registry_filters_unverified_by_default():
 
 def test_autoheal_is_bounded_and_reverifies():
     events, verifies = [], iter([False, True])
-    def authorize(action, context): return True
+
+    def authorize(*_args): return True
+
     def execute(action): return StepResult(action, True, changed_files=["x.py"])
+
     def verify(): return StepResult("verify", next(verifies), "test")
-    def repair(failure, attempt): return "fix tests"
-    def record(event, payload): events.append(event)
+
+    def repair(*_args): return "fix tests"
+
+    def record(event, *_args): events.append(event)
+
     loop = GovernedExecutionLoop(authorize=authorize, execute=execute, verify=verify, repair=repair, record=record, max_heal_attempts=2)
     results = loop.run(["build feature"], ExecutionMode.BUILD)
     assert results[-1].ok is True
@@ -26,11 +32,11 @@ def test_autoheal_is_bounded_and_reverifies():
 def test_denied_action_stops_execution():
     executed = []
     loop = GovernedExecutionLoop(
-        authorize=lambda action, context: False,
+        authorize=lambda *_args: False,
         execute=lambda action: executed.append(action) or StepResult(action, True),
         verify=lambda: StepResult("verify", True),
-        repair=lambda failure, attempt: None,
-        record=lambda event, payload: None,
+        repair=lambda *_args: None,
+        record=lambda *_args: None,
     )
     result = loop.run(["dangerous"])
     assert result[0].output == "DENIED_BY_POLICY"

@@ -548,6 +548,7 @@ class AgentCommonsStore:
             "tenant_id": row["tenant_id"],
             "workspace_id": row["workspace_id"],
             "name": row["name"],
+            "metadata": self._loads(row.get("metadata_json"), {}),
         }
 
     def _require_thread(self, tenant_id: str, thread_id: str) -> dict[str, Any]:
@@ -1294,8 +1295,9 @@ class SupervisorAgent:
         context: dict[str, Any],
     ) -> dict[str, Any]:
         path = list(trace.get("agent_path", []))
-        next_path = [*path, target.agent_id]
-        if target.agent_id in path or len(next_path) > self.max_delegation_depth:
+        delegated_depth = max(0, len(path) - 1)
+        next_delegated_depth = delegated_depth + 1
+        if target.agent_id in path or next_delegated_depth > self.max_delegation_depth:
             raise LoopDetectedError("Delegation loop detected or maximum delegation depth exceeded")
         run = self.store.start_agent_run(
             tenant_id=tenant_id,
@@ -1420,6 +1422,7 @@ class SupervisorAgent:
         principal.ensure("objective:create")
         reservation_id: str | None = None
         thread: dict[str, Any] | None = None
+        created_thread = False
         if idempotency_key:
             reservation_id = f"reservation:{uuid.uuid4().hex}"
             existing_thread_id = self.store.remember_idempotency("objective", principal.tenant_id, idempotency_key, reservation_id)
@@ -1440,6 +1443,7 @@ class SupervisorAgent:
                 thread_title or objective,
                 metadata={"objective": objective, "builder_capability": builder_capability, "reviewer_capability": reviewer_capability},
             )
+            created_thread = True
             if idempotency_key:
                 finalized_thread_id = self.store.finalize_idempotency(
                     "objective",
@@ -1450,6 +1454,7 @@ class SupervisorAgent:
                 )
                 if finalized_thread_id != thread["thread_id"]:
                     self.store.delete_thread(principal.tenant_id, thread["thread_id"])
+                    created_thread = False
                     existing = self.store.get_thread(finalized_thread_id, principal.tenant_id)
                     if existing:
                         return existing
@@ -1554,7 +1559,7 @@ class SupervisorAgent:
                 )
             return self.store.get_thread(thread["thread_id"], principal.tenant_id) or thread
         except Exception:
-            if thread:
+            if created_thread and thread:
                 self.store.delete_thread(principal.tenant_id, thread["thread_id"])
             if idempotency_key:
                 current_binding = self.store.get_idempotency_resource("objective", principal.tenant_id, idempotency_key)

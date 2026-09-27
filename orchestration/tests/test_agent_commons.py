@@ -377,7 +377,8 @@ async def test_loop_detection_stops_recursive_delegation(tmp_path: Path):
     proto = A2AProtocol()
     supervisor = SupervisorAgent(store, protocol=proto, max_delegation_depth=2)
     builder = supervisor.register_adapter(MockAgentAdapter("builder-agent", "Builder Agent", "worker", ["build"]))
-    reviewer = supervisor.register_adapter(MockAgentAdapter("reviewer-agent", "Reviewer Agent", "reviewer", ["review"]))
+    supervisor.register_adapter(MockAgentAdapter("reviewer-agent", "Reviewer Agent", "reviewer", ["review"]))
+    auditor = supervisor.register_adapter(MockAgentAdapter("auditor-agent", "Auditor Agent", "reviewer", ["audit"]))
     workspace = store.create_workspace("tenant-a", "Governed Workspace")
     channel = store.create_channel("tenant-a", workspace["workspace_id"], "deliveries")
     thread = store.create_thread("tenant-a", workspace["workspace_id"], channel["channel_id"], "Loop Thread")
@@ -407,11 +408,11 @@ async def test_loop_detection_stops_recursive_delegation(tmp_path: Path):
             thread_id=thread["thread_id"],
             task_id=thread["task_id"],
             sender="chatgpt-supervisor",
-            target=reviewer,
+            target=auditor,
             objective="depth-limited task",
             acceptance_criteria=["respect depth"],
             correlation_id="corr-depth",
-            trace={"agent_path": ["chatgpt-supervisor", "builder-agent"], "parent_run_id": None},
+            trace={"agent_path": ["chatgpt-supervisor", "builder-agent", "reviewer-agent"], "parent_run_id": None},
             idempotency_key="depth-1",
             context={"thread_history": []},
         )

@@ -82,9 +82,9 @@ function AgentAvatar({ agent, index }: { agent: TownWorldState['agents'][number]
     : agent.state === 'awaiting-approval' ? '#ffcf6b'
     : agent.state === 'working' ? '#35f2d0'
     : '#678b88';
-  const base = agent.district === 'constitution' ? [-24, 0, -8] : [24, 0, -8];
+  const base = TOWN_POINT[agent.district];
   return (
-    <group position={[base[0] + agent.position.x, .8, base[2] + agent.position.z]}>
+    <group position={[base.x + agent.position.x, .8, base.z + agent.position.z]}>
       <mesh ref={pulse} castShadow>
         <capsuleGeometry args={[.28, .72, 5, 10]} />
         <meshStandardMaterial color="#0b171b" metalness={.6} roughness={.3} emissive={color} emissiveIntensity={.45} />

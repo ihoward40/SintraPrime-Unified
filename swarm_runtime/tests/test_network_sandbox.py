@@ -197,13 +197,14 @@ def test_launch_governed_os_unavailable_denied(monkeypatch: pytest.MonkeyPatch) 
         _restore_env(saved)
 
 
-def test_receipt_distinguishes_levels() -> None:
+def test_receipt_distinguishes_levels(monkeypatch: pytest.MonkeyPatch) -> None:
     c1 = SwarmController(swarm_id="net3a", repo_path=str(REPO), run_dir=str(WORKDIR / "run_a"))
     r1 = c1.launch_governed(_safe_request(WORKDIR / "a"), _env())
     c1.wait()
 
     saved = _set_env(ENFORCEMENT="os_enforced")
     try:
+        monkeypatch.setattr("swarm_runtime.network_sandbox._probe_os_netns", lambda: False)
         c2 = SwarmController(swarm_id="net3b", repo_path=str(REPO), run_dir=str(WORKDIR / "run_b"))
         r2 = c2.launch_governed(_safe_request(WORKDIR / "b"), _env())
     finally:

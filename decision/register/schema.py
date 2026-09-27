@@ -163,6 +163,12 @@ CREATE TABLE IF NOT EXISTS decision_register_relations (
     created_at TEXT NOT NULL,
     FOREIGN KEY(source_register_id) REFERENCES decision_register_entries(register_id) ON DELETE CASCADE,
     FOREIGN KEY(target_register_id) REFERENCES decision_register_entries(register_id) ON DELETE CASCADE,
+    CHECK(source_register_id <> target_register_id),
+    CHECK(
+        created_at GLOB '????-??-??T??:??:??Z'
+        AND strftime('%Y-%m-%dT%H:%M:%SZ', created_at) IS NOT NULL
+        AND strftime('%Y-%m-%dT%H:%M:%SZ', created_at) = created_at
+    ),
     CHECK(relation_type IN ({_SQL_ALLOWED_RELATION_TYPES})),
     UNIQUE(source_register_id, target_register_id, relation_type)
 )
@@ -178,6 +184,11 @@ CREATE TABLE IF NOT EXISTS decision_register_traceability_links (
     metadata_json TEXT,
     created_at TEXT NOT NULL,
     FOREIGN KEY(register_id) REFERENCES decision_register_entries(register_id) ON DELETE CASCADE,
+    CHECK(
+        created_at GLOB '????-??-??T??:??:??Z'
+        AND strftime('%Y-%m-%dT%H:%M:%SZ', created_at) IS NOT NULL
+        AND strftime('%Y-%m-%dT%H:%M:%SZ', created_at) = created_at
+    ),
     CHECK(link_type IN ({_SQL_ALLOWED_TRACE_LINK_TYPES})),
     CHECK(
         (link_type IN ({_SQL_HASHED_TRACE_LINK_TYPES}) AND sha256 IS NOT NULL)

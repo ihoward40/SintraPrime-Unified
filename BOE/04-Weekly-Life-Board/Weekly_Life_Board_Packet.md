@@ -19,6 +19,6 @@ Execute a repeatable weekly decision cycle using governed evidence and active de
 
 ## Outputs
 
-- New or updated decision records
+- New appended decision records (including superseding entries when needed)
 - Updated execution items with owners and due dates
 - Weekly board action summary

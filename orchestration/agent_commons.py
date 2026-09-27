@@ -559,7 +559,7 @@ class AgentCommonsStore:
             raise CommonsError("Thread not found")
         return thread
 
-    def delete_thread(self, tenant_id: str, thread_id: str) -> None:
+    def delete_thread(self, tenant_id: str, thread_id: str, *, objective_idempotency_key: str | None = None) -> None:
         conn = self._connect()
         conn.execute("DELETE FROM participants WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
         conn.execute("DELETE FROM messages WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
@@ -568,6 +568,11 @@ class AgentCommonsStore:
         conn.execute("DELETE FROM evidence_references WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
         conn.execute("DELETE FROM agent_runs WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
         conn.execute("DELETE FROM idempotency_keys WHERE tenant_id = ? AND resource_id = ?", (tenant_id, thread_id))
+        if objective_idempotency_key:
+            conn.execute(
+                "DELETE FROM idempotency_keys WHERE scope = 'objective' AND tenant_id = ? AND key = ?",
+                (tenant_id, objective_idempotency_key),
+            )
         conn.execute("DELETE FROM threads WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
         conn.commit()
         self._close_if_needed(conn)
@@ -1456,7 +1461,7 @@ class SupervisorAgent:
                     final_resource_id=thread["thread_id"],
                 )
                 if finalized_thread_id != thread["thread_id"]:
-                    self.store.delete_thread(principal.tenant_id, thread["thread_id"])
+                    self.store.delete_thread(principal.tenant_id, thread["thread_id"], objective_idempotency_key=idempotency_key)
                     created_thread = False
                     existing = self.store.get_thread(finalized_thread_id, principal.tenant_id)
                     if existing:
@@ -1512,7 +1517,7 @@ class SupervisorAgent:
                 details={"objective": objective, "notes": "Supervisor planning started."},
             )
             plan = self.supervisor_adapter.invoke(
-                {"run_id": thread["task_id"], "objective": objective, "acceptance_criteria": acceptance_criteria or [], "builder_capability": builder_capability, "reviewer_capability": reviewer_capability},
+                {"run_id": supervisor_run["run_id"], "objective": objective, "acceptance_criteria": acceptance_criteria or [], "builder_capability": builder_capability, "reviewer_capability": reviewer_capability},
                 context,
             )
             self.store.complete_agent_run(
@@ -1534,7 +1539,7 @@ class SupervisorAgent:
                 run_id=supervisor_run["run_id"],
                 details={"objective": objective, "notes": plan.rationale},
             )
-            builder = self._find_agent(builder_capability)
+            builder = self._find_agent(builder_capability, role="worker")
             reviewer = self._find_agent(reviewer_capability, role="reviewer")
             builder_result = await self._delegate(
                 tenant_id=principal.tenant_id,
@@ -1605,7 +1610,7 @@ class SupervisorAgent:
             return self.store.get_thread(thread["thread_id"], principal.tenant_id) or thread
         except Exception:
             if created_thread and thread:
-                self.store.delete_thread(principal.tenant_id, thread["thread_id"])
+                self.store.delete_thread(principal.tenant_id, thread["thread_id"], objective_idempotency_key=idempotency_key)
             if idempotency_key:
                 current_binding = self.store.get_idempotency_resource("objective", principal.tenant_id, idempotency_key)
                 expected_binding = thread["thread_id"] if thread else reservation_id

@@ -40,8 +40,9 @@ Resolution (`NetworkSandbox.resolve()`) never upgrades posture:
   never downgrades.
 - `CONTAINER_NETWORK_NONE` → asserts OS-level (`os_enforced`) only when
   `SWARM_NETWORK_CONTAINER=none` is declared **and**
-  `SWARM_NETWORK_CONTAINER_VERIFIED_BY=<trusted component>` identifies the
-  orchestration/runtime component that verified the boundary; otherwise unavailable.
+  `SWARM_NETWORK_CONTAINER_VERIFIED_BY=<trusted component>` identifies an
+  allowlisted orchestration/runtime verifier (`docker`, `podman`, `kubernetes`,
+  or `orchestrator`) that verified the boundary; otherwise unavailable.
 - `UNAVAILABLE_FAIL_CLOSED` → denies all executions.
 
 ## 3. Configuration (added)
@@ -49,8 +50,8 @@ Resolution (`NetworkSandbox.resolve()`) never upgrades posture:
 `SWARM_NETWORK_ENFORCEMENT = policy_only | os_enforced | container_network_none |
 unavailable_fail_closed` (default `policy_only`). Backward-compatible aliases
 `policy`, `os`, and `container` are also accepted. `SWARM_NETWORK_CONTAINER = none`
-declares a net=none container, and `SWARM_NETWORK_CONTAINER_VERIFIED_BY` names the
-trusted component that verified that boundary.
+declares a net=none container, and `SWARM_NETWORK_CONTAINER_VERIFIED_BY` must be
+one of `docker`, `podman`, `kubernetes`, or `orchestrator` to claim that boundary.
 `SWARM_NETWORK_MODE = deny` is the invariant (no network admission path exists).
 
 ## 4. Fail-closed guarantees

@@ -126,6 +126,12 @@ PROXY_ENV_VARS = (
     "npm_config_proxy", "npm_config_https_proxy", "PIP_INDEX_URL",
     "REQUESTS_CA_BUNDLE", "SSL_CERT_FILE",
 )
+TRUSTED_CONTAINER_VERIFIERS = frozenset({
+    "docker",
+    "kubernetes",
+    "orchestrator",
+    "podman",
+})
 
 
 def _raise_oserror(name: str) -> None:
@@ -300,7 +306,10 @@ class NetworkSandbox:
                 "verification_component": "sandbox_probe",
             }
         if self.mode is NetworkSandboxMode.CONTAINER_NETWORK_NONE:
-            if self.container_declared and self.container_verified_by:
+            if (
+                self.container_declared
+                and self.container_verified_by in TRUSTED_CONTAINER_VERIFIERS
+            ):
                 return {
                     "effective_level": "os",
                     "enforcement_level": "os_enforced",

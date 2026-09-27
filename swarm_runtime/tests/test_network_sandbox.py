@@ -227,6 +227,20 @@ def test_container_network_none_requires_verified_boundary() -> None:
         _restore_env(saved)
 
 
+def test_container_network_none_rejects_unknown_verifier() -> None:
+    saved = _set_env(
+        ENFORCEMENT="container_network_none",
+        CONTAINER="none",
+        CONTAINER_VERIFIED_BY="totally-untrusted",
+    )
+    try:
+        r = NetworkSandbox.from_config().resolve()
+        assert r["fail_closed"] is True
+        assert r["verification_component"] == "totally-untrusted"
+    finally:
+        _restore_env(saved)
+
+
 def test_container_network_none_skips_preexec(monkeypatch: pytest.MonkeyPatch) -> None:
     saved = _set_env(
         ENFORCEMENT="container_network_none",

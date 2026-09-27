@@ -76,7 +76,11 @@ export default function MissionControlTown() {
       if (summaryResult.status === 'fulfilled') setSummary(summaryResult.value);
       if (briefResult.status === 'fulfilled') setBrief(briefResult.value);
       if (gateResult.status === 'fulfilled') setGate(gateResult.value);
-      setTelemetry(summaryResult.status === 'fulfilled' ? 'live' : 'degraded');
+      setTelemetry(
+        summaryResult.status === 'fulfilled' && summaryResult.value.health === 'healthy'
+          ? 'live'
+          : 'degraded',
+      );
     });
     return () => { mounted = false; };
   }, []);

@@ -74,6 +74,7 @@ def test_decision_register_traceability_links_require_targets():
     rule = links["items"]["allOf"][0]
     assert set(rule["if"]["properties"]["link_type"]["enum"]) == {"contract", "state", "receipt"}
     assert rule["then"]["required"] == ["sha256"]
+    assert rule["else"] == {"not": {"required": ["sha256"]}}
 
 
 def test_decision_register_storage_model_relations_and_traceability():
@@ -107,8 +108,12 @@ def test_decision_register_storage_model_relations_and_traceability():
     assert "CHECK(link_type IN ('contract', 'state', 'receipt', 'run', 'evidence'))" in tables[
         "decision_register_traceability_links"
     ]
+    assert "CHECK(" in tables["decision_register_traceability_links"]
+    assert "OR (link_type IN ('run', 'evidence') AND sha256 IS NULL)" in tables[
+        "decision_register_traceability_links"
+    ]
     assert "CHECK(sha256 IS NULL OR (length(sha256) = 64" in tables["decision_register_traceability_links"]
-    assert "CHECK(link_type NOT IN ('contract', 'state', 'receipt') OR sha256 IS NOT NULL)" in tables[
+    assert "(link_type IN ('contract', 'state', 'receipt') AND sha256 IS NOT NULL)" in tables[
         "decision_register_traceability_links"
     ]
     indexes = storage["indexes"]
@@ -129,6 +134,13 @@ def test_schema_requires_sha256_for_hashed_link_types(link_type: str):
 def test_schema_allows_non_hashed_link_types_without_sha256(link_type: str):
     payload = _entry_with_link(link_type=link_type, include_sha256=False)
     _VALIDATOR.validate(payload)
+
+
+@pytest.mark.parametrize("link_type", ["run", "evidence"])
+def test_schema_rejects_non_hashed_link_types_with_sha256(link_type: str):
+    payload = _entry_with_link(link_type=link_type, include_sha256=True)
+    with pytest.raises(ValidationError):
+        _VALIDATOR.validate(payload)
 
 
 def test_schema_allows_nullable_previous_receipt_hash():

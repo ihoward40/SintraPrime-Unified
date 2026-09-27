@@ -102,6 +102,7 @@ DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
                                     "properties": {"link_type": {"enum": ["contract", "state", "receipt"]}},
                                 },
                                 "then": {"required": ["sha256"]},
+                                "else": {"not": {"required": ["sha256"]}},
                             }
                         ],
                     },
@@ -165,8 +166,11 @@ CREATE TABLE IF NOT EXISTS decision_register_traceability_links (
     created_at TEXT NOT NULL,
     FOREIGN KEY(register_id) REFERENCES decision_register_entries(register_id) ON DELETE CASCADE,
     CHECK(link_type IN ('contract', 'state', 'receipt', 'run', 'evidence')),
-    CHECK(sha256 IS NULL OR (length(sha256) = 64 AND sha256 NOT GLOB '*[^0-9A-Fa-f]*')),
-    CHECK(link_type NOT IN ('contract', 'state', 'receipt') OR sha256 IS NOT NULL)
+    CHECK(
+        (link_type IN ('contract', 'state', 'receipt') AND sha256 IS NOT NULL)
+        OR (link_type IN ('run', 'evidence') AND sha256 IS NULL)
+    ),
+    CHECK(sha256 IS NULL OR (length(sha256) = 64 AND sha256 NOT GLOB '*[^0-9A-Fa-f]*'))
 )
 """.strip(),
     },

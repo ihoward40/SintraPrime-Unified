@@ -29,6 +29,8 @@ Every BOE artifact must either enable a decision, support a decision, execute a 
 
 ## Sprint 1 Build Order
 
+Only Step 1 exists today. Steps 2 through 7 are approved planned deliverables and do not become governed BOE artifacts until they are created in the repository.
+
 1. `BOE/00-Program/BOE-001_Master_Implementation_Spec.md`
 2. Planned deliverable: `BOE/01-Decision-Register/DRS-001.md`
 3. Decision Register schema

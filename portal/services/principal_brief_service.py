@@ -129,13 +129,14 @@ def recommendation_is_proposal_only(recommendation: dict) -> bool:
 
 def build_runtime_execution_state():
     """Resolve the current governed-runtime containment posture for the brief."""
-    from omnibrain.principal_brief import build_execution_state
-    from swarm_runtime.network_sandbox import NetworkSandbox
-
     try:
-        sandbox = NetworkSandbox.from_config()
-        return build_execution_state(
-            **sandbox.brief_fields(sandbox.resolve()),
-        )
-    except Exception:
+        from omnibrain.principal_brief import build_execution_state
+        from swarm_runtime.network_sandbox import NetworkSandbox
+    except ImportError:
+        from omnibrain.principal_brief import build_execution_state
+
         return build_execution_state()
+    sandbox = NetworkSandbox.from_config()
+    return build_execution_state(
+        **sandbox.brief_fields(sandbox.resolve()),
+    )

@@ -153,3 +153,12 @@ def test_runtime_execution_state_helper_carries_resolved_posture(monkeypatch: py
     state = build_runtime_execution_state()
     assert state.network_enforcement_level == "policy_enforced"
     assert state.network_sandbox_available is True
+
+
+def test_runtime_execution_state_helper_surfaces_unexpected_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "swarm_runtime.network_sandbox.NetworkSandbox.from_config",
+        classmethod(lambda cls: (_ for _ in ()).throw(RuntimeError("sandbox wiring broke"))),
+    )
+    with pytest.raises(RuntimeError, match="sandbox wiring broke"):
+        build_runtime_execution_state()

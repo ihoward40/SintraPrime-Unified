@@ -68,6 +68,7 @@ async def test_start_maps_durable_workflow_id_to_execution_ref(db):
     assert run.status == "ACTIVE"
     workflow = authority.engine.get_workflow(run.execution_ref)
     assert workflow is not None
+    assert workflow.metadata["authority_required"] is True
     assert workflow.metadata["authority_context"]["principal_id"] == USER_A
     assert workflow.metadata["authority_context"]["tenant_id"] == TENANT_A
     assert workflow.metadata["authority_context"]["capability_lease_id"] == str(run.run_id)

@@ -753,6 +753,7 @@ class ActivityExecutor:
         workflow_type: str = "",
         authority_context: Optional[Dict[str, Any]] = None,
         activity_action_hash: Optional[str] = None,
+        authority_required: bool = False,
     ) -> Any:
         kwargs = kwargs or {}
         policy = retry_policy or RetryPolicy()
@@ -764,6 +765,7 @@ class ActivityExecutor:
             kwargs=kwargs,
             authority_context=authority_context,
             activity_action_hash=activity_action_hash,
+            authority_required=authority_required,
         )
         activity_id = uuid.uuid4().hex
         comp_name = compensation_func.__name__ if compensation_func else None
@@ -859,7 +861,10 @@ class ActivityExecutor:
         kwargs: Dict[str, Any],
         authority_context: Optional[Dict[str, Any]],
         activity_action_hash: Optional[str],
+        authority_required: bool,
     ) -> None:
+        if authority_context is None and not authority_required:
+            return
         if authority_context is None:
             raise PermissionError("ACTIVITY_AUTHORITY_CONTEXT_REQUIRED")
         required = ("principal_id", "tenant_id", "capability_lease_id")
@@ -941,6 +946,7 @@ class WorkflowContext:
         store: DurableStore,
         executor: ActivityExecutor,
         authority_context: Optional[Dict[str, Any]] = None,
+        authority_required: bool = False,
     ) -> None:
         self.workflow_id = workflow_id
         self.workflow_type = workflow_type
@@ -948,6 +954,7 @@ class WorkflowContext:
         self._executor = executor
         self._compensator = SagaCompensator()
         self._authority_context = dict(authority_context) if isinstance(authority_context, dict) else None
+        self._authority_required = authority_required
 
     async def execute_activity(
         self,
@@ -967,15 +974,18 @@ class WorkflowContext:
             args=args,
             kwargs=kwargs,
         )
-        if self._authority_context is None:
+        authority_required = self._authority_required or self._authority_context is not None
+        if authority_required and self._authority_context is None:
             raise PermissionError("ACTIVITY_AUTHORITY_CONTEXT_REQUIRED")
-        authority_context = {
-            "principal_id": self._authority_context.get("principal_id"),
-            "tenant_id": self._authority_context.get("tenant_id"),
-            "capability_lease_id": self._authority_context.get("capability_lease_id"),
-            "approved_workflow_type": self._authority_context.get("approved_workflow_type"),
-            "activity_action_hash": activity_action_hash,
-        }
+        authority_context = None
+        if self._authority_context is not None:
+            authority_context = {
+                "principal_id": self._authority_context.get("principal_id"),
+                "tenant_id": self._authority_context.get("tenant_id"),
+                "capability_lease_id": self._authority_context.get("capability_lease_id"),
+                "approved_workflow_type": self._authority_context.get("approved_workflow_type"),
+                "activity_action_hash": activity_action_hash,
+            }
         result = await self._executor.run(
             workflow_id=self.workflow_id,
             name=name,
@@ -987,6 +997,7 @@ class WorkflowContext:
             workflow_type=self.workflow_type,
             authority_context=authority_context,
             activity_action_hash=activity_action_hash,
+            authority_required=authority_required,
         )
         if compensation_func:
             self._compensator.register_compensation(name, compensation_func)
@@ -1215,10 +1226,12 @@ class DurableWorkflowEngine:
 
         wf = self._store.load_workflow(workflow_id)
         authority_context = None
+        authority_required = False
         if wf and isinstance(wf.metadata, dict):
             raw_context = wf.metadata.get("authority_context")
             if isinstance(raw_context, dict):
                 authority_context = raw_context
+            authority_required = bool(wf.metadata.get("authority_required", False) or authority_context is not None)
         func = self._registered[workflow_type]
         ctx = WorkflowContext(
             workflow_id=workflow_id,
@@ -1226,6 +1239,7 @@ class DurableWorkflowEngine:
             store=self._store,
             executor=self._executor,
             authority_context=authority_context,
+            authority_required=authority_required,
         )
         try:
             if asyncio.iscoroutinefunction(func):

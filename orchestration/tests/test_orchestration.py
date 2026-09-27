@@ -988,6 +988,7 @@ class TestActivityExecutor:
             workflow_type="t",
             store=store,
             executor=executor,
+            authority_required=True,
         )
 
         async def my_activity():
@@ -995,6 +996,25 @@ class TestActivityExecutor:
 
         with pytest.raises(PermissionError, match="ACTIVITY_AUTHORITY_CONTEXT_REQUIRED"):
             await ctx.execute_activity("unbound", my_activity)
+
+    @pytest.mark.asyncio
+    async def test_workflow_context_allows_unbound_activity_when_not_required(self):
+        store = DurableStore()
+        store.save_workflow(WorkflowRecord(
+            workflow_id="wf8", workflow_type="t", status=WorkflowStatus.RUNNING, state={}
+        ))
+        executor = ActivityExecutor(store)
+        ctx = WorkflowContext(
+            workflow_id="wf8",
+            workflow_type="t",
+            store=store,
+            executor=executor,
+        )
+
+        async def my_activity():
+            return "ok"
+
+        assert await ctx.execute_activity("unbound-ok", my_activity) == "ok"
 
 
 class TestSagaCompensator:

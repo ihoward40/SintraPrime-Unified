@@ -23,6 +23,7 @@ class StepResult:
     action: str
     ok: bool
     output: str = ""
+    healthy: bool | None = None
     changed_files: list[str] = field(default_factory=list)
     attempt: int = 1
     input_tokens: int = 0
@@ -79,10 +80,13 @@ class GovernedExecutionLoop:
                 return results
 
         verification = self.verify()
+        verification_healthy = verification.healthy if verification.healthy is not None else verification.ok
         self._account(verification)
-        self.record("verification", {"ok": verification.ok, "output": verification.output})
+        self.record("verification", {"ok": verification.ok, "healthy": verification_healthy, "output": verification.output})
         results.append(verification)
-        if verification.ok or mode == ExecutionMode.JANITOR:
+        if not verification.ok:
+            return results
+        if verification_healthy or mode == ExecutionMode.JANITOR:
             return results
 
         failure = verification
@@ -137,10 +141,16 @@ class GovernedExecutionLoop:
                 self.circuit_breaker.record(False)
                 continue
             failure = self.verify()
+            failure_healthy = failure.healthy if failure.healthy is not None else failure.ok
             self._account(failure)
             results.append(failure)
-            self.record("verification", {"ok": failure.ok, "attempt": attempt, "output": failure.output})
-            self.circuit_breaker.record(failure.ok)
-            if failure.ok:
+            self.record(
+                "verification",
+                {"ok": failure.ok, "healthy": failure_healthy, "attempt": attempt, "output": failure.output},
+            )
+            if not failure.ok:
+                return results
+            self.circuit_breaker.record(failure_healthy)
+            if failure_healthy:
                 break
         return results

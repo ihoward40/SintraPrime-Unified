@@ -18,7 +18,7 @@ def test_autoheal_is_bounded_and_reverifies():
 
     def execute(action): return StepResult(action, True, changed_files=["x.py"])
 
-    def verify(): return StepResult("verify", next(verifies), "test")
+    def verify(): return StepResult("verify", True, "test", healthy=next(verifies))
 
     def repair(*_args): return "fix tests"
 
@@ -49,7 +49,7 @@ def test_autoheal_allows_first_repair_when_breaker_limit_is_one():
     loop = GovernedExecutionLoop(
         authorize=lambda *_args: True,
         execute=lambda action: StepResult(action, True),
-        verify=lambda: StepResult("verify", next(verifies), "test"),
+        verify=lambda: StepResult("verify", True, "test", healthy=next(verifies)),
         repair=lambda *_args: "fix tests",
         record=lambda *_args: None,
         max_heal_attempts=1,
@@ -66,7 +66,7 @@ def test_autoheal_records_unavailable_and_denied_terminal_states():
     unavailable = GovernedExecutionLoop(
         authorize=lambda *_args: True,
         execute=lambda action: StepResult(action, True),
-        verify=lambda: StepResult("verify", False, "test"),
+        verify=lambda: StepResult("verify", True, "test", healthy=False),
         repair=lambda *_args: None,
         record=lambda *_args: None,
         max_heal_attempts=1,
@@ -74,7 +74,7 @@ def test_autoheal_records_unavailable_and_denied_terminal_states():
     denied = GovernedExecutionLoop(
         authorize=lambda _action, context: "repair_mode" not in context,
         execute=lambda action: StepResult(action, True),
-        verify=lambda: StepResult("verify", False, "test"),
+        verify=lambda: StepResult("verify", True, "test", healthy=False),
         repair=lambda *_args: "fix tests",
         record=lambda *_args: None,
         max_heal_attempts=1,
@@ -91,7 +91,7 @@ def test_autoheal_records_circuit_open_terminal_state():
     loop = GovernedExecutionLoop(
         authorize=lambda *_args: True,
         execute=lambda action: StepResult(action, True),
-        verify=lambda: StepResult("verify", False, "test"),
+        verify=lambda: StepResult("verify", True, "test", healthy=False),
         repair=lambda *_args: "fix tests",
         record=lambda *_args: None,
         max_heal_attempts=2,

@@ -73,6 +73,11 @@ def test_retry_policy_exponential_backoff(attempt: int, expected_delay: int) -> 
     ) == expected_delay
 
 
+def test_retry_policy_rejects_non_positive_attempt() -> None:
+    with pytest.raises(ValueError, match="attempt must be >= 1"):
+        RetryPolicy().delay_for_attempt(0)
+
+
 def test_webhook_on_complete(queue: AsyncJobQueue, webhook_events: list[tuple[str, str, dict]]) -> None:
     job = queue.submit({"kind": "ucc"}, callback_url="https://callback")
     queue.claim_next_ready()

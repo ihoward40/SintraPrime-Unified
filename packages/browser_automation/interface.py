@@ -83,7 +83,7 @@ class FilingEngine:
 
     @staticmethod
     def _resolve_target(filing_type: str) -> FilingTarget:
-        normalized_type = filing_type.lower()
+        normalized_type = filing_type.strip().lower()
         if normalized_type.startswith("ucc"):
             return FilingTarget.UCC
         if normalized_type.startswith("court"):

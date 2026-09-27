@@ -20,6 +20,13 @@ def test_validate_success_ucc() -> None:
     assert result.missing_fields == []
 
 
+def test_validate_strips_filing_type_whitespace() -> None:
+    result = ExecutionBridge().validate(
+        document="Hello", filing_type=" ucc-1 ", metadata=_ucc_metadata()
+    )
+    assert result.is_valid is True
+
+
 def test_validate_hash_uses_normalized_document() -> None:
     bridge = ExecutionBridge()
     left = bridge.validate(document="  Hello  ", filing_type="ucc-1", metadata=_ucc_metadata())
@@ -63,6 +70,10 @@ def test_estimate_cost_default() -> None:
 
 def test_estimate_cost_rush() -> None:
     assert ExecutionBridge().estimate_cost(filing_type="court", rush=True) == 225
+
+
+def test_estimate_cost_strips_filing_type_whitespace() -> None:
+    assert ExecutionBridge().estimate_cost(filing_type=" court ") == 150
 
 
 def test_estimate_cost_unsupported_type_raises() -> None:

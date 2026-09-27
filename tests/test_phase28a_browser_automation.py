@@ -67,6 +67,11 @@ def test_file_submits_supported_variants(filing_type: str) -> None:
     assert result.status == "submitted"
 
 
+def test_file_accepts_whitespace_padded_filing_type() -> None:
+    result = FilingEngine().file(_request(" court "))
+    assert result.target is FilingTarget.COURT
+
+
 def test_custom_audit_root_is_used() -> None:
     result = FilingEngine(screenshot_root="screens").file(_request("ucc-1"))
     assert all(path.startswith("screens/") for path in result.screenshots)

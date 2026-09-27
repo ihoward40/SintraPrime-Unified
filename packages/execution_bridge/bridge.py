@@ -42,7 +42,7 @@ class ExecutionBridge:
         metadata: dict[str, Any],
     ) -> ValidationResult:
         normalized_document = document.strip()
-        normalized_type = filing_type.lower()
+        normalized_type = filing_type.strip().lower()
         required = self._required_fields.get(normalized_type, ())
         missing = [key for key in required if not metadata.get(key)]
         messages: list[str] = []
@@ -85,7 +85,7 @@ class ExecutionBridge:
         )
 
     def estimate_cost(self, *, filing_type: str, rush: bool = False) -> int:
-        normalized_type = filing_type.lower()
+        normalized_type = filing_type.strip().lower()
         if normalized_type not in self._base_fees:
             raise ValueError(f"unsupported filing type: {filing_type}")
         base = self._base_fees[normalized_type]

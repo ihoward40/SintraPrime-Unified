@@ -24,11 +24,15 @@ class JobStatus(StrEnum):
 
 @dataclass(slots=True)
 class RetryPolicy:
+    """Retry policy where max_attempts is the total allowed execution runs."""
+
     max_attempts: int = 5
     base_delay_seconds: int = 1
     max_delay_seconds: int = 60
 
     def delay_for_attempt(self, attempt: int) -> int:
+        if attempt < 1:
+            raise ValueError("attempt must be >= 1")
         return min(self.max_delay_seconds, self.base_delay_seconds * (2 ** max(0, attempt - 1)))
 
 
@@ -153,7 +157,8 @@ class AsyncJobQueue:
             if JobStatus(current_status) is not JobStatus.RUNNING:
                 conn.commit()
                 raise ValueError("job must be running before it can fail")
-            if attempts >= self._retry_policy.max_attempts:
+            should_retry = attempts < self._retry_policy.max_attempts
+            if not should_retry:
                 status = JobStatus.FAILED
             else:
                 status = JobStatus.RETRYING

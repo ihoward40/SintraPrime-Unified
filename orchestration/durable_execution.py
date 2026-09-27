@@ -967,15 +967,15 @@ class WorkflowContext:
             args=args,
             kwargs=kwargs,
         )
-        authority_context = None
-        if self._authority_context is not None:
-            authority_context = {
-                "principal_id": self._authority_context.get("principal_id"),
-                "tenant_id": self._authority_context.get("tenant_id"),
-                "capability_lease_id": self._authority_context.get("capability_lease_id"),
-                "approved_workflow_type": self._authority_context.get("approved_workflow_type"),
-                "activity_action_hash": activity_action_hash,
-            }
+        if self._authority_context is None:
+            raise PermissionError("ACTIVITY_AUTHORITY_CONTEXT_REQUIRED")
+        authority_context = {
+            "principal_id": self._authority_context.get("principal_id"),
+            "tenant_id": self._authority_context.get("tenant_id"),
+            "capability_lease_id": self._authority_context.get("capability_lease_id"),
+            "approved_workflow_type": self._authority_context.get("approved_workflow_type"),
+            "activity_action_hash": activity_action_hash,
+        }
         result = await self._executor.run(
             workflow_id=self.workflow_id,
             name=name,

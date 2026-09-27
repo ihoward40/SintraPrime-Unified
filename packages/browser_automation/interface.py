@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
+from decimal import Decimal
 from enum import StrEnum
 from hashlib import sha256
 from pathlib import PurePosixPath
@@ -47,9 +48,12 @@ class FilingEngine:
         self._screenshot_root = normalized_root
 
     def capture_signature(self, signer_name: str, payload: dict[str, Any]) -> str:
-        canonical_payload = json.dumps(
-            self._canonicalize(payload), sort_keys=True, separators=(",", ":")
-        )
+        try:
+            canonical_payload = json.dumps(
+                self._canonicalize(payload), sort_keys=True, separators=(",", ":")
+            )
+        except TypeError as exc:
+            raise ValueError("payload contains unsupported type for signing") from exc
         fingerprint = sha256(f"{signer_name}|{canonical_payload}".encode("utf-8")).hexdigest()[:16]
         return f"sig-{fingerprint}"
 
@@ -95,14 +99,24 @@ class FilingEngine:
 
     @classmethod
     def _canonicalize(cls, value: Any) -> Any:
+        if value is None or isinstance(value, (str, int, float, bool)):
+            return value
         if isinstance(value, dict):
             return {str(key): cls._canonicalize(item) for key, item in value.items()}
         if isinstance(value, (list, tuple)):
             return [cls._canonicalize(item) for item in value]
         if isinstance(value, datetime):
             return value.astimezone(UTC).isoformat()
+        if isinstance(value, date):
+            return value.isoformat()
         if isinstance(value, UUID):
             return str(value)
         if isinstance(value, StrEnum):
             return value.value
-        return value
+        if isinstance(value, Decimal):
+            return str(value)
+        if isinstance(value, bytes):
+            return value.hex()
+        if isinstance(value, set):
+            return sorted(cls._canonicalize(item) for item in value)
+        raise TypeError(f"unsupported payload type: {type(value).__name__}")

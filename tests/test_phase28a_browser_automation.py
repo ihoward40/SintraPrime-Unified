@@ -40,6 +40,11 @@ def test_capture_signature_allows_non_json_native_values() -> None:
     assert signature.startswith("sig-")
 
 
+def test_capture_signature_rejects_unsupported_payload_type() -> None:
+    with pytest.raises(ValueError, match="payload contains unsupported type for signing"):
+        FilingEngine().capture_signature("Alex", {"bad": object()})
+
+
 @pytest.mark.parametrize(
     ("filing_type", "target"),
     [("ucc-1", FilingTarget.UCC), ("court-motion", FilingTarget.COURT)],

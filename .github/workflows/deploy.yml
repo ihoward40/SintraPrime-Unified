@@ -25,10 +25,17 @@ jobs:
 
       - name: Build Docker images with CI-safe fallbacks
         env:
-          JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-build-placeholder-jwt-secret' }}
-          MINIO_PASSWORD: ${{ secrets.MINIO_PASSWORD || 'ci-build-placeholder-minio-password' }}
-          MINIO_ROOT_USER: ${{ secrets.MINIO_ROOT_USER || 'ci-build-placeholder-minio-user' }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD || 'ci-build-placeholder-postgres-password' }}
-          SECRET_KEY: ${{ secrets.SECRET_KEY || 'ci-build-placeholder-secret-key' }}
-          TWIN_AUTH_TOKEN: ${{ secrets.TWIN_AUTH_TOKEN || 'ci-build-placeholder-twin-token' }}
-        run: docker compose build
+          RAW_JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          RAW_MINIO_PASSWORD: ${{ secrets.MINIO_PASSWORD }}
+          RAW_MINIO_ROOT_USER: ${{ secrets.MINIO_ROOT_USER }}
+          RAW_POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          RAW_SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          RAW_TWIN_AUTH_TOKEN: ${{ secrets.TWIN_AUTH_TOKEN }}
+        run: |
+          export JWT_SECRET="${RAW_JWT_SECRET:-ci-build-placeholder-jwt-secret}"
+          export MINIO_PASSWORD="${RAW_MINIO_PASSWORD:-ci-build-placeholder-minio-password}"
+          export MINIO_ROOT_USER="${RAW_MINIO_ROOT_USER:-ci-build-placeholder-minio-user}"
+          export POSTGRES_PASSWORD="${RAW_POSTGRES_PASSWORD:-ci-build-placeholder-postgres-password}"
+          export SECRET_KEY="${RAW_SECRET_KEY:-ci-build-placeholder-secret-key}"
+          export TWIN_AUTH_TOKEN="${RAW_TWIN_AUTH_TOKEN:-ci-build-placeholder-twin-token}"
+          docker compose build

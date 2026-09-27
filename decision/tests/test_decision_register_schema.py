@@ -103,6 +103,7 @@ def test_decision_register_storage_model_relations_and_traceability():
     indexes = storage["indexes"]
     assert "decision_register_entries_decision_run_idx" in indexes
     assert "decision_register_relations_source_idx" in indexes
+    assert "decision_register_relations_target_idx" in indexes
     assert "decision_register_traceability_links_register_idx" in indexes
 
 
@@ -153,6 +154,8 @@ def test_storage_constraints_reject_invalid_hashes_and_link_rules():
     conn = sqlite3.connect(":memory:")
     conn.execute("PRAGMA foreign_keys = ON")
     for ddl in DECISION_REGISTER_STORAGE_MODEL["tables"].values():
+        conn.execute(ddl)
+    for ddl in DECISION_REGISTER_STORAGE_MODEL["indexes"].values():
         conn.execute(ddl)
 
     valid_entry = (

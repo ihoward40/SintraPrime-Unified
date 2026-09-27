@@ -176,6 +176,10 @@ CREATE TABLE IF NOT EXISTS decision_register_traceability_links (
             "CREATE INDEX IF NOT EXISTS decision_register_relations_source_idx "
             "ON decision_register_relations(source_register_id)"
         ),
+        "decision_register_relations_target_idx": (
+            "CREATE INDEX IF NOT EXISTS decision_register_relations_target_idx "
+            "ON decision_register_relations(target_register_id)"
+        ),
         "decision_register_traceability_links_register_idx": (
             "CREATE INDEX IF NOT EXISTS decision_register_traceability_links_register_idx "
             "ON decision_register_traceability_links(register_id, link_type)"

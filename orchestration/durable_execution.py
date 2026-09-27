@@ -1081,6 +1081,8 @@ class DurableWorkflowEngine:
 
         wf_id = workflow_id or uuid.uuid4().hex
         metadata = dict(metadata or {})
+        if "authority_context" in metadata and not metadata.get("authority_required", False):
+            raise ValueError("AUTHORITY_REQUIRED_FLAG_REQUIRED")
         if metadata.get("authority_required", False):
             authority_context = metadata.get("authority_context")
             if not isinstance(authority_context, dict):

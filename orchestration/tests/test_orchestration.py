@@ -963,6 +963,7 @@ class TestActivityExecutor:
             workflow_type="t",
             store=store,
             executor=executor,
+            authority_required=True,
             authority_context={
                 "principal_id": "principal-a",
                 "tenant_id": "tenant-a",

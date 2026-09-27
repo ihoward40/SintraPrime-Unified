@@ -974,7 +974,7 @@ class WorkflowContext:
             args=args,
             kwargs=kwargs,
         )
-        authority_required = self._authority_required or self._authority_context is not None
+        authority_required = self._authority_required
         if authority_required and self._authority_context is None:
             raise PermissionError("ACTIVITY_AUTHORITY_CONTEXT_REQUIRED")
         authority_context = None

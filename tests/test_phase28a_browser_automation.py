@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
 
 from packages.browser_automation import FilingEngine, FilingRequest, FilingTarget
@@ -31,6 +33,11 @@ def test_capture_signature_is_stable_across_dict_order() -> None:
     assert engine.capture_signature("Alex", {"a": 1, "b": 2}) == engine.capture_signature(
         "Alex", {"b": 2, "a": 1}
     )
+
+
+def test_capture_signature_allows_non_json_native_values() -> None:
+    signature = FilingEngine().capture_signature("Alex", {"when": datetime(2026, 1, 1, tzinfo=UTC)})
+    assert signature.startswith("sig-")
 
 
 @pytest.mark.parametrize(

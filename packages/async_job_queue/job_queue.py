@@ -40,6 +40,7 @@ class RetryPolicy:
 class AsyncJob:
     task_id: str
     payload: dict[str, Any]
+    result_payload: dict[str, Any] | None
     status: JobStatus
     attempts: int
     last_error: str | None
@@ -70,13 +71,14 @@ class AsyncJobQueue:
         with sqlite3.connect(self._db_path) as conn:
             conn.execute(
                 """
-                INSERT INTO async_jobs(task_id, status, payload, attempts, last_error, callback_url, run_after, created_at, updated_at)
-                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO async_jobs(task_id, status, payload, result_payload, attempts, last_error, callback_url, run_after, created_at, updated_at)
+                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     task_id,
                     JobStatus.PENDING.value,
                     json.dumps(payload, sort_keys=True),
+                    None,
                     0,
                     None,
                     callback_url,
@@ -128,10 +130,16 @@ class AsyncJobQueue:
         with sqlite3.connect(self._db_path) as conn:
             updated = conn.execute(
                 """
-                UPDATE async_jobs SET status = ?, last_error = NULL, updated_at = ?
+                UPDATE async_jobs SET status = ?, result_payload = ?, last_error = NULL, updated_at = ?
                 WHERE task_id = ? AND status = ?
                 """,
-                (JobStatus.COMPLETED.value, now.isoformat(), task_id, JobStatus.RUNNING.value),
+                (
+                    JobStatus.COMPLETED.value,
+                    json.dumps(result, sort_keys=True),
+                    now.isoformat(),
+                    task_id,
+                    JobStatus.RUNNING.value,
+                ),
             ).rowcount
         if updated == 0:
             raise KeyError(task_id)
@@ -190,7 +198,7 @@ class AsyncJobQueue:
         with sqlite3.connect(self._db_path) as conn:
             row = conn.execute(
                 """
-                SELECT task_id, payload, status, attempts, last_error, callback_url, run_after, created_at, updated_at
+                SELECT task_id, payload, result_payload, status, attempts, last_error, callback_url, run_after, created_at, updated_at
                 FROM async_jobs WHERE task_id = ?
                 """,
                 (task_id,),
@@ -200,13 +208,14 @@ class AsyncJobQueue:
         return AsyncJob(
             task_id=row[0],
             payload=json.loads(row[1]),
-            status=JobStatus(row[2]),
-            attempts=row[3],
-            last_error=row[4],
-            callback_url=row[5],
-            run_after=datetime.fromisoformat(row[6]),
-            created_at=datetime.fromisoformat(row[7]),
-            updated_at=datetime.fromisoformat(row[8]),
+            result_payload=json.loads(row[2]) if row[2] else None,
+            status=JobStatus(row[3]),
+            attempts=row[4],
+            last_error=row[5],
+            callback_url=row[6],
+            run_after=datetime.fromisoformat(row[7]),
+            created_at=datetime.fromisoformat(row[8]),
+            updated_at=datetime.fromisoformat(row[9]),
         )
 
     def _emit_webhook(self, task_id: str, event: str, payload: dict[str, Any]) -> None:
@@ -216,31 +225,23 @@ class AsyncJobQueue:
 
     def _ensure_schema(self) -> None:
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
-        migration_path = (
-            Path(__file__).resolve().parents[2]
-            / "database"
-            / "migrations"
-            / "003_async_fulfillment.sql"
-        )
         with sqlite3.connect(self._db_path) as conn:
-            if migration_path.exists():
-                conn.executescript(migration_path.read_text(encoding="utf-8"))
-            else:
-                conn.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS async_jobs(
-                        task_id TEXT PRIMARY KEY,
-                        status TEXT NOT NULL,
-                        payload TEXT NOT NULL,
-                        attempts INTEGER NOT NULL DEFAULT 0,
-                        last_error TEXT,
-                        callback_url TEXT,
-                        run_after TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                    )
-                    """
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS async_jobs(
+                    task_id TEXT PRIMARY KEY,
+                    status TEXT NOT NULL,
+                    payload TEXT NOT NULL,
+                    result_payload TEXT,
+                    attempts INTEGER NOT NULL DEFAULT 0,
+                    last_error TEXT,
+                    callback_url TEXT,
+                    run_after TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
+                """
+            )
             conn.execute(
                 """
                 CREATE INDEX IF NOT EXISTS idx_async_jobs_ready

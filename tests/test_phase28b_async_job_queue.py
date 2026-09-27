@@ -41,6 +41,7 @@ def test_mark_completed_updates_status(queue: AsyncJobQueue) -> None:
     queue.claim_next_ready()
     done = queue.mark_completed(job.task_id, result={"ok": True})
     assert done.status is JobStatus.COMPLETED
+    assert done.result_payload == {"ok": True}
     assert done.last_error is None
 
 

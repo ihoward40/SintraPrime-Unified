@@ -46,7 +46,9 @@ class FilingEngine:
         self._screenshot_root = normalized_root
 
     def capture_signature(self, signer_name: str, payload: dict[str, Any]) -> str:
-        canonical_payload = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        canonical_payload = json.dumps(
+            payload, sort_keys=True, separators=(",", ":"), default=str
+        )
         fingerprint = sha256(f"{signer_name}|{canonical_payload}".encode("utf-8")).hexdigest()[:16]
         return f"sig-{fingerprint}"
 

@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS async_jobs (
     task_id TEXT PRIMARY KEY,
     status TEXT NOT NULL,
     payload TEXT NOT NULL,
+    result_payload TEXT,
     attempts INTEGER NOT NULL DEFAULT 0,
     last_error TEXT,
     callback_url TEXT,

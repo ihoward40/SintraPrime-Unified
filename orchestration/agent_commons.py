@@ -400,21 +400,19 @@ class AgentCommonsStore:
 
     def remember_idempotency(self, scope: str, tenant_id: str, key: str, resource_id: str) -> str:
         conn = self._connect()
+        conn.execute("BEGIN IMMEDIATE")
+        conn.execute(
+            "INSERT OR IGNORE INTO idempotency_keys(scope, tenant_id, key, resource_id, created_at) VALUES (?, ?, ?, ?, ?)",
+            (scope, tenant_id, key, resource_id, utc_now()),
+        )
         existing = self._fetchone(
             conn,
             "SELECT resource_id FROM idempotency_keys WHERE scope = ? AND tenant_id = ? AND key = ?",
             (scope, tenant_id, key),
         )
-        if existing:
-            self._close_if_needed(conn)
-            return str(existing["resource_id"])
-        conn.execute(
-            "INSERT INTO idempotency_keys(scope, tenant_id, key, resource_id, created_at) VALUES (?, ?, ?, ?, ?)",
-            (scope, tenant_id, key, resource_id, utc_now()),
-        )
         conn.commit()
         self._close_if_needed(conn)
-        return resource_id
+        return str(existing["resource_id"]) if existing else resource_id
 
     def get_idempotency_resource(self, scope: str, tenant_id: str, key: str) -> str | None:
         conn = self._connect()
@@ -445,7 +443,50 @@ class AgentCommonsStore:
         self._close_if_needed(conn)
         return record
 
+    def _require_workspace(self, tenant_id: str, workspace_id: str) -> dict[str, Any]:
+        conn = self._connect()
+        row = self._fetchone(
+            conn,
+            "SELECT * FROM workspaces WHERE workspace_id = ? AND tenant_id = ?",
+            (workspace_id, tenant_id),
+        )
+        self._close_if_needed(conn)
+        if not row:
+            raise CommonsError("Workspace not found")
+        return {
+            "workspace_id": row["workspace_id"],
+            "tenant_id": row["tenant_id"],
+            "community_id": row["community_id"],
+            "name": row["name"],
+        }
+
+    def _require_channel(self, tenant_id: str, channel_id: str, workspace_id: str | None = None) -> dict[str, Any]:
+        conn = self._connect()
+        row = self._fetchone(
+            conn,
+            "SELECT * FROM channels WHERE channel_id = ? AND tenant_id = ?",
+            (channel_id, tenant_id),
+        )
+        self._close_if_needed(conn)
+        if not row:
+            raise CommonsError("Channel not found")
+        if workspace_id and row["workspace_id"] != workspace_id:
+            raise CommonsError("Channel does not belong to workspace")
+        return {
+            "channel_id": row["channel_id"],
+            "tenant_id": row["tenant_id"],
+            "workspace_id": row["workspace_id"],
+            "name": row["name"],
+        }
+
+    def _require_thread(self, tenant_id: str, thread_id: str) -> dict[str, Any]:
+        thread = self.get_thread(thread_id, tenant_id)
+        if not thread:
+            raise CommonsError("Thread not found")
+        return thread
+
     def create_channel(self, tenant_id: str, workspace_id: str, name: str, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+        self._require_workspace(tenant_id, workspace_id)
         channel_id = uuid.uuid4().hex
         record = {
             "channel_id": channel_id,
@@ -474,6 +515,8 @@ class AgentCommonsStore:
         lifecycle_status: str = "ASSIGNED",
         metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        self._require_workspace(tenant_id, workspace_id)
+        self._require_channel(tenant_id, channel_id, workspace_id=workspace_id)
         thread_id = uuid.uuid4().hex
         now = utc_now()
         record = {
@@ -509,6 +552,9 @@ class AgentCommonsStore:
         display_name: str,
         metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        self._require_workspace(tenant_id, workspace_id)
+        self._require_channel(tenant_id, channel_id, workspace_id=workspace_id)
+        self._require_thread(tenant_id, thread_id)
         participant_id = uuid.uuid4().hex
         record = {
             "participant_id": participant_id,
@@ -550,6 +596,9 @@ class AgentCommonsStore:
         message_id: str | None = None,
         timestamp: str | None = None,
     ) -> dict[str, Any]:
+        thread = self._require_thread(tenant_id, thread_id)
+        if thread["workspace_id"] != workspace_id or thread["channel_id"] != channel_id or thread["task_id"] != task_id:
+            raise CommonsError("Message routing metadata does not match the thread")
         message_id = message_id or uuid.uuid4().hex
         record = {
             "message_id": message_id,
@@ -620,6 +669,9 @@ class AgentCommonsStore:
         evidence: Sequence[dict[str, Any]] | None = None,
         run_id: str | None = None,
     ) -> dict[str, Any]:
+        thread = self._require_thread(tenant_id, thread_id)
+        if thread["workspace_id"] != workspace_id or thread["channel_id"] != channel_id or thread["task_id"] != task_id:
+            raise CommonsError("Task event metadata does not match the thread")
         event = {
             "event_id": uuid.uuid4().hex,
             "tenant_id": tenant_id,
@@ -673,6 +725,9 @@ class AgentCommonsStore:
         parent_run_id: str | None = None,
         idempotency_key: str | None = None,
     ) -> dict[str, Any]:
+        thread = self._require_thread(tenant_id, thread_id)
+        if thread["workspace_id"] != workspace_id or thread["channel_id"] != channel_id or thread["task_id"] != task_id:
+            raise CommonsError("Run metadata does not match the thread")
         if idempotency_key:
             existing = self.get_agent_run_by_idempotency(tenant_id, idempotency_key)
             if existing:
@@ -749,6 +804,9 @@ class AgentCommonsStore:
         requested_by: str,
         reason: str,
     ) -> dict[str, Any]:
+        thread = self._require_thread(tenant_id, thread_id)
+        if thread["workspace_id"] != workspace_id or thread["channel_id"] != channel_id or thread["task_id"] != task_id:
+            raise CommonsError("Approval metadata does not match the thread")
         approval = {
             "approval_id": uuid.uuid4().hex,
             "tenant_id": tenant_id,
@@ -784,15 +842,15 @@ class AgentCommonsStore:
         reason: str | None,
         idempotency_key: str | None,
     ) -> dict[str, Any]:
+        conn = self._connect()
+        conn.execute("BEGIN IMMEDIATE")
         if idempotency_key:
-            conn = self._connect()
             existing = self._fetchone(conn, "SELECT * FROM approvals WHERE tenant_id = ? AND idempotency_key = ?", (tenant_id, idempotency_key))
             if existing:
+                conn.commit()
                 self._close_if_needed(conn)
                 return self._row_to_approval(existing)
-            self._close_if_needed(conn)
         now = utc_now()
-        conn = self._connect()
         conn.execute(
             "UPDATE approvals SET status = ?, decision = ?, approver = ?, reason = ?, idempotency_key = ?, decided_at = ? WHERE approval_id = ? AND tenant_id = ?",
             ("APPROVED" if decision == "approve" else "REJECTED", decision, approver, reason, idempotency_key, now, approval_id, tenant_id),

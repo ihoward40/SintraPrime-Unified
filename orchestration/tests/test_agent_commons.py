@@ -180,6 +180,24 @@ def test_commons_api_enforces_tenant_isolation_and_idempotency(tmp_path: Path):
     )
     assert forbidden.status_code == 404
 
+    cross_tenant_channel = client.post(
+        "/orchestration/commons/channels",
+        headers=_headers("tenant-b", "owner-2", "owner"),
+        json={"workspace_id": workspace["workspace_id"], "name": "forbidden"},
+    )
+    assert cross_tenant_channel.status_code == 404
+
+    cross_tenant_thread = client.post(
+        "/orchestration/commons/threads",
+        headers=_headers("tenant-b", "owner-2", "owner"),
+        json={
+            "workspace_id": workspace["workspace_id"],
+            "channel_id": channel["channel_id"],
+            "title": "forbidden",
+        },
+    )
+    assert cross_tenant_thread.status_code == 404
+
 
 def test_commons_api_records_manual_thread_messages_and_health(tmp_path: Path):
     client = _client(tmp_path)
@@ -214,6 +232,20 @@ def test_commons_api_records_manual_thread_messages_and_health(tmp_path: Path):
 
     assert message.status_code == 201
     assert message.json()["trace"]["run_id"] == "manual-run"
+
+    rejected = client.post(
+        f"/orchestration/commons/threads/{thread['thread_id']}/messages",
+        headers=_headers("tenant-b", "owner-2", "owner"),
+        json={
+            "workspace_id": workspace["workspace_id"],
+            "channel_id": channel["channel_id"],
+            "task_id": thread["task_id"],
+            "recipients": ["chatgpt-supervisor"],
+            "lifecycle_status": "IN_PROGRESS",
+            "payload": {"text": "bad tenant"},
+        },
+    )
+    assert rejected.status_code == 404
 
     health = client.get("/orchestration/agents/builder-agent/health", headers=headers)
     assert health.status_code == 200

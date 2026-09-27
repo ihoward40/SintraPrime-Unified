@@ -447,9 +447,11 @@ async def create_channel(
 ) -> dict[str, Any]:
     try:
         principal.ensure("channel:create")
+        return store.create_channel(principal.tenant_id, req.workspace_id, req.name, req.metadata)
     except AuthorizationError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
-    return store.create_channel(principal.tenant_id, req.workspace_id, req.name, req.metadata)
+    except CommonsError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
 @router.post("/commons/threads", status_code=status.HTTP_201_CREATED)
@@ -460,27 +462,29 @@ async def create_thread(
 ) -> dict[str, Any]:
     try:
         principal.ensure("thread:create")
+        thread = store.create_thread(
+            principal.tenant_id,
+            req.workspace_id,
+            req.channel_id,
+            req.title,
+            task_id=req.task_id,
+            metadata=req.metadata,
+        )
+        store.add_participant(
+            principal.tenant_id,
+            req.workspace_id,
+            req.channel_id,
+            thread["thread_id"],
+            principal.principal_id,
+            "human",
+            principal.role,
+            principal.principal_id,
+        )
+        return store.get_thread(thread["thread_id"], principal.tenant_id) or thread
     except AuthorizationError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
-    thread = store.create_thread(
-        principal.tenant_id,
-        req.workspace_id,
-        req.channel_id,
-        req.title,
-        task_id=req.task_id,
-        metadata=req.metadata,
-    )
-    store.add_participant(
-        principal.tenant_id,
-        req.workspace_id,
-        req.channel_id,
-        thread["thread_id"],
-        principal.principal_id,
-        "human",
-        principal.role,
-        principal.principal_id,
-    )
-    return store.get_thread(thread["thread_id"], principal.tenant_id) or thread
+    except CommonsError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
 @router.post("/commons/threads/{thread_id}/messages", status_code=status.HTTP_201_CREATED)
@@ -499,10 +503,10 @@ async def post_thread_message(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
     message = store.add_message(
         tenant_id=principal.tenant_id,
-        workspace_id=req.workspace_id,
-        channel_id=req.channel_id,
+        workspace_id=thread["workspace_id"],
+        channel_id=thread["channel_id"],
         thread_id=thread_id,
-        task_id=req.task_id,
+        task_id=thread["task_id"],
         sender=principal.principal_id,
         recipients=req.recipients,
         correlation_id=req.correlation_id or uuid.uuid4().hex,
@@ -513,10 +517,10 @@ async def post_thread_message(
     )
     store.add_task_event(
         tenant_id=principal.tenant_id,
-        workspace_id=req.workspace_id,
-        channel_id=req.channel_id,
+        workspace_id=thread["workspace_id"],
+        channel_id=thread["channel_id"],
         thread_id=thread_id,
-        task_id=req.task_id,
+        task_id=thread["task_id"],
         status=req.lifecycle_status,
         actor=principal.principal_id,
         details={"objective": thread["title"], "notes": "Manual thread message recorded."},

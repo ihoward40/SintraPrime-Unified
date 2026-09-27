@@ -164,15 +164,15 @@ def _linux_drop_namespace_escape_capabilities(libc: ctypes.CDLL) -> None:
     _linux_prctl(libc, PR_SET_NO_NEW_PRIVS, 1)
     _linux_prctl(libc, PR_CAP_AMBIENT, PR_CAP_AMBIENT_CLEAR_ALL)
 
-    for cap in range(_cap_last_cap() + 1):
-        _linux_prctl(libc, PR_CAPBSET_DROP, cap)
-
     libc.capset.argtypes = [ctypes.POINTER(_CapHeader), ctypes.POINTER(_CapData)]
     libc.capset.restype = ctypes.c_int
     header = _CapHeader(version=LINUX_CAPABILITY_VERSION_3, pid=0)
     data = (_CapData * 2)()
     if libc.capset(ctypes.byref(header), data) != 0:
         _raise_oserror("capset")
+
+    for cap in range(_cap_last_cap() + 1):
+        _linux_prctl(libc, PR_CAPBSET_DROP, cap)
 
 
 def _apply_linux_os_sandbox() -> None:

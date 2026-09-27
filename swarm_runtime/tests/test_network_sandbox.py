@@ -259,6 +259,43 @@ def test_namespace_escape_hardening_runs_after_unshare(monkeypatch: pytest.Monke
     assert calls == ["unshare:True", "drop:True"]
 
 
+def test_capability_drop_clears_capset_before_bounding_set(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[str] = []
+
+    class _CapsetCall:
+        argtypes = None
+        restype = None
+
+        def __call__(self, *_args) -> int:
+            calls.append("capset")
+            return 0
+
+    class _FakeLibc:
+        def __init__(self) -> None:
+            self.capset = _CapsetCall()
+
+    def _fake_prctl(
+        _libc,
+        option: int,
+        arg2: int = 0,
+        _arg3: int = 0,
+        _arg4: int = 0,
+        _arg5: int = 0,
+    ) -> None:
+        if option == network_sandbox.PR_SET_NO_NEW_PRIVS:
+            calls.append("no_new_privs")
+        elif option == network_sandbox.PR_CAP_AMBIENT:
+            calls.append("ambient_clear")
+        elif option == network_sandbox.PR_CAPBSET_DROP:
+            calls.append(f"bounding:{arg2}")
+
+    monkeypatch.setattr(network_sandbox, "_linux_prctl", _fake_prctl)
+    monkeypatch.setattr(network_sandbox, "_cap_last_cap", lambda: 1)
+    network_sandbox._linux_drop_namespace_escape_capabilities(_FakeLibc())
+    assert calls[:3] == ["no_new_privs", "ambient_clear", "capset"]
+    assert calls[3:] == ["bounding:0", "bounding:1"]
+
+
 def test_networked_execution_class_denied_with_sandbox() -> None:
     gate = ExecutionAdmissionGate()
     req = _safe_request(WORKDIR, effect_class=ExecutionClass.NETWORKED_EXECUTION.value)

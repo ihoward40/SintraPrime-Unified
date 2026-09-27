@@ -140,7 +140,11 @@ CREATE TABLE IF NOT EXISTS decision_register_entries (
     prev_receipt_hash TEXT,
     payload_json TEXT NOT NULL,
     CHECK(schema_version = '{DECISION_REGISTER_SCHEMA_VERSION}'),
-    CHECK(recorded_at GLOB '????-??-??T??:??:??Z'),
+    CHECK(
+        recorded_at GLOB '????-??-??T??:??:??Z'
+        AND strftime('%Y-%m-%dT%H:%M:%SZ', recorded_at) IS NOT NULL
+        AND strftime('%Y-%m-%dT%H:%M:%SZ', recorded_at) = recorded_at
+    ),
     CHECK(length(contract_semantic_sha256) = 64 AND contract_semantic_sha256 NOT GLOB '*[^0-9A-Fa-f]*'),
     CHECK(length(state_sha256) = 64 AND state_sha256 NOT GLOB '*[^0-9A-Fa-f]*'),
     CHECK(length(receipt_hash) = 64 AND receipt_hash NOT GLOB '*[^0-9A-Fa-f]*'),

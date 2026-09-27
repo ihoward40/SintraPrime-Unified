@@ -87,7 +87,13 @@ def test_decision_register_storage_model_relations_and_traceability():
     assert "decision_register_traceability_links" in tables
     assert "schema_version TEXT NOT NULL" in tables["decision_register_entries"]
     assert "CHECK(schema_version = 'sp-decision-register-v1')" in tables["decision_register_entries"]
-    assert "CHECK(recorded_at GLOB '????-??-??T??:??:??Z')" in tables["decision_register_entries"]
+    assert "recorded_at GLOB '????-??-??T??:??:??Z'" in tables["decision_register_entries"]
+    assert "strftime('%Y-%m-%dT%H:%M:%SZ', recorded_at) IS NOT NULL" in tables[
+        "decision_register_entries"
+    ]
+    assert "strftime('%Y-%m-%dT%H:%M:%SZ', recorded_at) = recorded_at" in tables[
+        "decision_register_entries"
+    ]
     assert "receipt_hash TEXT NOT NULL UNIQUE" in tables["decision_register_entries"]
     assert "prev_receipt_hash TEXT" in tables["decision_register_entries"]
     assert "UNIQUE(decision_id, run_id)" not in tables["decision_register_entries"]
@@ -230,6 +236,31 @@ def test_storage_constraints_reject_invalid_hashes_and_link_rules():
                 "SHADOW_ONLY",
                 "ELEVATED",
                 "d" * 64,
+                None,
+                "{}",
+            ),
+        )
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            """
+            INSERT INTO decision_register_entries (
+                register_id, schema_version, decision_id, run_id, recorded_at,
+                contract_semantic_sha256, state_sha256, result_kind, policy_decision,
+                policy_risk, receipt_hash, prev_receipt_hash, payload_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "REG-2C",
+                DECISION_REGISTER_SCHEMA_VERSION,
+                "DEC-1",
+                "RUN-3",
+                "2026-99-99T99:99:99Z",
+                "a" * 64,
+                "b" * 64,
+                "DECISION",
+                "SHADOW_ONLY",
+                "ELEVATED",
+                "1" * 64,
                 None,
                 "{}",
             ),

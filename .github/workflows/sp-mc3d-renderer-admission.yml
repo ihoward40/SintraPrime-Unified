@@ -1,0 +1,65 @@
+name: SP-MC3D Renderer Admission
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - web/package.json
+      - web/package-lock.json
+      - web/playwright.config.ts
+      - web/src/App.tsx
+      - web/src/pages/mission-control/sections.ts
+      - web/src/pages/mission-control/MissionControlTown.tsx
+      - web/src/pages/mission-control/MissionControlTown.css
+      - web/src/pages/mission-control/three/**
+      - web/tests/e2e/mission-control-town-3d.spec.ts
+      - .github/workflows/sp-mc3d-renderer-admission.yml
+  push:
+    branches:
+      - feat/sp-mc3d-001-town
+    paths:
+      - web/package.json
+      - web/package-lock.json
+      - web/playwright.config.ts
+      - web/src/pages/mission-control/MissionControlTown.tsx
+      - web/src/pages/mission-control/three/**
+      - web/tests/e2e/mission-control-town-3d.spec.ts
+      - .github/workflows/sp-mc3d-renderer-admission.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sp-mc3d-renderer-admission-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-browser-smoke:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install exact dependency graph
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: TypeScript and production build
+        run: npm run build
+
+      - name: Install Chromium for renderer smoke
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser smoke — enter governed 3D town
+        run: npx playwright test tests/e2e/mission-control-town-3d.spec.ts --project=chromium

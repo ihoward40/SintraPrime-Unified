@@ -31,9 +31,12 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
+    command: 'npm run dev -- --port 5173 --strictPort',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
+    env: {
+      VITE_API_BASE_URL: process.env.VITE_API_BASE_URL || 'http://localhost:8000',
+    },
   },
 });

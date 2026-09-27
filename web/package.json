@@ -45,7 +45,10 @@
     "react-hot-toast": "^2.4.1",
     "react-pdf": "^9.1.0",
     "d3": "^7.9.0",
-    "@types/d3": "^7.4.3"
+    "@types/d3": "^7.4.3",
+    "three": "0.170.0",
+    "@react-three/fiber": "8.18.0",
+    "@react-three/drei": "9.122.0"
   },
   "devDependencies": {
     "@playwright/test": "1.62.0",
@@ -61,6 +64,7 @@
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.4",
     "typescript": "^5.4.5",
-    "vite": "^6.4.3"
+    "vite": "^6.4.3",
+    "@types/three": "0.170.0"
   }
 }

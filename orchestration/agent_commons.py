@@ -424,6 +424,30 @@ class AgentCommonsStore:
         self._close_if_needed(conn)
         return str(existing["resource_id"]) if existing else None
 
+    def finalize_idempotency(
+        self,
+        scope: str,
+        tenant_id: str,
+        key: str,
+        *,
+        expected_resource_id: str,
+        final_resource_id: str,
+    ) -> str:
+        conn = self._connect()
+        conn.execute("BEGIN IMMEDIATE")
+        conn.execute(
+            "UPDATE idempotency_keys SET resource_id = ? WHERE scope = ? AND tenant_id = ? AND key = ? AND resource_id = ?",
+            (final_resource_id, scope, tenant_id, key, expected_resource_id),
+        )
+        existing = self._fetchone(
+            conn,
+            "SELECT resource_id FROM idempotency_keys WHERE scope = ? AND tenant_id = ? AND key = ?",
+            (scope, tenant_id, key),
+        )
+        conn.commit()
+        self._close_if_needed(conn)
+        return str(existing["resource_id"]) if existing else final_resource_id
+
     def create_workspace(self, tenant_id: str, name: str, metadata: dict[str, Any] | None = None, community_id: str | None = None) -> dict[str, Any]:
         workspace_id = uuid.uuid4().hex
         record = {
@@ -618,7 +642,7 @@ class AgentCommonsStore:
         }
         conn = self._connect()
         conn.execute(
-            "INSERT OR REPLACE INTO messages(message_id, tenant_id, workspace_id, channel_id, thread_id, task_id, sender, recipients_json, correlation_id, lifecycle_status, evidence_json, trace_json, payload_json, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO messages(message_id, tenant_id, workspace_id, channel_id, thread_id, task_id, sender, recipients_json, correlation_id, lifecycle_status, evidence_json, trace_json, payload_json, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 message_id,
                 tenant_id,
@@ -728,13 +752,10 @@ class AgentCommonsStore:
         thread = self._require_thread(tenant_id, thread_id)
         if thread["workspace_id"] != workspace_id or thread["channel_id"] != channel_id or thread["task_id"] != task_id:
             raise CommonsError("Run metadata does not match the thread")
-        if idempotency_key:
-            existing = self.get_agent_run_by_idempotency(tenant_id, idempotency_key)
-            if existing:
-                return existing
         now = utc_now()
+        run_id = uuid.uuid4().hex
         run = {
-            "run_id": uuid.uuid4().hex,
+            "run_id": run_id,
             "tenant_id": tenant_id,
             "workspace_id": workspace_id,
             "channel_id": channel_id,
@@ -754,6 +775,17 @@ class AgentCommonsStore:
             "updated_at": now,
         }
         conn = self._connect()
+        if idempotency_key:
+            conn.execute("BEGIN IMMEDIATE")
+            existing = self._fetchone(
+                conn,
+                "SELECT * FROM agent_runs WHERE tenant_id = ? AND idempotency_key = ?",
+                (tenant_id, idempotency_key),
+            )
+            if existing:
+                conn.commit()
+                self._close_if_needed(conn)
+                return self._row_to_run(existing)
         conn.execute(
             "INSERT INTO agent_runs(run_id, tenant_id, workspace_id, channel_id, thread_id, task_id, agent_id, role, status, parent_run_id, correlation_id, idempotency_key, context_json, output_json, tool_calls_json, rationale, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
@@ -930,8 +962,8 @@ class AgentCommonsStore:
             self._close_if_needed(conn)
             return None
         run = self._row_to_run(row)
-        thread = self.get_thread(run["thread_id"], tenant_id)
         self._close_if_needed(conn)
+        thread = self.get_thread(run["thread_id"], tenant_id)
         return {
             "run": run,
             "thread": thread,
@@ -1275,10 +1307,17 @@ class SupervisorAgent:
         thread_title: str | None = None,
     ) -> dict[str, Any]:
         principal.ensure("objective:create")
+        reservation_id: str | None = None
         if idempotency_key:
-            existing_thread_id = self.store.get_idempotency_resource("objective", principal.tenant_id, idempotency_key)
+            reservation_id = f"reservation:{uuid.uuid4().hex}"
+            existing_thread_id = self.store.remember_idempotency("objective", principal.tenant_id, idempotency_key, reservation_id)
             if existing_thread_id:
-                existing = self.store.get_thread(existing_thread_id, principal.tenant_id)
+                if existing_thread_id == reservation_id:
+                    existing = None
+                elif existing_thread_id.startswith("reservation:"):
+                    raise IdempotencyConflictError("Objective already in progress for this idempotency key")
+                else:
+                    existing = self.store.get_thread(existing_thread_id, principal.tenant_id)
                 if existing:
                     return existing
         thread = self.store.create_thread(
@@ -1289,7 +1328,17 @@ class SupervisorAgent:
             metadata={"objective": objective, "builder_capability": builder_capability, "reviewer_capability": reviewer_capability},
         )
         if idempotency_key:
-            self.store.remember_idempotency("objective", principal.tenant_id, idempotency_key, thread["thread_id"])
+            finalized_thread_id = self.store.finalize_idempotency(
+                "objective",
+                principal.tenant_id,
+                idempotency_key,
+                expected_resource_id=reservation_id or thread["thread_id"],
+                final_resource_id=thread["thread_id"],
+            )
+            if finalized_thread_id != thread["thread_id"]:
+                existing = self.store.get_thread(finalized_thread_id, principal.tenant_id)
+                if existing:
+                    return existing
         self.store.add_participant(principal.tenant_id, workspace_id, channel_id, thread["thread_id"], principal.principal_id, "human", principal.role, principal.principal_id)
         self.store.add_participant(principal.tenant_id, workspace_id, channel_id, thread["thread_id"], self.supervisor_adapter.agent_id, "agent", "supervisor", self.supervisor_adapter.display_name)
         self.store.add_message(

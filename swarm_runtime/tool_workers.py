@@ -530,10 +530,10 @@ class _HealthTrackedInferenceProvider:
         try:
             result = getattr(self._provider, method)(request)
             if method == "invoke_stream":
-                if hasattr(result, "__iter__"):
-                    return self._wrap_stream_with_health(provider_name, result, started)
                 if hasattr(result, "__aiter__"):
                     return self._wrap_async_stream_with_health(provider_name, result, started)
+                if hasattr(result, "__iter__"):
+                    return self._wrap_stream_with_health(provider_name, result, started)
         except InferenceError as exc:
             if exc.kind in {
                 ProviderErrorKind.TIMEOUT_FIRST_BYTE,

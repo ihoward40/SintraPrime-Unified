@@ -15,6 +15,7 @@ import re
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from .message_types import ChannelType, IncomingMessage, Intent
+from .trust_authority_router import build_trust_authority_route
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,6 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 _INTENT_PATTERNS: List[Tuple[Intent, List[str]]] = [
-    # High-specificity intents first — these have strong, unambiguous keywords
     (
         Intent.REMINDER,
         [
@@ -66,7 +66,6 @@ _INTENT_PATTERNS: List[Tuple[Intent, List[str]]] = [
             r"health|ready|done|completed|pending)\b",
         ],
     ),
-    # LEGAL_QUESTION last — its keywords are broad and overlap with other intents
     (
         Intent.LEGAL_QUESTION,
         [
@@ -117,12 +116,7 @@ _PERSON_NAME_PATTERN = re.compile(
 
 
 class MessageRouter:
-    """
-    Intent-based message router for SintraPrime.
-
-    Provides rule-based intent detection (with optional LLM override),
-    entity extraction, and per-intent handler dispatch.
-    """
+    """Intent-based message router for SintraPrime/Hermes."""
 
     def __init__(self) -> None:
         self._handlers: Dict[Intent, Callable] = {}
@@ -131,17 +125,7 @@ class MessageRouter:
             for intent, patterns in _INTENT_PATTERNS
         ]
 
-    # ------------------------------------------------------------------
-    # Intent detection
-    # ------------------------------------------------------------------
-
     def detect_intent(self, text: str) -> Intent:
-        """
-        Classify *text* into an Intent using keyword patterns.
-
-        Returns the first matching intent in priority order, or
-        Intent.GENERAL_CHAT if nothing matches.
-        """
         text_lower = text.lower()
         for intent, patterns in self._compiled:
             for pattern in patterns:
@@ -150,10 +134,6 @@ class MessageRouter:
         return Intent.GENERAL_CHAT
 
     def detect_intent_scored(self, text: str) -> List[Tuple[Intent, int]]:
-        """
-        Return all intents with a match count score, sorted descending.
-        Useful for multi-intent messages.
-        """
         text_lower = text.lower()
         scores: Dict[Intent, int] = {}
         for intent, patterns in self._compiled:
@@ -162,17 +142,12 @@ class MessageRouter:
                 scores[intent] = count
         return sorted(scores.items(), key=lambda x: x[1], reverse=True)
 
-    # ------------------------------------------------------------------
-    # Entity extraction
-    # ------------------------------------------------------------------
-
     def extract_entities(self, text: str) -> Dict[str, Any]:
         """
-        Extract named entities from *text*.
-
-        :returns: Dict with keys: dates, case_numbers, amounts, jurisdictions, names.
+        Extract named entities and attach governed trust dispatch metadata when
+        the message concerns trust administration.
         """
-        return {
+        entities: Dict[str, Any] = {
             "dates": _DATE_PATTERN.findall(text),
             "case_numbers": _CASE_NUMBER_PATTERN.findall(text),
             "amounts": _AMOUNT_PATTERN.findall(text),
@@ -180,12 +155,13 @@ class MessageRouter:
             "names": _PERSON_NAME_PATTERN.findall(text),
         }
 
-    # ------------------------------------------------------------------
-    # Handler registration & dispatch
-    # ------------------------------------------------------------------
+        trust_route = build_trust_authority_route(text)
+        if trust_route is not None:
+            entities["trust_authority_route"] = trust_route
+
+        return entities
 
     def register_handler(self, intent: Intent, handler_fn: Callable) -> None:
-        """Register a handler callable for a given intent."""
         self._handlers[intent] = handler_fn
 
     def route_to_handler(
@@ -194,9 +170,6 @@ class MessageRouter:
         entities: Dict[str, Any],
         message: IncomingMessage,
     ) -> str:
-        """
-        Dispatch to the registered handler, or return a default response.
-        """
         handler = self._handlers.get(intent)
         if handler:
             try:
@@ -206,12 +179,22 @@ class MessageRouter:
                 logger.error("Handler error for %s: %s", intent.value, exc)
                 return "⚠️ An internal error occurred."
 
-        # Built-in fallback responses
         return self._default_response(intent, entities, message)
 
     def _default_response(
         self, intent: Intent, entities: Dict, message: IncomingMessage
     ) -> str:
+        trust_route = entities.get("trust_authority_route")
+        if trust_route:
+            route = " → ".join(trust_route["authority_order"])
+            suffix = (
+                " Legal-effect/external execution remains gated pending current-law "
+                "verification and required principal/trustee approval."
+                if trust_route.get("fail_closed")
+                else ""
+            )
+            return f"🛡️ Trust matter routed: {route}.{suffix}"
+
         if intent == Intent.LEGAL_QUESTION:
             juris = entities.get("jurisdictions", [])
             juris_str = f" ({', '.join(juris)})" if juris else ""
@@ -239,36 +222,21 @@ class MessageRouter:
             return f"⏰ Reminder set{date_str}."
         return "🤖 Message received. How can SintraPrime assist you further?"
 
-    # ------------------------------------------------------------------
-    # Response formatting
-    # ------------------------------------------------------------------
-
     def format_response(self, response: Any, channel_type: ChannelType) -> str:
-        """
-        Adapt a response object to the appropriate channel format.
-
-        - Telegram / WhatsApp: Markdown
-        - Discord: Discord-flavoured markdown
-        - Slack: mrkdwn
-        - Webhook / SMS: plain text
-        """
         text = str(response) if not isinstance(response, str) else response
 
         if channel_type in (ChannelType.TELEGRAM, ChannelType.WHATSAPP):
-            return text  # already Markdown-ish
+            return text
 
         if channel_type == ChannelType.DISCORD:
-            # Convert *bold* → **bold** if not already
             text = re.sub(r"(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)", r"**\1**", text)
             return text
 
         if channel_type == ChannelType.SLACK:
-            # Convert *bold* → *bold* (Slack uses single star)
             text = re.sub(r"\*\*(.+?)\*\*", r"*\1*", text)
             return text
 
         if channel_type in (ChannelType.SMS, ChannelType.WEBHOOK, ChannelType.EMAIL):
-            # Strip markdown
             text = re.sub(r"[*_`~]", "", text)
             text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
             return text

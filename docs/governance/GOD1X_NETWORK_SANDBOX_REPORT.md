@@ -42,8 +42,8 @@ Resolution (`NetworkSandbox.resolve()`) never upgrades posture:
 
 ## 3. Configuration (added)
 
-`SWARM_NETWORK_ENFORCEMENT = policy | os | container | unavailable_fail_closed`
-(default `policy`). `SWARM_NETWORK_CONTAINER = none` declares a net=none container.
+`SWARM_NETWORK_ENFORCEMENT = policy_only | os_enforced | container_network_none | unavailable_fail_closed`
+(default `policy_only`). `SWARM_NETWORK_CONTAINER = none` declares a net=none container.
 `SWARM_NETWORK_MODE = deny` is the invariant (no network admission path exists).
 
 ## 4. Fail-closed guarantees

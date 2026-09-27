@@ -114,9 +114,10 @@ def test_proxy_env_strip_removes_known_vars() -> None:
     assert clean["PATH"] == "/usr/bin"
 
 
-def test_os_enforced_unavailable_fails_closed() -> None:
+def test_os_enforced_unavailable_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
     saved = _set_env(ENFORCEMENT="os_enforced")
     try:
+        monkeypatch.setattr("swarm_runtime.network_sandbox._probe_os_netns", lambda: False)
         sb = NetworkSandbox.from_config()
         assert sb.mode is NetworkSandboxMode.OS_ENFORCED
         r = sb.resolve()

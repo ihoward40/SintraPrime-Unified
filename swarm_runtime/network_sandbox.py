@@ -28,6 +28,7 @@ own process network state (OS probes run in throwaway child processes only).
 
 from __future__ import annotations
 
+import ctypes
 import enum
 import os
 import platform
@@ -61,6 +62,17 @@ PROXY_ENV_VARS = (
 )
 
 
+_CLONE_NEWNET = 0x40000000
+
+
+def _unshare_newnet() -> None:
+    libc = ctypes.CDLL("libc.so.6", use_errno=True)
+    rc = libc.unshare(_CLONE_NEWNET)
+    if rc != 0:
+        errno = ctypes.get_errno()
+        raise OSError(errno, os.strerror(errno))
+
+
 def _probe_os_netns() -> bool:
     """Best-effort detection of an OS network-isolation capability.
 
@@ -68,7 +80,7 @@ def _probe_os_netns() -> bool:
     touched. Returns True only when a child can unshare a fresh network namespace
     (Linux CLONE_NEWNET, 0x40000000).
     """
-    if platform.system() != "Linux" or not hasattr(os, "unshare"):
+    if platform.system() != "Linux":
         return False
     probe = (
         "import ctypes,os;"
@@ -193,8 +205,12 @@ class NetworkSandbox:
         child via preexec_fn. On every other posture this is empty (policy and
         unavailable modes do not claim OS enforcement).
         """
-        if resolved.get("effective_level") == "os" and platform.system() == "Linux":
-            return {"preexec_fn": lambda: os.unshare(0x40000000)}
+        if (
+            self.mode is NetworkSandboxMode.OS_ENFORCED
+            and resolved.get("effective_level") == "os"
+            and platform.system() == "Linux"
+        ):
+            return {"preexec_fn": _unshare_newnet}
         return {}
 
     # --- reporting ------------------------------------------------------

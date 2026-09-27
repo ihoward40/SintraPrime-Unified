@@ -311,6 +311,15 @@ class SwarmController:
         self._governed_contexts[request.agent_id] = governed_context
         self._governed_requests[request.agent_id] = request
         self._launch_worker(spec, state, governed_context)
+        if state.status is not WorkerStatus.RUNNING:
+            result.status = "FAILED"
+            result.completed_at = time.time()
+            result.termination_reason = "WORKER_LAUNCH_FAILED"
+            result.severity = "material"
+            result.rejection_reasons = [f"WORKER_LAUNCH_FAILED:{request.agent_id}"]
+            self.execution_results[execution_id] = result
+            self._record_governed_receipt(request, envelope, result)
+            return result
         result.status = "RUNNING"
         self.execution_results[execution_id] = result
         self._record_governed_receipt(request, envelope, result)

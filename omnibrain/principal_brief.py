@@ -68,9 +68,9 @@ class BriefExecutionState:
     denied_executions: int = 0
     # SP-GOD1X-OS-NETWORK-SANDBOX-001 — network containment posture (observed)
     network_policy_status: str = "deny"
-    network_enforcement_level: str = "policy_enforced"
-    network_sandbox_available: bool = True
-    network_certification: str = "policy_only"
+    network_enforcement_level: str = "unavailable_fail_closed"
+    network_sandbox_available: bool = False
+    network_certification: str = "unavailable"
 
 
 def build_execution_state(
@@ -85,9 +85,9 @@ def build_execution_state(
     external_effect_blocked: int = 0,
     denied_executions: int = 0,
     network_policy_status: str = "deny",
-    network_enforcement_level: str = "policy_enforced",
-    network_sandbox_available: bool = True,
-    network_certification: str = "policy_only",
+    network_enforcement_level: str = "unavailable_fail_closed",
+    network_sandbox_available: bool = False,
+    network_certification: str = "unavailable",
 ) -> BriefExecutionState:
     """Aggregate observed execution-backend facts into the brief contract."""
     return BriefExecutionState(

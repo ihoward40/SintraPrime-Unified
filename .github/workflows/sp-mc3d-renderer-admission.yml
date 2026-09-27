@@ -8,6 +8,7 @@ on:
       - web/package.json
       - web/src/pages/mission-control/MissionControlTown.tsx
       - web/src/pages/mission-control/three/**
+      - web/tests/e2e/mission-control-town-3d.spec.ts
       - .github/workflows/sp-mc3d-renderer-admission.yml
 
 permissions:
@@ -56,3 +57,9 @@ jobs:
 
       - name: TypeScript and production build
         run: npm run build
+
+      - name: Install Chromium for renderer smoke
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser smoke — enter governed 3D town
+        run: npx playwright test tests/e2e/mission-control-town-3d.spec.ts --project=chromium

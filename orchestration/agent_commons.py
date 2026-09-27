@@ -400,19 +400,24 @@ class AgentCommonsStore:
 
     def remember_idempotency(self, scope: str, tenant_id: str, key: str, resource_id: str) -> str:
         conn = self._connect()
-        conn.execute("BEGIN IMMEDIATE")
-        conn.execute(
-            "INSERT OR IGNORE INTO idempotency_keys(scope, tenant_id, key, resource_id, created_at) VALUES (?, ?, ?, ?, ?)",
-            (scope, tenant_id, key, resource_id, utc_now()),
-        )
-        existing = self._fetchone(
-            conn,
-            "SELECT resource_id FROM idempotency_keys WHERE scope = ? AND tenant_id = ? AND key = ?",
-            (scope, tenant_id, key),
-        )
-        conn.commit()
-        self._close_if_needed(conn)
-        return str(existing["resource_id"]) if existing else resource_id
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute(
+                "INSERT OR IGNORE INTO idempotency_keys(scope, tenant_id, key, resource_id, created_at) VALUES (?, ?, ?, ?, ?)",
+                (scope, tenant_id, key, resource_id, utc_now()),
+            )
+            existing = self._fetchone(
+                conn,
+                "SELECT resource_id FROM idempotency_keys WHERE scope = ? AND tenant_id = ? AND key = ?",
+                (scope, tenant_id, key),
+            )
+            conn.commit()
+            return str(existing["resource_id"]) if existing else resource_id
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            self._close_if_needed(conn)
 
     def get_idempotency_resource(self, scope: str, tenant_id: str, key: str) -> str | None:
         conn = self._connect()
@@ -434,19 +439,24 @@ class AgentCommonsStore:
         final_resource_id: str,
     ) -> str:
         conn = self._connect()
-        conn.execute("BEGIN IMMEDIATE")
-        conn.execute(
-            "UPDATE idempotency_keys SET resource_id = ? WHERE scope = ? AND tenant_id = ? AND key = ? AND resource_id = ?",
-            (final_resource_id, scope, tenant_id, key, expected_resource_id),
-        )
-        existing = self._fetchone(
-            conn,
-            "SELECT resource_id FROM idempotency_keys WHERE scope = ? AND tenant_id = ? AND key = ?",
-            (scope, tenant_id, key),
-        )
-        conn.commit()
-        self._close_if_needed(conn)
-        return str(existing["resource_id"]) if existing else final_resource_id
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute(
+                "UPDATE idempotency_keys SET resource_id = ? WHERE scope = ? AND tenant_id = ? AND key = ? AND resource_id = ?",
+                (final_resource_id, scope, tenant_id, key, expected_resource_id),
+            )
+            existing = self._fetchone(
+                conn,
+                "SELECT resource_id FROM idempotency_keys WHERE scope = ? AND tenant_id = ? AND key = ?",
+                (scope, tenant_id, key),
+            )
+            conn.commit()
+            return str(existing["resource_id"]) if existing else final_resource_id
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            self._close_if_needed(conn)
 
     def release_idempotency_reservation(
         self,
@@ -457,13 +467,33 @@ class AgentCommonsStore:
         expected_resource_id: str,
     ) -> None:
         conn = self._connect()
-        conn.execute("BEGIN IMMEDIATE")
-        conn.execute(
-            "DELETE FROM idempotency_keys WHERE scope = ? AND tenant_id = ? AND key = ? AND resource_id = ?",
-            (scope, tenant_id, key, expected_resource_id),
-        )
-        conn.commit()
-        self._close_if_needed(conn)
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute(
+                "DELETE FROM idempotency_keys WHERE scope = ? AND tenant_id = ? AND key = ? AND resource_id = ?",
+                (scope, tenant_id, key, expected_resource_id),
+            )
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            self._close_if_needed(conn)
+
+    def clear_idempotency_key(self, scope: str, tenant_id: str, key: str) -> None:
+        conn = self._connect()
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute(
+                "DELETE FROM idempotency_keys WHERE scope = ? AND tenant_id = ? AND key = ?",
+                (scope, tenant_id, key),
+            )
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            self._close_if_needed(conn)
 
     def create_workspace(self, tenant_id: str, name: str, metadata: dict[str, Any] | None = None, community_id: str | None = None) -> dict[str, Any]:
         workspace_id = uuid.uuid4().hex
@@ -804,45 +834,45 @@ class AgentCommonsStore:
             "updated_at": now,
         }
         conn = self._connect()
-        if idempotency_key:
-            conn.execute("BEGIN IMMEDIATE")
-            existing = self._fetchone(
-                conn,
-                "SELECT * FROM agent_runs WHERE tenant_id = ? AND idempotency_key = ?",
-                (tenant_id, idempotency_key),
-            )
-            if existing:
+        try:
+            if idempotency_key:
+                conn.execute("BEGIN IMMEDIATE")
+                existing = self._fetchone(
+                    conn,
+                    "SELECT * FROM agent_runs WHERE tenant_id = ? AND idempotency_key = ?",
+                    (tenant_id, idempotency_key),
+                )
+                if existing:
+                    conn.commit()
+                    return self._row_to_run(existing)
+                conn.execute(
+                    "INSERT OR IGNORE INTO agent_runs(run_id, tenant_id, workspace_id, channel_id, thread_id, task_id, agent_id, role, status, parent_run_id, correlation_id, idempotency_key, context_json, output_json, tool_calls_json, rationale, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        run["run_id"], tenant_id, workspace_id, channel_id, thread_id, task_id, agent_id, role,
+                        run["status"], parent_run_id, correlation_id, idempotency_key, self._dumps(context), self._dumps({}), self._dumps([]), None, now, now,
+                    ),
+                )
+                existing = self._fetchone(
+                    conn,
+                    "SELECT * FROM agent_runs WHERE tenant_id = ? AND idempotency_key = ?",
+                    (tenant_id, idempotency_key),
+                )
                 conn.commit()
-                self._close_if_needed(conn)
-                return self._row_to_run(existing)
-        if idempotency_key:
+                return self._row_to_run(existing) if existing else run
             conn.execute(
-                "INSERT OR IGNORE INTO agent_runs(run_id, tenant_id, workspace_id, channel_id, thread_id, task_id, agent_id, role, status, parent_run_id, correlation_id, idempotency_key, context_json, output_json, tool_calls_json, rationale, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO agent_runs(run_id, tenant_id, workspace_id, channel_id, thread_id, task_id, agent_id, role, status, parent_run_id, correlation_id, idempotency_key, context_json, output_json, tool_calls_json, rationale, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     run["run_id"], tenant_id, workspace_id, channel_id, thread_id, task_id, agent_id, role,
                     run["status"], parent_run_id, correlation_id, idempotency_key, self._dumps(context), self._dumps({}), self._dumps([]), None, now, now,
                 ),
             )
-            existing = self._fetchone(
-                conn,
-                "SELECT * FROM agent_runs WHERE tenant_id = ? AND idempotency_key = ?",
-                (tenant_id, idempotency_key),
-            )
             conn.commit()
+            return run
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
             self._close_if_needed(conn)
-            if existing:
-                return self._row_to_run(existing)
-        else:
-            conn.execute(
-            "INSERT INTO agent_runs(run_id, tenant_id, workspace_id, channel_id, thread_id, task_id, agent_id, role, status, parent_run_id, correlation_id, idempotency_key, context_json, output_json, tool_calls_json, rationale, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (
-                run["run_id"], tenant_id, workspace_id, channel_id, thread_id, task_id, agent_id, role,
-                run["status"], parent_run_id, correlation_id, idempotency_key, self._dumps(context), self._dumps({}), self._dumps([]), None, now, now,
-            ),
-        )
-            conn.commit()
-            self._close_if_needed(conn)
-        return run
 
     def complete_agent_run(
         self,
@@ -922,43 +952,47 @@ class AgentCommonsStore:
         idempotency_key: str | None,
     ) -> dict[str, Any]:
         conn = self._connect()
-        conn.execute("BEGIN IMMEDIATE")
-        if idempotency_key:
-            existing = self._fetchone(conn, "SELECT * FROM approvals WHERE tenant_id = ? AND idempotency_key = ?", (tenant_id, idempotency_key))
-            if existing:
-                if existing["approval_id"] != approval_id:
-                    conn.commit()
-                    self._close_if_needed(conn)
-                    raise IdempotencyConflictError("Idempotency key is already bound to a different approval")
-                if existing["decision"] != decision:
-                    conn.commit()
-                    self._close_if_needed(conn)
-                    raise IdempotencyConflictError("Idempotent approval replay must keep the same decision")
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            current = self._fetchone(
+                conn,
+                "SELECT * FROM approvals WHERE approval_id = ? AND tenant_id = ?",
+                (approval_id, tenant_id),
+            )
+            if not current:
                 conn.commit()
-                self._close_if_needed(conn)
-                return self._row_to_approval(existing)
-        now = utc_now()
-        current = self._fetchone(
-            conn,
-            "SELECT * FROM approvals WHERE approval_id = ? AND tenant_id = ?",
-            (approval_id, tenant_id),
-        )
-        if not current:
+                raise CommonsError("Approval not found")
+            if idempotency_key:
+                existing = self._fetchone(conn, "SELECT * FROM approvals WHERE tenant_id = ? AND idempotency_key = ?", (tenant_id, idempotency_key))
+                if existing:
+                    if existing["approval_id"] != approval_id:
+                        conn.commit()
+                        raise IdempotencyConflictError("Idempotency key is already bound to a different approval")
+                    if existing["decision"] != decision:
+                        conn.commit()
+                        raise IdempotencyConflictError("Idempotent approval replay must keep the same decision")
+                    conn.commit()
+                    replayed = self._row_to_approval(existing)
+                    replayed["replayed"] = True
+                    return replayed
+            if current["status"] != "PENDING":
+                conn.commit()
+                raise IdempotencyConflictError("Approval already decided")
+            now = utc_now()
+            conn.execute(
+                "UPDATE approvals SET status = ?, decision = ?, approver = ?, reason = ?, idempotency_key = ?, decided_at = ? WHERE approval_id = ? AND tenant_id = ?",
+                ("APPROVED" if decision == "approve" else "REJECTED", decision, approver, reason, idempotency_key, now, approval_id, tenant_id),
+            )
             conn.commit()
+            row = self._fetchone(conn, "SELECT * FROM approvals WHERE approval_id = ? AND tenant_id = ?", (approval_id, tenant_id))
+            decided = self._row_to_approval(row) if row else {}
+            decided["replayed"] = False
+            return decided
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
             self._close_if_needed(conn)
-            raise CommonsError("Approval not found")
-        if current["status"] != "PENDING":
-            conn.commit()
-            self._close_if_needed(conn)
-            raise IdempotencyConflictError("Approval already decided")
-        conn.execute(
-            "UPDATE approvals SET status = ?, decision = ?, approver = ?, reason = ?, idempotency_key = ?, decided_at = ? WHERE approval_id = ? AND tenant_id = ?",
-            ("APPROVED" if decision == "approve" else "REJECTED", decision, approver, reason, idempotency_key, now, approval_id, tenant_id),
-        )
-        conn.commit()
-        row = self._fetchone(conn, "SELECT * FROM approvals WHERE approval_id = ? AND tenant_id = ?", (approval_id, tenant_id))
-        self._close_if_needed(conn)
-        return self._row_to_approval(row) if row else {}
 
     def add_evidence_reference(
         self,
@@ -1379,6 +1413,7 @@ class SupervisorAgent:
     ) -> dict[str, Any]:
         principal.ensure("objective:create")
         reservation_id: str | None = None
+        thread: dict[str, Any] | None = None
         if idempotency_key:
             reservation_id = f"reservation:{uuid.uuid4().hex}"
             existing_thread_id = self.store.remember_idempotency("objective", principal.tenant_id, idempotency_key, reservation_id)
@@ -1513,13 +1548,10 @@ class SupervisorAgent:
                 )
             return self.store.get_thread(thread["thread_id"], principal.tenant_id) or thread
         except Exception:
-            if idempotency_key and reservation_id:
-                self.store.release_idempotency_reservation(
-                    "objective",
-                    principal.tenant_id,
-                    idempotency_key,
-                    expected_resource_id=reservation_id,
-                )
+            if thread:
+                self.store.delete_thread(principal.tenant_id, thread["thread_id"])
+            if idempotency_key:
+                self.store.clear_idempotency_key("objective", principal.tenant_id, idempotency_key)
             raise
 
     def decide_run(
@@ -1549,15 +1581,16 @@ class SupervisorAgent:
             reason=reason,
             idempotency_key=idempotency_key,
         )
-        self.store.add_task_event(
-            tenant_id=principal.tenant_id,
-            workspace_id=trace["run"]["workspace_id"],
-            channel_id=trace["run"]["channel_id"],
-            thread_id=trace["run"]["thread_id"],
-            task_id=trace["run"]["task_id"],
-            status="CLOSED" if decision == "approve" else "REJECTED",
-            actor=principal.principal_id,
-            run_id=run_id,
-            details={"objective": trace["thread"]["title"], "notes": reason or "Owner decision recorded.", "owner_decision_required": False},
-        )
+        if not decided.get("replayed"):
+            self.store.add_task_event(
+                tenant_id=principal.tenant_id,
+                workspace_id=trace["run"]["workspace_id"],
+                channel_id=trace["run"]["channel_id"],
+                thread_id=trace["run"]["thread_id"],
+                task_id=trace["run"]["task_id"],
+                status="CLOSED" if decision == "approve" else "REJECTED",
+                actor=principal.principal_id,
+                run_id=run_id,
+                details={"objective": trace["thread"]["title"], "notes": reason or "Owner decision recorded.", "owner_decision_required": False},
+            )
         return self.store.get_run_trace(run_id, principal.tenant_id) or {"run": trace["run"], "approval": decided}

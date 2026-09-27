@@ -163,6 +163,46 @@ async def test_objective_idempotency_reservation_releases_after_failure(tmp_path
     assert thread["thread_id"]
 
 
+@pytest.mark.asyncio
+async def test_objective_retry_cleans_up_partial_thread_after_post_create_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    store = AgentCommonsStore(db_path=str(tmp_path / "commons.db"), ledger_dir=tmp_path / "ledger")
+    proto = A2AProtocol()
+    supervisor = SupervisorAgent(store, protocol=proto)
+    supervisor.register_adapter(MockAgentAdapter("builder-agent", "Builder Agent", "worker", ["build"]))
+    supervisor.register_adapter(MockAgentAdapter("reviewer-agent", "Reviewer Agent", "reviewer", ["review"]))
+    workspace = store.create_workspace("tenant-a", "Governed Workspace")
+    channel = store.create_channel("tenant-a", workspace["workspace_id"], "deliveries")
+
+    original_delegate = supervisor._delegate
+
+    async def explode_delegate(*_args, **_kwargs):
+        raise RuntimeError("delegate failure")
+
+    monkeypatch.setattr(supervisor, "_delegate", explode_delegate)
+    with pytest.raises(RuntimeError):
+        await supervisor.submit_objective(
+            principal=Principal("tenant-a", "owner-1", "owner"),
+            workspace_id=workspace["workspace_id"],
+            channel_id=channel["channel_id"],
+            objective="Fails after thread creation",
+            idempotency_key="cleanup-key",
+        )
+
+    monkeypatch.setattr(supervisor, "_delegate", original_delegate)
+    retried = await supervisor.submit_objective(
+        principal=Principal("tenant-a", "owner-1", "owner"),
+        workspace_id=workspace["workspace_id"],
+        channel_id=channel["channel_id"],
+        objective="Fails after thread creation",
+        idempotency_key="cleanup-key",
+    )
+
+    assert retried["thread_id"]
+    assert len(store.get_thread(retried["thread_id"], "tenant-a")["participants"]) >= 2
+    conn = store._connect()
+    assert conn.execute("SELECT COUNT(*) AS count FROM threads WHERE tenant_id = ?", ("tenant-a",)).fetchone()["count"] == 1
+
+
 def test_agent_commons_persistence_survives_restart(tmp_path: Path):
     db_path = tmp_path / "commons.db"
     ledger_dir = tmp_path / "ledger"

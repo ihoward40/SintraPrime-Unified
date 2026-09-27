@@ -53,7 +53,7 @@ def test_dr_0001_matches_required_decision_register_fields():
 
     validator_class = jsonschema.validators.validator_for(schema)
     validator_class.check_schema(schema)
-    validator_class(schema).validate(record)
+    validator_class(schema, format_checker=jsonschema.FormatChecker()).validate(record)
     assert record["decision_id"] == "DR-0001"
     assert record["status"] == "active"
     assert record["execution_items"]

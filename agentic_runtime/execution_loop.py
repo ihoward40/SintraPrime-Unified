@@ -90,10 +90,26 @@ class GovernedExecutionLoop:
             self.circuit_breaker.assert_closed()
             repair_action = self.repair(failure, attempt)
             if not repair_action:
+                results.append(
+                    StepResult(
+                        action="autoheal",
+                        ok=False,
+                        output="REPAIR_UNAVAILABLE",
+                        attempt=attempt,
+                    )
+                )
                 break
             context = {"mode": ExecutionMode.AUTOHEAL.value, "action": repair_action, "attempt": attempt}
             if not self.authorize(repair_action, context):
                 self.record("repair_denied", context)
+                results.append(
+                    StepResult(
+                        action=repair_action,
+                        ok=False,
+                        output="REPAIR_DENIED_BY_POLICY",
+                        attempt=attempt,
+                    )
+                )
                 break
             repaired = self.execute(repair_action)
             repaired.attempt = attempt

@@ -62,6 +62,31 @@ def test_autoheal_allows_first_repair_when_breaker_limit_is_one():
     assert results[-1].ok is True
 
 
+def test_autoheal_records_unavailable_and_denied_terminal_states():
+    unavailable = GovernedExecutionLoop(
+        authorize=lambda *_args: True,
+        execute=lambda action: StepResult(action, True),
+        verify=lambda: StepResult("verify", False, "test"),
+        repair=lambda *_args: None,
+        record=lambda *_args: None,
+        max_heal_attempts=1,
+    )
+    denied = GovernedExecutionLoop(
+        authorize=lambda _action, context: context["mode"] == ExecutionMode.BUILD,
+        execute=lambda action: StepResult(action, True),
+        verify=lambda: StepResult("verify", False, "test"),
+        repair=lambda *_args: "fix tests",
+        record=lambda *_args: None,
+        max_heal_attempts=1,
+    )
+
+    unavailable_results = unavailable.run(["build feature"], ExecutionMode.BUILD)
+    denied_results = denied.run(["build feature"], ExecutionMode.BUILD)
+
+    assert unavailable_results[-1].output == "REPAIR_UNAVAILABLE"
+    assert denied_results[-1].output == "REPAIR_DENIED_BY_POLICY"
+
+
 def test_media_external_provider_fails_closed():
     policy = MediaWorkflowPolicy()
     job = MediaJob(MediaKind.VIDEO, "wf-1", {"prompt": "x"}, local_only=False, external_provider="cloud")

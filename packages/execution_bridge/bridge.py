@@ -76,7 +76,7 @@ class ExecutionBridge:
             "document_preview": normalized_document[:120],
             "document_length": len(normalized_document),
         }
-        jurisdiction = str(metadata.get("jurisdiction") or "unknown")
+        jurisdiction = str(metadata.get("jurisdiction") or "").strip() or "unknown"
         return FilingPayload(
             filing_type=filing_type.lower(),
             document_hash=validation.document_hash,

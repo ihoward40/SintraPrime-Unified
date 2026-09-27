@@ -60,7 +60,8 @@ class FilingEngine:
             f"sign:{signature_id}",
             "submit:ok",
         ]
-        receipt_reference = f"receipt-{request.jurisdiction.lower()}-{filing_id[-8:]}"
+        jurisdiction = request.jurisdiction.strip().lower() or "unknown"
+        receipt_reference = f"receipt-{jurisdiction}-{filing_id[-8:]}"
         return FilingResult(
             filing_id=filing_id,
             status="submitted",

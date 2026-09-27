@@ -85,3 +85,10 @@ def test_absolute_screenshot_root_preserved() -> None:
 def test_unsupported_filing_type_rejected() -> None:
     with pytest.raises(ValueError, match="unsupported filing type: other"):
         FilingEngine().file(_request("other"))
+
+
+def test_receipt_reference_normalizes_jurisdiction_whitespace() -> None:
+    request = _request("court")
+    request.jurisdiction = " CA "
+    result = FilingEngine().file(request)
+    assert result.receipt_reference.startswith("receipt-ca-")

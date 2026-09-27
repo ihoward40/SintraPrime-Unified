@@ -217,13 +217,13 @@ class AsyncJobQueue:
                 CREATE TABLE IF NOT EXISTS async_jobs(
                     task_id TEXT PRIMARY KEY,
                     status TEXT NOT NULL,
-                    payload JSON NOT NULL,
+                    payload TEXT NOT NULL,
                     attempts INTEGER NOT NULL DEFAULT 0,
                     last_error TEXT,
                     callback_url TEXT,
-                    run_after TIMESTAMPTZ NOT NULL,
-                    created_at TIMESTAMPTZ NOT NULL,
-                    updated_at TIMESTAMPTZ NOT NULL
+                    run_after TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
                 )
                 """
             )

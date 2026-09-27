@@ -31,11 +31,4 @@ This subtree defines the minimum operational foundation for repeatable, evidence
 
 ## Child DOX Index
 
-| Path | Scope | Controls |
-|---|---|---|
-| `00-Program/` | Program-level BOE specs | Build order, standing engineering rule, Sprint/M1 tracking |
-| `01-Decision-Register/` | Decision governance and records | DRS-001, schema, append-only decision log |
-| `02-Agent-Passports/` | Agent operating identities | AOP-001, template, completed passports |
-| `03-Portfolio-Registry/` | Institutional assets and portfolio state | Registry entries and decision linkage |
-| `04-Weekly-Life-Board/` | Weekly board operating packet | Agenda, evidence inputs, decision outputs |
-| `05-Acceptance/` | Milestone acceptance evidence | M1 gate verification and sign-off |
+No child `AGENTS.md` contracts are currently defined under `BOE/`; this contract governs all BOE subpaths.

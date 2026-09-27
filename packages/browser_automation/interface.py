@@ -90,4 +90,4 @@ class FilingEngine:
             return FilingTarget.UCC
         if normalized_type.startswith("court"):
             return FilingTarget.COURT
-        raise ValueError(f"unsupported filing type: {filing_type}")
+        raise ValueError(f"unsupported filing type: {normalized_type}")

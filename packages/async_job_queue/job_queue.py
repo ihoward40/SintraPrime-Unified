@@ -9,9 +9,8 @@ from pathlib import Path
 from typing import Any, Callable
 from uuid import uuid4
 
-# Intentionally long hold while a job is in RUNNING to prevent it from being
-# re-claimed as ready before the worker reports completion/failure.
-RUNNING_LEASE_DURATION = timedelta(days=36500)
+# Finite lease for RUNNING jobs; stalled workers can be reclaimed after expiry.
+RUNNING_LEASE_DURATION = timedelta(minutes=15)
 
 
 class JobStatus(StrEnum):

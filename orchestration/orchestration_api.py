@@ -501,12 +501,18 @@ async def post_thread_message(
     thread = store.get_thread(thread_id, principal.tenant_id)
     if not thread:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
+    if (
+        req.workspace_id != thread["workspace_id"]
+        or req.channel_id != thread["channel_id"]
+        or req.task_id != thread["task_id"]
+    ):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Routing metadata does not match the thread")
     message = store.add_message(
         tenant_id=principal.tenant_id,
-        workspace_id=thread["workspace_id"],
-        channel_id=thread["channel_id"],
+        workspace_id=req.workspace_id,
+        channel_id=req.channel_id,
         thread_id=thread_id,
-        task_id=thread["task_id"],
+        task_id=req.task_id,
         sender=principal.principal_id,
         recipients=req.recipients,
         correlation_id=req.correlation_id or uuid.uuid4().hex,
@@ -517,10 +523,10 @@ async def post_thread_message(
     )
     store.add_task_event(
         tenant_id=principal.tenant_id,
-        workspace_id=thread["workspace_id"],
-        channel_id=thread["channel_id"],
+        workspace_id=req.workspace_id,
+        channel_id=req.channel_id,
         thread_id=thread_id,
-        task_id=thread["task_id"],
+        task_id=req.task_id,
         status=req.lifecycle_status,
         actor=principal.principal_id,
         details={"objective": thread["title"], "notes": "Manual thread message recorded."},

@@ -879,6 +879,10 @@ class AgentCommonsStore:
         if idempotency_key:
             existing = self._fetchone(conn, "SELECT * FROM approvals WHERE tenant_id = ? AND idempotency_key = ?", (tenant_id, idempotency_key))
             if existing:
+                if existing["approval_id"] != approval_id:
+                    conn.commit()
+                    self._close_if_needed(conn)
+                    raise IdempotencyConflictError("Idempotency key is already bound to a different approval")
                 conn.commit()
                 self._close_if_needed(conn)
                 return self._row_to_approval(existing)
@@ -907,6 +911,9 @@ class AgentCommonsStore:
         title: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        thread = self._require_thread(tenant_id, thread_id)
+        if thread["workspace_id"] != workspace_id or thread["channel_id"] != channel_id or thread["task_id"] != task_id:
+            raise CommonsError("Evidence metadata does not match the thread")
         evidence = {
             "evidence_id": uuid.uuid4().hex,
             "tenant_id": tenant_id,

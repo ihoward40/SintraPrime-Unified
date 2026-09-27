@@ -247,6 +247,20 @@ def test_commons_api_records_manual_thread_messages_and_health(tmp_path: Path):
     )
     assert rejected.status_code == 404
 
+    mismatched = client.post(
+        f"/orchestration/commons/threads/{thread['thread_id']}/messages",
+        headers=headers,
+        json={
+            "workspace_id": workspace["workspace_id"],
+            "channel_id": "wrong-channel",
+            "task_id": thread["task_id"],
+            "recipients": ["chatgpt-supervisor"],
+            "lifecycle_status": "IN_PROGRESS",
+            "payload": {"text": "mismatch"},
+        },
+    )
+    assert mismatched.status_code == 400
+
     health = client.get("/orchestration/agents/builder-agent/health", headers=headers)
     assert health.status_code == 200
     assert health.json()["status"] in {"healthy", "degraded"}

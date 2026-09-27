@@ -161,11 +161,15 @@ function FirstPersonMovement() {
   useEffect(() => {
     const down = (event: KeyboardEvent) => keys.current.add(event.code);
     const up = (event: KeyboardEvent) => keys.current.delete(event.code);
+    const clear = () => keys.current.clear();
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
+    window.addEventListener('blur', clear);
     return () => {
       window.removeEventListener('keydown', down);
       window.removeEventListener('keyup', up);
+      window.removeEventListener('blur', clear);
+      clear();
     };
   }, []);
 

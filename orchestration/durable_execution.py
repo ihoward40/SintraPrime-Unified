@@ -1081,6 +1081,15 @@ class DurableWorkflowEngine:
 
         wf_id = workflow_id or uuid.uuid4().hex
         metadata = metadata or {}
+        if metadata.get("authority_required", False):
+            authority_context = metadata.get("authority_context")
+            if not isinstance(authority_context, dict):
+                raise ValueError("AUTHORITY_CONTEXT_REQUIRED")
+            approved_workflow_type = str(authority_context.get("approved_workflow_type", "")).strip()
+            if not approved_workflow_type:
+                authority_context["approved_workflow_type"] = workflow_type
+            elif approved_workflow_type != workflow_type:
+                raise ValueError("APPROVED_WORKFLOW_TYPE_MISMATCH")
         dispatch_request_hash = self._compute_dispatch_hash(
             workflow_type=workflow_type,
             input_data=input_data,
@@ -1233,7 +1242,6 @@ class DurableWorkflowEngine:
                 raw_context = wf.metadata.get("authority_context")
                 if isinstance(raw_context, dict):
                     authority_context = dict(raw_context)
-                    authority_context["approved_workflow_type"] = workflow_type
         func = self._registered[workflow_type]
         ctx = WorkflowContext(
             workflow_id=workflow_id,

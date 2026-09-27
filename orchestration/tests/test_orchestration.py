@@ -1075,6 +1075,29 @@ class TestDurableWorkflowEngine:
             await engine.start_workflow("nonexistent", {})
 
     @pytest.mark.asyncio
+    async def test_start_rejects_authority_workflow_type_mismatch(self):
+        engine = DurableWorkflowEngine()
+
+        async def my_workflow(ctx, data):
+            return data
+
+        engine.register_workflow("test_wf", my_workflow)
+        with pytest.raises(ValueError, match="APPROVED_WORKFLOW_TYPE_MISMATCH"):
+            await engine.start_workflow(
+                "test_wf",
+                {"input": "data"},
+                metadata={
+                    "authority_required": True,
+                    "authority_context": {
+                        "principal_id": "principal-a",
+                        "tenant_id": "tenant-a",
+                        "capability_lease_id": "lease-a",
+                        "approved_workflow_type": "different_wf",
+                    },
+                },
+            )
+
+    @pytest.mark.asyncio
     async def test_start_and_complete_workflow(self):
         engine = DurableWorkflowEngine()
 

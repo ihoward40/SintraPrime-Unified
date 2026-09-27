@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import StrEnum
+from typing import Any
 
 
 class MediaKind(StrEnum):
@@ -16,7 +17,7 @@ class MediaKind(StrEnum):
 class MediaJob:
     kind: MediaKind
     workflow_id: str
-    inputs: dict[str, str]
+    inputs: dict[str, Any]
     local_only: bool = True
     external_provider: str | None = None
     estimated_cost_usd: float = 0.0

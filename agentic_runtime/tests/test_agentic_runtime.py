@@ -103,6 +103,21 @@ def test_autoheal_records_circuit_open_terminal_state():
     assert results[-1].output == "REPAIR_CIRCUIT_OPEN"
 
 
+def test_autoheal_records_budget_exhaustion_terminal_state():
+    loop = GovernedExecutionLoop(
+        authorize=lambda *_args: True,
+        execute=lambda action: StepResult(action, True),
+        verify=lambda: StepResult("verify", True, "test", healthy=False),
+        repair=lambda *_args: "fix tests",
+        record=lambda *_args: None,
+        max_heal_attempts=1,
+    )
+
+    results = loop.run(["build feature"], ExecutionMode.BUILD)
+
+    assert results[-1].output == "REPAIR_BUDGET_EXHAUSTED"
+
+
 def test_media_external_provider_fails_closed():
     policy = MediaWorkflowPolicy()
     job = MediaJob(MediaKind.VIDEO, "wf-1", {"prompt": "x"}, local_only=False, external_provider="cloud")

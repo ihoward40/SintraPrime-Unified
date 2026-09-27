@@ -154,4 +154,13 @@ class GovernedExecutionLoop:
             self.circuit_breaker.record(failure_healthy)
             if failure_healthy:
                 break
+            if attempt == self.max_heal_attempts:
+                results.append(
+                    StepResult(
+                        action="autoheal",
+                        ok=False,
+                        output="REPAIR_BUDGET_EXHAUSTED",
+                        attempt=attempt,
+                    )
+                )
         return results

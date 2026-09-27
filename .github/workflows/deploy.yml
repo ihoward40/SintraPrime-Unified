@@ -9,7 +9,12 @@ on:
       - "docker-compose.yml"
       - "core/**"
       - "apps/**"
+      - "deployment/**"
+      - "infrastructure/**"
       - ".github/workflows/deploy.yml"
+
+permissions:
+  contents: read
 
 jobs:
   deploy:

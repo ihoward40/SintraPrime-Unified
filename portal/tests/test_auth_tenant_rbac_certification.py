@@ -1009,6 +1009,14 @@ def test_auth_middleware_public_allowlist_is_exact_and_protects_private_routes()
     assert is_public_path("/")
     assert is_public_path("/api/v1/auth/login")
     assert is_public_path("/api/v1/documents/share/token-123")
+    assert is_public_path("/jurisdictions", "GET")
+    assert is_public_path("/legal-authorities/NJ-UTC-2015-276", "GET")
+    assert is_public_path("/legal-rules/compare", "GET")
+    assert is_public_path("/ucc-filings/evaluate", "POST")
+    assert not is_public_path("/jurisdictions", "POST")
+    assert not is_public_path("/legal-authorities/NJ-UTC-2015-276", "POST")
+    assert not is_public_path("/legal-rules/example-rule", "POST")
+    assert not is_public_path("/ucc-filings/example-evaluation", "DELETE")
     assert not is_public_path("/api/v1/clients")
     assert not is_public_path("/api/system/health")
 
@@ -1018,6 +1026,16 @@ def test_live_app_global_auth_middleware_denies_unlisted_routes_and_allows_healt
 
     assert client.get("/health").status_code == 200
     response = client.get("/api/system/health")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Missing or invalid Authorization header"
+
+
+def test_live_app_global_auth_middleware_preserves_public_gets_but_blocks_non_get_route_misses():
+    client = TestClient(create_app())
+
+    assert client.get("/jurisdictions").status_code == 200
+
+    response = client.post("/jurisdictions")
     assert response.status_code == 401
     assert response.json()["detail"] == "Missing or invalid Authorization header"
 

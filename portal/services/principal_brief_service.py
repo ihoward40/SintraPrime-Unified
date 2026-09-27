@@ -168,13 +168,13 @@ def build_runtime_execution_state():
 
     try:
         network_sandbox = importlib.import_module("swarm_runtime.network_sandbox")
-    except Exception as exc:
+    except ModuleNotFoundError as exc:
+        if exc.name not in {"swarm_runtime", "swarm_runtime.network_sandbox"}:
+            raise
         try:
             network_sandbox = _load_network_sandbox_fallback_module()
         except (FileNotFoundError, ModuleNotFoundError):
             return build_execution_state()
-        except Exception:
-            raise exc from None
     try:
         sandbox = network_sandbox.NetworkSandbox.from_config()
         return build_execution_state(

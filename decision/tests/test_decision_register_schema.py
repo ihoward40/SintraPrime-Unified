@@ -7,6 +7,7 @@ from decision.register.schema import (
     DECISION_REGISTER_ENTRY_SCHEMA,
     DECISION_REGISTER_SCHEMA_VERSION,
     DECISION_REGISTER_STORAGE_MODEL,
+    SHA256_HEX_PATTERN,
 )
 
 _VALIDATOR = Draft202012Validator(
@@ -57,7 +58,7 @@ def test_decision_register_traceability_links_require_targets():
     assert "links" in traceability["required"]
     prev_hash = traceability["properties"]["prev_receipt_hash"]
     assert prev_hash["anyOf"][0]["type"] == "null"
-    assert prev_hash["anyOf"][1] == {"type": "string", "minLength": 64, "maxLength": 64}
+    assert prev_hash["anyOf"][1] == {"type": "string", "pattern": SHA256_HEX_PATTERN}
     links = traceability["properties"]["links"]
     assert links["minItems"] == 1
     assert set(links["items"]["required"]) == {"link_type", "target_id"}
@@ -80,6 +81,7 @@ def test_decision_register_storage_model_relations_and_traceability():
     assert "decision_register_entries" in tables
     assert "decision_register_relations" in tables
     assert "decision_register_traceability_links" in tables
+    assert "schema_version TEXT NOT NULL" in tables["decision_register_entries"]
     assert "receipt_hash TEXT NOT NULL UNIQUE" in tables["decision_register_entries"]
     assert "prev_receipt_hash TEXT" in tables["decision_register_entries"]
     assert "UNIQUE(decision_id, run_id)" not in tables["decision_register_entries"]
@@ -121,5 +123,19 @@ def test_schema_allows_nullable_previous_receipt_hash():
 def test_schema_rejects_invalid_recorded_at_format():
     payload = _entry_with_link(link_type="receipt", include_sha256=True)
     payload["recorded_at"] = "not-a-timestamp"
+    with pytest.raises(ValidationError):
+        _VALIDATOR.validate(payload)
+
+
+def test_schema_rejects_non_zulu_timestamp_offset():
+    payload = _entry_with_link(link_type="receipt", include_sha256=True)
+    payload["recorded_at"] = "2026-01-01T00:00:00+00:00"
+    with pytest.raises(ValidationError):
+        _VALIDATOR.validate(payload)
+
+
+def test_schema_rejects_non_hex_sha256_values():
+    payload = _entry_with_link(link_type="receipt", include_sha256=True)
+    payload["traceability"]["receipt_hash"] = "g" * 64
     with pytest.raises(ValidationError):
         _VALIDATOR.validate(payload)

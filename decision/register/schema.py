@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 DECISION_REGISTER_SCHEMA_VERSION = "sp-decision-register-v1"
+SHA256_HEX_PATTERN = r"^[0-9a-fA-F]{64}$"
 
 DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -39,7 +40,7 @@ DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
             "properties": {
                 "name": {"type": "string"},
                 "version": {"type": "string"},
-                "semantic_sha256": {"type": "string", "minLength": 64, "maxLength": 64},
+                "semantic_sha256": {"type": "string", "pattern": SHA256_HEX_PATTERN},
             },
         },
         "state": {
@@ -47,7 +48,7 @@ DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
             "required": ["canonical_version", "sha256"],
             "properties": {
                 "canonical_version": {"type": "string"},
-                "sha256": {"type": "string", "minLength": 64, "maxLength": 64},
+                "sha256": {"type": "string", "pattern": SHA256_HEX_PATTERN},
             },
         },
         "result": {
@@ -71,11 +72,11 @@ DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
             "type": "object",
             "required": ["receipt_hash", "links"],
             "properties": {
-                "receipt_hash": {"type": "string", "minLength": 64, "maxLength": 64},
+                "receipt_hash": {"type": "string", "pattern": SHA256_HEX_PATTERN},
                 "prev_receipt_hash": {
                     "anyOf": [
                         {"type": "null"},
-                        {"type": "string", "minLength": 64, "maxLength": 64},
+                        {"type": "string", "pattern": SHA256_HEX_PATTERN},
                     ]
                 },
                 "links": {
@@ -91,7 +92,7 @@ DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
                             },
                             "target_id": {"type": "string"},
                             "target_ref": {"type": "string"},
-                            "sha256": {"type": "string", "minLength": 64, "maxLength": 64},
+                            "sha256": {"type": "string", "pattern": SHA256_HEX_PATTERN},
                         },
                         "allOf": [
                             {
@@ -116,6 +117,7 @@ DECISION_REGISTER_STORAGE_MODEL = {
         "decision_register_entries": """
 CREATE TABLE IF NOT EXISTS decision_register_entries (
     register_id TEXT PRIMARY KEY,
+    schema_version TEXT NOT NULL,
     decision_id TEXT NOT NULL,
     run_id TEXT NOT NULL,
     recorded_at TEXT NOT NULL,

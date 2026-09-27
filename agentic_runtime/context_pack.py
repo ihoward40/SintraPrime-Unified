@@ -38,6 +38,9 @@ class ContextPackBuilder:
 
     def build(self, items: Iterable[ContextItem]) -> ContextPack:
         pool = list(items)
+        for item in pool:
+            if item.token_estimate < 0:
+                raise ValueError("token_estimate cannot be negative")
         required = [i for i in pool if i.required]
         if sum(i.token_estimate for i in required) > self.token_budget:
             raise ValueError("REQUIRED_CONTEXT_EXCEEDS_BUDGET")
@@ -49,8 +52,6 @@ class ContextPackBuilder:
         )
         used = sum(i.token_estimate for i in selected)
         for item in remaining:
-            if item.token_estimate < 0:
-                raise ValueError("token_estimate cannot be negative")
             if used + item.token_estimate <= self.token_budget:
                 selected.append(item)
                 used += item.token_estimate

@@ -14,6 +14,15 @@ def test_receipt_hash_detects_mutation():
     assert not receipt.verify()
 
 
+def test_receipt_verify_preserves_existing_hash():
+    receipt = ExecutionReceipt("run-1", "a", "b", "PASS")
+    original_hash = receipt.seal()
+    receipt.status = "FAIL"
+
+    assert not receipt.verify()
+    assert receipt.receipt_hash == original_hash
+
+
 def test_receipt_binds_ledger_sha256():
     receipt = ExecutionReceipt("run-1", "a", "b", "PASS")
     bind_ledger_hash(receipt, "a" * 64)

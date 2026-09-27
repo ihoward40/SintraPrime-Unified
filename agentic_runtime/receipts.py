@@ -32,8 +32,11 @@ class ExecutionReceipt:
         return self.receipt_hash
 
     def verify(self) -> bool:
-        existing = self.receipt_hash
-        return bool(existing) and self.seal() == existing
+        if not self.receipt_hash:
+            return False
+        raw = json.dumps(self.canonical_payload(), sort_keys=True, separators=(",", ":")).encode()
+        expected = hashlib.sha256(raw).hexdigest()
+        return expected == self.receipt_hash
 
 
 def bind_ledger_hash(receipt: ExecutionReceipt, ledger_hash: str) -> ExecutionReceipt:

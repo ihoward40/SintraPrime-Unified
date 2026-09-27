@@ -27,6 +27,11 @@ def test_required_context_fails_closed():
         ContextPackBuilder(10).build([ContextItem("x", "x", 11, required=True)])
 
 
+def test_negative_required_context_fails_closed():
+    with pytest.raises(ValueError, match="token_estimate cannot be negative"):
+        ContextPackBuilder(10).build([ContextItem("x", "x", -1, required=True)])
+
+
 def test_budget_refuses_overspend():
     budget = ExecutionBudget(max_input_tokens=10, max_output_tokens=10, max_cost_usd=1)
     budget.charge(input_tokens=5, output_tokens=2, cost_usd=.25)

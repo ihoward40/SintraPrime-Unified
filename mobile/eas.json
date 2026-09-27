@@ -29,7 +29,7 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "isiahh@ikesolutions.org",
+        "appleId": "ios-submit@example.dev",
         "ascAppId": "sintraprime"
       },
       "android": {

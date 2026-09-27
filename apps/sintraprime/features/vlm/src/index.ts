@@ -148,20 +148,20 @@ export async function initializeSintraPrime() {
   const howardTrustNavigator = new HowardTrustNavigator(
     orchestrator,
     {
-      trustName: 'ISIAH TARIK HOWARD TRUST',
-      trustee: 'Isiah Tarik Howard',
-      trustEIN: '92-6080121',
-      businessName: 'IKE SOLUTIONS LLC',
-      businessEIN: '87-1798434',
+      trustName: 'SAMPLE FAMILY TRUST',
+      trustee: 'Demo Trustee',
+      trustEIN: 'XX-XXXXXXX',
+      businessName: 'SAMPLE SOLUTIONS LLC',
+      businessEIN: 'YY-YYYYYYY',
       beneficiaries: [
         {
-          name: 'Latanya Winbush',
-          email: 'lwinbush34@gmail.com',
+          name: 'Demo Beneficiary',
+          email: 'beneficiary@example.dev',
           relationship: 'Mother of beneficiaries',
           status: 'active'
         }
       ],
-      mailingAddress: 'c/o 991 Frelinghuysen Avenue, Apt 1K, Newark, NJ 07114'
+      mailingAddress: 'c/o 123 Sample Street, Suite 100, Example City, ST 12345'
     }
   );
 

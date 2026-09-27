@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -39,7 +40,8 @@ class FilingEngine:
         self._screenshot_root = screenshot_root.strip("/")
 
     def capture_signature(self, signer_name: str, payload: dict[str, Any]) -> str:
-        fingerprint = sha256(f"{signer_name}|{payload}".encode("utf-8")).hexdigest()[:16]
+        canonical_payload = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        fingerprint = sha256(f"{signer_name}|{canonical_payload}".encode("utf-8")).hexdigest()[:16]
         return f"sig-{fingerprint}"
 
     def file(self, request: FilingRequest) -> FilingResult:

@@ -69,10 +69,11 @@ class ExecutionBridge:
             raise ValueError(
                 f"cannot transform invalid filing payload: missing={validation.missing_fields}, messages={validation.messages}"
             )
+        normalized_document = document.strip()
         transformed = {
             **metadata,
-            "document_preview": document.strip()[:120],
-            "document_length": len(document),
+            "document_preview": normalized_document[:120],
+            "document_length": len(normalized_document),
         }
         jurisdiction = str(metadata.get("jurisdiction", "unknown"))
         return FilingPayload(

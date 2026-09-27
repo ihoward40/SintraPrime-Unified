@@ -113,9 +113,9 @@ class AsyncJobQueue:
             updated = conn.execute(
                 """
                 UPDATE async_jobs SET status = ?, last_error = NULL, updated_at = ?
-                WHERE task_id = ?
+                WHERE task_id = ? AND status = ?
                 """,
-                (JobStatus.COMPLETED.value, now.isoformat(), task_id),
+                (JobStatus.COMPLETED.value, now.isoformat(), task_id, JobStatus.RUNNING.value),
             ).rowcount
         if updated == 0:
             raise KeyError(task_id)
@@ -126,6 +126,8 @@ class AsyncJobQueue:
         job = self.get(task_id)
         if job is None:
             raise KeyError(task_id)
+        if job.status is not JobStatus.RUNNING:
+            raise ValueError("job must be running before it can fail")
         now = datetime.now(UTC)
         attempts = job.attempts
         status = JobStatus.FAILED

@@ -26,6 +26,13 @@ def test_capture_signature_changes_for_payload() -> None:
     assert engine.capture_signature("Alex", {"a": 1}) != engine.capture_signature("Alex", {"a": 2})
 
 
+def test_capture_signature_is_stable_across_dict_order() -> None:
+    engine = FilingEngine()
+    assert engine.capture_signature("Alex", {"a": 1, "b": 2}) == engine.capture_signature(
+        "Alex", {"b": 2, "a": 1}
+    )
+
+
 @pytest.mark.parametrize(
     ("filing_type", "target"),
     [("ucc-1", FilingTarget.UCC), ("court-motion", FilingTarget.COURT)],

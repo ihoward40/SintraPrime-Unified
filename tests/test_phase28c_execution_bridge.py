@@ -72,6 +72,14 @@ def test_validate_and_transform_passthrough() -> None:
     assert payload.filing_type == "ucc-1"
 
 
+def test_transform_uses_normalized_document_for_length_and_preview() -> None:
+    payload = ExecutionBridge().transform(
+        document="  abc  ", filing_type="ucc-1", metadata=_ucc_metadata()
+    )
+    assert payload.transformed_fields["document_length"] == 3
+    assert payload.transformed_fields["document_preview"] == "abc"
+
+
 @pytest.mark.parametrize("missing_key", ["case_number", "court_name", "filing_party"])
 def test_court_required_fields_enforced(missing_key: str) -> None:
     metadata = {

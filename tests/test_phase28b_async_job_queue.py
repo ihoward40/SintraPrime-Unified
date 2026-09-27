@@ -112,3 +112,15 @@ def test_claim_returns_none_when_empty(queue: AsyncJobQueue) -> None:
 def test_mark_completed_missing_job_raises(queue: AsyncJobQueue) -> None:
     with pytest.raises(KeyError):
         queue.mark_completed("missing", result={"ok": True})
+
+
+def test_mark_completed_requires_running_state(queue: AsyncJobQueue) -> None:
+    job = queue.submit({"kind": "ucc"})
+    with pytest.raises(KeyError):
+        queue.mark_completed(job.task_id, result={"ok": True})
+
+
+def test_mark_failed_requires_running_state(queue: AsyncJobQueue) -> None:
+    job = queue.submit({"kind": "ucc"})
+    with pytest.raises(ValueError, match="job must be running"):
+        queue.mark_failed(job.task_id, error="nope")

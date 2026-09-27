@@ -47,10 +47,17 @@ __all__ = [
 
 CLONE_NEWNET = 0x40000000
 PR_SET_NO_NEW_PRIVS = 38
+PR_SET_SECUREBITS = 28
 PR_CAPBSET_DROP = 24
 PR_CAP_AMBIENT = 47
 PR_CAP_AMBIENT_CLEAR_ALL = 4
 LINUX_CAPABILITY_VERSION_3 = 0x20080522
+SECBIT_NOROOT = 1 << 0
+SECBIT_NOROOT_LOCKED = 1 << 1
+SECBIT_NO_SETUID_FIXUP = 1 << 2
+SECBIT_NO_SETUID_FIXUP_LOCKED = 1 << 3
+SECBIT_NO_CAP_AMBIENT_RAISE = 1 << 6
+SECBIT_NO_CAP_AMBIENT_RAISE_LOCKED = 1 << 7
 
 _MODE_ALIASES = {
     "policy": "policy_only",
@@ -162,6 +169,16 @@ def _linux_unshare_netns(libc: ctypes.CDLL) -> None:
 
 def _linux_drop_namespace_escape_capabilities(libc: ctypes.CDLL) -> None:
     _linux_prctl(libc, PR_SET_NO_NEW_PRIVS, 1)
+    _linux_prctl(
+        libc,
+        PR_SET_SECUREBITS,
+        SECBIT_NOROOT
+        | SECBIT_NOROOT_LOCKED
+        | SECBIT_NO_SETUID_FIXUP
+        | SECBIT_NO_SETUID_FIXUP_LOCKED
+        | SECBIT_NO_CAP_AMBIENT_RAISE
+        | SECBIT_NO_CAP_AMBIENT_RAISE_LOCKED,
+    )
     _linux_prctl(libc, PR_CAP_AMBIENT, PR_CAP_AMBIENT_CLEAR_ALL)
 
     libc.capset.argtypes = [ctypes.POINTER(_CapHeader), ctypes.POINTER(_CapData)]

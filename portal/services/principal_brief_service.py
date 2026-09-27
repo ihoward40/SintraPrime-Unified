@@ -15,6 +15,7 @@ Design rules:
 """
 from __future__ import annotations
 
+import importlib
 import importlib.util
 import sys
 import types
@@ -133,7 +134,7 @@ def recommendation_is_proposal_only(recommendation: dict) -> bool:
 
 
 @lru_cache(maxsize=1)
-def _load_network_sandbox_module():
+def _load_network_sandbox_fallback_module():
     module_path = Path(__file__).resolve().parents[2] / "swarm_runtime" / "network_sandbox.py"
     package_name = "swarm_runtime"
     module_name = f"{package_name}.network_sandbox"
@@ -159,8 +160,15 @@ def build_runtime_execution_state():
     from omnibrain.principal_brief import build_execution_state
 
     try:
-        network_sandbox = _load_network_sandbox_module()
-    except (FileNotFoundError, ModuleNotFoundError):
+        network_sandbox = importlib.import_module("swarm_runtime.network_sandbox")
+    except ModuleNotFoundError as exc:
+        if exc.name not in {"swarm_runtime", "swarm_runtime.network_sandbox"}:
+            raise
+        try:
+            network_sandbox = _load_network_sandbox_fallback_module()
+        except (FileNotFoundError, ModuleNotFoundError):
+            return build_execution_state()
+    except FileNotFoundError:
         return build_execution_state()
     sandbox = network_sandbox.NetworkSandbox.from_config()
     return build_execution_state(

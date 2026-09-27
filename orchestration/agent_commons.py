@@ -526,6 +526,18 @@ class AgentCommonsStore:
             raise CommonsError("Thread not found")
         return thread
 
+    def delete_thread(self, tenant_id: str, thread_id: str) -> None:
+        conn = self._connect()
+        conn.execute("DELETE FROM participants WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
+        conn.execute("DELETE FROM messages WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
+        conn.execute("DELETE FROM task_events WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
+        conn.execute("DELETE FROM approvals WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
+        conn.execute("DELETE FROM evidence_references WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
+        conn.execute("DELETE FROM agent_runs WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
+        conn.execute("DELETE FROM threads WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
+        conn.commit()
+        self._close_if_needed(conn)
+
     def create_channel(self, tenant_id: str, workspace_id: str, name: str, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
         self._require_workspace(tenant_id, workspace_id)
         channel_id = uuid.uuid4().hex
@@ -1243,7 +1255,7 @@ class SupervisorAgent:
         context: dict[str, Any],
     ) -> dict[str, Any]:
         path = list(trace.get("agent_path", []))
-        if target.agent_id in path or len(path) >= self.max_delegation_depth:
+        if target.agent_id in path or (len(path) + 1) > self.max_delegation_depth:
             raise LoopDetectedError("Delegation loop detected or maximum delegation depth exceeded")
         run = self.store.start_agent_run(
             tenant_id=tenant_id,
@@ -1396,6 +1408,7 @@ class SupervisorAgent:
                     final_resource_id=thread["thread_id"],
                 )
                 if finalized_thread_id != thread["thread_id"]:
+                    self.store.delete_thread(principal.tenant_id, thread["thread_id"])
                     existing = self.store.get_thread(finalized_thread_id, principal.tenant_id)
                     if existing:
                         return existing

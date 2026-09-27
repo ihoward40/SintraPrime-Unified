@@ -22,6 +22,9 @@ pip install -r requirements.txt
 # Python (default CI-equivalent)
 python -m pytest --tb=short -q
 
+# Python (local full-suite safety lane; requires pytest-timeout and keeps per-test hangs bounded)
+python -m pytest --tb=short -q --timeout=120 --timeout-method=thread
+
 # Security certification suites (PRs #214–#217)
 python -m pytest portal/tests/test_auth_tenant_rbac_certification.py -q
 python -m pytest portal/tests/test_audit_correlation_non_http_certification.py -q

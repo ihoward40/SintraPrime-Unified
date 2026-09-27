@@ -33,11 +33,11 @@ Only Step 1 exists today. Steps 2 through 7 are approved planned deliverables an
 
 1. `BOE/00-Program/BOE-001_Master_Implementation_Spec.md`
 2. Planned deliverable: `BOE/01-Decision-Register/DRS-001.md`
-3. Decision Register schema
+3. Planned deliverable: Decision Register schema (path TBD)
 4. Planned deliverable: `BOE/02-Agent-Passports/AOP-001.md`
-5. Agent Passport template
-6. Portfolio Registry
-7. Weekly Life Board packet
+5. Planned deliverable: Agent Passport template (path TBD)
+6. Planned deliverable: Portfolio Registry (path TBD)
+7. Planned deliverable: Weekly Life Board packet (path TBD)
 
 ## Deferred Until Sprint 1 Is Operational
 

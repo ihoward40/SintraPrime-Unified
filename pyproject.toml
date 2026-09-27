@@ -273,7 +273,7 @@ known-first-party = ["portal", "operator", "voice_concierge"]
 testpaths = ["tests", "portal/tests", "voice_concierge/governed/tests"]
 python_files = "test_*.py"
 asyncio_mode = "auto"
-addopts = "-m 'not experimental'"
+addopts = "--timeout=120 --timeout-method=thread -m 'not experimental'"
 markers = [
     "experimental: tests that exercise experimental or unfinished integrations and are not part of the default CI lane",
     "integration: tests that require external services or infrastructure",
@@ -314,4 +314,3 @@ include = [
     "scheduler/task_queue.py",
     "scheduler/recurring_tasks.py",
 ]
-

@@ -150,9 +150,9 @@ export async function initializeSintraPrime() {
     {
       trustName: 'SAMPLE FAMILY TRUST',
       trustee: 'Demo Trustee',
-      trustEIN: 'XX-XXXXXXX',
+      trustEIN: '11-1111111',
       businessName: 'SAMPLE SOLUTIONS LLC',
-      businessEIN: 'YY-YYYYYYY',
+      businessEIN: '22-2222222',
       beneficiaries: [
         {
           name: 'Demo Beneficiary',

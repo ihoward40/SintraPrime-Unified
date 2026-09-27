@@ -15,3 +15,5 @@
 .mc-town-footer{display:flex;align-items:center;justify-content:center;gap:.6rem;padding:1rem 2rem;color:#63827e;font-size:.62rem;letter-spacing:.12em;border-top:1px solid rgba(53,242,208,.08)}.mc-town-footer svg{width:15px;color:var(--teal)}
 @media(max-width:900px){.mc-town-hud{grid-template-columns:repeat(2,1fr)}.mc-town-world{height:720px}.mc-town-inspector-grid{grid-template-columns:repeat(2,1fr)}.mc-town-hero{padding:1.4rem;flex-direction:column}.mc-building{transform:translate(-50%,-50%) scale(.82)}}
 @media(prefers-reduced-motion:reduce){.mc-building{transition:none!important}}
+
+.mc-town-enter3d{margin-right:.7rem;padding:.55rem .75rem;border:1px solid rgba(214,173,85,.48);background:linear-gradient(135deg,rgba(214,173,85,.12),rgba(53,242,208,.06));color:#e7c979;font-size:.58rem;letter-spacing:.12em;cursor:pointer;box-shadow:0 0 18px rgba(214,173,85,.08)}.mc-town-enter3d:hover{border-color:#35f2d0;color:#a9fff0;box-shadow:0 0 22px rgba(53,242,208,.14)}

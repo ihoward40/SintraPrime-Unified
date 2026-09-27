@@ -844,6 +844,57 @@ class TestActivityExecutor:
         with pytest.raises(RuntimeError, match="failed after"):
             await executor.run("wf3", "fail_act", always_fail, retry_policy=policy)
 
+    @pytest.mark.asyncio
+    async def test_activity_authority_context_requires_principal_tenant_and_lease(self):
+        store = DurableStore()
+        store.save_workflow(WorkflowRecord(
+            workflow_id="wf4", workflow_type="t", status=WorkflowStatus.RUNNING, state={}
+        ))
+        executor = ActivityExecutor(store)
+
+        async def my_activity():
+            return "ok"
+
+        with pytest.raises(PermissionError, match="ACTIVITY_AUTHORITY_CONTEXT_REQUIRED"):
+            await executor.run(
+                "wf4",
+                "act",
+                my_activity,
+                workflow_type="t",
+                authority_context={"tenant_id": "tenant-a"},
+                activity_action_hash="any",
+            )
+
+    @pytest.mark.asyncio
+    async def test_workflow_context_binds_activity_action_hash(self):
+        store = DurableStore()
+        store.save_workflow(WorkflowRecord(
+            workflow_id="wf5", workflow_type="t", status=WorkflowStatus.RUNNING, state={}
+        ))
+        executor = ActivityExecutor(store)
+        ctx = WorkflowContext(
+            workflow_id="wf5",
+            workflow_type="t",
+            store=store,
+            executor=executor,
+            authority_context={
+                "principal_id": "principal-a",
+                "tenant_id": "tenant-a",
+                "capability_lease_id": "lease-a",
+                "approved_workflow_type": "t",
+            },
+        )
+
+        async def my_activity(value):
+            return value + 1
+
+        assert await ctx.execute_activity("increment", my_activity, args=(1,)) == 2
+
+        scheduled = [h for h in store.load_history("wf5") if h.event_type == HistoryEventType.ACTIVITY_SCHEDULED]
+        assert len(scheduled) == 1
+        assert scheduled[0].payload["authority_bound"] is True
+        assert scheduled[0].payload["capability_lease_id"] == "lease-a"
+
 
 class TestSagaCompensator:
     @pytest.mark.asyncio

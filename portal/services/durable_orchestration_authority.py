@@ -109,6 +109,12 @@ class DurableOrchestrationAuthority:
                     # serializes metadata via json.dumps (Wave 2B-REM).
                     "mission_id": str(run.mission_id),
                     "run_id": str(run.run_id),
+                    "authority_context": {
+                        "principal_id": str(run.created_by),
+                        "tenant_id": str(run.tenant_id),
+                        "capability_lease_id": str(run.run_id),
+                        "approved_workflow_type": run.workflow_type,
+                    },
                 },
                 workflow_id=preallocated_wid,
             )

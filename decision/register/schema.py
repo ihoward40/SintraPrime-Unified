@@ -6,6 +6,7 @@ from typing import Any
 
 DECISION_REGISTER_SCHEMA_VERSION = "sp-decision-register-v1"
 SHA256_HEX_PATTERN = r"^[0-9a-fA-F]{64}$"
+ALLOWED_RELATION_TYPES = ("depends_on", "supersedes", "references", "derived_from")
 
 DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -129,6 +130,7 @@ CREATE TABLE IF NOT EXISTS decision_register_entries (
     receipt_hash TEXT NOT NULL UNIQUE,
     prev_receipt_hash TEXT,
     payload_json TEXT NOT NULL,
+    CHECK(schema_version = 'sp-decision-register-v1'),
     CHECK(length(contract_semantic_sha256) = 64 AND contract_semantic_sha256 NOT GLOB '*[^0-9A-Fa-f]*'),
     CHECK(length(state_sha256) = 64 AND state_sha256 NOT GLOB '*[^0-9A-Fa-f]*'),
     CHECK(length(receipt_hash) = 64 AND receipt_hash NOT GLOB '*[^0-9A-Fa-f]*'),
@@ -147,6 +149,7 @@ CREATE TABLE IF NOT EXISTS decision_register_relations (
     created_at TEXT NOT NULL,
     FOREIGN KEY(source_register_id) REFERENCES decision_register_entries(register_id),
     FOREIGN KEY(target_register_id) REFERENCES decision_register_entries(register_id),
+    CHECK(relation_type IN ('depends_on', 'supersedes', 'references', 'derived_from')),
     UNIQUE(source_register_id, target_register_id, relation_type)
 )
 """.strip(),

@@ -5,6 +5,7 @@ import pytest
 from jsonschema import Draft202012Validator, FormatChecker, ValidationError
 
 from decision.register.schema import (
+    ALLOWED_RELATION_TYPES,
     DECISION_REGISTER_ENTRY_SCHEMA,
     DECISION_REGISTER_SCHEMA_VERSION,
     DECISION_REGISTER_STORAGE_MODEL,
@@ -83,10 +84,14 @@ def test_decision_register_storage_model_relations_and_traceability():
     assert "decision_register_relations" in tables
     assert "decision_register_traceability_links" in tables
     assert "schema_version TEXT NOT NULL" in tables["decision_register_entries"]
+    assert "CHECK(schema_version = 'sp-decision-register-v1')" in tables["decision_register_entries"]
     assert "receipt_hash TEXT NOT NULL UNIQUE" in tables["decision_register_entries"]
     assert "prev_receipt_hash TEXT" in tables["decision_register_entries"]
     assert "UNIQUE(decision_id, run_id)" not in tables["decision_register_entries"]
     assert "UNIQUE(source_register_id, target_register_id, relation_type)" in tables["decision_register_relations"]
+    assert "CHECK(relation_type IN ('depends_on', 'supersedes', 'references', 'derived_from'))" in tables[
+        "decision_register_relations"
+    ]
     assert "CHECK(length(contract_semantic_sha256) = 64" in tables["decision_register_entries"]
     assert "CHECK(length(state_sha256) = 64" in tables["decision_register_entries"]
     assert "CHECK(length(receipt_hash) = 64" in tables["decision_register_entries"]
@@ -208,6 +213,66 @@ def test_storage_constraints_reject_invalid_hashes_and_link_rules():
                 None,
                 "{}",
             ),
+        )
+
+    conn.execute(
+        """
+        INSERT INTO decision_register_entries (
+            register_id, schema_version, decision_id, run_id, recorded_at,
+            contract_semantic_sha256, state_sha256, result_kind, policy_decision,
+            policy_risk, receipt_hash, prev_receipt_hash, payload_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            "REG-3",
+            DECISION_REGISTER_SCHEMA_VERSION,
+            "DEC-2",
+            "RUN-2",
+            "2026-01-01T00:00:05Z",
+            "a" * 64,
+            "b" * 64,
+            "DECISION",
+            "SHADOW_ONLY",
+            "ELEVATED",
+            "e" * 64,
+            None,
+            "{}",
+        ),
+    )
+    conn.execute(
+        """
+        INSERT INTO decision_register_relations (
+            source_register_id, target_register_id, relation_type, created_at
+        ) VALUES (?, ?, ?, ?)
+        """,
+        ("REG-1", "REG-3", ALLOWED_RELATION_TYPES[0], "2026-01-01T00:00:06Z"),
+    )
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            """
+            INSERT INTO decision_register_relations (
+                source_register_id, target_register_id, relation_type, created_at
+            ) VALUES (?, ?, ?, ?)
+            """,
+            ("REG-1", "REG-3", ALLOWED_RELATION_TYPES[0], "2026-01-01T00:00:07Z"),
+        )
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            """
+            INSERT INTO decision_register_relations (
+                source_register_id, target_register_id, relation_type, created_at
+            ) VALUES (?, ?, ?, ?)
+            """,
+            ("REG-1", "REG-3", "invalid_relation", "2026-01-01T00:00:08Z"),
+        )
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            """
+            INSERT INTO decision_register_relations (
+                source_register_id, target_register_id, relation_type, created_at
+            ) VALUES (?, ?, ?, ?)
+            """,
+            ("REG-1", "REG-404", ALLOWED_RELATION_TYPES[1], "2026-01-01T00:00:09Z"),
         )
 
     with pytest.raises(sqlite3.IntegrityError):

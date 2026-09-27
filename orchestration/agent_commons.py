@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+import threading
 import uuid
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Sequence
@@ -14,6 +15,7 @@ from typing import Any
 from .a2a_protocol import A2AProtocol, Message, MessageType, Priority
 
 LIFECYCLE_STATUSES = {"ASSIGNED", "ACK", "IN_PROGRESS", "RESULT", "BLOCKED", "REJECTED", "CLOSED"}
+_LEDGER_LOCK = threading.Lock()
 ROLE_PERMISSIONS = {
     "owner": {"workspace:create", "channel:create", "thread:create", "message:create", "thread:read", "objective:create", "approval:decide", "trace:read", "agent:health"},
     "supervisor": {"workspace:create", "channel:create", "thread:create", "message:create", "thread:read", "objective:create", "trace:read", "agent:health"},
@@ -565,6 +567,7 @@ class AgentCommonsStore:
         conn.execute("DELETE FROM approvals WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
         conn.execute("DELETE FROM evidence_references WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
         conn.execute("DELETE FROM agent_runs WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
+        conn.execute("DELETE FROM idempotency_keys WHERE tenant_id = ? AND resource_id = ?", (tenant_id, thread_id))
         conn.execute("DELETE FROM threads WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
         conn.commit()
         self._close_if_needed(conn)
@@ -1102,7 +1105,7 @@ class AgentCommonsStore:
             "timestamp": event["timestamp"],
             "notes": event["details"].get("notes", ""),
         }
-        with month_path.open("a", encoding="utf-8") as handle:
+        with _LEDGER_LOCK, month_path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(entry, sort_keys=True) + "\n")
 
     def _row_to_thread(self, row: dict[str, Any]) -> dict[str, Any]:
@@ -1485,9 +1488,51 @@ class SupervisorAgent:
                 details={"objective": objective, "to_agent": self.supervisor_adapter.agent_id, "notes": "Owner objective submitted."},
             )
             context = self.context_builder.build(principal.tenant_id, thread["thread_id"])
+            supervisor_run = self.store.start_agent_run(
+                tenant_id=principal.tenant_id,
+                workspace_id=workspace_id,
+                channel_id=channel_id,
+                thread_id=thread["thread_id"],
+                task_id=thread["task_id"],
+                agent_id=self.supervisor_adapter.agent_id,
+                role=self.supervisor_adapter.role,
+                correlation_id=uuid.uuid4().hex,
+                context=context,
+                idempotency_key=f"{thread['thread_id']}:supervisor-plan",
+            )
+            self.store.add_task_event(
+                tenant_id=principal.tenant_id,
+                workspace_id=workspace_id,
+                channel_id=channel_id,
+                thread_id=thread["thread_id"],
+                task_id=thread["task_id"],
+                status="IN_PROGRESS",
+                actor=self.supervisor_adapter.agent_id,
+                run_id=supervisor_run["run_id"],
+                details={"objective": objective, "notes": "Supervisor planning started."},
+            )
             plan = self.supervisor_adapter.invoke(
                 {"run_id": thread["task_id"], "objective": objective, "acceptance_criteria": acceptance_criteria or [], "builder_capability": builder_capability, "reviewer_capability": reviewer_capability},
                 context,
+            )
+            self.store.complete_agent_run(
+                supervisor_run["run_id"],
+                principal.tenant_id,
+                status=plan.status,
+                output=plan.output,
+                rationale=plan.rationale,
+                tool_calls=plan.tool_calls,
+            )
+            self.store.add_task_event(
+                tenant_id=principal.tenant_id,
+                workspace_id=workspace_id,
+                channel_id=channel_id,
+                thread_id=thread["thread_id"],
+                task_id=thread["task_id"],
+                status="RESULT",
+                actor=self.supervisor_adapter.agent_id,
+                run_id=supervisor_run["run_id"],
+                details={"objective": objective, "notes": plan.rationale},
             )
             builder = self._find_agent(builder_capability)
             reviewer = self._find_agent(reviewer_capability, role="reviewer")

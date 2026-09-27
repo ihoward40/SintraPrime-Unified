@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
 from hashlib import sha256
+from pathlib import PurePosixPath
 from typing import Any
 from uuid import uuid4
 
@@ -71,9 +72,11 @@ class FilingEngine:
 
     def _build_screenshot_trail(self, filing_id: str, target: FilingTarget) -> list[str]:
         steps = ("start", "form-complete", "signature", "submitted")
-        root = "" if self._screenshot_root == "/" else self._screenshot_root
+        root = PurePosixPath("/")
+        if self._screenshot_root != "/":
+            root = PurePosixPath(self._screenshot_root)
         return [
-            f"{root}/{target.value}/{filing_id}/{index:02d}-{step}.png"
+            str(root / target.value / filing_id / f"{index:02d}-{step}.png")
             for index, step in enumerate(steps, 1)
         ]
 

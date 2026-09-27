@@ -1,24 +1,24 @@
 CREATE TABLE IF NOT EXISTS async_jobs (
     task_id TEXT PRIMARY KEY,
     status TEXT NOT NULL,
-    payload JSON NOT NULL,
+    payload TEXT NOT NULL,
     attempts INTEGER NOT NULL DEFAULT 0,
     last_error TEXT,
     callback_url TEXT,
-    run_after TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    run_after TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS execution_attempts (
     attempt_id TEXT PRIMARY KEY,
     job_id TEXT NOT NULL REFERENCES async_jobs(task_id) ON DELETE CASCADE,
     status TEXT NOT NULL,
-    screenshots JSON NOT NULL DEFAULT '[]'::json,
-    browser_log JSON NOT NULL DEFAULT '[]'::json,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    completed_at TIMESTAMPTZ
+    screenshots TEXT NOT NULL DEFAULT '[]',
+    browser_log TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS filing_records (
@@ -26,8 +26,8 @@ CREATE TABLE IF NOT EXISTS filing_records (
     job_id TEXT NOT NULL REFERENCES async_jobs(task_id) ON DELETE CASCADE,
     document_hash TEXT NOT NULL,
     filing_status TEXT NOT NULL,
-    court_receipt JSON,
-    filed_at TIMESTAMPTZ
+    court_receipt TEXT,
+    filed_at TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_async_jobs_status ON async_jobs(status);

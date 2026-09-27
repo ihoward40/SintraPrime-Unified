@@ -148,7 +148,9 @@ class AsyncJobQueue:
             if JobStatus(current_status) is not JobStatus.RUNNING:
                 conn.commit()
                 raise ValueError("job must be running before it can fail")
-            if attempts < self._retry_policy.max_attempts:
+            if attempts >= self._retry_policy.max_attempts:
+                status = JobStatus.FAILED
+            else:
                 status = JobStatus.RETRYING
                 delay = self._retry_policy.delay_for_attempt(attempts)
                 run_after = now + timedelta(seconds=delay)

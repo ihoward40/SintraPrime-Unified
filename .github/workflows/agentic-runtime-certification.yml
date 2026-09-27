@@ -20,7 +20,24 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install focused test dependency
-        run: python -m pip install pytest
+        run: |
+          python -m pip install -U pip
+          if python - <<'PY'
+import pathlib
+import tomllib
+
+pyproject = pathlib.Path("pyproject.toml")
+if not pyproject.exists():
+    raise SystemExit(1)
+data = tomllib.loads(pyproject.read_text())
+raise SystemExit(0 if "test" in data.get("project", {}).get("optional-dependencies", {}) else 1)
+PY
+          then
+            python -m pip install ".[test]"
+          else
+            python -m pip install -e .
+          fi
+          python -m pip install pytest
       - name: Run agentic runtime suite
         run: python -m pytest agentic_runtime/tests -q
 

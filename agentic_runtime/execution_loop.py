@@ -149,6 +149,7 @@ class GovernedExecutionLoop:
                 {"ok": failure.ok, "healthy": failure_healthy, "attempt": attempt, "output": failure.output},
             )
             if not failure.ok:
+                self.circuit_breaker.record(False)
                 return results
             self.circuit_breaker.record(failure_healthy)
             if failure_healthy:

@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS execution_attempts (
     status TEXT NOT NULL,
     screenshots JSON NOT NULL DEFAULT '[]'::json,
     browser_log JSON NOT NULL DEFAULT '[]'::json,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     completed_at TIMESTAMPTZ
 );
 

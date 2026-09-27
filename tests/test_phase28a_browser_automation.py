@@ -72,9 +72,14 @@ def test_custom_audit_root_is_used() -> None:
     assert all(path.startswith("screens/") for path in result.screenshots)
 
 
-def test_empty_screenshot_root_rejected() -> None:
+def test_blank_screenshot_root_rejected() -> None:
     with pytest.raises(ValueError, match="screenshot_root must not be empty"):
-        FilingEngine(screenshot_root="/")
+        FilingEngine(screenshot_root="   ")
+
+
+def test_absolute_screenshot_root_preserved() -> None:
+    result = FilingEngine(screenshot_root="/var/audit").file(_request("ucc-1"))
+    assert all(path.startswith("/var/audit/") for path in result.screenshots)
 
 
 def test_unsupported_filing_type_rejected() -> None:

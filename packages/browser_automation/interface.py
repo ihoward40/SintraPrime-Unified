@@ -37,9 +37,11 @@ class FilingEngine:
     """Minimal autonomous browser filing engine with auditable artifacts."""
 
     def __init__(self, *, screenshot_root: str = "audit") -> None:
-        normalized_root = screenshot_root.strip("/")
+        normalized_root = screenshot_root.strip()
         if not normalized_root:
             raise ValueError("screenshot_root must not be empty")
+        if normalized_root != "/" and normalized_root.endswith("/"):
+            normalized_root = normalized_root.rstrip("/")
         self._screenshot_root = normalized_root
 
     def capture_signature(self, signer_name: str, payload: dict[str, Any]) -> str:
@@ -69,8 +71,9 @@ class FilingEngine:
 
     def _build_screenshot_trail(self, filing_id: str, target: FilingTarget) -> list[str]:
         steps = ("start", "form-complete", "signature", "submitted")
+        root = "" if self._screenshot_root == "/" else self._screenshot_root
         return [
-            f"{self._screenshot_root}/{target.value}/{filing_id}/{index:02d}-{step}.png"
+            f"{root}/{target.value}/{filing_id}/{index:02d}-{step}.png"
             for index, step in enumerate(steps, 1)
         ]
 

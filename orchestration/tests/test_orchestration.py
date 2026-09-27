@@ -1098,6 +1098,28 @@ class TestDurableWorkflowEngine:
             )
 
     @pytest.mark.asyncio
+    async def test_start_rejects_incomplete_authority_context(self):
+        engine = DurableWorkflowEngine()
+
+        async def my_workflow(ctx, data):
+            return data
+
+        engine.register_workflow("test_wf", my_workflow)
+        with pytest.raises(ValueError, match="AUTHORITY_CONTEXT_FIELDS_REQUIRED"):
+            await engine.start_workflow(
+                "test_wf",
+                {"input": "data"},
+                metadata={
+                    "authority_required": True,
+                    "authority_context": {
+                        "principal_id": "principal-a",
+                        "tenant_id": "",
+                        "capability_lease_id": "lease-a",
+                    },
+                },
+            )
+
+    @pytest.mark.asyncio
     async def test_start_and_complete_workflow(self):
         engine = DurableWorkflowEngine()
 

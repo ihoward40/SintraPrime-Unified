@@ -19,6 +19,7 @@ import importlib
 import importlib.util
 import subprocess
 import sys
+import time
 import types
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timezone
@@ -26,6 +27,8 @@ from pathlib import Path
 
 # The brief schema version this service guarantees.
 BRIEF_SCHEMA_VERSION = "sp-principal-brief-v2"
+_RUNTIME_EXECUTION_STATE_TTL_SECONDS = 5.0
+_runtime_execution_state_cache: tuple[float, object] | None = None
 DEFAULT_EXECUTION_STATE = {
     "running_workers": 0,
     "queued_tasks": 0,
@@ -164,7 +167,15 @@ def _load_network_sandbox_fallback_module():
 
 def build_runtime_execution_state():
     """Resolve the current governed-runtime containment posture for the brief."""
+    global _runtime_execution_state_cache
+
     from omnibrain.principal_brief import build_execution_state
+
+    now = time.monotonic()
+    if _runtime_execution_state_cache is not None:
+        cached_at, cached_state = _runtime_execution_state_cache
+        if now - cached_at <= _RUNTIME_EXECUTION_STATE_TTL_SECONDS:
+            return cached_state
 
     try:
         network_sandbox = importlib.import_module("swarm_runtime.network_sandbox")
@@ -174,11 +185,17 @@ def build_runtime_execution_state():
         try:
             network_sandbox = _load_network_sandbox_fallback_module()
         except (FileNotFoundError, ModuleNotFoundError):
-            return build_execution_state()
+            state = build_execution_state()
+            _runtime_execution_state_cache = (now, state)
+            return state
     try:
         sandbox = network_sandbox.NetworkSandbox.from_config()
-        return build_execution_state(
+        state = build_execution_state(
             **sandbox.brief_fields(sandbox.resolve()),
         )
+        _runtime_execution_state_cache = (now, state)
+        return state
     except (OSError, subprocess.SubprocessError):
-        return build_execution_state()
+        state = build_execution_state()
+        _runtime_execution_state_cache = (now, state)
+        return state

@@ -30,6 +30,11 @@ empty_brief_payload = _SERVICE.empty_brief_payload
 normalize_brief = _SERVICE.normalize_brief
 recommendation_is_proposal_only = _SERVICE.recommendation_is_proposal_only
 
+
+@pytest.fixture(autouse=True)
+def _clear_runtime_execution_state_cache() -> None:
+    _SERVICE._runtime_execution_state_cache = None
+
 # ---------------------------------------------------------------------------
 # Contract shape
 # ---------------------------------------------------------------------------
@@ -153,6 +158,40 @@ def test_runtime_execution_state_helper_carries_resolved_posture(monkeypatch: py
     state = build_runtime_execution_state()
     assert state.network_enforcement_level == "policy_enforced"
     assert state.network_sandbox_available is True
+
+
+def test_runtime_execution_state_helper_caches_recent_posture(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = {"count": 0}
+
+    class _Sandbox:
+        def resolve(self) -> dict[str, object]:
+            return {
+                "effective_level": "policy",
+                "enforcement_level": "policy_enforced",
+                "available": True,
+                "fail_closed": False,
+            }
+
+        def brief_fields(self, _resolved: dict[str, object]) -> dict[str, object]:
+            return {
+                "network_policy_status": "deny",
+                "network_enforcement_level": "policy_enforced",
+                "network_sandbox_available": True,
+                "network_certification": "policy_only",
+            }
+
+    class _Module:
+        class NetworkSandbox:
+            @classmethod
+            def from_config(cls):
+                calls["count"] += 1
+                return _Sandbox()
+
+    monkeypatch.setattr(_SERVICE.importlib, "import_module", lambda name: _Module())
+    state1 = build_runtime_execution_state()
+    state2 = build_runtime_execution_state()
+    assert state1 == state2
+    assert calls["count"] == 1
 
 
 def test_runtime_execution_state_helper_surfaces_unexpected_errors(monkeypatch: pytest.MonkeyPatch) -> None:

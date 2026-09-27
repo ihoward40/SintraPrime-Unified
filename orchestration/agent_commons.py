@@ -719,23 +719,28 @@ class AgentCommonsStore:
                 record["timestamp"],
             ),
         )
+        for item in record["evidence"]:
+            conn.execute(
+                "INSERT INTO evidence_references(evidence_id, tenant_id, workspace_id, channel_id, thread_id, task_id, run_id, message_id, kind, uri, title, metadata_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    uuid.uuid4().hex,
+                    tenant_id,
+                    workspace_id,
+                    channel_id,
+                    thread_id,
+                    task_id,
+                    trace.get("run_id") if trace else None,
+                    message_id,
+                    item.get("kind", "reference"),
+                    item.get("uri", "mock://missing"),
+                    item.get("title"),
+                    self._dumps(item),
+                    record["timestamp"],
+                ),
+            )
         conn.execute("UPDATE threads SET lifecycle_status = ?, updated_at = ? WHERE thread_id = ? AND tenant_id = ?", (lifecycle_status, record["timestamp"], thread_id, tenant_id))
         conn.commit()
         self._close_if_needed(conn)
-        for item in record["evidence"]:
-            self.add_evidence_reference(
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                channel_id=channel_id,
-                thread_id=thread_id,
-                task_id=task_id,
-                run_id=trace.get("run_id") if trace else None,
-                message_id=message_id,
-                kind=item.get("kind", "reference"),
-                uri=item.get("uri", "mock://missing"),
-                title=item.get("title"),
-                metadata=item,
-            )
         return record
 
     def add_task_event(
@@ -1289,7 +1294,8 @@ class SupervisorAgent:
         context: dict[str, Any],
     ) -> dict[str, Any]:
         path = list(trace.get("agent_path", []))
-        if target.agent_id in path or (len(path) + 1) > self.max_delegation_depth:
+        next_path = [*path, target.agent_id]
+        if target.agent_id in path or len(next_path) > self.max_delegation_depth:
             raise LoopDetectedError("Delegation loop detected or maximum delegation depth exceeded")
         run = self.store.start_agent_run(
             tenant_id=tenant_id,
@@ -1551,7 +1557,15 @@ class SupervisorAgent:
             if thread:
                 self.store.delete_thread(principal.tenant_id, thread["thread_id"])
             if idempotency_key:
-                self.store.clear_idempotency_key("objective", principal.tenant_id, idempotency_key)
+                current_binding = self.store.get_idempotency_resource("objective", principal.tenant_id, idempotency_key)
+                expected_binding = thread["thread_id"] if thread else reservation_id
+                if current_binding and expected_binding and current_binding == expected_binding:
+                    self.store.release_idempotency_reservation(
+                        "objective",
+                        principal.tenant_id,
+                        idempotency_key,
+                        expected_resource_id=current_binding,
+                    )
             raise
 
     def decide_run(

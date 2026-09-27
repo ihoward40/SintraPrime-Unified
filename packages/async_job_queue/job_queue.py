@@ -9,7 +9,9 @@ from pathlib import Path
 from typing import Any, Callable
 from uuid import uuid4
 
-RUNNING_LEASE_DAYS = 36500
+# Intentionally long hold while a job is in RUNNING to prevent it from being
+# re-claimed as ready before the worker reports completion/failure.
+RUNNING_LEASE_DURATION = timedelta(days=36500)
 
 
 class JobStatus(StrEnum):
@@ -83,30 +85,33 @@ class AsyncJobQueue:
 
     def claim_next_ready(self, *, as_of: datetime | None = None) -> AsyncJob | None:
         current = as_of or datetime.now(UTC)
-        running_hold_until = current + timedelta(days=RUNNING_LEASE_DAYS)
+        running_hold_until = current + RUNNING_LEASE_DURATION
         with sqlite3.connect(self._db_path) as conn:
             conn.execute("BEGIN IMMEDIATE")
             row = conn.execute(
                 """
                 UPDATE async_jobs
-                SET status = ?, attempts = attempts + 1, run_after = ?, updated_at = ?
+                SET status = :status_running,
+                    attempts = attempts + 1,
+                    run_after = :run_after,
+                    updated_at = :updated_at
                 WHERE task_id = (
                     SELECT task_id
                     FROM async_jobs
-                    WHERE status IN (?, ?) AND run_after <= ?
+                    WHERE status IN (:status_pending, :status_retrying) AND run_after <= :ready_at
                     ORDER BY created_at ASC
                     LIMIT 1
                 )
                 RETURNING task_id
                 """,
-                (
-                    JobStatus.RUNNING.value,
-                    running_hold_until.isoformat(),
-                    current.isoformat(),
-                    JobStatus.PENDING.value,
-                    JobStatus.RETRYING.value,
-                    current.isoformat(),
-                ),
+                {
+                    "status_running": JobStatus.RUNNING.value,
+                    "run_after": running_hold_until.isoformat(),
+                    "updated_at": current.isoformat(),
+                    "status_pending": JobStatus.PENDING.value,
+                    "status_retrying": JobStatus.RETRYING.value,
+                    "ready_at": current.isoformat(),
+                },
             ).fetchone()
             if row is None:
                 conn.commit()

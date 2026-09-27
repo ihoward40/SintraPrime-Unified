@@ -18,6 +18,7 @@ Worker classes:
 """
 from __future__ import annotations
 
+import asyncio
 import ast
 import contextlib
 import json
@@ -472,10 +473,17 @@ class StaticAnalysisWorker(BaseWorker):
 class _HealthTrackedInferenceProvider:
     """Wraps a governed provider with swarm health persistence."""
 
-    def __init__(self, provider: Any, router: Any, store: Any | None) -> None:
+    def __init__(
+        self,
+        provider: Any,
+        router: Any,
+        store: Any | None,
+        timeout_seconds: int | None = None,
+    ) -> None:
         self._provider = provider
         self._router = router
         self._store = store
+        self._timeout_seconds = timeout_seconds
         caps = provider.capabilities()
         if self._router.get_health(caps.provider) is None:
             self._router.register_provider(caps.provider, model=caps.model)
@@ -521,6 +529,8 @@ class _HealthTrackedInferenceProvider:
         started = time.perf_counter()
         try:
             result = getattr(self._provider, method)(request)
+            if method == "invoke_stream" and hasattr(result, "__iter__") and not hasattr(result, "provider"):
+                return self._wrap_stream_with_health(provider_name, result, started)
         except InferenceError as exc:
             if exc.kind in {
                 ProviderErrorKind.TIMEOUT_FIRST_BYTE,
@@ -531,22 +541,58 @@ class _HealthTrackedInferenceProvider:
                 self._router.mark_failure(provider_name)
             self._persist()
             raise
+        except asyncio.CancelledError:
+            self._persist()
+            raise
         except Exception:
             self._router.mark_failure(provider_name)
             self._persist()
             raise
-        latency_seconds = max(
-            float(getattr(result, "latency_ms", 0)) / 1000.0,
-            time.perf_counter() - started,
-            0.001,
-        )
+        latency_seconds = max(time.perf_counter() - started, 0.001)
         self._router.mark_success(provider_name, response_time=latency_seconds)
         self._persist()
         return result
 
+    def _wrap_stream_with_health(
+        self,
+        provider_name: str,
+        stream_result: Any,
+        started: float,
+    ) -> Any:
+        from governed_inference.contracts import InferenceError, ProviderErrorKind
+
+        def _iterator() -> Any:
+            try:
+                for item in stream_result:
+                    yield item
+            except InferenceError as exc:
+                if exc.kind in {
+                    ProviderErrorKind.TIMEOUT_FIRST_BYTE,
+                    ProviderErrorKind.TIMEOUT_PROGRESS,
+                }:
+                    self._router.mark_timeout(provider_name)
+                else:
+                    self._router.mark_failure(provider_name)
+                self._persist()
+                raise
+            except asyncio.CancelledError:
+                self._persist()
+                raise
+            except Exception:
+                self._router.mark_failure(provider_name)
+                self._persist()
+                raise
+            self._router.mark_success(
+                provider_name,
+                response_time=max(time.perf_counter() - started, 0.001),
+            )
+            self._persist()
+
+        return _iterator()
+
     def _persist(self) -> None:
         if self._store is not None:
-            self._store.save(self._router._providers)
+            self._store.save(self._router.health_snapshot())
 
 
 class ModelReasoningWorker(BaseWorker):
@@ -583,13 +629,16 @@ class ModelReasoningWorker(BaseWorker):
         health_store = ProviderHealthStore(
             self.state.task.get("provider_health_store_dir") or self.store.swarm_dir()
         )
+        health_store.apply_to_router(health_router)
         provider_timeout_seconds = self._provider_timeout_seconds()
         providers = self._build_governed_providers(
             provider_timeout_seconds=provider_timeout_seconds,
             health_router=health_router,
             health_store=health_store,
         )
-        health_store.apply_to_router(health_router)
+        if not providers:
+            self.state.errors.append("no governed providers configured")
+            return 1
         priority_source = self.state.task.get("governed_provider_priority") or {}
         policy = InferencePolicy(
             provider_priority={str(key): int(value) for key, value in priority_source.items()},
@@ -656,9 +705,8 @@ class ModelReasoningWorker(BaseWorker):
         health_router: Any,
         health_store: Any,
     ) -> list[Any]:
-        provider_configs = self.state.task.get("governed_providers")
-        if provider_configs:
-            configs = list(provider_configs)
+        if "governed_providers" in self.state.task:
+            configs = list(self.state.task.get("governed_providers") or [])
         else:
             provider_fixtures = self.state.task.get("provider_fixtures")
             if provider_fixtures:
@@ -668,8 +716,16 @@ class ModelReasoningWorker(BaseWorker):
                         "name": fixture.get("name", "deterministic-local"),
                         "model": fixture.get("model", "deterministic"),
                         "quality": fixture.get("quality", "standard"),
+                        "route_tier": fixture.get("route_tier", "LOCAL_PRIVATE"),
+                        "capabilities": fixture.get(
+                            "capabilities",
+                            ("summarization", "classification", "extraction"),
+                        ),
                         "fail_times": fixture.get("fail_times", 0),
                         "error_kind": fixture.get("error_kind", "transient"),
+                        "estimated_cost_usd": fixture.get("estimated_cost_usd", 0),
+                        "cloud": fixture.get("cloud", False),
+                        "paid": fixture.get("paid", False),
                     }
                     for fixture in provider_fixtures
                 ]
@@ -680,6 +736,7 @@ class ModelReasoningWorker(BaseWorker):
                 self._build_governed_provider(config, provider_timeout_seconds),
                 health_router,
                 health_store,
+                provider_timeout_seconds,
             )
             for config in configs
         ]
@@ -694,6 +751,8 @@ class ModelReasoningWorker(BaseWorker):
                 "model": self.state.task.get("ollama_model", "llama3"),
             }
         ]
+        if not bool(self.state.task.get("allow_hosted_providers", False)):
+            return configs
         if os.getenv("DEEPSEEK_API_KEY"):
             configs.append(
                 {
@@ -738,6 +797,15 @@ class ModelReasoningWorker(BaseWorker):
         from governed_inference.providers import MockProvider
 
         kind = str(config.get("kind", "mock")).strip().lower()
+        api_key = config.get("api_key")
+
+        def _with_metadata_overrides(provider: Any) -> Any:
+            if "cloud" in config:
+                provider.cloud = bool(config.get("cloud"))
+            if "paid" in config:
+                provider.paid = bool(config.get("paid"))
+            return provider
+
         if kind == "mock":
             capabilities = tuple(
                 config.get(
@@ -758,37 +826,43 @@ class ModelReasoningWorker(BaseWorker):
                 paid=bool(config.get("paid", False)),
             )
         if kind == "ollama":
-            return OllamaProvider(
+            return _with_metadata_overrides(OllamaProvider(
                 base_url=str(config.get("base_url", "http://localhost:11434")),
                 model=str(config.get("model", "llama3")),
                 timeout_seconds=provider_timeout_seconds,
                 quality=QualityFloor(str(config.get("quality", QualityFloor.STANDARD.value))),
-            )
+            ))
         if kind == "deepseek":
-            return DeepSeekProvider(
-                api_key=config.get("api_key"),
+            if not api_key:
+                raise ValueError("deepseek governed provider requires api_key")
+            return _with_metadata_overrides(DeepSeekProvider(
+                api_key=api_key,
                 model=str(config.get("model", "deepseek-chat")),
                 timeout_seconds=provider_timeout_seconds,
                 quality=QualityFloor(str(config.get("quality", QualityFloor.STANDARD.value))),
-            )
+            ))
         if kind == "openai":
-            return OpenAIProvider(
-                api_key=config.get("api_key"),
+            if not api_key:
+                raise ValueError("openai governed provider requires api_key")
+            return _with_metadata_overrides(OpenAIProvider(
+                api_key=api_key,
                 model=str(config.get("model", "gpt-4o-mini")),
                 timeout_seconds=provider_timeout_seconds,
                 quality=QualityFloor(str(config.get("quality", QualityFloor.STANDARD.value))),
                 estimated_cost_usd=config.get("estimated_cost_usd"),
                 pricing_known=bool(config.get("pricing_known", False)),
-            )
+            ))
         if kind == "anthropic":
-            return AnthropicProvider(
-                api_key=config.get("api_key"),
+            if not api_key:
+                raise ValueError("anthropic governed provider requires api_key")
+            return _with_metadata_overrides(AnthropicProvider(
+                api_key=api_key,
                 model=str(config.get("model", "claude-3-5-sonnet-20241022")),
                 timeout_seconds=provider_timeout_seconds,
                 quality=QualityFloor(str(config.get("quality", QualityFloor.HIGH.value))),
                 estimated_cost_usd=config.get("estimated_cost_usd"),
                 pricing_known=bool(config.get("pricing_known", False)),
-            )
+            ))
         raise ValueError(f"unsupported governed provider kind: {kind}")
 
 

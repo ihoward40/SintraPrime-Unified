@@ -69,6 +69,7 @@ export default function MissionControlTown() {
     () => districts.find((district) => district.id === selected) ?? districts[0],
     [selected],
   );
+  const SelectedIcon = selectedDistrict.icon;
 
   return (
     <div className="mc-town-shell">
@@ -130,7 +131,7 @@ export default function MissionControlTown() {
 
       <section className="mc-town-inspector">
         <div className="mc-town-inspector-title">
-          <selectedDistrict.icon />
+          <SelectedIcon />
           <div>
             <small>SELECTED DISTRICT</small>
             <h3>{selectedDistrict.name}</h3>

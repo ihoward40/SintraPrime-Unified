@@ -139,6 +139,7 @@ def test_decision_register_storage_model_relations_and_traceability():
     assert "decision_register_entries_decision_run_idx" in indexes
     assert "decision_register_relations_source_idx" in indexes
     assert "decision_register_relations_target_idx" in indexes
+    assert "decision_register_relations_references_pair_uq" in indexes
     assert "decision_register_traceability_links_register_idx" in indexes
     assert "decision_register_traceability_links_identity_uq" in indexes
 
@@ -259,6 +260,30 @@ def test_storage_constraints_reject_invalid_hashes_and_link_rules():
                 "{}",
             ),
         )
+    conn.execute(
+        """
+        INSERT INTO decision_register_entries (
+            register_id, schema_version, decision_id, run_id, recorded_at,
+            contract_semantic_sha256, state_sha256, result_kind, policy_decision,
+            policy_risk, receipt_hash, prev_receipt_hash, payload_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            "REG-4",
+            DECISION_REGISTER_SCHEMA_VERSION,
+            "DEC-3",
+            "RUN-3",
+            "2026-01-01T00:00:06Z",
+            "a" * 64,
+            "b" * 64,
+            "DECISION",
+            "SHADOW_ONLY",
+            "ELEVATED",
+            "2" * 64,
+            "c" * 64,
+            "{}",
+        ),
+    )
     with pytest.raises(sqlite3.IntegrityError):
         conn.execute(
             """
@@ -368,6 +393,23 @@ def test_storage_constraints_reject_invalid_hashes_and_link_rules():
             """,
             ("REG-1", "REG-3", ALLOWED_RELATION_TYPES[0], "2026-01-01T00:00:07Z"),
         )
+    conn.execute(
+        """
+        INSERT INTO decision_register_relations (
+            source_register_id, target_register_id, relation_type, created_at
+        ) VALUES (?, ?, ?, ?)
+        """,
+        ("REG-1", "REG-3", "references", "2026-01-01T00:00:07Z"),
+    )
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            """
+            INSERT INTO decision_register_relations (
+                source_register_id, target_register_id, relation_type, created_at
+            ) VALUES (?, ?, ?, ?)
+            """,
+            ("REG-3", "REG-1", "references", "2026-01-01T00:00:08Z"),
+        )
     with pytest.raises(sqlite3.IntegrityError):
         conn.execute(
             """
@@ -434,6 +476,14 @@ def test_storage_constraints_reject_invalid_hashes_and_link_rules():
             """,
             ("REG-1", "run", "RUN-2", None, "z" * 64, "{}", "2026-01-01T00:00:04Z"),
         )
+    conn.execute(
+        """
+        INSERT INTO decision_register_traceability_links (
+            register_id, link_type, target_id, target_ref, sha256, metadata_json, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        ("REG-4", "run", "RUN-3", None, None, "{}", "2026-01-01T00:00:07Z"),
+    )
     with pytest.raises(sqlite3.IntegrityError):
         conn.execute(
             """

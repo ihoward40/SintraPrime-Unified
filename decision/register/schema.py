@@ -218,6 +218,11 @@ CREATE TABLE IF NOT EXISTS decision_register_traceability_links (
             "CREATE INDEX IF NOT EXISTS decision_register_relations_target_idx "
             "ON decision_register_relations(target_register_id)"
         ),
+        "decision_register_relations_references_pair_uq": (
+            "CREATE UNIQUE INDEX IF NOT EXISTS decision_register_relations_references_pair_uq "
+            "ON decision_register_relations(relation_type, min(source_register_id, target_register_id), "
+            "max(source_register_id, target_register_id)) WHERE relation_type = 'references'"
+        ),
         "decision_register_traceability_links_register_idx": (
             "CREATE INDEX IF NOT EXISTS decision_register_traceability_links_register_idx "
             "ON decision_register_traceability_links(register_id, link_type)"

@@ -114,17 +114,19 @@ class MockAgentAdapter(AgentAdapter):
         role: str,
         capability_list: Sequence[str],
         *,
+        health_status: str = "healthy",
         reviewer_disagrees: bool = False,
         follow_up_capability: str | None = None,
     ) -> None:
         super().__init__(agent_id, display_name, role, capability_list)
+        self.health_status = health_status
         self.reviewer_disagrees = reviewer_disagrees
         self.follow_up_capability = follow_up_capability
 
     def health(self) -> dict[str, Any]:
         return {
             "agent_id": self.agent_id,
-            "status": "healthy",
+            "status": self.health_status,
             "role": self.role,
             "capabilities": list(self._capability_list),
         }
@@ -561,21 +563,27 @@ class AgentCommonsStore:
 
     def delete_thread(self, tenant_id: str, thread_id: str, *, objective_idempotency_key: str | None = None) -> None:
         conn = self._connect()
-        conn.execute("DELETE FROM participants WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
-        conn.execute("DELETE FROM messages WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
-        conn.execute("DELETE FROM task_events WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
-        conn.execute("DELETE FROM approvals WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
-        conn.execute("DELETE FROM evidence_references WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
-        conn.execute("DELETE FROM agent_runs WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
-        conn.execute("DELETE FROM idempotency_keys WHERE tenant_id = ? AND resource_id = ?", (tenant_id, thread_id))
-        if objective_idempotency_key:
-            conn.execute(
-                "DELETE FROM idempotency_keys WHERE scope = 'objective' AND tenant_id = ? AND key = ?",
-                (tenant_id, objective_idempotency_key),
-            )
-        conn.execute("DELETE FROM threads WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
-        conn.commit()
-        self._close_if_needed(conn)
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("DELETE FROM participants WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
+            conn.execute("DELETE FROM messages WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
+            conn.execute("DELETE FROM task_events WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
+            conn.execute("DELETE FROM approvals WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
+            conn.execute("DELETE FROM evidence_references WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
+            conn.execute("DELETE FROM agent_runs WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
+            conn.execute("DELETE FROM idempotency_keys WHERE tenant_id = ? AND resource_id = ?", (tenant_id, thread_id))
+            if objective_idempotency_key:
+                conn.execute(
+                    "DELETE FROM idempotency_keys WHERE scope = 'objective' AND tenant_id = ? AND key = ?",
+                    (tenant_id, objective_idempotency_key),
+                )
+            conn.execute("DELETE FROM threads WHERE tenant_id = ? AND thread_id = ?", (tenant_id, thread_id))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            self._close_if_needed(conn)
 
     def create_channel(self, tenant_id: str, workspace_id: str, name: str, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
         self._require_workspace(tenant_id, workspace_id)

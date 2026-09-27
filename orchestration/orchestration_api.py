@@ -103,7 +103,7 @@ def get_supervisor(
     a2a: A2AProtocol = Depends(get_a2a),
 ) -> SupervisorAgent:
     global _supervisor
-    if _supervisor is None:
+    if _supervisor is None or _supervisor.store is not store or _supervisor.protocol is not a2a:
         _supervisor = SupervisorAgent(store, protocol=a2a)
         _supervisor.register_adapter(MockAgentAdapter("builder-agent", "Builder Agent", "worker", ["build"]))
         _supervisor.register_adapter(MockAgentAdapter("reviewer-agent", "Reviewer Agent", "reviewer", ["review"]))

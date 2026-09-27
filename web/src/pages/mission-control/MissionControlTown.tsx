@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Activity, Archive, Bot, Building2, CircleDollarSign, Landmark, Radio,
@@ -13,9 +13,10 @@ import {
   CancellationControlStatus,
 } from '../../api/missionControl';
 import './MissionControlTown.css';
-import Town3DRenderer from './three/Town3DRenderer';
 import { chooseGraphicsPreset, type GraphicsPreset } from './three/townWorld';
 import { projectMissionControlToTown } from './three/missionControlTownAdapter';
+
+const Town3DRenderer = lazy(() => import('./three/Town3DRenderer'));
 
 type District = {
   id: string;
@@ -39,10 +40,11 @@ const districts: District[] = [
   { id: 'creative', name: 'Creative Studio', subtitle: 'Media & design', icon: Sparkles, x: 66, y: 84, size: 'sm', state: 'observed' },
 ];
 
-function metricValue(summary: MissionControlSummary | null, key: keyof MissionControlSummary) {
-  const metric = summary?.[key];
-  if (!metric || typeof metric !== 'object' || !('value' in metric)) return '—';
-  return metric.value ?? '—';
+type TownMetricKey = 'active_agents' | 'evidence_items';
+
+function metricValue(summary: MissionControlSummary | null, key: TownMetricKey): string | number {
+  const value = summary?.[key].value;
+  return value ?? '—';
 }
 
 export default function MissionControlTown() {
@@ -90,7 +92,11 @@ export default function MissionControlTown() {
   );
 
   if (show3D) {
-    return <Town3DRenderer world={world} preset={graphicsPreset} onExit={() => setShow3D(false)} />;
+    return (
+      <Suspense fallback={<div className="mc3d-loading">Preparing governed 3D projection…</div>}>
+        <Town3DRenderer world={world} preset={graphicsPreset} onExit={() => setShow3D(false)} />
+      </Suspense>
+    );
   }
 
   return (

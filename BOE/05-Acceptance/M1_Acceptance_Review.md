@@ -20,4 +20,4 @@
 
 ## Milestone Decision
 
-M1 is accepted and BOE Sprint 1 baseline is eligible to advance to Active.
+M1 is accepted and BOE Sprint 1 baseline is eligible to advance to active.

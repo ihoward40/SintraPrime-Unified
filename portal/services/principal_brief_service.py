@@ -167,18 +167,14 @@ def build_runtime_execution_state():
     from omnibrain.principal_brief import build_execution_state
 
     try:
-        importlib.import_module("swarm_runtime")
-    except ModuleNotFoundError as exc:
-        if exc.name != "swarm_runtime":
-            raise
+        network_sandbox = importlib.import_module("swarm_runtime.network_sandbox")
+    except Exception as exc:
         try:
             network_sandbox = _load_network_sandbox_fallback_module()
         except (FileNotFoundError, ModuleNotFoundError):
             return build_execution_state()
-    except FileNotFoundError:
-        return build_execution_state()
-    else:
-        network_sandbox = importlib.import_module("swarm_runtime.network_sandbox")
+        except Exception:
+            raise exc from None
     try:
         sandbox = network_sandbox.NetworkSandbox.from_config()
         return build_execution_state(

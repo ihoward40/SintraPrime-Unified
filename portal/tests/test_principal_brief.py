@@ -157,6 +157,7 @@ def test_runtime_execution_state_helper_carries_resolved_posture(monkeypatch: py
 
 def test_runtime_execution_state_helper_surfaces_unexpected_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(_SERVICE.importlib, "import_module", lambda name: (_ for _ in ()).throw(RuntimeError("sandbox wiring broke")))
+    monkeypatch.setattr(_SERVICE, "_load_network_sandbox_fallback_module", lambda: (_ for _ in ()).throw(RuntimeError("sandbox wiring broke")))
     with pytest.raises(RuntimeError, match="sandbox wiring broke"):
         build_runtime_execution_state()
 

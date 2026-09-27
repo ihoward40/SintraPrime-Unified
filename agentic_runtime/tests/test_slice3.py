@@ -25,7 +25,7 @@ def test_receipt_verify_preserves_existing_hash():
 
 def test_receipt_binds_ledger_sha256():
     receipt = ExecutionReceipt("run-1", "a", "b", "PASS")
-    bind_ledger_hash(receipt, "a" * 64)
+    bind_ledger_hash(receipt, "A" * 64)
     assert receipt.verify()
     assert receipt.ledger_entry_hash == "a" * 64
 

@@ -43,6 +43,6 @@ def bind_ledger_hash(receipt: ExecutionReceipt, ledger_hash: str) -> ExecutionRe
     if not ledger_hash or len(ledger_hash) != 64:
         raise ValueError("ledger_hash must be a SHA-256 hex digest")
     int(ledger_hash, 16)
-    receipt.ledger_entry_hash = ledger_hash
+    receipt.ledger_entry_hash = ledger_hash.lower()
     receipt.seal()
     return receipt

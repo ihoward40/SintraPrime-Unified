@@ -273,7 +273,9 @@ known-first-party = ["portal", "operator", "voice_concierge"]
 testpaths = ["tests", "portal/tests", "voice_concierge/governed/tests"]
 python_files = "test_*.py"
 asyncio_mode = "auto"
-addopts = "--tb=short -q --import-mode=importlib --timeout=120 --timeout-method=thread -m 'not experimental'"
+addopts = "--tb=short -q --import-mode=importlib -m 'not experimental'"
+timeout = 120
+timeout_method = "thread"
 markers = [
     "experimental: tests that exercise experimental or unfinished integrations and are not part of the default CI lane",
     "integration: tests that require external services or infrastructure",

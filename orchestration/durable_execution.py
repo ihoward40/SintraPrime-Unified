@@ -712,6 +712,25 @@ class RetryPolicy:
         return delay
 
 
+def _compute_activity_action_hash(
+    *,
+    workflow_id: str,
+    workflow_type: str,
+    activity_name: str,
+    args: Tuple[Any, ...],
+    kwargs: Dict[str, Any],
+) -> str:
+    fingerprint = {
+        "workflow_id": workflow_id,
+        "workflow_type": workflow_type,
+        "activity_name": activity_name,
+        "args": args,
+        "kwargs": kwargs,
+    }
+    canonical = json.dumps(fingerprint, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 # ---------------------------------------------------------------------------
 # Activity Executor
 # ---------------------------------------------------------------------------
@@ -731,9 +750,23 @@ class ActivityExecutor:
         kwargs: Optional[Dict[str, Any]] = None,
         retry_policy: Optional[RetryPolicy] = None,
         compensation_func: Optional[Callable] = None,
+        workflow_type: str = "",
+        authority_context: Optional[Dict[str, Any]] = None,
+        activity_action_hash: Optional[str] = None,
+        authority_required: bool = False,
     ) -> Any:
         kwargs = kwargs or {}
         policy = retry_policy or RetryPolicy()
+        self._validate_authority_binding(
+            workflow_id=workflow_id,
+            workflow_type=workflow_type,
+            activity_name=name,
+            args=args,
+            kwargs=kwargs,
+            authority_context=authority_context,
+            activity_action_hash=activity_action_hash,
+            authority_required=authority_required,
+        )
         activity_id = uuid.uuid4().hex
         comp_name = compensation_func.__name__ if compensation_func else None
 
@@ -750,6 +783,11 @@ class ActivityExecutor:
             workflow_id=workflow_id,
             event_type=HistoryEventType.ACTIVITY_SCHEDULED,
             activity_name=name,
+            payload={
+                "authority_bound": authority_required,
+                "capability_lease_id": authority_context.get("capability_lease_id") if authority_required and authority_context else None,
+                "activity_action_hash": activity_action_hash if authority_required else None,
+            },
         ))
 
         last_exc: Optional[Exception] = None
@@ -813,6 +851,45 @@ class ActivityExecutor:
         self._store.save_activity(act)
         raise RuntimeError(f"Activity '{name}' failed after {policy.max_attempts} attempts") from last_exc
 
+    @staticmethod
+    def _validate_authority_binding(
+        *,
+        workflow_id: str,
+        workflow_type: str,
+        activity_name: str,
+        args: Tuple[Any, ...],
+        kwargs: Dict[str, Any],
+        authority_context: Optional[Dict[str, Any]],
+        activity_action_hash: Optional[str],
+        authority_required: bool,
+    ) -> None:
+        if not authority_required:
+            return
+        if authority_context is None:
+            raise PermissionError("ACTIVITY_AUTHORITY_CONTEXT_REQUIRED")
+        required = ("principal_id", "tenant_id", "capability_lease_id")
+        if not all(str(authority_context.get(key, "")).strip() for key in required):
+            raise PermissionError("ACTIVITY_AUTHORITY_CONTEXT_REQUIRED")
+        approved_workflow_type = str(authority_context.get("approved_workflow_type", "")).strip()
+        if not approved_workflow_type:
+            raise PermissionError("ACTIVITY_WORKFLOW_TYPE_BINDING_REQUIRED")
+        if workflow_type and approved_workflow_type != workflow_type:
+            raise PermissionError("ACTIVITY_WORKFLOW_TYPE_MISMATCH")
+        if not activity_action_hash:
+            raise PermissionError("ACTIVITY_ACTION_HASH_REQUIRED")
+        expected_hash = _compute_activity_action_hash(
+            workflow_id=workflow_id,
+            workflow_type=workflow_type,
+            activity_name=activity_name,
+            args=args,
+            kwargs=kwargs,
+        )
+        if activity_action_hash != expected_hash:
+            raise PermissionError("ACTIVITY_ACTION_HASH_MISMATCH")
+        bound_hash = authority_context.get("activity_action_hash")
+        if bound_hash and bound_hash != expected_hash:
+            raise PermissionError("ACTIVITY_ACTION_HASH_BINDING_MISMATCH")
+
 
 # ---------------------------------------------------------------------------
 # Saga Compensator
@@ -868,12 +945,16 @@ class WorkflowContext:
         workflow_type: str,
         store: DurableStore,
         executor: ActivityExecutor,
+        authority_context: Optional[Dict[str, Any]] = None,
+        authority_required: bool = False,
     ) -> None:
         self.workflow_id = workflow_id
         self.workflow_type = workflow_type
         self._store = store
         self._executor = executor
         self._compensator = SagaCompensator()
+        self._authority_context = dict(authority_context) if isinstance(authority_context, dict) else None
+        self._authority_required = authority_required
 
     async def execute_activity(
         self,
@@ -885,6 +966,26 @@ class WorkflowContext:
         compensation_func: Optional[Callable] = None,
     ) -> Any:
         """Execute an activity within this workflow."""
+        kwargs = kwargs or {}
+        activity_action_hash = _compute_activity_action_hash(
+            workflow_id=self.workflow_id,
+            workflow_type=self.workflow_type,
+            activity_name=name,
+            args=args,
+            kwargs=kwargs,
+        )
+        authority_required = self._authority_required
+        if authority_required and self._authority_context is None:
+            raise PermissionError("ACTIVITY_AUTHORITY_CONTEXT_REQUIRED")
+        authority_context = None
+        if self._authority_context is not None:
+            authority_context = {
+                "principal_id": self._authority_context.get("principal_id"),
+                "tenant_id": self._authority_context.get("tenant_id"),
+                "capability_lease_id": self._authority_context.get("capability_lease_id"),
+                "approved_workflow_type": self._authority_context.get("approved_workflow_type"),
+                "activity_action_hash": activity_action_hash,
+            }
         result = await self._executor.run(
             workflow_id=self.workflow_id,
             name=name,
@@ -893,6 +994,10 @@ class WorkflowContext:
             kwargs=kwargs,
             retry_policy=retry_policy,
             compensation_func=compensation_func,
+            workflow_type=self.workflow_type,
+            authority_context=authority_context,
+            activity_action_hash=activity_action_hash,
+            authority_required=authority_required,
         )
         if compensation_func:
             self._compensator.register_compensation(name, compensation_func)
@@ -975,7 +1080,43 @@ class DurableWorkflowEngine:
             raise ValueError(f"Unknown workflow type: '{workflow_type}'")
 
         wf_id = workflow_id or uuid.uuid4().hex
-        metadata = metadata or {}
+        metadata = dict(metadata or {})
+        raw_authority_required = metadata.get("authority_required", False)
+        if isinstance(raw_authority_required, str):
+            authority_required = raw_authority_required.strip().lower() in {"1", "true", "yes", "on"}
+        else:
+            authority_required = bool(raw_authority_required)
+        metadata["authority_required"] = authority_required
+
+        if "authority_context" in metadata and not authority_required:
+            audit_context = metadata.get("authority_context")
+            sensitive_authority_keys = {"principal_id", "tenant_id", "capability_lease_id", "approved_workflow_type"}
+            if isinstance(audit_context, dict) and sensitive_authority_keys.intersection(audit_context.keys()):
+                raise ValueError("AUTHORITY_REQUIRED_FLAG_REQUIRED")
+            if isinstance(audit_context, dict):
+                sanitized = {
+                    key: value
+                    for key, value in audit_context.items()
+                    if isinstance(value, (str, int, float, bool)) or value is None
+                }
+                metadata["authority_context_audit"] = sanitized or {"stripped": True}
+            else:
+                metadata["authority_context_audit"] = {"stripped": True}
+            metadata.pop("authority_context", None)
+        if authority_required:
+            authority_context = metadata.get("authority_context")
+            if not isinstance(authority_context, dict):
+                raise ValueError("AUTHORITY_CONTEXT_REQUIRED")
+            authority_context = dict(authority_context)
+            metadata["authority_context"] = authority_context
+            required_authority_fields = ("principal_id", "tenant_id", "capability_lease_id")
+            if not all(str(authority_context.get(field, "")).strip() for field in required_authority_fields):
+                raise ValueError("AUTHORITY_CONTEXT_FIELDS_REQUIRED")
+            approved_workflow_type = str(authority_context.get("approved_workflow_type", "")).strip()
+            if not approved_workflow_type:
+                authority_context["approved_workflow_type"] = workflow_type
+            elif approved_workflow_type != workflow_type:
+                raise ValueError("APPROVED_WORKFLOW_TYPE_MISMATCH")
         dispatch_request_hash = self._compute_dispatch_hash(
             workflow_type=workflow_type,
             input_data=input_data,
@@ -1097,12 +1238,16 @@ class DurableWorkflowEngine:
         owner_id: str,
     ) -> None:
         """Execute a workflow body after confirming the durable dispatch handoff."""
+        resolved_workflow_id = workflow_id
+        if not resolved_workflow_id:
+            logger.error("Missing workflow id for workflow type %s", workflow_type)
+            return
         now = time.time()
 
         # Confirm the task has actually begun. This durable compare-and-swap is
         # the boundary between "dispatch scheduled" and "execution started".
         released = self._store.release_dispatch_claim(
-            workflow_id=workflow_id,
+            workflow_id=resolved_workflow_id,
             owner_id=owner_id,
             status=WorkflowStatus.RUNNING,
             now=now,
@@ -1110,29 +1255,43 @@ class DurableWorkflowEngine:
         if not released:
             # Workflow was cancelled, another worker owns it, or it was already
             # recovered. Do not execute the body.
-            logger.info("Workflow %s dispatch claim was released by another owner; aborting", workflow_id)
+            logger.info("Workflow %s dispatch claim was released by another owner; aborting", resolved_workflow_id)
             return
 
         self._store.append_history(HistoryEvent(
-            workflow_id=workflow_id,
+            workflow_id=resolved_workflow_id,
             event_type=HistoryEventType.WORKFLOW_STARTED,
             payload={"workflow_type": workflow_type, "input": input_data},
         ))
 
+        wf = self._store.load_workflow(resolved_workflow_id)
+        authority_context = None
+        authority_required = False
+        if wf and isinstance(wf.metadata, dict):
+            authority_required = bool(wf.metadata.get("authority_required", False))
+            if authority_required:
+                raw_context = wf.metadata.get("authority_context")
+                if isinstance(raw_context, dict):
+                    authority_context = dict(raw_context)
         func = self._registered[workflow_type]
         ctx = WorkflowContext(
-            workflow_id=workflow_id,
+            workflow_id=resolved_workflow_id,
             workflow_type=workflow_type,
             store=self._store,
             executor=self._executor,
+            authority_context=authority_context,
+            authority_required=authority_required,
         )
-        wf = self._store.load_workflow(workflow_id)
         try:
             if asyncio.iscoroutinefunction(func):
                 result = await func(ctx, input_data)
             else:
                 result = func(ctx, input_data)
 
+            if wf is None:
+                wf = self._store.load_workflow(resolved_workflow_id)
+            if wf is None:
+                raise RuntimeError(f"Workflow record missing: {resolved_workflow_id}")
             wf.status = WorkflowStatus.COMPLETED
             wf.state["_result"] = result
             wf.completed_at = time.time()
@@ -1143,7 +1302,11 @@ class DurableWorkflowEngine:
                 payload={"result": str(result)[:500] if result else None},
             ))
         except Exception as exc:
-            logger.exception("Workflow %s failed: %s", workflow_id, exc)
+            logger.exception("Workflow %s failed: %s", resolved_workflow_id, exc)
+            if wf is None:
+                wf = self._store.load_workflow(resolved_workflow_id)
+            if wf is None:
+                raise RuntimeError(f"Workflow record missing: {resolved_workflow_id}") from exc
             wf.status = WorkflowStatus.FAILED
             wf.error = str(exc)
             self._store.save_workflow(wf)

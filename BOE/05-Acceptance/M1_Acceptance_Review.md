@@ -12,7 +12,7 @@
 ## Evidence
 
 - Decision Register: `BOE/01-Decision-Register/DRS-001.md`, `Decision_Register.schema.json`, `Decision_Register.jsonl`
-- Agent Passports: `BOE/02-Agent-Passports/AOP-001.md`, `Agent_Passport_Template.md`, `Completed/AP-0001_Hermes.md` through `Completed/AP-0005_Board_Executor.md`
+- Agent Passports: `BOE/02-Agent-Passports/AOP-001.md`, `BOE/02-Agent-Passports/Agent_Passport_Template.md`, `BOE/02-Agent-Passports/Completed/AP-0001_Hermes.md` through `BOE/02-Agent-Passports/Completed/AP-0005_Board_Executor.md`
 - Portfolio Registry: `BOE/03-Portfolio-Registry/Portfolio_Registry.md`
 - Weekly Life Board: `BOE/04-Weekly-Life-Board/Weekly_Life_Board_Packet.md`
 - DR-0001: `BOE/01-Decision-Register/Decision_Register.jsonl`

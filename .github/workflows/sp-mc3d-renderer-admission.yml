@@ -8,7 +8,10 @@ on:
       - web/package.json
       - web/package-lock.json
       - web/playwright.config.ts
+      - web/src/App.tsx
+      - web/src/pages/mission-control/sections.ts
       - web/src/pages/mission-control/MissionControlTown.tsx
+      - web/src/pages/mission-control/MissionControlTown.css
       - web/src/pages/mission-control/three/**
       - web/tests/e2e/mission-control-town-3d.spec.ts
       - .github/workflows/sp-mc3d-renderer-admission.yml

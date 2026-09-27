@@ -1213,12 +1213,16 @@ class DurableWorkflowEngine:
         owner_id: str,
     ) -> None:
         """Execute a workflow body after confirming the durable dispatch handoff."""
+        resolved_workflow_id = workflow_id
+        if not resolved_workflow_id:
+            logger.error("Missing workflow id for workflow type %s", workflow_type)
+            return
         now = time.time()
 
         # Confirm the task has actually begun. This durable compare-and-swap is
         # the boundary between "dispatch scheduled" and "execution started".
         released = self._store.release_dispatch_claim(
-            workflow_id=workflow_id,
+            workflow_id=resolved_workflow_id,
             owner_id=owner_id,
             status=WorkflowStatus.RUNNING,
             now=now,
@@ -1226,16 +1230,16 @@ class DurableWorkflowEngine:
         if not released:
             # Workflow was cancelled, another worker owns it, or it was already
             # recovered. Do not execute the body.
-            logger.info("Workflow %s dispatch claim was released by another owner; aborting", workflow_id)
+            logger.info("Workflow %s dispatch claim was released by another owner; aborting", resolved_workflow_id)
             return
 
         self._store.append_history(HistoryEvent(
-            workflow_id=workflow_id,
+            workflow_id=resolved_workflow_id,
             event_type=HistoryEventType.WORKFLOW_STARTED,
             payload={"workflow_type": workflow_type, "input": input_data},
         ))
 
-        wf = self._store.load_workflow(workflow_id)
+        wf = self._store.load_workflow(resolved_workflow_id)
         authority_context = None
         authority_required = False
         if wf and isinstance(wf.metadata, dict):
@@ -1246,7 +1250,7 @@ class DurableWorkflowEngine:
                     authority_context = dict(raw_context)
         func = self._registered[workflow_type]
         ctx = WorkflowContext(
-            workflow_id=workflow_id,
+            workflow_id=resolved_workflow_id,
             workflow_type=workflow_type,
             store=self._store,
             executor=self._executor,
@@ -1260,9 +1264,9 @@ class DurableWorkflowEngine:
                 result = func(ctx, input_data)
 
             if wf is None:
-                wf = self._store.load_workflow(workflow_id)
+                wf = self._store.load_workflow(resolved_workflow_id)
             if wf is None:
-                raise RuntimeError(f"Workflow record missing: {workflow_id}")
+                raise RuntimeError(f"Workflow record missing: {resolved_workflow_id}")
             wf.status = WorkflowStatus.COMPLETED
             wf.state["_result"] = result
             wf.completed_at = time.time()
@@ -1273,11 +1277,11 @@ class DurableWorkflowEngine:
                 payload={"result": str(result)[:500] if result else None},
             ))
         except Exception as exc:
-            logger.exception("Workflow %s failed: %s", workflow_id, exc)
+            logger.exception("Workflow %s failed: %s", resolved_workflow_id, exc)
             if wf is None:
-                wf = self._store.load_workflow(workflow_id)
+                wf = self._store.load_workflow(resolved_workflow_id)
             if wf is None:
-                raise RuntimeError(f"Workflow record missing: {workflow_id}") from exc
+                raise RuntimeError(f"Workflow record missing: {resolved_workflow_id}") from exc
             wf.status = WorkflowStatus.FAILED
             wf.error = str(exc)
             self._store.save_workflow(wf)

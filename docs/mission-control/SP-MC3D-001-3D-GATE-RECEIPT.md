@@ -13,14 +13,14 @@
 - day/night/environment schema;
 - governed Mission Control-to-world adapter;
 - non-authoritative walk-up interaction envelope;
-- source-level governance tests authored.
+- dependency-neutral governance contracts authored.
 
 ## Verification state
 
 | Gate | State |
 |---|---|
 | Source implementation | IMPLEMENTED |
-| Source tests authored | IMPLEMENTED |
+| Dedicated 3D test-runner admission | PENDING |
 | Type-check executed | PENDING |
 | Production web build executed | PENDING |
 | Browser smoke executed | PENDING |

@@ -29,6 +29,7 @@
   "submit": {
     "production": {
       "ios": {
+        "appleId": "${EXPO_APPLE_ID}",
         "ascAppId": "sintraprime"
       },
       "android": {

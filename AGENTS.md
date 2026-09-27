@@ -91,6 +91,7 @@ When the user requests a durable behavior change, record it here or in the relev
 | `legal_authority/AGENTS.md` | Legal authority and jurisdiction rules | Normalized legal authority records, jurisdiction rules, conflicts, effective-date evaluation, provenance |
 | `.mesh/AGENTS.md` | Agent Mesh coordination | Ledger, registry, protocol messages, and transport status |
 | `governance/blackstone/AGENTS.md` | Blackstone Governance Library | Constitutional charter, standards, knowledge core, architecture, certification, registry, casebook |
+| `BOE/AGENTS.md` | BOE Executive Foundation | Decision register standards and institutional executive foundation artifacts |
 | `voice_concierge/governed/AGENTS.md` | SP-VOICE-001 Governed Voice Operations | Voice command envelope, risk classifier, policy decision, session state machine, confirmation, receipts, feature flags |
 | `docs/orchestration/AGENTS.md` | Adaptive orchestration documentation | Architecture, provider, routing, security, governance, and certification contracts |
 | `decision/AGENTS.md` | SP Decision Fabric (SP-SYSTEM-ONE-DECISION-FABRIC-001) | Vendor-neutral decision plane: canonical primitives (choice/score/boolean), provider protocol (mock/Jev), semantic contract hashing, JCS canonicalization, hash-chained receipts, fail-closed policy, untrusted-input boundary |

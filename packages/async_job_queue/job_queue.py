@@ -221,9 +221,15 @@ class AsyncJobQueue:
                     attempts INTEGER NOT NULL DEFAULT 0,
                     last_error TEXT,
                     callback_url TEXT,
-                    run_after TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
+                    run_after TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
+                """
+            )
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_async_jobs_ready
+                ON async_jobs(status, run_after, created_at)
                 """
             )

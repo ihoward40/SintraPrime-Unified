@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS filing_records (
 );
 
 CREATE INDEX IF NOT EXISTS idx_async_jobs_status ON async_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_async_jobs_ready ON async_jobs(status, run_after, created_at);
 CREATE INDEX IF NOT EXISTS idx_execution_attempts_job_id ON execution_attempts(job_id);
 CREATE INDEX IF NOT EXISTS idx_filing_records_document_hash ON filing_records(document_hash);
 CREATE INDEX IF NOT EXISTS idx_filing_records_job_id ON filing_records(job_id);

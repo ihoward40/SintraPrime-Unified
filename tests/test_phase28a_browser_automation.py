@@ -92,3 +92,4 @@ def test_receipt_reference_normalizes_jurisdiction_whitespace() -> None:
     request.jurisdiction = " CA "
     result = FilingEngine().file(request)
     assert result.receipt_reference.startswith("receipt-ca-")
+    assert result.browser_log[0] == "open:court:CA"

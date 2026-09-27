@@ -52,16 +52,16 @@ class FilingEngine:
 
     def file(self, request: FilingRequest) -> FilingResult:
         target = self._resolve_target(request.filing_type)
+        jurisdiction = request.jurisdiction.strip() or "unknown"
         filing_id = f"filing-{uuid4().hex}"
         signature_id = self.capture_signature(request.signer_name, request.payload)
         screenshots = self._build_screenshot_trail(filing_id, target)
         browser_log = [
-            f"open:{target.value}:{request.jurisdiction}",
+            f"open:{target.value}:{jurisdiction}",
             f"sign:{signature_id}",
             "submit:ok",
         ]
-        jurisdiction = request.jurisdiction.strip().lower() or "unknown"
-        receipt_reference = f"receipt-{jurisdiction}-{filing_id[-8:]}"
+        receipt_reference = f"receipt-{jurisdiction.lower()}-{filing_id[-8:]}"
         return FilingResult(
             filing_id=filing_id,
             status="submitted",

@@ -49,6 +49,7 @@ from .governed_execution import (
     redact_secrets,
     terminate_process_tree,
 )
+from .network_sandbox import NetworkSandbox
 from .provider_router import ProviderRouter
 from .supervisor import Supervisor
 from .worker import SwarmEvent, WorkerSpec, WorkerState, WorkerStatus
@@ -218,6 +219,18 @@ class SwarmController:
             status="DENIED",
         )
 
+        # Phase 9 / SP-GOD1X-OS-NETWORK-SANDBOX-001 — network containment posture
+        sandbox = NetworkSandbox.from_config()
+        sandbox_resolved = sandbox.resolve()
+        result.network_enforcement_level = sandbox_resolved["enforcement_level"]
+        if sandbox_resolved["fail_closed"]:
+            result.rejection_reasons = ["NETWORK_SANDBOX_UNAVAILABLE"]
+            result.severity = "security"
+            self._denied_count += 1
+            self.execution_results[execution_id] = result
+            self._record_governed_receipt(request, envelope, result)
+            return result
+
         decision = self.gate.admit(request, envelope)
         if not decision.allowed:
             result.rejection_reasons = decision.reasons
@@ -252,6 +265,8 @@ class SwarmController:
 
         # Phase 4 — environment boundary (no secret inheritance)
         governed_env, secret_check = build_governed_environment(request)
+        # SP-GOD1X-OS-NETWORK-SANDBOX-001 — strip proxy / network-escape env vars
+        governed_env = sandbox.strip_proxy_env(governed_env)
         if not secret_check["clean"]:
             result.status = "DENIED"
             result.rejection_reasons = ["SECRET_INHERITANCE_DETECTED:" + ",".join(secret_check["leaked"])]
@@ -290,6 +305,8 @@ class SwarmController:
             "task_id": request.task_id,
             "agent_id": request.agent_id,
             "authority_id": request.authority_id,
+            "network_enforcement_level": sandbox_resolved["enforcement_level"],
+            "sandbox_popen_kwargs": sandbox.popen_kwargs(sandbox_resolved),
         }
         self._governed_contexts[request.agent_id] = governed_context
         self._governed_requests[request.agent_id] = request
@@ -432,6 +449,7 @@ class SwarmController:
         }
         if governed_context is not None:
             popen_kwargs["env"] = governed_context["env"]
+            popen_kwargs.update(governed_context.get("sandbox_popen_kwargs") or {})
             if os.name == "nt":
                 import subprocess as _sp
 

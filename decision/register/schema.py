@@ -28,7 +28,11 @@ DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
         "register_id": {"type": "string"},
         "decision_id": {"type": "string"},
         "run_id": {"type": "string"},
-        "recorded_at": {"type": "string", "format": "date-time"},
+        "recorded_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$",
+        },
         "contract": {
             "type": "object",
             "required": ["name", "version", "semantic_sha256"],

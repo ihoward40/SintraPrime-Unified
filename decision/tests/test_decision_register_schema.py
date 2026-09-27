@@ -1,12 +1,16 @@
 import copy
 
 import pytest
-from jsonschema import ValidationError, validate
+from jsonschema import Draft202012Validator, FormatChecker, ValidationError
 
 from decision.register.schema import (
     DECISION_REGISTER_ENTRY_SCHEMA,
     DECISION_REGISTER_SCHEMA_VERSION,
     DECISION_REGISTER_STORAGE_MODEL,
+)
+
+_VALIDATOR = Draft202012Validator(
+    DECISION_REGISTER_ENTRY_SCHEMA, format_checker=FormatChecker()
 )
 
 
@@ -96,19 +100,26 @@ def test_decision_register_storage_model_relations_and_traceability():
 def test_schema_requires_sha256_for_hashed_link_types(link_type: str):
     payload = _entry_with_link(link_type=link_type, include_sha256=False)
     with pytest.raises(ValidationError):
-        validate(instance=payload, schema=DECISION_REGISTER_ENTRY_SCHEMA)
+        _VALIDATOR.validate(payload)
 
 
 @pytest.mark.parametrize("link_type", ["run", "evidence"])
 def test_schema_allows_non_hashed_link_types_without_sha256(link_type: str):
     payload = _entry_with_link(link_type=link_type, include_sha256=False)
-    validate(instance=payload, schema=DECISION_REGISTER_ENTRY_SCHEMA)
+    _VALIDATOR.validate(payload)
 
 
 def test_schema_allows_nullable_previous_receipt_hash():
     payload = _entry_with_link(link_type="receipt", include_sha256=True)
     payload["traceability"]["prev_receipt_hash"] = None
-    validate(instance=payload, schema=DECISION_REGISTER_ENTRY_SCHEMA)
+    _VALIDATOR.validate(payload)
     payload2 = copy.deepcopy(payload)
     payload2["traceability"]["prev_receipt_hash"] = "e" * 64
-    validate(instance=payload2, schema=DECISION_REGISTER_ENTRY_SCHEMA)
+    _VALIDATOR.validate(payload2)
+
+
+def test_schema_rejects_invalid_recorded_at_format():
+    payload = _entry_with_link(link_type="receipt", include_sha256=True)
+    payload["recorded_at"] = "not-a-timestamp"
+    with pytest.raises(ValidationError):
+        _VALIDATOR.validate(payload)

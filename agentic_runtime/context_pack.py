@@ -45,9 +45,9 @@ class ContextPackBuilder:
         if sum(i.token_estimate for i in required) > self.token_budget:
             raise ValueError("REQUIRED_CONTEXT_EXCEEDS_BUDGET")
         selected = list(required)
-        used_ids = {i.source_id for i in selected}
+        selected_ids = {id(item) for item in selected}
         remaining = sorted(
-            (i for i in pool if i.source_id not in used_ids),
+            (i for i in pool if id(i) not in selected_ids),
             key=lambda i: (-i.relevance, i.token_estimate, i.source_id),
         )
         used = sum(i.token_estimate for i in selected)

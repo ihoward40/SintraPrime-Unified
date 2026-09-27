@@ -1,6 +1,6 @@
 
 from agentic_runtime.capabilities import ModelCapabilityRegistry
-from agentic_runtime.controls import BenchmarkResult, ModelPromotionGate
+from agentic_runtime.controls import BenchmarkResult, Checkpoint, ModelPromotionGate
 from agentic_runtime.model_certification import ModelCertifier, ObservedModel
 from agentic_runtime.receipts import ExecutionReceipt, bind_ledger_hash
 from agentic_runtime.rollback import GovernedRollbackExecutor
@@ -61,6 +61,22 @@ def test_rollback_verifies_restored_ref():
     assert result.ok
     assert state["ref"] == cp.ref
     assert changed_ranges == [("base", "head"), ("later", "head")]
+
+
+def test_failed_rollback_reports_checkpoint_scope():
+    state = {"ref": "later"}
+    executor = GovernedRollbackExecutor(
+        authorize=lambda *_: True,
+        current_ref=lambda: state["ref"],
+        changed_files=lambda *_: [],
+        restore_ref=lambda _ref: False,
+        record=lambda *_: None,
+    )
+
+    result = executor.rollback(Checkpoint("cp1", "head", ("x.py", "y.py")), reason="regression")
+
+    assert not result.ok
+    assert result.restored_files == ("x.py", "y.py")
 
 
 def test_model_requires_observed_context_and_benchmark_evidence():

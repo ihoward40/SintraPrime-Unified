@@ -32,6 +32,14 @@ def test_negative_required_context_fails_closed():
         ContextPackBuilder(10).build([ContextItem("x", "x", -1, required=True)])
 
 
+def test_optional_context_with_duplicate_source_id_can_still_be_selected():
+    pack = ContextPackBuilder(10).build([
+        ContextItem("same", "required", 4, required=True),
+        ContextItem("same", "optional", 4, relevance=.9),
+    ])
+    assert [item.text for item in pack.items] == ["required", "optional"]
+
+
 def test_budget_refuses_overspend():
     budget = ExecutionBudget(max_input_tokens=10, max_output_tokens=10, max_cost_usd=1)
     budget.charge(input_tokens=5, output_tokens=2, cost_usd=.25)

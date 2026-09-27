@@ -65,6 +65,8 @@ raise SystemExit(0 if "test" in data.get("project", {}).get("optional-dependenci
 PY
           then
             python -m pip install ".[test]"
+          else
+            python -m pip install -e .
           fi
           python -m pip install pytest
       - name: Run canonical certification harness

@@ -84,7 +84,7 @@ A BOE module may not advance to **Active** until all of the following are true:
 
 ### M1 Gate (Program-Level)
 
-M1 is accepted only when every required checkpoint in the M1 milestone is satisfied and evidenced.
+M1 is accepted only when every required checkpoint in the M1 milestone is satisfied, evidenced, and explicitly marked **Pass** by review authority.
 
 ## Lifecycle Guidance
 
@@ -100,8 +100,8 @@ Each BOE module follows the lifecycle below:
 ## Governance and Change Control
 
 - This document is the root implementation contract for BOE Sprint 1.
-- Any change to module order, dependencies, or M1 acceptance criteria requires a revision entry in this file and downstream artifact alignment.
-- Downstream BOE artifacts must reference this specification as program authority.
+- Any change to module order, dependencies, or M1 acceptance criteria requires an entry in a `## Revision Log` section in this file (`date`, `change summary`, `approver`) and downstream artifact alignment.
+- Downstream BOE artifacts must include a `Program Authority` line in their metadata/header pointing to `BOE/00-Program/BOE-001_Master_Implementation_Spec.md`.
 
 ## Execution Checklist
 
@@ -116,3 +116,9 @@ Each BOE module follows the lifecycle below:
 - [ ] Hold first Weekly Life Board.
 - [ ] Record first institutional asset.
 - [ ] Run and record M1 acceptance review.
+
+## Revision Log
+
+| Date (UTC) | Change Summary | Approver |
+|---|---|---|
+| 2026-09-27 | Initial BOE-001 master implementation specification created for Sprint 1. | Pending |

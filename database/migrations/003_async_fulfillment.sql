@@ -4,6 +4,8 @@ CREATE TABLE IF NOT EXISTS async_jobs (
     payload JSONB NOT NULL,
     attempts INTEGER NOT NULL DEFAULT 0,
     last_error TEXT,
+    callback_url TEXT,
+    run_after TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

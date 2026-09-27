@@ -84,36 +84,41 @@ class AsyncJobQueue:
         with sqlite3.connect(self._db_path) as conn:
             row = conn.execute(
                 """
-                SELECT task_id FROM async_jobs
-                WHERE status IN (?, ?) AND run_after <= ?
-                ORDER BY created_at ASC
-                LIMIT 1
+                UPDATE async_jobs
+                SET status = ?, attempts = attempts + 1, updated_at = ?
+                WHERE task_id = (
+                    SELECT task_id
+                    FROM async_jobs
+                    WHERE status IN (?, ?) AND run_after <= ?
+                    ORDER BY created_at ASC
+                    LIMIT 1
+                )
+                RETURNING task_id
                 """,
-                (JobStatus.PENDING.value, JobStatus.RETRYING.value, current.isoformat()),
+                (
+                    JobStatus.RUNNING.value,
+                    current.isoformat(),
+                    JobStatus.PENDING.value,
+                    JobStatus.RETRYING.value,
+                    current.isoformat(),
+                ),
             ).fetchone()
             if row is None:
                 return None
-            task_id = row[0]
-            conn.execute(
-                """
-                UPDATE async_jobs
-                SET status = ?, attempts = attempts + 1, updated_at = ?
-                WHERE task_id = ?
-                """,
-                (JobStatus.RUNNING.value, current.isoformat(), task_id),
-            )
-        return self.get(task_id)
+        return self.get(row[0])
 
     def mark_completed(self, task_id: str, *, result: dict[str, Any]) -> AsyncJob:
         now = datetime.now(UTC)
         with sqlite3.connect(self._db_path) as conn:
-            conn.execute(
+            updated = conn.execute(
                 """
                 UPDATE async_jobs SET status = ?, last_error = NULL, updated_at = ?
                 WHERE task_id = ?
                 """,
                 (JobStatus.COMPLETED.value, now.isoformat(), task_id),
-            )
+            ).rowcount
+        if updated == 0:
+            raise KeyError(task_id)
         self._emit_webhook(task_id, "completed", result)
         return self.get(task_id)
 

@@ -52,18 +52,21 @@ def test_retry_flow_then_success(tmp_path) -> None:
 
 def test_bridge_and_browser_share_document_hash_context() -> None:
     bridge = ExecutionBridge()
+    engine = FilingEngine()
     payload = bridge.validate_and_transform(
         document="petition",
         filing_type="court",
         metadata={"case_number": "1", "court_name": "District", "filing_party": "Alice", "jurisdiction": "TX"},
     )
-    result = FilingEngine().file(
+    filing_payload = {"document_hash": payload.document_hash}
+    result = engine.file(
         FilingRequest(
             filing_type="court",
             jurisdiction="TX",
-            payload={"document_hash": payload.document_hash},
+            payload=filing_payload,
             signer_name="Alex",
         )
     )
-    assert payload.document_hash in str({"document_hash": payload.document_hash})
+    expected_signature = engine.capture_signature("Alex", filing_payload)
+    assert f"sign:{expected_signature}" in result.browser_log
     assert result.receipt_reference.startswith("receipt-tx-")

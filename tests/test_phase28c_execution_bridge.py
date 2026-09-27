@@ -58,6 +58,11 @@ def test_estimate_cost_rush() -> None:
     assert ExecutionBridge().estimate_cost(filing_type="court", rush=True) == 225
 
 
+def test_estimate_cost_unsupported_type_raises() -> None:
+    with pytest.raises(ValueError, match="unsupported filing type: other"):
+        ExecutionBridge().estimate_cost(filing_type="other")
+
+
 def test_validate_and_transform_passthrough() -> None:
     payload = ExecutionBridge().validate_and_transform(
         document="doc",

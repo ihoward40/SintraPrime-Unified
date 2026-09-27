@@ -83,7 +83,10 @@ class ExecutionBridge:
         )
 
     def estimate_cost(self, *, filing_type: str, rush: bool = False) -> int:
-        base = self._base_fees[filing_type.lower()]
+        normalized_type = filing_type.lower()
+        if normalized_type not in self._base_fees:
+            raise ValueError(f"unsupported filing type: {filing_type}")
+        base = self._base_fees[normalized_type]
         return int(base * 1.5) if rush else base
 
     def validate_and_transform(

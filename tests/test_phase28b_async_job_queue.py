@@ -107,3 +107,8 @@ def test_get_missing_returns_none(queue: AsyncJobQueue) -> None:
 
 def test_claim_returns_none_when_empty(queue: AsyncJobQueue) -> None:
     assert queue.claim_next_ready() is None
+
+
+def test_mark_completed_missing_job_raises(queue: AsyncJobQueue) -> None:
+    with pytest.raises(KeyError):
+        queue.mark_completed("missing", result={"ok": True})

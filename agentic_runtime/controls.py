@@ -89,7 +89,10 @@ class ModelPromotionGate:
         self.minimum_score = minimum_score
 
     def admit(self, results: Iterable[BenchmarkResult], *, required_suites: Iterable[str]) -> tuple[bool, str]:
-        by_suite: dict[str, BenchmarkResult] = {r.suite: r for r in results}
+        materialized = list(results)
+        if len({result.model_id for result in materialized}) > 1:
+            return False, "MIXED_MODEL_EVIDENCE"
+        by_suite: dict[str, BenchmarkResult] = {r.suite: r for r in materialized}
         for suite in required_suites:
             result = by_suite.get(suite)
             if result is None:

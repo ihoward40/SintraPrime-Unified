@@ -34,6 +34,19 @@ def test_budget_refuses_overspend():
         budget.charge(cost_usd=.76)
 
 
+def test_budget_refuses_negative_and_token_overruns():
+    budget = ExecutionBudget(max_input_tokens=10, max_output_tokens=10, max_cost_usd=1)
+
+    with pytest.raises(ValueError, match="budget charges cannot be negative"):
+        budget.charge(input_tokens=-1)
+
+    with pytest.raises(RuntimeError, match="INPUT_TOKEN_BUDGET_EXCEEDED"):
+        budget.charge(input_tokens=11)
+
+    with pytest.raises(RuntimeError, match="OUTPUT_TOKEN_BUDGET_EXCEEDED"):
+        budget.charge(output_tokens=11)
+
+
 def test_circuit_breaker_opens():
     breaker = CircuitBreaker(2)
     breaker.record(False); breaker.record(False)
@@ -51,6 +64,19 @@ def test_promotion_requires_evidence_and_floor():
     assert ok
     assert reason == "PROMOTED"
     assert gate.admit([], required_suites=["reasoning"])[0] is False
+
+
+def test_promotion_rejects_mixed_model_evidence():
+    gate = ModelPromotionGate(.8)
+    ok, reason = gate.admit(
+        [
+            BenchmarkResult("model-a", "reasoning", .9, "receipt-1"),
+            BenchmarkResult("model-b", "coding", .95, "receipt-2"),
+        ],
+        required_suites=["reasoning", "coding"],
+    )
+    assert not ok
+    assert reason == "MIXED_MODEL_EVIDENCE"
 
 
 def test_comfyui_policy_cannot_be_bypassed():

@@ -18,8 +18,8 @@ Worker classes:
 """
 from __future__ import annotations
 
-import asyncio
 import ast
+import asyncio
 import contextlib
 import json
 import os
@@ -563,8 +563,7 @@ class _HealthTrackedInferenceProvider:
 
         def _iterator() -> Any:
             try:
-                for item in stream_result:
-                    yield item
+                yield from stream_result
             except InferenceError as exc:
                 if exc.kind in {
                     ProviderErrorKind.TIMEOUT_FIRST_BYTE,

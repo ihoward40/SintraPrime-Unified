@@ -91,7 +91,10 @@ DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
                         },
                         "allOf": [
                             {
-                                "if": {"properties": {"link_type": {"enum": ["contract", "state", "receipt"]}}},
+                                "if": {
+                                    "required": ["link_type"],
+                                    "properties": {"link_type": {"enum": ["contract", "state", "receipt"]}},
+                                },
                                 "then": {"required": ["sha256"]},
                             }
                         ],
@@ -130,7 +133,8 @@ CREATE TABLE IF NOT EXISTS decision_register_relations (
     relation_type TEXT NOT NULL,
     created_at TEXT NOT NULL,
     FOREIGN KEY(source_register_id) REFERENCES decision_register_entries(register_id),
-    FOREIGN KEY(target_register_id) REFERENCES decision_register_entries(register_id)
+    FOREIGN KEY(target_register_id) REFERENCES decision_register_entries(register_id),
+    UNIQUE(source_register_id, target_register_id, relation_type)
 )
 """.strip(),
         "decision_register_traceability_links": """
@@ -143,7 +147,8 @@ CREATE TABLE IF NOT EXISTS decision_register_traceability_links (
     sha256 TEXT,
     metadata_json TEXT,
     created_at TEXT NOT NULL,
-    FOREIGN KEY(register_id) REFERENCES decision_register_entries(register_id)
+    FOREIGN KEY(register_id) REFERENCES decision_register_entries(register_id),
+    CHECK(link_type NOT IN ('contract', 'state', 'receipt') OR sha256 IS NOT NULL)
 )
 """.strip(),
     },

@@ -1,4 +1,5 @@
 export const missionControlSections = [
+  ['town', 'Command Town'],
   ['operations', 'Operations'],
   ['agents', 'Agents'],
   ['tasks', 'Tasks'],

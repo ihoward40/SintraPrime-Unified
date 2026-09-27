@@ -1080,11 +1080,13 @@ class DurableWorkflowEngine:
             raise ValueError(f"Unknown workflow type: '{workflow_type}'")
 
         wf_id = workflow_id or uuid.uuid4().hex
-        metadata = metadata or {}
+        metadata = dict(metadata or {})
         if metadata.get("authority_required", False):
             authority_context = metadata.get("authority_context")
             if not isinstance(authority_context, dict):
                 raise ValueError("AUTHORITY_CONTEXT_REQUIRED")
+            authority_context = dict(authority_context)
+            metadata["authority_context"] = authority_context
             approved_workflow_type = str(authority_context.get("approved_workflow_type", "")).strip()
             if not approved_workflow_type:
                 authority_context["approved_workflow_type"] = workflow_type

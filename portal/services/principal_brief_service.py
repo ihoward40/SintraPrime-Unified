@@ -15,6 +15,7 @@ Design rules:
 """
 from __future__ import annotations
 
+import importlib
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timezone
 
@@ -129,14 +130,15 @@ def recommendation_is_proposal_only(recommendation: dict) -> bool:
 
 def build_runtime_execution_state():
     """Resolve the current governed-runtime containment posture for the brief."""
-    try:
-        from omnibrain.principal_brief import build_execution_state
-        from swarm_runtime.network_sandbox import NetworkSandbox
-    except ImportError:
-        from omnibrain.principal_brief import build_execution_state
+    from omnibrain.principal_brief import build_execution_state
 
+    try:
+        network_sandbox = importlib.import_module("swarm_runtime.network_sandbox")
+    except ModuleNotFoundError as exc:
+        if exc.name != "swarm_runtime.network_sandbox":
+            raise
         return build_execution_state()
-    sandbox = NetworkSandbox.from_config()
+    sandbox = network_sandbox.NetworkSandbox.from_config()
     return build_execution_state(
         **sandbox.brief_fields(sandbox.resolve()),
     )

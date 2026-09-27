@@ -162,3 +162,14 @@ def test_runtime_execution_state_helper_surfaces_unexpected_errors(monkeypatch: 
     )
     with pytest.raises(RuntimeError, match="sandbox wiring broke"):
         build_runtime_execution_state()
+
+
+def test_runtime_execution_state_helper_falls_back_only_when_module_absent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    missing = ModuleNotFoundError("No module named 'swarm_runtime.network_sandbox'")
+    missing.name = "swarm_runtime.network_sandbox"
+    monkeypatch.setattr(_SERVICE.importlib, "import_module", lambda name: (_ for _ in ()).throw(missing))
+    state = build_runtime_execution_state()
+    assert state.network_enforcement_level == "unavailable_fail_closed"
+    assert state.network_sandbox_available is False

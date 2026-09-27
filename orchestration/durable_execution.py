@@ -1212,8 +1212,10 @@ class DurableWorkflowEngine:
         ))
 
         wf = self._store.load_workflow(workflow_id)
+        if wf is None:
+            raise RuntimeError(f"Workflow record missing: {workflow_id}")
         authority_context = None
-        if wf and isinstance(wf.metadata, dict):
+        if isinstance(wf.metadata, dict):
             raw_context = wf.metadata.get("authority_context")
             if isinstance(raw_context, dict):
                 authority_context = raw_context
@@ -1225,8 +1227,6 @@ class DurableWorkflowEngine:
             executor=self._executor,
             authority_context=authority_context,
         )
-        if wf is None:
-            raise RuntimeError(f"Workflow record missing: {workflow_id}")
         try:
             if asyncio.iscoroutinefunction(func):
                 result = await func(ctx, input_data)

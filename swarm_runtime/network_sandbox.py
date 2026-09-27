@@ -90,6 +90,9 @@ def _container_network_none_verified() -> bool:
     if platform.system() != "Linux":
         return False
     try:
+        # A `--network=none` runtime should not be in the initial host netns.
+        if os.readlink("/proc/self/ns/net") == "net:[4026531993]":
+            return False
         # A `--network=none` runtime should expose only loopback.
         interfaces = [name for name in os.listdir("/sys/class/net") if name != "lo"]
         if interfaces:

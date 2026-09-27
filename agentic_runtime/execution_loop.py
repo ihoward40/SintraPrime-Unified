@@ -1,13 +1,14 @@
 """Governed plan -> execute -> verify -> heal loop.
 
-This module deliberately does not execute shell commands itself. Every action
-is delegated to injected callbacks so existing SintraPrime approval, sandbox,
-audit, and evidence boundaries remain authoritative.
+No raw execution authority lives here. Authorization, execution, verification,
+repair generation and evidence recording are injected from SintraPrime.
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable, Iterable, List, Optional
+
+from .controls import CircuitBreaker, ExecutionBudget
 
 
 class ExecutionMode(str, Enum):
@@ -23,6 +24,9 @@ class StepResult:
     output: str = ""
     changed_files: List[str] = field(default_factory=list)
     attempt: int = 1
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cost_usd: float = 0.0
 
 
 class GovernedExecutionLoop:
@@ -35,6 +39,8 @@ class GovernedExecutionLoop:
         repair: Callable[[StepResult, int], Optional[str]],
         record: Callable[[str, dict], None],
         max_heal_attempts: int = 3,
+        budget: Optional[ExecutionBudget] = None,
+        circuit_breaker: Optional[CircuitBreaker] = None,
     ) -> None:
         if max_heal_attempts < 0:
             raise ValueError("max_heal_attempts cannot be negative")
@@ -44,6 +50,16 @@ class GovernedExecutionLoop:
         self.repair = repair
         self.record = record
         self.max_heal_attempts = max_heal_attempts
+        self.budget = budget
+        self.circuit_breaker = circuit_breaker or CircuitBreaker(max(1, max_heal_attempts or 1))
+
+    def _account(self, result: StepResult) -> None:
+        if self.budget:
+            self.budget.charge(
+                input_tokens=result.input_tokens,
+                output_tokens=result.output_tokens,
+                cost_usd=result.cost_usd,
+            )
 
     def run(self, actions: Iterable[str], mode: ExecutionMode = ExecutionMode.BUILD) -> List[StepResult]:
         results: List[StepResult] = []
@@ -55,19 +71,23 @@ class GovernedExecutionLoop:
                 results.append(denied)
                 return results
             result = self.execute(action)
+            self._account(result)
             self.record("action_executed", {**context, "ok": result.ok, "changed_files": result.changed_files})
             results.append(result)
             if not result.ok:
                 return results
 
         verification = self.verify()
+        self._account(verification)
         self.record("verification", {"ok": verification.ok, "output": verification.output})
         results.append(verification)
         if verification.ok or mode == ExecutionMode.JANITOR:
             return results
 
         failure = verification
+        self.circuit_breaker.record(False)
         for attempt in range(1, self.max_heal_attempts + 1):
+            self.circuit_breaker.assert_closed()
             repair_action = self.repair(failure, attempt)
             if not repair_action:
                 break
@@ -77,14 +97,18 @@ class GovernedExecutionLoop:
                 break
             repaired = self.execute(repair_action)
             repaired.attempt = attempt
+            self._account(repaired)
             results.append(repaired)
             self.record("repair_executed", {**context, "ok": repaired.ok, "changed_files": repaired.changed_files})
             if not repaired.ok:
                 failure = repaired
+                self.circuit_breaker.record(False)
                 continue
             failure = self.verify()
+            self._account(failure)
             results.append(failure)
             self.record("verification", {"ok": failure.ok, "attempt": attempt, "output": failure.output})
+            self.circuit_breaker.record(failure.ok)
             if failure.ok:
                 break
         return results

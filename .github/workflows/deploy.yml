@@ -1,0 +1,45 @@
+name: Deploy Compose Build Validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "docker-compose.yml"
+      - "core/**"
+      - "apps/**"
+      - "deployment/**"
+      - "infrastructure/**"
+      - ".github/workflows/deploy.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  compose-build-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker images with CI-safe fallbacks
+        env:
+          RAW_JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          RAW_MINIO_PASSWORD: ${{ secrets.MINIO_PASSWORD }}
+          RAW_MINIO_ROOT_USER: ${{ secrets.MINIO_ROOT_USER }}
+          RAW_POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          RAW_SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          RAW_TWIN_AUTH_TOKEN: ${{ secrets.TWIN_AUTH_TOKEN }}
+        run: |
+          cp .env.example /tmp/deploy-build.env
+
+          if [ -n "${RAW_JWT_SECRET}" ]; then printf "JWT_SECRET=%s\n" "${RAW_JWT_SECRET}" >> /tmp/deploy-build.env; fi
+          if [ -n "${RAW_MINIO_PASSWORD}" ]; then printf "MINIO_PASSWORD=%s\n" "${RAW_MINIO_PASSWORD}" >> /tmp/deploy-build.env; fi
+          if [ -n "${RAW_MINIO_ROOT_USER}" ]; then printf "MINIO_ROOT_USER=%s\n" "${RAW_MINIO_ROOT_USER}" >> /tmp/deploy-build.env; fi
+          if [ -n "${RAW_POSTGRES_PASSWORD}" ]; then printf "POSTGRES_PASSWORD=%s\n" "${RAW_POSTGRES_PASSWORD}" >> /tmp/deploy-build.env; fi
+          if [ -n "${RAW_SECRET_KEY}" ]; then printf "SECRET_KEY=%s\n" "${RAW_SECRET_KEY}" >> /tmp/deploy-build.env; fi
+          if [ -n "${RAW_TWIN_AUTH_TOKEN}" ]; then printf "TWIN_AUTH_TOKEN=%s\n" "${RAW_TWIN_AUTH_TOKEN}" >> /tmp/deploy-build.env; fi
+
+          docker compose --env-file /tmp/deploy-build.env config > /dev/null
+          docker compose --env-file /tmp/deploy-build.env build

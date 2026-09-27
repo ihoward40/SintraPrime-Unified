@@ -1,0 +1,56 @@
+from decision.register.schema import (
+    DECISION_REGISTER_ENTRY_SCHEMA,
+    DECISION_REGISTER_SCHEMA_VERSION,
+    DECISION_REGISTER_STORAGE_MODEL,
+)
+
+
+def test_decision_register_entry_required_fields():
+    required = set(DECISION_REGISTER_ENTRY_SCHEMA["required"])
+    assert required == {
+        "schema_version",
+        "register_id",
+        "decision_id",
+        "run_id",
+        "recorded_at",
+        "contract",
+        "state",
+        "result",
+        "policy",
+        "traceability",
+    }
+    assert DECISION_REGISTER_ENTRY_SCHEMA["properties"]["schema_version"]["const"] == (
+        DECISION_REGISTER_SCHEMA_VERSION
+    )
+
+
+def test_decision_register_traceability_links_require_targets():
+    traceability = DECISION_REGISTER_ENTRY_SCHEMA["properties"]["traceability"]
+    assert "receipt_hash" in traceability["required"]
+    assert "links" in traceability["required"]
+    links = traceability["properties"]["links"]
+    assert links["minItems"] == 1
+    assert set(links["items"]["required"]) == {"link_type", "target_id"}
+    assert set(links["items"]["properties"]["link_type"]["enum"]) == {
+        "contract",
+        "state",
+        "receipt",
+        "run",
+        "evidence",
+    }
+
+
+def test_decision_register_storage_model_relations_and_traceability():
+    storage = DECISION_REGISTER_STORAGE_MODEL
+    assert storage["schema_version"] == DECISION_REGISTER_SCHEMA_VERSION
+    tables = storage["tables"]
+    assert "decision_register_entries" in tables
+    assert "decision_register_relations" in tables
+    assert "decision_register_traceability_links" in tables
+    assert "FOREIGN KEY(source_register_id)" in tables["decision_register_relations"]
+    assert "FOREIGN KEY(target_register_id)" in tables["decision_register_relations"]
+    assert "FOREIGN KEY(register_id)" in tables["decision_register_traceability_links"]
+    indexes = storage["indexes"]
+    assert "decision_register_entries_decision_run_idx" in indexes
+    assert "decision_register_relations_source_idx" in indexes
+    assert "decision_register_traceability_links_register_idx" in indexes

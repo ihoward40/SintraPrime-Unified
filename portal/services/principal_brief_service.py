@@ -15,9 +15,12 @@ Design rules:
 """
 from __future__ import annotations
 
-import importlib
+import importlib.util
+import sys
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timezone
+from functools import lru_cache
+from pathlib import Path
 
 # The brief schema version this service guarantees.
 BRIEF_SCHEMA_VERSION = "sp-principal-brief-v2"
@@ -128,15 +131,27 @@ def recommendation_is_proposal_only(recommendation: dict) -> bool:
     return not (set(recommendation) & forbidden)
 
 
+@lru_cache(maxsize=1)
+def _load_network_sandbox_module():
+    module_path = Path(__file__).resolve().parents[2] / "swarm_runtime" / "network_sandbox.py"
+    spec = importlib.util.spec_from_file_location("portal_runtime_network_sandbox", module_path)
+    if spec is None or spec.loader is None:
+        raise ModuleNotFoundError("swarm_runtime.network_sandbox")
+    module = sys.modules.get(spec.name)
+    if module is None:
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+    return module
+
+
 def build_runtime_execution_state():
     """Resolve the current governed-runtime containment posture for the brief."""
     from omnibrain.principal_brief import build_execution_state
 
     try:
-        network_sandbox = importlib.import_module("swarm_runtime.network_sandbox")
-    except ModuleNotFoundError as exc:
-        if exc.name != "swarm_runtime.network_sandbox":
-            raise
+        network_sandbox = _load_network_sandbox_module()
+    except (FileNotFoundError, ModuleNotFoundError):
         return build_execution_state()
     sandbox = network_sandbox.NetworkSandbox.from_config()
     return build_execution_state(

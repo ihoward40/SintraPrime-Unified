@@ -156,10 +156,7 @@ def test_runtime_execution_state_helper_carries_resolved_posture(monkeypatch: py
 
 
 def test_runtime_execution_state_helper_surfaces_unexpected_errors(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "swarm_runtime.network_sandbox.NetworkSandbox.from_config",
-        classmethod(lambda cls: (_ for _ in ()).throw(RuntimeError("sandbox wiring broke"))),
-    )
+    monkeypatch.setattr(_SERVICE, "_load_network_sandbox_module", lambda: (_ for _ in ()).throw(RuntimeError("sandbox wiring broke")))
     with pytest.raises(RuntimeError, match="sandbox wiring broke"):
         build_runtime_execution_state()
 
@@ -168,8 +165,7 @@ def test_runtime_execution_state_helper_falls_back_only_when_module_absent(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     missing = ModuleNotFoundError("No module named 'swarm_runtime.network_sandbox'")
-    missing.name = "swarm_runtime.network_sandbox"
-    monkeypatch.setattr(_SERVICE.importlib, "import_module", lambda name: (_ for _ in ()).throw(missing))
+    monkeypatch.setattr(_SERVICE, "_load_network_sandbox_module", lambda: (_ for _ in ()).throw(missing))
     state = build_runtime_execution_state()
     assert state.network_enforcement_level == "unavailable_fail_closed"
     assert state.network_sandbox_available is False

@@ -33,6 +33,7 @@ DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
         "policy",
         "traceability",
     ],
+    "additionalProperties": False,
     "properties": {
         "schema_version": {"type": "string", "const": DECISION_REGISTER_SCHEMA_VERSION},
         "register_id": {"type": "string"},
@@ -46,6 +47,7 @@ DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
         "contract": {
             "type": "object",
             "required": ["name", "version", "semantic_sha256"],
+            "additionalProperties": False,
             "properties": {
                 "name": {"type": "string"},
                 "version": {"type": "string"},
@@ -55,6 +57,7 @@ DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
         "state": {
             "type": "object",
             "required": ["canonical_version", "sha256"],
+            "additionalProperties": False,
             "properties": {
                 "canonical_version": {"type": "string"},
                 "sha256": {"type": "string", "pattern": SHA256_HEX_PATTERN},
@@ -63,6 +66,7 @@ DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
         "result": {
             "type": "object",
             "required": ["kind"],
+            "additionalProperties": False,
             "properties": {
                 "kind": {"type": "string", "enum": ["DECISION", "ABSTAIN", "ERROR", "UNAVAILABLE"]},
                 "provider": {"type": "string"},
@@ -72,6 +76,7 @@ DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
         "policy": {
             "type": "object",
             "required": ["decision", "risk"],
+            "additionalProperties": False,
             "properties": {
                 "decision": {"type": "string"},
                 "risk": {"type": "string"},
@@ -80,6 +85,7 @@ DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
         "traceability": {
             "type": "object",
             "required": ["receipt_hash", "links"],
+            "additionalProperties": False,
             "properties": {
                 "receipt_hash": {"type": "string", "pattern": SHA256_HEX_PATTERN},
                 "prev_receipt_hash": {
@@ -94,6 +100,7 @@ DECISION_REGISTER_ENTRY_SCHEMA: dict[str, Any] = {
                     "items": {
                         "type": "object",
                         "required": ["link_type", "target_id"],
+                        "additionalProperties": False,
                         "properties": {
                             "link_type": {
                                 "type": "string",

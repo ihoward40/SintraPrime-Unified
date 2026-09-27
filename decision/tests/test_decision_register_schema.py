@@ -59,6 +59,7 @@ def test_decision_register_entry_required_fields():
     assert DECISION_REGISTER_ENTRY_SCHEMA["properties"]["schema_version"]["const"] == (
         DECISION_REGISTER_SCHEMA_VERSION
     )
+    assert DECISION_REGISTER_ENTRY_SCHEMA["additionalProperties"] is False
 
 
 def test_decision_register_traceability_links_require_targets():
@@ -76,6 +77,7 @@ def test_decision_register_traceability_links_require_targets():
     assert set(rule["if"]["properties"]["link_type"]["enum"]) == set(HASHED_TRACE_LINK_TYPES)
     assert rule["then"]["required"] == ["sha256"]
     assert rule["else"] == {"not": {"required": ["sha256"]}}
+    assert links["items"]["additionalProperties"] is False
 
 
 def test_decision_register_storage_model_relations_and_traceability():
@@ -186,6 +188,13 @@ def test_schema_rejects_non_zulu_timestamp_offset():
 def test_schema_rejects_non_hex_sha256_values():
     payload = _entry_with_link(link_type="receipt", include_sha256=True)
     payload["traceability"]["receipt_hash"] = "g" * 64
+    with pytest.raises(ValidationError):
+        _VALIDATOR.validate(payload)
+
+
+def test_schema_rejects_unknown_traceability_link_fields():
+    payload = _entry_with_link(link_type="receipt", include_sha256=True)
+    payload["traceability"]["links"][0]["extra_field"] = "unexpected"
     with pytest.raises(ValidationError):
         _VALIDATOR.validate(payload)
 

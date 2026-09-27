@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS async_jobs (
     task_id TEXT PRIMARY KEY,
     status TEXT NOT NULL,
-    payload JSONB NOT NULL,
+    payload JSON NOT NULL,
     attempts INTEGER NOT NULL DEFAULT 0,
     last_error TEXT,
     callback_url TEXT,
@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS execution_attempts (
     attempt_id TEXT PRIMARY KEY,
     job_id TEXT NOT NULL REFERENCES async_jobs(task_id) ON DELETE CASCADE,
     status TEXT NOT NULL,
-    screenshots JSONB NOT NULL DEFAULT '[]'::jsonb,
-    browser_log JSONB NOT NULL DEFAULT '[]'::jsonb,
+    screenshots JSON NOT NULL DEFAULT '[]'::json,
+    browser_log JSON NOT NULL DEFAULT '[]'::json,
     completed_at TIMESTAMPTZ
 );
 
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS filing_records (
     job_id TEXT NOT NULL REFERENCES async_jobs(task_id) ON DELETE CASCADE,
     document_hash TEXT NOT NULL,
     filing_status TEXT NOT NULL,
-    court_receipt JSONB,
+    court_receipt JSON,
     filed_at TIMESTAMPTZ
 );
 

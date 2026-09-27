@@ -81,11 +81,12 @@ class AsyncJobQueue:
 
     def claim_next_ready(self, *, as_of: datetime | None = None) -> AsyncJob | None:
         current = as_of or datetime.now(UTC)
+        running_hold_until = current + timedelta(days=36500)
         with sqlite3.connect(self._db_path) as conn:
             row = conn.execute(
                 """
                 UPDATE async_jobs
-                SET status = ?, attempts = attempts + 1, updated_at = ?
+                SET status = ?, attempts = attempts + 1, run_after = ?, updated_at = ?
                 WHERE task_id = (
                     SELECT task_id
                     FROM async_jobs
@@ -97,6 +98,7 @@ class AsyncJobQueue:
                 """,
                 (
                     JobStatus.RUNNING.value,
+                    running_hold_until.isoformat(),
                     current.isoformat(),
                     JobStatus.PENDING.value,
                     JobStatus.RETRYING.value,
@@ -186,13 +188,13 @@ class AsyncJobQueue:
                 CREATE TABLE IF NOT EXISTS async_jobs(
                     task_id TEXT PRIMARY KEY,
                     status TEXT NOT NULL,
-                    payload TEXT NOT NULL,
+                    payload JSON NOT NULL,
                     attempts INTEGER NOT NULL DEFAULT 0,
                     last_error TEXT,
                     callback_url TEXT,
-                    run_after TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
+                    run_after TIMESTAMPTZ NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL,
+                    updated_at TIMESTAMPTZ NOT NULL
                 )
                 """
             )

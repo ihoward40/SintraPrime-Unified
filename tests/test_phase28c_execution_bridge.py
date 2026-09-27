@@ -20,6 +20,13 @@ def test_validate_success_ucc() -> None:
     assert result.missing_fields == []
 
 
+def test_validate_hash_uses_normalized_document() -> None:
+    bridge = ExecutionBridge()
+    left = bridge.validate(document="  Hello  ", filing_type="ucc-1", metadata=_ucc_metadata())
+    right = bridge.validate(document="Hello", filing_type="ucc-1", metadata=_ucc_metadata())
+    assert left.document_hash == right.document_hash
+
+
 def test_validate_missing_fields() -> None:
     result = ExecutionBridge().validate(document="Hello", filing_type="ucc-1", metadata={})
     assert result.is_valid is False

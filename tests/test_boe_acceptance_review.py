@@ -82,7 +82,12 @@ def test_m1_acceptance_review_evidences_required_baseline_artifacts():
 
 def test_dr_0001_matches_required_decision_register_fields():
     schema = json.loads(DECISION_SCHEMA.read_text(encoding="utf-8"))
-    record = json.loads(DECISION_REGISTER.read_text(encoding="utf-8").strip())
+    records = [
+        json.loads(line)
+        for line in DECISION_REGISTER.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    record = next(item for item in records if item["decision_id"] == "DR-0001")
 
     _assert_matches_schema(record, schema)
     assert record["decision_id"] == "DR-0001"

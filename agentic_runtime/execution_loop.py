@@ -155,6 +155,7 @@ class GovernedExecutionLoop:
             if failure_healthy:
                 break
             if attempt == self.max_heal_attempts:
+                self.circuit_breaker.record(False)
                 results.append(
                     StepResult(
                         action="autoheal",

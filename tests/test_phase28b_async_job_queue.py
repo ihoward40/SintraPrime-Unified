@@ -142,3 +142,13 @@ def test_webhook_failure_bubbles_after_completion_commit(tmp_path) -> None:
     with pytest.raises(RuntimeError, match="webhook down"):
         queue.mark_completed(job.task_id, result={"ok": True})
     assert queue.get(job.task_id).status is JobStatus.COMPLETED
+
+
+def test_expired_running_job_is_reclaimed(queue: AsyncJobQueue) -> None:
+    job = queue.submit({"kind": "ucc"})
+    claimed = queue.claim_next_ready()
+    assert claimed is not None and claimed.status is JobStatus.RUNNING
+    reclaimed = queue.claim_next_ready(as_of=datetime.now(UTC) + timedelta(minutes=16))
+    assert reclaimed is not None
+    assert reclaimed.task_id == job.task_id
+    assert reclaimed.attempts == 2

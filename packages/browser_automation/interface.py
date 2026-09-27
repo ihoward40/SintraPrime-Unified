@@ -43,6 +43,8 @@ class FilingEngine:
         normalized_root = screenshot_root.strip()
         if not normalized_root:
             raise ValueError("screenshot_root must not be empty")
+        if normalized_root == "/":
+            raise ValueError("screenshot_root must not be filesystem root")
         if normalized_root != "/" and normalized_root.endswith("/"):
             normalized_root = normalized_root.rstrip("/")
         self._screenshot_root = normalized_root
@@ -80,9 +82,7 @@ class FilingEngine:
 
     def _build_screenshot_trail(self, filing_id: str, target: FilingTarget) -> list[str]:
         steps = ("start", "form-complete", "signature", "submitted")
-        root = PurePosixPath("/")
-        if self._screenshot_root != "/":
-            root = PurePosixPath(self._screenshot_root)
+        root = PurePosixPath(self._screenshot_root)
         return [
             str(root / target.value / filing_id / f"{index:02d}-{step}.png")
             for index, step in enumerate(steps, 1)

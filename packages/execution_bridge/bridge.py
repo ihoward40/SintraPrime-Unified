@@ -43,6 +43,14 @@ class ExecutionBridge:
     ) -> ValidationResult:
         normalized_document = document.strip()
         normalized_type = filing_type.strip().lower()
+        document_hash = sha256(normalized_document.encode("utf-8")).hexdigest()
+        if normalized_type not in self._required_fields:
+            return ValidationResult(
+                is_valid=False,
+                document_hash=document_hash,
+                missing_fields=["filing_type"],
+                messages=[f"unsupported filing type: {normalized_type}"],
+            )
         required = self._required_fields.get(normalized_type, ())
         missing = []
         for key in required:
@@ -57,9 +65,6 @@ class ExecutionBridge:
         messages: list[str] = []
         if not normalized_document:
             messages.append("document is empty")
-        if normalized_type not in self._required_fields:
-            messages.append(f"unsupported filing type: {normalized_type}")
-        document_hash = sha256(normalized_document.encode("utf-8")).hexdigest()
         return ValidationResult(
             is_valid=not missing and not messages,
             document_hash=document_hash,

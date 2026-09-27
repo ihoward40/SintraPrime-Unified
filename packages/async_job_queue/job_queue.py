@@ -93,6 +93,19 @@ class AsyncJobQueue:
         running_hold_until = current + RUNNING_LEASE_DURATION
         with sqlite3.connect(self._db_path) as conn:
             conn.execute("BEGIN IMMEDIATE")
+            conn.execute(
+                """
+                UPDATE async_jobs
+                SET status = :status_retrying, updated_at = :updated_at
+                WHERE status = :status_running AND run_after <= :ready_at
+                """,
+                {
+                    "status_retrying": JobStatus.RETRYING.value,
+                    "updated_at": current.isoformat(),
+                    "status_running": JobStatus.RUNNING.value,
+                    "ready_at": current.isoformat(),
+                },
+            )
             row = conn.execute(
                 """
                 UPDATE async_jobs

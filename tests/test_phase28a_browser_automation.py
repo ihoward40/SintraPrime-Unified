@@ -94,6 +94,11 @@ def test_blank_screenshot_root_rejected() -> None:
         FilingEngine(screenshot_root="   ")
 
 
+def test_filesystem_root_screenshot_root_rejected() -> None:
+    with pytest.raises(ValueError, match="screenshot_root must not be filesystem root"):
+        FilingEngine(screenshot_root="/")
+
+
 def test_absolute_screenshot_root_preserved() -> None:
     result = FilingEngine(screenshot_root="/var/audit").file(_request("ucc-1"))
     assert all(path.startswith("/var/audit/") for path in result.screenshots)

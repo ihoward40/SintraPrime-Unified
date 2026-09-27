@@ -62,6 +62,7 @@ def test_validate_empty_doc_invalid() -> None:
 def test_validate_unsupported_type_invalid() -> None:
     result = ExecutionBridge().validate(document="doc", filing_type="other", metadata={})
     assert result.is_valid is False
+    assert result.missing_fields == ["filing_type"]
     assert "unsupported filing type: other" in result.messages
 
 

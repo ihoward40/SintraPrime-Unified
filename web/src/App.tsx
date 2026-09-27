@@ -29,6 +29,7 @@ import MatterWorkspace from './pages/MatterWorkspace';
 import MissionControlLayout from './pages/mission-control/MissionControlLayout';
 import MissionControlHome from './pages/mission-control/MissionControlHome';
 import MissionControlSurface from './pages/mission-control/MissionControlSurface';
+import MissionControlTown from './pages/mission-control/MissionControlTown';
 import { useTheme } from './hooks/useTheme';
 
 function AppContent() {
@@ -60,6 +61,7 @@ function AppContent() {
           <Route path="settings" element={<Settings />} />
           <Route path="mission-control" element={<MissionControlLayout />}>
             <Route index element={<MissionControlHome />} />
+            <Route path="town" element={<MissionControlTown />} />
             <Route path=":surface" element={<MissionControlSurface />} />
           </Route>
           <Route path="orchestration" element={<OrchestrationCommandCenter />} />

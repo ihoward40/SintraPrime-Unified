@@ -90,6 +90,7 @@ When the user requests a durable behavior change, record it here or in the relev
 | `tests/AGENTS.md` | Root-level tests | Scheduler tests, agent unit tests, security tests (not portal-level tests)
 | `legal_authority/AGENTS.md` | Legal authority and jurisdiction rules | Normalized legal authority records, jurisdiction rules, conflicts, effective-date evaluation, provenance |
 | `.mesh/AGENTS.md` | Agent Mesh coordination | Ledger, registry, protocol messages, and transport status |
+| `orchestration/AGENTS.md` | Standalone orchestration runtime | Durable workflows, A2A messaging, Agent Commons persistence, supervisor runtime, standalone API, and orchestration tests |
 | `governance/blackstone/AGENTS.md` | Blackstone Governance Library | Constitutional charter, standards, knowledge core, architecture, certification, registry, casebook |
 | `voice_concierge/governed/AGENTS.md` | SP-VOICE-001 Governed Voice Operations | Voice command envelope, risk classifier, policy decision, session state machine, confirmation, receipts, feature flags |
 | `docs/orchestration/AGENTS.md` | Adaptive orchestration documentation | Architecture, provider, routing, security, governance, and certification contracts |

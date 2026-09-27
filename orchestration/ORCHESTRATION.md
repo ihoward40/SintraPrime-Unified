@@ -46,6 +46,31 @@ legal workflow automation.
 
 ## Components
 
+### 0. Agent Commons + Governed Supervisor (`agent_commons.py`)
+
+Provides the governed multi-agent runtime introduced for Agent Commons Increment 1.
+
+**Key capabilities:**
+- SQLite-backed persistence for workspaces, channels, threads, participants, messages, task lifecycle events, agent runs, approvals, and evidence references
+- Tenant-scoped shared threads with correlated A2A message persistence
+- Shared-context builder limited to thread history, approved decisions, evidence links, and agent metadata
+- Supervisor delegation with builder/reviewer flow, disagreement escalation, idempotent objective submission, and loop/depth protection
+- Adapter contract: `health()`, `capabilities()`, `invoke(task, context)`, `cancel(run_id)`, `stream_events(run_id)`
+
+**Standalone API additions:**
+- `POST /orchestration/commons/workspaces`
+- `POST /orchestration/commons/channels`
+- `POST /orchestration/commons/threads`
+- `POST /orchestration/commons/threads/{id}/messages`
+- `GET /orchestration/commons/threads/{id}`
+- `POST /orchestration/supervisor/objectives`
+- `POST /orchestration/supervisor/runs/{id}/approve`
+- `POST /orchestration/supervisor/runs/{id}/reject`
+- `GET /orchestration/supervisor/runs/{id}/trace`
+- `GET /orchestration/agents/{id}/health`
+
+The default runtime registers deterministic mock builder/reviewer agents plus an OpenAI Responses-backed supervisor identity that degrades safely to mock planning when no API key is configured.
+
 ### 1. LangGraph Engine (`langgraph_engine.py`)
 
 A `StateGraph` implementation compatible with LangGraph's mental model.

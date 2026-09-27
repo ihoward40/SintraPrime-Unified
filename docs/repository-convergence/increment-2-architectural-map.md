@@ -160,7 +160,7 @@ Where authority is unresolved, it is labeled `UNRESOLVED — convergence require
 | Entry point | ops |
 | Source path | `deployment/` (linux/windows scripts), `infrastructure/` (aws/azure/gcp Terraform/Bicep), `docker-compose.yml` |
 | Test/evidence path | none in CI |
-| CI lane | `deploy.yml` exists but fails (issue #186: required secrets missing) |
+| CI lane | `deploy.yml` builds with CI-safe non-empty fallbacks for required compose secrets (issue #186) |
 | Known limitation | Not CI-verified; deployment secrets missing (issue #186); no staging target defined; no migration-from-zero test; no backup/restore test; no rollback test |
 | Next certification requirement | Define staging target; create environment-specific threat model; provision isolated staging; run migration from zero; health checks; auth smoke test; tenant-isolation smoke test; WebSocket smoke test; secret-leak audit; backup/restore test; rollback test |
 | Conflicting/superseded branches | None open |

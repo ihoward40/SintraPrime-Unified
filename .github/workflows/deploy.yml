@@ -1,0 +1,29 @@
+name: Deploy SintraPrime
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "docker-compose.yml"
+      - "core/**"
+      - "apps/**"
+      - ".github/workflows/deploy.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker images with CI-safe fallbacks
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-build-placeholder-jwt-secret' }}
+          MINIO_PASSWORD: ${{ secrets.MINIO_PASSWORD || 'ci-build-placeholder-minio-password' }}
+          MINIO_ROOT_USER: ${{ secrets.MINIO_ROOT_USER || 'ci-build-placeholder-minio-user' }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD || 'ci-build-placeholder-postgres-password' }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY || 'ci-build-placeholder-secret-key' }}
+          TWIN_AUTH_TOKEN: ${{ secrets.TWIN_AUTH_TOKEN || 'ci-build-placeholder-twin-token' }}
+        run: docker compose build

@@ -6,7 +6,10 @@ retries, safe eval, restricted shell.
 from __future__ import annotations
 
 import os
+import shlex
+import subprocess
 import sys
+import textwrap
 import time
 from datetime import UTC, datetime, timedelta
 
@@ -44,8 +47,24 @@ def _stderr_fn(**_kw):
     raise RuntimeError("oops")
 
 
-def _python_shell_command(code: str) -> str:
-    return f'"{sys.executable}" -c "{code}"'
+def _shell_command(args: list[str]) -> str:
+    if os.name == "nt":
+        return subprocess.list2cmdline(args)
+    return shlex.join(args)
+
+
+@pytest.fixture
+def python_script_command(tmp_path):
+    script_index = 0
+
+    def _make(code: str) -> str:
+        nonlocal script_index
+        script_index += 1
+        script_path = tmp_path / f"shell_command_{script_index}.py"
+        script_path.write_text(textwrap.dedent(code), encoding="utf-8")
+        return _shell_command([sys.executable, str(script_path)])
+
+    return _make
 
 
 def _make_task(fn=None, name="exec_task", max_retries=0, timeout_seconds=5):
@@ -212,8 +231,8 @@ class TestSafePython:
 
 
 class TestRestrictedShell:
-    def test_basic_command(self, executor):
-        output = executor.execute_shell(_python_shell_command("print('hello')"))
+    def test_basic_command(self, executor, python_script_command):
+        output = executor.execute_shell(python_script_command("print('hello')"))
         assert "hello" in output
 
     def test_blocked_rm_rf(self, executor):
@@ -228,16 +247,35 @@ class TestRestrictedShell:
         with pytest.raises(PermissionError, match="Blocked"):
             executor.execute_shell("sudo rm -f /etc/passwd")
 
-    def test_unsafe_mode_allows(self, executor):
-        output = executor.execute_shell(_python_shell_command("print('allowed')"), safe_mode=False)
+    def test_unsafe_mode_allows(self, executor, python_script_command):
+        output = executor.execute_shell(
+            python_script_command("print('allowed')"),
+            safe_mode=False,
+        )
         assert "allowed" in output
 
-    def test_shell_timeout(self, executor):
+    def test_shell_timeout(self, executor, python_script_command):
         from scheduler.task_executor import TimeoutError as ExecTimeout
 
         with pytest.raises(ExecTimeout):
-            executor.execute_shell(_python_shell_command("import time; time.sleep(120)"))
+            executor.execute_shell(
+                python_script_command(
+                    """
+                    import time
 
-    def test_nonzero_exit_code(self, executor):
+                    time.sleep(120)
+                    """
+                )
+            )
+
+    def test_nonzero_exit_code(self, executor, python_script_command):
         with pytest.raises(RuntimeError, match="failed"):
-            executor.execute_shell(_python_shell_command("import sys; sys.exit(1)"))
+            executor.execute_shell(
+                python_script_command(
+                    """
+                    import sys
+
+                    sys.exit(1)
+                    """
+                )
+            )

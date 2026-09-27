@@ -222,5 +222,9 @@ CREATE TABLE IF NOT EXISTS decision_register_traceability_links (
             "CREATE INDEX IF NOT EXISTS decision_register_traceability_links_register_idx "
             "ON decision_register_traceability_links(register_id, link_type)"
         ),
+        "decision_register_traceability_links_identity_uq": (
+            "CREATE UNIQUE INDEX IF NOT EXISTS decision_register_traceability_links_identity_uq "
+            "ON decision_register_traceability_links(register_id, link_type, target_id, ifnull(target_ref, ''))"
+        ),
     },
 }

@@ -140,6 +140,7 @@ def test_decision_register_storage_model_relations_and_traceability():
     assert "decision_register_relations_source_idx" in indexes
     assert "decision_register_relations_target_idx" in indexes
     assert "decision_register_traceability_links_register_idx" in indexes
+    assert "decision_register_traceability_links_identity_uq" in indexes
 
 
 @pytest.mark.parametrize("link_type", ["contract", "state", "receipt"])
@@ -349,6 +350,15 @@ def test_storage_constraints_reject_invalid_hashes_and_link_rules():
         """,
         ("REG-3", "receipt", "REC-3", None, "f" * 64, "{}", "2026-01-01T00:00:06Z"),
     )
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            """
+            INSERT INTO decision_register_traceability_links (
+                register_id, link_type, target_id, target_ref, sha256, metadata_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            ("REG-3", "receipt", "REC-3", None, "f" * 64, "{}", "2026-01-01T00:00:06Z"),
+        )
     with pytest.raises(sqlite3.IntegrityError):
         conn.execute(
             """

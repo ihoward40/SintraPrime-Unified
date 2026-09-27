@@ -21,7 +21,6 @@ import sys
 import types
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timezone
-from functools import lru_cache
 from pathlib import Path
 
 # The brief schema version this service guarantees.
@@ -133,25 +132,32 @@ def recommendation_is_proposal_only(recommendation: dict) -> bool:
     return not (set(recommendation) & forbidden)
 
 
-@lru_cache(maxsize=1)
 def _load_network_sandbox_fallback_module():
     module_path = Path(__file__).resolve().parents[2] / "swarm_runtime" / "network_sandbox.py"
     package_name = "swarm_runtime"
     module_name = f"{package_name}.network_sandbox"
-    package = sys.modules.get(package_name)
-    if package is None:
-        package = types.ModuleType(package_name)
-        package.__path__ = [str(module_path.parent)]
-        package.__package__ = package_name
-        sys.modules[package_name] = package
     spec = importlib.util.spec_from_file_location(module_name, module_path)
     if spec is None or spec.loader is None:
         raise ModuleNotFoundError("swarm_runtime.network_sandbox")
-    module = sys.modules.get(spec.name)
-    if module is None:
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[spec.name] = module
+    package = types.ModuleType(package_name)
+    package.__path__ = [str(module_path.parent)]
+    package.__package__ = package_name
+    module = importlib.util.module_from_spec(spec)
+    original_package = sys.modules.get(package_name)
+    original_module = sys.modules.get(module_name)
+    try:
+        sys.modules[package_name] = package
+        sys.modules[module_name] = module
         spec.loader.exec_module(module)
+    finally:
+        if original_module is None:
+            sys.modules.pop(module_name, None)
+        else:
+            sys.modules[module_name] = original_module
+        if original_package is None:
+            sys.modules.pop(package_name, None)
+        else:
+            sys.modules[package_name] = original_package
     return module
 
 

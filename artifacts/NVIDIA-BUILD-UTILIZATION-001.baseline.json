@@ -1,0 +1,52 @@
+{
+  "track_id": "NVIDIA-BUILD-UTILIZATION-001",
+  "status": "BASELINE_NOT_ADMITTED",
+  "sequence": 3,
+  "provider": "nvidia-build-hosted-nim",
+  "verified_at": "2026-10-04",
+  "public_facts": {
+    "free_endpoints_documented": true,
+    "free_endpoint_count_is_catalog_dynamic": true,
+    "hosted_api_base": "https://integrate.api.nvidia.com",
+    "openai_style_chat_completions": true,
+    "self_hosted_nim_is_separate_route": true,
+    "example_free_endpoint_candidates": [
+      "glm-5-3",
+      "glm-5-3-flash",
+      "nemotron-3.5-lightning-30b-a3b",
+      "deepseek-v4.1-flash",
+      "muse-glimmer-30b"
+    ]
+  },
+  "account_side_inventory": {
+    "account_verified": false,
+    "api_key_presence_verified": false,
+    "model_access_verified": false,
+    "quota_verified": false,
+    "pricing_entitlement_verified": false,
+    "privacy_retention_verified": false
+  },
+  "gates": {
+    "entitlement": "PENDING",
+    "pricing": "PENDING_ACCOUNT_AND_MODEL_VERIFICATION",
+    "privacy": "PENDING",
+    "quota": "UNKNOWN_UNTIL_ACCOUNT_OR_RUNTIME_EVIDENCE",
+    "adapter": "PENDING",
+    "canary": "BLOCKED",
+    "receipt": "DEFINED_NOT_EXECUTED"
+  },
+  "routing": {
+    "live_enabled": false,
+    "paid_or_partner_fallback_enabled": false,
+    "restricted_data_allowed": false,
+    "unknown_data_allowed": false,
+    "self_hosted_inherits_hosted_approval": false
+  },
+  "sources": [
+    "https://build.nvidia.com/models",
+    "https://docs.api.nvidia.com/nim/reference/llm-apis",
+    "https://docs.api.nvidia.com/nim/docs/api-quickstart",
+    "https://developer.nvidia.com/nim"
+  ],
+  "authorization_boundary": "No secrets, external calls, paid use, sensitive-data routing, merge, deployment, or self-hosted NIM admission authorized by this receipt."
+}

@@ -95,8 +95,21 @@ class ApprovalGate:
         )
         req.approval_link = self.create_approval_link(req.id)
 
+        # GOV-001A: an upstream fail-closed condition (e.g. the action was
+        # unrecognized or malformed, per RiskAssessor) must never be
+        # overridden by the whitelist or by the risk-level auto-approve
+        # threshold. A whitelist entry only applies to the exact action it
+        # was registered for, under ordinary (non-fail-closed) assessment.
+        fail_closed = bool(risk.metadata.get("unrecognized_action"))
+
+        if fail_closed:
+            logger.warning(
+                "Approval request for '%s' is fail-closed (unrecognized/malformed "
+                "action) — whitelist and auto-approve threshold are disabled",
+                action,
+            )
         # Auto-approve if action is whitelisted or risk is below threshold
-        if action in self._auto_approve_actions:
+        elif action in self._auto_approve_actions:
             req.status = ApprovalStatus.AUTO_APPROVED
             req.approved_at = now
             req.notes = "Auto-approved: action is in the trusted whitelist"

@@ -84,6 +84,7 @@ class GovernanceEngine:
         agent_id: str = "unknown",
         domain: str = "general",
         jurisdiction: Optional[str] = None,
+        min_risk: Optional[RiskLevel] = None,
     ) -> bool:
         """
         Pre-execution governance hook.
@@ -97,6 +98,10 @@ class GovernanceEngine:
             agent_id: Performing agent's ID.
             domain: Action domain (legal, financial, general, etc.).
             jurisdiction: User/data jurisdiction for compliance.
+            min_risk: Optional declared risk floor (e.g. from the
+                @requires_approval decorator). GOV-001A: the assessed risk
+                must never be reduced below this floor — effective_risk is
+                max(assessed_risk, min_risk).
 
         Returns:
             True if the action is approved to proceed, False otherwise.
@@ -128,6 +133,17 @@ class GovernanceEngine:
 
         # 3. Assess risk
         risk = self.risk_assessor.assess(action, payload)
+
+        # 3b. Enforce the declared min_risk floor (GOV-001A). A downstream
+        # assessment must never reduce risk below what the caller (e.g. the
+        # @requires_approval decorator) explicitly declared.
+        if min_risk is not None and risk.risk_level < min_risk:
+            original_level = risk.risk_level
+            risk.risk_level = min_risk
+            risk.requires_approval = risk.requires_approval or risk.risk_level.requires_approval
+            risk.metadata["min_risk_floor_applied"] = True
+            risk.metadata["original_risk_level"] = original_level.value
+            risk.reason = f"{risk.reason} (floor raised to {min_risk.value} by declared min_risk)"
 
         # 4. Compliance check
         compliance = self.compliance_monitor.check_action(
@@ -296,17 +312,26 @@ class GovernanceEngine:
                     payload=payload,
                     agent_id=agent_id,
                     domain=domain,
+                    min_risk=min_risk,
                 )
                 if not allowed:
                     raise PermissionError(f"Governance: action '{action}' was not approved.")
 
+                # GOV-001A: AUDIT_FAILURE != ACTION_SUCCESS. If func() raises,
+                # that is an action failure and is audited as such. If func()
+                # succeeds but the post-action audit log itself fails, that
+                # exception must propagate on its own — it must never be
+                # relabeled as the action's failure, and the function's
+                # result must never be returned to the caller as if the
+                # governed action had completed successfully.
                 try:
                     result = func(*args, **kwargs)
-                    self.after_action(action, result, agent_id=agent_id)
-                    return result
                 except Exception as exc:
                     self.after_action(action, None, agent_id=agent_id, error=exc)
                     raise
+                else:
+                    self.after_action(action, result, agent_id=agent_id)
+                    return result
 
             return wrapper
 

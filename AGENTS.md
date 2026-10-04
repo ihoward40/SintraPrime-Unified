@@ -89,6 +89,7 @@ Applies to `governance/risk_assessor.py`, `governance/governance_engine.py`, `go
 - Sequence aggregation fails closed: an unknown, malformed, unauthorized, unassessed, or blocked member prevents aggregate authorization.
 - Required audit failure must not be silently relabeled or swallowed as successful governed execution.
 - Post-action audit and result records must preserve the effective risk actually used for the governance decision, including any decorator/policy floors.
+- This contract is enforced in controlling CI by the `gov-001a-regression` job in `.github/workflows/ci.yml`, which names `governance/tests/test_gov001a_fail_closed.py` explicitly. `governance/tests` is absent from `pytest.ini` `testpaths`, so a bare `python -m pytest` run does not collect it — a passing `test` job is not evidence this contract holds.
 
 ## Child DOX Index
 

@@ -409,7 +409,7 @@ class TestPostActionAuditPreservesEffectiveRisk:
         def read_data():
             raise ValueError("boom")
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="boom"):
             read_data()
 
         failure_entries = [e for e in audit.entries if e.get("outcome") == "failure"]

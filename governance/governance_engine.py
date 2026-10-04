@@ -17,8 +17,9 @@ from governance.approval_gate import ApprovalGate
 from governance.audit_trail import AuditTrail
 from governance.compliance_monitor import ComplianceMonitor
 from governance.intervention_controller import InterventionController
-from governance.risk_assessor import RiskAssessor
+from governance.risk_assessor import RiskAssessor, safe_action_label
 from governance.risk_types import (
+    ActionRisk,
     ApprovalStatus,
     GovernancePolicy,
     GovernanceReport,
@@ -77,6 +78,51 @@ class GovernanceEngine:
     # Core middleware hooks
     # ------------------------------------------------------------------
 
+    def assess_effective_risk(
+        self,
+        action: str,
+        payload: Optional[Dict[str, Any]] = None,
+        min_risk: Optional[RiskLevel] = None,
+    ) -> ActionRisk:
+        """
+        Assess an action's risk and reconcile it against a declared
+        min_risk floor and the org-wide risk threshold.
+
+        GOV-001A (builder-002, findings 1 & 2): a min_risk floor must
+        never silently leave requires_approval stale. This is reconciled
+        unconditionally — including when the assessed risk already equals
+        the declared floor exactly, which a prior "only reconcile when the
+        level actually changes" check incorrectly skipped.
+
+        Exposed publicly so a caller that needs the effective risk for its
+        own audit/logging (e.g. to avoid re-assessing from scratch and
+        losing the floor, per finding 5) can compute it once and reuse it
+        for both before_action() (via precomputed_risk=) and after_action()
+        (via risk_level=).
+        """
+        payload = payload or {}
+        risk = self.risk_assessor.assess(action, payload)
+
+        if min_risk is not None:
+            effective_level = max(risk.risk_level, min_risk)
+            if effective_level != risk.risk_level:
+                risk.metadata["min_risk_floor_applied"] = True
+                risk.metadata["original_risk_level"] = risk.risk_level.value
+                risk.reason = f"{risk.reason} (floor raised to {min_risk.value} by declared min_risk)"
+                risk.risk_level = effective_level
+
+            # Always reconcile requires_approval against the effective
+            # level and the org threshold, regardless of whether elevation
+            # actually changed the level (the equality case — assessed
+            # risk already == min_risk — must be reconciled too).
+            risk.requires_approval = (
+                risk.requires_approval
+                or effective_level.requires_approval
+                or effective_level >= self.risk_assessor.org_risk_threshold
+            )
+
+        return risk
+
     def before_action(
         self,
         action: str,
@@ -85,6 +131,7 @@ class GovernanceEngine:
         domain: str = "general",
         jurisdiction: Optional[str] = None,
         min_risk: Optional[RiskLevel] = None,
+        precomputed_risk: Optional[ActionRisk] = None,
     ) -> bool:
         """
         Pre-execution governance hook.
@@ -102,18 +149,39 @@ class GovernanceEngine:
                 @requires_approval decorator). GOV-001A: the assessed risk
                 must never be reduced below this floor — effective_risk is
                 max(assessed_risk, min_risk).
+            precomputed_risk: Optional ActionRisk already computed via
+                assess_effective_risk() for this same action/payload/
+                min_risk. When given, before_action() reuses it instead of
+                assessing again, so a caller (e.g. the @requires_approval
+                decorator) can share the identical effective risk with
+                after_action() rather than letting after_action()
+                re-assess from scratch and lose any min_risk floor
+                (GOV-001A finding 5).
 
         Returns:
             True if the action is approved to proceed, False otherwise.
         """
         payload = payload or {}
 
+        # GOV-001A (builder-002, findings 3 & 4): a malformed (non-string)
+        # action identifier must never reach a downstream string-based
+        # consumer (guardrail checks, compliance checks) or be implicitly
+        # stringified via str()/repr() in a log/audit message — an
+        # attacker-controlled object's __repr__/__str__ could raise, have
+        # side effects, or leak data. Compute a bounded, type-only safe
+        # label up front, before anything else touches `action`, and use
+        # it for every downstream call below. The original `action` is
+        # still passed to the risk assessor, which performs its own
+        # isinstance check before any string operation and never invokes
+        # repr()/str() on a malformed value either.
+        safe_action = action if isinstance(action, str) else safe_action_label(action)
+
         # 1. Check emergency stop
         if self.intervention_controller.is_emergency_stopped:
-            logger.warning("before_action: emergency stop active — blocking '%s'", action)
+            logger.warning("before_action: emergency stop active — blocking '%s'", safe_action)
             self.audit_trail.log(
                 actor=agent_id,
-                action=action,
+                action=safe_action,
                 outcome="blocked_emergency_stop",
                 risk_level=RiskLevel.CRITICAL,
                 metadata={"reason": "Emergency stop is active"},
@@ -121,41 +189,34 @@ class GovernanceEngine:
             return False
 
         # 2. Check guardrails
-        if not self.intervention_controller.check_guardrail(action):
+        if not self.intervention_controller.check_guardrail(safe_action):
             self.audit_trail.log(
                 actor=agent_id,
-                action=action,
+                action=safe_action,
                 outcome="blocked_guardrail",
                 risk_level=RiskLevel.HIGH,
                 metadata={"reason": "Guardrail violation"},
             )
             return False
 
-        # 3. Assess risk
-        risk = self.risk_assessor.assess(action, payload)
-
-        # 3b. Enforce the declared min_risk floor (GOV-001A). A downstream
-        # assessment must never reduce risk below what the caller (e.g. the
-        # @requires_approval decorator) explicitly declared.
-        if min_risk is not None and risk.risk_level < min_risk:
-            original_level = risk.risk_level
-            risk.risk_level = min_risk
-            risk.requires_approval = risk.requires_approval or risk.risk_level.requires_approval
-            risk.metadata["min_risk_floor_applied"] = True
-            risk.metadata["original_risk_level"] = original_level.value
-            risk.reason = f"{risk.reason} (floor raised to {min_risk.value} by declared min_risk)"
+        # 3. Assess risk (and apply the declared min_risk floor, GOV-001A).
+        risk = (
+            precomputed_risk
+            if precomputed_risk is not None
+            else self.assess_effective_risk(action, payload, min_risk)
+        )
 
         # 4. Compliance check
         compliance = self.compliance_monitor.check_action(
-            action, domain=domain, payload=payload, jurisdiction=jurisdiction
+            safe_action, domain=domain, payload=payload, jurisdiction=jurisdiction
         )
         if not compliance.compliant:
             logger.warning(
-                "before_action: compliance violation for '%s': %s", action, compliance.violations
+                "before_action: compliance violation for '%s': %s", safe_action, compliance.violations
             )
             self.audit_trail.log(
                 actor=agent_id,
-                action=action,
+                action=safe_action,
                 outcome="blocked_compliance",
                 risk_level=risk.risk_level,
                 metadata={"violations": compliance.violations},
@@ -165,7 +226,7 @@ class GovernanceEngine:
         # 5. Approval gate (if required)
         if risk.requires_approval:
             approval_req = self.approval_gate.request_approval(
-                action=action,
+                action=safe_action,
                 risk=risk,
                 context={**payload, "agent_id": agent_id, "domain": domain},
                 requestor=agent_id,
@@ -174,7 +235,7 @@ class GovernanceEngine:
             if approval_req.status == ApprovalStatus.AUTO_APPROVED:
                 self.audit_trail.log(
                     actor=agent_id,
-                    action=action,
+                    action=safe_action,
                     outcome="auto_approved",
                     risk_level=risk.risk_level,
                     approval_id=approval_req.id,
@@ -185,7 +246,7 @@ class GovernanceEngine:
             # Wait for human decision
             logger.info(
                 "Waiting for human approval of '%s' (request_id=%s, link=%s)",
-                action,
+                safe_action,
                 approval_req.id,
                 approval_req.approval_link,
             )
@@ -196,7 +257,7 @@ class GovernanceEngine:
             if status == ApprovalStatus.APPROVED:
                 self.audit_trail.log(
                     actor=agent_id,
-                    action=action,
+                    action=safe_action,
                     outcome="approved",
                     risk_level=risk.risk_level,
                     approval_id=approval_req.id,
@@ -206,18 +267,18 @@ class GovernanceEngine:
             else:
                 self.audit_trail.log(
                     actor=agent_id,
-                    action=action,
+                    action=safe_action,
                     outcome=f"not_approved_{status.value.lower()}",
                     risk_level=risk.risk_level,
                     approval_id=approval_req.id,
                 )
-                logger.info("Action '%s' not approved (status=%s)", action, status.value)
+                logger.info("Action '%s' not approved (status=%s)", safe_action, status.value)
                 return False
 
         # Low risk: no approval required — log and allow
         self.audit_trail.log(
             actor=agent_id,
-            action=action,
+            action=safe_action,
             outcome="auto_allowed",
             risk_level=risk.risk_level,
             metadata={"domain": domain},
@@ -230,6 +291,7 @@ class GovernanceEngine:
         result: Any,
         agent_id: str = "unknown",
         error: Optional[Exception] = None,
+        risk_level: Optional[RiskLevel] = None,
     ) -> None:
         """
         Post-execution audit hook.
@@ -241,7 +303,23 @@ class GovernanceEngine:
             result: The action result (any serializable value).
             agent_id: Performing agent's ID.
             error: If the action raised an exception, pass it here.
+            risk_level: The effective risk level that governed this
+                action (e.g. computed by assess_effective_risk()/
+                before_action(), including any min_risk floor). GOV-001A
+                (builder-002, finding 5): when omitted, this falls back to
+                a fresh risk re-assessment for backward compatibility with
+                callers that invoke after_action() standalone — but that
+                fallback has no knowledge of any min_risk floor that was
+                applied to the original governing decision, so any caller
+                that already computed the effective risk (e.g. the
+                @requires_approval decorator) MUST pass it explicitly here
+                to avoid the post-action audit silently losing the floor.
         """
+        # GOV-001A (builder-002, findings 3 & 4): sanitize a malformed
+        # (non-string) action before it reaches audit_trail.log(), which
+        # otherwise would attempt to store/format the raw object.
+        safe_action = action if isinstance(action, str) else safe_action_label(action)
+
         outcome = "failure" if error else "success"
         metadata: Dict[str, Any] = {}
 
@@ -256,11 +334,15 @@ class GovernanceEngine:
             except Exception:
                 pass
 
+        effective_risk_level = (
+            risk_level if risk_level is not None else self.risk_assessor.assess(action).risk_level
+        )
+
         self.audit_trail.log(
             actor=agent_id,
-            action=action,
+            action=safe_action,
             outcome=outcome,
-            risk_level=self.risk_assessor.assess(action).risk_level,
+            risk_level=effective_risk_level,
             metadata=metadata,
         )
 
@@ -307,12 +389,21 @@ class GovernanceEngine:
                 action = func.__name__
                 payload = {"args": str(args)[:200], "kwargs": str(kwargs)[:200]}
 
+                # GOV-001A (builder-002, finding 5): compute the effective
+                # risk once and share it with both before_action() and
+                # after_action(), so the post-action audit reflects the
+                # same min_risk-floored risk that actually governed the
+                # decision instead of re-assessing from scratch and losing
+                # the floor.
+                risk = self.assess_effective_risk(action, payload, min_risk)
+
                 allowed = self.before_action(
                     action=action,
                     payload=payload,
                     agent_id=agent_id,
                     domain=domain,
                     min_risk=min_risk,
+                    precomputed_risk=risk,
                 )
                 if not allowed:
                     raise PermissionError(f"Governance: action '{action}' was not approved.")
@@ -327,10 +418,12 @@ class GovernanceEngine:
                 try:
                     result = func(*args, **kwargs)
                 except Exception as exc:
-                    self.after_action(action, None, agent_id=agent_id, error=exc)
+                    self.after_action(
+                        action, None, agent_id=agent_id, error=exc, risk_level=risk.risk_level
+                    )
                     raise
                 else:
-                    self.after_action(action, result, agent_id=agent_id)
+                    self.after_action(action, result, agent_id=agent_id, risk_level=risk.risk_level)
                     return result
 
             return wrapper

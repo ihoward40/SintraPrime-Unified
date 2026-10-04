@@ -267,3 +267,151 @@ class TestAuditFailureNotActionSuccess:
         # propagate as-is and must not trigger a second, mislabeled
         # "failure" audit call for the same invocation.
         assert calls == ["auto_allowed", "success"]
+
+
+# ---------------------------------------------------------------------------
+# 7. BUILDER-002: org-threshold/min_risk reconciliation (findings 1 & 2)
+# ---------------------------------------------------------------------------
+
+
+class _CapturingAudit:
+    def __init__(self):
+        self.entries = []
+
+    def log(self, *args, **kwargs):
+        self.entries.append(dict(kwargs))
+
+
+class TestMinRiskOrgThresholdReconciliation:
+    def test_floor_elevation_reconciles_against_org_threshold(self) -> None:
+        # read_data is normally LOW / hardcoded requires_approval=False.
+        # org_risk_threshold=MEDIUM, min_risk=MEDIUM: the floor elevates
+        # LOW -> MEDIUM, and MEDIUM >= org_threshold(MEDIUM) so the
+        # resulting requires_approval must be True, not just
+        # RiskLevel.MEDIUM.requires_approval (which is False — only
+        # HIGH/CRITICAL are True by that hardcoded property alone).
+        engine = GovernanceEngine(db_path=tempfile.mktemp(suffix=".db"), approval_timeout_seconds=1)
+        engine.risk_assessor = RiskAssessor(org_risk_threshold=RiskLevel.MEDIUM)
+        audit = _CapturingAudit()
+        engine.audit_trail = audit
+
+        allowed = engine.before_action("read_data", {}, "probe", min_risk=RiskLevel.MEDIUM)
+
+        assert allowed is False
+        assert audit.entries[-1]["outcome"] != "auto_allowed"
+
+    def test_floor_equality_case_still_reconciles(self) -> None:
+        # Regression guard for the narrower "equality" concern: when the
+        # assessed risk already equals the declared min_risk (no
+        # elevation occurs), reconciliation must still run rather than be
+        # skipped because "nothing changed". With org_risk_threshold=LOW,
+        # every risk level (including the unchanged LOW) must require
+        # approval.
+        engine = GovernanceEngine(db_path=tempfile.mktemp(suffix=".db"), approval_timeout_seconds=1)
+        engine.risk_assessor = RiskAssessor(org_risk_threshold=RiskLevel.LOW)
+        risk = engine.assess_effective_risk("read_data", {}, min_risk=RiskLevel.LOW)
+        assert risk.risk_level == RiskLevel.LOW
+        assert risk.requires_approval is True
+
+    def test_floor_reconciliation_does_not_break_ordinary_high_risk_rule(self) -> None:
+        # Regression guard: an ordinary HIGH-risk action with its own
+        # hardcoded requires_approval=True must remain unaffected by the
+        # reconciliation change.
+        engine = GovernanceEngine(db_path=tempfile.mktemp(suffix=".db"), approval_timeout_seconds=1)
+        risk = engine.assess_effective_risk("send_payment", {}, min_risk=None)
+        assert risk.requires_approval is True
+
+
+# ---------------------------------------------------------------------------
+# 8. BUILDER-002: malformed actions must never reach downstream consumers
+#    (findings 3 & 4)
+# ---------------------------------------------------------------------------
+
+
+class TestMalformedActionNeverReachesDownstreamConsumers:
+    @pytest.mark.parametrize("bad_action", [None, 123, 1.5, ["x"], {"a": 1}])
+    def test_before_action_does_not_raise_for_malformed_action(
+        self, engine: GovernanceEngine, bad_action
+    ) -> None:
+        # Previously a non-string action reached ComplianceMonitor.check_action
+        # (via `action.lower()`, evaluated for every domain, not just
+        # "medical") and InterventionController.check_guardrail (via
+        # `.startswith()`/`in` when a guardrail rule is active), either of
+        # which could raise for a non-string value.
+        allowed = engine.before_action(action=bad_action, payload={}, agent_id="probe")
+        assert allowed is False
+
+    def test_before_action_never_invokes_hostile_repr_or_str(
+        self, engine: GovernanceEngine
+    ) -> None:
+        class _Hostile:
+            def __repr__(self):
+                raise RuntimeError("hostile __repr__ invoked")
+
+            def __str__(self):
+                raise RuntimeError("hostile __str__ invoked")
+
+        # Must fail closed (return False) without ever raising — proving
+        # neither repr() nor str() was invoked on the malformed object
+        # anywhere in the governance path (guardrail check, compliance
+        # check, audit logging, or risk assessment).
+        allowed = engine.before_action(action=_Hostile(), payload={}, agent_id="probe")
+        assert allowed is False
+
+    def test_fail_closed_label_is_bounded_type_only_sentinel(
+        self, assessor: RiskAssessor
+    ) -> None:
+        class _Hostile:
+            def __repr__(self):
+                raise RuntimeError("hostile __repr__ invoked")
+
+        risk = assessor.assess(_Hostile())
+        assert risk.action_type == "<malformed:_Hostile>"
+
+
+# ---------------------------------------------------------------------------
+# 9. BUILDER-002: post-action audit must preserve effective risk (finding 5)
+# ---------------------------------------------------------------------------
+
+
+class TestPostActionAuditPreservesEffectiveRisk:
+    def test_decorator_audit_uses_floored_risk_not_fresh_reassessment(self) -> None:
+        # read_data is normally LOW; @requires_approval(min_risk=CRITICAL)
+        # floors it to CRITICAL for the governing decision. The
+        # post-action "success" audit entry must record CRITICAL (the
+        # risk that actually governed this call), not a fresh re-assessment
+        # of "read_data" in isolation (which would silently drop back to
+        # LOW, losing the floor).
+        audit = _CapturingAudit()
+        engine = GovernanceEngine(db_path=tempfile.mktemp(suffix=".db"), approval_timeout_seconds=1)
+        engine.audit_trail = audit
+        engine.approval_gate.auto_approve("read_data")
+
+        @engine.requires_approval(min_risk=RiskLevel.CRITICAL, agent_id="agent-f5")
+        def read_data():
+            return "ok"
+
+        read_data()
+
+        success_entries = [e for e in audit.entries if e.get("outcome") == "success"]
+        assert len(success_entries) == 1
+        assert success_entries[0]["risk_level"] == RiskLevel.CRITICAL
+
+    def test_decorator_audit_uses_floored_risk_on_failure_too(self) -> None:
+        # Same guarantee must hold for the "failure" audit entry when the
+        # governed function raises.
+        audit = _CapturingAudit()
+        engine = GovernanceEngine(db_path=tempfile.mktemp(suffix=".db"), approval_timeout_seconds=1)
+        engine.audit_trail = audit
+        engine.approval_gate.auto_approve("read_data")
+
+        @engine.requires_approval(min_risk=RiskLevel.CRITICAL, agent_id="agent-f5b")
+        def read_data():
+            raise ValueError("boom")
+
+        with pytest.raises(ValueError):
+            read_data()
+
+        failure_entries = [e for e in audit.entries if e.get("outcome") == "failure"]
+        assert len(failure_entries) == 1
+        assert failure_entries[0]["risk_level"] == RiskLevel.CRITICAL

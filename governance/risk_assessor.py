@@ -246,6 +246,20 @@ _DEFAULT_RISK_RULES: List[Tuple[str, RiskLevel, str, bool, bool, str, str]] = [
 ]
 
 
+def safe_action_label(action_type: object) -> str:
+    """
+    Produce a bounded, type-only label for a non-string action identifier.
+
+    GOV-001A (builder-002, finding 4): a malformed action identifier may be
+    an arbitrary object whose __repr__/__str__ is attacker-controlled and
+    could raise, have side effects, or leak sensitive data. This helper
+    never invokes the object's own __repr__/__str__ — it only reads
+    type(action_type).__name__, which is always a plain, safe string for
+    any object, including ones with a broken or hostile __repr__.
+    """
+    return f"<malformed:{type(action_type).__name__}>"
+
+
 class RiskAssessor:
     """
     Automatically evaluates the risk level of agent actions.
@@ -337,7 +351,12 @@ class RiskAssessor:
         malformed: bool = False,
     ) -> ActionRisk:
         """Build the maximum-risk ActionRisk used for unknown/malformed actions."""
-        safe_action_type = action_type if isinstance(action_type, str) else repr(action_type)
+        # GOV-001A (builder-002, finding 4): never call repr() on an
+        # arbitrary malformed action_type — use a bounded type-only
+        # sentinel instead (see safe_action_label).
+        safe_action_type = (
+            action_type if isinstance(action_type, str) else safe_action_label(action_type)
+        )
         metadata: Dict[str, object] = {
             "payload_keys": list(payload.keys()),
             "unrecognized_action": True,

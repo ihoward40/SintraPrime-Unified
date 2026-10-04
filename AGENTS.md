@@ -78,6 +78,18 @@ Default section order:
 
 When the user requests a durable behavior change, record it here or in the relevant child AGENTS.md
 
+## Governance Fail-Closed Contract
+
+Applies to `governance/risk_assessor.py`, `governance/governance_engine.py`, `governance/approval_gate.py`, and `governance/tests/` (core risk-engine files not covered by `governance/blackstone/AGENTS.md`).
+
+- Unknown or unregistered action identifiers must not gain authority from missing classification; fail closed.
+- Malformed action identifiers (`None`, empty/whitespace, non-string, or otherwise invalid) must be blocked before any downstream string, hash, pattern, or compliance consumer can act on the original malformed value.
+- Approval requirements are evaluated against effective risk — including decorator/policy risk floors — and the configured organization threshold, not the pre-floor risk level alone.
+- A whitelist is non-escalatory: it must never override unknown/malformed fail-closed state, explicit denial, subject mismatch, expiry, or an already-required approval.
+- Sequence aggregation fails closed: an unknown, malformed, unauthorized, unassessed, or blocked member prevents aggregate authorization.
+- Required audit failure must not be silently relabeled or swallowed as successful governed execution.
+- Post-action audit and result records must preserve the effective risk actually used for the governance decision, including any decorator/policy floors.
+
 ## Child DOX Index
 
 | Path | Scope | Controls |

@@ -1,0 +1,61 @@
+{
+  "track_id": "GEMINI-UTILIZATION-001",
+  "status": "DESIGN_BASELINE_ACCOUNT_INVENTORY_PENDING",
+  "baseline_repo_sha": "051e2594c67a805ceacc66ea2a6fc6db9c0bc793",
+  "created_on": "2026-10-04",
+  "authorization_boundary": {
+    "repository_planning_artifacts": true,
+    "network_invocation": false,
+    "paid_inference": false,
+    "billing_changes": false,
+    "secret_changes": false,
+    "sensitive_cloud_routing": false,
+    "merge_to_main": false,
+    "production_deploy": false
+  },
+  "repository_inventory": {
+    "gemini_provider_shell_exists": true,
+    "network_adapter_configured": false,
+    "existing_router_reused": true,
+    "existing_receipt_system_reused": true,
+    "default_cloud_sensitive_data_allowed": false,
+    "default_paid_models_allowed": false,
+    "default_daily_budget_usd": 0.0,
+    "default_monthly_budget_usd": 0.0
+  },
+  "provider_baseline": {
+    "preferred_model": "gemini-3.8-flash",
+    "verification_date": "2026-10-04",
+    "official_sources": [
+      "https://ai.google.dev/gemini-api/docs/models",
+      "https://ai.google.dev/gemini-api/docs/pricing",
+      "https://ai.google.dev/gemini-api/docs/billing",
+      "https://ai.google.dev/gemini-api/docs/logs-policy",
+      "https://ai.google.dev/gemini-api/docs/zdr"
+    ],
+    "introductory_paid_pricing_through": "2026-12-31",
+    "input_usd_per_million_tokens": 0.75,
+    "output_usd_per_million_tokens": 3.75,
+    "pricing_must_be_reverified_before_activation": true
+  },
+  "provisional_circuit_breakers": {
+    "automatic_request_cost_ceiling_usd": 0.10,
+    "daily_review_stop_usd": 2.0,
+    "monthly_hard_stop_usd": 25.0,
+    "activated": false
+  },
+  "gates": {
+    "A_repository_inventory": "VERIFIED",
+    "B_google_account_billing_inventory": "PENDING",
+    "C_provider_metadata_pricing_snapshot": "SAMPLED",
+    "D_real_gemini_adapter": "BLOCKED",
+    "E_deterministic_adapter_tests": "PENDING",
+    "F_live_synthetic_canary": "BLOCKED",
+    "G_production_routing": "BLOCKED"
+  },
+  "next_provider_tracks": [
+    "CEREBRAS-UTILIZATION-001",
+    "NVIDIA-BUILD-UTILIZATION-001"
+  ],
+  "certification_note": "CI verification, when later obtained, will not itself authorize merge or production deployment."
+}

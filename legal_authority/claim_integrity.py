@@ -167,7 +167,7 @@ class ClaimIntegrityInput(BaseModel):
         return values
 
     @model_validator(mode="after")
-    def validate_remedy(self) -> "ClaimIntegrityInput":
+    def validate_remedy(self) -> ClaimIntegrityInput:
         if self.remedy_verified and not self.remedy_claimed:
             raise ValueError("remedy_verified requires remedy_claimed")
         if self.remedy_verified and not self.remedy_authority_ids:

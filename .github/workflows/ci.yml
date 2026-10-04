@@ -34,6 +34,30 @@ jobs:
           name: test-inventory
           path: artifacts/ci/test-inventory.json
           if-no-files-found: ignore
+  # GOV-001A: fail-closed governance regression gate.
+  # governance/tests is absent from pytest.ini testpaths, so the default
+  # `python -m pytest` invocation never collects it. Targets are named
+  # explicitly so the fail-closed contract is exercised by controlling CI
+  # rather than merely existing in the repository. Deliberately narrow:
+  # broad governance/tests discovery is out of scope for GOV-001A.
+  gov-001a-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: GOV-001A fail-closed regression suite
+        run: python -m pytest governance/tests/test_gov001a_fail_closed.py -v --tb=short
+      - name: Directly modified existing governance behavior
+        run: |
+          python -m pytest \
+            "governance/tests/test_governance.py::TestRiskAssessor::test_assess_unknown_action_fails_closed" \
+            "governance/tests/test_governance.py::TestGovernanceEngine::test_requires_approval_decorator_allows_low" \
+            -v --tb=short
   postgresql-race:
     runs-on: ubuntu-latest
     services:

@@ -90,6 +90,7 @@ Applies to `governance/risk_assessor.py`, `governance/governance_engine.py`, `go
 - Required audit failure must not be silently relabeled or swallowed as successful governed execution.
 - Post-action audit and result records must preserve the effective risk actually used for the governance decision, including any decorator/policy floors.
 - This contract is enforced in controlling CI by the `gov-001a-regression` job in `.github/workflows/ci.yml`, which names `governance/tests/test_gov001a_fail_closed.py` explicitly. `governance/tests` is absent from `pytest.ini` `testpaths`, so a bare `python -m pytest` run does not collect it — a passing `test` job is not evidence this contract holds.
+- Adjacent security-critical suites (`governance/tests/test_governance.py`, `security/tests/test_security.py`, `agent_protocol/tests/test_agent_protocol.py`, `trust_law/tests/test_trust_law.py`) have the same default-lane blind spot and are run by the `governance-security-regression` and `security-critical-regression` jobs in `.github/workflows/ci.yml`, each naming its test file explicitly. Each job measures collection with `scripts/ci/report_test_inventory.py` and asserts a minimum floor with `scripts/ci/assert_test_floor.py` before executing the suite, so an incomplete or collapsed collection fails the job rather than passing on zero collected tests. See `docs/ci/CI_TEST_SCOPE.md` for the full explicit-file-target rationale.
 
 ## Child DOX Index
 

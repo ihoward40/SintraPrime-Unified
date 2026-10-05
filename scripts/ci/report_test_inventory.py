@@ -33,7 +33,17 @@ from datetime import UTC, datetime
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Per-file collect line, e.g. "tests/test_x.py: 42" or Windows "tests\\test_x.py: 42"
-_PER_FILE_RE = re.compile(r"^(?:\.+[\\/])?[\w.\-/\\]+\.py:\s*(\d+)\s*$")
+#
+# Pytest's own terminal reporter emits this record as f"{nodeid}: {count}"
+# (TEST-INVENTORY-PARSER-DEFECT-001): the colon is ALWAYS followed by a
+# space before the digits. A Python warning/traceback source-location line
+# (e.g. "...\\_pytest\\config\\__init__.py:1464" or "module.py:9999") has the
+# same ".py:<int>" shape but never has a space after the colon. Requiring at
+# least one whitespace character between the colon and the digits positively
+# recognizes pytest's collection-count grammar instead of blocklisting
+# specific path fragments (AppData, site-packages, etc.), so it also rejects
+# source-location lines originating from inside the repository itself.
+_PER_FILE_RE = re.compile(r"^(?:\.+[\\/])?[\w.\-/\\]+\.py:\s+(\d+)\s*$")
 # Summary line, e.g. "collected 147 items" or "collected 147 items / 3 errors"
 _SUMMARY_RE = re.compile(r"collected\s+(\d+)\s+items", re.IGNORECASE)
 _ERROR_RE = re.compile(r"ERROR|error collecting|collection error", re.IGNORECASE)

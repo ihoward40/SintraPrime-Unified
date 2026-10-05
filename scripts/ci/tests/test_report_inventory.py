@@ -63,6 +63,79 @@ def test_parse_malformed_output():
     assert r["has_summary"] is False
 
 
+def test_parse_warning_traceback_lines_not_counted():
+    # Regression for TEST-INVENTORY-PARSER-DEFECT-001: a Windows warning
+    # traceback source-location line ("path.py:LINENO", no space after the
+    # colon) must never be mistaken for a legitimate pytest per-file
+    # collection-count record ("path.py: N", with a space after the colon).
+    out = (
+        "security/tests/test_security.py: 58\n"
+        "\n"
+        "============================== warnings summary ===============================\n"
+        "..\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\_pytest\\config\\__init__.py:1464\n"
+        "  C:\\Users\\howar\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\_pytest\\config\\__init__.py:1464: PytestConfigWarning: Unknown config option: asyncio_default_fixture_loop_scope\n"
+        "\n"
+        "    self._warn_or_fail_if_strict(f\"Unknown config option: {key}\\n\")\n"
+        "\n"
+        "..\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\_pytest\\config\\__init__.py:1464\n"
+        "  C:\\Users\\howar\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\_pytest\\config\\__init__.py:1464: PytestConfigWarning: Unknown config option: asyncio_mode\n"
+        "\n"
+        "    self._warn_or_fail_if_strict(f\"Unknown config option: {key}\\n\")\n"
+        "\n"
+        "-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n"
+    )
+    r = mod.parse_collect_output(out)
+    assert r["collected"] == 58
+    assert r["per_file_collected"] == 58
+
+
+def test_parse_multiple_files_with_surrounding_warning_lines():
+    out = (
+        "agent_protocol/tests/test_agent_protocol.py: 64\n"
+        "governance/tests/test_governance.py: 100\n"
+        "\n"
+        "============================== warnings summary ===============================\n"
+        "..\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\_pytest\\config\\__init__.py:1464\n"
+        "  ...PytestConfigWarning: Unknown config option: asyncio_default_fixture_loop_scope\n"
+        "..\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\_pytest\\config\\__init__.py:1464\n"
+        "  ...PytestConfigWarning: Unknown config option: asyncio_mode\n"
+    )
+    r = mod.parse_collect_output(out)
+    assert r["per_file_collected"] == 164
+    assert r["collected"] == 164
+
+
+def test_parse_traceback_lines_outside_appdata_not_counted():
+    # The fix must positively recognize pytest's collection-count grammar,
+    # not merely blocklist AppData/site-packages path fragments. A warning
+    # or traceback source-location line from inside the repository itself
+    # must be rejected on the same basis (no space after the ".py:").
+    out = (
+        "governance/tests/test_governance.py: 100\n"
+        "\n"
+        "============================== warnings summary ===============================\n"
+        "governance/some_module.py:9999\n"
+        "  SomeWarning: unrelated in-repo warning\n"
+    )
+    r = mod.parse_collect_output(out)
+    assert r["collected"] == 100
+    assert r["per_file_collected"] == 100
+
+
+def test_parse_adversarial_source_location_integers_not_summed():
+    # Conceptual adversarial fixture from GOV-001B-INVENTORY-PRODUCER-FIX-001:
+    # large line-number-like integers adjacent to a legitimate, low count must
+    # never be summed into the reported count.
+    out = (
+        "security/tests/test_security.py: 1\n"
+        "some\\python\\module.py:9999\n"
+        "another\\module.py:8888\n"
+    )
+    r = mod.parse_collect_output(out)
+    assert r["collected"] == 1
+    assert r["per_file_collected"] == 1
+
+
 def test_parse_collection_errors_detected():
     out = "ERROR: error collecting tests/test_broken.py\ncollected 5 items / 1 error\n"
     r = mod.parse_collect_output(out)

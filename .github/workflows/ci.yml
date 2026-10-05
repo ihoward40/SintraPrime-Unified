@@ -34,6 +34,144 @@ jobs:
           name: test-inventory
           path: artifacts/ci/test-inventory.json
           if-no-files-found: ignore
+  # GOV-001A: fail-closed governance regression gate.
+  # governance/tests is absent from pytest.ini testpaths, so the default
+  # `python -m pytest` invocation never collects it. Targets are named
+  # explicitly so the fail-closed contract is exercised by controlling CI
+  # rather than merely existing in the repository. Deliberately narrow:
+  # broad governance/tests discovery is out of scope for GOV-001A.
+  gov-001a-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: GOV-001A fail-closed regression suite
+        run: python -m pytest governance/tests/test_gov001a_fail_closed.py -v --tb=short
+      - name: Directly modified existing governance behavior
+        run: |
+          python -m pytest \
+            "governance/tests/test_governance.py::TestRiskAssessor::test_assess_unknown_action_fails_closed" \
+            "governance/tests/test_governance.py::TestGovernanceEngine::test_requires_approval_decorator_allows_low" \
+            -v --tb=short
+  # GOV-001B Wave 1 (minimal): bounded security-critical regression gates.
+  #
+  # These two jobs make governance/security/agent_protocol/trust_law test
+  # suites execute in CI via explicit file targets only -- no conftest.py
+  # change, no SINTRAPRIME_TEST_LANES env var, no directory-level discovery
+  # change. Each suite's collection is measured by the existing
+  # scripts/ci/report_test_inventory.py and gated by
+  # scripts/ci/assert_test_floor.py BEFORE pytest actually executes the
+  # suite, so an incomplete or below-floor collection fails the job even if
+  # pytest itself would otherwise report green on zero collected tests.
+  # gov-001a-regression above remains the sole REQUIRED status check and is
+  # untouched by this change. Floors bind per suite, not as a combined total,
+  # so one suite's growth cannot mask another suite's regression.
+  governance-security-regression:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: gov001a
+            suite: governance/tests/test_gov001a_fail_closed.py
+            floor: 37
+          - name: governance
+            suite: governance/tests/test_governance.py
+            floor: 100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Resolve subject binding
+        id: subject
+        run: |
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "tree=$(git rev-parse "HEAD^{tree}")" >> "$GITHUB_OUTPUT"
+      - name: Measure collection (${{ matrix.name }})
+        run: |
+          python scripts/ci/report_test_inventory.py \
+            --pytest-args "${{ matrix.suite }}" \
+            --out "artifacts/ci/${{ matrix.name }}-inventory.json" \
+            --commit "${{ steps.subject.outputs.commit }}" \
+            --tree "${{ steps.subject.outputs.tree }}"
+      - name: Assert collection floor (${{ matrix.name }})
+        run: |
+          python scripts/ci/assert_test_floor.py \
+            --receipt "artifacts/ci/${{ matrix.name }}-inventory.json" \
+            --expect-commit "${{ steps.subject.outputs.commit }}" \
+            --expect-tree "${{ steps.subject.outputs.tree }}" \
+            --floor ${{ matrix.floor }} \
+            --name "${{ matrix.name }}"
+      - name: Execute suite (${{ matrix.name }})
+        run: python -m pytest ${{ matrix.suite }} -v --tb=short
+      - name: Upload inventory receipt (${{ matrix.name }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gov001b-${{ matrix.name }}-inventory
+          path: artifacts/ci/${{ matrix.name }}-inventory.json
+          if-no-files-found: ignore
+  security-critical-regression:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: security
+            suite: security/tests/test_security.py
+            floor: 58
+          - name: agent_protocol
+            suite: agent_protocol/tests/test_agent_protocol.py
+            floor: 64
+          - name: trust_law
+            suite: trust_law/tests/test_trust_law.py
+            floor: 73
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Resolve subject binding
+        id: subject
+        run: |
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "tree=$(git rev-parse "HEAD^{tree}")" >> "$GITHUB_OUTPUT"
+      - name: Measure collection (${{ matrix.name }})
+        run: |
+          python scripts/ci/report_test_inventory.py \
+            --pytest-args "${{ matrix.suite }}" \
+            --out "artifacts/ci/${{ matrix.name }}-inventory.json" \
+            --commit "${{ steps.subject.outputs.commit }}" \
+            --tree "${{ steps.subject.outputs.tree }}"
+      - name: Assert collection floor (${{ matrix.name }})
+        run: |
+          python scripts/ci/assert_test_floor.py \
+            --receipt "artifacts/ci/${{ matrix.name }}-inventory.json" \
+            --expect-commit "${{ steps.subject.outputs.commit }}" \
+            --expect-tree "${{ steps.subject.outputs.tree }}" \
+            --floor ${{ matrix.floor }} \
+            --name "${{ matrix.name }}"
+      - name: Execute suite (${{ matrix.name }})
+        run: python -m pytest ${{ matrix.suite }} -v --tb=short
+      - name: Upload inventory receipt (${{ matrix.name }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gov001b-${{ matrix.name }}-inventory
+          path: artifacts/ci/${{ matrix.name }}-inventory.json
+          if-no-files-found: ignore
   postgresql-race:
     runs-on: ubuntu-latest
     services:

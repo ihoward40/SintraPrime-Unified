@@ -65,6 +65,19 @@ Default section order:
 - Delete stale notes instead of explaining history
 - Trim obvious statements, repeated rules, misplaced detail, and warnings for risks that no longer exist
 
+## Collective Intelligence Contract
+
+- Organizational learning follows: OBSERVE -> CHALLENGE -> VERIFY -> DISTRIBUTE -> DEMONSTRATE COMPETENCY -> PROPOSE VALUE -> MEASURE OUTCOME -> LEARN AGAIN.
+- An originating agent MUST NOT independently verify its own lesson.
+- A verifier MUST be independent of both the originating agent and the challengers.
+- Failed challenges block distribution. Only verified knowledge may become distributable shared knowledge.
+- Relevant agents may inherit distributable knowledge, but inherited knowledge does not grant execution authority.
+- TRAINING, COMPETENCY/CERTIFICATION, and AUTHORIZATION remain separate states.
+- Competency must be demonstrated against evidence-bound lessons; superseded lessons make dependent competency stale.
+- Revenue or operational proposals derived from lessons remain proposals and require the existing authority/approval path before consequential execution.
+- Outcomes must carry evidence references and feed subsequent learning; outcome success never retroactively converts an unsupported claim into verified knowledge.
+- Reuse existing governed evidence, memory, registry, receipt, and approval systems. Do not create parallel authoritative stores merely to support learning.
+
 ## Closeout
 
 1. Re-check changed paths against the DOX chain
@@ -87,7 +100,7 @@ When the user requests a durable behavior change, record it here or in the relev
 | `portal/routers/AGENTS.md` | API route handlers | Router modules and their tests; delegates business logic to `services/` |
 | `agents/AGENTS.md` | Autonomous agent system | Nova, Sigma, Zero, Chat, Howard agents (Howard is approval-gated — evidence-intake only) |
 | `intake_templates/AGENTS.md` | Evidence intake template library | JSON template definitions and usage guide |
-| `tests/AGENTS.md` | Root-level tests | Scheduler tests, agent unit tests, security tests (not portal-level tests)
+| `tests/AGENTS.md` | Root-level tests | Scheduler tests, agent unit tests, security tests (not portal-level tests) |
 | `legal_authority/AGENTS.md` | Legal authority and jurisdiction rules | Normalized legal authority records, jurisdiction rules, conflicts, effective-date evaluation, provenance |
 | `.mesh/AGENTS.md` | Agent Mesh coordination | Ledger, registry, protocol messages, and transport status |
 | `governance/blackstone/AGENTS.md` | Blackstone Governance Library | Constitutional charter, standards, knowledge core, architecture, certification, registry, casebook |

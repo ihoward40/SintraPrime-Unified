@@ -21,7 +21,7 @@ import html as _html
 import re
 from pathlib import Path
 
-from .jobs import ExplainerJob, LyricLine, LyricVideoJob
+from .jobs import ExplainerJob, LyricVideoJob
 
 # ---------------------------------------------------------------------------
 # Shared CSS / helpers

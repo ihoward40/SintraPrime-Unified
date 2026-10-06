@@ -23,13 +23,12 @@ import shutil
 import subprocess
 import tempfile
 import time
-from dataclasses import dataclass, field
+from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Sequence
 
 from . import compositions
-from .jobs import ExplainerJob, JobValidationError, LyricVideoJob, RenderResult
-
+from .jobs import ExplainerJob, LyricVideoJob, RenderResult
 
 # ---------------------------------------------------------------------------
 # Errors
@@ -99,7 +98,7 @@ class MediaRendererConfig:
     """
 
     hyperframes_command: Sequence[str] = ("npx", "hyperframes")
-    workdir: Optional[str | Path] = None
+    workdir: str | Path | None = None
     run_lint: bool = True
     render_timeout_seconds: int = 1800
     lint_timeout_seconds: int = 120
@@ -157,7 +156,7 @@ _MISSING_GUIDANCE = (
 class MediaRenderer:
     """Orchestrates hyperframes CLI renders for lyric/explainer jobs."""
 
-    def __init__(self, config: Optional[MediaRendererConfig] = None) -> None:
+    def __init__(self, config: MediaRendererConfig | None = None) -> None:
         self.config = config or MediaRendererConfig()
         base = (Path(self.config.workdir).expanduser()
                 if self.config.workdir
@@ -299,12 +298,12 @@ class MediaRenderer:
 
 
 __all__ = [
+    "DependencyError",
+    "DependencyStatus",
+    "HyperframesError",
     "MediaRenderer",
     "MediaRendererConfig",
-    "DependencyStatus",
-    "check_dependencies",
-    "HyperframesError",
-    "DependencyError",
     "RenderFailedError",
     "RenderTimeoutError",
+    "check_dependencies",
 ]

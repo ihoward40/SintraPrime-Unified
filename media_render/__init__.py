@@ -10,29 +10,26 @@ optional dependencies.
 """
 
 __all__ = [
-    # jobs
-    "LyricVideoJob",
-    "LyricLine",
-    "ExplainerJob",
-    "NarrationOptions",
-    "Theme",
     "PRESET_THEMES",
-    "RenderResult",
+    "DependencyError",
+    "DependencyStatus",
+    "ExplainerJob",
+    "HyperframesError",
     "JobValidationError",
-    # compositions
-    "build_composition_html",
-    "build_lyric_video_html",
-    "build_explainer_html",
-    "split_explainer_scenes",
-    # pipeline
+    "LyricLine",
+    "LyricVideoJob",
     "MediaRenderer",
     "MediaRendererConfig",
-    "DependencyStatus",
-    "check_dependencies",
-    "HyperframesError",
-    "DependencyError",
+    "NarrationOptions",
     "RenderFailedError",
+    "RenderResult",
     "RenderTimeoutError",
+    "Theme",
+    "build_composition_html",
+    "build_explainer_html",
+    "build_lyric_video_html",
+    "check_dependencies",
+    "split_explainer_scenes",
 ]
 
 _EXPORTS = {

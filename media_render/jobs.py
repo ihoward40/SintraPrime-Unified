@@ -14,11 +14,12 @@ hyperframes CLI installed.
 
 from __future__ import annotations
 
+import itertools
 import re
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, Sequence
 
 
 class JobValidationError(ValueError):
@@ -118,8 +119,8 @@ class NarrationOptions:
     """
 
     engine: str = "none"
-    narration_audio_path: Optional[str | Path] = None
-    voice_id: Optional[str] = None
+    narration_audio_path: str | Path | None = None
+    voice_id: str | None = None
     rate: float = 1.0
     language: str = "en-US"
 
@@ -153,7 +154,7 @@ class RenderResult:
 
     job_id: str
     success: bool
-    output_path: Optional[Path]
+    output_path: Path | None
     elapsed_seconds: float
     command: Sequence[str]
     stdout_tail: str = ""
@@ -201,7 +202,7 @@ class LyricVideoJob:
         for line in self.lyrics:
             line.validate()
         ordered = sorted(self.lyrics, key=lambda line: line.start)
-        for previous, current in zip(ordered, ordered[1:]):
+        for previous, current in itertools.pairwise(ordered):
             if current.start < previous.end:
                 raise JobValidationError(
                     "LyricVideoJob.lyrics must not overlap: "
@@ -230,8 +231,8 @@ class ExplainerJob:
     scene is rendered as a timed typographic clip.
     """
 
-    script_text: Optional[str] = None
-    script_path: Optional[str | Path] = None
+    script_text: str | None = None
+    script_path: str | Path | None = None
     output_path: str | Path = "explainer.mp4"
     narration: NarrationOptions = field(default_factory=NarrationOptions)
     theme: Theme = field(default_factory=Theme)

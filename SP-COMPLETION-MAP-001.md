@@ -752,3 +752,35 @@ SintraPrime-Unified is complete when it operates as one governed system:
 At that point SintraPrime is not merely a large repository. It is a **governed, testable, observable, recoverable, continuously learning operating system for IKE workflows**.
 
 The architectural objective is not maximum autonomy. It is **maximum useful autonomy under explicit authority, evidence, reversibility, and measurable value**.
+
+
+---
+
+# 14. Wave 0 populated baseline — SP-COMPLETION-BASELINE-001
+
+**Baseline SHA:** `051e2594c67a805ceacc66ea2a6fc6db9c0bc793`  
+**Detailed evidence:** `SP-COMPLETION-BASELINE-001.md`
+
+| Workstream | Baseline state |
+|---|---|
+| WS-00 Repository truth/scope | RED |
+| WS-01 Test-universe closure | YELLOW |
+| WS-02 API/router wiring | YELLOW |
+| WS-03 Identity/auth/tenancy/secrets | YELLOW |
+| WS-04 Agent runtime convergence | YELLOW |
+| WS-05 Collective intelligence/Academy | RED |
+| WS-06 Memory/RAG/provenance | YELLOW |
+| WS-07 Durable orchestration/scheduling | YELLOW |
+| WS-08 MCP/tools/integrations | YELLOW |
+| WS-09 Observability/evals/SRE | RED |
+| WS-10 Data/migrations/event integrity | RED |
+| WS-11 Security/safety | YELLOW |
+| WS-12 Web/mobile/voice UX | RED |
+| WS-13 Domain engines | YELLOW |
+| WS-14 IKE revenue/customer ops | RED |
+| WS-15 Deployment/DR | UNKNOWN |
+
+**Wave 0 count:** GREEN 0 · YELLOW 9 · RED 6 · UNKNOWN 1.  
+**Minimum remaining completion gates:** 44 (16 P0, 18 P1, 10 P2).
+
+This baseline does not mean zero functionality works. A workstream turns GREEN only when its entire exit gate is proven against current evidence. See the baseline document for the evidence register, dependency graph, critical path, planning ranges, and authority boundary.

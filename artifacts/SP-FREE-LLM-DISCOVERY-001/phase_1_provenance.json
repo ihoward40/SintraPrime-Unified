@@ -1,0 +1,161 @@
+{
+  "record_id": "SP-FREE-LLM-DISCOVERY-001-P1-PROVENANCE-2026-10-09-01",
+  "track": "SP-FREE-LLM-DISCOVERY-001",
+  "phase": 1,
+  "phase_name": "catalog audit (read-only)",
+  "artifact": "phase_1_catalog_audit.md",
+  "created_utc": "2026-10-09T09:17:00Z",
+  "authorization": {
+    "permitted": ["public GitHub reads"],
+    "not_performed": [
+      "provider registration",
+      "api key acquisition",
+      "api key use",
+      "provider endpoint calls",
+      "router or policy modification",
+      "spending"
+    ],
+    "phase_2_authorized": false,
+    "providers_approved": 0
+  },
+  "source": {
+    "repo_full_name": "open-free-llm-api/awesome-freellm-apis",
+    "readme_slug_alias": "awesome-free-llm-apis",
+    "default_branch": "main",
+    "pinned_commit": "63a2633ae22201c551e350c46af041ddee5ab5ed",
+    "commit_date_utc": "2026-10-09T03:03:56Z",
+    "commit_author": "github-actions[bot]",
+    "commit_message": "chore: sync README from freellm.net data [skip ci]",
+    "commit_signature_verified": false,
+    "license_spdx": "MIT",
+    "license_copyright": "Copyright (c) 2026 open-free-llm-api",
+    "stars_at_audit": 3941,
+    "data_origin": "https://freellm.net",
+    "funding_declared": "mailto:support@freellm.net",
+    "in_repo_dataset": false,
+    "ci_validation_present": false
+  },
+  "retrieval": {
+    "method": "gh api + raw.githubusercontent.com",
+    "retrieved_utc": "2026-10-09T09:17:00Z",
+    "tracked_blobs": 15,
+    "files": [
+      { "path": "README.md", "bytes": 36979, "sha256": "daa09b791bf794e96c0f5e648f4da939201e297bbdeacecff7987b609967065f" },
+      { "path": "LICENSE", "bytes": 1074, "sha256": "fe37c581de84dbfc95f13a72a28431e8471cb0bc006b552e0464196436ee040d" },
+      { "path": "CONTRIBUTING.md", "bytes": 1718, "sha256": "d4cd9eb0de2093920cb0d80b22ff612d04bb2667c1c21ea4ed7fa3d611340309" },
+      { "path": "code-examples/claude-code.md", "bytes": 2627, "sha256": "8af84aa65500035a518abeb8307de2b3262335713d437286ff20ae2d38ebd7f1" },
+      { "path": "code-examples/codex.md", "bytes": 2367, "sha256": "62dea98e2083226df95881cd53294ab0ccaeab36b9311d186b03c4b3270887b1" },
+      { "path": "code-examples/cursor.md", "bytes": 2399, "sha256": "a817ed32de665171d20ae98a0182c85edbafcb86bc9ec7e3a839cdaa56835365" },
+      { "path": ".github/PULL_REQUEST_TEMPLATE.md", "bytes": 641, "sha256": "befa299afe3f4f938b842250e11514ef324d6ebdd89a2e810e49afde9f929f1e" },
+      { "path": ".github/FUNDING.yml", "bytes": 39, "sha256": "e015ff2018477f8a71291b35951d3bbd3613730636d8fbc4867f6d8a509f90a0" },
+      { "path": ".github/ISSUE_TEMPLATE/submit_api.yml", "bytes": 2165, "sha256": "d9e0ffb3691a3d46216df739aca12ae9876298b54132929be6f841fc46d57862" }
+    ],
+    "unhashed_paths": [
+      "README.zh-CN.md",
+      "README.zh-TW.md",
+      "README.ja.md",
+      "README.ko.md",
+      "assets/provider-logos-marquee.svg",
+      ".github/ISSUE_TEMPLATE/config.yml"
+    ]
+  },
+  "advertised_counts": {
+    "free_api_listings": "505+",
+    "providers": 30,
+    "refresh_cadence": "daily",
+    "dataset_models_footnote": 453,
+    "openrouter_models_in_examples": "35+",
+    "total_free_models_in_examples": "128+",
+    "certified_by_third_party": false
+  },
+  "derived_counts": {
+    "permanent_free_rows": 29,
+    "permanent_free_models_sum": 474,
+    "renewable_credit_rows": 1,
+    "renewable_credit_models_sum": 31,
+    "listings_sum": 505,
+    "distinct_provider_entities": 29,
+    "duplicate_provider_entities": ["xAI / Grok (xAI)"],
+    "best_model_rows": 83,
+    "best_model_provider_groups": 30,
+    "quick_reference_rows": 30,
+    "cross_table_provider_set_agrees": true
+  },
+  "candidate_providers": [
+    { "provider": "NVIDIA NIM", "catalog_models": 132, "sintraprime_surface": "none", "capability_gap": true, "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "ModelScope", "catalog_models": 61, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "Cloudflare Workers AI", "catalog_models": 40, "sintraprime_surface": "none", "capability_gap": true, "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "OpenCode Zen", "catalog_models": 34, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "OpenRouter", "catalog_models": 31, "sintraprime_surface": "governed_inference/providers.py::OpenRouterProvider (free-gateway shell)", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "LLM7.io", "catalog_models": 24, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "Kilo Code", "catalog_models": 22, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "Google Gemini", "catalog_models": 19, "sintraprime_surface": "governed_inference/providers.py::GeminiProvider (shell)", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "Ollama Cloud", "catalog_models": 17, "sintraprime_surface": "governed_inference/adapters.py::OllamaProvider (local variant configured)", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "Mistral AI", "catalog_models": 15, "sintraprime_surface": "governed_inference/providers.py::MistralProvider (shell)", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "OVHcloud AI Endpoints", "catalog_models": 15, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "Groq", "catalog_models": 12, "sintraprime_surface": "governed_inference/providers.py::GroqProvider (shell)", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "Cohere", "catalog_models": 12, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "Aion Labs", "catalog_models": 11, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "Hugging Face", "catalog_models": 9, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "Z AI (Zhipu AI)", "catalog_models": 8, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false, "notes": "F4 retirement-announced model published as recommended" },
+    { "provider": "Cerebras", "catalog_models": 6, "sintraprime_surface": "none", "capability_gap": true, "state": "DISCOVERED", "entitlement_verified": false, "notes": "F4 deprecated model published as recommended" },
+    { "provider": "Agnes AI", "catalog_models": 5, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "Alibaba Cloud Model Studio", "catalog_models": 5, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "SambaNova", "catalog_models": 4, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "Cline", "catalog_models": 4, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false, "notes": "F5 malformed row" },
+    { "provider": "SiliconFlow", "catalog_models": 3, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "xAI", "catalog_models": 3, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false, "notes": "F2 duplicate entity with Grok (xAI)" },
+    { "provider": "Chutes.ai", "catalog_models": 2, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "Glhf.chat", "catalog_models": 2, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "Grok (xAI)", "catalog_models": 2, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false, "notes": "F1 credit-based row inside Permanent Free Tiers; F2 duplicate entity" },
+    { "provider": "AI21 Labs", "catalog_models": 2, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "DeepSeek", "catalog_models": 2, "sintraprime_surface": "governed_inference/adapters.py::DeepSeekProvider", "state": "DISCOVERED", "entitlement_verified": false, "notes": "F3 classification depends on account state" },
+    { "provider": "Nscale", "catalog_models": 2, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false },
+    { "provider": "Nebius", "catalog_models": 1, "sintraprime_surface": "none", "state": "DISCOVERED", "entitlement_verified": false }
+  ],
+  "catalog_defects": [
+    { "id": "F1", "summary": "Credit-based Grok (xAI) row published inside Permanent Free Tiers ($25/month free credits)", "refs": ["README.md:158", "README.md:290-291"] },
+    { "id": "F2", "summary": "Duplicate vendor entity xAI and Grok (xAI) as separate rows sharing base URL https://api.x.ai/v1", "refs": ["README.md:155", "README.md:158", "README.md:202", "README.md:205"] },
+    { "id": "F3", "summary": "DeepSeek listed as permanent free tier while rate limit is Dynamic and access requires registration", "refs": ["README.md:160", "README.md:207", "README.md:294-295"] },
+    { "id": "F4", "summary": "Retirement and deprecation state encoded in model IDs that are still published as recommended best models", "refs": ["README.md:263", "README.md:266"] },
+    { "id": "F5", "summary": "Malformed Cline row: free model count 4 with max context 0, empty key link, empty base URL", "refs": ["README.md:153", "README.md:200"] },
+    { "id": "F6", "summary": "OpenAI-compatible claimed for all providers; Cloudflare Workers AI base URL differs between directory and examples", "refs": ["README.md:59", "README.md:182", "code-examples/cursor.md"] },
+    { "id": "F7", "summary": "Claude Code guidance self-contradictory and carries a paid top-up prerequisite", "refs": ["README.md:96-103", "code-examples/claude-code.md:29-35"] },
+    { "id": "F8", "summary": "Deprecated model rows retain plausible but stale rate limits", "refs": ["README.md:266"] },
+    { "id": "F9", "summary": "Examples instruct persistent shell-profile exports of API keys", "refs": ["code-examples/claude-code.md:47-55", "code-examples/codex.md:41-47"] },
+    { "id": "F10", "summary": "No schema or machine-readable records; markdown table parsing is the only ingestion path", "refs": ["inventory"] },
+    { "id": "F11", "summary": "Stale repository slug in README title, structure block, and Contributing link", "refs": ["README.md:2", "README.md:341", "README.md:357"] }
+  ],
+  "verification_status": {
+    "entitlement_verified": 0,
+    "commercial_rights_verified": 0,
+    "retention_terms_verified": 0,
+    "quota_verified": 0,
+    "canary_passed": 0
+  },
+  "conclusions": {
+    "use_as": "continuously refreshed intelligence source",
+    "use_as_software_to_install": false,
+    "catalog_is_cost_or_security_authority": false,
+    "cost_authority": "governed_inference policy, budgets, and receipts",
+    "confidential_evidence_sharing": "prohibited for free-tier models regardless of price"
+  },
+  "next_phase": {
+    "id": 2,
+    "name": "entitlement and cost verification",
+    "authorized": false,
+    "proposed_order": ["NVIDIA NIM", "Cerebras", "Cloudflare Workers AI", "Google Gemini", "Groq", "Mistral AI", "OpenRouter"],
+    "required_evidence_per_provider": [
+      "current free allowance and its terms from a provider-controlled primary source",
+      "commercial-use permission",
+      "training, retention, and data-use terms",
+      "regional availability and jurisdictional constraints",
+      "observed real rate limits",
+      "model retirement dates",
+      "named approver"
+    ]
+  },
+  "change_log": [
+    { "date": "2026-10-09", "change": "Phase 1 record created; all candidate providers seeded at DISCOVERED; no provider approved" }
+  ]
+}

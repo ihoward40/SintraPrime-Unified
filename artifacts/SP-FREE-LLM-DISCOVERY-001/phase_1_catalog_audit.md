@@ -31,6 +31,12 @@ In scope for Phase 1: read-only inventory of the catalog's contents, licensing, 
 
 Out of scope and not performed: provider signup, API key acquisition or use, provider endpoint calls, model registration, router or policy modification, spend of any kind. No credential was read, written, or transmitted.
 
+Boundaries, stated separately (per certification correction C3):
+
+- **Upstream catalog access** was read-only: public fetches only, no writes, forks, or issues.
+- **SintraPrime repository** was modified: the Phase 1 artifacts were committed and pushed to the designated work-in-progress branch `cline/33b1n070` for preservation. No PR, merge to `main`, deployment, or CI change was made. Repository mutation and upstream read-only access are distinct facts and are recorded separately in every receipt from this track forward.
+- **Provider accounts and endpoints**: no access of any kind.
+
 
 ---
 
@@ -70,7 +76,7 @@ Tracked file inventory at the pin:
 | `.github/ISSUE_TEMPLATE/submit_api.yml` | 2,165 |
 | `.github/ISSUE_TEMPLATE/config.yml` | 245 |
 
-SHA-256 digests for each retrieved file are recorded in `phase_1_provenance.json` so a future sync can be detected without re-reading the catalog.
+SHA-256 digests were captured for **9 of 15 tracked files (partial coverage)** — the primary README, license, contributing guide, all three code-examples, PR template, funding file, and submission template — and are recorded in `phase_1_provenance.json`. The remaining 6 tracked files (four localized READMEs, the logo SVG, and the issue-config) are listed under `unhashed_paths`: they were inventoried by size only, never content-verified, and a future upstream sync touching only those files would **not** be detectable from this record.
 
 **Not present:** JSON/CSV/YAML dataset, JSON schema, per-model machine-readable records, rate-limit source data, provider terms-of-service snapshots, tests, or CI validation of the rendered tables.
 
@@ -249,4 +255,5 @@ Expected: 29 rows / 474 models / 505 with OpenRouter, matching §6.
 | Date | Change |
 |---|---|
 | 2026-10-09 | Phase 1 catalog audit created; provider records seeded at `DISCOVERED`; no provider approved |
+| 2026-10-09 | Certification corrections applied: §2 boundary now states upstream read-only access, WIP-branch repository mutations, and zero provider access separately; §3 hash coverage reclassified as partial (9 of 15). Provider states have since advanced to `DOCUMENTED` for `nvidia-nim`, `cerebras`, and `cloudflare-workers-ai` via Phase 2 — see `phase_1_certification_corrections.md` and `phase_2_entitlement_research.md` |
 

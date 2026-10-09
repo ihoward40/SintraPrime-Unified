@@ -78,6 +78,10 @@ Default section order:
 
 When the user requests a durable behavior change, record it here or in the relevant child AGENTS.md
 
+- Confidential IKE Solutions legal-education materials, consumer documents, and trust-related workflows must never be sent to a free-tier or third-party model because it is cheaper. Free-tier output may assist drafting and research; it cannot certify legal conclusions.
+- No third-party `.env` examples, credential configurations, or shell installation/export instructions may be copied into this repository.
+- Third-party provider catalogs ("free LLM API" lists) are discovery leads only, never entitlement, cost, or security authorities. A withdrawn free tier may suspend eligibility but must never silently authorize a paid replacement.
+
 ## Child DOX Index
 
 | Path | Scope | Controls |

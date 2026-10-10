@@ -81,3 +81,7 @@ __pycache__/
 *.log
 logs/
 e2e_test.db
+
+# simple-workflow plugin artifacts (local-only; delete entries to share via git)
+.simple-workflow/
+.simple-workflow

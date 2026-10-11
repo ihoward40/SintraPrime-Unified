@@ -14,6 +14,7 @@ test_governance.py — Comprehensive test suite for the AI Governance system.
 from __future__ import annotations
 
 import csv
+import fnmatch
 import os
 import tempfile
 import threading
@@ -31,7 +32,7 @@ from governance.audit_trail import AuditTrail
 from governance.compliance_monitor import ComplianceMonitor
 from governance.governance_engine import GovernanceEngine
 from governance.intervention_controller import InterventionController
-from governance.risk_assessor import RiskAssessor
+from governance.risk_assessor import RiskAssessor, UnknownActionPolicy
 from governance.risk_types import (
     ActionRisk,
     ApprovalStatus,
@@ -159,9 +160,279 @@ class TestRiskAssessor:
         risk = assessor.assess("format_document")
         assert risk.risk_level == RiskLevel.LOW
 
-    def test_assess_unknown_action_defaults_medium(self, assessor: RiskAssessor) -> None:
+    def test_unknown_action_fails_closed(self, assessor: RiskAssessor) -> None:
+        # B1 (SP-AGENT-PARLIAMENT-001): superseded
+        # test_assess_unknown_action_defaults_medium — unknown actions are
+        # escalated to a human, never silently approved.
         risk = assessor.assess("totally_unknown_action_xyz")
+        assert risk.risk_level == RiskLevel.CRITICAL
+        assert risk.requires_approval is True
+        assert risk.reversible is False
+
+    def test_deceptive_action_name_is_unknown(self, assessor: RiskAssessor) -> None:
+        risk = assessor.assess("send_payment_but_actually_safe")
+        assert risk.requires_approval is True
+        assert risk.risk_level == RiskLevel.CRITICAL
+
+    def test_audited_exception_restores_legacy_until_expiry(self) -> None:
+        ra = RiskAssessor(
+            unknown_action_policy=UnknownActionPolicy.AUDITED_EXCEPTION,
+            exception_reference="EXC-B1-TEST-1",
+            exception_expires_at=time.time() + 3600,
+        )
+        risk = ra.assess("totally_unknown_action_xyz")
         assert risk.risk_level == RiskLevel.MEDIUM
+        assert risk.requires_approval is False
+        assert risk.metadata["exception_reference"] == "EXC-B1-TEST-1"
+        assert any(
+            a["event"] == "UNKNOWN_ACTION_LEGACY_PATH_USED" for a in ra._exception_audit
+        )
+
+    def test_expired_exception_reverts_to_fail_closed(self) -> None:
+        ra = RiskAssessor(
+            unknown_action_policy=UnknownActionPolicy.AUDITED_EXCEPTION,
+            exception_reference="EXC-B1-TEST-2",
+            exception_expires_at=time.time() + 3600,
+        )
+        ra.exception_expires_at = time.time() - 1  # simulate expiry passage
+        risk = ra.assess("totally_unknown_action_xyz")
+        assert risk.risk_level == RiskLevel.CRITICAL
+        assert risk.requires_approval is True
+
+    def test_audited_exception_requires_reference(self) -> None:
+        with pytest.raises(ValueError):
+            RiskAssessor(unknown_action_policy=UnknownActionPolicy.AUDITED_EXCEPTION)
+
+    def test_audited_exception_requires_future_expiry(self) -> None:
+        with pytest.raises(ValueError):
+            RiskAssessor(
+                unknown_action_policy=UnknownActionPolicy.AUDITED_EXCEPTION,
+                exception_reference="EXC-B1-TEST-3",
+                exception_expires_at=time.time() - 1,
+            )
+
+    # ------------------------------------------------------------------
+    # A-FIX adversarial tests (SP-PARLIAMENT-C-REVIEW-001). Prove the
+    # post-construction authority-binding vulnerability is closed:
+    # mutation cannot restore the legacy fail-open path, use-time
+    # integrity validation fails closed, integrity violations are
+    # audited, audit-write failure withholds authority, and legitimate
+    # behavior remains compatible. Tests inspect actual decisions and
+    # audit outcomes, not merely attribute values.
+    # ------------------------------------------------------------------
+
+    def test_afix_unknown_action_still_fails_closed(self, assessor: RiskAssessor) -> None:
+        # (5) Baseline invariant preserved after A-FIX.
+        risk = assessor.assess("totally_unknown_action_xyz")
+        assert risk.risk_level == RiskLevel.CRITICAL
+        assert risk.requires_approval is True
+        assert risk.reversible is False
+
+    def test_afix_exception_policy_mutation_fails_closed(self) -> None:
+        # (1) Flipping unknown_action_policy to AUDITED_EXCEPTION after
+        # construction must NOT restore legacy authority.
+        ra = RiskAssessor()  # default FAIL_CLOSED, sealed
+        object.__setattr__(ra, "unknown_action_policy", UnknownActionPolicy.AUDITED_EXCEPTION)
+        object.__setattr__(ra, "exception_reference", "FORGED-EXC")
+        object.__setattr__(ra, "exception_expires_at", time.time() + 3600)
+        risk = ra.assess("totally_unknown_action_xyz")
+        assert risk.requires_approval is True
+        assert risk.risk_level == RiskLevel.CRITICAL
+        assert risk.metadata.get("fail_closed_reason") == "authority-config-integrity"
+
+    def test_afix_risk_threshold_mutation_fails_closed(self) -> None:
+        # (2) Lowering the org threshold after construction must not relax
+        # approval requirements — use-time integrity check fails closed.
+        ra = RiskAssessor(org_risk_threshold=RiskLevel.HIGH)
+        object.__setattr__(ra, "org_risk_threshold", RiskLevel.LOW)
+        risk = ra.assess("update_financial_record")
+        assert risk.requires_approval is True
+        assert risk.risk_level == RiskLevel.CRITICAL
+        assert risk.metadata.get("fail_closed_reason") == "authority-config-integrity"
+
+    def test_afix_exception_reference_mutation_fails_closed(self) -> None:
+        # (3) Mutating a protected attribute (exception_reference) after
+        # construction trips the seal.
+        ra = RiskAssessor(
+            unknown_action_policy=UnknownActionPolicy.AUDITED_EXCEPTION,
+            exception_reference="EXC-AFIX-OK",
+            exception_expires_at=time.time() + 3600,
+        )
+        ra.exception_reference = "FORGED-EXC"  # normal assignment -> __setattr__ audit
+        risk = ra.assess("totally_unknown_action_xyz")
+        assert risk.risk_level == RiskLevel.CRITICAL
+        assert risk.requires_approval is True
+
+    def test_afix_missing_or_corrupt_seal_fails_closed(self) -> None:
+        # (4) A missing / None / corrupted integrity seal must fail closed. The
+        # use-time check treats any seal that is absent, falsy, or inconsistent
+        # with the live authority config as tampering and returns the canonical
+        # fail-closed result with an integrity-violation audit record — never the
+        # legacy MEDIUM / no-approval path.
+
+        # 4a. MISSING seal: the construction-time seal attribute is removed, so
+        # reconstructing it raises and the check fails closed.
+        ra = RiskAssessor()
+        object.__delattr__(ra, "_authority_signature")
+        risk = ra.assess("totally_unknown_action_xyz")
+        assert risk.risk_level == RiskLevel.CRITICAL
+        assert risk.requires_approval is True
+        assert risk.reversible is False
+        assert risk.metadata.get("fail_closed_reason") == "authority-config-integrity"
+        assert any(
+            a["event"] == "AUTHORITY_INTEGRITY_VIOLATION" for a in ra._exception_audit
+        )
+
+        # 4b. None seal: present but falsy -> fails closed.
+        ra = RiskAssessor()
+        object.__setattr__(ra, "_authority_signature", None)
+        risk = ra.assess("totally_unknown_action_xyz")
+        assert risk.risk_level == RiskLevel.CRITICAL
+        assert risk.requires_approval is True
+        assert risk.metadata.get("fail_closed_reason") == "authority-config-integrity"
+
+        # 4c. CORRUPTED seal: non-empty but incorrect signature -> fails closed.
+        ra = RiskAssessor()
+        object.__setattr__(ra, "_authority_signature", "deadbeef-not-the-real-seal")
+        risk = ra.assess("totally_unknown_action_xyz")
+        assert risk.risk_level == RiskLevel.CRITICAL
+        assert risk.requires_approval is True
+        assert risk.metadata.get("fail_closed_reason") == "authority-config-integrity"
+        assert not any(
+            a["event"] == "UNKNOWN_ACTION_EXCEPTION_GRANTED" for a in ra._exception_audit
+        )
+
+    def test_afix_r2_race_cannot_forge_legacy_authority(self) -> None:
+        # (R2, SP-PARLIAMENT-A-FIX-R2R3-001) Regression for the
+        # validation-to-decision race. A concurrent attacker mutates the
+        # authority configuration at the natural seam — the first fnmatch()
+        # call inside the rule-matching loop, which runs AFTER the use-time seal
+        # check and BEFORE the exception_active decision. assess() derives its
+        # decision EXCLUSIVELY from a validated local snapshot captured before
+        # that seam, so the raced mutation cannot yield a permissive MEDIUM /
+        # no-approval result or a forged exception_reference.
+        ra = RiskAssessor()  # FAIL_CLOSED, sealed
+        real_fnmatch = fnmatch.fnmatch
+        injected = {"done": False}
+
+        def _malicious(name, pat):
+            if not injected["done"]:
+                injected["done"] = True
+                # Attacker wins the race at the validation -> decision seam.
+                object.__setattr__(
+                    ra, "unknown_action_policy", UnknownActionPolicy.AUDITED_EXCEPTION
+                )
+                object.__setattr__(ra, "exception_reference", "RACE-FORGED-EXC")
+                object.__setattr__(ra, "exception_expires_at", time.time() + 3600)
+            return real_fnmatch(name, pat)
+
+        with patch("governance.risk_assessor.fnmatch.fnmatch", side_effect=_malicious):
+            risk = ra.assess("expensive_unknown_action_xyz")
+
+        # The seam was actually exercised (otherwise this proves nothing).
+        assert injected["done"] is True
+        # Decision came from the pre-validation FAIL_CLOSED snapshot, not the
+        # raced mutation: the unknown action stays fail-closed, never legacy.
+        assert risk.risk_level == RiskLevel.CRITICAL
+        assert risk.requires_approval is True
+        # The forged reference never reaches the decision or the audit ledger.
+        assert "exception_reference" not in risk.metadata
+        assert risk.metadata.get("unknown_action_policy") == "fail_closed"
+        assert not any(
+            a["event"] == "UNKNOWN_ACTION_EXCEPTION_GRANTED"
+            for a in ra._exception_audit
+        )
+
+    def test_afix_forged_exception_cannot_authorize(self) -> None:
+        # (6) A forged AUDITED_EXCEPTION must never grant legacy authority and
+        # must never emit a GRANTED approval event.
+        ra = RiskAssessor()
+        object.__setattr__(ra, "unknown_action_policy", UnknownActionPolicy.AUDITED_EXCEPTION)
+        object.__setattr__(ra, "exception_reference", "FORGED")
+        object.__setattr__(ra, "exception_expires_at", time.time() + 3600)
+        risk = ra.assess("totally_unknown_action_xyz")
+        assert risk.requires_approval is True
+        assert risk.risk_level == RiskLevel.CRITICAL
+        assert not any(
+            a["event"] == "UNKNOWN_ACTION_EXCEPTION_GRANTED" for a in ra._exception_audit
+        )
+
+    def test_afix_integrity_violation_is_audited(self) -> None:
+        # (7) Detected tampering produces both the mutation-detected audit
+        # record (from __setattr__) and the integrity-violation record (assess).
+        ra = RiskAssessor()
+        ra.org_risk_threshold = RiskLevel.LOW  # normal assignment -> __setattr__ audit
+        risk = ra.assess("send_payment")
+        assert risk.metadata.get("fail_closed_reason") == "authority-config-integrity"
+        events = [a["event"] for a in ra._exception_audit]
+        assert "AUTHORITY_INTEGRITY_VIOLATION" in events
+        assert "AUTHORITY_CONFIG_MUTATION_DETECTED" in events
+
+    def test_afix_audit_write_failure_withholds_authority(self) -> None:
+        # (8) If audit persistence fails on the legacy path, authority must fail
+        # closed — a legacy-path warning never substitutes for approval.
+        ra = RiskAssessor(
+            unknown_action_policy=UnknownActionPolicy.AUDITED_EXCEPTION,
+            exception_reference="EXC-AFIX-AUDIT",
+            exception_expires_at=time.time() + 3600,
+        )
+
+        def _boom(*_a, **_k):
+            raise RuntimeError("audit store unavailable")
+
+        object.__setattr__(ra, "_record_audit", _boom)
+        risk = ra.assess("totally_unknown_action_xyz")
+        assert risk.risk_level == RiskLevel.CRITICAL
+        assert risk.requires_approval is True
+        assert risk.metadata.get("fail_closed_reason") == "audit-unavailable"
+
+    def test_afix_legitimate_exception_still_grants_legacy(self) -> None:
+        # (9) Compatibility: a legitimately constructed, unexpired audited
+        # exception still restores legacy behavior (seal valid, no mutation).
+        ra = RiskAssessor(
+            unknown_action_policy=UnknownActionPolicy.AUDITED_EXCEPTION,
+            exception_reference="EXC-AFIX-COMPAT",
+            exception_expires_at=time.time() + 3600,
+        )
+        risk = ra.assess("totally_unknown_action_xyz")
+        assert risk.risk_level == RiskLevel.MEDIUM
+        assert risk.requires_approval is False
+        assert risk.metadata.get("exception_reference") == "EXC-AFIX-COMPAT"
+
+    def test_afix_set_org_threshold_reseals_and_stays_authorized(self) -> None:
+        # (9) The audited set_org_threshold API remains functional after A-FIX
+        # (re-seals) and is not misclassified as tampering.
+        ra = RiskAssessor(org_risk_threshold=RiskLevel.HIGH)
+        ra.set_org_threshold(RiskLevel.CRITICAL)
+        risk = ra.assess("send_payment")
+        assert risk.requires_approval is True
+        assert risk.metadata.get("fail_closed_reason") is None
+        assert any(a["event"] == "AUTHORITY_THRESHOLD_UPDATED" for a in ra._exception_audit)
+
+    def test_afix_genuine_expiry_reverts_without_tampering(self) -> None:
+        # Expiry auto-revert still works via real time, independent of the
+        # integrity check (no post-construction attribute mutation). A genuinely
+        # constructed, unexpired audited exception reverts to fail-closed once
+        # the (patched) clock advances past its expiry, and this benign expiry
+        # must NOT be misreported as an integrity violation.
+        ra = RiskAssessor(
+            unknown_action_policy=UnknownActionPolicy.AUDITED_EXCEPTION,
+            exception_reference="EXC-AFIX-EXPIRY",
+            exception_expires_at=time.time() + 5,
+        )
+        future = time.time() + 3600
+        with patch("governance.risk_assessor.time.time", return_value=future):
+            risk = ra.assess("totally_unknown_action_xyz")
+        assert risk.risk_level == RiskLevel.CRITICAL
+        assert risk.requires_approval is True
+        # Genuine expiry is NOT tampering: the seal remains valid, so no
+        # integrity violation is recorded and no legacy authority is granted.
+        assert risk.metadata.get("fail_closed_reason") is None
+        assert not any(
+            a["event"] == "AUTHORITY_INTEGRITY_VIOLATION" for a in ra._exception_audit
+        )
+
+
 
     def test_assess_with_payload_enriches_impact(self, assessor: RiskAssessor) -> None:
         risk = assessor.assess("send_payment", {"amount": 10000})
@@ -674,12 +945,12 @@ class TestGovernanceEngine:
         engine.approval_gate.auto_approve_threshold = RiskLevel.MEDIUM
 
         @engine.requires_approval(min_risk=RiskLevel.HIGH)
-        def my_func():
+        def read_data():
             return "done"
 
         # With auto_approve_threshold=MEDIUM, LOW/MEDIUM are auto-approved
-        # my_func maps to RiskLevel.MEDIUM (unknown) → auto-approved
-        result = my_func()
+# read_data maps to a known MEDIUM action - auto-approved below threshold
+        result = read_data()
         assert result == "done"
 
     def test_requires_approval_decorator_blocks_high(self, engine: GovernanceEngine) -> None:
@@ -744,3 +1015,56 @@ class TestRiskTypes:
         entry.actor = "hacker"
         tampered_checksum = entry.compute_checksum()
         assert original_checksum != tampered_checksum
+
+
+# ===========================================================================
+# 9. B2 — Read-only capability allowlist (SP-AGENT-PARLIAMENT-001)
+# ===========================================================================
+
+
+class TestReadOnlyCapabilityAllowlistB2:
+    """read_only_mode blocks privileged mutations and unknown verbs regardless
+    of naming; only enumerated read-class operations proceed."""
+
+    def _read_only_controller(self) -> InterventionController:
+        controller = InterventionController()
+        controller.set_guardrail("read_only_mode")
+        return controller
+
+    def test_blocks_privileged_mutations(self) -> None:
+        controller = self._read_only_controller()
+        for action in (
+            "set_permissions",
+            "grant_role",
+            "modify_permissions",
+            "register_approval",
+            "rotate_key",
+            "deploy_service",
+        ):
+            assert controller.check_guardrail(action) is False, action
+
+    def test_allowlist_blocks_unknown_verbs(self) -> None:
+        controller = self._read_only_controller()
+        assert controller.check_guardrail("foo_bar") is False
+
+    def test_allows_enumerated_reads(self) -> None:
+        controller = self._read_only_controller()
+        for action in (
+            "read_data",
+            "search_database",
+            "list_records",
+            "get_status",
+            "validate_data",
+        ):
+            assert controller.check_guardrail(action) is True, action
+
+    def test_deceptive_name_blocked(self) -> None:
+        controller = self._read_only_controller()
+        assert controller.check_guardrail("send_payment_but_actually_safe") is False
+
+    def test_engine_blocks_mutation_under_read_only_mode(
+        self, engine: GovernanceEngine
+    ) -> None:
+        engine.intervention_controller.set_guardrail("read_only_mode")
+        assert engine.before_action("set_permissions", {}, "agent-1") is False
+        engine.intervention_controller.remove_guardrail("read_only_mode")

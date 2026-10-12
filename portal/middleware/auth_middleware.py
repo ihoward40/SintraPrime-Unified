@@ -58,19 +58,12 @@ PUBLIC_METHOD_PATHS = {
     ("POST", "/ucc-filings/evaluate"),
 }
 
-PUBLIC_CONTROLLED_PREFIXES = (
-    "/legal-rules/",
-    "/legal-authorities/",
-)
-
-
 def is_public_path(path: str, method: str | None = None) -> bool:
-    if method:
+    if method == "GET":
         if path in PUBLIC_GET_EXACT_PATHS or any(path.startswith(prefix) for prefix in PUBLIC_GET_PREFIX_PATHS):
             return True
+    if method:
         if (method, path) in PUBLIC_METHOD_PATHS:
-            return True
-        if any(path.startswith(prefix) for prefix in PUBLIC_CONTROLLED_PREFIXES):
             return True
     return path in PUBLIC_EXACT_PATHS or any(path.startswith(prefix) for prefix in PUBLIC_PREFIX_PATHS)
 

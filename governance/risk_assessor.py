@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import fnmatch
 import hashlib
+import math
 import time
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
@@ -341,9 +342,12 @@ class RiskAssessor:
                     "AUDITED_EXCEPTION requires exception_reference "
                     "(B1: no ungoverned legacy behavior)"
                 )
-            if exception_expires_at <= time.time():
+            if not (
+                math.isfinite(exception_expires_at)
+                and exception_expires_at > time.time()
+            ):
                 raise ValueError(
-                    "AUDITED_EXCEPTION requires a future exception_expires_at"
+                    "AUDITED_EXCEPTION requires a finite future exception_expires_at"
                 )
             self._exception_audit: List[Dict[str, object]] = [
                 {
@@ -576,25 +580,48 @@ class RiskAssessor:
     def set_org_threshold(self, threshold: RiskLevel) -> None:
         """Update the organization-wide risk threshold for approval requirements.
 
-        A-FIX: the audited path for changing the threshold. Re-seals the
-        authority signature so the use-time integrity check treats this
-        legitimate change as authorized rather than as tampering.
+        A-FIX + F-HIGH-2/F-HIGH-3: the audited path for changing the threshold.
+        Validates the CURRENT authority seal before re-sealing (so tampered
+        state is never legitimized), and records the audit BEFORE committing
+        (so an audit failure rolls back the change instead of persisting it).
+        The new seal is derived only from the validated snapshot plus the
+        requested threshold.
         """
-        object.__setattr__(self, "org_risk_threshold", threshold)
-        object.__setattr__(
-            self,
-            "_authority_signature",
-            _authority_signature(
-                self.unknown_action_policy,
-                self.exception_reference,
-                self.exception_expires_at,
-                threshold,
-            ),
+        # F-HIGH-2: validate the current seal BEFORE any re-seal.
+        sealed = object.__getattribute__(self, "_authority_signature")
+        snapshot_policy = self.unknown_action_policy
+        snapshot_reference = self.exception_reference
+        snapshot_expires_at = self.exception_expires_at
+        snapshot_threshold = self.org_risk_threshold
+        live = _authority_signature(
+            snapshot_policy,
+            snapshot_reference,
+            snapshot_expires_at,
+            snapshot_threshold,
+        )
+        if not sealed or sealed != live:
+            try:
+                self._record_audit("AUTHORITY_INTEGRITY_VIOLATION")
+            except Exception:
+                pass
+            raise ValueError(
+                "authority-config-integrity: cannot change threshold over tampered state"
+            )
+        # F-HIGH-3: record the audit BEFORE committing; commit only after the
+        # audit succeeds. On audit failure the exception propagates and the
+        # threshold/seal are left unchanged (rollback).
+        new_seal = _authority_signature(
+            snapshot_policy,
+            snapshot_reference,
+            snapshot_expires_at,
+            threshold,
         )
         self._record_audit(
             "AUTHORITY_THRESHOLD_UPDATED",
             threshold=getattr(threshold, "value", threshold),
         )
+        object.__setattr__(self, "org_risk_threshold", threshold)
+        object.__setattr__(self, "_authority_signature", new_seal)
 
     def _record_audit(self, event: str, **fields: object) -> None:
         """A-FIX: append an authority event to the audit log.

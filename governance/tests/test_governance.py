@@ -491,6 +491,67 @@ class TestRiskAssessor:
         assert RiskLevel.HIGH < RiskLevel.CRITICAL
         assert RiskLevel.CRITICAL > RiskLevel.LOW
 
+    # ------------------------------------------------------------------
+    # F-HIGH regression tests (PR #370 Copilot review,
+    # SP-PARLIAMENT-PUBLICATION-001). Each reproduces the exact bypass
+    # probe and proves it is closed.
+    # ------------------------------------------------------------------
+
+    def test_fhigh1_non_finite_expiry_rejected(self) -> None:
+        # F-HIGH-1: float("inf") passed the future-time check and created a
+        # never-expiring audited exception. It must be rejected at construction.
+        with pytest.raises(ValueError):
+            RiskAssessor(
+                unknown_action_policy=UnknownActionPolicy.AUDITED_EXCEPTION,
+                exception_reference="EXC-FHIGH-1",
+                exception_expires_at=float("inf"),
+            )
+
+    def test_fhigh1_nan_expiry_rejected(self) -> None:
+        # F-HIGH-1: NaN must also be rejected (NaN comparisons are always False,
+        # so the old check silently accepted it).
+        with pytest.raises(ValueError):
+            RiskAssessor(
+                unknown_action_policy=UnknownActionPolicy.AUDITED_EXCEPTION,
+                exception_reference="EXC-FHIGH-1NAN",
+                exception_expires_at=float("nan"),
+            )
+
+    def test_fhigh2_set_org_threshold_rejects_tampered_state(self) -> None:
+        # F-HIGH-2: an ordinary caller who forges the authority fields via
+        # attribute assignment must NOT be able to legitimize that state by
+        # calling set_org_threshold (which used to re-seal over live,
+        # unvalidated fields). The setter must validate the current seal first
+        # and reject tampered state; the forged state must still fail closed.
+        ra = RiskAssessor(org_risk_threshold=RiskLevel.HIGH)
+        ra.unknown_action_policy = UnknownActionPolicy.AUDITED_EXCEPTION
+        ra.exception_reference = "FORGED-VIA-SETTER"
+        ra.exception_expires_at = time.time() + 3600
+        with pytest.raises(ValueError):
+            ra.set_org_threshold(RiskLevel.HIGH)
+        risk = ra.assess("totally_unknown_action_xyz")
+        assert risk.risk_level == RiskLevel.CRITICAL
+        assert risk.requires_approval is True
+        assert risk.metadata.get("fail_closed_reason") == "authority-config-integrity"
+
+    def test_fhigh3_set_org_threshold_rolls_back_on_audit_failure(self) -> None:
+        # F-HIGH-3: if the audit write fails, the threshold change must NOT be
+        # committed (rollback). Previously the setter committed the threshold +
+        # seal before auditing, so an audit failure left the change persisted.
+        ra = RiskAssessor(org_risk_threshold=RiskLevel.HIGH)
+        original_threshold = ra.org_risk_threshold
+        original_seal = object.__getattribute__(ra, "_authority_signature")
+
+        def _boom(*_args, **_kwargs):
+            raise RuntimeError("audit store unavailable")
+
+        with patch.object(ra, "_record_audit", side_effect=_boom):
+            with pytest.raises(RuntimeError):
+                ra.set_org_threshold(RiskLevel.LOW)
+
+        assert ra.org_risk_threshold == original_threshold
+        assert object.__getattribute__(ra, "_authority_signature") == original_seal
+
 
 # ===========================================================================
 # 2. ApprovalGate Tests

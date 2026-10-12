@@ -500,7 +500,9 @@ class TestRiskAssessor:
     def test_fhigh1_non_finite_expiry_rejected(self) -> None:
         # F-HIGH-1: float("inf") passed the future-time check and created a
         # never-expiring audited exception. It must be rejected at construction.
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="AUDITED_EXCEPTION requires a finite future exception_expires_at"
+        ):
             RiskAssessor(
                 unknown_action_policy=UnknownActionPolicy.AUDITED_EXCEPTION,
                 exception_reference="EXC-FHIGH-1",
@@ -510,7 +512,9 @@ class TestRiskAssessor:
     def test_fhigh1_nan_expiry_rejected(self) -> None:
         # F-HIGH-1: NaN must also be rejected (NaN comparisons are always False,
         # so the old check silently accepted it).
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="AUDITED_EXCEPTION requires a finite future exception_expires_at"
+        ):
             RiskAssessor(
                 unknown_action_policy=UnknownActionPolicy.AUDITED_EXCEPTION,
                 exception_reference="EXC-FHIGH-1NAN",
@@ -527,7 +531,7 @@ class TestRiskAssessor:
         ra.unknown_action_policy = UnknownActionPolicy.AUDITED_EXCEPTION
         ra.exception_reference = "FORGED-VIA-SETTER"
         ra.exception_expires_at = time.time() + 3600
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="authority-config-integrity"):
             ra.set_org_threshold(RiskLevel.HIGH)
         risk = ra.assess("totally_unknown_action_xyz")
         assert risk.risk_level == RiskLevel.CRITICAL
@@ -545,9 +549,10 @@ class TestRiskAssessor:
         def _boom(*_args, **_kwargs):
             raise RuntimeError("audit store unavailable")
 
-        with patch.object(ra, "_record_audit", side_effect=_boom):
-            with pytest.raises(RuntimeError):
-                ra.set_org_threshold(RiskLevel.LOW)
+        with patch.object(ra, "_record_audit", side_effect=_boom), pytest.raises(
+            RuntimeError, match="audit store unavailable"
+        ):
+            ra.set_org_threshold(RiskLevel.LOW)
 
         assert ra.org_risk_threshold == original_threshold
         assert object.__getattribute__(ra, "_authority_signature") == original_seal
@@ -1129,3 +1134,4 @@ class TestReadOnlyCapabilityAllowlistB2:
         engine.intervention_controller.set_guardrail("read_only_mode")
         assert engine.before_action("set_permissions", {}, "agent-1") is False
         engine.intervention_controller.remove_guardrail("read_only_mode")
+

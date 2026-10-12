@@ -11,6 +11,7 @@ import fnmatch
 import hashlib
 import math
 import time
+from contextlib import suppress
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
@@ -600,10 +601,8 @@ class RiskAssessor:
             snapshot_threshold,
         )
         if not sealed or sealed != live:
-            try:
+            with suppress(Exception):
                 self._record_audit("AUTHORITY_INTEGRITY_VIOLATION")
-            except Exception:
-                pass
             raise ValueError(
                 "authority-config-integrity: cannot change threshold over tampered state"
             )
@@ -791,3 +790,4 @@ class RiskAssessor:
                 ],
             ),
         }
+

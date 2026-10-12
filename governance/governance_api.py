@@ -82,12 +82,33 @@ def create_governance_router(engine: GovernanceEngine) -> "APIRouter":
 
         app = FastAPI()
         engine = GovernanceEngine()
-        app.include_router(create_governance_router(engine), prefix="/governance")
+        # NOTE: the router already carries the /governance prefix and G4
+        # authentication dependencies; mount it without an extra prefix.
+        app.include_router(create_governance_router(engine))
     """
     if not FASTAPI_AVAILABLE:
         raise RuntimeError("FastAPI is not installed. Run: pip install fastapi")
 
-    router = APIRouter(prefix="/governance", tags=["governance"])
+    from fastapi import Depends
+
+    from governance.authz_dependencies import (
+        SCOPE_EMERGENCY_STOP,
+        SCOPE_EMERGENCY_STOP_CLEAR,
+        PrincipalContext,
+        PrincipalDependency,
+        require_scope,
+        verify_principal_token,
+    )
+
+    # G4 (SP-PARLIAMENT-A2A-REVOCATION-DESIGN-CERT-002 §2/§4): authentication is
+    # attached at router construction so it is structural — every route on this
+    # router (and any future mount of it) requires a verified Principal JWT.
+    # Anonymous or invalid tokens receive HTTP 401 before any handler runs.
+    router = APIRouter(
+        prefix="/governance",
+        tags=["governance"],
+        dependencies=[Depends(verify_principal_token)],
+    )
 
     # ------------------------------------------------------------------
     # Approval endpoints
@@ -291,32 +312,66 @@ def create_governance_router(engine: GovernanceEngine) -> "APIRouter":
             raise HTTPException(status_code=400, detail=f"Could not resume agent '{agent_id}'")
         return {"resumed": True, "agent_id": agent_id}
 
-    @router.post("/emergency-stop", summary="Emergency stop ALL agents")
-    def emergency_stop(authorized_by: str = Query(...)) -> Dict[str, Any]:
+    @router.post(
+        "/emergency-stop",
+        summary="Emergency stop ALL agents",
+        dependencies=[Depends(require_scope(SCOPE_EMERGENCY_STOP))],
+    )
+    def emergency_stop(
+        principal: PrincipalContext = PrincipalDependency,
+        authorized_by: Optional[str] = Query(None),
+    ) -> Dict[str, Any]:
         """
         Immediately halt ALL agent activity.
 
         ⚠️ This is the nuclear option. All agents will stop immediately.
+
+        G4: requires the ``emergency_stop`` scope. Audit identity is derived ONLY
+        from the verified principal claims; any caller-supplied ``authorized_by``
+        value is recorded as unverified metadata and confers no authority.
         """
         count = engine.intervention_controller.emergency_stop()
         engine.audit_trail.log(
-            actor=authorized_by,
+            actor=principal.subject,
             action="emergency_stop",
             outcome="success",
             risk_level=RiskLevel.CRITICAL,
-            metadata={"agents_stopped": count},
+            metadata={
+                "agents_stopped": count,
+                "principal_role": principal.role,
+                "principal_tenant_id": principal.tenant_id,
+                "principal_jti": principal.jti,
+                "caller_supplied_label": authorized_by or "",
+            },
         )
         return {
             "emergency_stop_active": True,
             "agents_stopped": count,
-            "authorized_by": authorized_by,
+            "authorized_by": principal.subject,
         }
 
-    @router.post("/emergency-stop/clear", summary="Clear emergency stop")
-    def clear_emergency_stop(authorized_by: str = Query(...)) -> Dict[str, Any]:
-        """Clear the emergency stop and allow agents to resume."""
-        engine.intervention_controller.clear_emergency_stop(authorized_by)
-        return {"emergency_stop_active": False, "cleared_by": authorized_by}
+    @router.post(
+        "/emergency-stop/clear",
+        summary="Clear emergency stop",
+        dependencies=[Depends(require_scope(SCOPE_EMERGENCY_STOP_CLEAR))],
+    )
+    def clear_emergency_stop(
+        principal: PrincipalContext = PrincipalDependency,
+        authorized_by: Optional[str] = Query(None),
+    ) -> Dict[str, Any]:
+        """Clear the emergency stop and allow agents to resume (G4-protected).
+
+        Requires the DISTINCT ``emergency_stop_clear`` scope: authority to stop
+        is not authority to restart.
+        """
+        # The controller's release record attributes the release to the VERIFIED
+        # principal; the caller-supplied label is metadata only.
+        engine.intervention_controller.clear_emergency_stop(principal.subject)
+        return {
+            "emergency_stop_active": False,
+            "cleared_by": principal.subject,
+            "caller_supplied_label": authorized_by or "",
+        }
 
     @router.post("/guardrail", summary="Add runtime guardrail")
     def add_guardrail(body: GuardrailRequest) -> Dict[str, Any]:

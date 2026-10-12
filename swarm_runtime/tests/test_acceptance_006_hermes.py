@@ -21,6 +21,7 @@ import os
 import sys
 from pathlib import Path
 
+from mission_wiring.approval_service import AuthorityApprovalService
 from swarm_runtime import DelegateTask, HermesSwarmAdapter
 
 REPO = Path(__file__).resolve().parents[2]
@@ -29,6 +30,34 @@ REPO = Path(__file__).resolve().parents[2]
 def run_acceptance_006() -> dict:
     swarm_id = "SWARM-ACCEPTANCE-006-HERMES"
     repo_path = str(REPO)
+
+    # Authority service for mandatory governed verification
+    approval_service = AuthorityApprovalService()
+
+    # Pre-issue verified approval bindings for all 5 inventory workers
+    for tid, role, wcls, rpaths in [
+        ("A", "tenant_fk_inventory", "CodeSearchWorker", ["portal/"]),
+        ("B", "user_fk_inventory", "CodeSearchWorker", ["portal/"]),
+        ("C", "portable_uuid_usage", "CodeSearchWorker", ["portal/"]),
+        ("D", "rls_identity_casts", "DatabaseSchemaWorker", ["portal/migrations"]),
+        ("E", "api_schema_identity", "ASTAnalysisWorker", ["portal/routers"]),
+    ]:
+        caps = {"repository.read"}
+        if wcls == "DatabaseSchemaWorker":
+            caps.add("database.schema.read")
+        approval_service.issue(
+            approval_id=f"appr-{tid}",
+            mission_id="identity-audit",
+            actor_id=tid,
+            tenant_id="default",
+            capabilities=frozenset(caps),
+            resource_urls=frozenset(rpaths),
+            issued_by="PRINCIPAL",
+            permitted_roles=frozenset({role}),
+            permitted_workers=frozenset({wcls}),
+            permitted_execution_classes=frozenset({"read_only_inspection"}),
+            context_hash="eeb55ffb",
+        )
 
     # This uses the canonical HermesSwarmAdapter — the production path
     # that replaces the old delegate_task provider-bound subagent engine.
@@ -39,6 +68,7 @@ def run_acceptance_006() -> dict:
             "SintraPrime", "swarm-runs", swarm_id,
         ),
         max_concurrent=5,
+        approval_service=approval_service,
     )
 
     # Define 5 independent inventory workers as DelegateTasks
@@ -56,7 +86,7 @@ def run_acceptance_006() -> dict:
             timeout_seconds=60,
             tenant="default",
             mission="identity-audit",
-            run_context={"swarm_id": swarm_id},
+            run_context={"swarm_id": swarm_id, "approval_id": "appr-A"},
             worker_class="CodeSearchWorker",
             task_params={"pattern": r"ForeignKey.*tenants\.id", "path": "portal/", "file_glob": "*.py"},
             artifact_filename="artifacts/lane-a.json",
@@ -72,7 +102,7 @@ def run_acceptance_006() -> dict:
             timeout_seconds=60,
             tenant="default",
             mission="identity-audit",
-            run_context={"swarm_id": swarm_id},
+            run_context={"swarm_id": swarm_id, "approval_id": "appr-B"},
             worker_class="CodeSearchWorker",
             task_params={"pattern": r"ForeignKey.*users\.id", "path": "portal/", "file_glob": "*.py"},
             artifact_filename="artifacts/lane-b.json",
@@ -88,7 +118,7 @@ def run_acceptance_006() -> dict:
             timeout_seconds=60,
             tenant="default",
             mission="identity-audit",
-            run_context={"swarm_id": swarm_id},
+            run_context={"swarm_id": swarm_id, "approval_id": "appr-C"},
             worker_class="CodeSearchWorker",
             task_params={"pattern": r"PortableUUID", "path": "portal/", "file_glob": "*.py", "context_lines": 1},
             artifact_filename="artifacts/lane-c.json",
@@ -104,7 +134,7 @@ def run_acceptance_006() -> dict:
             timeout_seconds=60,
             tenant="default",
             mission="identity-audit",
-            run_context={"swarm_id": swarm_id},
+            run_context={"swarm_id": swarm_id, "approval_id": "appr-D"},
             worker_class="DatabaseSchemaWorker",
             task_params={"path": "portal/migrations", "extract": "rls_policies"},
             artifact_filename="artifacts/lane-d.json",
@@ -120,7 +150,7 @@ def run_acceptance_006() -> dict:
             timeout_seconds=60,
             tenant="default",
             mission="identity-audit",
-            run_context={"swarm_id": swarm_id},
+            run_context={"swarm_id": swarm_id, "approval_id": "appr-E"},
             worker_class="ASTAnalysisWorker",
             task_params={"path": "portal/routers", "target": "class_defs"},
             artifact_filename="artifacts/lane-e.json",

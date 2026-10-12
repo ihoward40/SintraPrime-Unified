@@ -17,6 +17,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from swarm_runtime import SwarmController, WorkerSpec
@@ -63,10 +64,11 @@ def run_acceptance_004_real() -> dict:
         capture_output=True, timeout=5,
     )
 
+    run_nonce = str(int(time.time()))
     worktrees: list[dict] = []
     for wid in ["B1", "B2", "B3"]:
-        wt_path = worktree_base / f"builder-{wid}"
-        branch = f"acceptance-004-real-{wid}"
+        wt_path = worktree_base / f"builder-{wid}-{run_nonce}"
+        branch = f"acceptance-004-test-{wid}-{run_nonce}"
 
         # Remove existing branch if any
         subprocess.run(

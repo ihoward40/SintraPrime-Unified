@@ -1134,4 +1134,3 @@ class TestReadOnlyCapabilityAllowlistB2:
         engine.intervention_controller.set_guardrail("read_only_mode")
         assert engine.before_action("set_permissions", {}, "agent-1") is False
         engine.intervention_controller.remove_guardrail("read_only_mode")
-

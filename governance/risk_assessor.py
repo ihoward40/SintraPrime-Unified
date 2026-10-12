@@ -790,4 +790,3 @@ class RiskAssessor:
                 ],
             ),
         }
-

@@ -200,11 +200,13 @@ class TestRiskAssessor:
         assert risk.requires_approval is True
 
     def test_audited_exception_requires_reference(self) -> None:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="AUDITED_EXCEPTION requires exception_reference"):
             RiskAssessor(unknown_action_policy=UnknownActionPolicy.AUDITED_EXCEPTION)
 
     def test_audited_exception_requires_future_expiry(self) -> None:
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="AUDITED_EXCEPTION requires a finite future exception_expires_at"
+        ):
             RiskAssessor(
                 unknown_action_policy=UnknownActionPolicy.AUDITED_EXCEPTION,
                 exception_reference="EXC-B1-TEST-3",

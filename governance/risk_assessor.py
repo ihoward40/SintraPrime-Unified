@@ -396,7 +396,7 @@ class RiskAssessor:
         if name in RiskAssessor._PROTECTED_AUTHORITY_FIELDS and object.__getattribute__(
             self, "__dict__"
         ).get("_authority_sealed", False):
-            try:
+            with suppress(Exception):
                 object.__getattribute__(self, "_exception_audit").append(
                     {
                         "event": "AUTHORITY_CONFIG_MUTATION_DETECTED",
@@ -404,8 +404,6 @@ class RiskAssessor:
                         "at": time.time(),
                     }
                 )
-            except Exception:
-                pass
         object.__setattr__(self, name, value)
 
     # ------------------------------------------------------------------
@@ -452,12 +450,10 @@ class RiskAssessor:
         except Exception:
             sealed, live = None, None
         if not sealed or sealed != live:
-            try:
+            with suppress(Exception):
                 self._record_audit(
                     "AUTHORITY_INTEGRITY_VIOLATION", action_type=action_type
                 )
-            except Exception:
-                pass
             return self._fail_closed_unknown(
                 action_type, payload, "authority-config-integrity"
             )

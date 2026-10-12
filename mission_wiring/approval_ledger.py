@@ -8,22 +8,20 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import sqlite3
 import threading
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
 __all__ = [
+    "SCHEMA_VERSION",
     "ApprovalLedger",
     "LedgerError",
-    "LedgerUnavailableError",
     "LedgerRecord",
-    "SCHEMA_VERSION",
+    "LedgerUnavailableError",
 ]
 
 SCHEMA_VERSION = 2

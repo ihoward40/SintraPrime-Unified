@@ -9,19 +9,15 @@ from __future__ import annotations
 import hashlib
 import hmac
 import multiprocessing
-import os
-import sqlite3
-import subprocess
-import tempfile
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
 
 from mission_wiring.approval_ledger import ApprovalLedger, LedgerError, LedgerUnavailableError
 from mission_wiring.approval_service import (
-    ApprovalBinding,
     ApprovalInvalidError,
     AuthorityApprovalService,
     PrincipalAuthToken,
@@ -30,7 +26,6 @@ from swarm_runtime.controller import SwarmController
 from swarm_runtime.governed_execution import (
     AuthorityEnvelope,
     ExecutionAdmissionGate,
-    ExecutionClass,
     ExecutionRequest,
 )
 from swarm_runtime.hermes_adapter import DelegateTask, HermesSwarmAdapter
@@ -719,7 +714,7 @@ def test_neg_17_crash_after_consumption_recovery(approval_svc, tmp_path):
     )
 
     # Simulate crash during launch by monkeypatching _launch_worker to raise an unhandled exception
-    def _exploding_launch(*args, **kwargs):
+    def _exploding_launch(*_args: Any, **_kwargs: Any) -> None:
         raise RuntimeError("SIMULATED_PROCESS_SPAWN_CRASH")
 
     ctrl._launch_worker = _exploding_launch
@@ -780,6 +775,7 @@ def test_pos_01_legitimate_authorized_delegation(approval_svc, tmp_path):
         max_concurrent=1,
         approval_service=approval_svc,
     )
+    assert adapter.approval_service is approval_svc
     task = DelegateTask(
         task_id="W-pos",
         description="Search for ForeignKey references",

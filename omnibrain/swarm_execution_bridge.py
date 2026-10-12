@@ -93,6 +93,7 @@ def dispatch_task_to_runtime(
     parent_delegable: Iterable[str],
     worktree_claim: WorktreeClaim | None = None,
     timeout_seconds: int = 120,
+    approval_service: Any = None,
 ) -> tuple[ExecutionResult | None, AuthorityEnvelope, SwarmController]:
     """Admit a GOD-1 task through the governed execution backend.
 
@@ -112,7 +113,12 @@ def dispatch_task_to_runtime(
         swarm_authority=swarm_authority,
         parent_delegable=parent_delegable,
     )
-    ctrl = SwarmController(swarm_id=swarm_id, repo_path=repo_path, run_dir=run_dir)
+    ctrl = SwarmController(
+        swarm_id=swarm_id,
+        repo_path=repo_path,
+        run_dir=run_dir,
+        approval_service=approval_service,
+    )
     if not envelope.role_allowed:
         task.status = TaskStatus.BLOCKED
         return None, envelope, ctrl

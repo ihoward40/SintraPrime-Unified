@@ -55,9 +55,20 @@ class JarvisReadOnlyWorkflow:
     authority = JARVIS_AUTHORITY
     external_side_effects = EXTERNAL_SIDE_EFFECTS
 
-    def __init__(self, *, repo_path: str, run_dir: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        repo_path: str,
+        run_dir: str | None = None,
+        approval_service: Any = None,
+    ) -> None:
         self._repo_path = repo_path
         self._run_dir = run_dir
+        if approval_service is None:
+            from mission_wiring.approval_service import AuthorityApprovalService
+            self._approval_service = AuthorityApprovalService()
+        else:
+            self._approval_service = approval_service
 
     def execute(
         self,
@@ -74,12 +85,32 @@ class JarvisReadOnlyWorkflow:
             created_by=request.requested_by,
         )
         context: DecisionContext = request.decision_context
+
+        task_id = f"jarvis-{request.request_id}"
+        base_sha = "051e2594c67a805ceacc66ea2a6fc6db9c0bc793"
+        approval_id = None
+        if self._approval_service is not None:
+            binding = self._approval_service.issue(
+                approval_id=f"appr-{request.request_id}",
+                mission_id=str(mission.mission_id),
+                actor_id=task_id,
+                tenant_id=request.tenant_id,
+                capabilities=frozenset({"provider.inference"}),
+                resource_urls=frozenset(),
+                issued_by=request.requested_by,
+                permitted_roles=frozenset({"breaker"}),
+                permitted_workers=frozenset({"ModelReasoningWorker"}),
+                permitted_execution_classes=frozenset({"read_only_inspection"}),
+                context_hash=base_sha,
+            )
+            approval_id = binding.approval_id
+
         task = DelegateTask(
-            task_id=f"jarvis-{request.request_id}",
+            task_id=task_id,
             description=context.objective,
             role="breaker",
             worker_class="ModelReasoningWorker",
-            base_sha="",
+            base_sha=base_sha,
             timeout_seconds=30,
             tenant=request.tenant_id,
             mission=str(mission.mission_id),
@@ -87,6 +118,7 @@ class JarvisReadOnlyWorkflow:
                 "swarm_id": f"jarvis-{mission.mission_id}",
                 "mission_id": str(mission.mission_id),
                 "request_id": str(request.request_id),
+                "approval_id": approval_id,
             },
             task_params={
                 "prompt": context.objective,
@@ -102,7 +134,10 @@ class JarvisReadOnlyWorkflow:
             artifact_filename="artifacts/result.json",
         )
         surface = adapter or HermesSwarmAdapter(
-            repo_path=self._repo_path, run_dir=self._run_dir, max_concurrent=1
+            repo_path=self._repo_path,
+            run_dir=self._run_dir,
+            max_concurrent=1,
+            approval_service=self._approval_service,
         )
         if adapter is not None and not isinstance(adapter, HermesSwarmAdapter):
             raise PermissionError("CANONICAL_HERMES_SWARM_ADAPTER_REQUIRED")

@@ -190,17 +190,62 @@ class ExecutionAdmissionGate:
     """Mandatory gate between GOD-1 and the execution backend.
 
     Admission requires ALL of:
+        APPROVAL_SERVICE_MANDATORY and
+        KNOWN_WORKER_CLASS and
+        INDEPENDENT_AUTHORITY_REVALIDATION and
         MISSION_ACTIVE and SWARM_AUTHORIZED and TASK_READY and
         AGENT_AUTHORIZED and AUTHORITY_VALID and CONTEXT_VALID and
         ROLE_ALLOWED and RESOURCE_ALLOWED and EXECUTION_CLASS_ALLOWED
     Otherwise: DENY. No implicit defaults that expand authority.
     """
 
-    def __init__(self, denied_classes: frozenset[ExecutionClass] = DENIED_EXECUTION_CLASSES) -> None:
+    def __init__(
+        self,
+        approval_service: Any = None,
+        denied_classes: frozenset[ExecutionClass] = DENIED_EXECUTION_CLASSES,
+    ) -> None:
+        self.approval_service = approval_service
         self.denied_classes = denied_classes
 
     def admit(self, request: ExecutionRequest, env: AuthorityEnvelope) -> AdmissionDecision:
         d = AdmissionDecision(allowed=True, reasons=[])
+
+        # Mandatory verifier check at the final execution gate
+        if self.approval_service is None:
+            d.require(False, "APPROVAL_SERVICE_MANDATORY")
+            return d
+
+        # Unknown worker class denial (B-02)
+        from .tool_workers import WORKER_INTRINSIC_CAPABILITIES
+        if request.worker_class not in WORKER_INTRINSIC_CAPABILITIES:
+            d.require(False, f"UNKNOWN_WORKER_CLASS:{request.worker_class}")
+            return d
+
+        intrinsic_caps = WORKER_INTRINSIC_CAPABILITIES[request.worker_class]
+        effective_caps = intrinsic_caps.union(request.task_params.get("capabilities", []))
+
+        # Independent revalidation of authority handle against trusted store
+        if not env.authority_id or not env.authority_id.strip():
+            d.require(False, "AUTHORITY_HANDLE_MISSING")
+            return d
+
+        try:
+            self.approval_service.validate(
+                approval_id=env.authority_id,
+                mission_id=request.mission_id,
+                actor_id=request.agent_id,
+                tenant_id=request.task_params.get("tenant", "default"),
+                capabilities=effective_caps,
+                resource_urls=frozenset(request.read_paths + request.write_paths),
+                role=request.role_id,
+                worker_class=request.worker_class,
+                effect_class=request.effect_class,
+                context_hash=request.context_package_id,
+            )
+        except Exception as exc:
+            code = getattr(exc, "code", "INVALID")
+            d.require(False, f"AUTHORITY_REVALIDATION_FAILED:{code}")
+            return d
 
         # Authority envelope conditions (fail-closed)
         d.require(env.mission_active, "MISSION_NOT_ACTIVE")

@@ -117,10 +117,12 @@ class SwarmController:
         repo_path: str,
         run_dir: str | None = None,
         max_concurrent: int = 5,
+        approval_service: Any = None,
     ) -> None:
         self.swarm_id = swarm_id
         self.repo_path = Path(repo_path).resolve()
         self.max_concurrent = max_concurrent
+        self.approval_service = approval_service
 
         # Determine run directory
         if run_dir is None:
@@ -140,7 +142,7 @@ class SwarmController:
         self._supervisor: Supervisor | None = None
 
         # GOD-1X governed execution layer
-        self.gate = ExecutionAdmissionGate()
+        self.gate = ExecutionAdmissionGate(approval_service=self.approval_service)
         self.worktree_registry = WorktreeRegistry()
         self.execution_results: dict[str, ExecutionResult] = {}
         self._governed_contexts: dict[str, dict] = {}
@@ -293,8 +295,47 @@ class SwarmController:
         }
         self._governed_contexts[request.agent_id] = governed_context
         self._governed_requests[request.agent_id] = request
-        self._launch_worker(spec, state, governed_context)
-        result.status = "RUNNING"
+
+        # Atomic single-use approval consumption under mutex/write transaction
+        from .tool_workers import WORKER_INTRINSIC_CAPABILITIES
+        intrinsic_caps = WORKER_INTRINSIC_CAPABILITIES.get(request.worker_class, frozenset())
+        effective_caps = intrinsic_caps.union(request.task_params.get("capabilities", []))
+
+        try:
+            self.gate.approval_service.consume(
+                approval_id=envelope.authority_id,
+                mission_id=request.mission_id,
+                actor_id=request.agent_id,
+                tenant_id=request.task_params.get("tenant", "default"),
+                capabilities=effective_caps,
+                resource_urls=frozenset(request.read_paths + request.write_paths),
+                role=request.role_id,
+                worker_class=request.worker_class,
+                effect_class=request.effect_class,
+                context_hash=request.context_package_id,
+            )
+        except Exception as exc:
+            code = getattr(exc, "code", "DENIED")
+            result.status = "DENIED"
+            result.rejection_reasons = [f"APPROVAL_CONSUMPTION_FAILED:{code}"]
+            result.severity = "security"
+            self._denied_count += 1
+            self.execution_results[execution_id] = result
+            self._record_governed_receipt(request, envelope, result)
+            return result
+
+        try:
+            self._launch_worker(spec, state, governed_context)
+            result.status = "RUNNING"
+        except Exception as exc:
+            state.status = WorkerStatus.FAILED
+            result.status = "FAILED"
+            result.rejection_reasons = [f"WORKER_LAUNCH_CRASH:{exc}"]
+            result.severity = "material"
+            self.execution_results[execution_id] = result
+            self._record_governed_receipt(request, envelope, result)
+            return result
+
         self.execution_results[execution_id] = result
         self._record_governed_receipt(request, envelope, result)
         return result

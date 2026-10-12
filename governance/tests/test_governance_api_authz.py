@@ -246,17 +246,31 @@ def test_stop_scope_without_clear_scope_denied_on_clear(client: TestClient) -> N
 
 
 def test_revoked_jti_denied(client: TestClient) -> None:
+    """Revoked-token regression: a blocklisted JTI is rejected with HTTP 401.
+
+    NOTE: the blocklist is IN-MEMORY (session_manager._memory_blocklist) — it is
+    NOT restart-durable and NOT cross-process durable. Durable revocation is the
+    G1 design scope; this test asserts the existing portal-parity enforcement
+    only. Blocklist state is explicitly restored so the test cannot leak state.
+    """
     import asyncio
 
     from portal.auth.jwt_handler import decode_access_token
-    from portal.auth.session_manager import blocklist_jti
+    from portal.auth.session_manager import _memory_blocklist, blocklist_jti
 
     token = _token()
     jti = decode_access_token(token).get("jti")
-    if jti:
+    assert jti, "expected the minted token to carry a JTI"
+    try:
         asyncio.run(blocklist_jti(jti))
-    response = client.get("/governance/dashboard", headers=_auth(token))
-    assert response.status_code == 401
+        assert jti in _memory_blocklist  # blocklist state was recorded
+        response = client.get("/governance/dashboard", headers=_auth(token))
+        assert response.status_code == 401
+    finally:
+        # Explicit test isolation: discard the blocklist entry regardless of
+        # outcome so no other test can observe this test's state.
+        _memory_blocklist.discard(jti)
+    assert jti not in _memory_blocklist  # state restored
 
 
 # ---------------------------------------------------------------------------

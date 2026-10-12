@@ -5,11 +5,12 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any
 
-from fastapi import APIRouter, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from legal_authority.constants import REVIEWER_ROLES
 from legal_authority.review_workflow import ReviewWorkflowError
+from portal.auth.rbac import CurrentUser, Role, get_current_user
 from portal.services.jurisdiction_rule_service import JurisdictionRuleService
 
 router = APIRouter(tags=["jurisdictions"])
@@ -66,15 +67,20 @@ class UCCFilingEvaluationRequest(BaseModel):
     duration_exception: str | None = None
 
 
+_PORTAL_REVIEWER_ROLES = {
+    Role.SUPER_ADMIN: "PLATFORM_ADMIN",
+    Role.FIRM_ADMIN: "PLATFORM_ADMIN",
+    Role.ATTORNEY: "LICENSED_ATTORNEY",
+}
+
+
 def _authorized_actor(
-    x_reviewer_role: str | None = Header(default=None),
-    x_reviewer_identity: str | None = Header(default=None),
+    current_user: CurrentUser = Depends(get_current_user),
 ) -> tuple[str, str]:
-    if not x_reviewer_role or not x_reviewer_identity:
-        raise HTTPException(status_code=403, detail="review authorization headers required")
-    if x_reviewer_role not in REVIEWER_ROLES:
-        raise HTTPException(status_code=403, detail="invalid reviewer role")
-    return x_reviewer_role, x_reviewer_identity
+    reviewer_role = _PORTAL_REVIEWER_ROLES.get(current_user.role)
+    if reviewer_role not in REVIEWER_ROLES:
+        raise HTTPException(status_code=403, detail="authenticated user is not an authorized reviewer")
+    return reviewer_role, current_user.user_id
 
 
 @router.get("/federal/domains")
@@ -129,10 +135,8 @@ async def get_jurisdiction_coverage(code: str):
 @router.get("/jurisdictions/{code}/review-queue")
 async def get_review_queue(
     code: str,
-    x_reviewer_role: str | None = Header(default=None),
-    x_reviewer_identity: str | None = Header(default=None),
+    _actor: tuple[str, str] = Depends(_authorized_actor),
 ):
-    _authorized_actor(x_reviewer_role, x_reviewer_identity)
     queue = service.review_queue(code)
     if queue is None:
         raise HTTPException(status_code=404, detail="unsupported jurisdiction")
@@ -203,10 +207,9 @@ async def get_legal_authority(authority_id: str):
 async def refresh_authority_metadata(
     authority_id: str,
     payload: RefreshMetadataRequest,
-    x_reviewer_role: str | None = Header(default=None),
-    x_reviewer_identity: str | None = Header(default=None),
+    actor: tuple[str, str] = Depends(_authorized_actor),
 ):
-    role, identity = _authorized_actor(x_reviewer_role, x_reviewer_identity)
+    role, identity = actor
     try:
         return service.refresh_authority_metadata(
             authority_id,
@@ -235,10 +238,9 @@ async def compare_legal_rules(
 @router.post("/ucc-filings/evaluate")
 async def evaluate_ucc_filing(
     payload: UCCFilingEvaluationRequest,
-    x_reviewer_role: str | None = Header(default=None),
-    x_reviewer_identity: str | None = Header(default=None),
+    actor: tuple[str, str] = Depends(_authorized_actor),
 ):
-    role, identity = _authorized_actor(x_reviewer_role, x_reviewer_identity)
+    role, identity = actor
     try:
         return service.evaluate_ucc_filing(payload.model_dump(), role, identity)
     except ValueError as exc:
@@ -257,10 +259,9 @@ async def get_ucc_filing_evaluation(evaluation_id: str):
 async def submit_rule_review(
     rule_id: str,
     payload: SubmitReviewRequest,
-    x_reviewer_role: str | None = Header(default=None),
-    x_reviewer_identity: str | None = Header(default=None),
+    actor: tuple[str, str] = Depends(_authorized_actor),
 ):
-    role, identity = _authorized_actor(x_reviewer_role, x_reviewer_identity)
+    role, identity = actor
     try:
         return service.submit_review(rule_id, role, identity, payload.findings)
     except ReviewWorkflowError as exc:
@@ -271,10 +272,9 @@ async def submit_rule_review(
 async def record_rule_review(
     rule_id: str,
     payload: RecordReviewRequest,
-    x_reviewer_role: str | None = Header(default=None),
-    x_reviewer_identity: str | None = Header(default=None),
+    actor: tuple[str, str] = Depends(_authorized_actor),
 ):
-    role, identity = _authorized_actor(x_reviewer_role, x_reviewer_identity)
+    role, identity = actor
     try:
         return service.record_review(rule_id, role, identity, payload.model_dump())
     except ReviewWorkflowError as exc:
@@ -295,10 +295,9 @@ async def list_rule_reviews(rule_id: str):
 async def submit_rule_challenge(
     rule_id: str,
     payload: ChallengeRequest,
-    x_reviewer_role: str | None = Header(default=None),
-    x_reviewer_identity: str | None = Header(default=None),
+    actor: tuple[str, str] = Depends(_authorized_actor),
 ):
-    role, identity = _authorized_actor(x_reviewer_role, x_reviewer_identity)
+    role, identity = actor
     try:
         return service.submit_challenge(rule_id, role, identity, payload.model_dump())
     except ReviewWorkflowError as exc:

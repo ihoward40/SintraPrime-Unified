@@ -9,7 +9,33 @@ from legal_authority.comparison import CONFLICT_OF_LAWS_WARNING, JurisdictionCom
 from legal_authority.engine import RuleEvaluationEngine
 from legal_authority.repository import LegalAuthorityRepository
 from legal_authority.ucc_filing import UCCFilingAssessmentService
+from portal.auth.jwt_handler import create_access_token
 from portal.main import create_app
+
+
+def _session_headers(user_id: str, role: str) -> dict[str, str]:
+    """Build a verified JWT bearer header for the given role.
+
+    Reviewer identity is derived exclusively from verified JWT claims; the
+    legacy X-Reviewer-* headers are no longer trusted.
+    """
+    token = create_access_token(
+        user_id=user_id,
+        tenant_id="tenant-1",
+        role=role,
+        permissions=[],
+    )
+    return {"Authorization": f"Bearer {token}"}
+
+
+def _attorney_headers(user_id: str = "portal-attorney-1") -> dict[str, str]:
+    """Authorized reviewer credentials (attorney) -> 200 on reviewer routes."""
+    return _session_headers(user_id, "ATTORNEY")
+
+
+def _paralegal_headers(user_id: str = "portal-paralegal-1") -> dict[str, str]:
+    """Authenticated but non-reviewer credentials -> 403 on reviewer routes."""
+    return _session_headers(user_id, "PARALEGAL")
 
 
 def test_governed_jurisdiction_packages_validate():
@@ -234,30 +260,28 @@ def test_phase_2b_api_new_states_comparison_and_ucc_endpoints():
     )
     assert comparison.status_code == 200
     assert comparison.json()["conflict_of_laws_warning"] == CONFLICT_OF_LAWS_WARNING
-    denied = c.post(
+    payload = {
+        "filing_jurisdiction": "NY",
+        "filing_date": "2022-01-15",
+        "debtor_type": "trust",
+        "debtor_name": "Trust",
+        "collateral_summary": "equipment",
+    }
+    # No or invalid JWT -> 401 (authentication missing).
+    denied = c.post("/ucc-filings/evaluate", json=payload)
+    assert denied.status_code == 401
+    # Valid JWT, insufficient reviewer permission -> 403 (authenticated, unauthorized).
+    forbidden = c.post(
         "/ucc-filings/evaluate",
-        json={
-            "filing_jurisdiction": "NY",
-            "filing_date": "2022-01-15",
-            "debtor_type": "trust",
-            "debtor_name": "Trust",
-            "collateral_summary": "equipment",
-        },
+        headers=_paralegal_headers(),
+        json=payload,
     )
-    assert denied.status_code == 403
+    assert forbidden.status_code == 403
+    # Valid reviewer JWT (licensed attorney) -> 200.
     created = c.post(
         "/ucc-filings/evaluate",
-        headers={
-            "X-Reviewer-Role": "LEGAL_RESEARCHER",
-            "X-Reviewer-Identity": "researcher@example.test",
-        },
-        json={
-            "filing_jurisdiction": "NY",
-            "filing_date": "2022-01-15",
-            "debtor_type": "trust",
-            "debtor_name": "Trust",
-            "collateral_summary": "equipment",
-        },
+        headers=_attorney_headers(),
+        json=payload,
     )
     assert created.status_code == 200
     fetched = c.get(f"/ucc-filings/{created.json()['evaluation_id']}")

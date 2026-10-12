@@ -16,8 +16,34 @@ from legal_authority.constants import (
     SUPPORTED_JURISDICTIONS,
 )
 from legal_authority.repository import LegalAuthorityRepository
+from portal.auth.jwt_handler import create_access_token
 from portal.main import create_app
 from portal.services.jurisdiction_rule_service import JurisdictionRuleService
+
+
+def _session_headers(user_id: str, role: str) -> dict[str, str]:
+    """Build a verified JWT bearer header for the given role.
+
+    Reviewer identity is derived exclusively from verified JWT claims; the
+    legacy X-Reviewer-* headers are no longer trusted.
+    """
+    token = create_access_token(
+        user_id=user_id,
+        tenant_id="tenant-1",
+        role=role,
+        permissions=[],
+    )
+    return {"Authorization": f"Bearer {token}"}
+
+
+def _attorney_headers(user_id: str = "portal-attorney-1") -> dict[str, str]:
+    """Authorized reviewer credentials (attorney) -> 200 on reviewer routes."""
+    return _session_headers(user_id, "ATTORNEY")
+
+
+def _paralegal_headers(user_id: str = "portal-paralegal-1") -> dict[str, str]:
+    """Authenticated but non-reviewer credentials -> 403 on reviewer routes."""
+    return _session_headers(user_id, "PARALEGAL")
 
 
 def _pkg_root() -> Path:
@@ -347,14 +373,20 @@ def test_ct_conflicts_endpoint():
 
 
 def test_de_review_queue_requires_auth():
-    denied = client().get("/jurisdictions/DE/review-queue")
-    assert denied.status_code == 403
-    allowed = client().get(
+    c = client()
+    # No or invalid JWT -> 401 (authentication missing).
+    denied = c.get("/jurisdictions/DE/review-queue")
+    assert denied.status_code == 401
+    # Valid JWT, insufficient reviewer permission -> 403 (authenticated, unauthorized).
+    forbidden = c.get(
         "/jurisdictions/DE/review-queue",
-        headers={
-            "X-Reviewer-Role": "LICENSED_ATTORNEY",
-            "X-Reviewer-Identity": "attorney@example.test",
-        },
+        headers=_paralegal_headers(),
+    )
+    assert forbidden.status_code == 403
+    # Valid reviewer JWT -> 200.
+    allowed = c.get(
+        "/jurisdictions/DE/review-queue",
+        headers=_attorney_headers(),
     )
     assert allowed.status_code == 200
     body = allowed.json()
@@ -363,14 +395,20 @@ def test_de_review_queue_requires_auth():
 
 
 def test_ct_review_queue_requires_auth():
-    denied = client().get("/jurisdictions/CT/review-queue")
-    assert denied.status_code == 403
-    allowed = client().get(
+    c = client()
+    # No or invalid JWT -> 401 (authentication missing).
+    denied = c.get("/jurisdictions/CT/review-queue")
+    assert denied.status_code == 401
+    # Valid JWT, insufficient reviewer permission -> 403 (authenticated, unauthorized).
+    forbidden = c.get(
         "/jurisdictions/CT/review-queue",
-        headers={
-            "X-Reviewer-Role": "LICENSED_ATTORNEY",
-            "X-Reviewer-Identity": "attorney@example.test",
-        },
+        headers=_paralegal_headers(),
+    )
+    assert forbidden.status_code == 403
+    # Valid reviewer JWT -> 200.
+    allowed = c.get(
+        "/jurisdictions/CT/review-queue",
+        headers=_attorney_headers(),
     )
     assert allowed.status_code == 200
     body = allowed.json()
@@ -384,7 +422,17 @@ def test_ct_review_queue_requires_auth():
 
 
 def test_de_authority_retrieval():
-    response = client().get("/legal-authorities/DE-TRUST-DAPT-4901")
+    c = client()
+    # No or invalid JWT -> 401 (authentication required, enforced by middleware).
+    assert c.get("/legal-authorities/DE-TRUST-DAPT-4901").status_code == 401
+    # Valid JWT -> 200. This route is authentication-only (NOT reviewer-gated):
+    # the middleware enforces 401 without a JWT, but any authenticated principal
+    # may retrieve a verified authority. There is no reviewer-role 403 on this
+    # route, so a valid JWT (even PARALEGAL) is the authenticated success case.
+    response = c.get(
+        "/legal-authorities/DE-TRUST-DAPT-4901",
+        headers=_paralegal_headers(),
+    )
     assert response.status_code == 200
     body = response.json()
     assert body["jurisdiction"] == "DE"
@@ -392,7 +440,16 @@ def test_de_authority_retrieval():
 
 
 def test_ct_authority_retrieval():
-    response = client().get("/legal-authorities/CT-TRUST-CREDITOR-45478")
+    c = client()
+    # No or invalid JWT -> 401 (authentication required, enforced by middleware).
+    assert c.get("/legal-authorities/CT-TRUST-CREDITOR-45478").status_code == 401
+    # Valid JWT -> 200. Authentication-only route (NOT reviewer-gated): any
+    # authenticated principal may retrieve a verified authority. There is no
+    # reviewer-role 403 on this route, so a valid JWT is the success case.
+    response = c.get(
+        "/legal-authorities/CT-TRUST-CREDITOR-45478",
+        headers=_paralegal_headers(),
+    )
     assert response.status_code == 200
     body = response.json()
     assert body["jurisdiction"] == "CT"

@@ -22,6 +22,24 @@ from governance.risk_types import AgentStatus
 
 logger = logging.getLogger(__name__)
 
+# B2 (SP-AGENT-PARLIAMENT-001): explicit read-only capability allowlist.
+# read_only_mode permits ONLY these enumerated read-class operations; every
+# other action — including privileged mutations (set_/grant_/modify_/rotate_/
+# connect_/install_/approve_/authorize_/revoke_/register_/deploy_) and any
+# unknown verb — is blocked regardless of naming (capability-based containment,
+# replacing the bypassable verb-prefix blocklist).
+_READ_ONLY_ALLOWED_ACTIONS = frozenset(
+    {
+        "read_data",
+        "search_database",
+        "list_records",
+        "get_status",
+        "validate_data",
+        "log_event",
+        "internal_calculation",
+    }
+)
+
 
 class InterventionController:
     """
@@ -284,17 +302,11 @@ class InterventionController:
             guardrails = list(self._guardrails)
 
         for rule in guardrails:
-            if rule == "read_only_mode" and action not in (
-                "read_data",
-                "search_database",
-                "list_records",
-                "get_status",
-            ):
-                if action.startswith(
-                    ("send_", "update_", "delete_", "publish_", "sign_", "file_", "create_")
-                ):
-                    logger.warning("Guardrail 'read_only_mode' blocked action '%s'", action)
-                    return False
+            if rule == "read_only_mode" and action not in _READ_ONLY_ALLOWED_ACTIONS:
+                # B2: allowlist semantics — the working-directory sandbox of the
+                # read-only guardrail is the enumerated capability list itself.
+                logger.warning("Guardrail 'read_only_mode' blocked action '%s'", action)
+                return False
             if rule == "no_external_api_calls" and "external" in action:
                 logger.warning("Guardrail 'no_external_api_calls' blocked action '%s'", action)
                 return False

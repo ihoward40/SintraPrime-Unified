@@ -7,12 +7,42 @@ from fastapi.testclient import TestClient
 
 import portal.routers.jurisdictions as jurisdiction_router
 from legal_authority.repository import LegalAuthorityRepository
+from portal.auth.jwt_handler import create_access_token
+from portal.auth.rbac import CurrentUser
 from portal.main import create_app
 from portal.services.jurisdiction_rule_service import JurisdictionRuleService
 
 
 def client():
     return TestClient(create_app())
+
+
+def _session_headers(user_id: str, role: str) -> dict[str, str]:
+    token = create_access_token(
+        user_id=user_id,
+        tenant_id="tenant-1",
+        role=role,
+        permissions=[],
+    )
+    return {"Authorization": f"Bearer {token}"}
+
+
+def _attorney_headers(user_id: str = "portal-attorney-1") -> dict[str, str]:
+    return _session_headers(user_id, "ATTORNEY")
+
+
+def test_authorized_actor_uses_verified_user_claims_not_headers():
+    actor = jurisdiction_router._authorized_actor(
+        CurrentUser(
+            {
+                "sub": "verified-user-1",
+                "tenant_id": "tenant-1",
+                "role": "ATTORNEY",
+                "permissions": [],
+            }
+        )
+    )
+    assert actor == ("LICENSED_ATTORNEY", "verified-user-1")
 
 
 def test_jurisdiction_list_and_detail():
@@ -76,7 +106,7 @@ def test_invalid_rule_id():
 
 
 def test_authority_retrieval():
-    response = client().get("/legal-authorities/NJ-UTC-2015-276")
+    response = client().get("/legal-authorities/NJ-UTC-2015-276", headers=_attorney_headers())
     assert response.status_code == 200
     body = response.json()
     assert body["citation"].startswith("P.L.2015")
@@ -100,7 +130,7 @@ def test_compare_endpoint_conflict_and_provenance():
 
 def test_containment_not_returned_as_verified_authority_or_active_rule():
     c = client()
-    authority = c.get("/legal-authorities/NJ-PRIVATE-UNSUPPORTED-BANK-SIGNATURE-CARD")
+    authority = c.get("/legal-authorities/NJ-PRIVATE-UNSUPPORTED-BANK-SIGNATURE-CARD", headers=_attorney_headers())
     assert authority.status_code == 200
     assert authority.json()["source_classification"] == "UNVERIFIED_PRIVATE_LAW_CLAIM"
     assert authority.json()["verification_status"] == "UNVERIFIED"
@@ -125,11 +155,12 @@ def test_phase_2a_review_queue_requires_authorization(tmp_path):
     try:
         c = client()
         denied = c.get("/jurisdictions/NJ/review-queue")
-        assert denied.status_code == 403
+        assert denied.status_code == 401
 
         allowed = c.get(
             "/jurisdictions/NJ/review-queue",
             headers={
+                **_attorney_headers(),
                 "X-Reviewer-Role": "LICENSED_ATTORNEY",
                 "X-Reviewer-Identity": "attorney@example.test",
             },
@@ -138,6 +169,31 @@ def test_phase_2a_review_queue_requires_authorization(tmp_path):
         body = allowed.json()
         assert body["pending_rules"]
         assert "stale_authorities" in body
+    finally:
+        jurisdiction_router.service = original
+
+
+def test_phase_2a_review_queue_authenticated_but_unauthorized(tmp_path):
+    original = jurisdiction_router.service
+    jurisdiction_router.service = _temp_service(tmp_path)
+    try:
+        c = client()
+        # Authenticated session whose role is NOT an authorized reviewer:
+        # get_current_user() passes (valid JWT) but _authorized_actor() rejects
+        # the role with 403 -- distinct from the 401 returned for no/invalid auth.
+        unauthorized = c.get(
+            "/jurisdictions/NJ/review-queue",
+            headers=_session_headers("portal-paralegal-1", "PARALEGAL"),
+        )
+        assert unauthorized.status_code == 403
+        assert "not an authorized reviewer" in unauthorized.json()["detail"]
+
+        # A VIEWER (lowest trust) is likewise authenticated-but-unauthorized.
+        viewer = c.get(
+            "/jurisdictions/NJ/review-queue",
+            headers=_session_headers("portal-viewer-1", "VIEWER"),
+        )
+        assert viewer.status_code == 403
     finally:
         jurisdiction_router.service = original
 
@@ -151,11 +207,12 @@ def test_phase_2a_review_and_challenge_write_endpoints_are_controlled(tmp_path):
             "/legal-rules/NJ-TRUST-CERTIFICATION/submit-review",
             json={"findings": "submit"},
         )
-        assert no_auth.status_code == 403
+        assert no_auth.status_code == 401
 
         submit = c.post(
             "/legal-rules/NJ-TRUST-CERTIFICATION/submit-review",
             headers={
+                **_attorney_headers("portal-researcher-1"),
                 "X-Reviewer-Role": "LEGAL_RESEARCHER",
                 "X-Reviewer-Identity": "researcher@example.test",
             },
@@ -167,16 +224,18 @@ def test_phase_2a_review_and_challenge_write_endpoints_are_controlled(tmp_path):
         non_attorney = c.post(
             "/legal-rules/NJ-TRUST-CERTIFICATION/reviews",
             headers={
+                **_session_headers("portal-paralegal-1", "PARALEGAL"),
                 "X-Reviewer-Role": "LEGAL_RESEARCHER",
                 "X-Reviewer-Identity": "researcher@example.test",
             },
             json={"review_status": "APPROVED", "findings": "approve", "digital_signature": "sig"},
         )
-        assert non_attorney.status_code == 400
+        assert non_attorney.status_code == 403
 
         challenge = c.post(
             "/legal-rules/NJ-UCC-DEBTOR-NAMING-TRUSTS/challenges",
             headers={
+                **_attorney_headers("portal-attorney-3"),
                 "X-Reviewer-Role": "LICENSED_ATTORNEY",
                 "X-Reviewer-Identity": "attorney@example.test",
             },
@@ -205,6 +264,7 @@ def test_phase_2a_stale_authority_and_refresh_endpoint(tmp_path):
         refreshed = c.post(
             "/legal-authorities/NJ-UTC-2015-276/refresh-metadata",
             headers={
+                **_attorney_headers("portal-researcher-2"),
                 "X-Reviewer-Role": "LEGAL_RESEARCHER",
                 "X-Reviewer-Identity": "researcher@example.test",
             },

@@ -58,7 +58,7 @@ jobs:
             --receipt artifacts/ci/portal-applicability.json
       - name: Run portal Tier-2 lane (certify wrapper)
         run: |
-          case "\${{ steps.applicability.outputs.state }}" in
+          case "${{ steps.applicability.outputs.state }}" in
             applicable)
               python scripts/certify.py --target portal --name ci-portal-lane
               ;;

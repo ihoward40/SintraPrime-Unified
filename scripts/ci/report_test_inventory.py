@@ -103,7 +103,11 @@ def parse_collect_output(text: str) -> dict:
             normalized_path = stripped.replace("\\", "/")
             # Warning frames from pytest internals/site-packages also look like
             # per-file counts; never let them inflate the collection floor.
-            if "/_pytest/" not in normalized_path and "site-packages/" not in normalized_path:
+            warning_prefixes = ("_pytest/", "pytest/", "site-packages/")
+            is_internal_warning = normalized_path.startswith(warning_prefixes) or any(
+                f"/{prefix}" in normalized_path for prefix in warning_prefixes
+            )
+            if not is_internal_warning:
                 per_file += int(file_match.group(1))
     collected = summary if summary is not None else per_file
     return {

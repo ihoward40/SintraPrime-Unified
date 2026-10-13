@@ -176,7 +176,7 @@ def test_main_execute_records_outcomes_and_returns_for_policy_step(monkeypatch, 
         "xpassed": 0,
         "deselected": 0,
     })
-    monkeypatch.setattr(mod, "_git", lambda *args: "f" * 40)
+    monkeypatch.setattr(mod, "_git", lambda *_args: "f" * 40)
     out = tmp_path / "receipt.json"
     assert mod.main(["--out", str(out), "--execute"]) == 0
     receipt = json.loads(out.read_text(encoding="utf-8"))

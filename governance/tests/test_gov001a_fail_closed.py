@@ -30,9 +30,8 @@ from governance.risk_types import ApprovalStatus, RiskLevel
 
 def _temp_db_path() -> str:
     """Create a secure temporary database pathname for the test subject."""
-    handle = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
-    handle.close()
-    return handle.name
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as handle:
+        return handle.name
 
 # ---------------------------------------------------------------------------
 # Fixtures

@@ -1,0 +1,108 @@
+name: Governance Policy Enforcement
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gov-001a-regression:
+    name: gov-001a-regression
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Resolve subject binding
+        id: subject
+        shell: bash
+        run: |
+          echo "commit=\${{ github.sha }}" >> "\$GITHUB_OUTPUT"
+          echo "tree=\$(git rev-parse 'HEAD^{tree}')" >> "\$GITHUB_OUTPUT"
+      - name: Measure and execute GOV-001A
+        run: |
+          python scripts/ci/report_test_inventory.py \
+            --pytest-args "governance/tests/test_gov001a_fail_closed.py" \
+            --out artifacts/ci/gov-001a-inventory.json \
+            --commit "\${{ steps.subject.outputs.commit }}" \
+            --tree "\${{ steps.subject.outputs.tree }}" \
+            --execute
+      - name: Assert GOV-001A floor
+        run: |
+          python scripts/ci/assert_test_floor.py \
+            --receipt artifacts/ci/gov-001a-inventory.json \
+            --expect-commit "\${{ steps.subject.outputs.commit }}" \
+            --expect-tree "\${{ steps.subject.outputs.tree }}" \
+            --floor 37 \
+            --name gov-001a-regression
+      - name: Upload GOV-001A receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gov-001a-regression-inventory
+          path: artifacts/ci/gov-001a-inventory.json
+          if-no-files-found: ignore
+
+  governance-security-regression:
+    name: governance-security-regression
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: gov001a
+            suite: governance/tests/test_gov001a_fail_closed.py
+            floor: 37
+          - name: governance
+            suite: governance/tests/test_governance.py
+            floor: 100
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Resolve subject binding
+        id: subject
+        shell: bash
+        run: |
+          echo "commit=\${{ github.sha }}" >> "\$GITHUB_OUTPUT"
+          echo "tree=\$(git rev-parse 'HEAD^{tree}')" >> "\$GITHUB_OUTPUT"
+      - name: Measure and execute governance suite (\${{ matrix.name }})
+        run: |
+          python scripts/ci/report_test_inventory.py \
+            --pytest-args "\${{ matrix.suite }}" \
+            --out "artifacts/ci/\${{ matrix.name }}-inventory.json" \
+            --commit "\${{ steps.subject.outputs.commit }}" \
+            --tree "\${{ steps.subject.outputs.tree }}" \
+            --execute
+      - name: Assert governance floor (\${{ matrix.name }})
+        run: |
+          python scripts/ci/assert_test_floor.py \
+            --receipt "artifacts/ci/\${{ matrix.name }}-inventory.json" \
+            --expect-commit "\${{ steps.subject.outputs.commit }}" \
+            --expect-tree "\${{ steps.subject.outputs.tree }}" \
+            --floor "\${{ matrix.floor }}" \
+            --name "\${{ matrix.name }}"
+      - name: Upload governance receipt (\${{ matrix.name }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: governance-\${{ matrix.name }}-inventory
+          path: "artifacts/ci/\${{ matrix.name }}-inventory.json"
+          if-no-files-found: ignore

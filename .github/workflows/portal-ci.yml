@@ -9,23 +9,12 @@ name: Portal Tier-2 Lane
 on:
   push:
     branches: [ main, dev, "fix/**", "feat/**" ]
-    paths:
-      - "portal/**"
-      - "pyproject.toml"
-      - "requirements.txt"
-      - "conftest.py"
-      - "scripts/certify.py"
-      - ".github/workflows/portal-ci.yml"
   pull_request:
     branches: [ main ]
-    paths:
-      - "portal/**"
-      - "pyproject.toml"
-      - "requirements.txt"
-      - "conftest.py"
-      - "scripts/certify.py"
-      - ".github/workflows/portal-ci.yml"
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   portal-tier2:
@@ -49,6 +38,8 @@ jobs:
       DATABASE_URL: postgresql+asyncpg://sintraprime:sintraprime@localhost:5432/sintraprime_unified
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -57,8 +48,28 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+      - name: Determine portal applicability
+        id: applicability
+        run: |
+          mkdir -p artifacts/ci
+          python scripts/ci/applicability_gate.py \
+            --area portal \
+            --paths portal/** pyproject.toml requirements.txt conftest.py scripts/certify.py .github/workflows/portal-ci.yml \
+            --receipt artifacts/ci/portal-applicability.json
       - name: Run portal Tier-2 lane (certify wrapper)
-        run: python scripts/certify.py --target portal --name ci-portal-lane
+        run: |
+          case "\${{ steps.applicability.outputs.state }}" in
+            applicable)
+              python scripts/certify.py --target portal --name ci-portal-lane
+              ;;
+            not_applicable_with_proof)
+              echo "PASS: portal lane not applicable with machine-checkable proof"
+              ;;
+            *)
+              echo "FAIL: portal applicability is unknown" >&2
+              exit 1
+              ;;
+          esac
       - name: Upload portal lane receipt
         if: always()
         uses: actions/upload-artifact@v4

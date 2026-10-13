@@ -27,6 +27,13 @@ from governance.governance_engine import GovernanceEngine
 from governance.risk_assessor import RiskAssessor
 from governance.risk_types import ApprovalStatus, RiskLevel
 
+
+def _temp_db_path() -> str:
+    """Create a secure temporary database pathname for the test subject."""
+    handle = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+    handle.close()
+    return handle.name
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -47,7 +54,7 @@ def gate() -> ApprovalGate:
 
 @pytest.fixture
 def engine() -> GovernanceEngine:
-    tmp_db = tempfile.mktemp(suffix=".db")
+    tmp_db = _temp_db_path()
     return GovernanceEngine(db_path=tmp_db, approval_timeout_seconds=1)
 
 
@@ -290,7 +297,7 @@ class TestMinRiskOrgThresholdReconciliation:
         # resulting requires_approval must be True, not just
         # RiskLevel.MEDIUM.requires_approval (which is False — only
         # HIGH/CRITICAL are True by that hardcoded property alone).
-        engine = GovernanceEngine(db_path=tempfile.mktemp(suffix=".db"), approval_timeout_seconds=1)
+        engine = GovernanceEngine(db_path=_temp_db_path(), approval_timeout_seconds=1)
         engine.risk_assessor = RiskAssessor(org_risk_threshold=RiskLevel.MEDIUM)
         audit = _CapturingAudit()
         engine.audit_trail = audit
@@ -307,7 +314,7 @@ class TestMinRiskOrgThresholdReconciliation:
         # skipped because "nothing changed". With org_risk_threshold=LOW,
         # every risk level (including the unchanged LOW) must require
         # approval.
-        engine = GovernanceEngine(db_path=tempfile.mktemp(suffix=".db"), approval_timeout_seconds=1)
+        engine = GovernanceEngine(db_path=_temp_db_path(), approval_timeout_seconds=1)
         engine.risk_assessor = RiskAssessor(org_risk_threshold=RiskLevel.LOW)
         risk = engine.assess_effective_risk("read_data", {}, min_risk=RiskLevel.LOW)
         assert risk.risk_level == RiskLevel.LOW
@@ -317,7 +324,7 @@ class TestMinRiskOrgThresholdReconciliation:
         # Regression guard: an ordinary HIGH-risk action with its own
         # hardcoded requires_approval=True must remain unaffected by the
         # reconciliation change.
-        engine = GovernanceEngine(db_path=tempfile.mktemp(suffix=".db"), approval_timeout_seconds=1)
+        engine = GovernanceEngine(db_path=_temp_db_path(), approval_timeout_seconds=1)
         risk = engine.assess_effective_risk("send_payment", {}, min_risk=None)
         assert risk.requires_approval is True
 
@@ -383,7 +390,7 @@ class TestPostActionAuditPreservesEffectiveRisk:
         # of "read_data" in isolation (which would silently drop back to
         # LOW, losing the floor).
         audit = _CapturingAudit()
-        engine = GovernanceEngine(db_path=tempfile.mktemp(suffix=".db"), approval_timeout_seconds=1)
+        engine = GovernanceEngine(db_path=_temp_db_path(), approval_timeout_seconds=1)
         engine.audit_trail = audit
         engine.approval_gate.auto_approve("read_data")
 
@@ -401,7 +408,7 @@ class TestPostActionAuditPreservesEffectiveRisk:
         # Same guarantee must hold for the "failure" audit entry when the
         # governed function raises.
         audit = _CapturingAudit()
-        engine = GovernanceEngine(db_path=tempfile.mktemp(suffix=".db"), approval_timeout_seconds=1)
+        engine = GovernanceEngine(db_path=_temp_db_path(), approval_timeout_seconds=1)
         engine.audit_trail = audit
         engine.approval_gate.auto_approve("read_data")
 

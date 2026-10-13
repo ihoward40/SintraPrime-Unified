@@ -26,7 +26,7 @@ jobs:
           mkdir -p artifacts/ci
           python scripts/ci/applicability_gate.py \
             --area docker \
-            --paths Dockerfile requirements.txt portal/** alembic.ini .dockerignore .github/workflows/docker-build.yml \
+            --paths Dockerfile requirements.txt 'portal/**' alembic.ini .dockerignore .github/workflows/docker-build.yml \
             --receipt artifacts/ci/docker-applicability.json
 
       - name: Build canonical portal image without runtime secrets

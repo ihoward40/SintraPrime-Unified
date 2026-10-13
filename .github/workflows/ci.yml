@@ -343,3 +343,56 @@ jobs:
           "${RUNNER_TEMP}/sintraprime-safety-venv/bin/safety" check -r requirements.txt
       - name: Security lint (bandit — baseline mode)
         run: bandit -r . -x tests/,portal/tests/ -ll --baseline .bandit-baseline.json -f json -o /tmp/bandit.json || true && python scripts/check_bandit.py
+
+  security-critical-regression:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: security
+            suite: security/tests/test_security.py
+            floor: 58
+          - name: agent_protocol
+            suite: agent_protocol/tests/test_agent_protocol.py
+            floor: 64
+          - name: trust_law
+            suite: trust_law/tests/test_trust_law.py
+            floor: 73
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Resolve subject binding
+        id: subject
+        run: |
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "tree=$(git rev-parse "HEAD^{tree}")" >> "$GITHUB_OUTPUT"
+      - name: Measure collection (${{ matrix.name }})
+        run: |
+          python scripts/ci/report_test_inventory.py \
+            --pytest-args "${{ matrix.suite }}" \
+            --out "artifacts/ci/${{ matrix.name }}-inventory.json" \
+            --commit "${{ steps.subject.outputs.commit }}" \
+            --tree "${{ steps.subject.outputs.tree }}"
+      - name: Assert collection floor (${{ matrix.name }})
+        run: |
+          python scripts/ci/assert_test_floor.py \
+            --receipt "artifacts/ci/${{ matrix.name }}-inventory.json" \
+            --expect-commit "${{ steps.subject.outputs.commit }}" \
+            --expect-tree "${{ steps.subject.outputs.tree }}" \
+            --floor ${{ matrix.floor }} \
+            --name "${{ matrix.name }}"
+      - name: Execute suite (${{ matrix.name }})
+        run: python -m pytest ${{ matrix.suite }} -v --tb=short
+      - name: Upload inventory receipt (${{ matrix.name }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gov001b-${{ matrix.name }}-inventory
+          path: artifacts/ci/${{ matrix.name }}-inventory.json
+          if-no-files-found: ignore

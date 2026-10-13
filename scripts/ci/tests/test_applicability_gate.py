@@ -34,7 +34,7 @@ def test_pull_request_uses_three_dot_diff(monkeypatch):
         stdout = "portal/services/orders.py\n"
         stderr = ""
 
-    def fake_run(command, **kwargs):
+    def fake_run(command, **_kwargs):
         calls.append(command)
         return Result()
 

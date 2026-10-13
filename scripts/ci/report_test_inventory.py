@@ -100,7 +100,11 @@ def parse_collect_output(text: str) -> dict:
             has_summary = True
         file_match = _PER_FILE_RE.match(stripped)
         if file_match:
-            per_file += int(file_match.group(1))
+            normalized_path = stripped.replace("\\", "/")
+            # Warning frames from pytest internals/site-packages also look like
+            # per-file counts; never let them inflate the collection floor.
+            if "/_pytest/" not in normalized_path and "site-packages/" not in normalized_path:
+                per_file += int(file_match.group(1))
     collected = summary if summary is not None else per_file
     return {
         "collected": collected,

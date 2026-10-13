@@ -1,43 +1,20 @@
 #!/usr/bin/env python3
-"""Evaluate a report_test_inventory.py receipt against a subject binding and a
-minimum collection floor.
+"""Validate collected and executed pytest outcomes against subject and floors.
 
-This is a POLICY CONSUMER ONLY. It never invokes pytest and never performs
-its own collection; it reads the JSON receipt already produced by
-scripts/ci/report_test_inventory.py and applies a fixed evaluation
-precedence. Keeping measurement (report_test_inventory.py) and policy
-(this script) in separate tools avoids a second, divergent pytest-counting
-implementation.
+This policy consumer never runs pytest. It validates the receipt emitted by
+report_test_inventory.py. Collection and execution remain separate facts:
+``collected`` is the collection-only total, while the execution outcomes are
+reported independently and must reconcile to that total (including deselected
+items) for a complete run.
 
-Required receipt fields (as emitted by report_test_inventory.py):
-    commit                  (str)  subject commit this receipt was measured on
-    tree                    (str)  subject tree this receipt was measured on
-    collected               (int)  observed collection count
-    incomplete              (bool) True if collection did not complete cleanly
-    collection_return_code  (int)  pytest --collect-only return code
+For each lane, the same configured floor applies independently to both the
+collected count and passed count. Failures, skips, xfails, xpasses, and
+ deselections are prohibited by default; any exception requires explicit
+policy changes and separate authorization.
 
-Evaluation precedence (first match wins):
-    0. SUBJECT_BINDING
-         receipt commit/tree != expected           -> FAIL / STALE_SUBJECT
-    1. RECEIPT_VALIDITY
-         malformed/missing/mistyped fields          -> FAIL / INVALID_RECEIPT
-    2. COLLECTION_COMPLETENESS
-         incomplete is True OR
-         collection_return_code != 0                -> FAIL / INCOMPLETE_COLLECTION
-         (an incomplete collection produces no admissible count)
-    3. FLOOR
-         collected < minimum_floor                  -> FAIL / COLLECTION_FLOOR_VIOLATION
-         collected >= minimum_floor                  -> PASS
-
-Wave 1 deliberately does NOT implement expected_count, PASS_WITH_DRIFT, drift
-obligations/events, or exact_count_required. Those belong to a future
-Wave 1B and must not be added here without separate authorization.
-
-Usage:
-    python scripts/ci/assert_test_floor.py \
-        --receipt artifacts/ci/governance-inventory.json \
-        --expect-commit <sha> --expect-tree <sha> \
-        --floor 137 [--name governance]
+Evaluation precedence: receipt structure, subject binding, collection
+completeness, test failures, execution completeness/exit status, collection
+floor, passing floor, excluded outcomes, then PASS.
 """
 
 from __future__ import annotations
@@ -45,13 +22,36 @@ from __future__ import annotations
 import argparse
 import json
 
-REQUIRED_FIELDS = ("commit", "tree", "collected", "incomplete", "collection_return_code")
+COUNT_FIELDS = (
+    "collected",
+    "passed",
+    "failed",
+    "skipped",
+    "xfailed",
+    "xpassed",
+    "deselected",
+)
+EXCLUDED_FIELDS = ("skipped", "xfailed", "xpassed", "deselected")
+REQUIRED_FIELDS = (
+    "commit",
+    "tree",
+    "collected",
+    "incomplete",
+    "collection_return_code",
+    "passed",
+    "failed",
+    "skipped",
+    "xfailed",
+    "xpassed",
+    "deselected",
+    "execution_return_code",
+    "execution_complete",
+    "execution_errors",
+)
 
 
 class Verdict:
-    """Plain value object (not a dataclass: this module may be exec'd via
-    importlib.util.module_from_spec by test harnesses before it is inserted
-    into sys.modules, which breaks dataclasses' PEP 563 type-resolution)."""
+    """Plain value object compatible with importlib test loading."""
 
     __slots__ = ("detail", "passed", "reason")
 
@@ -60,81 +60,108 @@ class Verdict:
         self.reason = reason
         self.detail = detail
 
-    def __repr__(self) -> str:  # pragma: no cover - debugging aid only
+    def __repr__(self) -> str:
         return f"Verdict(passed={self.passed!r}, reason={self.reason!r}, detail={self.detail!r})"
 
 
-def _is_int_like(value) -> bool:
-    """True for a real int, excluding bool (bool is an int subclass in Python)."""
+def _is_int(value) -> bool:
     return isinstance(value, int) and not isinstance(value, bool)
 
 
 def validate_receipt(receipt) -> Verdict | None:
-    """Return a FAIL Verdict if the receipt is structurally invalid, else None."""
+    """Return a failure verdict for malformed/internally inconsistent data."""
     if not isinstance(receipt, dict):
         return Verdict(False, "INVALID_RECEIPT", "receipt is not a JSON object")
-    missing = [f for f in REQUIRED_FIELDS if f not in receipt]
+    missing = [field for field in REQUIRED_FIELDS if field not in receipt]
     if missing:
-        return Verdict(
-            False, "INVALID_RECEIPT", f"missing required field(s): {', '.join(missing)}"
-        )
-    if not isinstance(receipt["commit"], str) or not receipt["commit"]:
-        return Verdict(False, "INVALID_RECEIPT", "commit must be a non-empty string")
-    if not isinstance(receipt["tree"], str) or not receipt["tree"]:
-        return Verdict(False, "INVALID_RECEIPT", "tree must be a non-empty string")
-    if not _is_int_like(receipt["collected"]):
-        return Verdict(False, "INVALID_RECEIPT", "collected must be an integer")
-    if receipt["collected"] < 0:
-        return Verdict(False, "INVALID_RECEIPT", "collected must not be negative")
-    if not isinstance(receipt["incomplete"], bool):
-        return Verdict(False, "INVALID_RECEIPT", "incomplete must be a boolean")
-    if not _is_int_like(receipt["collection_return_code"]):
-        return Verdict(False, "INVALID_RECEIPT", "collection_return_code must be an integer")
+        return Verdict(False, "INVALID_RECEIPT", f"missing fields: {', '.join(missing)}")
+    for field in ("commit", "tree"):
+        if not isinstance(receipt[field], str) or not receipt[field]:
+            return Verdict(False, "INVALID_RECEIPT", f"{field} must be a non-empty string")
+    for field in COUNT_FIELDS:
+        if not _is_int(receipt[field]) or receipt[field] < 0:
+            return Verdict(False, "INVALID_RECEIPT", f"{field} must be a non-negative integer")
+    for field in ("collection_return_code", "execution_return_code"):
+        if not _is_int(receipt[field]):
+            return Verdict(False, "INVALID_RECEIPT", f"{field} must be an integer")
+    for field in ("incomplete", "execution_complete"):
+        if not isinstance(receipt[field], bool):
+            return Verdict(False, "INVALID_RECEIPT", f"{field} must be a boolean")
+    if not isinstance(receipt["execution_errors"], list) or any(
+        not isinstance(error, str) for error in receipt["execution_errors"]
+    ):
+        return Verdict(False, "INVALID_RECEIPT", "execution_errors must be a list of strings")
+
+    # Partial or interrupted runs are rejected later as incomplete. For a
+    # complete collection and execution, every collected item must have exactly
+    # one final execution disposition or be explicitly recorded as deselected.
+    if not receipt["incomplete"] and receipt["execution_complete"]:
+        outcomes = sum(receipt[field] for field in ("passed", "failed", "skipped", "xfailed", "xpassed", "deselected"))
+        if outcomes != receipt["collected"]:
+            return Verdict(
+                False,
+                "INVALID_RECEIPT",
+                f"outcome total={outcomes} does not equal collected={receipt['collected']}",
+            )
     return None
 
 
 def evaluate(receipt, expect_commit: str, expect_tree: str, minimum_floor: int) -> Verdict:
-    """Pure policy evaluation. Never touches the filesystem or a subprocess."""
-    if not _is_int_like(minimum_floor) or minimum_floor < 0:
+    """Pure policy evaluation; does not access files, processes, or services."""
+    if not _is_int(minimum_floor) or minimum_floor < 0:
         return Verdict(False, "INVALID_FLOOR", "minimum_floor must be a non-negative integer")
 
     invalid = validate_receipt(receipt)
     if invalid is not None:
-        # A structurally invalid receipt has nothing meaningful to bind
-        # against, so INVALID_RECEIPT takes priority over SUBJECT_BINDING.
         return invalid
 
     if receipt["commit"] != expect_commit or receipt["tree"] != expect_tree:
-        return Verdict(
-            False,
-            "STALE_SUBJECT",
-            f"receipt subject commit={receipt['commit']!r} tree={receipt['tree']!r} "
-            f"!= expected commit={expect_commit!r} tree={expect_tree!r}",
-        )
-
+        return Verdict(False, "STALE_SUBJECT", "receipt commit/tree do not match expected subject")
     if receipt["incomplete"] or receipt["collection_return_code"] != 0:
         return Verdict(
             False,
             "INCOMPLETE_COLLECTION",
-            f"incomplete={receipt['incomplete']} "
-            f"collection_return_code={receipt['collection_return_code']}; "
-            "an incomplete collection produces no admissible count",
+            f"incomplete={receipt['incomplete']} collection_return_code={receipt['collection_return_code']}",
         )
-
-    collected = receipt["collected"]
-    if collected < minimum_floor:
+    if receipt["failed"]:
+        return Verdict(False, "TEST_FAILURES", f"failed={receipt['failed']} (required 0)")
+    if (
+        not receipt["execution_complete"]
+        or receipt["execution_return_code"] != 0
+        or receipt["execution_errors"]
+    ):
+        return Verdict(
+            False,
+            "INCOMPLETE_EXECUTION",
+            f"complete={receipt['execution_complete']} return_code={receipt['execution_return_code']} "
+            f"errors={len(receipt['execution_errors'])}",
+        )
+    if receipt["collected"] < minimum_floor:
         return Verdict(
             False,
             "COLLECTION_FLOOR_VIOLATION",
-            f"collected={collected} < minimum_floor={minimum_floor}",
+            f"collected={receipt['collected']} < minimum_floor={minimum_floor}",
         )
-
-    return Verdict(True, "PASS", f"collected={collected} >= minimum_floor={minimum_floor}")
+    if receipt["passed"] < minimum_floor:
+        return Verdict(
+            False,
+            "PASSING_FLOOR_VIOLATION",
+            f"passed={receipt['passed']} < minimum_passed={minimum_floor}",
+        )
+    excluded = {field: receipt[field] for field in EXCLUDED_FIELDS if receipt[field]}
+    if excluded:
+        return Verdict(False, "EXCLUDED_TESTS", f"nonzero skipped/xfail/xpass/deselected outcomes: {excluded}")
+    return Verdict(
+        True,
+        "PASS",
+        f"collected={receipt['collected']} passed={receipt['passed']} "
+        f"minimum_floor={minimum_floor}; failures and exclusions are zero",
+    )
 
 
 def load_receipt(path: str):
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
+    with open(path, encoding="utf-8") as stream:
+        return json.load(stream)
 
 
 def _report(name: str | None, verdict: Verdict) -> None:
@@ -144,21 +171,21 @@ def _report(name: str | None, verdict: Verdict) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--receipt", required=True, help="Path to a report_test_inventory.py JSON receipt")
-    ap.add_argument("--expect-commit", required=True, help="Expected subject commit SHA")
-    ap.add_argument("--expect-tree", required=True, help="Expected subject tree SHA")
-    ap.add_argument("--floor", required=True, type=int, dest="minimum_floor", help="Minimum admissible collected count")
-    ap.add_argument("--name", default=None, help="Label for log output only")
-    args = ap.parse_args(argv)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--receipt", required=True, help="Path to the inventory/execution JSON receipt")
+    parser.add_argument("--expect-commit", required=True)
+    parser.add_argument("--expect-tree", required=True)
+    parser.add_argument("--floor", required=True, type=int, dest="minimum_floor")
+    parser.add_argument("--name", default=None, help="Label for log output only")
+    args = parser.parse_args(argv)
 
     try:
         receipt = load_receipt(args.receipt)
     except FileNotFoundError:
         _report(args.name, Verdict(False, "MISSING_RECEIPT", f"receipt file not found: {args.receipt}"))
         return 1
-    except json.JSONDecodeError as exc:
-        _report(args.name, Verdict(False, "INVALID_RECEIPT", f"malformed JSON: {exc}"))
+    except (json.JSONDecodeError, OSError) as exc:
+        _report(args.name, Verdict(False, "INVALID_RECEIPT", f"receipt cannot be read: {exc}"))
         return 1
 
     verdict = evaluate(receipt, args.expect_commit, args.expect_tree, args.minimum_floor)

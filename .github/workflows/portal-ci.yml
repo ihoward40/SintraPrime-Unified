@@ -54,7 +54,7 @@ jobs:
           mkdir -p artifacts/ci
           python scripts/ci/applicability_gate.py \
             --area portal \
-            --paths portal/** pyproject.toml requirements.txt conftest.py scripts/certify.py .github/workflows/portal-ci.yml \
+            --paths 'portal/**' pyproject.toml requirements.txt conftest.py scripts/certify.py .github/workflows/portal-ci.yml \
             --receipt artifacts/ci/portal-applicability.json
       - name: Run portal Tier-2 lane (certify wrapper)
         run: |

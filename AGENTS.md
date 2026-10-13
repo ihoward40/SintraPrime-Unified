@@ -80,7 +80,7 @@ When the user requests a durable behavior change, record it here or in the relev
 
 ## Security Regression CI Contract
 
-- PR-controlled security-regression jobs use an explicit least-privilege `GITHUB_TOKEN` boundary (`contents: read` unless a separately reviewed requirement justifies otherwise) and must not expose repository/app secrets or privileged credentials to candidate-controlled code.
+- The `ci.yml` workflow applies a workflow-wide `GITHUB_TOKEN` ceiling of `contents: read` to every job, including same-repository pull requests. Any broader job-level override requires a separately reviewed, specifically authorized action/API need; do not expose repository/app secrets or privileged credentials to candidate-controlled code.
 - Keep collection counts distinct from execution outcomes. For the current security-critical regression lanes, preserve collection/pass floors of 58 / 64 / 73, require zero failures, skips, xfails, xpasses, and deselections, and bind receipts to the tested commit/tree. Any exception requires explicit Principal authorization naming the affected tests and limits.
 - Missing, malformed, incomplete, stale, or internally inconsistent evidence fails closed. Independent certification is separate from CI success.
 

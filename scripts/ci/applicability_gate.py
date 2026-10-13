@@ -41,6 +41,11 @@ def _subjects(event: dict) -> tuple[str, str]:
     elif event_name == "push":
         base = event.get("before")
         head = event.get("after") or os.environ.get("GITHUB_SHA")
+    elif event_name == "workflow_dispatch":
+        # A manual run has no meaningful diff; execute the substantive lane
+        # conservatively rather than treating the event as unknown.
+        head = os.environ.get("GITHUB_SHA")
+        base = head
     else:
         raise RuntimeError(f"unsupported event for applicability proof: {event_name!r}")
     if not isinstance(base, str) or not base or set(base) == {"0"}:
@@ -50,9 +55,10 @@ def _subjects(event: dict) -> tuple[str, str]:
     return base, head
 
 
-def _changed_files(base: str, head: str) -> list[str]:
+def _changed_files(base: str, head: str, event_name: str) -> list[str]:
+    revision_range = f"{base}...{head}" if event_name == "pull_request" else f"{base} {head}"
     proc = subprocess.run(
-        ["git", "diff", "--name-only", "--no-renames", f"{base}...{head}"],
+        ["git", "diff", "--name-only", "--no-renames", *revision_range.split()],
         check=False,
         capture_output=True,
         text=True,
@@ -64,7 +70,9 @@ def _changed_files(base: str, head: str) -> list[str]:
 
 
 def _matches(path: str, pattern: str) -> bool:
-    normalized = pattern.strip().lstrip("./")
+    normalized = pattern.strip()
+    if normalized.startswith("./"):
+        normalized = normalized[2:]
     if normalized.endswith("/**"):
         prefix = normalized[:-3].rstrip("/")
         return path == prefix or path.startswith(prefix + "/")
@@ -90,14 +98,22 @@ def main() -> int:
     receipt = {"area": args.area, "patterns": args.paths}
     try:
         event = _event()
+        event_name = os.environ.get("GITHUB_EVENT_NAME")
         base, head = _subjects(event)
-        changed = _changed_files(base, head)
-        matched = [path for path in changed if any(_matches(path, pattern) for pattern in args.paths)]
-        state = "applicable" if matched else "not_applicable_with_proof"
-        proof = (
-            f"{state}: diff {base[:12]}...{head[:12]}; "
-            f"matched={len(matched)}; changed={len(changed)}"
-        )
+        if event_name == "workflow_dispatch":
+            changed = []
+            matched = ["<workflow_dispatch>"]
+            state = "applicable"
+            proof = "applicable: manual workflow dispatch executes conservatively"
+        else:
+            changed = _changed_files(base, head, event_name or "")
+            matched = [path for path in changed if any(_matches(path, pattern) for pattern in args.paths)]
+            state = "applicable" if matched else "not_applicable_with_proof"
+            separator = "..." if event_name == "pull_request" else ".."
+            proof = (
+                f"{state}: diff {base[:12]}{separator}{head[:12]}; "
+                f"matched={len(matched)}; changed={len(changed)}"
+            )
         receipt.update(
             {
                 "state": state,

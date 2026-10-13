@@ -127,6 +127,7 @@ def run_collect(pytest_args: list[str] | None = None) -> dict:
             "parse_method": "none",
             "collection_errors": [f"subprocess failed: {exc}"],
             "incomplete": True,
+            "authoritative": False,
             "raw_tail": "",
         }
     output = proc.stdout + proc.stderr

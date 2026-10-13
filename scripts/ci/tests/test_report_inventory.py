@@ -4,6 +4,7 @@ Tests are deterministic and do not require a real pytest collection run.
 """
 
 import importlib.util
+import json
 import os
 import sys
 
@@ -111,6 +112,79 @@ def test_run_collect_never_silent_zero_on_subprocess_failure(monkeypatch):
     assert res["incomplete"] is True
     assert res["authoritative"] is False
     assert res["collection_return_code"] == 2
+
+
+def test_outcome_recorder_counts_each_final_category_and_deselections():
+    from types import SimpleNamespace
+
+    recorder = mod.OutcomeRecorder()
+    recorder.pytest_deselected([object(), object()])
+    reports = [
+        SimpleNamespace(nodeid="pass", when="call", passed=True, failed=False, skipped=False),
+        SimpleNamespace(nodeid="fail", when="call", passed=False, failed=True, skipped=False),
+        SimpleNamespace(nodeid="skip", when="call", passed=False, failed=False, skipped=True),
+        SimpleNamespace(nodeid="xfail", when="call", passed=False, failed=False, skipped=True, wasxfail="expected"),
+        SimpleNamespace(nodeid="xpass", when="call", passed=True, failed=False, skipped=False, wasxfail="expected"),
+        SimpleNamespace(nodeid="xpass-empty-reason", when="call", passed=True, failed=False, skipped=False, wasxfail=""),
+    ]
+    for report in reports:
+        recorder.pytest_runtest_logreport(report)
+    assert recorder.counts() == {
+        "passed": 1,
+        "failed": 1,
+        "skipped": 1,
+        "xfailed": 1,
+        "xpassed": 2,
+        "deselected": 2,
+    }
+
+
+def test_teardown_failure_overrides_passed_call():
+    from types import SimpleNamespace
+
+    recorder = mod.OutcomeRecorder()
+    recorder.pytest_runtest_logreport(
+        SimpleNamespace(nodeid="case", when="call", passed=True, failed=False, skipped=False)
+    )
+    recorder.pytest_runtest_logreport(
+        SimpleNamespace(nodeid="case", when="teardown", passed=False, failed=True, skipped=False)
+    )
+    assert recorder.counts()["passed"] == 0
+    assert recorder.counts()["failed"] == 1
+
+
+def test_main_execute_records_outcomes_and_returns_for_policy_step(monkeypatch, tmp_path):
+    monkeypatch.setattr(mod, "run_collect", lambda _: {
+        "collection_status": "ok",
+        "collection_command": "pytest --collect-only",
+        "collection_return_code": 0,
+        "collected_count": 3,
+        "parse_method": "summary-line",
+        "collection_errors": [],
+        "incomplete": False,
+        "authoritative": True,
+    })
+    monkeypatch.setattr(mod, "run_execution", lambda _: {
+        "execution_status": "failed",
+        "execution_return_code": 1,
+        "execution_complete": True,
+        "execution_errors": [],
+        "passed": 2,
+        "failed": 1,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "deselected": 0,
+    })
+    monkeypatch.setattr(mod, "_git", lambda *_args: "f" * 40)
+    out = tmp_path / "receipt.json"
+    assert mod.main(["--out", str(out), "--execute"]) == 0
+    receipt = json.loads(out.read_text(encoding="utf-8"))
+    assert receipt["collected"] == 3
+    assert receipt["passed"] == 2
+    assert receipt["failed"] == 1
+    assert receipt["execution_return_code"] == 1
+    assert receipt["execution_complete"] is True
 
 
 if __name__ == "__main__":

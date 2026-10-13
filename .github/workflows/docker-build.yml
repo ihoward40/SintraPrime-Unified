@@ -31,12 +31,12 @@ jobs:
 
       - name: Build canonical portal image without runtime secrets
         run: |
-          if [ "\${{ steps.applicability.outputs.state }}" = "applicable" ]; then
+          if [ "${{ steps.applicability.outputs.state }}" = "applicable" ]; then
             docker build \
               --file Dockerfile \
               --tag sintraprime-unified:build-verification \
               .
-          elif [ "\${{ steps.applicability.outputs.state }}" = "not_applicable_with_proof" ]; then
+          elif [ "${{ steps.applicability.outputs.state }}" = "not_applicable_with_proof" ]; then
             echo "PASS: Docker build not applicable with machine-checkable proof"
           else
             echo "FAIL: Docker applicability is unknown" >&2
@@ -44,7 +44,7 @@ jobs:
           fi
       - name: Inspect image history for secret-bearing build instructions
         run: |
-          if [ "\${{ steps.applicability.outputs.state }}" = "applicable" ]; then
+          if [ "${{ steps.applicability.outputs.state }}" = "applicable" ]; then
             set -euo pipefail
             docker history --no-trunc sintraprime-unified:build-verification > /tmp/sintraprime-image-history.txt
             if grep -qEi 'TWIN_AUTH_TOKEN|POSTGRES_PASSWORD|SECRET_KEY|JWT_SECRET|MINIO_ROOT_USER|MINIO_PASSWORD|AWS_SECRET_ACCESS_KEY|STRIPE_SECRET_KEY' /tmp/sintraprime-image-history.txt; then
@@ -52,7 +52,7 @@ jobs:
               exit 1
             fi
             echo "Image history scan passed; no configured runtime-secret names detected."
-          elif [ "\${{ steps.applicability.outputs.state }}" = "not_applicable_with_proof" ]; then
+          elif [ "${{ steps.applicability.outputs.state }}" = "not_applicable_with_proof" ]; then
             echo "PASS: Docker image inspection not applicable with machine-checkable proof"
           else
             echo "FAIL: Docker applicability is unknown" >&2

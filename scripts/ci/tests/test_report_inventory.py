@@ -64,6 +64,13 @@ def test_parse_malformed_output():
     assert r["has_summary"] is False
 
 
+def test_parse_collection_ignores_pytest_warning_frames():
+    out = "tests/test_a.py: 10\n_pytest/config/__init__.py:1434\n"
+    r = mod.parse_collect_output(out)
+    assert r["per_file_collected"] == 10
+    assert r["collected"] == 10
+
+
 def test_parse_collection_errors_detected():
     out = "ERROR: error collecting tests/test_broken.py\ncollected 5 items / 1 error\n"
     r = mod.parse_collect_output(out)

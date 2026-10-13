@@ -1,0 +1,4 @@
+# Governance CI control-plane ownership.
+# Changes to the shared applicability proof require explicit owner review.
+/scripts/ci/applicability_gate.py @ihoward40
+/.github/workflows/governance-policy.yml @ihoward40

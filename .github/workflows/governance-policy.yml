@@ -28,22 +28,22 @@ jobs:
         id: subject
         shell: bash
         run: |
-          echo "commit=\${{ github.sha }}" >> "\$GITHUB_OUTPUT"
-          echo "tree=\$(git rev-parse 'HEAD^{tree}')" >> "\$GITHUB_OUTPUT"
+          echo "commit=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          echo "tree=$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_OUTPUT"
       - name: Measure and execute GOV-001A
         run: |
           python scripts/ci/report_test_inventory.py \
             --pytest-args "governance/tests/test_gov001a_fail_closed.py" \
             --out artifacts/ci/gov-001a-inventory.json \
-            --commit "\${{ steps.subject.outputs.commit }}" \
-            --tree "\${{ steps.subject.outputs.tree }}" \
+            --commit "${{ steps.subject.outputs.commit }}" \
+            --tree "${{ steps.subject.outputs.tree }}" \
             --execute
       - name: Assert GOV-001A floor
         run: |
           python scripts/ci/assert_test_floor.py \
             --receipt artifacts/ci/gov-001a-inventory.json \
-            --expect-commit "\${{ steps.subject.outputs.commit }}" \
-            --expect-tree "\${{ steps.subject.outputs.tree }}" \
+            --expect-commit "${{ steps.subject.outputs.commit }}" \
+            --expect-tree "${{ steps.subject.outputs.tree }}" \
             --floor 37 \
             --name gov-001a-regression
       - name: Upload GOV-001A receipt
@@ -81,28 +81,28 @@ jobs:
         id: subject
         shell: bash
         run: |
-          echo "commit=\${{ github.sha }}" >> "\$GITHUB_OUTPUT"
-          echo "tree=\$(git rev-parse 'HEAD^{tree}')" >> "\$GITHUB_OUTPUT"
-      - name: Measure and execute governance suite (\${{ matrix.name }})
+          echo "commit=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          echo "tree=$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_OUTPUT"
+      - name: Measure and execute governance suite (${{ matrix.name }})
         run: |
           python scripts/ci/report_test_inventory.py \
-            --pytest-args "\${{ matrix.suite }}" \
-            --out "artifacts/ci/\${{ matrix.name }}-inventory.json" \
-            --commit "\${{ steps.subject.outputs.commit }}" \
-            --tree "\${{ steps.subject.outputs.tree }}" \
+            --pytest-args "${{ matrix.suite }}" \
+            --out "artifacts/ci/${{ matrix.name }}-inventory.json" \
+            --commit "${{ steps.subject.outputs.commit }}" \
+            --tree "${{ steps.subject.outputs.tree }}" \
             --execute
-      - name: Assert governance floor (\${{ matrix.name }})
+      - name: Assert governance floor (${{ matrix.name }})
         run: |
           python scripts/ci/assert_test_floor.py \
-            --receipt "artifacts/ci/\${{ matrix.name }}-inventory.json" \
-            --expect-commit "\${{ steps.subject.outputs.commit }}" \
-            --expect-tree "\${{ steps.subject.outputs.tree }}" \
-            --floor "\${{ matrix.floor }}" \
-            --name "\${{ matrix.name }}"
-      - name: Upload governance receipt (\${{ matrix.name }})
+            --receipt "artifacts/ci/${{ matrix.name }}-inventory.json" \
+            --expect-commit "${{ steps.subject.outputs.commit }}" \
+            --expect-tree "${{ steps.subject.outputs.tree }}" \
+            --floor "${{ matrix.floor }}" \
+            --name "${{ matrix.name }}"
+      - name: Upload governance receipt (${{ matrix.name }})
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: governance-\${{ matrix.name }}-inventory
-          path: "artifacts/ci/\${{ matrix.name }}-inventory.json"
+          name: governance-${{ matrix.name }}-inventory
+          path: "artifacts/ci/${{ matrix.name }}-inventory.json"
           if-no-files-found: ignore

@@ -4,22 +4,8 @@ on:
   workflow_dispatch:
   pull_request:
     branches: [main]
-    paths:
-      - Dockerfile
-      - requirements.txt
-      - portal/**
-      - alembic.ini
-      - .dockerignore
-      - .github/workflows/docker-build.yml
   push:
     branches: [main]
-    paths:
-      - Dockerfile
-      - requirements.txt
-      - portal/**
-      - alembic.ini
-      - .dockerignore
-      - .github/workflows/docker-build.yml
 
 permissions:
   contents: read
@@ -31,20 +17,44 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine Docker applicability
+        id: applicability
+        run: |
+          mkdir -p artifacts/ci
+          python scripts/ci/applicability_gate.py \
+            --area docker \
+            --paths Dockerfile requirements.txt portal/** alembic.ini .dockerignore .github/workflows/docker-build.yml \
+            --receipt artifacts/ci/docker-applicability.json
 
       - name: Build canonical portal image without runtime secrets
-        run: >-
-          docker build
-          --file Dockerfile
-          --tag sintraprime-unified:build-verification
-          .
-
-      - name: Inspect image history for secret-bearing build instructions
         run: |
-          set -euo pipefail
-          docker history --no-trunc sintraprime-unified:build-verification > /tmp/sintraprime-image-history.txt
-          if grep -qEi 'TWIN_AUTH_TOKEN|POSTGRES_PASSWORD|SECRET_KEY|JWT_SECRET|MINIO_ROOT_USER|MINIO_PASSWORD|AWS_SECRET_ACCESS_KEY|STRIPE_SECRET_KEY' /tmp/sintraprime-image-history.txt; then
-            echo "Secret-bearing instruction detected in image history; details withheld from logs." >&2
+          if [ "\${{ steps.applicability.outputs.state }}" = "applicable" ]; then
+            docker build \
+              --file Dockerfile \
+              --tag sintraprime-unified:build-verification \
+              .
+          elif [ "\${{ steps.applicability.outputs.state }}" = "not_applicable_with_proof" ]; then
+            echo "PASS: Docker build not applicable with machine-checkable proof"
+          else
+            echo "FAIL: Docker applicability is unknown" >&2
             exit 1
           fi
-          echo "Image history scan passed; no configured runtime-secret names detected."
+      - name: Inspect image history for secret-bearing build instructions
+        run: |
+          if [ "\${{ steps.applicability.outputs.state }}" = "applicable" ]; then
+            set -euo pipefail
+            docker history --no-trunc sintraprime-unified:build-verification > /tmp/sintraprime-image-history.txt
+            if grep -qEi 'TWIN_AUTH_TOKEN|POSTGRES_PASSWORD|SECRET_KEY|JWT_SECRET|MINIO_ROOT_USER|MINIO_PASSWORD|AWS_SECRET_ACCESS_KEY|STRIPE_SECRET_KEY' /tmp/sintraprime-image-history.txt; then
+              echo "Secret-bearing instruction detected in image history; details withheld from logs." >&2
+              exit 1
+            fi
+            echo "Image history scan passed; no configured runtime-secret names detected."
+          elif [ "\${{ steps.applicability.outputs.state }}" = "not_applicable_with_proof" ]; then
+            echo "PASS: Docker image inspection not applicable with machine-checkable proof"
+          else
+            echo "FAIL: Docker applicability is unknown" >&2
+            exit 1
+          fi

@@ -52,7 +52,7 @@ def test_push_uses_exact_before_after_endpoints(monkeypatch):
         stdout = ".dockerignore\n"
         stderr = ""
 
-    def fake_run(command, **kwargs):
+    def fake_run(command, **_kwargs):
         calls.append(command)
         return Result()
 

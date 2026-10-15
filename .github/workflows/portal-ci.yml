@@ -5,6 +5,8 @@ name: Portal Tier-2 Lane
 # (root conftest collect_ignore_glob, PR #98/Issue #97 design); this workflow
 # runs the portal lane explicitly via scripts/certify.py, which sets
 # SINTRAPRIME_TEST_LANES and a per-run repo-local pytest temp root.
+# The workflow file is included in paths so protected PR checks are emitted
+# for governance-only branch updates as well as application changes.
 
 on:
   push:

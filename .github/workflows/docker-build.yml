@@ -1,5 +1,8 @@
 name: Docker Image Build Verification
 
+# The workflow file is included in paths so protected PR checks are emitted
+# for governance-only branch updates as well as application changes.
+
 on:
   workflow_dispatch:
   pull_request:

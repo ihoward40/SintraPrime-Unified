@@ -47,13 +47,27 @@ from .capability_lease import (
 from .controller import SwarmController, SwarmSummary
 from .event_dispatcher import (
     DispatchOutcome,
-    EventDispatcher,
     EventDispatchStatus,
     EventEnvelope,
     EventPolicyDecision,
     EventPolicyEngine,
     KillSwitchState,
     SwarmActivationAdapter,
+)
+from .governed_execution import (
+    AuthorityEnvelope,
+    ExecutionAdmissionGate,
+    ExecutionClass,
+    ExecutionRequest,
+    ExecutionResult,
+    Severity,
+    WorktreeClaim,
+    WorktreeRegistry,
+    build_governed_environment,
+    check_filesystem_scope,
+    make_execution_id,
+    redact_secrets,
+    terminate_process_tree,
 )
 from .health_persistence import ProviderHealthStore
 from .hermes_adapter import DelegateTask, HermesSwarmAdapter, SwarmResult, is_swarm_eligible
@@ -85,6 +99,7 @@ __all__ = [
     "WORKER_REGISTRY",
     "ASTAnalysisWorker",
     "ArtifactStore",
+    "AuthorityEnvelope",
     "BreakerWorker",
     "BuilderWorker",
     # Workers
@@ -95,13 +110,17 @@ __all__ = [
     "DeliberatelyFlawedBuilderWorker",
     "DispatchOutcome",
     "EventDispatchStatus",
-    # Events
-    "EventDispatcher",
     "EventEnvelope",
     "EventPolicyDecision",
     "EventPolicyEngine",
+    "ExecutionAdmissionGate",
+    "ExecutionClass",
+    "ExecutionRequest",
+    "ExecutionResult",
     "FailoverTestWorker",
     "GitDiffWorker",
+    # Events
+    "Governed execution",
     "HermesSwarmAdapter",
     "IndependentBreakerWorker",
     "KillSwitchState",
@@ -112,6 +131,7 @@ __all__ = [
     # Health
     "ProviderHealthStore",
     "ProviderRouter",
+    "Severity",
     "StaticAnalysisWorker",
     "Supervisor",
     "SwarmActivationAdapter",
@@ -130,7 +150,14 @@ __all__ = [
     "WorkerSpec",
     "WorkerState",
     "WorkerStatus",
+    "WorktreeClaim",
+    "WorktreeRegistry",
+    "build_governed_environment",
     "build_worker_environment",
+    "check_filesystem_scope",
     "check_secret_inheritance",
     "is_swarm_eligible",
+    "make_execution_id",
+    "redact_secrets",
+    "terminate_process_tree",
 ]

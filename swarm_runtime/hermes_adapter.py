@@ -37,6 +37,11 @@ from pathlib import Path
 from typing import Any
 
 from .controller import SwarmController
+from .governed_execution import (
+    AuthorityEnvelope,
+    ExecutionClass,
+    ExecutionRequest,
+)
 from .worker import WorkerSpec
 
 
@@ -63,6 +68,21 @@ class DelegateTask:
     task_params: dict[str, Any] = field(default_factory=dict)
     artifact_filename: str = "artifacts/result.json"
 
+    def effect_class(self) -> str:
+        """Map the delegate role to a governed execution class (Phase 2)."""
+        mapping = {
+            "builder": ExecutionClass.BUILD_EXECUTION.value,
+            "test_runner": ExecutionClass.TEST_EXECUTION.value,
+            "git_diff": ExecutionClass.READ_ONLY_INSPECTION.value,
+            "code_search": ExecutionClass.READ_ONLY_INSPECTION.value,
+            "schema_analysis": ExecutionClass.READ_ONLY_INSPECTION.value,
+            "ast_analysis": ExecutionClass.READ_ONLY_INSPECTION.value,
+            "database_schema": ExecutionClass.READ_ONLY_INSPECTION.value,
+            "static_analysis": ExecutionClass.READ_ONLY_INSPECTION.value,
+            "breaker": ExecutionClass.READ_ONLY_INSPECTION.value,
+        }
+        return mapping.get(self.role, ExecutionClass.READ_ONLY_INSPECTION.value)
+
     def to_worker_spec(self, worker_id: str) -> WorkerSpec:
         """Translate to WorkerSpec — no authority widening."""
         return WorkerSpec(
@@ -75,6 +95,62 @@ class DelegateTask:
             owned_files=list(self.write_paths),  # write authority = owned files
             timeout_seconds=self.timeout_seconds,
             expected_artifact_schema=self.expected_artifact,
+        )
+
+    def to_execution_request(
+        self, worker_id: str, authority_id: str, context_package_id: str
+    ) -> ExecutionRequest:
+        """Translate to a governed ExecutionRequest (GOD-1X)."""
+        mission = self.mission or self.run_context.get("mission_id", "hermes-delegate")
+        swarm_id = self.run_context.get("swarm_id", f"hermes-swarm-{int(time.time())}")
+        return ExecutionRequest(
+            execution_request_id=f"req_{worker_id}",
+            mission_id=mission,
+            swarm_id=swarm_id,
+            task_id=self.task_id,
+            agent_id=worker_id,
+            authority_id=authority_id,
+            context_package_id=context_package_id,
+            role_id=self.role,
+            working_directory=self.run_context.get("working_directory", "."),
+            timeout_seconds=self.timeout_seconds,
+            effect_class=self.effect_class(),
+            worker_class=self.worker_class,
+            task_params=self.task_params,
+            artifact_path=self.artifact_filename,
+            owned_files=list(self.write_paths),
+            read_paths=list(self.read_paths),
+            write_paths=list(self.write_paths),
+            prohibited_paths=self.run_context.get("prohibited_paths", []),
+        )
+
+    def to_authority_envelope(self, worker_id: str) -> AuthorityEnvelope:
+        """Build the authority envelope the adapter asserts for this delegate.
+
+        The HermesSwarmAdapter is the admitted delegate path; it has already
+        performed swarm-eligibility validation. It asserts the positive
+        conditions here. Revocation is honored if signaled via run_context.
+        """
+        mission = self.mission or self.run_context.get("mission_id", "hermes-delegate")
+        swarm_id = self.run_context.get("swarm_id", f"hermes-swarm-{int(time.time())}")
+        revoked = bool(self.run_context.get("revoked", False))
+        return AuthorityEnvelope(
+            mission_id=mission,
+            swarm_id=swarm_id,
+            task_id=self.task_id,
+            agent_id=worker_id,
+            authority_id=self.run_context.get("authority_id", "hermes-delegate-authority"),
+            role_id=self.role,
+            context_package_id=self.base_sha or "ctx-default",
+            mission_active=True,
+            swarm_authorized=True,
+            task_ready=True,
+            agent_authorized=True,
+            authority_valid=True,
+            context_valid=True,
+            role_allowed=True,
+            resource_allowed=True,
+            revoked=revoked,
         )
 
 
@@ -187,15 +263,20 @@ class HermesSwarmAdapter:
             max_concurrent=self.max_concurrent,
         )
 
-        # Translate DelegateTasks to WorkerSpecs — preserving all semantics
-        specs: list[WorkerSpec] = []
+        # Translate DelegateTasks into governed ExecutionRequests + envelopes
+        requests: list[ExecutionRequest] = []
+        envelopes: list[AuthorityEnvelope] = []
+        worker_ids: list[str] = []
         for i, task in enumerate(tasks):
             worker_id = task.task_id if task.task_id else f"W{i + 1}"
-            spec = task.to_worker_spec(worker_id)
-            specs.append(spec)
+            worker_ids.append(worker_id)
+            requests.append(
+                task.to_execution_request(worker_id, "hermes-delegate-authority", task.base_sha or "ctx-default")
+            )
+            envelopes.append(task.to_authority_envelope(worker_id))
 
-        # Launch all workers through the canonical swarm path
-        controller.launch_all(specs)
+        # Launch all workers through the governed admission gate (GOD-1X)
+        controller.launch_all_governed(requests, envelopes)
 
         # Wait for completion
         summary = controller.wait(
@@ -205,21 +286,23 @@ class HermesSwarmAdapter:
         # Collect artifacts from the artifact store
         # Artifacts are stored at: run_dir/workers/<worker_id>/findings.json
         artifacts: list[dict[str, Any]] = []
-        for spec in specs:
-            worker_artifact_path = controller.store.worker_dir(spec.worker_id) / "findings.json"
+        id_to_task = {t.task_id if t.task_id else f"W{i + 1}": t for i, t in enumerate(tasks)}
+        for worker_id in worker_ids:
+            worker_artifact_path = controller.store.worker_dir(worker_id) / "findings.json"
+            role = id_to_task[worker_id].role if worker_id in id_to_task else None
             if worker_artifact_path.exists():
                 try:
                     artifact_data = json.loads(worker_artifact_path.read_text(encoding="utf-8"))
                     artifacts.append({
-                        "worker_id": spec.worker_id,
-                        "role": spec.role,
+                        "worker_id": worker_id,
+                        "role": role,
                         "artifact_path": str(worker_artifact_path),
                         "artifact": artifact_data,
                     })
                 except (OSError, json.JSONDecodeError):
                     artifacts.append({
-                        "worker_id": spec.worker_id,
-                        "role": spec.role,
+                        "worker_id": worker_id,
+                        "role": role,
                         "artifact_path": str(worker_artifact_path),
                         "artifact": None,
                         "error": "Failed to read artifact",

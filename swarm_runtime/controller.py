@@ -12,7 +12,7 @@ Usage:
 
     controller = SwarmController(
         swarm_id="acceptance-001",
-        repo_path="C:/Users/admin/SintraPrime-Unified",
+        repo_path=os.environ.get("SINTRAPRIME_REPO", "<repository root>"),
         run_dir="$LOCALAPPDATA/SintraPrime/swarm-runs/acceptance-001",
     )
 
@@ -33,8 +33,22 @@ import sys
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Any
 
 from .artifact_store import ArtifactStore
+from .governed_execution import (
+    AuthorityEnvelope,
+    ExecutionAdmissionGate,
+    ExecutionRequest,
+    ExecutionResult,
+    WorktreeClaim,
+    WorktreeRegistry,
+    build_governed_environment,
+    check_filesystem_scope,
+    make_execution_id,
+    redact_secrets,
+    terminate_process_tree,
+)
 from .provider_router import ProviderRouter
 from .supervisor import Supervisor
 from .worker import SwarmEvent, WorkerSpec, WorkerState, WorkerStatus
@@ -57,6 +71,9 @@ class SwarmSummary:
 
     max_simultaneous_workers: int = 0
     controller_fallback_required: bool = False
+
+    denied_executions: int = 0
+    governed_execution_count: int = 0
 
     valid_artifacts: int = 0
     invalid_artifacts: int = 0
@@ -122,6 +139,14 @@ class SwarmController:
         self._started_at = time.time()
         self._supervisor: Supervisor | None = None
 
+        # GOD-1X governed execution layer
+        self.gate = ExecutionAdmissionGate()
+        self.worktree_registry = WorktreeRegistry()
+        self.execution_results: dict[str, ExecutionResult] = {}
+        self._governed_contexts: dict[str, dict] = {}
+        self._governed_requests: dict[str, ExecutionRequest] = {}
+        self._denied_count = 0
+
     def launch(self, spec: WorkerSpec) -> str:
         """Launch a single worker as a subprocess.
 
@@ -166,8 +191,212 @@ class SwarmController:
             launched.append(self.launch(spec))
         return launched
 
-    def _launch_worker(self, spec: WorkerSpec, state: WorkerState) -> None:
-        """Launch a worker subprocess."""
+    # ------------------------------------------------------------------
+    # GOD-1X governed execution path
+    # ------------------------------------------------------------------
+    def launch_governed(
+        self,
+        request: ExecutionRequest,
+        envelope: AuthorityEnvelope,
+        worktree_claim: WorktreeClaim | None = None,
+    ) -> ExecutionResult:
+        """Admit a single governed execution request through the authority gate.
+
+        Implements the GOD-1X invariant: NO GOVERNED TASK -> NO EXECUTION and
+        NO AUTHORITY ENVELOPE -> NO EXECUTION. On denial, no subprocess is
+        spawned and a DENIED receipt is recorded.
+        """
+        execution_id = make_execution_id()
+        result = ExecutionResult(
+            execution_id=execution_id,
+            request_id=request.execution_request_id,
+            mission_id=request.mission_id,
+            swarm_id=request.swarm_id,
+            task_id=request.task_id,
+            agent_id=request.agent_id,
+            started_at=time.time(),
+            status="DENIED",
+        )
+
+        decision = self.gate.admit(request, envelope)
+        if not decision.allowed:
+            result.rejection_reasons = decision.reasons
+            result.severity = "security"
+            self._denied_count += 1
+            self.execution_results[execution_id] = result
+            self._record_governed_receipt(request, envelope, result)
+            return result
+
+        # Phase 6 — worktree collision control
+        if worktree_claim is not None:
+            granted, reason = self.worktree_registry.claim(worktree_claim)
+            if not granted:
+                result.status = "DENIED"
+                result.rejection_reasons = [reason]
+                result.severity = "material"
+                self._denied_count += 1
+                self.execution_results[execution_id] = result
+                self._record_governed_receipt(request, envelope, result)
+                return result
+
+        # Phase 5 — filesystem boundary
+        ok, fs_reason = check_filesystem_scope(request, str(self.repo_path))
+        if not ok:
+            result.status = "DENIED"
+            result.rejection_reasons = [fs_reason]
+            result.severity = "security"
+            self._denied_count += 1
+            self.execution_results[execution_id] = result
+            self._record_governed_receipt(request, envelope, result)
+            return result
+
+        # Phase 4 — environment boundary (no secret inheritance)
+        governed_env, secret_check = build_governed_environment(request)
+        if not secret_check["clean"]:
+            result.status = "DENIED"
+            result.rejection_reasons = ["SECRET_INHERITANCE_DETECTED:" + ",".join(secret_check["leaked"])]
+            result.severity = "security"
+            self._denied_count += 1
+            self.execution_results[execution_id] = result
+            self._record_governed_receipt(request, envelope, result)
+            return result
+
+        # Build a WorkerSpec from the governed request
+        spec = WorkerSpec(
+            worker_id=request.agent_id,
+            role=request.role_id,
+            worker_class=request.worker_class,
+            task=request.task_params,
+            artifact_path=request.artifact_path or "findings.json",
+            base_sha=envelope.context_package_id,
+            worktree=request.working_directory,
+            owned_files=list(request.owned_files),
+            timeout_seconds=request.timeout_seconds,
+            expected_artifact_schema="findings",
+        )
+        state = WorkerState.from_spec(self.swarm_id, spec)
+        self.workers[request.agent_id] = state
+        self.specs[request.agent_id] = spec
+        self.store.write_status(request.agent_id, state)
+
+        governed_context = {
+            "execution_id": execution_id,
+            "env": governed_env,
+            "envelope": envelope,
+            "effect_class": request.effect_class,
+            "request_id": request.execution_request_id,
+            "mission_id": request.mission_id,
+            "swarm_id": request.swarm_id,
+            "task_id": request.task_id,
+            "agent_id": request.agent_id,
+            "authority_id": request.authority_id,
+        }
+        self._governed_contexts[request.agent_id] = governed_context
+        self._governed_requests[request.agent_id] = request
+        self._launch_worker(spec, state, governed_context)
+        result.status = "RUNNING"
+        self.execution_results[execution_id] = result
+        self._record_governed_receipt(request, envelope, result)
+        return result
+
+    def launch_all_governed(
+        self,
+        requests: list[ExecutionRequest],
+        envelopes: list[AuthorityEnvelope],
+        worktree_claims: list[WorktreeClaim | None] | None = None,
+    ) -> list[ExecutionResult]:
+        """Admit multiple governed execution requests through the gate."""
+        if worktree_claims is None:
+            worktree_claims = [None] * len(requests)
+        results: list[ExecutionResult] = []
+        for i, req in enumerate(requests):
+            if len(self.processes) >= self.max_concurrent:
+                self._wait_for_slot()
+            results.append(
+                self.launch_governed(req, envelopes[i], worktree_claims[i])
+            )
+        return results
+
+    def _record_governed_receipt(
+        self,
+        request: ExecutionRequest,
+        envelope: AuthorityEnvelope,
+        result: ExecutionResult,
+    ) -> None:
+        """Persist a governed execution receipt (Phase 12 linkage)."""
+        receipt = {
+            "execution_id": result.execution_id,
+            "request_id": result.request_id,
+            "authority_envelope": envelope.as_dict(),
+            "request": {
+                "mission_id": request.mission_id,
+                "swarm_id": request.swarm_id,
+                "task_id": request.task_id,
+                "agent_id": request.agent_id,
+                "authority_id": request.authority_id,
+                "context_package_id": request.context_package_id,
+                "role_id": request.role_id,
+                "working_directory": request.working_directory,
+                "effect_class": request.effect_class,
+                "timeout_seconds": request.timeout_seconds,
+                "owned_files": request.owned_files,
+                "read_paths": request.read_paths,
+                "write_paths": request.write_paths,
+                "prohibited_paths": request.prohibited_paths,
+            },
+            "result": result.to_dict(),
+            "timestamp": time.time(),
+        }
+        try:
+            path = self.store.worker_dir(request.agent_id) / "governed_receipt.json"
+            path.write_text(
+                __import__("json").dumps(receipt, indent=2, default=str),
+                encoding="utf-8",
+            )
+        except OSError:
+            pass
+
+    def revoke(self, agent_id: str, reason: str = "AUTHORITY_REVOKED") -> str:
+        """Revoke an active or queued governed execution (Phase 13).
+
+        Terminates the running worker process tree where possible and records a
+        CANCELLED receipt. Returns the termination disposition; if the child
+        cannot be confirmed terminated it reports a degraded state rather than
+        falsely claiming CANCELLED.
+        """
+        gctx = self._governed_contexts.get(agent_id)
+        proc = self.processes.get(agent_id)
+        if proc is None and gctx is None:
+            return "NOT_RUNNING"
+        disposition = "CANCELLED"
+        if proc is not None:
+            disposition = terminate_process_tree(proc)
+        state = self.workers.get(agent_id)
+        if state is not None:
+            state.status = WorkerStatus.CANCELLED
+            state.end_time = time.time()
+            self.store.write_status(agent_id, state)
+        self.store.record_event(SwarmEvent(
+            timestamp=time.time(), swarm_id=self.swarm_id,
+            worker_id=agent_id, event="WORKER_CANCELLED",
+            details={"reason": reason, "disposition": disposition},
+        ))
+        if gctx is not None:
+            er = self.execution_results.get(gctx["execution_id"])
+            if er is not None and er.status == "RUNNING":
+                er.completed_at = time.time()
+                er.status = "CANCELLED"
+                er.termination_reason = disposition
+                er.severity = "material"
+        return disposition
+
+    def _launch_worker(self, spec: WorkerSpec, state: WorkerState, governed_context: dict | None = None) -> None:
+        """Launch a worker subprocess.
+
+        When ``governed_context`` is provided (GOD-1X path), the subprocess
+        inherits the filtered governed environment and is spawned in a new
+        process group so it can be terminated as a tree.
+        """
         state.status = WorkerStatus.STARTING
         state.start_time = time.time()
         self._start_times[spec.worker_id] = time.time()
@@ -194,14 +423,34 @@ class SwarmController:
             "--run-dir", str(self.run_dir),
         ]
 
+        # GOD-1X: governed environment + process-group isolation
+        popen_kwargs: dict[str, Any] = {
+            "stdout": subprocess.PIPE,
+            "stderr": subprocess.PIPE,
+            "text": True,
+            "cwd": worker_cwd,
+        }
+        if governed_context is not None:
+            popen_kwargs["env"] = governed_context["env"]
+            if os.name == "nt":
+                import subprocess as _sp
+
+                popen_kwargs["creationflags"] = _sp.CREATE_NEW_PROCESS_GROUP
+            else:
+                popen_kwargs["start_new_session"] = True
+            self.store.record_event(SwarmEvent(
+                timestamp=time.time(), swarm_id=self.swarm_id,
+                worker_id=spec.worker_id, event="GOVERNED_EXECUTION_ADMITTED",
+                details={
+                    "execution_id": governed_context["execution_id"],
+                    "agent_id": governed_context["agent_id"],
+                    "authority_id": governed_context["authority_id"],
+                    "effect_class": governed_context["effect_class"],
+                },
+            ))
+
         try:
-            proc = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                cwd=worker_cwd,
-            )
+            proc = subprocess.Popen(cmd, **popen_kwargs)
             self.processes[spec.worker_id] = proc
             state.status = WorkerStatus.RUNNING
             state.touch_heartbeat()
@@ -394,18 +643,39 @@ if __name__ == "__main__":
                     if retcode != 0:
                         state.errors.append(f"exit_code_{retcode}")
 
-                # Capture stdout/stderr
+                # Capture stdout/stderr (redacted — secrets never persisted)
                 try:
                     stdout, stderr = proc.communicate(timeout=5)
                     if stdout:
-                        self.store.append_log(worker_id, stdout, "stdout")
+                        redacted_out = redact_secrets(stdout)
+                        self.store.append_log(worker_id, redacted_out, "stdout")
                     if stderr:
-                        self.store.append_log(worker_id, stderr, "stderr")
+                        redacted_err = redact_secrets(stderr)
+                        self.store.append_log(worker_id, redacted_err, "stderr")
                         # Print stderr for failed workers so it appears in CI logs
                         if state.status == WorkerStatus.FAILED:
-                            print(f"  [WORKER {worker_id} STDERR]: {stderr[:500]}")
+                            print(f"  [WORKER {worker_id} STDERR]: {redacted_err[:500]}")
                 except Exception:
                     pass
+
+                # Update the governed ExecutionResult receipt
+                gctx = self._governed_contexts.get(worker_id)
+                if gctx is not None:
+                    er = self.execution_results.get(gctx["execution_id"])
+                    if er is not None:
+                        er.completed_at = time.time()
+                        er.exit_code = state.exit_code
+                        er.status = state.status.value.upper()
+                        er.stdout_ref = str(self.store.worker_dir(worker_id) / "stdout.log")
+                        er.stderr_ref = str(self.store.worker_dir(worker_id) / "stderr.log")
+                        artifact = self.store.worker_dir(worker_id) / "findings.json"
+                        if artifact.exists():
+                            er.artifact_refs.append(str(artifact))
+                        er.termination_reason = "COMPLETED"
+                        er.severity = "info"
+                        req = self._governed_requests.get(worker_id)
+                        if req is not None:
+                            self._record_governed_receipt(req, gctx["envelope"], er)
 
                 self.store.write_status(worker_id, state)
                 self.store.record_event(SwarmEvent(
@@ -421,7 +691,7 @@ if __name__ == "__main__":
                     spec = self.specs.get(worker_id)
                     max_timeout = spec.timeout_seconds if spec else 120
                     if elapsed > max_timeout:
-                        proc.kill()
+                        reason = terminate_process_tree(proc)
                         state.status = WorkerStatus.TIMED_OUT
                         state.end_time = time.time()
                         self._end_times[worker_id] = time.time()
@@ -430,8 +700,16 @@ if __name__ == "__main__":
                         self.store.record_event(SwarmEvent(
                             timestamp=time.time(), swarm_id=self.swarm_id,
                             worker_id=worker_id, event="WORKER_TIMED_OUT",
-                            details={"elapsed_seconds": elapsed},
+                            details={"elapsed_seconds": elapsed, "termination": reason},
                         ))
+                        gctx = self._governed_contexts.get(worker_id)
+                        if gctx is not None:
+                            er = self.execution_results.get(gctx["execution_id"])
+                            if er is not None:
+                                er.completed_at = time.time()
+                                er.status = "TIMED_OUT"
+                                er.termination_reason = reason
+                                er.severity = "material"
 
     def _check_process_alive(self, worker_id: str) -> bool:
         """Check if a worker process is still alive."""
@@ -476,6 +754,8 @@ if __name__ == "__main__":
             duration_seconds=time.time() - self._started_at,
             workers_requested=len(self.workers),
             max_simultaneous_workers=max_concurrent,
+            denied_executions=self._denied_count,
+            governed_execution_count=len(self.execution_results),
         )
 
         for worker_id, state in self.workers.items():

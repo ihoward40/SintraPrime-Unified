@@ -25,6 +25,15 @@ _DEFAULT_RISK_RULES: List[Tuple[str, RiskLevel, str, bool, bool, str, str]] = [
     # (action_pattern, risk_level, reason, requires_approval, reversible, estimated_impact, domain)
     # CRITICAL
     (
+        "pay",
+        RiskLevel.CRITICAL,
+        "Financial payment requires explicit approval",
+        True,
+        False,
+        "Potential financial loss",
+        "financial",
+    ),
+    (
         "send_payment",
         RiskLevel.CRITICAL,
         "Irreversible financial transaction",

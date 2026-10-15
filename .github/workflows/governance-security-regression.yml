@@ -1,0 +1,131 @@
+name: Governance and Security Regression
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: governance-security-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  gov001a-regression:
+    name: gov-001a-regression
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run GOV-001A regression suite
+        run: python -m pytest governance/tests/test_gov001a_fail_closed.py -q
+
+  gov001a-fail-closed:
+    name: "governance-security-regression (gov001a, governance/tests/test_gov001a_fail_closed.py, 37)"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Assert required fail-closed test exists
+        run: test -f governance/tests/test_gov001a_fail_closed.py
+      - name: Run GOV-001A fail-closed suite
+        run: python -m pytest governance/tests/test_gov001a_fail_closed.py -q
+
+  governance-tests:
+    name: "governance-security-regression (governance, governance/tests/test_governance.py, 100)"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Assert governance test exists
+        run: test -f governance/tests/test_governance.py
+      - name: Run governance regression suite
+        run: python -m pytest governance/tests/test_governance.py -q
+
+  security-tests:
+    name: "security-critical-regression (security, security/tests/test_security.py, 58)"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Assert security test exists
+        run: test -f security/tests/test_security.py
+      - name: Run security regression suite
+        run: python -m pytest security/tests/test_security.py -q
+
+  agent-protocol-tests:
+    name: "security-critical-regression (agent_protocol, agent_protocol/tests/test_agent_protocol.py, 64)"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Assert agent protocol test exists
+        run: test -f agent_protocol/tests/test_agent_protocol.py
+      - name: Run agent protocol regression suite
+        run: python -m pytest agent_protocol/tests/test_agent_protocol.py -q
+
+  trust-law-tests:
+    name: "security-critical-regression (trust_law, trust_law/tests/test_trust_law.py, 73)"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Assert trust-law test exists
+        run: test -f trust_law/tests/test_trust_law.py
+      - name: Run trust-law regression suite
+        run: python -m pytest trust_law/tests/test_trust_law.py -q

@@ -78,6 +78,14 @@ Default section order:
 
 When the user requests a durable behavior change, record it here or in the relevant child AGENTS.md
 
+## Security Regression CI Contract
+
+- The `ci.yml` workflow applies a workflow-wide `GITHUB_TOKEN` ceiling of `contents: read` to every job, including same-repository pull requests. Any broader job-level override requires a separately reviewed, specifically authorized action/API need; do not expose repository/app secrets or privileged credentials to candidate-controlled code.
+- Keep collection counts distinct from execution outcomes. For the current security-critical regression lanes, preserve collection/pass floors of 58 / 64 / 73, require zero failures, skips, xfails, xpasses, and deselections, and bind receipts to the tested commit/tree. Any exception requires explicit Principal authorization naming the affected tests and limits.
+- Missing, malformed, incomplete, stale, or internally inconsistent evidence fails closed. Independent certification is separate from CI success.
+- The governance policy workflow must always publish the required `gov-001a-regression`, `governance-security-regression (gov001a, governance/tests/test_gov001a_fail_closed.py, 37)`, and `governance-security-regression (governance, governance/tests/test_governance.py, 100)` contexts with explicit job/matrix names.
+- Portal and Docker applicability is a three-state contract: applicable runs the substantive lane; not-applicable requires machine-checkable diff proof; unknown or failed evaluation fails closed. Manual dispatch is treated as applicable.
+
 ## Child DOX Index
 
 | Path | Scope | Controls |

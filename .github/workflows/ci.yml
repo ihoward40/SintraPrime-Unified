@@ -4,6 +4,8 @@ on:
     branches: [ main, dev, feature/* ]
   pull_request:
     branches: [ main ]
+permissions:
+  contents: read
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -343,3 +345,103 @@ jobs:
           "${RUNNER_TEMP}/sintraprime-safety-venv/bin/safety" check -r requirements.txt
       - name: Security lint (bandit — baseline mode)
         run: bandit -r . -x tests/,portal/tests/ -ll --baseline .bandit-baseline.json -f json -o /tmp/bandit.json || true && python scripts/check_bandit.py
+
+  security-critical-regression:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: security
+            suite: security/tests/test_security.py
+            floor: 58
+          - name: agent_protocol
+            suite: agent_protocol/tests/test_agent_protocol.py
+            floor: 64
+          - name: trust_law
+            suite: trust_law/tests/test_trust_law.py
+            floor: 73
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Verify job token cannot create repository refs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          GH_RUN_ID: ${{ github.run_id }}
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+
+          repository = os.environ["GH_REPOSITORY"]
+          run_id = os.environ["GH_RUN_ID"]
+          token = os.environ["GH_TOKEN"]
+          headers = {
+              "Accept": "application/vnd.github+json",
+              "Authorization": f"Bearer {token}",
+              "X-GitHub-Api-Version": "2022-11-28",
+          }
+          missing_sha = hashlib.sha256(f"permission-probe:{repository}:{run_id}".encode()).hexdigest()[:40]
+          commit_url = f"https://api.github.com/repos/{repository}/git/commits/{missing_sha}"
+          try:
+              with urllib.request.urlopen(urllib.request.Request(commit_url, headers=headers), timeout=15) as response:
+                  commit_status = response.status
+          except urllib.error.HTTPError as error:
+              commit_status = error.code
+          if commit_status != 404:
+              raise SystemExit(f"Permission probe could not establish a nonexistent target (HTTP {commit_status}); stopping safely")
+
+          ref_url = f"https://api.github.com/repos/{repository}/git/refs"
+          body = json.dumps({
+              "ref": f"refs/heads/__sp_gate1_permission_probe_{run_id}",
+              "sha": missing_sha,
+          }).encode()
+          request = urllib.request.Request(ref_url, data=body, headers=headers, method="POST")
+          try:
+              with urllib.request.urlopen(request, timeout=15) as response:
+                  write_status = response.status
+          except urllib.error.HTTPError as error:
+              write_status = error.code
+          if write_status not in (403, 404):
+              raise SystemExit(f"Expected read-only write denial (403/404), received HTTP {write_status}; no valid commit was supplied")
+          print("PASS: restricted job token was denied ref creation; no repository state was changed")
+          PY
+      - name: Resolve subject binding
+        id: subject
+        run: |
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "tree=$(git rev-parse "HEAD^{tree}")" >> "$GITHUB_OUTPUT"
+      - name: Measure collection and execute suite (${{ matrix.name }})
+        run: |
+          python scripts/ci/report_test_inventory.py \
+            --pytest-args "${{ matrix.suite }}" \
+            --out "artifacts/ci/${{ matrix.name }}-inventory.json" \
+            --commit "${{ steps.subject.outputs.commit }}" \
+            --tree "${{ steps.subject.outputs.tree }}" \
+            --execute
+      - name: Assert collection and execution policy (${{ matrix.name }})
+        run: |
+          python scripts/ci/assert_test_floor.py \
+            --receipt "artifacts/ci/${{ matrix.name }}-inventory.json" \
+            --expect-commit "${{ steps.subject.outputs.commit }}" \
+            --expect-tree "${{ steps.subject.outputs.tree }}" \
+            --floor ${{ matrix.floor }} \
+            --name "${{ matrix.name }}"
+      - name: Upload inventory receipt (${{ matrix.name }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gov001b-${{ matrix.name }}-inventory
+          path: artifacts/ci/${{ matrix.name }}-inventory.json
+          if-no-files-found: ignore

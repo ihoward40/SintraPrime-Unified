@@ -14,7 +14,7 @@ def test_get_only_reference_exemptions_do_not_apply_to_writes():
         "/jurisdictions/123",
         "/federal/statutes",
         "/ucc-filings/123",
-        "/legal-rules/compare",
+        "/federal/rules",
     ):
         assert is_public_path(path, "GET"), path
         for method in ("POST", "PUT", "PATCH", "DELETE"):
@@ -36,7 +36,7 @@ def test_protected_write_request_cannot_bypass_auth_via_get_only_path():
     for method, path in (
         ("POST", "/jurisdictions"),
         ("DELETE", "/jurisdictions/123"),
-        ("POST", "/legal-rules/compare"),
+        ("POST", "/federal/rules"),
         ("PUT", "/federal/statutes"),
     ):
         response = client.request(method, path)

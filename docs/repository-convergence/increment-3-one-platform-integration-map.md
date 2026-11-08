@@ -4,6 +4,7 @@
 **Baseline commit (main):** `051e2594c67a805ceacc66ea2a6fc6db9c0bc793`
 **Branch:** `cline/sp-378-one-platform-integration-map`
 **Generated:** 2026-11-08
+**Correction pass:** 2026-11-08 — completed the open-PR inventory (111 total, paginated), filled all head-SHA placeholders, and reconciled section 8 with PR #367's `SP-RELEASE-SURFACE-MANIFEST-001` proposal.
 **Scope:** Documentation and planning only. No runtime, route, schema, migration, or authority changes. Inspection limited to `ihoward40/SintraPrime-Unified`; all other repositories are marked NOT INSPECTED.
 
 This map extends Increment Two (`increment-2-architectural-map.md`, authoritative at `48e2caa7…`) to the current baseline and adds the open-PR-branch dimension required by issue #378. It covers the five areas named in the assignment: Mission Control, agents, Hermes, IKE-Bot, and Agent Commons.
@@ -20,7 +21,8 @@ This map extends Increment Two (`increment-2-architectural-map.md`, authoritativ
 ## Method
 
 - `git log` / `git status` / `git ls-tree` / `git ls-remote` at the baseline commit.
-- `gh issue view 378`, `gh issue view 243`, `gh pr list --state open --limit 100`, `gh pr view` (2026-11-08).
+- `gh issue view 378`, `gh issue view 243`, `gh pr view` (2026-11-08).
+- Open-PR inventory: initial retrieval used `gh pr list --state open --limit 100`, which capped results below the true total. Complete retrieval: `gh pr list --state open --limit 200` at **2026-11-08T17:04:14Z → 111 open PRs**. Comparing the complete retrieval against the capped one identified these previously unexamined PRs: #205 (Observatory event chains), #219 (Stripe webhook replay controls), #224/#226 (dependabot), #231 and #232 (agents area — added to section 2), #233 (SP-TKM-001 TikTok preview — relates to the #378 TikTok work-queue item, outside the five mapped areas), #235 (deploy OIDC). #391 is this PR, created after the first retrieval.
 - File inspection of entrypoints and modules listed below; `grep` surveys for `agent_commons`, `ike-bot`, `hermes`.
 
 ---
@@ -40,7 +42,7 @@ This map extends Increment Two (`increment-2-architectural-map.md`, authoritativ
 | PR | Title | Head SHA | Draft |
 |---|---|---|---|
 | [#265](https://github.com/ihoward40/SintraPrime-Unified/pull/265) | Phase 3C — Mission Control Command Authority and Dashboard Integration | `1a5d9958248e0c99454dcd980bc85dbc0398e253` | no |
-| [#279](https://github.com/ihoward40/SintraPrime-Unified/pull/279) | R1: Fix ORM/Schema UUID Drift — MC Command Proven on PostgreSQL | (see PR) | yes |
+| [#279](https://github.com/ihoward40/SintraPrime-Unified/pull/279) | R1: Fix ORM/Schema UUID Drift — MC Command Proven on PostgreSQL | `2d71861dbe0a29ac81cd74782c4ca59ec7d20254` | yes |
 | [#262](https://github.com/ihoward40/SintraPrime-Unified/pull/262) | Executor continuation implementation authorization review | `c3ca4f3d8eec231eee0c5658becfdd884db5e3b9` | yes |
 | [#353](https://github.com/ihoward40/SintraPrime-Unified/pull/353) | SP-MC3D-001 governed SintraPrime Command Town | `a95a8383ccc5fd8d29ab656e9742f9bf9cfbdc94` | no |
 | [#367](https://github.com/ihoward40/SintraPrime-Unified/pull/367) | SP-COMPLETION-MAP-001 + BASELINE-001 canonical completion plan | `feaf658e0a34d0e9bb1a23767b3becb1a8419ae1` | yes |
@@ -73,8 +75,11 @@ This map extends Increment Two (`increment-2-architectural-map.md`, authoritativ
 | [#283](https://github.com/ihoward40/SintraPrime-Unified/pull/283) | SP-AMR-001 governed autonomous mission runtime | `11364d0cac90a3d9711878b2b3158c641e1f9d6f` | yes |
 | [#325](https://github.com/ihoward40/SintraPrime-Unified/pull/325) | GOD-2A capability inventory integration | `dce634b9f7b04eac4aa9675b1c6cdf9fd708fd2c` | no |
 | [#327](https://github.com/ihoward40/SintraPrime-Unified/pull/327) | Agent-to-agent Redis messaging | `8f489fd2f86aff6948198750a497790b61f36a15` | no |
-| [#361](https://github.com/ihoward40/SintraPrime-Unified/pull/361) | Learning memory (retain/recall/reflect) | (see PR) | no |
-| [#366](https://github.com/ihoward40/SintraPrime-Unified/pull/366) | SP-COLLECTIVE-INTELLIGENCE-001 organizational learning loop | (see PR) | yes |
+| [#361](https://github.com/ihoward40/SintraPrime-Unified/pull/361) | Learning memory (retain/recall/reflect) | `d54da5218acb6affcb1641d43a7871fb101046aa` | no |
+| [#366](https://github.com/ihoward40/SintraPrime-Unified/pull/366) | SP-COLLECTIVE-INTELLIGENCE-001 organizational learning loop | `93236d0c35a49c281b409b5364f6ad3c94836008` | yes |
+| [#231](https://github.com/ihoward40/SintraPrime-Unified/pull/231) | Governed agent capability stack boundary | `cf71c213e2b82ca6a58d211754ab630ad7728aea` | yes |
+| [#232](https://github.com/ihoward40/SintraPrime-Unified/pull/232) | Governed inference streaming and chat integration | `2450b95a2f261bf2e971f0ec9ab447ccaeb5279d` | yes |
+| [#241](https://github.com/ihoward40/SintraPrime-Unified/pull/241) | M-001 AI-OS agent registry schema | `ae3a32aab0d63ef631d497d5e4b8e5ab3633fb8a` | no |
 
 ---
 
@@ -162,13 +167,20 @@ Issue #378 lists related repositories: `SintraPrime`, `ike-bot`, `ike-trust-agen
 
 ## 8. Recommended next implementation task (ONE)
 
-**MODULE-REGISTRY-001 — machine-readable one-product module registry (seeded from this map).**
+**Correction (2026-11-08):** The first revision of this section proposed a standalone `MODULE-REGISTRY-001` and asserted it did not overlap PR #367. That assertion was wrong. PR #367's `SP-COMPLETION-MAP-001.md` (WS-00) already requires a machine-readable `release_surface_manifest` binding every release-bearing surface to owner, entrypoint, dependencies, tests, CI lane, runtime, data stores, APIs, UI consumers, feature flag, deployment target, and rollback, and `SP-COMPLETION-BASELINE-001.md` names **`SP-RELEASE-SURFACE-MANIFEST-001`** as the next authorized implementation target (head `feaf658e0a34d0e9bb1a23767b3becb1a8419ae1`). Related existing work: PR [#241](https://github.com/ihoward40/SintraPrime-Unified/pull/241) (M-001 AI-OS agent registry schema), and the completion map's own directive to extend `agent_runtime`'s existing typed manifests rather than build another agent registry. A separate module registry would create a second source of truth; it is withdrawn.
 
-- **Scope:** Add `registry/modules.json` (entries: module name, canonical path, owning domain, status [`canonical` / `experimental` / `pr-branch-only` / `external-not-inspected`], entrypoint, source-of-truth doc, last-verified SHA) plus `scripts/ci/validate_module_registry.py` and `scripts/ci/tests/test_validate_module_registry.py`. Seed only the five areas mapped here: Mission Control, agents/agent runtime, Hermes, IKE-Bot, Agent Commons (status `pr-branch-only` pending the #244/#346 decision). Wire the validator into the existing `claims-validation` CI lane alongside `validate_repository_claims.py`.
-- **Acceptance checks:** (1) validator exits 0 on the seeded registry and fails when an entry's path does not exist at the checked commit; (2) new unit tests pass; (3) existing `validate_repository_claims.py` still passes; (4) DOX pass updates the owning AGENTS.md files for `registry/` and `scripts/ci/` scope as required.
-- **Dependencies:** This Increment Three map (for seed data and statuses). No code dependencies. Does not conflict with PR #367 — that PR is a completion *plan*; the registry is a machine-readable *current-state* artifact. Must not pre-empt the #244/#346 Agent Commons placement decision (Agent Commons is seeded as `pr-branch-only`).
-- **Rollback:** Delete `registry/modules.json`, the validator, its tests, and the CI lane step. No runtime or schema impact.
-- **Coverage check:** Verified 2026-11-08 via `gh pr list --state open --limit 100` and a `module_registry` grep that no open PR or main-path file provides a module registry; this task is not covered by active work.
+**Reconciled recommendation: implement one bounded first increment of SP-RELEASE-SURFACE-MANIFEST-001, scoped to the five areas mapped in this document, with coverage explicitly marked PARTIAL.**
+
+- **Scope:** Create the machine-readable release-surface manifest at the location and in the format PR #367's WS-00 spec defines, seeded with entries for Mission Control, agents/agent runtime, Hermes, IKE-Bot, and Agent Commons only; plus `scripts/ci/validate_release_surface_manifest.py` and unit tests, wired into the existing `claims-validation` CI lane. The manifest header must record `coverage: PARTIAL (5 of 16 WS-00 areas)` so it cannot be read as the complete WS-00 inventory. Any future separate module view must be generated from, or explicitly reference, this single authoritative inventory.
+- **Entry contract (validation rules):**
+  - Every entry declares `verified_ref` — the commit/ref against which its paths were checked: the declared baseline (`051e2594…`) for main-present entries; the recorded branch head SHA for branch-only entries.
+  - `presence`: `on-main` (path must exist at the declared baseline; CI validates `on-main` paths against the checkout under test) / `branch-only` (branch name and head SHA recorded; no existence check against main) / `external-not-inspected` (no path recorded; no check).
+  - Three separate fields, never collapsed into one status: `source_presence` (code exists in the repository), `canonical_status` (`canonical` / `candidate` / `unresolved` — the ownership decision), and `runtime_evidence` (`none` / `tests-only` / `certified-lane:<lane-name>`). `canonical_status: unresolved` keeps competing implementations visible.
+  - Agent Commons is entered as `presence: branch-only`, `canonical_status: unresolved`, listing PR #244 and PR #346 as candidates. The registry must not choose between Agent Commons implementations through a status label; that decision remains with review and Principal approval.
+- **Acceptance checks:** (1) validator exits 0 on the seeded manifest and fails when an `on-main` entry's path is missing at the checked commit; (2) `branch-only` and `external-not-inspected` entries are representable without triggering path checks; (3) new unit tests pass; (4) existing `validate_repository_claims.py` still passes; (5) DOX pass updates the owning AGENTS.md files for every folder touched.
+- **Dependencies:** PR #367's WS-00 manifest specification — this increment implements a bounded slice of that existing proposal, not a competing artifact — and this map for seed data. If PR #367 merges first, follow its final manifest location and format; if this increment lands first, WS-00 work extends the seeded manifest to full coverage.
+- **Rollback:** revert the single bounded implementation commit, including its CI lane edit and DOX edits. No runtime or schema impact.
+- **Coverage check:** complete open-PR inventory (111 PRs, retrieved 2026-11-08T17:04:14Z, `--limit 200`) re-checked: no open PR implements the release-surface manifest; #367 specifies but does not implement it; #241 covers an agent-registry schema only, not a release-surface inventory.
 
 ---
 
@@ -177,8 +189,8 @@ Issue #378 lists related repositories: `SintraPrime`, `ike-bot`, `ike-trust-agen
 | Claim class | Evidence |
 |---|---|
 | Baseline commit | `git log -1 origin/main` → `051e2594c67a805ceacc66ea2a6fc6db9c0bc793` |
-| Open PR inventory | `gh pr list --state open --limit 100` (2026-11-08); per-PR `gh pr view <n> --json files,headRefName,isDraft` |
-| Branch head SHAs | `git ls-remote origin <branch>` (recorded inline above) |
+| Open PR inventory | Complete retrieval: `gh pr list --state open --limit 200` at 2026-11-08T17:04:14Z → 111 open PRs; per-PR `gh pr view <n> --json files,headRefName,headRefOid,isDraft`. An earlier `--limit 100` retrieval was capped; previously unexamined PRs identified and checked (see Method) |
+| Branch head SHAs | `git ls-remote origin <branch>` and `gh pr view <n> --json headRefOid` (recorded inline above; #279/#361/#366 heads confirmed 2026-11-08) |
 | Mission Control on main | `portal/main.py` router imports; Increment Two section 3 |
 | Agent Commons absent on main | repo-wide `grep` for `agent_commons` / `Agent Commons` at baseline → zero matches |
 | IKE-Bot on main | `git ls-tree origin/main apps/`; `apps/ike-bot/main/` file inspection; `git log -- apps/ike-bot` → `dbf2c56a` |

@@ -258,13 +258,18 @@ jobs:
   claims-validation:
     runs-on: ubuntu-latest
     steps:
+      # Full history: the release-surface manifest is verified against the git tree
+      # of its declared baseline commit, which a shallow clone would not contain.
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Validate documentation and claims integrity
         run: python scripts/ci/validate_repository_claims.py
+      - name: Validate release-surface manifest
+        run: python scripts/ci/validate_release_surface_manifest.py
       - name: Run validator tests
         run: python -m pytest scripts/ci/tests/ -q
   auth-tenant-rbac-certification:

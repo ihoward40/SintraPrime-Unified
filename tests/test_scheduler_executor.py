@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import os
 import shlex
-import subprocess
 import sys
 import textwrap
 import time
@@ -48,8 +47,6 @@ def _stderr_fn(**_kw):
 
 
 def _shell_command(args: list[str]) -> str:
-    if os.name == "nt":
-        return subprocess.list2cmdline(args)
     return shlex.join(args)
 
 
@@ -231,6 +228,18 @@ class TestSafePython:
 
 
 class TestRestrictedShell:
+    @pytest.mark.parametrize(
+        "path",
+        [
+            r"C:\Python311\python.exe",
+            r"C:\Users\runner\Python Scripts\python.exe",
+        ],
+    )
+    def test_shell_command_preserves_windows_paths(self, path):
+        args = ["python", path]
+
+        assert shlex.split(_shell_command(args)) == args
+
     def test_basic_command(self, executor, python_script_command):
         output = executor.execute_shell(python_script_command("print('hello')"))
         assert "hello" in output

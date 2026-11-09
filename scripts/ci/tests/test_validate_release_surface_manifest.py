@@ -60,7 +60,7 @@ def template_repo(tmp_path_factory):
     return SimpleNamespace(root=root, base=base)
 
 
-@pytest.fixture()
+@pytest.fixture
 def repo(template_repo, tmp_path):
     root = tmp_path / "repo"
     shutil.copytree(template_repo.root, root)
@@ -374,7 +374,7 @@ def test_external_entry_unknown_source_presence_is_valid(repo):
     assert errors_for(good_manifest(repo.base), repo) == []
 
 
-@pytest.mark.parametrize("presence_index,value", [(0, "unknown"), (1, "unknown"), (0, "no")])
+@pytest.mark.parametrize(("presence_index", "value"), [(0, "unknown"), (1, "unknown"), (0, "no")])
 def test_unknown_source_presence_only_for_external(repo, presence_index, value):
     manifest = good_manifest(repo.base)
     manifest["entries"][presence_index]["source_presence"] = value
@@ -464,7 +464,7 @@ def test_duplicate_id_fails(repo):
 
 
 @pytest.mark.parametrize(
-    "field,value",
+    ("field", "value"),
     [
         ("presence", "everywhere"),
         ("source_presence", "maybe"),
@@ -571,20 +571,20 @@ def test_malformed_on_main_entry_values_report_errors(repo, field, bad):
 _NON_SCALAR_OR_EMPTY = [None, [], {}, ["x"], {"k": "v"}, True, ""]
 # Invalid values differ per field: PR 7 and branch name "1" are legitimate.
 BRANCH_REF_INVALID = (
-    [("pr", v) for v in _NON_SCALAR_OR_EMPTY + [1.5, "1", "7", -3, 0]]
-    + [("branch", v) for v in _NON_SCALAR_OR_EMPTY + [7, 1.5]]
-    + [("head_sha", v) for v in _NON_SCALAR_OR_EMPTY + [7, 1.5, "1", -3, 0]]
+    [("pr", v) for v in [*_NON_SCALAR_OR_EMPTY, 1.5, "1", "7", -3, 0]]
+    + [("branch", v) for v in [*_NON_SCALAR_OR_EMPTY, 7, 1.5]]
+    + [("head_sha", v) for v in [*_NON_SCALAR_OR_EMPTY, 7, 1.5, "1", -3, 0]]
 )
 
 
-@pytest.mark.parametrize("field,bad", BRANCH_REF_INVALID, ids=repr)
+@pytest.mark.parametrize(("field", "bad"), BRANCH_REF_INVALID, ids=repr)
 def test_malformed_branch_ref_values_report_errors(repo, field, bad):
     manifest = good_manifest(repo.base)
     manifest["entries"][1]["branch_refs"][0][field] = bad
     assert errors_for(manifest, repo)
 
 
-@pytest.mark.parametrize("field,value", [("pr", 7), ("pr", 100000), ("branch", "1"), ("branch", "release/v1.2")])
+@pytest.mark.parametrize(("field", "value"), [("pr", 7), ("pr", 100000), ("branch", "1"), ("branch", "release/v1.2")])
 def test_legitimate_branch_ref_values_accepted(repo, field, value):
     manifest = good_manifest(repo.base)
     manifest["entries"][1]["branch_refs"][0][field] = value
@@ -706,7 +706,7 @@ def test_real_manifest_separates_source_canonical_and_runtime_concepts():
         assert {"source_presence", "canonical_status", "runtime_evidence"} <= set(entry)
 
 
-def test_real_manifest_mutation_of_baseline_is_detected(tmp_path):
+def test_real_manifest_mutation_of_baseline_is_detected():
     manifest = copy.deepcopy(_real())
     manifest["baseline_ref"] = "0" * 40
     errors = vm.validate_manifest(manifest, vm.REPO_ROOT)

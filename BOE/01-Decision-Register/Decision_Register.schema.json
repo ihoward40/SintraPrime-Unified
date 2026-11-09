@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sintraprime.local/boe/decision-register.schema.json",
+  "title": "BOE Decision Register Entry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision_id",
+    "decision_title",
+    "recorded_on",
+    "status",
+    "decision_owner",
+    "decision_summary",
+    "evidence",
+    "execution_items",
+    "review_date"
+  ],
+  "properties": {
+    "decision_id": {
+      "type": "string",
+      "pattern": "^DR-[0-9]{4}$"
+    },
+    "decision_title": {
+      "type": "string",
+      "minLength": 3
+    },
+    "recorded_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["proposed", "active", "superseded"]
+    },
+    "decision_owner": {
+      "type": "string",
+      "minLength": 3
+    },
+    "decision_summary": {
+      "type": "string",
+      "minLength": 10
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source", "captured_on", "note"],
+        "properties": {
+          "source": { "type": "string", "minLength": 3 },
+          "captured_on": { "type": "string", "format": "date" },
+          "note": { "type": "string", "minLength": 3 }
+        }
+      }
+    },
+    "execution_items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["description", "owner", "due_date", "status"],
+        "properties": {
+          "description": { "type": "string", "minLength": 3 },
+          "owner": { "type": "string", "minLength": 3 },
+          "due_date": { "type": "string", "format": "date" },
+          "status": { "type": "string", "enum": ["open", "in_progress", "complete"] }
+        }
+      }
+    },
+    "review_date": {
+      "type": "string",
+      "format": "date"
+    }
+  }
+}

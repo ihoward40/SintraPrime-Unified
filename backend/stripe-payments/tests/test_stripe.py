@@ -191,13 +191,13 @@ class TestPricingCalculator:
         calculator = PricingCalculator()
 
         monthly = 9900  # $99
-        annual = 108900  # $1089 (2 months free)
+        annual = 108900  # $1089 (1 month free)
 
         result = calculator.calculate_annual_savings(monthly, annual)
 
         assert result["monthly_price"] == 9900
         assert result["annual_price"] == 108900
-        assert result["savings"] == 10800  # $108 saved
+        assert result["savings"] == 9900  # $99 saved
 
     def test_get_tier_pricing(self):
         """Test getting tier pricing"""

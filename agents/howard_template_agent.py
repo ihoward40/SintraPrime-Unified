@@ -139,6 +139,65 @@ TEMPLATES = {
         "notes": "Describe grant opportunity, deadline, denial, eligibility issue, application record, funding amount, or supporting business evidence. External action remains locked."
     },
 
+    "agent_passport_template.json": {
+        "case_name": "Agent Passport",
+        "evidence_type": "agent passport",
+        "title": "Agent Passport profile",
+        "source": "Agent registry / portfolio records / authority docs / performance telemetry",
+        "date_found": TODAY,
+        "agent_id": "",
+        "agent_name": "",
+        "identity": {
+            "agent_type": "",
+            "version": "",
+            "owner": "",
+            "status": "active"
+        },
+        "portfolio": {
+            "domains": [],
+            "products": [],
+            "active_programs": []
+        },
+        "authority": {
+            "role": "",
+            "jurisdictions": [],
+            "approval_level": "",
+            "constraints": []
+        },
+        "competencies": [
+            {
+                "name": "",
+                "proficiency": "",
+                "last_validated": ""
+            }
+        ],
+        "integrations": [
+            {
+                "name": "",
+                "type": "",
+                "status": "inactive"
+            }
+        ],
+        "performance": {
+            "success_rate": 0,
+            "average_cycle_time_hours": 0,
+            "sla_compliance_rate": 0,
+            "period": ""
+        },
+        "trust_score": {
+            "overall": 0,
+            "components": {
+                "identity_confidence": 0,
+                "authority_compliance": 0,
+                "competency_reliability": 0,
+                "integration_health": 0,
+                "performance_consistency": 0
+            },
+            "last_updated": ""
+        },
+        "notes": "Capture identity, portfolio, authority, competencies, integrations, performance, and trust score evidence. External action remains locked."
+    },
+
     "generic_evidence_template.json": {
         "case_name": "",
         "evidence_type": "",

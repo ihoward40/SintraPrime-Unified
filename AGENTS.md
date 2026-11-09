@@ -78,6 +78,11 @@ Default section order:
 
 When the user requests a durable behavior change, record it here or in the relevant child AGENTS.md
 
+## Deployment Authorization
+
+- `apps/ike-bot/main/vercel.json` owns the Vercel Git-deployment hold for the `apps/ike-bot/main` project root. Keep `git.deploymentEnabled` set to `false` until the owner explicitly authorizes resuming automatic deployments; this applies to all Git branches, including `main`.
+- Merge authorization does not authorize deployment. The flag does not disable CLI/API deployments or GitHub deployment workflows; those routes retain their separate authorization gate.
+
 ## Security Regression CI Contract
 
 - The `ci.yml` workflow applies a workflow-wide `GITHUB_TOKEN` ceiling of `contents: read` to every job, including same-repository pull requests. Any broader job-level override requires a separately reviewed, specifically authorized action/API need; do not expose repository/app secrets or privileged credentials to candidate-controlled code.

@@ -289,6 +289,21 @@ class PrincipalBriefResponse(BaseModel):
     exclusively through the governed approval service.
     """
 
+    class ExecutionState(BaseModel):
+        running_workers: int = 0
+        queued_tasks: int = 0
+        worktree_ownership_claims: int = 0
+        execution_failures: int = 0
+        timeouts: int = 0
+        cancellations: int = 0
+        orphan_process_findings: int = 0
+        external_effect_blocked: int = 0
+        denied_executions: int = 0
+        network_policy_status: str = "deny"
+        network_enforcement_level: str = "unavailable_fail_closed"
+        network_sandbox_available: bool = False
+        network_certification: str = "unavailable"
+
     schema_version: str
     generated_at: datetime
     available: bool
@@ -303,7 +318,7 @@ class PrincipalBriefResponse(BaseModel):
     authority_expirations: list[dict] = Field(default_factory=list)
     memory_change_summary: dict = Field(default_factory=dict)
     recommended_principal_decisions: list[dict] = Field(default_factory=list)
-    execution_state: dict | None = None  # GOD-1X backend visibility (Phase 15)
+    execution_state: ExecutionState | None = None  # GOD-1X backend visibility (Phase 15)
 
 
 @router.get("/principal-brief", response_model=PrincipalBriefResponse)
@@ -320,6 +335,7 @@ async def get_principal_brief(
     from omnibrain.principal_brief import build_brief
 
     from ..services.principal_brief_service import (
+        build_runtime_execution_state,
         empty_brief_payload,
         normalize_brief,
     )
@@ -339,6 +355,8 @@ async def get_principal_brief(
         payload = empty_brief_payload(reason=unavailable_reason or "unavailable")
         return PrincipalBriefResponse(**payload)
 
+    execution_state = build_runtime_execution_state()
+
     # Admitted state aggregation. In local/shadow mode there are no agents
     # executing yet, so the brief is valid but empty — an honest state.
     brief = build_brief(
@@ -349,6 +367,7 @@ async def get_principal_brief(
         authority_expirations=[],
         memory_change_summary={},
         recommended_principal_decisions=[],
+        execution_state=execution_state,
     )
     payload = normalize_brief(brief.to_dict())
     payload["available"] = True

@@ -22,7 +22,7 @@ Usage:
         charge_off_year=2022,
         furnisher_address="First Premier Bank\\nP.O. Box 5524\\nSioux Falls, SD 57117-5524",
     )
-    engine = CreditDisputeEngine(consumer_name="Isiah Tarik Howard", consumer_address="Newark, NJ 07114")
+    engine = CreditDisputeEngine(consumer_name="Demo Consumer", consumer_address="Sample City, ST 12345")
     docs = engine.generate_all(account)
 """
 
@@ -259,10 +259,10 @@ class CreditDisputeEngine:
     Example:
         >>> engine = CreditDisputeEngine(
         ...     consumer=ConsumerProfile(
-        ...         name="Isiah Tarik Howard",
-        ...         address="Newark, NJ 07114",
-        ...         phone="(908) 365-4234",
-        ...         email="isiahh@ikesolutions.org",
+        ...         name="Demo Consumer",
+        ...         address="Sample City, ST 12345",
+        ...         phone="(555) 010-0000",
+        ...         email="consumer@example.dev",
         ...     )
         ... )
         >>> packet = engine.generate_all(account)
@@ -544,7 +544,7 @@ class CreditDisputeEngine:
         case_notes = (
             f"CASE: {account.creditor_name} Charge-off Dispute\n"
             f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
-            f"Status: DRAFT — Awaiting Isiah Howard approval before any submission\n\n"
+            f"Status: DRAFT — Awaiting case-owner approval before any submission\n\n"
             f"ACCOUNT: {account.account_type} | Limit: ${account.credit_limit:,.2f} | "
             f"Balance: ${account.reported_balance:,.2f} | Util: {int(account.utilization_pct)}%\n"
             f"Status: {account.status} | Charge-off year: {account.charge_off_year or 'unknown'}\n\n"
@@ -578,10 +578,10 @@ class CreditDisputeEngine:
 # ---------------------------------------------------------------------------
 
 HOWARD_RECOVERY_CONSUMER = ConsumerProfile(
-    name="Isiah Tarik Howard",
-    address="Newark, NJ 07114",
-    phone="(908) 365-4234",
-    email="isiahh@ikesolutions.org",
+    name="Demo Consumer",
+    address="Sample City, ST 12345",
+    phone="(555) 010-0000",
+    email="consumer@example.dev",
 )
 
 FIRST_PREMIER_ACCOUNT = DisputeAccount(

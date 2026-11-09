@@ -39,11 +39,14 @@ Modes (receipt "mode"):
 
 Collection counts are reported only when the helper observed collection complete
 (count_source "collection_helper"); if pytest aborted earlier (exit 3/4, a raising
-hook) they are null even though the evidence file exists.
+hook) they are null even though the evidence file exists. Collection-mode skipped
+counts remain null because the helper does not measure skipped collection reports.
 
 Execution-mode executed_count = tests whose body is known to have run (passed +
-failed + xpassed). It is taken from pytest's summary line, or from progress marks only
-when every mark is '.' or 'F'. Setup errors ('E'), skips and xfails can occur before
+failed + xpassed). It requires an ordinary completed pytest outcome (exit 0 or 1).
+It is taken from pytest's summary line, or from progress marks only when every mark
+is '.' or 'F' and the final progress record reached 100%. Partial progress and
+interrupted/internal-error outcomes leave the total unknown. Setup errors ('E'), skips and xfails can occur before
 or inside a body, so if the summary reports any xfailed/skipped, or any mark is not
 '.'/'F', executed_count (and, for marks, errors) is null. Legacy passed/failed/skipped keep their old
 mark-derived values. If quiet output contains no outcome counts, pytest exit 5
@@ -192,7 +195,7 @@ EXIT_WALL_CLOCK_TIMEOUT = 3
 EXIT_EVIDENCE_GATE = 6  # pytest exited 0 but the evidence gate did not pass
 EXIT_LAUNCH_ERROR = 7  # the pytest subprocess could not be started
 
-_COLLECT_FLAGS = frozenset({"--collect-only", "--co"})
+_COLLECT_FLAGS = frozenset({"--collect-only", "--co", "--collectonly"})
 _COLLECT_PLUGIN_FILE = Path(__file__).with_name("_certify_collect_plugin.py")
 _COLLECT_PLUGIN_MODULE = _COLLECT_PLUGIN_FILE.stem
 _COLLECT_EVIDENCE_ENV = "SINTRAPRIME_CERT_COLLECT_JSON"
@@ -247,10 +250,12 @@ def _count_progress_marks(stdout: str) -> dict[str, int] | None:
     """Count pytest progress marks. 'E' (setup/teardown error), 's', 'x' and 'X' cannot be
     told apart from call-phase outcomes by the mark alone, so they make the run ambiguous."""
     dots = skips = legacy_failed = ambiguous = 0
+    complete = False
     for line in stdout.splitlines():
         stripped = line.strip()
         if re.fullmatch(r"[.sFXxXE]+(\s+\[\s*\d+%\])?", stripped):
             marks = stripped.split("[")[0].strip()
+            complete = bool(re.search(r"\[\s*100%\]$", stripped))
             dots += marks.count(".")
             skips += marks.count("s")
             other = marks.count("X") + marks.count("x") + marks.count("E")
@@ -258,7 +263,10 @@ def _count_progress_marks(stdout: str) -> dict[str, int] | None:
             legacy_failed += marks.count("F") + other
     if not (dots or skips or legacy_failed):
         return None
-    return {"dots": dots, "skips": skips, "legacy_failed": legacy_failed, "ambiguous": ambiguous}
+    return {
+        "dots": dots, "skips": skips, "legacy_failed": legacy_failed,
+        "ambiguous": ambiguous, "complete": complete,
+    }
 
 
 def _blank_analysis() -> dict[str, object]:
@@ -287,6 +295,7 @@ def _analyze_execution(stdout: str, rc: int) -> tuple[str, dict[str, object]]:
     summary = _last_timed_line(stdout)
     counts: dict[str, int] | None = None
     marks_unambiguous = False
+    marks_complete = False
     if summary is not None:
         body = _TIMED_LINE_RE.match(summary).group("body")  # type: ignore[union-attr]
         found = {
@@ -301,6 +310,7 @@ def _analyze_execution(stdout: str, rc: int) -> tuple[str, dict[str, object]]:
         if marks is not None:
             passed, skipped, failed = marks["dots"], marks["skips"], marks["legacy_failed"]
             marks_unambiguous = marks["ambiguous"] == 0
+            marks_complete = bool(marks["complete"])
             counts = dict.fromkeys(_COUNT_KEYS, 0) | {
                 "passed": passed,
                 "skipped": skipped,
@@ -335,10 +345,14 @@ def _analyze_execution(stdout: str, rc: int) -> tuple[str, dict[str, object]]:
     # imply a body ran (setup/teardown problems are "error"). Summary xfailed and skipped
     # do not: both can happen before the body (xfail(run=False), skip marks) or inside it
     # (pytest.xfail()/pytest.skip()), so any of them makes the count unknown. From progress
-    # marks it is established only when every mark is '.' or 'F'. Also unknown when
-    # failures are uncounted. Unknown is null, never a guess.
-    summary_ok = counts["failed"] >= 0 and counts["xfailed"] == 0 and counts["skipped"] == 0
-    if (not from_marks and summary_ok) or (from_marks and marks_unambiguous):
+    # marks it additionally needs a terminal 100% record: an aborted body can enter
+    # without emitting a mark. Interruptions/internal errors and uncounted failures
+    # cannot establish a total, even if some outcomes were printed.
+    summary_ok = (
+        rc in (0, 1) and counts["failed"] >= 0
+        and counts["xfailed"] == 0 and counts["skipped"] == 0
+    )
+    if summary_ok and (not from_marks or (marks_unambiguous and marks_complete)):
         a["executed_count"] = (
             counts["passed"] + max(counts["failed"], 0) + counts["xfailed"] + counts["xpassed"]
         )
@@ -406,8 +420,9 @@ def _analyze_collection(
     """Collection-mode evidence: node ids come from the private helper plugin, never text."""
     a = _blank_analysis()
     reasons: list[str] = a["reasons"]  # type: ignore[assignment]
-    # --collect-only never runs a test body, so nothing was executed.
-    a.update(passed=0, failed=0, skipped=0, errors=0, executed_count=0)
+    # Collection never runs a test body. Modules can still be skipped on import,
+    # and the helper does not measure those reports, so skipped remains unknown.
+    a.update(passed=0, failed=0, errors=0, executed_count=0)
     if rc != 0:
         reasons.append(f"pytest exit code {rc}" + (" (no tests collected/selected)" if rc == 5 else ""))
     data = _read_collection_evidence(evidence_file)

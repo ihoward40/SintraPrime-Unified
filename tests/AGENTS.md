@@ -19,6 +19,8 @@ Owns the root-level test suite: scheduler tests, agent unit tests, and certifica
 - Security tests must validate that no dangerous runtime exec patterns exist
 - `test_certify_runner.py` points certify at a throwaway repo root under `tmp_path`: tiny real pytest collections and controlled subprocess faults only; never a real lane, service or DB, and nothing written in the repo. It pins: `COLLECTION PASS` means `executed_count` 0 and is never runtime certification; unknown evidence is `null`, not 0 or PASS; zero tests, a missing/empty configured path or an incomplete collection fail the gate; raw pytest return code is preserved (certify's own codes: 3 timeout, 6 evidence gate, 7 launch error); failure temp evidence is preserved; `TARGETS`/`LANE_ENV` fingerprints, 120s per-test and 1800s wall-clock caps and the network guard are unchanged
 
+- Receipt regressions cover all three pytest collection aliases, real module import skips, and real body-entry sentinels during aborted runs. Partial progress and abnormal exits cannot establish execution totals; collection skip counts remain unknown while unmeasured.
+
 ## Work Guidance
 
 - Cover both quiet output and timed pytest summaries. Module-level skips, and skips/expected failures before or inside a body, must not create false zero counts or unsupported execution claims.

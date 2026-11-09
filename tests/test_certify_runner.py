@@ -196,7 +196,7 @@ def test_positive_collection_is_labeled_collection_pass_and_executes_nothing(san
     assert receipt["pytest_returncode"] == 0
     # Executed count is 0 and the outcome counters carry no executed-test success.
     assert receipt["executed_count"] == 0
-    assert (receipt["passed"], receipt["failed"], receipt["skipped"]) == (0, 0, 0)
+    assert (receipt["passed"], receipt["failed"], receipt["skipped"]) == (0, 0, None)
     # Collected vs selected: the experimental marker is deselected by the lane filter.
     assert (receipt["collected_count"], receipt["selected_count"]) == (5, 4)
     assert receipt["deselected_count"] == 1
@@ -448,18 +448,43 @@ def test_collection_failure_is_recorded_not_reported_as_success(sandbox, label, 
     assert (sandbox.root / "artifacts" / "test-temp" / receipt["run_id"]).exists()
 
 
-def test_collect_flag_passed_as_extra_pytest_arg_is_still_collection_mode(sandbox):
-    calls = sandbox.fake_pytest(lambda cmd, _kw: completed(cmd, 0, "3 passed in 0.01s"))
+@pytest.mark.parametrize("collect_flag", ["--collect-only", "--co", "--collectonly"])
+def test_collect_flag_passed_as_extra_pytest_arg_is_still_collection_mode(sandbox, collect_flag):
+    sandbox.add("pkg_a/test_a.py", MODULE_A)
     sandbox.targets("pkg_a")
 
-    # argparse would abbreviate a bare --co to --collect-only; after '--' it is passed through.
-    _, receipt, _ = sandbox.run("--", "--co")
+    exit_code, receipt, _ = sandbox.run("--", collect_flag)
 
-    cmd = calls[0][0]
+    assert exit_code == 0
     assert receipt["mode"] == "collection"
-    assert "--co" in cmd
-    assert "--collect-only" not in cmd  # not duplicated
+    assert receipt["gate_result"] == "COLLECTION PASS"
+    assert receipt["selected_count"] == 2
+    assert receipt["executed_count"] == 0
+    assert sandbox.executed_bodies() == []
+    cmd = receipt["command"]
+    assert cmd.count(collect_flag) == 1
+    if collect_flag != "--collect-only":
+        assert "--collect-only" not in cmd
     assert "_certify_collect_plugin" in cmd
+
+
+def test_collection_import_skip_is_not_reported_as_measured_zero(sandbox):
+    sandbox.add("pkg_a/test_a.py", MODULE_A)
+    sandbox.add(
+        "pkg_a/test_import_skip.py",
+        "import pytest\npytest.skip('review collection skip', allow_module_level=True)\n",
+    )
+    sandbox.targets("pkg_a")
+
+    exit_code, receipt, _ = sandbox.run("--collect-only", "--", "-rs")
+
+    assert exit_code == 0
+    assert receipt["gate_result"] == "COLLECTION PASS"
+    assert receipt["selected_count"] == 2
+    assert receipt["executed_count"] == 0
+    assert sandbox.executed_bodies() == []
+    assert "SKIPPED [1]" in Path(receipt["stdout_log"]).read_text(encoding="utf-8")
+    assert receipt["skipped"] is None  # collection helper does not measure skip reports
 
 
 # --------------------------------------------------------------------------------------
@@ -864,3 +889,48 @@ def test_executed_count_is_null_whenever_the_evidence_is_ambiguous(
 
     assert receipt["executed_count"] == executed
     assert receipt["errors"] == errors
+
+
+@pytest.mark.parametrize(
+    ("stdout", "rc"),
+    [
+        (".... [50%]\n", 1),
+        ("..F. [50%]\n", 1),
+        (".... [100%]\n", 2),
+        ("..F. [100%]\n", 3),
+        ("2 passed, 1 failed in 0.10s\n", 2),
+        ("2 passed, 1 failed in 0.10s\n", 3),
+    ],
+    ids=["uncounted-failure", "partial-progress", "interrupted-progress",
+         "internal-error-progress", "interrupted-summary", "internal-error-summary"],
+)
+def test_partial_or_interrupted_execution_keeps_total_unknown(sandbox, stdout, rc):
+    sandbox.fake_pytest(lambda cmd, _kw: completed(cmd, rc, stdout))
+    sandbox.targets("pkg_a")
+
+    exit_code, receipt, _ = sandbox.run()
+
+    assert exit_code == rc == receipt["pytest_returncode"]
+    assert receipt["gate_result"] == "FAIL"
+    assert receipt["executed_count"] is None
+
+
+@pytest.mark.parametrize("abort", ["pytest.exit('review abort', returncode=1)", "raise KeyboardInterrupt"])
+def test_real_aborted_body_does_not_make_partial_progress_an_execution_total(sandbox, abort):
+    source = SENTINEL_HEADER + "\n"
+    for n in range(8):
+        source += f"def test_{n}():\n    mark('body-{n}')\n"
+        if n == 0:
+            source += "    assert False\n"
+        if n == 4:
+            source += f"    {abort}\n"
+        source += "\n"
+    sandbox.add("pkg_a/test_abort.py", source)
+    sandbox.targets("pkg_a")
+
+    exit_code, receipt, _ = sandbox.run()
+
+    assert exit_code in (1, 2)
+    assert len(sandbox.executed_bodies()) == 5
+    assert receipt["gate_result"] == "FAIL"
+    assert receipt["executed_count"] is None

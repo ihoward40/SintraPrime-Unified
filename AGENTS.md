@@ -77,8 +77,8 @@ Default section order:
 ## Certification Runner
 
 - `scripts/certify.py` is the serial certification runner with private observer `scripts/_certify_collect_plugin.py` (no `scripts/AGENTS.md`; this section and `tests/AGENTS.md` own its contract; the module docstring is the detailed reference)
-- `--collect-only` receipts are collection evidence only: `COLLECTION PASS`, `executed_count` 0, never runtime certification
-- Evidence that cannot be established is `null`, never a fabricated zero or PASS. A quiet pytest exit 5 establishes zero executions only; unobserved outcome counters, including collection-time skips, stay unknown.
+- `--collect-only` and passthrough pytest aliases `--co` / `--collectonly` produce collection evidence only: `COLLECTION PASS`, `executed_count` 0, never runtime certification
+- Evidence that cannot be established is `null`, never a fabricated zero or PASS. A quiet pytest exit 5 establishes zero executions only; unobserved outcome counters, including collection-time skips, stay unknown. Execution totals require ordinary completion evidence; partial progress and interrupted/internal-error outcomes stay unknown. Collection-only skip counts remain null because the helper does not measure skipped collection reports.
 - Receipt version 2 retains terminal receipts and stdout/stderr for valid subprocess attempts, including launch failures and wall-clock timeouts. `.github/workflows/portal-ci.yml` archives JSON, stdout and stderr with its existing always-run artifact step.
 
 ## User Preferences

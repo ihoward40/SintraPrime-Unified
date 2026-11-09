@@ -83,6 +83,13 @@ When the user requests a durable behavior change, record it here or in the relev
 - `apps/ike-bot/main/vercel.json` owns the Vercel Git-deployment hold for the `apps/ike-bot/main` project root. Keep `git.deploymentEnabled` set to `false` until the owner explicitly authorizes resuming automatic deployments; this applies to all Git branches, including `main`.
 - Merge authorization does not authorize deployment. The flag does not disable CLI/API deployments or GitHub deployment workflows; those routes retain their separate authorization gate.
 
+## Dependency Maintenance
+
+- The root `package.json` is a dependency-free command wrapper. Regenerate its lockfile from that manifest; do not restore obsolete dependencies from historical lockfile records.
+- `web/package-lock.json` and `web/pnpm-lock.yaml` remain supported install graphs. Keep targeted security versions aligned and prove both clean/frozen installations. The `dependency-security` CI matrix runs the actual installed-consumer tests, frontend build, and lint for each manager.
+- Root/frontend Node support is `20 || >=22`, matching the patched modern minimatch dependency. Scope the minimatch override to `@typescript-eslint/typescript-estree`; legacy minimatch consumers have a different export API and must not be globally overridden. Keep npm and pnpm override semantics equivalent.
+- `scripts/ci/tests/test_dependency_security.py` checks manifest/lock consistency and the bounded advisory floors. `scripts/ci/tests/dependency_security.test.cjs` exercises synthetic loopback redirect credentials, typed ESLint project resolution, and Tailwind/PostCSS compilation. These are not a claim that all repository advisories are resolved.
+
 ## Security Regression CI Contract
 
 - The `ci.yml` workflow applies a workflow-wide `GITHUB_TOKEN` ceiling of `contents: read` to every job, including same-repository pull requests. Any broader job-level override requires a separately reviewed, specifically authorized action/API need; do not expose repository/app secrets or privileged credentials to candidate-controlled code.

@@ -85,6 +85,7 @@ When the user requests a durable behavior change, record it here or in the relev
 - Missing, malformed, incomplete, stale, or internally inconsistent evidence fails closed. Independent certification is separate from CI success.
 - The governance policy workflow must always publish the required `gov-001a-regression`, `governance-security-regression (gov001a, governance/tests/test_gov001a_fail_closed.py, 37)`, and `governance-security-regression (governance, governance/tests/test_governance.py, 100)` contexts with explicit job/matrix names.
 - Portal and Docker applicability is a three-state contract: applicable runs the substantive lane; not-applicable requires machine-checkable diff proof; unknown or failed evaluation fails closed. Manual dispatch is treated as applicable.
+- Applicability consumes NUL-delimited Git filenames without whitespace or separator normalization; incomplete, empty, or undecodable path records fail closed. Shared applicability helper and helper-test changes apply to both Portal and Docker lanes.
 
 ## Child DOX Index
 

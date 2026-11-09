@@ -56,17 +56,25 @@ def _subjects(event: dict) -> tuple[str, str]:
 
 
 def _changed_files(base: str, head: str, event_name: str) -> list[str]:
-    revision_range = f"{base}...{head}" if event_name == "pull_request" else f"{base} {head}"
+    subjects = [f"{base}...{head}"] if event_name == "pull_request" else [base, head]
     proc = subprocess.run(
-        ["git", "diff", "--name-only", "--no-renames", *revision_range.split()],
+        ["git", "diff", "--name-only", "--no-renames", "-z", *subjects, "--"],
         check=False,
         capture_output=True,
-        text=True,
     )
     if proc.returncode:
-        detail = (proc.stderr or proc.stdout).strip()
+        detail = (proc.stderr or proc.stdout).decode("utf-8", errors="replace").strip()
         raise RuntimeError(f"cannot establish the subject diff: {detail}")
-    return sorted({line.strip().replace("\\", "/") for line in proc.stdout.splitlines() if line.strip()})
+    if not proc.stdout:
+        return []
+    # NUL records avoid Git's quoted-path escaping and preserve whitespace,
+    # backslashes, and Unicode. Text-mode newline conversion is unsafe here.
+    if not proc.stdout.endswith(b"\0"):
+        raise RuntimeError("subject diff contains an incomplete path record")
+    records = proc.stdout[:-1].split(b"\0")
+    if any(not path for path in records):
+        raise RuntimeError("subject diff contains an empty path record")
+    return sorted({path.decode("utf-8") for path in records})
 
 
 def _matches(path: str, pattern: str) -> bool:

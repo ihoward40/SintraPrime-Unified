@@ -445,3 +445,36 @@ jobs:
           name: gov001b-${{ matrix.name }}-inventory
           path: artifacts/ci/${{ matrix.name }}-inventory.json
           if-no-files-found: ignore
+
+  dependency-security:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        manager: [npm, pnpm]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify root wrapper clean install
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install frontend with npm
+        if: matrix.manager == 'npm'
+        working-directory: web
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install frontend with pnpm
+        if: matrix.manager == 'pnpm'
+        run: |
+          npm install --global --ignore-scripts pnpm@10.34.9
+          pnpm --dir web install --frozen-lockfile --ignore-scripts
+      - name: Test installed security-sensitive consumers
+        run: node --test scripts/ci/tests/dependency_security.test.cjs
+      - name: Build frontend
+        working-directory: web
+        run: npm run build
+      - name: Lint frontend
+        working-directory: web
+        run: npm run lint
+      - name: Verify installs did not rewrite dependency evidence
+        run: git diff --exit-code -- package.json package-lock.json web/package.json web/package-lock.json web/pnpm-lock.yaml web/pnpm-workspace.yaml

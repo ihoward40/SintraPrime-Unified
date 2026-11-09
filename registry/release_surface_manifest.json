@@ -1,0 +1,395 @@
+{
+  "manifest_id": "SP-RELEASE-SURFACE-MANIFEST-001",
+  "schema_version": 1,
+  "baseline_ref": "051e2594c67a805ceacc66ea2a6fc6db9c0bc793",
+  "generated": "2026-11-08",
+  "coverage": {
+    "status": "PARTIAL",
+    "covered_areas": [
+      "mission-control",
+      "agents",
+      "hermes",
+      "ike-bot",
+      "agent-commons"
+    ],
+    "not_covered": "Every other release-bearing surface in the repository is NOT yet inventoried. This manifest is a bounded first increment and is not the complete WS-00 release-surface inventory. External repositories were not inspected.",
+    "ws00_fields_pending": [
+      "classification",
+      "dependencies",
+      "runtime",
+      "data_stores",
+      "apis",
+      "ui_consumers",
+      "feature_flag",
+      "deployment_target",
+      "rollback"
+    ]
+  },
+  "authoritative_inputs": [
+    {
+      "ref": "PR #367 SP-COMPLETION-MAP-001.md (WS-00) and SP-COMPLETION-BASELINE-001.md",
+      "head_sha": "feaf658e0a34d0e9bb1a23767b3becb1a8419ae1"
+    },
+    {
+      "ref": "PR #391 docs/repository-convergence/increment-3-one-platform-integration-map.md",
+      "head_sha": "8e643ddaff36ca0c74a9155ca9448ee82cce407e"
+    }
+  ],
+  "field_semantics": {
+    "presence": "on-main: every path, entrypoint, test, owner and ci_lane file must exist with exact case in the git tree of baseline_ref AND in the checkout under test. branch-only: each candidate records PR, branch and full head SHA; nothing is checked against main and no fetch is made. external-not-inspected: no path recorded, no check.",
+    "source_presence": "yes: source exists in this repository at baseline_ref. branch-only: source exists only on the recorded PR branches. unknown: not inspected, so presence is neither claimed nor denied.",
+    "canonical_status": "Ownership decision, kept separate from presence and evidence. canonical / candidate / unresolved. This manifest does not ratify ownership; candidate and unresolved keep competing implementations visible.",
+    "runtime_evidence": "none / tests-only / certified-lane:<lane-name>. tests-only means tests exist on disk; it does not assert they were run or pass.",
+    "verified_ref": "on-main entries only: must equal baseline_ref. Branch-only evidence is each candidate's head_sha.",
+    "owner": "UNKNOWN, or dox:<path of the AGENTS.md whose scope contains the surface>.",
+    "ci_lane": "UNKNOWN, or the workflow files that run some of the entry's tests. Presence of a workflow file does not mean every listed test is covered."
+  },
+  "entries": [
+    {
+      "id": "mission-control-portal",
+      "area": "mission-control",
+      "name": "Mission Control portal routers, services and models",
+      "domain": "portal",
+      "owner": "dox:portal/AGENTS.md",
+      "ci_lane": [".github/workflows/ci.yml"],
+      "presence": "on-main",
+      "source_presence": "yes",
+      "canonical_status": "candidate",
+      "runtime_evidence": "tests-only",
+      "verified_ref": "051e2594c67a805ceacc66ea2a6fc6db9c0bc793",
+      "entrypoints": [
+        "portal/main.py",
+        "portal/routers/mission_control.py",
+        "portal/routers/mission_control_commands.py"
+      ],
+      "paths": [
+        "portal/routers/mission_control.py",
+        "portal/routers/mission_control_commands.py",
+        "portal/services/mission_control_command_guard.py",
+        "portal/services/mission_control_command_service.py",
+        "portal/services/mission_control_run_control_service.py",
+        "portal/services/permission_provisioning.py",
+        "docs/mission-control"
+      ],
+      "tests": [
+        "portal/tests/test_mission_control.py",
+        "portal/tests/test_mission_control_commands.py",
+        "portal/tests/test_mission_control_run_controls.py",
+        "portal/tests/test_permission_provisioning.py"
+      ],
+      "notes": "Per Increment Two: refusal-only command path (COMMAND_EXECUTION_NOT_ENABLED); no live pause/resume and no runner ownership. ci.yml names only two PostgreSQL run-control tests from this set; the remaining tests are not shown to run in a certification lane. Ownership ratification pending."
+    },
+    {
+      "id": "mission-control-open-prs",
+      "area": "mission-control",
+      "name": "Mission Control open PR branches",
+      "domain": "portal",
+      "owner": "UNKNOWN",
+      "ci_lane": "UNKNOWN",
+      "presence": "branch-only",
+      "source_presence": "branch-only",
+      "canonical_status": "unresolved",
+      "runtime_evidence": "none",
+      "branch_refs": [
+        {"pr": 265, "branch": "feat/phase-3c-command-authority", "head_sha": "1a5d9958248e0c99454dcd980bc85dbc0398e253"},
+        {"pr": 279, "branch": "fix/sintraprime-foundation-recovery", "head_sha": "2d71861dbe0a29ac81cd74782c4ca59ec7d20254"},
+        {"pr": 353, "branch": "feat/sp-mc3d-001-town", "head_sha": "a95a8383ccc5fd8d29ab656e9742f9bf9cfbdc94"}
+      ],
+      "notes": "Not merged. Certification labels in PR titles are not verified."
+    },
+    {
+      "id": "agents-legacy-package",
+      "area": "agents",
+      "name": "agents/ (Nova, Sigma, Zero, Chat, Howard)",
+      "domain": "agents",
+      "owner": "dox:agents/AGENTS.md",
+      "ci_lane": "UNKNOWN",
+      "presence": "on-main",
+      "source_presence": "yes",
+      "canonical_status": "unresolved",
+      "runtime_evidence": "tests-only",
+      "verified_ref": "051e2594c67a805ceacc66ea2a6fc6db9c0bc793",
+      "entrypoints": [],
+      "paths": [
+        "agents",
+        "agents/AGENTS.md"
+      ],
+      "tests": [
+        "tests/test_nova_agent.py",
+        "tests/test_sigma_agent.py",
+        "tests/test_zero_agent.py",
+        "tests/test_chat_agent_governed.py"
+      ],
+      "notes": "Howard is approval-gated, evidence-intake only. artifacts/convergence/mission-wiring/CONVERGENCE-DUPLICATES-001.md records agents/ as orphaned (zero production importers). Listed tests are root-level agent unit tests; not exhaustive."
+    },
+    {
+      "id": "agent-runtime-canonical",
+      "area": "agents",
+      "name": "agent_runtime canonical registry, delegation, receipts",
+      "domain": "agent_runtime",
+      "owner": "UNKNOWN",
+      "ci_lane": "UNKNOWN",
+      "presence": "on-main",
+      "source_presence": "yes",
+      "canonical_status": "unresolved",
+      "runtime_evidence": "tests-only",
+      "verified_ref": "051e2594c67a805ceacc66ea2a6fc6db9c0bc793",
+      "entrypoints": [
+        "agent_runtime/canonical.py",
+        "agent_runtime/registry.py"
+      ],
+      "paths": [
+        "agent_runtime",
+        "agent_runtime/canonical.py",
+        "agent_runtime/registry.py"
+      ],
+      "tests": [
+        "agent_runtime/tests"
+      ],
+      "notes": "Per Increment Two, agent runtime authority is UNRESOLVED. SP-COMPLETION-MAP-001 directs extending agent_runtime typed manifests rather than creating another agent registry; this manifest is not an agent registry."
+    },
+    {
+      "id": "swarm-runtime",
+      "area": "agents",
+      "name": "swarm_runtime governed swarm execution backend",
+      "domain": "swarm_runtime",
+      "owner": "UNKNOWN",
+      "ci_lane": [".github/workflows/swarm-runtime-ci.yml"],
+      "presence": "on-main",
+      "source_presence": "yes",
+      "canonical_status": "candidate",
+      "runtime_evidence": "tests-only",
+      "verified_ref": "051e2594c67a805ceacc66ea2a6fc6db9c0bc793",
+      "entrypoints": [],
+      "paths": [
+        "swarm_runtime"
+      ],
+      "tests": [
+        "swarm_runtime/tests"
+      ],
+      "notes": "Brought under the GOD-1 authority envelope by baseline commits 08060be7 and 051e2594. swarm-runtime-ci.yml runs named acceptance tests, not necessarily every test in swarm_runtime/tests."
+    },
+    {
+      "id": "mission-wiring-and-orchestration",
+      "area": "agents",
+      "name": "mission_wiring, omnibrain and orchestration A2A bus",
+      "domain": "mission_wiring/omnibrain/orchestration",
+      "owner": "UNKNOWN",
+      "ci_lane": "UNKNOWN",
+      "presence": "on-main",
+      "source_presence": "yes",
+      "canonical_status": "unresolved",
+      "runtime_evidence": "tests-only",
+      "verified_ref": "051e2594c67a805ceacc66ea2a6fc6db9c0bc793",
+      "entrypoints": [
+        "orchestration/a2a_protocol.py"
+      ],
+      "paths": [
+        "mission_wiring",
+        "omnibrain",
+        "orchestration/a2a_protocol.py"
+      ],
+      "tests": [
+        "mission_wiring/tests",
+        "omnibrain/tests",
+        "orchestration/tests"
+      ],
+      "notes": "orchestration/a2a_protocol.py is an in-memory priority bus. Overlaps with open PRs listed in agents-open-prs."
+    },
+    {
+      "id": "agents-open-prs",
+      "area": "agents",
+      "name": "Agents and agent runtime open PR branches",
+      "domain": "agent_runtime",
+      "owner": "UNKNOWN",
+      "ci_lane": "UNKNOWN",
+      "presence": "branch-only",
+      "source_presence": "branch-only",
+      "canonical_status": "unresolved",
+      "runtime_evidence": "none",
+      "branch_refs": [
+        {"pr": 271, "branch": "agent/omnibrain-god-mode-foundation", "head_sha": "e717710d9bc48546a0f69ae9514370baa2ff7d15"},
+        {"pr": 352, "branch": "feat/sp-agentic-runtime-20260927", "head_sha": "e6bf0e67621364358398d0bc646dbad5be0a73a7"},
+        {"pr": 283, "branch": "feat/sp-amr-001-autonomous-mission-runtime", "head_sha": "11364d0cac90a3d9711878b2b3158c641e1f9d6f"},
+        {"pr": 325, "branch": "god2a-integration-main", "head_sha": "dce634b9f7b04eac4aa9675b1c6cdf9fd708fd2c"},
+        {"pr": 327, "branch": "feat/agent-to-agent-redis-messaging", "head_sha": "8f489fd2f86aff6948198750a497790b61f36a15"},
+        {"pr": 241, "branch": "chore/ai-os-foundation-migration-baseline", "head_sha": "ae3a32aab0d63ef631d497d5e4b8e5ab3633fb8a"}
+      ],
+      "notes": "Several fragment agent runtime authority further; PR #241 is an agent-registry schema, not a release-surface inventory."
+    },
+    {
+      "id": "hermes-swarm-adapter",
+      "area": "hermes",
+      "name": "Hermes delegate_task to SwarmController bridge",
+      "domain": "swarm_runtime",
+      "owner": "UNKNOWN",
+      "ci_lane": [".github/workflows/swarm-runtime-ci.yml"],
+      "presence": "on-main",
+      "source_presence": "yes",
+      "canonical_status": "candidate",
+      "runtime_evidence": "tests-only",
+      "verified_ref": "051e2594c67a805ceacc66ea2a6fc6db9c0bc793",
+      "entrypoints": [
+        "swarm_runtime/hermes_adapter.py"
+      ],
+      "paths": [
+        "swarm_runtime/hermes_adapter.py"
+      ],
+      "tests": [
+        "agent_runtime/tests/test_hermes_delegation_certification.py",
+        "swarm_runtime/tests/test_acceptance_006_hermes.py"
+      ],
+      "notes": "Distinct concern from hermes-llm-adapter despite the shared name. swarm-runtime-ci.yml runs test_acceptance_006_hermes.py; the agent_runtime certification test has no evidenced lane."
+    },
+    {
+      "id": "hermes-llm-adapter",
+      "area": "hermes",
+      "name": "NousResearch Hermes LLM adapter over Ollama",
+      "domain": "local_llm",
+      "owner": "UNKNOWN",
+      "ci_lane": "UNKNOWN",
+      "presence": "on-main",
+      "source_presence": "yes",
+      "canonical_status": "candidate",
+      "runtime_evidence": "none",
+      "verified_ref": "051e2594c67a805ceacc66ea2a6fc6db9c0bc793",
+      "entrypoints": [
+        "local_llm/hermes_adapter.py"
+      ],
+      "paths": [
+        "local_llm/hermes_adapter.py"
+      ],
+      "tests": [],
+      "notes": "Name collision with swarm_runtime/hermes_adapter.py is a risk to track, not a duplicate to merge."
+    },
+    {
+      "id": "hermes-registry-and-manual",
+      "area": "hermes",
+      "name": "Hermes registry entry and operating manual",
+      "domain": "registry",
+      "owner": "UNKNOWN",
+      "ci_lane": "UNKNOWN",
+      "presence": "on-main",
+      "source_presence": "yes",
+      "canonical_status": "candidate",
+      "runtime_evidence": "none",
+      "verified_ref": "051e2594c67a805ceacc66ea2a6fc6db9c0bc793",
+      "entrypoints": [],
+      "paths": [
+        "registry/agents/AGENT-HERMES-2-0.md",
+        "docs/IKE_HERMES_OPERATING_MANUAL.md"
+      ],
+      "tests": [],
+      "notes": "Documentation and registry text only. The manual describes a draft-only safety mode; this manifest does not verify that behavior at runtime."
+    },
+    {
+      "id": "hermes-open-prs",
+      "area": "hermes",
+      "name": "Hermes open PR branches",
+      "domain": "swarm_runtime",
+      "owner": "UNKNOWN",
+      "ci_lane": "UNKNOWN",
+      "presence": "branch-only",
+      "source_presence": "branch-only",
+      "canonical_status": "unresolved",
+      "runtime_evidence": "none",
+      "branch_refs": [
+        {"pr": 227, "branch": "feat/hermes-governed-memory-vault-increment-1", "head_sha": "6954818bb6b7e6012dfda0a58482284bfdd4179a"},
+        {"pr": 230, "branch": "feat/hermes-quicksilver-governed-fleet-increment-1", "head_sha": "778e1c63951dd56db12e8ed51cb41ba29340a17a"},
+        {"pr": 282, "branch": "feat/trust-authority-routing", "head_sha": "078db122e3e56f5ae60906165d5a97fff3b2f537"},
+        {"pr": 371, "branch": "feat/sp-a2a-authority-enforcement-001", "head_sha": "04b8e6785ccbe5e21447a95f57216db3ea09e19e"}
+      ],
+      "notes": "Four increments touch the Hermes authority boundary with no merged ordering between them."
+    },
+    {
+      "id": "ike-bot-app",
+      "area": "ike-bot",
+      "name": "apps/ike-bot vendored IKE-Bot and apps/ike-trust-agent",
+      "domain": "apps/ike-bot",
+      "owner": "UNKNOWN",
+      "ci_lane": "UNKNOWN",
+      "presence": "on-main",
+      "source_presence": "yes",
+      "canonical_status": "candidate",
+      "runtime_evidence": "none",
+      "verified_ref": "051e2594c67a805ceacc66ea2a6fc6db9c0bc793",
+      "entrypoints": [
+        "apps/ike-bot/main/main.py"
+      ],
+      "paths": [
+        "apps/ike-bot",
+        "apps/ike-bot/main/main.py",
+        "apps/ike-trust-agent"
+      ],
+      "tests": [],
+      "notes": "Test and CI coverage for these apps was not verified in this increment."
+    },
+    {
+      "id": "ike-bot-airlock-webhook",
+      "area": "ike-bot",
+      "name": "Airlock IKE-Bot task webhook route",
+      "domain": "apps/sintraprime",
+      "owner": "UNKNOWN",
+      "ci_lane": "UNKNOWN",
+      "presence": "on-main",
+      "source_presence": "yes",
+      "canonical_status": "unresolved",
+      "runtime_evidence": "none",
+      "verified_ref": "051e2594c67a805ceacc66ea2a6fc6db9c0bc793",
+      "entrypoints": [
+        "apps/sintraprime/airlock_server/routes/ikebotTask.ts"
+      ],
+      "paths": [
+        "apps/sintraprime/airlock_server/routes/ikebotTask.ts"
+      ],
+      "tests": [],
+      "notes": "Both apps/SintraPrime and apps/sintraprime are tracked on main and collide on case-insensitive filesystems; the case-variant duplicate is unresolved and tracked in CONVERGENCE-DUPLICATES-001.md. Exact-case path verification is deliberate here."
+    },
+    {
+      "id": "ike-bot-open-prs",
+      "area": "ike-bot",
+      "name": "IKE-Bot open PR branches",
+      "domain": "apps/ike-bot",
+      "owner": "UNKNOWN",
+      "ci_lane": "UNKNOWN",
+      "presence": "branch-only",
+      "source_presence": "branch-only",
+      "canonical_status": "unresolved",
+      "runtime_evidence": "none",
+      "branch_refs": [
+        {"pr": 285, "branch": "feat/ike-bot-governed-top-features-20260819", "head_sha": "894f2b9d887483790c6e048de947d6af69f285de"}
+      ],
+      "notes": "Large PR including CI workflow changes and certification bundles; not merged."
+    },
+    {
+      "id": "ike-bot-external-repos",
+      "area": "ike-bot",
+      "name": "External ike-bot and ike-trust-agent repositories",
+      "domain": "external",
+      "owner": "UNKNOWN",
+      "ci_lane": "UNKNOWN",
+      "presence": "external-not-inspected",
+      "source_presence": "unknown",
+      "canonical_status": "unresolved",
+      "runtime_evidence": "none",
+      "notes": "Named in issue #378 but outside this repository. Not inspected: their source presence is unknown, and no claim relies on their contents."
+    },
+    {
+      "id": "agent-commons",
+      "area": "agent-commons",
+      "name": "Agent Commons (issue #243 Increment 1) competing implementations",
+      "domain": "agent_commons",
+      "owner": "UNKNOWN",
+      "ci_lane": "UNKNOWN",
+      "presence": "branch-only",
+      "source_presence": "branch-only",
+      "canonical_status": "unresolved",
+      "runtime_evidence": "none",
+      "branch_refs": [
+        {"pr": 244, "branch": "feat/agent-commons-supervisor-increment-1", "head_sha": "68f17304d27ffe7f10851021c8dca6b5d51eac95"},
+        {"pr": 346, "branch": "copilot/agent-commons-increment-1", "head_sha": "eb60476a74b84e41fce9d89d97889c4393da27f9"}
+      ],
+      "notes": "No Agent Commons code exists on main at the baseline. PR #244 adds a top-level agent_commons package; PR #346 adds orchestration/agent_commons.py. This manifest does not choose between them; that decision remains with review and Principal approval."
+    }
+  ]
+}

@@ -66,7 +66,13 @@ async def test_start_maps_durable_workflow_id_to_execution_ref(db):
     assert run.run_id != run.execution_ref
     assert run.execution_ref
     assert run.status == "ACTIVE"
-    assert authority.engine.get_workflow(run.execution_ref) is not None
+    workflow = authority.engine.get_workflow(run.execution_ref)
+    assert workflow is not None
+    assert workflow.metadata["authority_required"] is True
+    assert workflow.metadata["authority_context"]["principal_id"] == USER_A
+    assert workflow.metadata["authority_context"]["tenant_id"] == TENANT_A
+    assert workflow.metadata["authority_context"]["capability_lease_id"] == str(run.run_id)
+    assert workflow.metadata["authority_context"]["approved_workflow_type"] == "test"
 
 
 @pytest.mark.asyncio

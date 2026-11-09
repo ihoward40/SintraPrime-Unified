@@ -181,12 +181,22 @@ class LangGraphRunResponse(BaseModel):
 router = APIRouter(prefix="/orchestration", tags=["orchestration"])
 
 
+def _generic_workflow_start_enabled() -> bool:
+    value = os.getenv("SINTRAPRIME_ENABLE_GENERIC_WORKFLOW_START", "")
+    return value.lower() in {"1", "true", "yes", "on"}
+
+
 @router.post("/workflows/start", response_model=StartWorkflowResponse, status_code=status.HTTP_201_CREATED)
 async def start_workflow(
     req: StartWorkflowRequest,
     engine: DurableWorkflowEngine = Depends(get_engine),
 ) -> StartWorkflowResponse:
     """Start a new durable workflow."""
+    if not _generic_workflow_start_enabled():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="GENERIC_WORKFLOW_START_DISABLED_USE_DURABLE_ORCHESTRATION_AUTHORITY",
+        )
     try:
         wf_id = await engine.start_workflow(
             workflow_type=req.workflow_type,

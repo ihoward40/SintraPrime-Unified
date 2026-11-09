@@ -12,42 +12,53 @@ Endpoints:
   POST   /agents/message
 """
 
+# ruff: noqa: B008, B904
+
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
 import time
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, Field
 
-from .a2a_protocol import A2AProtocol, MessageType, Priority, Message
+from .a2a_protocol import A2AProtocol, Message, MessageType, Priority
+from .agent_commons import (
+    AgentCommonsStore,
+    AuthorizationError,
+    CommonsError,
+    IdempotencyConflictError,
+    LoopDetectedError,
+    MockAgentAdapter,
+    Principal,
+    SupervisorAgent,
+)
 from .durable_execution import (
     DurableWorkflowEngine,
     WorkflowStatus,
-    HistoryEvent,
-    WorkflowRecord,
-    ActivityRecord,
 )
 from .langgraph_engine import (
-    StateGraph,
-    GraphState,
     InMemoryCheckpointer,
     create_legal_graph,
 )
 
 logger = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    from fastapi import FastAPI
+
 # ---------------------------------------------------------------------------
 # Shared singletons (in production these would be injected via DI)
 # ---------------------------------------------------------------------------
 
-_engine: Optional[DurableWorkflowEngine] = None
-_a2a: Optional[A2AProtocol] = None
-_checkpointer: Optional[InMemoryCheckpointer] = None
+_engine: DurableWorkflowEngine | None = None
+_a2a: A2AProtocol | None = None
+_checkpointer: InMemoryCheckpointer | None = None
+_commons_store: AgentCommonsStore | None = None
+_supervisor: SupervisorAgent | None = None
 
 
 def get_engine() -> DurableWorkflowEngine:
@@ -78,15 +89,48 @@ def get_checkpointer() -> InMemoryCheckpointer:
     return _checkpointer
 
 
+def get_commons_store() -> AgentCommonsStore:
+    global _commons_store
+    if _commons_store is None:
+        db_path = os.getenv("AGENT_COMMONS_DB_PATH", "agent_commons.db")
+        ledger_dir = os.getenv("AGENT_COMMONS_LEDGER_DIR", ".mesh/ledger")
+        _commons_store = AgentCommonsStore(db_path=db_path, ledger_dir=ledger_dir)
+    return _commons_store
+
+
+def get_supervisor(
+    store: AgentCommonsStore = Depends(get_commons_store),
+    a2a: A2AProtocol = Depends(get_a2a),
+) -> SupervisorAgent:
+    global _supervisor
+    if _supervisor is None or _supervisor.store is not store or _supervisor.protocol is not a2a:
+        _supervisor = SupervisorAgent(store, protocol=a2a)
+        _supervisor.register_adapter(MockAgentAdapter("builder-agent", "Builder Agent", "worker", ["build"]))
+        _supervisor.register_adapter(MockAgentAdapter("reviewer-agent", "Reviewer Agent", "reviewer", ["review"]))
+        _supervisor.register_adapter(MockAgentAdapter("tasklet-agent", "Tasklet Agent", "worker", ["tasklet"]))
+    return _supervisor
+
+
+def get_commons_principal(
+    x_tenant_id: str = Header(..., alias="X-Tenant-Id"),
+    x_principal_id: str = Header(..., alias="X-Principal-Id"),
+    x_role: str = Header(..., alias="X-Role"),
+) -> Principal:
+    role = x_role.strip().lower()
+    if role not in {"owner", "supervisor", "worker", "reviewer", "observer"}:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unsupported commons role")
+    return Principal(tenant_id=x_tenant_id, principal_id=x_principal_id, role=role)
+
+
 # ---------------------------------------------------------------------------
 # Pydantic request / response models
 # ---------------------------------------------------------------------------
 
 class StartWorkflowRequest(BaseModel):
     workflow_type: str = Field(..., description="Registered workflow type name")
-    input_data: Dict[str, Any] = Field(default_factory=dict, description="Input parameters")
-    workflow_id: Optional[str] = Field(None, description="Optional explicit workflow ID")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Optional metadata")
+    input_data: dict[str, Any] = Field(default_factory=dict, description="Input parameters")
+    workflow_id: str | None = Field(None, description="Optional explicit workflow ID")
+    metadata: dict[str, Any] | None = Field(None, description="Optional metadata")
 
 
 class StartWorkflowResponse(BaseModel):
@@ -100,17 +144,17 @@ class WorkflowStatusResponse(BaseModel):
     workflow_id: str
     workflow_type: str
     status: str
-    state: Dict[str, Any]
+    state: dict[str, Any]
     created_at: float
     updated_at: float
-    completed_at: Optional[float]
-    error: Optional[str]
+    completed_at: float | None
+    error: str | None
     activity_count: int
     history_event_count: int
 
 
 class ResumeWorkflowRequest(BaseModel):
-    signal: Dict[str, Any] = Field(default_factory=dict, description="Signal payload to merge into state")
+    signal: dict[str, Any] = Field(default_factory=dict, description="Signal payload to merge into state")
 
 
 class ResumeWorkflowResponse(BaseModel):
@@ -123,23 +167,23 @@ class HistoryEventResponse(BaseModel):
     event_id: str
     event_type: str
     timestamp: float
-    activity_name: Optional[str]
-    payload: Dict[str, Any]
+    activity_name: str | None
+    payload: dict[str, Any]
     attempt: int
-    error: Optional[str]
+    error: str | None
 
 
 class AgentInfo(BaseModel):
     agent_id: str
     name: str
-    capabilities: List[str]
+    capabilities: list[str]
     status: str
-    endpoint: Optional[str]
+    endpoint: str | None
     last_seen: float
 
 
 class AgentRegistryResponse(BaseModel):
-    agents: List[AgentInfo]
+    agents: list[AgentInfo]
     total: int
 
 
@@ -147,9 +191,9 @@ class SendMessageRequest(BaseModel):
     from_agent: str
     to_agent: str
     message_type: str = Field("REQUEST", description="One of: REQUEST, RESPONSE, BROADCAST, DELEGATION, RESULT, ERROR")
-    payload: Dict[str, Any] = Field(default_factory=dict)
+    payload: dict[str, Any] = Field(default_factory=dict)
     priority: str = Field("NORMAL", description="One of: LOW, NORMAL, HIGH, CRITICAL")
-    ttl: Optional[float] = Field(None, description="Time to live in seconds")
+    ttl: float | None = Field(None, description="Time to live in seconds")
 
 
 class SendMessageResponse(BaseModel):
@@ -159,19 +203,67 @@ class SendMessageResponse(BaseModel):
 
 
 class LangGraphRunRequest(BaseModel):
-    case_id: Optional[str] = None
+    case_id: str | None = None
     practice_area: str = Field("general", description="e.g. trust, estate, probate, general")
-    initial_state: Dict[str, Any] = Field(default_factory=dict)
+    initial_state: dict[str, Any] = Field(default_factory=dict)
 
 
 class LangGraphRunResponse(BaseModel):
     run_id: str
     graph_id: str
     status: str
-    visited_nodes: List[str]
-    final_state: Dict[str, Any]
+    visited_nodes: list[str]
+    final_state: dict[str, Any]
     duration_seconds: float
     checkpoints_saved: int
+
+
+class CreateWorkspaceRequest(BaseModel):
+    name: str
+    community_id: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class CreateChannelRequest(BaseModel):
+    workspace_id: str
+    name: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class CreateThreadRequest(BaseModel):
+    workspace_id: str
+    channel_id: str
+    title: str
+    task_id: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class CreateThreadMessageRequest(BaseModel):
+    workspace_id: str
+    channel_id: str
+    task_id: str
+    recipients: list[str] = Field(default_factory=list)
+    correlation_id: str | None = None
+    lifecycle_status: str = "IN_PROGRESS"
+    payload: dict[str, Any] = Field(default_factory=dict)
+    evidence: list[dict[str, Any]] = Field(default_factory=list)
+    trace: dict[str, Any] = Field(default_factory=dict)
+
+
+class SupervisorObjectiveRequest(BaseModel):
+    workspace_id: str
+    channel_id: str
+    objective: str
+    acceptance_criteria: list[str] = Field(default_factory=list)
+    builder_capability: str = "build"
+    reviewer_capability: str = "review"
+    idempotency_key: str | None = None
+    thread_title: str | None = None
+
+
+class ApprovalDecisionRequest(BaseModel):
+    reason: str | None = None
+    idempotency_key: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -254,11 +346,11 @@ async def resume_workflow(
     )
 
 
-@router.get("/workflows/{workflow_id}/history", response_model=List[HistoryEventResponse])
+@router.get("/workflows/{workflow_id}/history", response_model=list[HistoryEventResponse])
 async def get_workflow_history(
     workflow_id: str,
     engine: DurableWorkflowEngine = Depends(get_engine),
-) -> List[HistoryEventResponse]:
+) -> list[HistoryEventResponse]:
     """Get the full audit history of a workflow."""
     wf = engine.get_workflow(workflow_id)
     if not wf:
@@ -334,6 +426,238 @@ async def send_agent_message(
     )
 
 
+@router.post("/commons/workspaces", status_code=status.HTTP_201_CREATED)
+async def create_workspace(
+    req: CreateWorkspaceRequest,
+    principal: Principal = Depends(get_commons_principal),
+    store: AgentCommonsStore = Depends(get_commons_store),
+) -> dict[str, Any]:
+    try:
+        principal.ensure("workspace:create")
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    return store.create_workspace(principal.tenant_id, req.name, req.metadata, req.community_id)
+
+
+@router.post("/commons/channels", status_code=status.HTTP_201_CREATED)
+async def create_channel(
+    req: CreateChannelRequest,
+    principal: Principal = Depends(get_commons_principal),
+    store: AgentCommonsStore = Depends(get_commons_store),
+) -> dict[str, Any]:
+    try:
+        principal.ensure("channel:create")
+        return store.create_channel(principal.tenant_id, req.workspace_id, req.name, req.metadata)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    except CommonsError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.post("/commons/threads", status_code=status.HTTP_201_CREATED)
+async def create_thread(
+    req: CreateThreadRequest,
+    principal: Principal = Depends(get_commons_principal),
+    store: AgentCommonsStore = Depends(get_commons_store),
+) -> dict[str, Any]:
+    try:
+        principal.ensure("thread:create")
+        thread = store.create_thread(
+            principal.tenant_id,
+            req.workspace_id,
+            req.channel_id,
+            req.title,
+            task_id=req.task_id,
+            metadata=req.metadata,
+        )
+        store.add_participant(
+            principal.tenant_id,
+            req.workspace_id,
+            req.channel_id,
+            thread["thread_id"],
+            principal.principal_id,
+            "human",
+            principal.role,
+            principal.principal_id,
+        )
+        return store.get_thread(thread["thread_id"], principal.tenant_id) or thread
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    except CommonsError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.post("/commons/threads/{thread_id}/messages", status_code=status.HTTP_201_CREATED)
+async def post_thread_message(
+    thread_id: str,
+    req: CreateThreadMessageRequest,
+    principal: Principal = Depends(get_commons_principal),
+    store: AgentCommonsStore = Depends(get_commons_store),
+) -> dict[str, Any]:
+    try:
+        principal.ensure("message:create")
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    thread = store.get_thread(thread_id, principal.tenant_id)
+    if not thread:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
+    if (
+        req.workspace_id != thread["workspace_id"]
+        or req.channel_id != thread["channel_id"]
+        or req.task_id != thread["task_id"]
+    ):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Routing metadata does not match the thread")
+    message = store.add_message(
+        tenant_id=principal.tenant_id,
+        workspace_id=req.workspace_id,
+        channel_id=req.channel_id,
+        thread_id=thread_id,
+        task_id=req.task_id,
+        sender=principal.principal_id,
+        recipients=req.recipients,
+        correlation_id=req.correlation_id or uuid.uuid4().hex,
+        lifecycle_status=req.lifecycle_status,
+        payload=req.payload,
+        evidence=req.evidence,
+        trace=req.trace,
+    )
+    store.add_task_event(
+        tenant_id=principal.tenant_id,
+        workspace_id=req.workspace_id,
+        channel_id=req.channel_id,
+        thread_id=thread_id,
+        task_id=req.task_id,
+        status=req.lifecycle_status,
+        actor=principal.principal_id,
+        details={"objective": thread["title"], "notes": "Manual thread message recorded."},
+        evidence=req.evidence,
+        run_id=req.trace.get("run_id"),
+    )
+    return message
+
+
+@router.get("/commons/threads/{thread_id}")
+async def get_thread(
+    thread_id: str,
+    principal: Principal = Depends(get_commons_principal),
+    store: AgentCommonsStore = Depends(get_commons_store),
+) -> dict[str, Any]:
+    try:
+        principal.ensure("thread:read")
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    thread = store.get_thread(thread_id, principal.tenant_id)
+    if not thread:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
+    return thread
+
+
+@router.post("/supervisor/objectives", status_code=status.HTTP_201_CREATED)
+async def submit_supervisor_objective(
+    req: SupervisorObjectiveRequest,
+    principal: Principal = Depends(get_commons_principal),
+    supervisor: SupervisorAgent = Depends(get_supervisor),
+) -> dict[str, Any]:
+    try:
+        return await supervisor.submit_objective(
+            principal=principal,
+            workspace_id=req.workspace_id,
+            channel_id=req.channel_id,
+            objective=req.objective,
+            acceptance_criteria=req.acceptance_criteria,
+            builder_capability=req.builder_capability,
+            reviewer_capability=req.reviewer_capability,
+            idempotency_key=req.idempotency_key,
+            thread_title=req.thread_title,
+        )
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    except LoopDetectedError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except IdempotencyConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except CommonsError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.post("/supervisor/runs/{run_id}/approve")
+async def approve_supervisor_run(
+    run_id: str,
+    req: ApprovalDecisionRequest,
+    principal: Principal = Depends(get_commons_principal),
+    supervisor: SupervisorAgent = Depends(get_supervisor),
+) -> dict[str, Any]:
+    try:
+        return supervisor.decide_run(
+            principal=principal,
+            run_id=run_id,
+            decision="approve",
+            reason=req.reason,
+            idempotency_key=req.idempotency_key,
+        )
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    except IdempotencyConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except CommonsError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.post("/supervisor/runs/{run_id}/reject")
+async def reject_supervisor_run(
+    run_id: str,
+    req: ApprovalDecisionRequest,
+    principal: Principal = Depends(get_commons_principal),
+    supervisor: SupervisorAgent = Depends(get_supervisor),
+) -> dict[str, Any]:
+    try:
+        return supervisor.decide_run(
+            principal=principal,
+            run_id=run_id,
+            decision="reject",
+            reason=req.reason,
+            idempotency_key=req.idempotency_key,
+        )
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    except IdempotencyConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except CommonsError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.get("/supervisor/runs/{run_id}/trace")
+async def get_supervisor_run_trace(
+    run_id: str,
+    principal: Principal = Depends(get_commons_principal),
+    store: AgentCommonsStore = Depends(get_commons_store),
+) -> dict[str, Any]:
+    try:
+        principal.ensure("trace:read")
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    trace = store.get_run_trace(run_id, principal.tenant_id)
+    if not trace:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run trace not found")
+    return trace
+
+
+@router.get("/commons/agents/{agent_id}/health")
+async def get_agent_health(
+    agent_id: str,
+    principal: Principal = Depends(get_commons_principal),
+    supervisor: SupervisorAgent = Depends(get_supervisor),
+) -> dict[str, Any]:
+    try:
+        principal.ensure("agent:health")
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    health = supervisor.agent_health(agent_id)
+    if not health:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agent not found")
+    return health
+
+
 @router.post("/workflows/langgraph/run", response_model=LangGraphRunResponse)
 async def run_langgraph_workflow(
     req: LangGraphRunRequest,
@@ -361,7 +685,7 @@ async def run_langgraph_workflow(
 
 
 @router.get("/health")
-async def health_check() -> Dict[str, Any]:
+async def health_check() -> dict[str, Any]:
     """Health check endpoint."""
     return {
         "status": "ok",
@@ -374,13 +698,13 @@ async def health_check() -> Dict[str, Any]:
 # App factory
 # ---------------------------------------------------------------------------
 
-def create_app() -> "FastAPI":
+def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
     try:
         from fastapi import FastAPI
         from fastapi.middleware.cors import CORSMiddleware
-    except ImportError:
-        raise RuntimeError("FastAPI is required. Install with: pip install fastapi")
+    except ImportError as exc:
+        raise RuntimeError("FastAPI is required. Install with: pip install fastapi") from exc
 
     app = FastAPI(
         title="SintraPrime-Unified Orchestration API",

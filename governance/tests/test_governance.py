@@ -159,9 +159,15 @@ class TestRiskAssessor:
         risk = assessor.assess("format_document")
         assert risk.risk_level == RiskLevel.LOW
 
-    def test_assess_unknown_action_defaults_medium(self, assessor: RiskAssessor) -> None:
+    def test_assess_unknown_action_fails_closed(self, assessor: RiskAssessor) -> None:
+        # GOV-001A: an unrecognized action must never default to a
+        # permissive risk level — it must fail closed to CRITICAL and
+        # always require approval, regardless of org_risk_threshold.
         risk = assessor.assess("totally_unknown_action_xyz")
-        assert risk.risk_level == RiskLevel.MEDIUM
+        assert risk.risk_level == RiskLevel.CRITICAL
+        assert risk.requires_approval is True
+        assert risk.reversible is False
+        assert risk.metadata["unrecognized_action"] is True
 
     def test_assess_with_payload_enriches_impact(self, assessor: RiskAssessor) -> None:
         risk = assessor.assess("send_payment", {"amount": 10000})
@@ -671,15 +677,16 @@ class TestGovernanceEngine:
         assert "compliance_score" in data
 
     def test_requires_approval_decorator_allows_low(self, engine: GovernanceEngine) -> None:
-        engine.approval_gate.auto_approve_threshold = RiskLevel.MEDIUM
-
-        @engine.requires_approval(min_risk=RiskLevel.HIGH)
-        def my_func():
+        # GOV-001A: this previously relied on an *unknown* action name
+        # defaulting to MEDIUM risk and MEDIUM < org HIGH threshold making
+        # requires_approval False — i.e. it exercised the fail-open defect,
+        # not genuine low-risk auto-allow. Use a real registered LOW-risk
+        # action with a LOW min_risk floor (no escalation) instead.
+        @engine.requires_approval(min_risk=RiskLevel.LOW, agent_id="agent-low")
+        def read_data():
             return "done"
 
-        # With auto_approve_threshold=MEDIUM, LOW/MEDIUM are auto-approved
-        # my_func maps to RiskLevel.MEDIUM (unknown) → auto-approved
-        result = my_func()
+        result = read_data()
         assert result == "done"
 
     def test_requires_approval_decorator_blocks_high(self, engine: GovernanceEngine) -> None:

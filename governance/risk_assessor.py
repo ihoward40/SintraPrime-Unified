@@ -246,6 +246,20 @@ _DEFAULT_RISK_RULES: List[Tuple[str, RiskLevel, str, bool, bool, str, str]] = [
 ]
 
 
+def safe_action_label(action_type: object) -> str:
+    """
+    Produce a bounded, type-only label for a non-string action identifier.
+
+    GOV-001A (builder-002, finding 4): a malformed action identifier may be
+    an arbitrary object whose __repr__/__str__ is attacker-controlled and
+    could raise, have side effects, or leak sensitive data. This helper
+    never invokes the object's own __repr__/__str__ — it only reads
+    type(action_type).__name__, which is always a plain, safe string for
+    any object, including ones with a broken or hostile __repr__.
+    """
+    return f"<malformed:{type(action_type).__name__}>"
+
+
 class RiskAssessor:
     """
     Automatically evaluates the risk level of agent actions.
@@ -278,8 +292,28 @@ class RiskAssessor:
 
         Returns:
             ActionRisk with full assessment details.
+
+        GOV-001A fail-closed contract:
+            Any action identifier that is malformed (None, non-string, empty,
+            or whitespace-only) or that does not match a known risk rule MUST
+            NOT be assigned a default/permissive risk. Both cases are treated
+            as maximum risk (CRITICAL, requires_approval=True, irreversible)
+            so an unrecognized or malformed action can never gain authority
+            simply because the system does not understand it.
         """
         payload = payload or {}
+
+        if not isinstance(action_type, str) or not action_type.strip():
+            return self._fail_closed(
+                action_type,
+                payload,
+                reason=(
+                    "Action identifier is missing, empty, or malformed — "
+                    "treated fail-closed (GOV-001A)"
+                ),
+                malformed=True,
+            )
+
         all_rules = self._custom_rules + _DEFAULT_RISK_RULES
 
         for pattern, risk_level, reason, req_approval, reversible, impact, domain in all_rules:
@@ -297,16 +331,47 @@ class RiskAssessor:
                     metadata={"payload_keys": list(payload.keys())},
                 )
 
-        # Default: unknown action = MEDIUM risk
+        # Unknown/unregistered action: fail closed (GOV-001A), not a
+        # permissive default. The system does not understand this action,
+        # so it must never be assigned less than maximum risk.
+        return self._fail_closed(
+            action_type,
+            payload,
+            reason=(
+                "Action was not recognized by any registered risk rule — "
+                "unrecognized actions are treated fail-closed (GOV-001A)"
+            ),
+        )
+
+    def _fail_closed(
+        self,
+        action_type: object,
+        payload: Dict,
+        reason: str,
+        malformed: bool = False,
+    ) -> ActionRisk:
+        """Build the maximum-risk ActionRisk used for unknown/malformed actions."""
+        # GOV-001A (builder-002, finding 4): never call repr() on an
+        # arbitrary malformed action_type — use a bounded type-only
+        # sentinel instead (see safe_action_label).
+        safe_action_type = (
+            action_type if isinstance(action_type, str) else safe_action_label(action_type)
+        )
+        metadata: Dict[str, object] = {
+            "payload_keys": list(payload.keys()),
+            "unrecognized_action": True,
+        }
+        if malformed:
+            metadata["malformed_action"] = True
         return ActionRisk(
-            action_type=action_type,
-            risk_level=RiskLevel.MEDIUM,
-            reason="Unknown action type — defaulting to MEDIUM risk",
-            requires_approval=RiskLevel.MEDIUM >= self.org_risk_threshold,
-            reversible=True,
-            estimated_impact="Unknown — manual review recommended",
+            action_type=safe_action_type,
+            risk_level=RiskLevel.CRITICAL,
+            reason=reason,
+            requires_approval=True,
+            reversible=False,
+            estimated_impact="Unknown — unrecognized/malformed action defaults to maximum risk",
             domain="general",
-            metadata={"payload_keys": list(payload.keys())},
+            metadata=metadata,
         )
 
     def assess_sequence(self, actions: List[str]) -> List[ActionRisk]:
@@ -316,14 +381,26 @@ class RiskAssessor:
         Returns a list of ActionRisk objects, one per action.
         High-risk sequences (e.g. read → send_payment) are flagged with
         escalated metadata.
+
+        GOV-001A fail-closed contract:
+            If any single member of the sequence is unknown, malformed, or
+            otherwise requires approval, the entire sequence must not be
+            authorized: every result in the returned list has
+            requires_approval forced to True and metadata["sequence_requires_approval"]
+            set, so a caller aggregating this list can never authorize the
+            batch based on only the individual members that happened to be
+            low risk.
         """
         results: List[ActionRisk] = []
         max_level = RiskLevel.LOW
+        sequence_requires_approval = False
 
         for i, action in enumerate(actions):
             risk = self.assess(action)
             if risk.risk_level > max_level:
                 max_level = risk.risk_level
+            if risk.requires_approval:
+                sequence_requires_approval = True
             risk.metadata["sequence_index"] = i
             risk.metadata["sequence_length"] = len(actions)
             results.append(risk)
@@ -333,6 +410,13 @@ class RiskAssessor:
             for r in results:
                 if r.risk_level == RiskLevel.HIGH:
                     r.metadata["escalated"] = True
+
+        # Fail-closed propagation: one blocked/unknown/malformed/unauthorized
+        # member prevents the whole sequence from being authorized.
+        for r in results:
+            if sequence_requires_approval:
+                r.requires_approval = True
+            r.metadata["sequence_requires_approval"] = sequence_requires_approval
 
         return results
 

@@ -168,6 +168,10 @@ class ProviderRouter:
     def all_health(self) -> dict[str, dict]:
         return {name: h.to_dict() for name, h in self._providers.items()}
 
+    def health_snapshot(self) -> dict[str, ProviderHealth]:
+        """Return a shallow copy of tracked provider health objects."""
+        return dict(self._providers)
+
     def mark_timeout(self, provider: str) -> None:
         health = self._providers.get(provider)
         if health:

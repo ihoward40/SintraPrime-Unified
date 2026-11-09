@@ -509,13 +509,18 @@ def main():
         spec_dict = json.load(f)
 
     # Reconstruct state
+    task_payload = dict(spec_dict.get("task") or dict())
+    worker_timeout_seconds = task_payload.get("worker_timeout_seconds")
+    if worker_timeout_seconds is None:
+        worker_timeout_seconds = int(spec_dict.get("timeout_seconds", 120))
+    task_payload["worker_timeout_seconds"] = int(worker_timeout_seconds)
     state = WorkerState(
         swarm_id=args.swarm_id,
         worker_id=spec_dict["worker_id"],
         role=spec_dict["role"],
         base_sha=spec_dict.get("base_sha", ""),
         worktree=spec_dict.get("worktree", ""),
-        task=spec_dict.get("task", {{}}),
+        task=task_payload,
         expected_artifact=spec_dict.get("expected_artifact_schema", "findings"),
         artifact_path=spec_dict.get("artifact_path", ""),
         owned_files=spec_dict.get("owned_files", []),

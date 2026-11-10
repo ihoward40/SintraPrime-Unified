@@ -1,3 +1,10 @@
+/**
+ * SintraPrime Tailwind theme.
+ *
+ * Design-token additions (signal colors, letter-spacing) follow web/DESIGN.md.
+ * Token-system pattern inspired by pbakaus/impeccable (Apache-2.0);
+ * values are original to SintraPrime.
+ */
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
@@ -36,11 +43,23 @@ const config: Config = {
           950: '#020617',
           DEFAULT: '#0F172A',
         },
+        // Semantic status colors (DESIGN.md §3). Status is never color-only:
+        // always pair with an icon and/or text label.
+        signal: {
+          success: '#34D399',
+          danger: '#FB7185',
+          warning: '#FBBF24',
+          info: '#60A5FA',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
         serif: ['Playfair Display', 'Georgia', 'serif'],
+      },
+      // Eyebrow wayfinding label: text-[10px] font-bold tracking-eyebrow uppercase text-gold
+      letterSpacing: {
+        eyebrow: '0.22em',
       },
       backgroundImage: {
         'gold-gradient': 'linear-gradient(135deg, #D4AF37 0%, #F5D87A 50%, #D4AF37 100%)',

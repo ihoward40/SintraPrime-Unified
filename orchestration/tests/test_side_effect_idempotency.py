@@ -212,6 +212,47 @@ async def test_timeout_with_unverifiable_remote_outcome_stays_unknown(tmp_path: 
 
 
 @pytest.mark.asyncio
+async def test_unverified_unknown_replay_denied_after_restart(tmp_path: Path) -> None:
+    """A second request after ambiguous remote success cannot call execute again."""
+    db_path = tmp_path / "durable.db"
+
+    class UnverifiableProvider(DeterministicProvider):
+        async def verify_or_reconcile(
+            self, *, idempotency_key: str,
+            provider_request_id: Optional[str],
+        ) -> Optional[ProviderExecutionResult]:
+            return None
+
+    provider = UnverifiableProvider(accepted_timeout_once=True)
+    kwargs = dict(
+        tenant_id="tenant-1", workflow_id="wf-1", activity_id="ambiguous",
+        target_type="filing", target_identifier="remote-uncertain",
+        request={"filing": "uncertain"}, provider=provider,
+    )
+    engine = _engine(db_path)
+    try:
+        with pytest.raises(AcceptedButTimedOut):
+            await engine.execute_idempotent_side_effect(**kwargs)
+        assert provider.mutation_count == 1
+    finally:
+        engine.close()
+
+    resumed = DurableWorkflowEngine(db_path=str(db_path))
+    try:
+        with pytest.raises(RuntimeError, match="SIDE_EFFECT_RECONCILIATION_REQUIRED"):
+            await resumed.execute_idempotent_side_effect(**kwargs)
+        assert provider.mutation_count == 1
+        key, _ = resumed.derive_side_effect_identity(
+            workflow_id="wf-1", activity_id="ambiguous",
+            target_type="filing", target_identifier="remote-uncertain",
+            request={"filing": "uncertain"},
+        )
+        assert resumed._store.get_side_effect(key).status.value == "unknown"
+    finally:
+        resumed.close()
+
+
+@pytest.mark.asyncio
 async def test_two_workers_race_same_side_effect_key_one_provider_mutation(tmp_path: Path) -> None:
     db_path = tmp_path / "durable.db"
     engine_a = _engine(db_path)

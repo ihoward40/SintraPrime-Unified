@@ -9,12 +9,24 @@ Provides REST and WebSocket endpoints for voice processing:
 
 import logging
 import asyncio
+import base64
 import json
 from typing import Optional, Dict, List, Any
 from datetime import datetime
 from fastapi import APIRouter, UploadFile, File, WebSocket, Depends, HTTPException, Header
 from fastapi.responses import StreamingResponse
 import jwt
+
+from .local_voice import (
+    DubbingJob,
+    DubbingSegment,
+    LocalVoicePipeline,
+    ModelNotAvailableError,
+    VoiceDesignSpec,
+    VoiceProfileNotFoundError,
+    VoiceSample,
+    create_local_voice_pipeline,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -205,6 +217,7 @@ class VoiceAPIRouter:
         self.router = APIRouter(prefix="/voice", tags=["voice"])
         self.session_store = SessionStore()
         self.rate_limiter = RateLimiter()
+        self.local_pipeline: LocalVoicePipeline = create_local_voice_pipeline()
         self._register_routes()
 
     def _register_routes(self):
@@ -216,6 +229,14 @@ class VoiceAPIRouter:
         self.router.post("/session/new")(self.create_session)
         self.router.delete("/session/{session_id}")(self.delete_session)
         self.router.websocket("/stream")(self.websocket_stream)
+        # Local voice pipeline routes (fully on-device)
+        self.router.get("/local/voices")(self.local_list_voices)
+        self.router.post("/local/enroll")(self.local_enroll)
+        self.router.post("/local/synthesize")(self.local_synthesize)
+        self.router.post("/local/transcribe")(self.local_transcribe)
+        self.router.post("/local/dictation/start")(self.local_dictation_start)
+        self.router.post("/local/dictation/stop")(self.local_dictation_stop)
+        self.router.post("/local/dubbing/plan")(self.local_dubbing_plan)
 
     # ==================== Endpoints ====================
 
@@ -541,6 +562,297 @@ class VoiceAPIRouter:
         finally:
             await websocket.close()
             logger.info("WebSocket connection closed")
+
+    # ==================== Local Voice Endpoints ====================
+
+    async def local_list_voices(
+        self,
+        token_data: Dict = Depends(verify_token),
+    ):
+        """List enrolled local voice profiles.
+
+        GET /voice/local/voices
+        """
+        user_id = token_data.get("sub")
+
+        if not await self.rate_limiter.check_limit(user_id):
+            raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
+        return {
+            "voices": [
+                {
+                    "voice_id": p.voice_id,
+                    "display_name": p.display_name,
+                    "language": p.language,
+                    "sample_count": p.sample_count,
+                    "total_sample_seconds": p.total_sample_seconds,
+                    "created_at": p.created_at,
+                    "backend": p.backend_name,
+                    "designed": p.design is not None,
+                }
+                for p in self.local_pipeline.registry.list()
+            ]
+        }
+
+    async def local_enroll(
+        self,
+        request: Dict,
+        token_data: Dict = Depends(verify_token),
+    ):
+        """Enroll a local voice profile from audio samples and/or a design.
+
+        POST /voice/local/enroll
+
+        Request:
+            {
+                "display_name": "Narrator",
+                "language": "en",
+                "design": {"name": "boardroom", "pitch_shift": 1.5},
+                "samples": [
+                    {"label": "sample-1", "audio_base64": "...", "sample_rate": 16000}
+                ]
+            }
+        """
+        user_id = token_data.get("sub")
+
+        if not await self.rate_limiter.check_limit(user_id):
+            raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
+        try:
+            display_name = (request or {}).get("display_name", "")
+            if not display_name:
+                raise HTTPException(status_code=400, detail="Missing display_name")
+
+            samples = []
+            for s in (request or {}).get("samples", []):
+                samples.append(VoiceSample(
+                    label=s.get("label", "sample"),
+                    audio_bytes=base64.b64decode(s.get("audio_base64", "")),
+                    sample_rate=s.get("sample_rate", 16000),
+                    channels=s.get("channels", 1),
+                ))
+
+            design = None
+            design_data = (request or {}).get("design")
+            if design_data:
+                design = VoiceDesignSpec(**design_data)
+
+            profile = await self.local_pipeline.enroll(
+                display_name,
+                samples,
+                language=(request or {}).get("language", "en"),
+                design=design,
+            )
+            return {
+                "voice_id": profile.voice_id,
+                "display_name": profile.display_name,
+                "language": profile.language,
+                "sample_count": profile.sample_count,
+                "total_sample_seconds": profile.total_sample_seconds,
+                "created_at": profile.created_at,
+                "backend": profile.backend_name,
+            }
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Local enrollment error: {e}")
+            raise HTTPException(status_code=400, detail=str(e))
+
+    async def local_synthesize(
+        self,
+        request: Dict,
+        token_data: Dict = Depends(verify_token),
+    ):
+        """Synthesize text with an enrolled local voice.
+
+        POST /voice/local/synthesize
+
+        Request:
+            {"text": "text to synthesize", "voice_id": "local-abc123"}
+        """
+        user_id = token_data.get("sub")
+
+        if not await self.rate_limiter.check_limit(user_id):
+            raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
+        try:
+            text = (request or {}).get("text", "")
+            voice_id = (request or {}).get("voice_id", "")
+            if not text:
+                raise HTTPException(status_code=400, detail="Missing text")
+            if not voice_id:
+                raise HTTPException(status_code=400, detail="Missing voice_id")
+
+            result = await self.local_pipeline.synthesize(text, voice_id)
+            return StreamingResponse(
+                iter([result.audio_bytes]),
+                media_type="audio/wav",
+                headers={
+                    "Content-Disposition": "attachment; filename=local-speech.wav",
+                    "X-Voice-Placeholder": str(result.is_placeholder).lower(),
+                    "X-Voice-Backend": result.backend,
+                },
+            )
+
+        except HTTPException:
+            raise
+        except VoiceProfileNotFoundError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+        except Exception as e:
+            logger.error(f"Local synthesis error: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    async def local_transcribe(
+        self,
+        file: UploadFile = File(...),
+        language: str = "en",
+        token_data: Dict = Depends(verify_token),
+    ):
+        """Transcribe audio with the local pipeline.
+
+        POST /voice/local/transcribe
+
+        Returns 501 when no local transcription model is wired.
+        """
+        user_id = token_data.get("sub")
+
+        if not await self.rate_limiter.check_limit(user_id):
+            raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
+        try:
+            audio_data = await file.read()
+            result = await self.local_pipeline.transcribe(audio_data, language)
+            return {
+                "text": result.text,
+                "confidence": result.confidence,
+                "language": result.language,
+                "is_partial": result.is_partial,
+                "backend": result.backend,
+                "timestamp": datetime.now().isoformat(),
+            }
+
+        except ModelNotAvailableError as e:
+            raise HTTPException(status_code=501, detail=str(e))
+        except Exception as e:
+            logger.error(f"Local transcription error: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    async def local_dictation_start(
+        self,
+        request: Optional[Dict] = None,
+        token_data: Dict = Depends(verify_token),
+    ):
+        """Start a local dictation session.
+
+        POST /voice/local/dictation/start
+
+        Request (optional):
+            {"user_id": "user123", "language": "en"}
+        """
+        user_id = token_data.get("sub")
+
+        if not await self.rate_limiter.check_limit(user_id):
+            raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
+        try:
+            session_id = await self.local_pipeline.dictation.start_session(
+                user_id=(request or {}).get("user_id", user_id),
+                language=(request or {}).get("language", "en"),
+            )
+            return {"session_id": session_id}
+
+        except ModelNotAvailableError as e:
+            raise HTTPException(status_code=501, detail=str(e))
+        except Exception as e:
+            logger.error(f"Local dictation start error: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    async def local_dictation_stop(
+        self,
+        request: Dict,
+        token_data: Dict = Depends(verify_token),
+    ):
+        """Stop a local dictation session and return the transcript summary.
+
+        POST /voice/local/dictation/stop
+
+        Request:
+            {"session_id": "dict-abc123"}
+        """
+        user_id = token_data.get("sub")
+
+        if not await self.rate_limiter.check_limit(user_id):
+            raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
+        try:
+            session_id = (request or {}).get("session_id", "")
+            if not session_id:
+                raise HTTPException(status_code=400, detail="Missing session_id")
+            return await self.local_pipeline.dictation.stop_session(session_id)
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Local dictation stop error: {e}")
+            raise HTTPException(status_code=400, detail=str(e))
+
+    async def local_dubbing_plan(
+        self,
+        request: Dict,
+        token_data: Dict = Depends(verify_token),
+    ):
+        """Build a dubbing render plan from a job spec.
+
+        POST /voice/local/dubbing/plan
+
+        Request:
+            {
+                "source_audio_seconds": 60.0,
+                "target_voice_id": "local-abc123",
+                "language": "en",
+                "segments": [
+                    {"index": 0, "start_seconds": 0.0, "end_seconds": 10.0,
+                     "source_text": "Hello", "target_text": "Hola"}
+                ]
+            }
+        """
+        user_id = token_data.get("sub")
+
+        if not await self.rate_limiter.check_limit(user_id):
+            raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
+        try:
+            job = DubbingJob(
+                source_audio_seconds=float((request or {}).get("source_audio_seconds", 0)),
+                target_voice_id=(request or {}).get("target_voice_id", ""),
+                language=(request or {}).get("language", "en"),
+                segments=[
+                    DubbingSegment(
+                        index=s.get("index", i),
+                        start_seconds=float(s.get("start_seconds", 0)),
+                        end_seconds=float(s.get("end_seconds", 0)),
+                        source_text=s.get("source_text", ""),
+                        target_text=s.get("target_text"),
+                    )
+                    for i, s in enumerate((request or {}).get("segments", []))
+                ],
+            )
+            plan = self.local_pipeline.plan_dubbing(job)
+            return {
+                "job_id": plan.job_id,
+                "target_voice_id": plan.target_voice_id,
+                "source_audio_seconds": plan.source_audio_seconds,
+                "segment_count": plan.segment_count,
+                "planned_segments": plan.planned_segments,
+                "estimated_render_seconds": plan.estimated_render_seconds,
+                "steps": plan.steps,
+            }
+
+        except (VoiceProfileNotFoundError, Exception) as e:
+            status = 404 if isinstance(e, VoiceProfileNotFoundError) else 400
+            logger.error(f"Local dubbing plan error: {e}")
+            raise HTTPException(status_code=status, detail=str(e))
 
     # ==================== Helper Methods ====================
 

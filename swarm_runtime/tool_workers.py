@@ -31,6 +31,27 @@ from typing import Any
 from .artifact_store import ArtifactStore
 from .worker import WorkerState, WorkerStatus
 
+# ---------------------------------------------------------------------------
+# Authoritative Intrinsic Worker Capabilities Registry
+# Every registered worker class maps strictly to its non-negotiable capabilities.
+# Unregistered classes fail closed with UNKNOWN_WORKER_CLASS.
+# ---------------------------------------------------------------------------
+WORKER_INTRINSIC_CAPABILITIES: dict[str, frozenset[str]] = {
+    "CodeSearchWorker": frozenset({"repository.read"}),
+    "ASTAnalysisWorker": frozenset({"repository.read"}),
+    "DatabaseSchemaWorker": frozenset({"database.schema.read"}),
+    "TestRunnerWorker": frozenset({"tests.run"}),
+    "GitDiffWorker": frozenset({"repo.diff.read"}),
+    "StaticAnalysisWorker": frozenset({"repository.read"}),
+    "ModelReasoningWorker": frozenset({"provider.inference"}),
+    "BreakerWorker": frozenset({"analysis.domain.read"}),
+    "BuilderWorker": frozenset({"repository.write"}),
+    "DeliberatelyFlawedBuilderWorker": frozenset({"repository.write"}),
+    "IndependentBreakerWorker": frozenset({"analysis.domain.read"}),
+    "FailoverTestWorker": frozenset({"provider.inference"}),
+    "CrashTestWorker": frozenset({"provider.inference"}),
+}
+
 
 class BaseWorker:
     """Base class for all tool-first workers."""

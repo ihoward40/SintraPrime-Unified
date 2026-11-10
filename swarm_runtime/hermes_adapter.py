@@ -103,6 +103,9 @@ class DelegateTask:
         """Translate to a governed ExecutionRequest (GOD-1X)."""
         mission = self.mission or self.run_context.get("mission_id", "hermes-delegate")
         swarm_id = self.run_context.get("swarm_id", f"hermes-swarm-{int(time.time())}")
+        params = dict(self.task_params)
+        if "tenant" not in params and self.tenant:
+            params["tenant"] = self.tenant
         return ExecutionRequest(
             execution_request_id=f"req_{worker_id}",
             mission_id=mission,
@@ -116,7 +119,7 @@ class DelegateTask:
             timeout_seconds=self.timeout_seconds,
             effect_class=self.effect_class(),
             worker_class=self.worker_class,
-            task_params=self.task_params,
+            task_params=params,
             artifact_path=self.artifact_filename,
             owned_files=list(self.write_paths),
             read_paths=list(self.read_paths),
@@ -124,34 +127,87 @@ class DelegateTask:
             prohibited_paths=self.run_context.get("prohibited_paths", []),
         )
 
-    def to_authority_envelope(self, worker_id: str) -> AuthorityEnvelope:
-        """Build the authority envelope the adapter asserts for this delegate.
+    def to_authority_envelope(
+        self,
+        worker_id: str,
+        approval_service: Any = None,
+    ) -> AuthorityEnvelope:
+        """Derive the authority envelope strictly from verified upstream service.
 
-        The HermesSwarmAdapter is the admitted delegate path; it has already
-        performed swarm-eligibility validation. It asserts the positive
-        conditions here. Revocation is honored if signaled via run_context.
+        Fail-closed by construction. Zero permissive defaults.
+        Requires a valid ApprovalBinding from AuthorityApprovalService.
         """
-        mission = self.mission or self.run_context.get("mission_id", "hermes-delegate")
+        mission = self.mission or self.run_context.get("mission_id", "")
         swarm_id = self.run_context.get("swarm_id", f"hermes-swarm-{int(time.time())}")
-        revoked = bool(self.run_context.get("revoked", False))
-        return AuthorityEnvelope(
+        approval_id = self.run_context.get("approval_id")
+
+        env = AuthorityEnvelope(
             mission_id=mission,
             swarm_id=swarm_id,
             task_id=self.task_id,
             agent_id=worker_id,
-            authority_id=self.run_context.get("authority_id", "hermes-delegate-authority"),
+            authority_id=approval_id or "",
             role_id=self.role,
-            context_package_id=self.base_sha or "ctx-default",
-            mission_active=True,
-            swarm_authorized=True,
-            task_ready=True,
-            agent_authorized=True,
-            authority_valid=True,
-            context_valid=True,
-            role_allowed=True,
-            resource_allowed=True,
-            revoked=revoked,
+            context_package_id=self.base_sha or "",
+            mission_active=False,
+            swarm_authorized=False,
+            task_ready=False,
+            agent_authorized=False,
+            authority_valid=False,
+            context_valid=False,
+            role_allowed=False,
+            resource_allowed=False,
+            revoked=bool(self.run_context.get("revoked", False)),
         )
+
+        # Fail closed immediately if approval_id or approval_service is absent
+        if not approval_id or approval_service is None:
+            return env
+
+        requested_resources = frozenset(self.read_paths + self.write_paths)
+        requested_capabilities = frozenset(self.run_context.get("capabilities", []))
+
+        # Independent validation against trusted authority store
+        try:
+            binding = approval_service.validate(
+                approval_id=approval_id,
+                mission_id=mission,
+                actor_id=worker_id,
+                tenant_id=self.tenant,
+                capabilities=requested_capabilities,
+                resource_urls=requested_resources,
+                role=self.role,
+                worker_class=self.worker_class,
+                effect_class=self.effect_class(),
+                context_hash=self.base_sha,
+            )
+        except Exception:
+            return env
+
+        base_sha_clean = (self.base_sha or "").strip()
+        is_context_valid = bool(len(base_sha_clean) >= 7 and base_sha_clean != "ctx-default")
+        is_task_ready = bool(
+            self.task_id.strip()
+            and self.role.strip()
+            and self.worker_class.strip()
+            and self.timeout_seconds > 0
+        )
+
+        is_role_allowed = bool(binding.permitted_roles and self.role in binding.permitted_roles)
+        is_resource_allowed = requested_resources.issubset(binding.resource_urls)
+
+        env.authority_id = binding.approval_id
+        env.mission_active = True
+        env.swarm_authorized = True
+        env.task_ready = is_task_ready
+        env.agent_authorized = True
+        env.authority_valid = True
+        env.context_valid = is_context_valid
+        env.role_allowed = is_role_allowed
+        env.resource_allowed = is_resource_allowed
+        env.revoked = False
+
+        return env
 
 
 @dataclass
@@ -217,10 +273,12 @@ class HermesSwarmAdapter:
         repo_path: str,
         run_dir: str | None = None,
         max_concurrent: int = 5,
+        approval_service: Any = None,
     ) -> None:
         self.repo_path = str(Path(repo_path).resolve())
         self.run_dir = run_dir
         self.max_concurrent = max_concurrent
+        self.approval_service = approval_service
         # Track whether the legacy path was ever used
         self._legacy_path_invoked = False
 
@@ -255,12 +313,13 @@ class HermesSwarmAdapter:
         else:
             run_dir = self.run_dir
 
-        # Create SwarmController — the sole execution authority
+        # Create SwarmController — passing approval_service
         controller = SwarmController(
             swarm_id=swarm_id,
             repo_path=self.repo_path,
             run_dir=run_dir,
             max_concurrent=self.max_concurrent,
+            approval_service=self.approval_service,
         )
 
         # Translate DelegateTasks into governed ExecutionRequests + envelopes
@@ -270,10 +329,12 @@ class HermesSwarmAdapter:
         for i, task in enumerate(tasks):
             worker_id = task.task_id if task.task_id else f"W{i + 1}"
             worker_ids.append(worker_id)
+            authority_id = task.run_context.get("approval_id", "")
+            context_id = task.base_sha or ""
             requests.append(
-                task.to_execution_request(worker_id, "hermes-delegate-authority", task.base_sha or "ctx-default")
+                task.to_execution_request(worker_id, authority_id, context_id)
             )
-            envelopes.append(task.to_authority_envelope(worker_id))
+            envelopes.append(task.to_authority_envelope(worker_id, approval_service=self.approval_service))
 
         # Launch all workers through the governed admission gate (GOD-1X)
         controller.launch_all_governed(requests, envelopes)

@@ -74,6 +74,13 @@ Default section order:
 5. Run existing verification when relevant
 6. Report any docs intentionally left unchanged and why
 
+## Certification Runner
+
+- `scripts/certify.py` is the serial certification runner with private observer `scripts/_certify_collect_plugin.py` (no `scripts/AGENTS.md`; this section and `tests/AGENTS.md` own its contract; the module docstring is the detailed reference)
+- `--collect-only` and passthrough pytest aliases `--co` / `--collectonly` produce collection evidence only: `COLLECTION PASS`, `executed_count` 0, never runtime certification
+- Evidence that cannot be established is `null`, never a fabricated zero or PASS. A quiet pytest exit 5 establishes zero executions only; unobserved outcome counters, including collection-time skips, stay unknown. Execution totals require ordinary completion evidence; partial progress and interrupted/internal-error outcomes stay unknown. Collection-only skip counts remain null because the helper does not measure skipped collection reports.
+- Receipt version 2 retains terminal receipts and stdout/stderr for valid subprocess attempts, including launch failures and wall-clock timeouts. `.github/workflows/portal-ci.yml` archives JSON, stdout and stderr with its existing always-run artifact step.
+
 ## User Preferences
 
 When the user requests a durable behavior change, record it here or in the relevant child AGENTS.md
@@ -108,7 +115,7 @@ When the user requests a durable behavior change, record it here or in the relev
 | `portal/routers/AGENTS.md` | API route handlers | Router modules and their tests; delegates business logic to `services/` |
 | `agents/AGENTS.md` | Autonomous agent system | Nova, Sigma, Zero, Chat, Howard agents (Howard is approval-gated — evidence-intake only) |
 | `intake_templates/AGENTS.md` | Evidence intake template library | JSON template definitions and usage guide |
-| `tests/AGENTS.md` | Root-level tests | Scheduler tests, agent unit tests, security tests (not portal-level tests)
+| `tests/AGENTS.md` | Root-level tests | Scheduler, agent, security, and certification runner tests (not portal-level tests) |
 | `legal_authority/AGENTS.md` | Legal authority and jurisdiction rules | Normalized legal authority records, jurisdiction rules, conflicts, effective-date evaluation, provenance |
 | `.mesh/AGENTS.md` | Agent Mesh coordination | Ledger, registry, protocol messages, and transport status |
 | `governance/blackstone/AGENTS.md` | Blackstone Governance Library | Constitutional charter, standards, knowledge core, architecture, certification, registry, casebook |

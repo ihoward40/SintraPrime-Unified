@@ -81,3 +81,8 @@ __pycache__/
 *.log
 logs/
 e2e_test.db
+
+# Tool-generated local data (session logs, pattern data, uv lockfile; CI installs from requirements.txt)
+.harnesskit/
+.cto-toolkit/
+uv.lock

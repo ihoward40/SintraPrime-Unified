@@ -54,13 +54,16 @@ def _now() -> str:
 
 
 def _short_ref() -> str:
-    result = subprocess.run(
-        ["git", "rev-parse", "--short", "HEAD"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return "unknown"
     return result.stdout.strip() if result.returncode == 0 else "unknown"
 
 
@@ -94,14 +97,18 @@ def _run_pytest_smoke() -> tuple[int, int, int, int]:
     ]
     env = os.environ.copy()
     env["PYTHONPATH"] = str(ROOT)
-    result = subprocess.run(
-        cmd,
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        env=env,
-        check=False,
-    )
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            env=env,
+            check=False,
+        )
+    except OSError:
+        # Interpreter missing or not executable: count it as a failure, never a pass.
+        return 0, 1, 0, -1
     # Parse summary line like "3 passed, 390 deselected, 2 warnings in 1.33s"
     passed = failed = skipped = 0
     for line in result.stdout.splitlines():
@@ -130,13 +137,18 @@ def _run_repo_truth() -> tuple[bool, list[dict]]:
             {"name": "repo_truth_check.py", "status": "FAIL", "detail": "script missing"}
         ]
 
-    result = subprocess.run(
-        [sys.executable, str(script)],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        result = subprocess.run(
+            [sys.executable, str(script)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError as exc:
+        return False, [
+            {"name": "repo_truth_check.py", "status": "FAIL", "detail": type(exc).__name__}
+        ]
     # repo_truth_check prints summary but does not emit JSON; infer from exit code.
     passed = result.returncode == 0
     details = [
@@ -164,8 +176,6 @@ def main() -> int:
     started = _now()
     receipt_id = f"smoke_{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}_{_short_ref()}"
 
-    ARTIFACTS.mkdir(parents=True, exist_ok=True)
-
     pytest_passed, pytest_failed, pytest_skipped, pytest_code = _run_pytest_smoke()
     repo_truth_passed, repo_truth_details = _run_repo_truth()
 
@@ -192,6 +202,7 @@ def main() -> int:
     )
 
     try:
+        ARTIFACTS.mkdir(parents=True, exist_ok=True)
         SUMMARY_PATH.write_text(json.dumps(asdict(summary), indent=2), encoding="utf-8")
         RECEIPT_PATH.write_text(receipt_id, encoding="utf-8")
         TIMESTAMP_PATH.write_text(finished, encoding="utf-8")

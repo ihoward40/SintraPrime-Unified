@@ -84,6 +84,42 @@ def test_unwritable_artifacts_fail_the_lane(runner, monkeypatch, tmp_path):
     assert not (tmp_path / "receipt.txt").exists()
 
 
+def test_unusable_artifacts_dir_fails_the_lane(runner, monkeypatch, tmp_path):
+    """If the artifacts directory cannot be created the lane exits nonzero, no traceback."""
+    blocker = tmp_path / "artifacts"
+    blocker.write_text("a file where the directory should be", encoding="utf-8")
+    monkeypatch.setattr(runner.subprocess, "run", _fake_pytest_run(0, "3 passed in 0.5s\n"))
+    monkeypatch.setattr(runner, "_run_repo_truth", lambda: (True, []))
+    monkeypatch.setattr(runner, "ARTIFACTS", blocker)
+    monkeypatch.setattr(runner, "SUMMARY_PATH", blocker / "summary.json")
+    monkeypatch.setattr(runner, "RECEIPT_PATH", blocker / "receipt.txt")
+    monkeypatch.setattr(runner, "TIMESTAMP_PATH", blocker / "timestamp.txt")
+    monkeypatch.setattr(runner, "_short_ref", lambda: "testref")
+
+    assert runner.main() == 1
+
+
+def test_unlaunchable_subprocesses_fail_the_lane(runner, monkeypatch, tmp_path):
+    """If no subprocess can start, every step degrades to FAIL instead of crashing."""
+
+    def boom(*_args, **_kwargs):
+        raise FileNotFoundError("no such executable")
+
+    monkeypatch.setattr(runner.subprocess, "run", boom)
+    monkeypatch.setattr(runner, "ARTIFACTS", tmp_path)
+    monkeypatch.setattr(runner, "SUMMARY_PATH", tmp_path / "summary.json")
+    monkeypatch.setattr(runner, "RECEIPT_PATH", tmp_path / "receipt.txt")
+    monkeypatch.setattr(runner, "TIMESTAMP_PATH", tmp_path / "timestamp.txt")
+
+    assert runner._short_ref() == "unknown"
+    assert runner.main() == 1
+
+    summary = (tmp_path / "summary.json").read_text(encoding="utf-8")
+    assert '"overall": "FAIL"' in summary
+    assert '"pytest_exit_code": -1' in summary
+    assert '"repo_truth_passed": false' in summary
+
+
 def test_clean_pytest_run_still_passes_the_lane(runner, monkeypatch, tmp_path):
     monkeypatch.setattr(runner.subprocess, "run", _fake_pytest_run(0, "3 passed in 0.5s\n"))
     monkeypatch.setattr(runner, "_run_repo_truth", lambda: (True, []))

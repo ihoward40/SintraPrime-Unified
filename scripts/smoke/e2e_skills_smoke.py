@@ -39,6 +39,7 @@ class SmokeResult:
     pytest_passed: int = 0
     pytest_failed: int = 0
     pytest_skipped: int = 0
+    pytest_exit_code: int = -1
     repo_truth_passed: bool = False
     repo_truth_details: list[dict] = field(default_factory=list)
     started_at: str = ""
@@ -148,13 +149,24 @@ def _run_repo_truth() -> tuple[bool, list[dict]]:
     return passed, details
 
 
+def _overall(pytest_code: int, pytest_failed: int, repo_truth_passed: bool) -> str:
+    """PASS only if pytest exited 0, no failures were parsed, and repo truth passed.
+
+    The exit code is required because collection errors and similar problems can
+    exit nonzero while the parsed output still shows passed tests and no failures.
+    """
+    if pytest_code == 0 and pytest_failed == 0 and repo_truth_passed:
+        return "PASS"
+    return "FAIL"
+
+
 def main() -> int:
     started = _now()
     receipt_id = f"smoke_{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}_{_short_ref()}"
 
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
 
-    pytest_passed, pytest_failed, pytest_skipped, _pytest_code = _run_pytest_smoke()
+    pytest_passed, pytest_failed, pytest_skipped, pytest_code = _run_pytest_smoke()
     repo_truth_passed, repo_truth_details = _run_repo_truth()
 
     finished = _now()
@@ -162,13 +174,14 @@ def main() -> int:
     finished_dt = datetime.fromisoformat(finished)
     duration = (finished_dt - started_dt).total_seconds()
 
-    overall = "PASS" if pytest_failed == 0 and repo_truth_passed else "FAIL"
+    overall = _overall(pytest_code, pytest_failed, repo_truth_passed)
 
     summary = SmokeResult(
         overall=overall,
         pytest_passed=pytest_passed,
         pytest_failed=pytest_failed,
         pytest_skipped=pytest_skipped,
+        pytest_exit_code=pytest_code,
         repo_truth_passed=repo_truth_passed,
         repo_truth_details=repo_truth_details,
         started_at=started,
@@ -178,12 +191,20 @@ def main() -> int:
         python_executable=sys.executable,
     )
 
-    SUMMARY_PATH.write_text(json.dumps(asdict(summary), indent=2), encoding="utf-8")
-    RECEIPT_PATH.write_text(receipt_id, encoding="utf-8")
-    TIMESTAMP_PATH.write_text(finished, encoding="utf-8")
+    try:
+        SUMMARY_PATH.write_text(json.dumps(asdict(summary), indent=2), encoding="utf-8")
+        RECEIPT_PATH.write_text(receipt_id, encoding="utf-8")
+        TIMESTAMP_PATH.write_text(finished, encoding="utf-8")
+    except OSError as exc:
+        # Never leave a stale receipt looking like evidence for this run.
+        print(f"Smoke lane: could not write artifacts ({type(exc).__name__})", file=sys.stderr)
+        return 1
 
     print(f"\nSmoke lane: {overall}")
-    print(f"  pytest: {pytest_passed} passed, {pytest_failed} failed, {pytest_skipped} skipped")
+    print(
+        f"  pytest: {pytest_passed} passed, {pytest_failed} failed, "
+        f"{pytest_skipped} skipped (exit code {pytest_code})"
+    )
     print(f"  repo_truth: {'PASS' if repo_truth_passed else 'FAIL'}")
     print(f"  receipt: {receipt_id}")
     print(f"  artifacts:")

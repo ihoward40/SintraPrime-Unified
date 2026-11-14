@@ -1,0 +1,96 @@
+"""Regression tests: the smoke runner must not report PASS after a failed pytest run."""
+
+from __future__ import annotations
+
+import importlib.util
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+RUNNER_PATH = Path(__file__).resolve().parents[2] / "scripts" / "smoke" / "e2e_skills_smoke.py"
+
+
+@pytest.fixture
+def runner(monkeypatch):
+    name = "e2e_skills_smoke_under_test"
+    spec = importlib.util.spec_from_file_location(name, RUNNER_PATH)
+    module = importlib.util.module_from_spec(spec)
+    # dataclasses resolves string annotations through sys.modules, so register first.
+    monkeypatch.setitem(sys.modules, name, module)
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.mark.parametrize(
+    ("pytest_code", "pytest_failed", "repo_truth_passed", "expected"),
+    [
+        (0, 0, True, "PASS"),
+        (0, 1, True, "FAIL"),
+        (0, 0, False, "FAIL"),
+        (2, 0, True, "FAIL"),  # collection error: nonzero exit, passed tests, no parsed failures
+        (1, 0, True, "FAIL"),
+        (5, 0, True, "FAIL"),  # pytest "no tests collected"
+    ],
+    ids=["all-ok", "failed-test", "repo-truth-fail", "collection-error", "exit-1", "no-tests"],
+)
+def test_overall_requires_zero_exit_code(
+    runner, pytest_code, pytest_failed, repo_truth_passed, expected
+):
+    assert runner._overall(pytest_code, pytest_failed, repo_truth_passed) == expected
+
+
+def _fake_pytest_run(returncode: int, stdout: str):
+    def fake_run(cmd, **_kwargs):
+        return subprocess.CompletedProcess(cmd, returncode, stdout=stdout, stderr="")
+
+    return fake_run
+
+
+def test_nonzero_pytest_exit_with_passed_tests_fails_the_lane(runner, monkeypatch, tmp_path):
+    """Passed tests plus a collection error must exit nonzero and write FAIL."""
+    monkeypatch.setattr(
+        runner.subprocess,
+        "run",
+        _fake_pytest_run(2, "3 passed, 1 error in 0.5s\n"),
+    )
+    monkeypatch.setattr(runner, "_run_repo_truth", lambda: (True, []))
+    monkeypatch.setattr(runner, "ARTIFACTS", tmp_path)
+    monkeypatch.setattr(runner, "SUMMARY_PATH", tmp_path / "summary.json")
+    monkeypatch.setattr(runner, "RECEIPT_PATH", tmp_path / "receipt.txt")
+    monkeypatch.setattr(runner, "TIMESTAMP_PATH", tmp_path / "timestamp.txt")
+    monkeypatch.setattr(runner, "_short_ref", lambda: "testref")
+
+    assert runner.main() == 1
+
+    summary = (tmp_path / "summary.json").read_text(encoding="utf-8")
+    assert '"overall": "FAIL"' in summary
+    assert '"pytest_exit_code": 2' in summary
+    assert '"pytest_failed": 0' in summary
+
+
+def test_unwritable_artifacts_fail_the_lane(runner, monkeypatch, tmp_path):
+    """If artifacts cannot be written the lane must exit nonzero, not crash or pass."""
+    monkeypatch.setattr(runner.subprocess, "run", _fake_pytest_run(0, "3 passed in 0.5s\n"))
+    monkeypatch.setattr(runner, "_run_repo_truth", lambda: (True, []))
+    monkeypatch.setattr(runner, "ARTIFACTS", tmp_path)
+    monkeypatch.setattr(runner, "SUMMARY_PATH", tmp_path / "missing_dir" / "summary.json")
+    monkeypatch.setattr(runner, "RECEIPT_PATH", tmp_path / "receipt.txt")
+    monkeypatch.setattr(runner, "TIMESTAMP_PATH", tmp_path / "timestamp.txt")
+    monkeypatch.setattr(runner, "_short_ref", lambda: "testref")
+
+    assert runner.main() == 1
+    assert not (tmp_path / "receipt.txt").exists()
+
+
+def test_clean_pytest_run_still_passes_the_lane(runner, monkeypatch, tmp_path):
+    monkeypatch.setattr(runner.subprocess, "run", _fake_pytest_run(0, "3 passed in 0.5s\n"))
+    monkeypatch.setattr(runner, "_run_repo_truth", lambda: (True, []))
+    monkeypatch.setattr(runner, "ARTIFACTS", tmp_path)
+    monkeypatch.setattr(runner, "SUMMARY_PATH", tmp_path / "summary.json")
+    monkeypatch.setattr(runner, "RECEIPT_PATH", tmp_path / "receipt.txt")
+    monkeypatch.setattr(runner, "TIMESTAMP_PATH", tmp_path / "timestamp.txt")
+    monkeypatch.setattr(runner, "_short_ref", lambda: "testref")
+
+    assert runner.main() == 0

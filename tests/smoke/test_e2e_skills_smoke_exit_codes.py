@@ -120,6 +120,78 @@ def test_unlaunchable_subprocesses_fail_the_lane(runner, monkeypatch, tmp_path):
     assert '"repo_truth_passed": false' in summary
 
 
+def test_unreadable_paths_degrade_instead_of_raising(runner, monkeypatch):
+    """Filesystem errors from exists()/resolve() must not escape the helpers."""
+
+    def deny(*_args, **_kwargs):
+        raise PermissionError("denied")
+
+    with monkeypatch.context() as patched:
+        patched.setattr(runner.Path, "exists", deny)
+        passed, details = runner._run_repo_truth()
+    assert passed is False
+    assert details[0]["status"] == "FAIL"
+    assert details[0]["detail"] == "PermissionError"
+
+    with monkeypatch.context() as patched:
+        patched.setattr(runner.Path, "resolve", deny)
+        assert runner._python_executable() == sys.executable
+
+
+def _seed_pass_artifacts(runner, monkeypatch, tmp_path):
+    """Point the runner at tmp_path and leave an earlier PASS run's artifacts there."""
+    paths = {
+        "SUMMARY_PATH": tmp_path / "summary.json",
+        "RECEIPT_PATH": tmp_path / "receipt.txt",
+        "TIMESTAMP_PATH": tmp_path / "timestamp.txt",
+    }
+    monkeypatch.setattr(runner, "ARTIFACTS", tmp_path)
+    for attr, path in paths.items():
+        monkeypatch.setattr(runner, attr, path)
+        path.write_text('{"overall": "PASS"}', encoding="utf-8")
+    monkeypatch.setattr(runner.subprocess, "run", _fake_pytest_run(0, "3 passed in 0.5s\n"))
+    monkeypatch.setattr(runner, "_run_repo_truth", lambda: (True, []))
+    monkeypatch.setattr(runner, "_short_ref", lambda: "testref")
+    return list(paths.values())
+
+
+def _fail_write_for(runner, monkeypatch, filename):
+    original = runner.Path.write_text
+
+    def fake_write_text(self, *args, **kwargs):
+        if self.name == filename:
+            raise OSError("disk full")
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(runner.Path, "write_text", fake_write_text)
+
+
+@pytest.mark.parametrize("failing_file", ["summary.json", "timestamp.txt"])
+def test_failed_publish_leaves_no_earlier_pass_artifacts(
+    runner, monkeypatch, tmp_path, failing_file
+):
+    """A write failure must not leave a prior PASS (or a half-written new run) behind."""
+    paths = _seed_pass_artifacts(runner, monkeypatch, tmp_path)
+    _fail_write_for(runner, monkeypatch, failing_file)
+
+    assert runner.main() == 1
+    assert [p.exists() for p in paths] == [False, False, False]
+
+
+def test_uncleared_artifacts_fail_before_any_check_runs(runner, monkeypatch, tmp_path):
+    """If prior evidence cannot be invalidated, no check runs and the lane fails."""
+    _seed_pass_artifacts(runner, monkeypatch, tmp_path)
+    stuck = tmp_path / "receipt.txt"
+    stuck.unlink()
+    stuck.mkdir()  # a directory cannot be unlinked as a file
+    (stuck / "keep").write_text("x", encoding="utf-8")
+    calls = []
+    monkeypatch.setattr(runner.subprocess, "run", lambda *args, **_kwargs: calls.append(args))
+
+    assert runner.main() == 1
+    assert calls == []
+
+
 def test_clean_pytest_run_still_passes_the_lane(runner, monkeypatch, tmp_path):
     monkeypatch.setattr(runner.subprocess, "run", _fake_pytest_run(0, "3 passed in 0.5s\n"))
     monkeypatch.setattr(runner, "_run_repo_truth", lambda: (True, []))

@@ -76,9 +76,12 @@ def _python_executable() -> str:
         Path(sys.executable),
     ]
     for candidate in candidates:
-        resolved = Path(candidate).resolve()
-        if resolved.exists():
-            return str(resolved)
+        try:
+            resolved = Path(candidate).resolve()
+            if resolved.exists():
+                return str(resolved)
+        except OSError:
+            continue
     return sys.executable
 
 
@@ -132,12 +135,11 @@ def _run_pytest_smoke() -> tuple[int, int, int, int]:
 
 def _run_repo_truth() -> tuple[bool, list[dict]]:
     script = ROOT / "scripts" / "smoke" / "repo_truth_check.py"
-    if not script.exists():
-        return False, [
-            {"name": "repo_truth_check.py", "status": "FAIL", "detail": "script missing"}
-        ]
-
     try:
+        if not script.exists():
+            return False, [
+                {"name": "repo_truth_check.py", "status": "FAIL", "detail": "script missing"}
+            ]
         result = subprocess.run(
             [sys.executable, str(script)],
             cwd=ROOT,
@@ -172,7 +174,32 @@ def _overall(pytest_code: int, pytest_failed: int, repo_truth_passed: bool) -> s
     return "FAIL"
 
 
+def _remove_artifacts() -> list[str]:
+    """Delete the receipt, summary and timestamp; return those that could not be removed.
+
+    The receipt goes first so a half-finished cleanup never leaves a pointer
+    to evidence that no longer matches.
+    """
+    failed: list[str] = []
+    for path in (RECEIPT_PATH, SUMMARY_PATH, TIMESTAMP_PATH):
+        try:
+            path.unlink(missing_ok=True)
+        except OSError as exc:
+            failed.append(f"{path.name} ({type(exc).__name__})")
+    return failed
+
+
 def main() -> int:
+    # Invalidate prior evidence before any check runs, so a failed or aborted
+    # run can never leave an earlier PASS standing as this run's result.
+    stale = _remove_artifacts()
+    if stale:
+        print(
+            "Smoke lane: could not clear previous artifacts: " + ", ".join(stale),
+            file=sys.stderr,
+        )
+        return 1
+
     started = _now()
     receipt_id = f"smoke_{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}_{_short_ref()}"
 
@@ -204,11 +231,18 @@ def main() -> int:
     try:
         ARTIFACTS.mkdir(parents=True, exist_ok=True)
         SUMMARY_PATH.write_text(json.dumps(asdict(summary), indent=2), encoding="utf-8")
-        RECEIPT_PATH.write_text(receipt_id, encoding="utf-8")
         TIMESTAMP_PATH.write_text(finished, encoding="utf-8")
+        # The receipt is the proof of a run, so it is published last.
+        RECEIPT_PATH.write_text(receipt_id, encoding="utf-8")
     except OSError as exc:
-        # Never leave a stale receipt looking like evidence for this run.
+        # Never leave partial output looking like evidence for this run.
         print(f"Smoke lane: could not write artifacts ({type(exc).__name__})", file=sys.stderr)
+        leftovers = _remove_artifacts()
+        if leftovers:
+            print(
+                "Smoke lane: could not clean up partial artifacts: " + ", ".join(leftovers),
+                file=sys.stderr,
+            )
         return 1
 
     print(f"\nSmoke lane: {overall}")

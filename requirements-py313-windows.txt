@@ -78,7 +78,7 @@ mypy==1.11.2
 # QR codes & email validation
 qrcode==8.2
 email-validator==2.3.0
-dnspython==2.8.0
+dnspython==2.9.2
 
 # Date/time utilities
 python-dateutil==2.8.2

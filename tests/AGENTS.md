@@ -8,6 +8,7 @@ Owns the root-level test suite: scheduler tests and agent unit tests that valida
 
 - Root-level test files: scheduler tests (`test_scheduler_core.py`, `test_scheduler_dispatcher.py`, `test_scheduler_executor.py`, `test_scheduler_queue.py`, `test_scheduler_recurring.py`, `test_scheduler_task_types.py`) and agent tests (`test_nova_agent.py`, `test_sigma_agent.py`, `test_zero_agent.py`)
 - `tests/security/` subdirectory
+- `tests/smoke/` subdirectory: smoke-lane tests marked `smoke` (run by `scripts/smoke/e2e_skills_smoke.py`) and unmarked tests of the runner's own verdict logic (`test_e2e_skills_smoke_exit_codes.py`: PASS requires pytest exit code 0)
 - Does *not* own `portal/tests/`, `portal/sso/tests/`, or `portal/routers/tests/`
 
 ## Local Contracts

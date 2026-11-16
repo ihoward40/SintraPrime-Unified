@@ -10,19 +10,42 @@ REPO = Path(__file__).resolve().parents[2]
 
 
 def _run(task_params: dict) -> dict:
+    from mission_wiring.approval_service import AuthorityApprovalService
+
     run_dir = tempfile.mkdtemp(prefix="semantic-worker-")
+    base_sha = "051e2594c67a805ceacc66ea2a6fc6db9c0bc793"
+    svc = AuthorityApprovalService()
+    svc.issue(
+        approval_id="appr-sem-1",
+        mission_id="semantic-mission",
+        actor_id="semantic-1",
+        tenant_id="default",
+        capabilities=frozenset({"provider.inference"}),
+        resource_urls=frozenset(),
+        issued_by="PRINCIPAL",
+        permitted_roles=frozenset({"breaker"}),
+        permitted_workers=frozenset({"ModelReasoningWorker"}),
+        permitted_execution_classes=frozenset({"read_only_inspection"}),
+        context_hash=base_sha,
+    )
     task = DelegateTask(
         task_id="semantic-1",
         description="Perform one bounded semantic inference",
         role="breaker",
         worker_class="ModelReasoningWorker",
+        base_sha=base_sha,
         timeout_seconds=30,
-        run_context={"swarm_id": "SWARM-SEMANTIC-ACCEPTANCE-001"},
+        tenant="default",
+        mission="semantic-mission",
+        run_context={
+            "swarm_id": "SWARM-SEMANTIC-ACCEPTANCE-001",
+            "approval_id": "appr-sem-1",
+        },
         task_params=task_params,
         artifact_filename="artifacts/result.json",
     )
     result = HermesSwarmAdapter(
-        repo_path=str(REPO), run_dir=run_dir, max_concurrent=1
+        repo_path=str(REPO), run_dir=run_dir, max_concurrent=1, approval_service=svc
     ).delegate([task])
     return {"result": result.to_dict(), "run_dir": run_dir}
 

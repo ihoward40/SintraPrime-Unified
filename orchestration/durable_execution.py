@@ -1322,6 +1322,9 @@ class DurableWorkflowEngine:
             if current.status == SideEffectStatus.SUCCEEDED:
                 return current.result_reference
 
+            # Preserve the pre-claim state. A missing receipt or expired lease
+            # may mean the provider already committed the mutation.
+            previous_status = current.status
             owner_id = f"side-effect-{uuid.uuid4()}"
             now = time.time()
             if not self._store.claim_side_effect_execution(
@@ -1339,6 +1342,16 @@ class DurableWorkflowEngine:
                     )
                     if reconciled is not None:
                         execution = reconciled
+                    elif previous_status in (SideEffectStatus.UNKNOWN, SideEffectStatus.IN_PROGRESS):
+                        # Never retry an ambiguous external mutation just because
+                        # the provider cannot confirm its outcome. Retain UNKNOWN
+                        # for independent reconciliation / Principal review.
+                        self._store.mark_side_effect_unknown(
+                            key, owner_id,
+                            provider_request_id=current.provider_request_id,
+                            error="REMOTE_OUTCOME_UNVERIFIED",
+                        )
+                        raise RuntimeError("SIDE_EFFECT_RECONCILIATION_REQUIRED")
                     else:
                         execution = await provider.execute(
                             request,

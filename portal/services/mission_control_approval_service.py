@@ -217,6 +217,15 @@ async def consume_approval_and_activate(
     Concurrent activation requests are serialized by the UNIQUE(tenant_id, run_id)
     constraint and the atomic PENDING → CONSUMED transition.
     """
+    # Activation is a consequential action: a previously created approval
+    # artifact does not delegate the Principal's execution authority.
+    # A delegated activation path must be introduced separately with an
+    # authenticated, scoped, unexpired delegation and dedicated tests.
+    if not await is_tenant_principal(
+        db, authenticated_user_id=str(actor.user_id), tenant_id=tenant_id
+    ):
+        raise NotPrincipalError("NOT_TENANT_PRINCIPAL")
+
     authority = authority or DurableOrchestrationAuthority()
 
     # 1. Load approval artifact

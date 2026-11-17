@@ -76,5 +76,10 @@
     "tsx": "^4.23.0",
     "tweetnacl": "^1.0.3",
     "typescript": "^5.7.2"
+  },
+  "overrides": {
+    "pac-proxy-agent": {
+      "get-uri": "8.0.2"
+    }
   }
 }

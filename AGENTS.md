@@ -90,6 +90,8 @@ When the user requests a durable behavior change, record it here or in the relev
 - Root/frontend Node support is `20 || >=22`, matching the patched modern minimatch dependency. Scope the minimatch override to `@typescript-eslint/typescript-estree`; legacy minimatch consumers have a different export API and must not be globally overridden. Keep npm and pnpm override semantics equivalent.
 - `scripts/ci/tests/test_dependency_security.py` checks manifest/lock consistency and the bounded advisory floors. `scripts/ci/tests/dependency_security.test.cjs` exercises synthetic loopback redirect credentials, typed ESLint project resolution, and Tailwind/PostCSS compilation. These are not a claim that all repository advisories are resolved.
 
+- The nested `apps/sintraprime` app retains Node >=20 support. Keep its PAC chain on CommonJS-compatible `get-uri@6.0.5` with `basic-ftp@6.2.6` scoped beneath `pac-proxy-agent > get-uri`; do not replace it with ESM-only get-uri without validating the minimum supported Node runtime. `node --test pac-compat.test.cjs` and the SintraPrime PAC compatibility workflow guard the consumer boundary and installed FTP version.
+
 ## Security Regression CI Contract
 
 - The `ci.yml` workflow applies a workflow-wide `GITHUB_TOKEN` ceiling of `contents: read` to every job, including same-repository pull requests. Any broader job-level override requires a separately reviewed, specifically authorized action/API need; do not expose repository/app secrets or privileged credentials to candidate-controlled code.

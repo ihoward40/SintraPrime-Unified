@@ -92,7 +92,7 @@ When the user requests a durable behavior change, record it here or in the relev
 
 ## SintraPrime App Tests
 
-- `apps/sintraprime` owns unit tests in `tests/unit` and integration tests in `tests/integration`. `npm test` runs the unit suite; `npm run test:integration` runs the integration suite. Runners discover explicit `.test` files, reject missing or empty suites, and propagate test failures. These checks cover selected monitoring behavior and do not certify the full app.
+- `apps/sintraprime` owns unit tests in `tests/unit` and integration tests in `tests/integration`. `npm test` runs the unit suite; `npm run test:integration` runs the integration suite. Runners discover `.test.js`, `.test.mjs`, and `.test.cjs` JavaScript wrappers, reject missing or empty suites, and propagate test failures. Load TypeScript modules from wrappers with `createRequire` and the preloaded `tsx/cjs` hook so Node 20.0 does not depend on the later ESM registration API. These checks cover selected monitoring behavior and do not certify the full app.
 
 ## Security Regression CI Contract
 

@@ -7,7 +7,7 @@ on:
       - 'apps/sintraprime/**'
       - '.github/workflows/sintraprime-pac-compat.yml'
   pull_request:
-    branches: [main]
+    branches: [main, 'fix/basic-ftp-get-uri-pac-20261117']
     paths:
       - 'apps/sintraprime/**'
       - '.github/workflows/sintraprime-pac-compat.yml'
@@ -37,5 +37,5 @@ jobs:
           cache: npm
           cache-dependency-path: apps/sintraprime/package-lock.json
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: node --test pac-compat.test.cjs
+      - run: node --test pac-compat.test.cjs file-uri-compat.test.cjs vendor-integrity.test.cjs
       - run: git diff --exit-code -- package.json package-lock.json

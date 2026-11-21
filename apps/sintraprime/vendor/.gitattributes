@@ -1,0 +1,5 @@
+# Preserve audited package/archive bytes across Windows and Linux.
+get-uri/** -text whitespace=cr-at-eol
+*.tgz -text
+# Upstream README uses a setext underline, not a merge-conflict marker.
+get-uri/README.md conflict-marker-size=32

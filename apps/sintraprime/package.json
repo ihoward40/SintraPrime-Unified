@@ -80,7 +80,7 @@
   "overrides": {
     "pac-proxy-agent": {
       "get-uri": {
-        ".": "6.0.5",
+        ".": "file:vendor/get-uri-6.0.5-sintraprime.1.tgz",
         "basic-ftp": "6.2.6"
       }
     }

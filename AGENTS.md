@@ -82,6 +82,7 @@ When the user requests a durable behavior change, record it here or in the relev
 
 - `apps/ike-bot/main/vercel.json` owns the Vercel Git-deployment hold for the `apps/ike-bot/main` project root. Keep `git.deploymentEnabled` set to `false` until the owner explicitly authorizes resuming automatic deployments; this applies to all Git branches, including `main`.
 - Merge authorization does not authorize deployment. The flag does not disable CLI/API deployments or GitHub deployment workflows; those routes retain their separate authorization gate.
+- Google Cloud project `ike-bot-automation` has two automatic Cloud Run deployment triggers for this repository: `b9dfcad5-80c9-4066-af34-f01f64b1ae50` (europe-west1) and `3bb59c01-2645-480f-9be8-2d5d21474068` (us-central1). Keep both Disabled until the owner separately authorizes deployment. Integration/merge authorization does not authorize re-enabling them or manually running deployment builds; existing running services remain untouched.
 
 ## Dependency Maintenance
 
@@ -90,7 +91,7 @@ When the user requests a durable behavior change, record it here or in the relev
 - Root/frontend Node support is `20 || >=22`, matching the patched modern minimatch dependency. Scope the minimatch override to `@typescript-eslint/typescript-estree`; legacy minimatch consumers have a different export API and must not be globally overridden. Keep npm and pnpm override semantics equivalent.
 - `scripts/ci/tests/test_dependency_security.py` checks manifest/lock consistency and the bounded advisory floors. `scripts/ci/tests/dependency_security.test.cjs` exercises synthetic loopback redirect credentials, typed ESLint project resolution, and Tailwind/PostCSS compilation. These are not a claim that all repository advisories are resolved.
 
-- The nested `apps/sintraprime` app retains Node >=20 support. Keep its PAC chain on CommonJS-compatible `get-uri@6.0.5` with `basic-ftp@6.2.6` scoped beneath `pac-proxy-agent > get-uri`; do not replace it with ESM-only get-uri without validating the minimum supported Node runtime. `node --test pac-compat.test.cjs` and the SintraPrime PAC compatibility workflow guard the consumer boundary and installed FTP version.
+- The nested `apps/sintraprime` app retains Node >=20 support. Keep its PAC chain on the reviewed vendored CommonJS `get-uri@6.0.5` patch with `basic-ftp@6.2.6` scoped beneath `pac-proxy-agent > get-uri`; do not replace it with ESM-only get-uri without validating the minimum supported Node runtime. `node --test pac-compat.test.cjs file-uri-compat.test.cjs vendor-integrity.test.cjs` and the SintraPrime PAC compatibility workflow guard the consumer boundary and installed FTP version.
 
 ## Security Regression CI Contract
 
@@ -105,6 +106,7 @@ When the user requests a durable behavior change, record it here or in the relev
 
 | Path | Scope | Controls |
 |---|---|---|
+| `apps/sintraprime/vendor/AGENTS.md` | Vendored PAC URI dependency and install artifact | License/provenance, single handle ownership, Node 20 and patched FTP compatibility |
 | `ws8_cmrd/AGENTS.md` | WS8-CMRD-001 standalone scenario arithmetic and replay | Phase 1 contract, manifest, export and authority boundary |
 | `portal/AGENTS.md` | Client portal (FastAPI) | Auth, models, routes, services, middleware, SSO, WebSocket, DB schema, portal-level tests |
 | `portal/routers/AGENTS.md` | API route handlers | Router modules and their tests; delegates business logic to `services/` |

@@ -3,12 +3,11 @@ import { ExecutionPlanSchema } from "../schemas/ExecutionPlan.schema.js";
 import crypto from "node:crypto";
 import { computePlanHash } from "../utils/planHash.js";
 import { proposeStatus } from "../analysis/proposeStatus.js";
-import { notionLiveGet, notionLiveWhoAmI } from "../adapters/notionLiveRead.js";
-import { notionLivePatchWithIdempotency } from "../adapters/notionLiveWrite.js";
+import { notionLiveGet, notionLiveWhoAmI, notionPath as validateNotionPath, redactNotion } from "../adapters/notionLiveRead.js";
+import { notionLivePatchWithIdempotency, notionWriteRequest, type NotionWriteApproval } from "../adapters/notionLiveWrite.js";
 import { writeNotionLiveWriteArtifact } from "../artifacts/writeNotionLiveWriteArtifact.js";
 import { writeDocsCaptureArtifact } from "../artifacts/writeDocsCaptureArtifact.js";
 import { writeBrowserOperatorArtifact } from "../artifacts/writeBrowserOperatorArtifact.js";
-import { getIdempotencyRecord, writeIdempotencyRecord } from "../idempotency/idempotencyLedger.js";
 import { runBrowserOperatorStep } from "../browserOperator/runBrowserOperator.js";
 import { browserL0DomExtract, browserL0Navigate, browserL0Screenshot } from "../browserOperator/l0.js";
 import { evidenceRollupSha256 } from "../receipts/evidenceRollup.js";
@@ -90,6 +89,7 @@ function maybeEvaluateStepGuards(step: ExecutionStep, stepOut: unknown) {
 }
 
 export type ExecutePlanOptions = {
+  notionWriteApproval?: NotionWriteApproval;
   onStepFinished?: (args: {
     plan: ExecutionPlan;
     step: ExecutionStep;
@@ -514,6 +514,8 @@ export async function executePlan(rawPlan: unknown, opts: ExecutePlanOptions = {
                         ? String((step as any).notion_path)
                         : new URL(step.url).pathname;
 
+                    validateNotionPath(notionPath);
+                    if (step.adapter !== "NotionAdapter" || step.method !== "GET" || step.read_only !== true || step.url !== "https://api.notion.com" + notionPath) throw new Error("Invalid Notion read step");
                     const r = await notionLiveGet(notionPath);
                     return {
                       ok: r.http_status >= 200 && r.http_status < 300,
@@ -543,23 +545,18 @@ export async function executePlan(rawPlan: unknown, opts: ExecutePlanOptions = {
                             });
                       (step as any).idempotency_key = stepIdempotencyKey;
 
-                      const existing = getIdempotencyRecord(stepIdempotencyKey);
-                      if (existing && typeof existing?.http_status === "number") {
-                        return {
-                          ok: true,
-                          status: existing.http_status,
-                          response: existing.response ?? null,
-                          responseJson: existing.response ?? null,
-                        };
-                      }
+                      notionWriteRequest(plan.execution_id, step);
 
                       const r = await notionLivePatchWithIdempotency(
                         notionPath,
                         { properties: props },
-                        stepIdempotencyKey
+                        stepIdempotencyKey,
+                        opts.notionWriteApproval,
+                        plan.execution_id,
+                        step.step_id
                       );
 
-                      if (r.http_status >= 400) {
+                      if (r.http_status < 200 || r.http_status >= 300) {
                         throw new Error(`Notion PATCH failed HTTP ${r.http_status}`);
                       }
 
@@ -573,25 +570,11 @@ export async function executePlan(rawPlan: unknown, opts: ExecutePlanOptions = {
                         execution_id: plan.execution_id,
                         step_id: step.step_id,
                         notion_path: notionPath,
-                        request_properties: props,
-                        guards: (step as any).guards || [],
+                        request_properties: redactNotion(props),
+                        guards: redactNotion((step as any).guards || []) as any[],
                         http_status: r.http_status,
                         response: r.redacted,
                         approved_at,
-                      });
-
-                      writeIdempotencyRecord(stepIdempotencyKey, {
-                        status: "executed",
-                        idempotency_key: stepIdempotencyKey,
-                        execution_id: plan.execution_id,
-                        plan_hash,
-                        threadId: plan.threadId,
-                        step_id: step.step_id,
-                        action: step.action,
-                        notion_path: notionPath,
-                        http_status: r.http_status,
-                        response: r.redacted,
-                        executed_at: new Date().toISOString(),
                       });
 
                       return {

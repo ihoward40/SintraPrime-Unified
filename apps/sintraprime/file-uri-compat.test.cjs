@@ -76,10 +76,17 @@ test('autoClose false permits explicit caller closure', async () => {
  const dir = await mkdtemp(path.join(os.tmpdir(), 'uri-close-'));
  try {
   const file = path.join(dir, 'file'); await writeFile(file, 'text');
-  const stream = await getUri(pathToFileURL(file).href, { autoClose: false });
+  const fs = require('node:fs'); const original = fs.promises.open;
+  let handle, stream;
+  try {
+   fs.promises.open = async (...args) => { handle = await original(...args); return handle; };
+   stream = await getUri(pathToFileURL(file).href, { autoClose: false });
+  } finally { fs.promises.open = original; }
   stream.resume(); await new Promise((resolve, reject) => { stream.once('end', resolve); stream.once('error', reject); });
   assert.equal(stream.closed, false);
-  const fd = stream.fd; await new Promise((resolve, reject) => stream.close(error => error ? reject(error) : resolve()));
-  assert.throws(() => require('node:fs').fstatSync(fd), { code: 'EBADF' });
+  assert.ok(handle.fd >= 0, 'Caller still owns the open handle before explicit close');
+  await new Promise((resolve, reject) => { stream.once('close', resolve); stream.once('error', reject); stream.close(); });
+  assert.equal(stream.closed, true);
+  assert.equal(handle.fd, -1, 'Explicit stream closure closes its owning FileHandle');
  } finally { await rm(dir, { recursive: true, force: true }); }
 });

@@ -1,0 +1,9 @@
+{
+  "_description": "Deny-only example, not loaded automatically. Supply deliberate policy values and provisioned state before enabling confidence-based writes.",
+  "initial_score": 0,
+  "penalties": {
+    "THROTTLE": 0,
+    "ROLLBACK": 0,
+    "POLICY_DENIAL": 0
+  }
+}

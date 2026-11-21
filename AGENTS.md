@@ -90,6 +90,13 @@ When the user requests a durable behavior change, record it here or in the relev
 - Root/frontend Node support is `20 || >=22`, matching the patched modern minimatch dependency. Scope the minimatch override to `@typescript-eslint/typescript-estree`; legacy minimatch consumers have a different export API and must not be globally overridden. Keep npm and pnpm override semantics equivalent.
 - `scripts/ci/tests/test_dependency_security.py` checks manifest/lock consistency and the bounded advisory floors. `scripts/ci/tests/dependency_security.test.cjs` exercises synthetic loopback redirect credentials, typed ESLint project resolution, and Tailwind/PostCSS compilation. These are not a claim that all repository advisories are resolved.
 
+## SintraPrime Runtime Contracts
+
+- `apps/sintraprime` must pass `npm run typecheck` and `npm run build`. The scoped runtime-contract CI runs those commands plus explicit confidence, Notion and monitoring JS-wrapper tests on Node 20.0 and 24; all transport tests use fake fetch, never live Notion writes.
+- Confidence is fail-closed until explicit valid operator policy and state exist. The example at `apps/sintraprime/config/confidence-policy.example.json` is deny-only and is not loaded automatically. Do not grant a positive baseline, auto-clear penalties or synthesize success evidence to make a check pass; see the confidence child contract.
+- Notion writes retain the existing validated runtime approval path. Raw plan flags cannot create authority; unbound legacy, pending, failed and uncertain replay records require reconciliation. This does not add a separate human PR-review requirement; follow the configured repository policy.
+- Legacy monitoring `classify`, `alert` and `report` use the function-based monitoring APIs. The CLI only prints classification, Markdown or a recent-input report; it does not send Slack messages or write a ledger.
+
 ## Security Regression CI Contract
 
 - The `ci.yml` workflow applies a workflow-wide `GITHUB_TOKEN` ceiling of `contents: read` to every job, including same-repository pull requests. Any broader job-level override requires a separately reviewed, specifically authorized action/API need; do not expose repository/app secrets or privileged credentials to candidate-controlled code.
@@ -103,6 +110,8 @@ When the user requests a durable behavior change, record it here or in the relev
 
 | Path | Scope | Controls |
 |---|---|---|
+| `apps/sintraprime/src/adapters/AGENTS.md` | Live Notion reads, approved writes and request-bound replay | Transport origin, redaction, opaque authority and reservation contracts |
+| `apps/sintraprime/src/confidence/AGENTS.md` | Confidence policy, immutable penalties and decay evidence | Fail-closed state, concurrency, precision and explicit operator authority |
 | `ws8_cmrd/AGENTS.md` | WS8-CMRD-001 standalone scenario arithmetic and replay | Phase 1 contract, manifest, export and authority boundary |
 | `portal/AGENTS.md` | Client portal (FastAPI) | Auth, models, routes, services, middleware, SSO, WebSocket, DB schema, portal-level tests |
 | `portal/routers/AGENTS.md` | API route handlers | Router modules and their tests; delegates business logic to `services/` |

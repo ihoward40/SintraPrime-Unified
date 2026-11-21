@@ -36,6 +36,7 @@ import { writeRollbackArtifact } from "../artifacts/writeRollbackArtifact.js";
 import { notionLiveGet } from "../adapters/notionLiveRead.js";
 import { evaluateGuards } from "../guards/evaluateGuards.js";
 import { getIdempotencyRecord } from "../idempotency/idempotencyLedger.js";
+import { authorizeApprovedNotionWrites, getSuccessfulNotionReplay } from "../adapters/notionLiveWrite.js";
 import { parseDomainPrefix } from "../domains/parseDomainPrefix.js";
 import { getOperatorId, operatorHasRole } from "../domains/domainRoles.js";
 import { runGovernor, isRunGovernorEnabled, deriveFingerprint, checkGovernor } from "../governor/runGovernor.js";
@@ -142,6 +143,7 @@ async function fetchLivePrestateForStep(step: any) {
   const p = step?.notion_path_prestate || step?.notion_path;
   if (typeof p !== "string" || !p.trim()) return null;
   const live = await notionLiveGet(p);
+  if (live.http_status < 200 || live.http_status >= 300) throw new Error("Notion prestate read failed");
   return live.redacted;
 }
 
@@ -1991,7 +1993,7 @@ async function run() {
             allExecuted = false;
             continue;
           }
-          const rec = getIdempotencyRecord(key);
+          const rec = getSuccessfulNotionReplay(approve.execution_id, s);
           if (rec) {
             hits.push({ step_id: String(s.step_id ?? ""), idempotency_key: key });
           } else {
@@ -2015,7 +2017,7 @@ async function run() {
 
       // General idempotency: if already completed successfully (and not a Tier-10.5 idempotency hit),
       // emit the existing receipt.
-      if (lastReceipt.status === "success") {
+      if (lastReceipt.status === "success" && !writeSteps.length) {
         console.log(JSON.stringify(lastReceipt, null, 2));
         process.exit(0);
       }
@@ -2154,7 +2156,7 @@ async function run() {
         if (!step) throw new Error(`step not found: ${step_id}`);
 
         const key = ensureIdempotencyKey(step, plan_hash, threadIdForKey);
-        if (key && getIdempotencyRecord(key)) {
+        if (key && (step.action === "notion.live.write" ? getSuccessfulNotionReplay(approve.execution_id, step) : getIdempotencyRecord(key))) {
           executedHits.push({ step_id, idempotency_key: key });
           continue;
         }
@@ -2264,7 +2266,7 @@ async function run() {
         process.exit(3);
       }
 
-      const runLog = await executePlan(execPlan);
+      const runLog = await executePlan(execPlan, { notionWriteApproval: authorizeApprovedNotionWrites(execPlan, policy, approve.execution_id) });
       (runLog as any).skills_lock_sha256 = (state as any).skills_lock_sha256 ?? (plan as any).skills_lock_sha256;
       // Persist the derived fingerprint so downstream governance (Tier-23)
       // can observe recent successful activity for this autonomy scope.
@@ -2330,7 +2332,7 @@ async function run() {
             allExecuted = false;
             continue;
           }
-          const rec = getIdempotencyRecord(key);
+          const rec = getSuccessfulNotionReplay(approve.execution_id, s);
           if (rec) {
             hits.push({ step_id: String(s.step_id ?? ""), idempotency_key: key });
           } else {
@@ -2365,12 +2367,13 @@ async function run() {
         if (s?.action === "notion.live.write") {
           // Tier-10.5: idempotency check first; if already executed, skip guard + fingerprint recheck.
           const key = ensureIdempotencyKey(s, plan_hash, savedPlan?.threadId ?? "");
-          if (key && getIdempotencyRecord(key)) {
+          if (key && getSuccessfulNotionReplay(approve.execution_id, s)) {
             continue;
           }
           const path = s.notion_path_prestate || s.notion_path;
           if (typeof path !== "string" || !path.trim()) continue;
           const live = await notionLiveGet(path);
+          if (live.http_status < 200 || live.http_status >= 300) throw new Error("Notion prestate read failed");
 
           // Tier-10.4: guard evaluation immediately pre-exec (anti-stale safety)
           const guards = (s as any)?.guards;
@@ -2538,7 +2541,7 @@ async function run() {
           return;
         }
 
-        const phaseRun = await executePlan(phasePlan);
+        const phaseRun = await executePlan(phasePlan, { notionWriteApproval: authorizeApprovedNotionWrites(phasePlan, policy, approve.execution_id) });
         const prefixedSteps = phaseRun.steps.map((s: any) => ({ ...s, step_id: `${phaseId}:${s.step_id}` }));
         allStepLogs.push(...prefixedSteps);
 
@@ -2693,7 +2696,7 @@ async function run() {
       return;
     }
 
-    const runLog = await executePlan(plan);
+    const runLog = await executePlan(plan, { notionWriteApproval: authorizeApprovedNotionWrites(plan, policy, approve.execution_id) });
   (runLog as any).skills_lock_sha256 = (state as any).skills_lock_sha256 ?? skills_lock_sha256;
     (runLog as any).receipt_hash = computeReceiptHashForLog(runLog);
 
@@ -4173,6 +4176,7 @@ async function run() {
         const path = s.notion_path_prestate || s.notion_path;
         if (!s.prestate && typeof path === "string" && path.trim()) {
           const pre = await notionLiveGet(path);
+          if (pre.http_status < 200 || pre.http_status >= 300) throw new Error("Notion prestate read failed");
           s.prestate = pre.redacted;
         }
         if (!s.prestate_fingerprint && s.prestate) {
@@ -4325,6 +4329,7 @@ async function run() {
         const path = s.notion_path_prestate || s.notion_path;
         if (!s.prestate && typeof path === "string" && path.trim()) {
           const pre = await notionLiveGet(path);
+          if (pre.http_status < 200 || pre.http_status >= 300) throw new Error("Notion prestate read failed");
           s.prestate = pre.redacted;
         }
         if (!s.prestate_fingerprint && s.prestate) {

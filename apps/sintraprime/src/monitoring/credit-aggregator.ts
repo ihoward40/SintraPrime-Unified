@@ -32,6 +32,11 @@ export async function aggregateCredits(daysBack = 7): Promise<CreditReport> {
   // Read runs from ledger
   const runs = readRunsFromLedger(startDate, endDate);
 
+  return summarizeCreditRuns(runs, startDate, endDate);
+}
+
+/** Pure report projection for validated records; performs no ledger writes or network calls. */
+export function summarizeCreditRuns(runs: RunRecord[], startDate: Date, endDate: Date): CreditReport {
   // Group by scenario
   const scenarioMap = new Map<string, RunRecord[]>();
   for (const run of runs) {

@@ -36,6 +36,7 @@ export async function notionLiveGet(path: string) {
     const text = await res.text();
     let value: unknown;
     try { value = JSON.parse(text); } catch { value = null; }
+    if (res.status >= 200 && res.status < 300 && (!value || typeof value !== "object" || Array.isArray(value))) throw new Error("Invalid Notion response");
     return { http_status: res.status, redacted: redactNotion(value, config.token) };
   } catch { throw new Error("Notion read request failed"); }
 }

@@ -14,6 +14,30 @@ function policy(): Policy | null {
 function key(fingerprint: string): string { return createHash("sha256").update(fingerprint).digest("hex"); }
 function statePath(fingerprint: string): string { return path.join(process.cwd(), "runs", "confidence", "fingerprint", `${key(fingerprint)}.json`); }
 function eventDir(fingerprint: string): string { return path.join(process.cwd(), "runs", "confidence", "penalties", key(fingerprint)); }
+// Interpret stored JSON numbers by their shortest decimal representation.
+function decimal(value: number): [bigint, number] {
+  const [mantissa = "0", exponent = "0"] = value.toString().split("e");
+  const [whole, fraction = ""] = mantissa.split(".");
+  const scale = fraction.length - Number(exponent);
+  const digits = BigInt(whole + fraction);
+  return scale < 0 ? [digits * 10n ** BigInt(-scale), 0] : [digits, scale];
+}
+function subtractPenalties(cap: number, penalties: number[]): number {
+  const values = [cap, ...penalties].map(decimal);
+  const scale = values.reduce((max, [, s]) => Math.max(max, s), 0);
+  const scaled = values.map(([n, s]) => n * 10n ** BigInt(scale - s));
+  const remaining = scaled.slice(1).reduce((n, p) => n - p, scaled[0]!);
+  if (remaining <= 0n) return 0;
+  let result = Number(`${remaining}e-${scale}`);
+  const [rounded, roundedScale] = decimal(result);
+  if (rounded * 10n ** BigInt(Math.max(0, scale - roundedScale)) > remaining * 10n ** BigInt(Math.max(0, roundedScale - scale))) {
+    const bits = new DataView(new ArrayBuffer(8));
+    bits.setFloat64(0, result);
+    bits.setBigUint64(0, bits.getBigUint64(0) - 1n);
+    result = bits.getFloat64(0);
+  }
+  return result;
+}
 export function readConfidence(fingerprint: string): { fingerprint: string; confidence: number; reason: string } {
   if (typeof fingerprint !== "string" || !fingerprint) return { fingerprint, confidence: 0, reason: "INVALID_FINGERPRINT" };
   const p = policy();
@@ -22,13 +46,13 @@ export function readConfidence(fingerprint: string): { fingerprint: string; conf
   if (!state || state.fingerprint !== fingerprint || !validScore(state.confidence)) return { fingerprint, confidence: 0, reason: "INVALID_OR_MISSING_STATE" };
   let entries: string[];
   try { entries = fs.readdirSync(eventDir(fingerprint)); } catch (e: any) { if (e?.code === "ENOENT") entries = []; else return { fingerprint, confidence: 0, reason: "INVALID_EVENT_LEDGER" }; }
-  let total = 0;
+  const penalties: number[] = [];
   for (const entry of entries) {
     const event = json(path.join(eventDir(fingerprint), entry));
     if (!event || event.fingerprint !== fingerprint || !["THROTTLE", "ROLLBACK", "POLICY_DENIAL"].includes(event.signal) || !validScore(event.penalty)) return { fingerprint, confidence: 0, reason: "INVALID_EVENT_LEDGER" };
-    total += event.penalty;
+    penalties.push(event.penalty);
   }
-  return { fingerprint, confidence: Math.max(0, Math.min(state.confidence, p.initial_score) - total), reason: "VALID_STATE" };
+  return { fingerprint, confidence: subtractPenalties(Math.min(state.confidence, p.initial_score), penalties), reason: "VALID_STATE" };
 }
 export function updateConfidence(input: { fingerprint: string; signal: Signal }): { fingerprint: string; confidence: number; reason: string } {
   if (typeof input.fingerprint !== "string" || !input.fingerprint) return { fingerprint: input.fingerprint, confidence: 0, reason: "INVALID_FINGERPRINT" };

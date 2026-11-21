@@ -46,3 +46,20 @@ test('high precision caps and penalties never round confidence upward', t => {
   assert.ok(after <= cap);
   assert.equal(updateConfidence({ fingerprint: 'precise', signal: 'ROLLBACK' }).confidence, after);
 });
+test('decimal penalties reach denial and suspension thresholds exactly', t => {
+  fixture(t);
+  write('config/confidence-policy.json', { initial_score: 0.8, penalties: { THROTTLE: 0.05, ROLLBACK: 0, POLICY_DENIAL: 0 } });
+  state('threshold', 0.8);
+  for (let i = 0; i < 8; i++) updateConfidence({ fingerprint: 'threshold', signal: 'THROTTLE' });
+  assert.ok(readConfidence('threshold').confidence <= 0.4);
+  for (let i = 0; i < 4; i++) updateConfidence({ fingerprint: 'threshold', signal: 'THROTTLE' });
+  assert.ok(readConfidence('threshold').confidence <= 0.2);
+});
+test('tiny penalties and subnormal values are retained conservatively', t => {
+  fixture(t);
+  write('config/confidence-policy.json', { initial_score: 0.5, penalties: { THROTTLE: 1e-20, ROLLBACK: 5e-324, POLICY_DENIAL: 0 } });
+  state('tiny', 0.5);
+  assert.ok(updateConfidence({ fingerprint: 'tiny', signal: 'THROTTLE' }).confidence < 0.5);
+  state('subnormal', 1e-323);
+  assert.equal(updateConfidence({ fingerprint: 'subnormal', signal: 'ROLLBACK' }).confidence, 5e-324);
+});

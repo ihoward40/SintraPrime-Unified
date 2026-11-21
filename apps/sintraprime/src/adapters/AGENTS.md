@@ -13,7 +13,7 @@ Own the live Notion HTTP boundary and its local write replay ledger.
 ## Local Contracts
 
 - Use `NOTION_TOKEN`, `NOTION_API_BASE` (only `https://api.notion.com`) and `NOTION_API_VERSION` (default `2022-06-28`). No alternative live-mode environment switch is required.
-- Reads return `{ http_status, redacted }`; identity lookup returns `{ ok, me }`. Only page/database GET and `/v1/users/me` are supported.
+- Reads return `{ http_status, redacted }`; identity lookup returns `{ ok, me }`. Successful reads require a JSON object; malformed or non-object success bodies fail closed. Only page/database GET and `/v1/users/me` are supported.
 - Writes accept only page PATCH with a JSON `properties` object. Require matching canonical URL/path, `NotionAdapter`, `read_only:false`, `approval_scoped:true`, consistent prestate fingerprint and passing guards.
 - Only the three validated CLI approval-resume branches mint write authority. Serialized flags/timestamps or copied capability objects cannot authorize a write. The issuer is an internal trusted-code API, not an untrusted-input endpoint.
 - Bind authority and replay to execution, step, canonical destination, serialized body, key, API version and hashed credential scope. Never store the credential in the ledger or evidence.

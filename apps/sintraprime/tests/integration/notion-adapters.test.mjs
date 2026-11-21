@@ -166,3 +166,9 @@ test('unbound legacy success requires reconciliation without replay or dispatch'
   const log = await runApproved(p); assert.equal(log.status, 'failed');
   assert.match(log.steps[0].error, /Legacy.*reconciliation/); assert.equal(calls.length, 0);
 });
+test('successful reads reject malformed and non-object payloads without disclosing tokens', async () => {
+  for (const body of ['{', 'null', '[]', '42', '"private-test-token"']) {
+    globalThis.fetch = async () => new Response(body, { status: 200 });
+    await assert.rejects(notionLiveGet('/v1/pages/abc'), e => !e.message.includes('private-test-token'));
+  }
+});

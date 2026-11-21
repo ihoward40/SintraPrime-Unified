@@ -82,6 +82,7 @@ When the user requests a durable behavior change, record it here or in the relev
 
 - `apps/ike-bot/main/vercel.json` owns the Vercel Git-deployment hold for the `apps/ike-bot/main` project root. Keep `git.deploymentEnabled` set to `false` until the owner explicitly authorizes resuming automatic deployments; this applies to all Git branches, including `main`.
 - Merge authorization does not authorize deployment. The flag does not disable CLI/API deployments or GitHub deployment workflows; those routes retain their separate authorization gate.
+- Google Cloud project `ike-bot-automation` has two automatic Cloud Run deployment triggers for this repository: `b9dfcad5-80c9-4066-af34-f01f64b1ae50` (europe-west1) and `3bb59c01-2645-480f-9be8-2d5d21474068` (us-central1). Keep both Disabled until the owner separately authorizes deployment. Integration/merge authorization does not authorize re-enabling them or manually running deployment builds; existing running services remain untouched.
 
 ## Dependency Maintenance
 

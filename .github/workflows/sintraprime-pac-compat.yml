@@ -1,6 +1,11 @@
 name: SintraPrime PAC compatibility
 
 on:
+  push:
+    branches: ['fix/**']
+    paths:
+      - 'apps/sintraprime/**'
+      - '.github/workflows/sintraprime-pac-compat.yml'
   pull_request:
     branches: [main]
     paths:

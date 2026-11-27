@@ -43,3 +43,28 @@ def test_brief_carries_execution_state_additively() -> None:
     )
     assert brief2.execution_state is None
     assert "execution_state" in brief2.to_dict()
+
+
+def test_execution_state_network_fields_default_and_roundtrip() -> None:
+    # Defaults: deny policy, but unobserved/omitted containment must fail closed.
+    s = build_execution_state()
+    assert s.network_policy_status == "deny"
+    assert s.network_enforcement_level == "unavailable_fail_closed"
+    assert s.network_sandbox_available is False
+    assert s.network_certification == "unavailable"
+
+    # Explicit OS-equivalent posture is carried into the brief contract.
+    s2 = build_execution_state(
+        network_policy_status="deny",
+        network_enforcement_level="os_enforced",
+        network_sandbox_available=True,
+        network_certification="certified",
+    )
+    d = build_brief(
+        agents=[BriefAgent("a1", "M1", "GOVERNED_RUNTIME", "ACTIVE")],
+        pending_approvals=[], security_events=[], recent_receipt_ids=[],
+        authority_expirations=[], memory_change_summary={},
+        recommended_principal_decisions=[], execution_state=s2,
+    ).to_dict()
+    assert d["execution_state"]["network_enforcement_level"] == "os_enforced"
+    assert d["execution_state"]["network_certification"] == "certified"

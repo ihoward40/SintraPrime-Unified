@@ -1,0 +1,50 @@
+{
+  "track_id": "CEREBRAS-UTILIZATION-001",
+  "status": "BASELINE_NOT_ADMITTED",
+  "sequence": 2,
+  "provider": "cerebras",
+  "verified_at": "2026-10-04",
+  "public_facts": {
+    "free_tier_documented": true,
+    "free_tier_is_recurring_access": true,
+    "one_time_signup_credit_usd": 5,
+    "one_time_credit_separate_from_free_tier": true,
+    "openai_compatible_api": true,
+    "public_free_tier_limits": {
+      "gpt-oss-120b": {"tokens_per_day": 1000000},
+      "llama3.1-8b": {"tokens_per_day": 1000000},
+      "qwen-3-235b-a22b-instruct-2507": {"tokens_per_day": 1000000},
+      "zai-glm-4.7": {"tokens_per_day": 1000000, "requests_per_day": 100}
+    }
+  },
+  "account_side_inventory": {
+    "account_verified": false,
+    "tier_verified": false,
+    "api_key_presence_verified": false,
+    "limits_verified": false,
+    "billing_state_verified": false,
+    "privacy_retention_verified": false
+  },
+  "gates": {
+    "entitlement": "PENDING",
+    "pricing": "PENDING_ACCOUNT_VERIFICATION",
+    "privacy": "PENDING",
+    "quota": "PENDING_ACCOUNT_VERIFICATION",
+    "adapter": "PENDING",
+    "canary": "BLOCKED",
+    "receipt": "DEFINED_NOT_EXECUTED"
+  },
+  "routing": {
+    "live_enabled": false,
+    "paid_fallback_enabled": false,
+    "restricted_data_allowed": false,
+    "unknown_data_allowed": false
+  },
+  "sources": [
+    "https://inference-docs.cerebras.ai/support/pricing",
+    "https://inference-docs.cerebras.ai/support/rate-limits",
+    "https://www.cerebras.ai/inference",
+    "https://inference-docs.cerebras.ai/quickstart"
+  ],
+  "authorization_boundary": "No secrets, external calls, paid use, sensitive-data routing, merge, or deployment authorized by this receipt."
+}

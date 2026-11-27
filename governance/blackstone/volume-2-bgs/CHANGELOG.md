@@ -20,6 +20,7 @@ status: draft
 - Decision Ledger Standard
 - Constitutional Compliance Scoring
 - Amendment Compatibility Rule
+- AOP-001 Agent Onboarding Procedure (`STANDARDS/agent_onboarding_procedure.md`)
 
 ### Derived From
 

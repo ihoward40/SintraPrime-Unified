@@ -700,6 +700,7 @@ from orchestration.durable_execution import (
     SagaCompensator,
     WorkflowContext,
     DurableWorkflowEngine,
+    _compute_activity_action_hash,
 )
 
 
@@ -796,6 +797,25 @@ class TestRetryPolicy:
 
 
 class TestActivityExecutor:
+    @staticmethod
+    def _authority_context() -> dict[str, str]:
+        return {
+            "principal_id": "principal-a",
+            "tenant_id": "tenant-a",
+            "capability_lease_id": "lease-a",
+            "approved_workflow_type": "t",
+        }
+
+    @staticmethod
+    def _action_hash(activity_name: str) -> str:
+        return _compute_activity_action_hash(
+            workflow_id="wf1",
+            workflow_type="t",
+            activity_name=activity_name,
+            args=(),
+            kwargs={},
+        )
+
     @pytest.mark.asyncio
     async def test_successful_activity(self):
         store = DurableStore()
@@ -807,7 +827,15 @@ class TestActivityExecutor:
         async def my_activity():
             return {"value": 42}
 
-        result = await executor.run("wf1", "fetch_data", my_activity)
+        result = await executor.run(
+            "wf1",
+            "fetch_data",
+            my_activity,
+            workflow_type="t",
+            authority_context=self._authority_context(),
+            activity_action_hash=self._action_hash("fetch_data"),
+            authority_required=True,
+        )
         assert result["value"] == 42
 
     @pytest.mark.asyncio
@@ -826,7 +854,22 @@ class TestActivityExecutor:
             return "ok"
 
         policy = RetryPolicy(max_attempts=3, initial_interval=0.01, jitter=False)
-        result = await executor.run("wf2", "flaky", flaky_activity, retry_policy=policy)
+        result = await executor.run(
+            "wf2",
+            "flaky",
+            flaky_activity,
+            retry_policy=policy,
+            workflow_type="t",
+            authority_context=self._authority_context(),
+            activity_action_hash=_compute_activity_action_hash(
+                workflow_id="wf2",
+                workflow_type="t",
+                activity_name="flaky",
+                args=(),
+                kwargs={},
+            ),
+            authority_required=True,
+        )
         assert result == "ok"
 
     @pytest.mark.asyncio
@@ -842,7 +885,142 @@ class TestActivityExecutor:
 
         policy = RetryPolicy(max_attempts=2, initial_interval=0.01, jitter=False)
         with pytest.raises(RuntimeError, match="failed after"):
-            await executor.run("wf3", "fail_act", always_fail, retry_policy=policy)
+            await executor.run(
+                "wf3",
+                "fail_act",
+                always_fail,
+                retry_policy=policy,
+                workflow_type="t",
+                authority_context=self._authority_context(),
+                activity_action_hash=_compute_activity_action_hash(
+                    workflow_id="wf3",
+                    workflow_type="t",
+                    activity_name="fail_act",
+                    args=(),
+                    kwargs={},
+                ),
+                authority_required=True,
+            )
+
+    @pytest.mark.asyncio
+    async def test_activity_authority_context_requires_principal_tenant_and_lease(self):
+        store = DurableStore()
+        store.save_workflow(WorkflowRecord(
+            workflow_id="wf4", workflow_type="t", status=WorkflowStatus.RUNNING, state={}
+        ))
+        executor = ActivityExecutor(store)
+
+        async def my_activity():
+            return "ok"
+
+        with pytest.raises(PermissionError, match="ACTIVITY_AUTHORITY_CONTEXT_REQUIRED"):
+            await executor.run(
+                "wf4",
+                "act",
+                my_activity,
+                workflow_type="t",
+                authority_context={"tenant_id": "tenant-a"},
+                activity_action_hash="any",
+                authority_required=True,
+            )
+
+    @pytest.mark.asyncio
+    async def test_activity_authority_context_requires_approved_workflow_type(self):
+        store = DurableStore()
+        store.save_workflow(WorkflowRecord(
+            workflow_id="wf6", workflow_type="t", status=WorkflowStatus.RUNNING, state={}
+        ))
+        executor = ActivityExecutor(store)
+
+        async def my_activity():
+            return "ok"
+
+        with pytest.raises(PermissionError, match="ACTIVITY_WORKFLOW_TYPE_BINDING_REQUIRED"):
+            await executor.run(
+                "wf6",
+                "act",
+                my_activity,
+                workflow_type="t",
+                authority_context={
+                    "principal_id": "principal-a",
+                    "tenant_id": "tenant-a",
+                    "capability_lease_id": "lease-a",
+                    "approved_workflow_type": "",
+                },
+                activity_action_hash="any",
+                authority_required=True,
+            )
+
+    @pytest.mark.asyncio
+    async def test_workflow_context_binds_activity_action_hash(self):
+        store = DurableStore()
+        store.save_workflow(WorkflowRecord(
+            workflow_id="wf5", workflow_type="t", status=WorkflowStatus.RUNNING, state={}
+        ))
+        executor = ActivityExecutor(store)
+        ctx = WorkflowContext(
+            workflow_id="wf5",
+            workflow_type="t",
+            store=store,
+            executor=executor,
+            authority_required=True,
+            authority_context={
+                "principal_id": "principal-a",
+                "tenant_id": "tenant-a",
+                "capability_lease_id": "lease-a",
+                "approved_workflow_type": "t",
+            },
+        )
+
+        async def my_activity(value):
+            return value + 1
+
+        assert await ctx.execute_activity("increment", my_activity, args=(1,)) == 2
+
+        scheduled = [h for h in store.load_history("wf5") if h.event_type == HistoryEventType.ACTIVITY_SCHEDULED]
+        assert len(scheduled) == 1
+        assert scheduled[0].payload["authority_bound"] is True
+        assert scheduled[0].payload["capability_lease_id"] == "lease-a"
+
+    @pytest.mark.asyncio
+    async def test_workflow_context_rejects_unbound_activity_execution(self):
+        store = DurableStore()
+        store.save_workflow(WorkflowRecord(
+            workflow_id="wf7", workflow_type="t", status=WorkflowStatus.RUNNING, state={}
+        ))
+        executor = ActivityExecutor(store)
+        ctx = WorkflowContext(
+            workflow_id="wf7",
+            workflow_type="t",
+            store=store,
+            executor=executor,
+            authority_required=True,
+        )
+
+        async def my_activity():
+            return "ok"
+
+        with pytest.raises(PermissionError, match="ACTIVITY_AUTHORITY_CONTEXT_REQUIRED"):
+            await ctx.execute_activity("unbound", my_activity)
+
+    @pytest.mark.asyncio
+    async def test_workflow_context_allows_unbound_activity_when_not_required(self):
+        store = DurableStore()
+        store.save_workflow(WorkflowRecord(
+            workflow_id="wf8", workflow_type="t", status=WorkflowStatus.RUNNING, state={}
+        ))
+        executor = ActivityExecutor(store)
+        ctx = WorkflowContext(
+            workflow_id="wf8",
+            workflow_type="t",
+            store=store,
+            executor=executor,
+        )
+
+        async def my_activity():
+            return "ok"
+
+        assert await ctx.execute_activity("unbound-ok", my_activity) == "ok"
 
 
 class TestSagaCompensator:
@@ -897,6 +1075,82 @@ class TestDurableWorkflowEngine:
             await engine.start_workflow("nonexistent", {})
 
     @pytest.mark.asyncio
+    async def test_start_rejects_authority_workflow_type_mismatch(self):
+        engine = DurableWorkflowEngine()
+
+        async def my_workflow(ctx, data):
+            return data
+
+        engine.register_workflow("test_wf", my_workflow)
+        with pytest.raises(ValueError, match="APPROVED_WORKFLOW_TYPE_MISMATCH"):
+            await engine.start_workflow(
+                "test_wf",
+                {"input": "data"},
+                metadata={
+                    "authority_required": True,
+                    "authority_context": {
+                        "principal_id": "principal-a",
+                        "tenant_id": "tenant-a",
+                        "capability_lease_id": "lease-a",
+                        "approved_workflow_type": "different_wf",
+                    },
+                },
+            )
+
+    @pytest.mark.asyncio
+    async def test_start_rejects_incomplete_authority_context(self):
+        engine = DurableWorkflowEngine()
+
+        async def my_workflow(ctx, data):
+            return data
+
+        engine.register_workflow("test_wf", my_workflow)
+        with pytest.raises(ValueError, match="AUTHORITY_CONTEXT_FIELDS_REQUIRED"):
+            await engine.start_workflow(
+                "test_wf",
+                {"input": "data"},
+                metadata={
+                    "authority_required": True,
+                    "authority_context": {
+                        "principal_id": "principal-a",
+                        "tenant_id": "",
+                        "capability_lease_id": "lease-a",
+                    },
+                },
+            )
+
+    @pytest.mark.asyncio
+    async def test_start_normalizes_string_authority_required_flag(self):
+        engine = DurableWorkflowEngine()
+
+        async def my_workflow(ctx, data):
+            return await ctx.execute_activity(
+                "step_1",
+                lambda: {"processed": True},
+                retry_policy=RetryPolicy(max_attempts=1, jitter=False),
+            )
+
+        engine.register_workflow("test_wf", my_workflow)
+        wf_id = await engine.start_workflow(
+            "test_wf",
+            {"input": "data"},
+            metadata={
+                "authority_required": "true",
+                "authority_context": {
+                    "principal_id": "principal-a",
+                    "tenant_id": "tenant-a",
+                    "capability_lease_id": "lease-a",
+                    "approved_workflow_type": "test_wf",
+                },
+            },
+        )
+        await asyncio.sleep(0.2)
+        wf = engine.get_workflow(wf_id)
+        assert wf is not None
+        assert wf.status == WorkflowStatus.COMPLETED
+        assert wf.metadata["authority_required"] is True
+
+    @pytest.mark.asyncio
     async def test_start_and_complete_workflow(self):
         engine = DurableWorkflowEngine()
 
@@ -909,13 +1163,77 @@ class TestDurableWorkflowEngine:
             return result
 
         engine.register_workflow("test_wf", my_workflow)
-        wf_id = await engine.start_workflow("test_wf", {"input": "data"})
+        wf_id = await engine.start_workflow(
+            "test_wf",
+            {"input": "data"},
+            metadata={
+                "authority_context": {
+                    "principal_id": "principal-a",
+                    "tenant_id": "tenant-a",
+                    "capability_lease_id": "lease-a",
+                    "approved_workflow_type": "test_wf",
+                }
+            },
+        )
         assert wf_id is not None
 
         await asyncio.sleep(0.2)  # let the task complete
         wf = engine.get_workflow(wf_id)
         assert wf is not None
         assert wf.status in (WorkflowStatus.COMPLETED, WorkflowStatus.RUNNING)
+
+    @pytest.mark.asyncio
+    async def test_start_ignores_authority_context_without_authority_required_flag(self):
+        engine = DurableWorkflowEngine()
+
+        async def my_workflow(ctx, data):
+            return await ctx.execute_activity(
+                "step_1",
+                lambda: {"processed": True},
+                retry_policy=RetryPolicy(max_attempts=1, jitter=False),
+            )
+
+        engine.register_workflow("test_wf", my_workflow)
+        wf_id = await engine.start_workflow(
+            "test_wf",
+            {"input": "data"},
+            metadata={
+                "authority_context": {
+                    "source": "legacy-audit-note",
+                }
+            },
+        )
+        await asyncio.sleep(0.2)
+        wf = engine.get_workflow(wf_id)
+        assert wf is not None
+        assert wf.status == WorkflowStatus.COMPLETED
+        assert "authority_context" not in (wf.metadata or {})
+        assert "authority_context_audit" in (wf.metadata or {})
+        assert wf.metadata["authority_context_audit"]["source"] == "legacy-audit-note"
+        scheduled = [h for h in engine.get_history(wf_id) if h.event_type == HistoryEventType.ACTIVITY_SCHEDULED]
+        assert len(scheduled) == 1
+        assert scheduled[0].payload["authority_bound"] is False
+
+    @pytest.mark.asyncio
+    async def test_start_rejects_sensitive_authority_context_without_authority_required_flag(self):
+        engine = DurableWorkflowEngine()
+
+        async def my_workflow(ctx, data):
+            return data
+
+        engine.register_workflow("test_wf", my_workflow)
+        with pytest.raises(ValueError, match="AUTHORITY_REQUIRED_FLAG_REQUIRED"):
+            await engine.start_workflow(
+                "test_wf",
+                {"input": "data"},
+                metadata={
+                    "authority_context": {
+                        "principal_id": "principal-a",
+                        "tenant_id": "tenant-a",
+                        "capability_lease_id": "lease-a",
+                    }
+                },
+            )
 
     @pytest.mark.asyncio
     async def test_cancel_workflow(self):

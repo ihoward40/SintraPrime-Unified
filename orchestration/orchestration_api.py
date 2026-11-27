@@ -21,10 +21,23 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, Field
 
 from .a2a_protocol import A2AProtocol, MessageType, Priority, Message
+from .a2a_governance import (
+    ApprovalReceipt,
+    ClaimStatus,
+    DispatchAudit,
+    EvidenceClaim,
+    content_hash,
+    validate_dispatch,
+)
+from .a2a_audit import A2AAuditStore
+from .agent_identity import AgentPrincipal, authenticate_agent
+from .agent_policy import AgentPolicy
+from .approval_store import ApprovalStore
+from .redis_a2a import RedisA2ATransport
 from .durable_execution import (
     DurableWorkflowEngine,
     WorkflowStatus,
@@ -47,6 +60,10 @@ logger = logging.getLogger(__name__)
 
 _engine: Optional[DurableWorkflowEngine] = None
 _a2a: Optional[A2AProtocol] = None
+_redis_a2a: Optional[RedisA2ATransport] = None
+_a2a_audit: Optional[A2AAuditStore] = None
+_agent_policy: Optional[AgentPolicy] = None
+_approval_store: Optional[ApprovalStore] = None
 _checkpointer: Optional[InMemoryCheckpointer] = None
 
 
@@ -69,6 +86,64 @@ def get_a2a() -> A2AProtocol:
     if _a2a is None:
         _a2a = A2AProtocol()
     return _a2a
+
+
+def get_redis_a2a() -> RedisA2ATransport:
+    global _redis_a2a
+    if _redis_a2a is None:
+        _redis_a2a = RedisA2ATransport()
+    return _redis_a2a
+
+
+def get_a2a_audit() -> A2AAuditStore:
+    global _a2a_audit
+    if _a2a_audit is None:
+        _a2a_audit = A2AAuditStore()
+    return _a2a_audit
+
+
+def get_agent_policy() -> AgentPolicy:
+    global _agent_policy
+    if _agent_policy is None:
+        _agent_policy = AgentPolicy()
+    return _agent_policy
+
+
+def get_agent_principal(
+    x_a2a_agent_token: str | None = Header(default=None),
+    x_a2a_tenant_id: str | None = Header(default=None),
+) -> AgentPrincipal:
+    try:
+        return authenticate_agent(x_a2a_agent_token, x_a2a_tenant_id)
+    except PermissionError as exc:
+        try:
+            audit_store = get_a2a_audit()
+            empty_hash = content_hash({})
+            audit_store.append(DispatchAudit(
+                mission_id=uuid.uuid4().hex,
+                objective="AUTHENTICATION",
+                agents_used=("unknown",),
+                sources_used=(),
+                claims_verified=(),
+                risks_flagged=(),
+                user_approval="no",
+                external_action_taken=False,
+                final_output_hash=empty_hash,
+                payload_hash=empty_hash,
+                status="blocked",
+                reason_code="identity_authentication_failed",
+                reason_detail=str(exc),
+            ))
+        except Exception:
+            logger.exception("Unable to audit failed A2A authentication")
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+
+
+def get_approval_store(audit_store: A2AAuditStore = Depends(get_a2a_audit)) -> ApprovalStore:
+    global _approval_store
+    if _approval_store is None:
+        _approval_store = ApprovalStore(audit_store=audit_store)
+    return _approval_store
 
 
 def get_checkpointer() -> InMemoryCheckpointer:
@@ -150,12 +225,23 @@ class SendMessageRequest(BaseModel):
     payload: Dict[str, Any] = Field(default_factory=dict)
     priority: str = Field("NORMAL", description="One of: LOW, NORMAL, HIGH, CRITICAL")
     ttl: Optional[float] = Field(None, description="Time to live in seconds")
+    correlation_id: Optional[str] = None
+    headers: Dict[str, Any] = Field(default_factory=dict)
+    external_action: bool = Field(False, description="True when this message requests an external side effect")
+    approval: Optional[Dict[str, Any]] = Field(None, description="Approval receipt for an external action")
+    claims: List[Dict[str, Any]] = Field(default_factory=list)
+    attachment_hashes: List[str] = Field(default_factory=list)
 
 
 class SendMessageResponse(BaseModel):
     message_id: str
     correlation_id: str
     delivered: bool
+
+
+class ReceiveMessageResponse(BaseModel):
+    message: Optional[Dict[str, Any]]
+    received: bool
 
 
 class LangGraphRunRequest(BaseModel):
@@ -305,8 +391,17 @@ async def get_agent_registry(
 async def send_agent_message(
     req: SendMessageRequest,
     a2a: A2AProtocol = Depends(get_a2a),
+    redis_a2a: RedisA2ATransport = Depends(get_redis_a2a),
+    audit_store: A2AAuditStore = Depends(get_a2a_audit),
+    agent_policy: AgentPolicy = Depends(get_agent_policy),
+    principal: AgentPrincipal = Depends(get_agent_principal),
+    approval_store: ApprovalStore = Depends(get_approval_store),
 ) -> SendMessageResponse:
-    """Send an A2A message between agents."""
+    """Send an A2A message between agents.
+
+    ``A2A_BACKEND=redis`` makes delivery cross-process. The default remains
+    the in-memory bus for embedded deployments and unit tests.
+    """
     try:
         msg_type = MessageType(req.message_type)
     except ValueError:
@@ -324,13 +419,186 @@ async def send_agent_message(
         payload=req.payload,
         priority=priority,
         ttl=req.ttl,
+        correlation_id=req.correlation_id or uuid.uuid4().hex,
+        headers=req.headers,
     )
-    await a2a.bus.publish(msg)
+    claims: list[EvidenceClaim] = []
+    approval = None
+    final_hash = content_hash(req.payload)
+    if principal.agent_id != req.from_agent:
+        audit_store.append(DispatchAudit(
+            mission_id=msg.correlation_id,
+            objective=msg.message_type.value,
+            agents_used=(principal.agent_id, req.from_agent, req.to_agent),
+            sources_used=(),
+            claims_verified=(),
+            risks_flagged=(),
+            user_approval="no",
+            external_action_taken=req.external_action,
+            final_output_hash=final_hash,
+            payload_hash=final_hash,
+            status="blocked",
+            reason_code="identity_mismatch",
+            reason_detail="Authenticated principal does not match from_agent.",
+        ))
+        raise HTTPException(status_code=403, detail="Dispatch blocked: sender identity mismatch")
+    try:
+        agent_policy.authorize_sender(principal.agent_id)
+    except PermissionError as exc:
+        audit_store.append(DispatchAudit(
+            mission_id=msg.correlation_id,
+            objective=msg.message_type.value,
+            agents_used=(req.from_agent, req.to_agent),
+            sources_used=(),
+            claims_verified=(),
+            risks_flagged=(),
+            user_approval="no",
+            external_action_taken=req.external_action,
+            final_output_hash=final_hash,
+            payload_hash=final_hash,
+            status="blocked",
+            reason_code="sender_policy_blocked",
+            reason_detail=str(exc),
+        ))
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    try:
+        if req.approval:
+            approval_data = dict(req.approval)
+            approval_data["attachment_hashes"] = tuple(approval_data.get("attachment_hashes", []))
+            approval = ApprovalReceipt(**approval_data)
+        claims = [
+            EvidenceClaim(
+                claim=str(claim.get("claim", "")),
+                status=ClaimStatus(claim.get("status", "UNVERIFIED")),
+                source_refs=tuple(claim.get("source_refs", [])),
+            )
+            for claim in req.claims
+        ]
+        if req.external_action:
+            audit_store.append(DispatchAudit(
+                mission_id=msg.correlation_id,
+                objective=msg.message_type.value,
+                agents_used=(req.from_agent, req.to_agent),
+                sources_used=tuple(source for claim in claims for source in claim.source_refs),
+                claims_verified=tuple(claim.claim for claim in claims if claim.status == ClaimStatus.PROVEN),
+                risks_flagged=tuple(claim.claim for claim in claims if claim.status in {ClaimStatus.RISKY, ClaimStatus.UNSUPPORTED}),
+                user_approval="no",
+                external_action_taken=True,
+                final_output_hash=final_hash,
+                payload_hash=final_hash,
+                status="blocked",
+                reason_code="external_actions_disabled",
+                reason_detail="External actions remain disabled pending Patch B/C verification.",
+            ))
+            raise HTTPException(status_code=403, detail="Dispatch blocked: external actions are disabled")
+        final_hash = validate_dispatch(
+            payload=req.payload,
+            recipient=req.to_agent,
+            external_action=req.external_action,
+            sender_agent_id=req.from_agent,
+            tenant_id=principal.tenant_id,
+            approval=approval,
+            approval_store=approval_store,
+            claims=claims,
+            attachment_hashes=req.attachment_hashes,
+        )
+        msg.headers["final_content_hash"] = final_hash
+    except (PermissionError, ValueError) as exc:
+        audit_store.append(DispatchAudit(
+            mission_id=msg.correlation_id,
+            objective=msg.message_type.value,
+            agents_used=(req.from_agent, req.to_agent),
+            sources_used=tuple(source for claim in claims for source in claim.source_refs),
+            claims_verified=tuple(claim.claim for claim in claims if claim.status == ClaimStatus.PROVEN),
+            risks_flagged=tuple(claim.claim for claim in claims if claim.status in {ClaimStatus.RISKY, ClaimStatus.UNSUPPORTED}),
+            user_approval="yes" if approval else "no",
+            external_action_taken=req.external_action,
+            final_output_hash=final_hash,
+            payload_hash=final_hash,
+            status="blocked",
+            reason_code="governance_blocked",
+            reason_detail=str(exc),
+        ))
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    audit_store.append(DispatchAudit(
+        mission_id=msg.correlation_id,
+        objective=msg.message_type.value,
+        agents_used=(req.from_agent, req.to_agent),
+        sources_used=tuple(source for claim in claims for source in claim.source_refs),
+        claims_verified=tuple(claim.claim for claim in claims if claim.status == ClaimStatus.PROVEN),
+        risks_flagged=tuple(claim.claim for claim in claims if claim.status in {ClaimStatus.RISKY, ClaimStatus.UNSUPPORTED}),
+        user_approval="not required",
+        external_action_taken=False,
+        final_output_hash=final_hash,
+        payload_hash=final_hash,
+        status="accepted",
+    ))
+    if os.getenv("A2A_BACKEND", "memory").lower() == "redis":
+        try:
+            await redis_a2a.send(msg)
+        except Exception as exc:
+            audit_store.append(DispatchAudit(
+                mission_id=msg.correlation_id,
+                objective=msg.message_type.value,
+                agents_used=(req.from_agent, req.to_agent),
+                sources_used=tuple(source for claim in claims for source in claim.source_refs),
+                claims_verified=tuple(claim.claim for claim in claims if claim.status == ClaimStatus.PROVEN),
+                risks_flagged=(),
+                user_approval="not required",
+                external_action_taken=False,
+                final_output_hash=final_hash,
+                payload_hash=final_hash,
+                status="delivery_failed",
+                reason_code="redis_delivery_failed",
+                reason_detail=str(exc),
+            ))
+            logger.exception("Redis A2A delivery failed")
+            raise HTTPException(status_code=503, detail="Agent messaging backend unavailable") from exc
+    else:
+        await a2a.bus.publish(msg)
+
+    audit_store.append(DispatchAudit(
+        mission_id=msg.correlation_id,
+        objective=msg.message_type.value,
+        agents_used=(req.from_agent, req.to_agent),
+        sources_used=tuple(source for claim in claims for source in claim.source_refs),
+        claims_verified=tuple(claim.claim for claim in claims if claim.status == ClaimStatus.PROVEN),
+        risks_flagged=(),
+        user_approval="not required",
+        external_action_taken=False,
+        final_output_hash=final_hash,
+        payload_hash=final_hash,
+        status="delivered",
+    ))
 
     return SendMessageResponse(
         message_id=msg.message_id,
         correlation_id=msg.correlation_id,
         delivered=True,
+    )
+
+
+@router.get("/agents/{agent_id}/messages/receive", response_model=ReceiveMessageResponse)
+async def receive_agent_message(
+    agent_id: str,
+    timeout: int = 5,
+    redis_a2a: RedisA2ATransport = Depends(get_redis_a2a),
+) -> ReceiveMessageResponse:
+    """Receive one cross-process message for an agent (Redis backend only)."""
+    if os.getenv("A2A_BACKEND", "memory").lower() != "redis":
+        raise HTTPException(status_code=409, detail="Set A2A_BACKEND=redis to use HTTP receive")
+    if timeout < 0 or timeout > 30:
+        raise HTTPException(status_code=400, detail="timeout must be between 0 and 30 seconds")
+    try:
+        message = await redis_a2a.receive(agent_id, timeout=timeout)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Redis A2A receive failed")
+        raise HTTPException(status_code=503, detail="Agent messaging backend unavailable") from exc
+    return ReceiveMessageResponse(
+        message=message.to_dict() if message else None,
+        received=message is not None,
     )
 
 

@@ -111,7 +111,7 @@ result = await compiled.invoke({"case_id": "C-001"})
 
 ### 2. A2A Protocol (`a2a_protocol.py`)
 
-Standardized message envelope and in-memory message bus for agent coordination.
+Standardized message envelope with in-memory and optional Redis-backed delivery for agent coordination. See [A2A_REDIS.md](../docs/orchestration/A2A_REDIS.md) for cross-process setup.
 
 **Message Envelope:**
 

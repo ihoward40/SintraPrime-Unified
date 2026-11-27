@@ -1,0 +1,462 @@
+from __future__ import annotations
+
+import pytest
+
+from orchestration.a2a_governance import (
+    ApprovalReceipt,
+    ClaimStatus,
+    DispatchAudit,
+    EvidenceClaim,
+    content_hash,
+    issue_approval,
+    validate_dispatch,
+)
+from orchestration.a2a_audit import A2AAuditStore
+from orchestration.a2a_protocol import A2AProtocol, Message, MessageBus, MessageType
+from orchestration.agent_policy import AgentPolicy
+from orchestration.agent_identity import AgentPrincipal
+from orchestration.approval_store import ApprovalStore
+from orchestration.outbox import DurableOutbox
+from orchestration.execution_worker import ExecutionWorker
+from orchestration.orchestration_api import SendMessageRequest, send_agent_message
+
+
+def test_internal_message_can_be_sent_without_approval():
+    assert validate_dispatch(
+        payload={"task": "review"},
+        recipient="reviewer",
+        external_action=False,
+    ) == content_hash({"task": "review"})
+
+
+def test_external_action_requires_approval():
+    with pytest.raises(PermissionError, match="approval receipt"):
+        validate_dispatch(payload={"body": "send"}, recipient="counsel", external_action=True)
+
+
+def test_unsupported_claim_blocks_dispatch():
+    with pytest.raises(PermissionError, match="unsupported or risky"):
+        validate_dispatch(
+            payload={"body": "claim"},
+            recipient="reviewer",
+            external_action=False,
+            claims=[EvidenceClaim("claim", ClaimStatus.UNSUPPORTED)],
+        )
+
+
+def test_content_hash_mismatch_blocks_external_action(monkeypatch):
+    monkeypatch.setenv("A2A_APPROVAL_HMAC_SECRET", "test-secret")
+    approval = issue_approval(
+        approved_by="user-1",
+        approved_output_id="out-1",
+        sender_agent_id="sender",
+        recipient="counsel",
+        final_content_hash=content_hash({"body": "approved"}),
+        expires_at=9999999999,
+    )
+    with pytest.raises(PermissionError, match="content hash"):
+        validate_dispatch(
+            payload={"body": "changed after approval"},
+            recipient="counsel",
+            external_action=True,
+            sender_agent_id="sender",
+            approval=approval,
+        )
+
+
+def test_matching_approval_passes(monkeypatch):
+    monkeypatch.setenv("A2A_APPROVAL_HMAC_SECRET", "test-secret")
+    payload = {"body": "approved"}
+    result = validate_dispatch(
+        payload=payload,
+        recipient="counsel",
+        external_action=True,
+        sender_agent_id="sender",
+        approval=issue_approval(
+            approved_by="user-1",
+            approved_output_id="out-1",
+            sender_agent_id="sender",
+            recipient="counsel",
+            final_content_hash=content_hash(payload),
+            expires_at=9999999999,
+        ),
+    )
+    assert result == content_hash(payload)
+
+
+def test_forged_matching_approval_is_rejected(monkeypatch):
+    monkeypatch.setenv("A2A_APPROVAL_HMAC_SECRET", "test-secret")
+    forged = ApprovalReceipt(
+        approved_by="user-1",
+        approved_output_id="out-1",
+        sender_agent_id="sender",
+        recipient="counsel",
+        final_content_hash=content_hash({"body": "approved"}),
+        expires_at=9999999999,
+    )
+    with pytest.raises(PermissionError, match="unsigned approval"):
+        validate_dispatch(
+            payload={"body": "approved"},
+            recipient="counsel",
+            external_action=True,
+            sender_agent_id="sender",
+            approval=forged,
+        )
+
+
+def test_expired_signed_approval_is_rejected(monkeypatch):
+    monkeypatch.setenv("A2A_APPROVAL_HMAC_SECRET", "test-secret")
+    expired = issue_approval(
+        approved_by="user-1",
+        approved_output_id="out-1",
+        sender_agent_id="sender",
+        recipient="counsel",
+        final_content_hash=content_hash({"body": "approved"}),
+        expires_at=1,
+    )
+    with pytest.raises(PermissionError, match="expired"):
+        validate_dispatch(
+            payload={"body": "approved"},
+            recipient="counsel",
+            external_action=True,
+            sender_agent_id="sender",
+            approval=expired,
+        )
+
+
+def test_audit_store_persists_records(tmp_path):
+    store = A2AAuditStore(str(tmp_path / "audit.jsonl"))
+    record = {
+        "mission_id": "run-1",
+        "objective": "REQUEST",
+        "agents_used": ("a", "b"),
+        "sources_used": (),
+        "claims_verified": (),
+        "risks_flagged": (),
+        "user_approval": "not required",
+        "external_action_taken": False,
+        "final_output_hash": "abc",
+        "status": "done",
+    }
+    store.append(DispatchAudit(**record))
+    assert store.read()[0]["mission_id"] == "run-1"
+
+
+def test_audit_store_survives_fresh_store_reconstruction(tmp_path):
+    path = tmp_path / "audit.jsonl"
+    first = A2AAuditStore(str(path))
+    first.append(DispatchAudit(
+        mission_id="restart-run",
+        objective="REQUEST",
+        agents_used=("a", "b"),
+        sources_used=(),
+        claims_verified=(),
+        risks_flagged=(),
+        user_approval="not required",
+        external_action_taken=False,
+        final_output_hash="hash-1",
+        payload_hash="hash-1",
+        status="delivered",
+    ))
+
+    second = A2AAuditStore(str(path))
+    records = second.read()
+    assert records[0]["mission_id"] == "restart-run"
+    assert records[0]["payload_hash"] == "hash-1"
+    assert records[0]["status"] == "delivered"
+
+
+def test_agent_registry_contains_named_specialists_with_safe_defaults():
+    import json
+    from pathlib import Path
+
+    registry_path = Path(__file__).parents[2] / "orchestration" / "agent_registry.json"
+    registry = json.loads(registry_path.read_text())
+    agents = {agent["agent_id"]: agent for agent in registry["agents"]}
+    expected = {
+        "orchestrator",
+        "blackstone_verifier",
+        "justice_scribe",
+        "source_hunter",
+        "trust_vault_clerk",
+        "sintraprime_builder",
+        "covenant_auditor",
+        "dispatch_desk",
+    }
+    assert expected <= agents.keys()
+    assert all(agent["requires_user_approval"] for agent in agents.values())
+    assert all(not agent["can_send_external"] for agent in agents.values())
+    assert all(agent["evidence_required"] and agent["audit_required"] for agent in agents.values())
+    assert agents["dispatch_desk"]["status"] == "blocked"
+
+
+@pytest.mark.asyncio
+async def test_api_external_action_is_blocked_and_audited(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2A_BACKEND", "memory")
+    audit = A2AAuditStore(str(tmp_path / "audit.jsonl"))
+    request = SendMessageRequest(
+        from_agent="dispatch_desk",
+        to_agent="third_party",
+        message_type="REQUEST",
+        payload={"action": "send_external_message"},
+        external_action=True,
+    )
+
+    from fastapi import HTTPException
+
+    with pytest.raises(HTTPException) as error:
+        await send_agent_message(request, A2AProtocol(), None, audit, AgentPolicy(), AgentPrincipal("dispatch_desk", "tenant-a"))
+
+    assert error.value.status_code == 403
+    records = audit.read()
+    assert records[0]["status"] == "blocked"
+    assert records[0]["reason_code"] == "sender_policy_blocked"
+
+
+@pytest.mark.asyncio
+async def test_api_internal_dispatch_records_lifecycle(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2A_BACKEND", "memory")
+    audit = A2AAuditStore(str(tmp_path / "audit.jsonl"))
+    request = SendMessageRequest(
+        from_agent="orchestrator",
+        to_agent="blackstone_verifier",
+        message_type="REQUEST",
+        payload={"task": "verify"},
+    )
+
+    result = await send_agent_message(request, A2AProtocol(), None, audit, AgentPolicy(), AgentPrincipal("orchestrator", "tenant-a"))
+
+    assert result.delivered is True
+    assert [record["status"] for record in audit.read()] == ["accepted", "delivered"]
+    assert audit.read()[0]["payload_hash"] == audit.read()[1]["payload_hash"]
+
+
+@pytest.mark.asyncio
+async def test_raw_memory_transport_rejects_external_intent():
+    bus = MessageBus()
+    message = Message(
+        from_agent="orchestrator",
+        to_agent="dispatch_desk",
+        message_type=MessageType.REQUEST,
+        payload={"action": "send_external_message"},
+    )
+
+    with pytest.raises(PermissionError, match="raw transport"):
+        await bus.publish(message)
+
+
+def test_agent_token_authentication_binds_tenant(monkeypatch):
+    import json
+    from orchestration.agent_identity import authenticate_agent
+
+    monkeypatch.setenv("A2A_AGENT_CREDENTIALS", json.dumps({"token-a": {"agent_id": "orchestrator", "tenant_id": "tenant-a"}}))
+    principal = authenticate_agent("token-a", "tenant-a")
+    assert principal == AgentPrincipal("orchestrator", "tenant-a")
+    with pytest.raises(PermissionError, match="tenant scope"):
+        authenticate_agent("token-a", "tenant-b")
+
+
+def test_approval_store_survives_restart_and_consumes_once(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2A_APPROVAL_HMAC_SECRET", "test-secret")
+    receipt = issue_approval(
+        approved_by="user-1",
+        approved_output_id="out-1",
+        sender_agent_id="sender",
+        recipient="counsel",
+        final_content_hash=content_hash({"body": "approved"}),
+        expires_at=9999999999,
+    )
+    path = tmp_path / "approvals.jsonl"
+    ApprovalStore(str(path)).issue(receipt)
+    ApprovalStore(str(path)).verify_and_consume(receipt)
+    with pytest.raises(PermissionError, match="already been used"):
+        ApprovalStore(str(path)).verify_and_consume(receipt)
+
+
+def test_approval_store_revoke_and_lifecycle_audit(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2A_APPROVAL_HMAC_SECRET", "test-secret")
+    receipt = issue_approval(
+        approved_by="user-1",
+        approved_output_id="out-2",
+        sender_agent_id="sender",
+        recipient="counsel",
+        final_content_hash=content_hash({"body": "approved"}),
+        expires_at=9999999999,
+    )
+    audit = A2AAuditStore(str(tmp_path / "audit.jsonl"))
+    store = ApprovalStore(str(tmp_path / "approvals.jsonl"), audit_store=audit)
+    store.issue(receipt)
+    store.revoke(receipt.receipt_id, "manual review")
+    with pytest.raises(PermissionError, match="revoked"):
+        store.verify_and_consume(receipt)
+    assert [record["status"] for record in audit.read()] == ["issued", "revoked"]
+
+
+def test_outbox_survives_restart_and_revalidates_approval(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2A_APPROVAL_HMAC_SECRET", "test-secret")
+    payload = {"body": "approved"}
+    receipt = issue_approval(
+        approved_by="user-1", approved_output_id="out-3", sender_agent_id="orchestrator",
+        recipient="blackstone_verifier", tenant_id="tenant-a", final_content_hash=content_hash(payload),
+        expires_at=9999999999,
+    )
+    approval_store = ApprovalStore(str(tmp_path / "approvals.jsonl"))
+    approval_store.issue(receipt)
+    outbox_id = DurableOutbox(str(tmp_path / "outbox.jsonl")).enqueue(
+        receipt_id=receipt.receipt_id, sender_agent_id="orchestrator", tenant_id="tenant-a",
+        recipient="blackstone_verifier", payload_hash=content_hash(payload),
+    )
+    restarted = DurableOutbox(str(tmp_path / "outbox.jsonl"))
+    result = restarted.revalidate(
+        outbox_id, approval_store=ApprovalStore(str(tmp_path / "approvals.jsonl")),
+        agent_policy=AgentPolicy(), payload_hash=content_hash(payload), tenant_id="tenant-a",
+    )
+    assert result["status"] == "validated"
+
+
+def test_outbox_blocks_revoked_approval_and_audits(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2A_APPROVAL_HMAC_SECRET", "test-secret")
+    payload_hash = content_hash({"body": "approved"})
+    receipt = issue_approval(
+        approved_by="user-1", approved_output_id="out-4", sender_agent_id="orchestrator",
+        recipient="blackstone_verifier", tenant_id="tenant-a", final_content_hash=payload_hash,
+        expires_at=9999999999,
+    )
+    audit = A2AAuditStore(str(tmp_path / "audit.jsonl"))
+    approvals = ApprovalStore(str(tmp_path / "approvals.jsonl"), audit_store=audit)
+    approvals.issue(receipt)
+    approvals.revoke(receipt.receipt_id)
+    outbox = DurableOutbox(str(tmp_path / "outbox.jsonl"), audit_store=audit)
+    outbox_id = outbox.enqueue(
+        receipt_id=receipt.receipt_id, sender_agent_id="orchestrator", tenant_id="tenant-a",
+        recipient="blackstone_verifier", payload_hash=payload_hash,
+    )
+    with pytest.raises(PermissionError, match="revoked"):
+        outbox.revalidate(outbox_id, approval_store=ApprovalStore(str(tmp_path / "approvals.jsonl")),
+                          agent_policy=AgentPolicy(), payload_hash=payload_hash, tenant_id="tenant-a")
+    assert any(record["status"] == "blocked" for record in audit.read())
+
+
+def test_outbox_blocks_payload_and_tenant_drift(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2A_APPROVAL_HMAC_SECRET", "test-secret")
+    payload_hash = content_hash({"body": "approved"})
+    receipt = issue_approval(
+        approved_by="user-1", approved_output_id="out-5", sender_agent_id="orchestrator",
+        recipient="blackstone_verifier", tenant_id="tenant-a", final_content_hash=payload_hash,
+        expires_at=9999999999,
+    )
+    approvals_path = tmp_path / "approvals.jsonl"
+    ApprovalStore(str(approvals_path)).issue(receipt)
+    outbox = DurableOutbox(str(tmp_path / "outbox.jsonl"))
+    outbox_id = outbox.enqueue(
+        receipt_id=receipt.receipt_id, sender_agent_id="orchestrator", tenant_id="tenant-a",
+        recipient="blackstone_verifier", payload_hash=payload_hash,
+    )
+    with pytest.raises(PermissionError, match="payload hash"):
+        outbox.revalidate(outbox_id, approval_store=ApprovalStore(str(approvals_path)),
+                          agent_policy=AgentPolicy(), payload_hash="changed", tenant_id="tenant-a")
+
+
+def _worker_fixture(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2A_APPROVAL_HMAC_SECRET", "test-secret")
+    payload_hash = content_hash({"body": "approved"})
+    receipt = issue_approval(
+        approved_by="user-1", approved_output_id="worker", sender_agent_id="orchestrator",
+        recipient="blackstone_verifier", tenant_id="tenant-a", final_content_hash=payload_hash,
+        expires_at=9999999999,
+    )
+    approvals = ApprovalStore(str(tmp_path / "approvals.jsonl"))
+    approvals.issue(receipt)
+    outbox = DurableOutbox(str(tmp_path / "outbox.jsonl"))
+    outbox_id = outbox.enqueue(
+        receipt_id=receipt.receipt_id, sender_agent_id="orchestrator", tenant_id="tenant-a",
+        recipient="blackstone_verifier", payload_hash=payload_hash,
+    )
+    return approvals, outbox, outbox_id, payload_hash
+
+
+def test_worker_is_dry_run_and_idempotent(tmp_path, monkeypatch):
+    approvals, outbox, outbox_id, payload_hash = _worker_fixture(tmp_path, monkeypatch)
+    calls = []
+    worker = ExecutionWorker(
+        outbox=outbox, approval_store=approvals, agent_policy=AgentPolicy(),
+        executor=lambda record: calls.append(record),
+    )
+    result = worker.run_once(outbox_id, payload_hash=payload_hash, tenant_id="tenant-a")
+    assert result["status"] == "blocked"
+    assert result["dry_run"] is True
+    assert calls == []
+    with pytest.raises(PermissionError, match="terminal"):
+        worker.run_once(outbox_id, payload_hash=payload_hash, tenant_id="tenant-a")
+
+
+def test_worker_enforces_retry_limit_and_dlq(tmp_path, monkeypatch):
+    approvals, outbox, outbox_id, payload_hash = _worker_fixture(tmp_path, monkeypatch)
+    monkeypatch.setenv("A2A_EXTERNAL_ACTIONS_ENABLED", "true")
+    worker = ExecutionWorker(
+        outbox=outbox, approval_store=approvals, agent_policy=AgentPolicy(),
+        max_retries=2, dry_run=False, executor=lambda record: (_ for _ in ()).throw(RuntimeError("downstream")),
+    )
+    first = worker.run_once(outbox_id, payload_hash=payload_hash, tenant_id="tenant-a")
+    second = worker.run_once(outbox_id, payload_hash=payload_hash, tenant_id="tenant-a")
+    assert first["status"] == "pending"
+    assert second["status"] == "dlq"
+
+
+def test_concurrent_jsonl_writers_preserve_sequence_integrity(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+
+    store = A2AAuditStore(str(tmp_path / "audit.jsonl"))
+
+    def append(index):
+        store.append(DispatchAudit(
+            mission_id=f"concurrent-{index}", objective="REQUEST", agents_used=("a", "b"),
+            sources_used=(), claims_verified=(), risks_flagged=(), user_approval="not required",
+            external_action_taken=False, final_output_hash=str(index), status="delivered",
+        ))
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(append, range(40)))
+    result = store.integrity_check()
+    assert result["records"] == 40
+    assert result["last_sequence"] == 40
+
+
+def test_approval_and_outbox_integrity_checks(tmp_path, monkeypatch):
+    monkeypatch.setenv("A2A_APPROVAL_HMAC_SECRET", "test-secret")
+    payload_hash = content_hash({"body": "approved"})
+    receipt = issue_approval(
+        approved_by="user-1", approved_output_id="integrity", sender_agent_id="orchestrator",
+        recipient="blackstone_verifier", tenant_id="tenant-a", final_content_hash=payload_hash,
+        expires_at=9999999999,
+    )
+    approvals = ApprovalStore(str(tmp_path / "approvals.jsonl"))
+    approvals.issue(receipt)
+    outbox = DurableOutbox(str(tmp_path / "outbox.jsonl"))
+    outbox.enqueue(
+        receipt_id=receipt.receipt_id, sender_agent_id="orchestrator", tenant_id="tenant-a",
+        recipient="blackstone_verifier", payload_hash=payload_hash,
+    )
+    assert approvals.integrity_check()["records"] == 1
+    assert outbox.integrity_check()["records"] == 1
+
+
+@pytest.mark.asyncio
+async def test_api_sender_mismatch_is_audited(tmp_path):
+    audit = A2AAuditStore(str(tmp_path / "audit.jsonl"))
+    request = SendMessageRequest(
+        from_agent="orchestrator",
+        to_agent="blackstone_verifier",
+        message_type="REQUEST",
+        payload={"task": "verify"},
+    )
+    with pytest.raises(Exception):
+        await send_agent_message(
+            request,
+            A2AProtocol(),
+            None,
+            audit,
+            AgentPolicy(),
+            AgentPrincipal("justice_scribe", "tenant-a"),
+        )
+    assert audit.read()[0]["reason_code"] == "identity_mismatch"

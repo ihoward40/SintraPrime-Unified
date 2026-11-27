@@ -1,0 +1,73 @@
+name: Agentic Runtime Certification
+
+on:
+  pull_request:
+    paths:
+      - "agentic_runtime/**"
+      - ".github/workflows/agentic-runtime-certification.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focused-certification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install focused test dependency
+        run: |
+          python -m pip install -U pip
+          if python - <<'PY'
+import pathlib
+import tomllib
+
+pyproject = pathlib.Path("pyproject.toml")
+if not pyproject.exists():
+    raise SystemExit(1)
+data = tomllib.loads(pyproject.read_text())
+raise SystemExit(0 if "test" in data.get("project", {}).get("optional-dependencies", {}) else 1)
+PY
+          then
+            python -m pip install ".[test]"
+          else
+            python -m pip install -e .
+          fi
+          python -m pip install pytest
+      - name: Run agentic runtime suite
+        run: python -m pytest agentic_runtime/tests -q
+
+  regression-certification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install repository test dependencies
+        run: |
+          python -m pip install -U pip
+          if [ -f requirements.txt ]; then python -m pip install -r requirements.txt; fi
+          if python - <<'PY'
+import pathlib
+import tomllib
+
+pyproject = pathlib.Path("pyproject.toml")
+if not pyproject.exists():
+    raise SystemExit(1)
+data = tomllib.loads(pyproject.read_text())
+raise SystemExit(0 if "test" in data.get("project", {}).get("optional-dependencies", {}) else 1)
+PY
+          then
+            python -m pip install ".[test]"
+          else
+            python -m pip install -e .
+          fi
+          python -m pip install pytest
+      - name: Run canonical certification harness
+        run: python scripts/certify.py --quiet

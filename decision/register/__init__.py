@@ -1,0 +1,13 @@
+"""Decision Register schema and storage contracts."""
+
+from .schema import (
+    DECISION_REGISTER_ENTRY_SCHEMA,
+    DECISION_REGISTER_SCHEMA_VERSION,
+    DECISION_REGISTER_STORAGE_MODEL,
+)
+
+__all__ = [
+    "DECISION_REGISTER_ENTRY_SCHEMA",
+    "DECISION_REGISTER_SCHEMA_VERSION",
+    "DECISION_REGISTER_STORAGE_MODEL",
+]

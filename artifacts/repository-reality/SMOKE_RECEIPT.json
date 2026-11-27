@@ -1,0 +1,45 @@
+{
+  "smoke_receipt": {
+    "timestamp": "2026-08-08T06:45:00Z",
+    "commit_sha": "e2ada66e22f7992fec83c884fd6f7aa9329ccb25",
+    "tree_sha": "verified_against_origin_main",
+    "branch": "audit/sintraprime-foundation-reality",
+    "database": "PostgreSQL 15.17 (Docker 5433) + SQLite (default)",
+    "python": "3.11.9",
+    "platform": "Windows 10",
+    "tests_executed": {
+      "tier_1_default": {"passed": 556, "failed": 7, "total": 563, "note": "7 failures are PG auth (wrong password for portal user)"},
+      "portal_direct": {"passed": "see failures", "failed": 66, "errors": 5, "note": "excluded from default lane by conftest ignore_glob; 41/66 are stale unauthenticated-test assertions (app correctly enforces 401), ~8 signature drift, 5 migration-check errors"},
+      "collaboration_foundation": {"passed": 61, "note": "On unmerged branch PR #276"},
+      "governance_expansion": {"passed": 133, "note": "On unmerged branch PR #277"}
+    },
+    "providers_tested": {"real": 0, "mock": 2},
+    "result": "PARTIAL",
+    "failures": [
+      "SP-DEF-001: Schema/model UUID drift (mission_control_commands.tenant_id)",
+      "SP-DEF-002: Schema/model body/content drift (messages.body vs content)",
+      "SP-DEF-003: Migration chain ordering broken",
+      "SP-DEF-004: Default config uses SQLite",
+      "SP-DEF-007: Governance engine disconnected",
+      "SP-DEF-008: All providers mock-only"
+    ],
+    "dynamic_proofs": {
+      "app_startup": "PASS",
+      "auth_enforcement": "PASS",
+      "rbac_permissions": "PASS",
+      "health_endpoint_unauthenticated": "PASS",
+      "health_endpoint_authenticated": "PASS",
+      "mc_command_auth_required": "PASS",
+      "mc_command_permission_check": "PASS",
+      "mc_command_create_pg": "FAIL (UUID drift SP-DEF-001)",
+      "message_insert_parallel_pg": "PASS (10/10)",
+      "message_ordered_retrieval_pg": "PASS",
+      "message_restart_persistence_pg": "PASS",
+      "message_cross_tenant_rejection_pg": "PASS",
+      "tenant_isolation_db_level": "PASS",
+      "migration_chain_clean_bootstrap": "FAIL (ordering SP-DEF-003)",
+      "agent_execution_e2e": "NOT_RUN (no harness)",
+      "provider_invocation_real": "BLOCKED (no providers connected)"
+    }
+  }
+}

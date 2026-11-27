@@ -72,6 +72,11 @@ from .governed_execution import (
 from .health_persistence import ProviderHealthStore
 from .hermes_adapter import DelegateTask, HermesSwarmAdapter, SwarmResult, is_swarm_eligible
 from .inference_adapter import SwarmInferenceAdapter, WorkerInferenceRequest, WorkerInferenceResult
+from .network_sandbox import (
+    PROXY_ENV_VARS,
+    NetworkSandbox,
+    NetworkSandboxMode,
+)
 from .ownership import OwnershipRegistry, OwnershipViolation
 from .provider_router import ProviderHealth, ProviderRouter
 from .supervisor import Supervisor
@@ -96,6 +101,7 @@ from .worker import SwarmEvent, WorkerSpec, WorkerState, WorkerStatus
 __version__ = "0.2.0"
 
 __all__ = [
+    "PROXY_ENV_VARS",
     "WORKER_REGISTRY",
     "ASTAnalysisWorker",
     "ArtifactStore",
@@ -125,6 +131,8 @@ __all__ = [
     "IndependentBreakerWorker",
     "KillSwitchState",
     "ModelReasoningWorker",
+    "NetworkSandbox",
+    "NetworkSandboxMode",
     "OwnershipRegistry",
     "OwnershipViolation",
     "ProviderHealth",
@@ -158,6 +166,7 @@ __all__ = [
     "check_secret_inheritance",
     "is_swarm_eligible",
     "make_execution_id",
+    "network_sandbox",
     "redact_secrets",
     "terminate_process_tree",
 ]

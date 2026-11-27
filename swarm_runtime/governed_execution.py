@@ -505,6 +505,7 @@ class ExecutionResult:
     termination_reason: str = ""
     severity: str = Severity.INFO.value
     rejection_reasons: list[str] = field(default_factory=list)
+    network_enforcement_level: str = "policy_enforced"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -525,6 +526,7 @@ class ExecutionResult:
             "termination_reason": self.termination_reason,
             "severity": self.severity,
             "rejection_reasons": self.rejection_reasons,
+            "network_enforcement_level": self.network_enforcement_level,
         }
 
 
